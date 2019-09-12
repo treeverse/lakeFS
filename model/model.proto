@@ -1,0 +1,56 @@
+syntax = "proto3";
+
+// Data model
+message Blob {
+    repeated string blocks = 1;
+}
+
+message Tree {
+    message Entry {
+        enum Type {
+            BLOB = 1;
+            TREE = 2;
+        }
+        Type type = 1;
+        string name = 2;
+    }
+    repeated Entry entries = 1;
+}
+
+message Commit {
+    string rootTree = 1;
+    repeated string parents = 2;
+    string creator = 3;
+    int64 timestamp = 4;
+}
+
+
+// RPC
+service Index {
+    // workspace
+    rpc Read(ReadRequest) returns ReadResponse;
+    rpc Write(WriteRequest) returns WriteResponse;
+    rpc Delete(DeleteRequest) returns DeleteResponse;
+    rpc List(ListRequest) returns ListResponse;
+
+    // merkle tree
+    rpc Commit(CommitRequest) return CommitResponse;
+    rpc Diff(DiffRequest) returns DiffResponse;
+    rpc Merge(MergeRequest) returns MergeResponse;
+    
+    // branches
+    rpc DeleteBranch(DeleteBranchRequest) returns DeleteBranchResponse;
+    rpc ListBranches() returns ListBranchesResponse;
+}
+
+message ReadRequest {
+    string client =1;
+    string repo = 2;
+    string branch = 3;
+    string path = 4;
+}
+
+message ReadResponse {
+
+}
+
