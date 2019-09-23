@@ -2,19 +2,19 @@ syntax = "proto3";
 
 // Data model
 message Blob {
-    repeated string blocks = 1;
+    map<string, string> metadata = 2;
+    repeated string blocks = 4;
+}
+
+message Entry {
+    string address = 1;
+    map<string, string> metadata = 2;
+    uint64 mtime = 3;
 }
 
 message Tree {
-    message Entry {
-        enum Type {
-            BLOB = 1;
-            TREE = 2;
-        }
-        Type type = 1;
-        string name = 2;
-    }
-    repeated Entry entries = 1;
+    string parent = 1;
+    map<string, string> metadata = 2;
 }
 
 message Commit {
@@ -28,21 +28,27 @@ message Commit {
 // RPC
 service Index {
     // workspace
-    rpc Read(ReadRequest) returns ReadResponse;
-    rpc Write(WriteRequest) returns WriteResponse;
-    rpc Delete(DeleteRequest) returns DeleteResponse;
-    rpc List(ListRequest) returns ListResponse;
+    rpc Read(ReadRequest) returns (ReadResponse) {}
+    rpc Write(WriteRequest) returns (WriteResponse) {}
+    rpc Delete(DeleteRequest) returns (DeleteResponse) {}
+    rpc List(ListRequest) returns (ListResponse) {}
 
     // merkle tree
-    rpc Commit(CommitRequest) return CommitResponse;
-    rpc Diff(DiffRequest) returns DiffResponse;
-    rpc Merge(MergeRequest) returns MergeResponse;
+    // rpc Commit(CommitRequest) returns (CommitResponse) {}
+    // rpc Diff(DiffRequest) returns (DiffResponse) {}
+    // rpc Merge(MergeRequest) returns (MergeResponse) {}
     
     // branches
-    rpc DeleteBranch(DeleteBranchRequest) returns DeleteBranchResponse;
-    rpc ListBranches() returns ListBranchesResponse;
+    // rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse) {}
+    // rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse) {}
 }
 
+message RPCError {
+    uint32 code = 1;
+    string message = 2;
+}
+
+// read
 message ReadRequest {
     string client =1;
     string repo = 2;
@@ -51,6 +57,39 @@ message ReadRequest {
 }
 
 message ReadResponse {
-
+    Blob blob = 1;
 }
 
+// write
+message WriteRequest {
+    string client =1;
+    string repo = 2;
+    string branch = 3;
+    string path = 4;
+    Blob blob = 5;
+}
+message WriteResponse {}
+
+// delete
+message DeleteRequest {
+    string client =1;
+    string repo = 2;
+    string branch = 3;
+    string path = 4;
+}
+
+message DeleteResponse {}
+
+
+// list
+message ListRequest {
+    string client =1;
+    string repo = 2;
+    string branch = 3;
+    string path = 4;
+}
+
+message ListResponse {
+    Tree directory = 1;
+    repeated Entry entries = 2;
+}
