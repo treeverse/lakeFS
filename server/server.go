@@ -2,16 +2,17 @@ package server
 
 import (
 	"context"
-	"fmt"
 	"net"
 	"versio-index/config"
 	"versio-index/model"
 
+	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"google.golang.org/grpc"
 )
 
 // Server is the component holding the DB instance and exposing an external API for it
 type Server struct {
+	db fdb.Database
 }
 
 func (s *Server) Read(ctx context.Context, req *model.ReadRequest) (*model.ReadResponse, error) {
@@ -32,8 +33,8 @@ func (s *Server) List(ctx context.Context, req *model.ListRequest) (*model.ListR
 
 // New returns a new Server instance configured according to the supplied config
 func New(conf *config.IndexerConfiguration) (*Server, error) {
-	s := &Server{}
-	soc, err := net.Listen("tcp", fmt.Sprintf(":%d", 8080))
+	s := &Server{db: conf.Database}
+	soc, err := net.Listen("tcp", conf.ListenAddress)
 	if err != nil {
 		return nil, err
 	}
