@@ -12,11 +12,13 @@ func main() {
 	fdb.MustAPIVersion(600)
 
 	db := fdb.MustOpenDefault()
+
 	dir, err := directory.CreateOrOpen(db, []string{"md_index"}, nil)
 	if err != nil {
 		panic(err)
 	}
 	workspace := dir.Sub("workspace")
+
 	ret, e := db.Transact(func(tr fdb.Transaction) (interface{}, error) {
 		k := workspace.Pack(tuple.Tuple{"foor", "bar", 3})
 		// tr.Set(k, []byte("hello world"))
