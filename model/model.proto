@@ -24,6 +24,12 @@ message Commit {
     int64 timestamp = 4;
 }
 
+message Branch {
+    string commit_hash = 1;
+    string commit_root_hash = 2;
+    string workspace_root_hash = 3;
+}
+
 
 // RPC
 service Index {
