@@ -2,19 +2,26 @@ syntax = "proto3";
 
 // Data model
 message Blob {
+    map<string, string> metadata = 1;
+    repeated string blocks = 2;
+}
+
+message Tree {
+    string address = 1;
     map<string, string> metadata = 2;
-    repeated string blocks = 4;
 }
 
 message Entry {
     string address = 1;
     map<string, string> metadata = 2;
-    uint64 mtime = 3;
-}
 
-message Tree {
-    string parent = 1;
-    map<string, string> metadata = 2;
+    enum Type {
+        TREE = 0;
+        BLOB = 1;
+    }
+    Type type = 3;
+    string name = 4;
+    uint64 mtime = 5;
 }
 
 message Commit {

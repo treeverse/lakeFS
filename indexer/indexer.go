@@ -17,7 +17,6 @@ type Index interface {
 	Delete(Repo, Branch, string) error
 	List(Repo, Branch, string) ([]*model.Entry, error)
 	Reset(Repo, Branch) error
-	PartialCommit(Repo, Branch) error
 	GC(Repo, Branch, string) error
 	Commit(Repo, Branch, committer, message string) error
 	Merge(Repo, source, destination Branch) error
