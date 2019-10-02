@@ -34,8 +34,8 @@ func main() {
 		return nil, nil
 	})
 
-	start := workspace.Pack(tuple.Tuple{"client_id", "repo", "master"})
-	end := workspace.Pack(tuple.Tuple{"client_id", "repo", "master", 0xFF})
+	start := workspace.Pack(tuple.Tuple{"client_id", "repo"})
+	end := workspace.Pack(tuple.Tuple{"client_id", "repo", 0xFF})
 	fmt.Printf("start: %s, end: %s\n", start, end)
 
 	db.ReadTransact(func(tx fdb.ReadTransaction) (interface{}, error) {
@@ -46,7 +46,7 @@ func main() {
 			if err != nil {
 				panic(err)
 			}
-			fmt.Printf("key tuple: %v = %v\n", keyTuple[3], string(kv.Value))
+			fmt.Printf("key tuple: %v\n", keyTuple)
 		}
 
 		return nil, nil

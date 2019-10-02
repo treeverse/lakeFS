@@ -1,4 +1,4 @@
-package indexer
+package index
 
 import (
 	"versio-index/model"
@@ -11,60 +11,100 @@ import (
 )
 
 type DB struct {
-	database    fdb.Database
-	workspace   subspace.Subspace
-	tries       subspace.Subspace
-	trieEntries subspace.Subspace
-	blobs       subspace.Subspace
-	commits     subspace.Subspace
-	branches    subspace.Subspace
-	refCounts   subspace.Subspace
+	workspace     subspace.Subspace
+	workspaceMeta subspace.Subspace
+	tries         subspace.Subspace
+	blobs         subspace.Subspace
+	commits       subspace.Subspace
+	branches      subspace.Subspace
+	refCounts     subspace.Subspace
 }
 
 type Query struct {
 	db   *DB
 	repo *Repo
-
-	tx fdb.Transaction
 }
 
-type ReadQuery struct {
-	db   *DB
-	repo *Repo
-
-	tx fdb.ReadTransaction
+type QueryReader struct {
+	query *Query
+	tx    fdb.ReadTransaction
 }
 
-func (q *ReadQuery) ReadWorkspacePath(branch Branch, path string) (*model.Blob, error) {
-	blobKey := w.workspace.Pack(tuple.Tuple{q.repo.ClientID, q.repo.RepoID, branch, path})
-	data := q.tx.Get(blobKey).MustGet()
+type QueryWriter struct {
+	query *Query
+	tx    fdb.Transaction
+}
+
+func (q *Query) Reader(tx fdb.ReadTransaction) *QueryReader {
+	return &QueryReader{query: q, tx: tx}
+}
+
+func (q *Query) Writer(tx fdb.Transaction) *QueryWriter {
+	return &QueryWriter{query: q, tx: tx}
+}
+
+func (q *Query) pack(space subspace.Subspace, parts ...tuple.TupleElement) fdb.Key {
+	parts = append(tuple.Tuple{q.repo.ClientID, q.repo.RepoID}, parts...)
+	return space.Pack(parts)
+}
+
+func (r *QueryReader) get(space subspace.Subspace, parts ...tuple.TupleElement) fdb.FutureByteSlice {
+	return r.tx.Get(r.query.pack(space, parts...))
+}
+
+func (r *QueryReader) rangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) *fdb.RangeIterator {
+	begin := r.query.pack(space, parts...)
+	return r.tx.GetRange(fdb.KeyRange{
+		Begin: begin,
+		End:   append(begin, 0xFF),
+	}, fdb.RangeOptions{}).Iterator()
+}
+
+func (r *QueryReader) ReadPath(branch, path string) (*Blob, error) {
+	// read the blob's hash addr
+	data := r.get(r.query.db.workspace, branch, path)
 	if data == nil {
 		return nil, ErrNotFound
 	}
-	blob := &model.Blob{}
-	err := proto.Unmarshal(data, blob)
-	if err != nil {
-		return nil, xerrors.Errorf("unable to read path data: %w", ErrIndexMalformed)
+	addr := string(data.MustGet())
+
+	// read blocks
+	blocks := make([]string, 0)
+	iterator := r.rangePrefix(r.query.db.blobs, addr)
+	for iterator.Advance() {
+		blocks = append(blocks, string(iterator.MustGet().Value))
+	}
+
+	// read the blob's metadata
+	meta := make(map[string]string)
+	iterator = r.rangePrefix(r.query.db.workspaceMeta, branch, path)
+	for iterator.Advance() {
+		kv := iterator.MustGet()
+		key, err := r.query.db.workspaceMeta.Unpack(kv.Key)
+		if err != nil {
+			return nil, err
+		}
+		meta[key[5].(string)] = string(kv.Value)
+	}
+
+	// assemble result
+	blob := &Blob{
+		Address:  addr,
+		Blocks:   blocks,
+		Metadata: meta,
 	}
 	return blob, nil
 }
 
-func (q *ReadQuery) ReadBranch(branch Branch) (*model.Branch, error) {
-	branchBytes := q.tx.Get(q.db.branches.Pack(tuple.Tuple{q.repo.ClientID, q.repo.RepoID, branch})).MustGet()
-	if branchBytes == nil {
-		// branch not found we fall back to master..
-		branchBytes := q.tx.Get(q.db.branches.Pack(tuple.Tuple{q.repo.ClientID, q.repo.RepoID, DefaultBranch})).MustGet()
-		if branchBytes == nil {
-			return nil, ErrNotFound
-		}
+func (r *QueryReader) ReadBranch(branch string) *Branch {
+	// read branch attributes
+	commitFuture := r.get(r.query.db.branches, branch, "commit_address")
+	workspaceFuture := r.get(r.query.db.branches, branch, "workspace_root")
+	return &Branch{
+		Name:          branch,
+		CommitAddress: string(commitFuture.MustGet()),
+		WorkspaceRoot: string(workspaceFuture.MustGet()),
 	}
-	// parse branch
-	branchData := &model.Branch{}
-	err := proto.Unmarshal(branchBytes, branchData)
-	if err != nil {
-		return nil, xerrors.Errorf("unable to read branch data: %w", ErrIndexMalformed)
-	}
-	return branchData, nil
 }
 
 func (q *ReadQuery) ReadBlob(addr string) (*model.Blob, error) {
