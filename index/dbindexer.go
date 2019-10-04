@@ -1,9 +1,15 @@
 package index
 
 import (
+	"math/rand"
+	"strings"
+	"time"
+	"versio-index/index/model"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
+	"golang.org/x/xerrors"
 )
 
 const (
@@ -12,14 +18,14 @@ const (
 )
 
 type DBIndex struct {
-	database    fdb.Database
-	workspace   subspace.Subspace
-	tries       subspace.Subspace
-	trieEntries subspace.Subspace
-	blobs       subspace.Subspace
-	commits     subspace.Subspace
-	branches    subspace.Subspace
-	refCounts   subspace.Subspace
+	database  fdb.Database
+	workspace subspace.Subspace
+	trees     subspace.Subspace
+	entries   subspace.Subspace
+	blobs     subspace.Subspace
+	commits   subspace.Subspace
+	branches  subspace.Subspace
+	refCounts subspace.Subspace
 }
 
 func NewDBIndex(db fdb.Database) (*DBIndex, error) {
@@ -30,7 +36,7 @@ func NewDBIndex(db fdb.Database) (*DBIndex, error) {
 	return &DBIndex{
 		db,
 		dir.Sub("workspace"),
-		dir.Sub("tries"),
+		dir.Sub("trees"),
 		dir.Sub("entries"),
 		dir.Sub("blobs"),
 		dir.Sub("commits"),
@@ -39,199 +45,271 @@ func NewDBIndex(db fdb.Database) (*DBIndex, error) {
 	}, nil
 }
 
-//
-//func (w *DBIndex) Read(repo Repo, branch Branch, path string) (*model.Blob, error) {
-//	blob := &model.Blob{}
-//	var err error
-//	_, err = w.database.ReadTransact(func(tr fdb.ReadTransaction) (interface{}, error) {
-//		// read from workspace
-//		blobkey := w.workspace.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch, path})
-//		result := tr.Get(blobkey).MustGet()
-//		if result != nil {
-//			err := proto.Unmarshal(result, blob)
-//			if err != nil {
-//				return nil, err
-//			}
-//		}
-//		// if not found, read from tree
-//		blob, err = w.readFromTree(repo, branch, path, tr)
-//		return nil, err
-//	})
-//	if err != nil {
-//		return nil, err
-//	}
-//	return blob, nil
-//}
-//
-//func (w *DBIndex) readFromTree(repo Repo, branch Branch, path string, tr fdb.ReadTransaction) (*model.Blob, error) {
-//	// get branch commit hash
-//	branchBytes := tr.Get(w.branches.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch})).MustGet()
-//	if branchBytes == nil {
-//		// branch not found we fall back to master..
-//		branchBytes := tr.Get(w.branches.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, DefaultBranch})).MustGet()
-//		if branchBytes == nil {
-//			return nil, xerrors.Errorf("%s: %w", path, ErrNotFound)
-//		}
-//	}
-//	// parse branch
-//	branchData := &model.Branch{}
-//	err := proto.Unmarshal(branchBytes, branchData)
-//	if err != nil {
-//		return nil, xerrors.Errorf("unable to read branch data: %w", ErrIndexMalformed)
-//	}
-//	// get commit's workspace trie (or root trie if there's no workspace)
-//	rootID := branchData.GetWorkspaceRootHash()
-//	if strings.EqualFold(rootID, "") {
-//		rootID = branchData.GetCommitRootHash()
-//	}
-//
-//	// split and traverse path
-//	return w.traverse(repo, rootID, path, tr)
-//}
-//
-//func (w *DBIndex) traverse(repo Repo, rootID, path string, tr fdb.ReadTransaction) (*model.Blob, error) {
-//	currentAddr := rootID
-//	parts := strings.Split(path, PathSeparator)
-//	for i, part := range parts {
-//		if i == len(parts)-1 {
-//			// get a blob
-//			blobKey := w.blobs.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, currentAddr})
-//			blobData := tr.Get(blobKey).MustGet()
-//			if len(blobData) == 0 {
-//				return nil, xerrors.Errorf("%s: %w", path, ErrNotFound)
-//			}
-//			blob := &model.Blob{}
-//			err := proto.Unmarshal(blobData, blob)
-//			if err != nil {
-//				return nil, xerrors.Errorf("unable to read file: %w", err)
-//			}
-//			return blob, nil
-//		}
-//		// get sub trie
-//		entryKey := w.trieEntries.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, currentAddr, "d", part})
-//		entryData := tr.Get(entryKey).MustGet()
-//		if len(entryData) == 0 {
-//			return nil, xerrors.Errorf("%s: %w", path, ErrNotFound)
-//		}
-//		entry := &model.Entry{}
-//		err := proto.Unmarshal(entryData, entry)
-//		if err != nil {
-//			return nil, xerrors.Errorf("unable to read file: %w", err)
-//		}
-//		currentAddr = entry.Address
-//	}
-//	return nil, ErrNotFound
-//}
-//
-//func shouldPartiallyCommit() bool {
-//	chosen := rand.Float64()
-//	return chosen < PartialCommitChance
-//}
-//
-//func (w *DBIndex) partialCommit(repo Repo, branch Branch, tr fdb.Transaction) error {
-//	// 1. iterate all changes in the current workspace
-//	changes := make(map[string]*model.Blob)
-//	start := w.workspace.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch})
-//	end := w.workspace.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch, 0xFF})
-//	result := tr.GetRange(fdb.KeyRange{
-//		Begin: start,
-//		End:   end,
-//	}, fdb.RangeOptions{}).Iterator()
-//	for result.Advance() {
-//		kv := result.MustGet()
-//		keyTuple, err := w.workspace.Unpack(kv.Key)
-//		if err != nil {
-//			return err
-//		}
-//		// (client, repo, branch, path)
-//		blob := &model.Blob{}
-//		err = proto.Unmarshal(kv.Value, blob)
-//		if err != nil {
-//			return err
-//		}
-//		changes[keyTuple[3].(string)] = blob
-//	}
-//
-//	// 2. Apply them to the Merkle root as exists in the branch pointer
-//	rootKey := w.branches.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch})
-//	branchData := tr.Get(rootKey).MustGet()
-//	branchMeta := &model.Branch{}
-//	err := proto.Unmarshal(branchData, branchMeta)
-//	if err != nil {
-//		return err
-//	}
-//	//root := branchMeta.WorkspaceRootHash
-//
-//	//for path, blob := range changes {
-//	//
-//	//}
-//
-//	// 3. calculate new Merkle root
-//	// 4. save it in the branch pointer
-//	return nil
-//}
-//
-//func (w *DBIndex) Write(repo Repo, branch Branch, path string, blob *model.Blob) error {
-//	blobKey := w.workspace.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch, path})
-//	blobData, err := proto.Marshal(blob)
-//	if err != nil {
-//		return ErrBadBlock
-//	}
-//	_, err = w.database.Transact(func(tr fdb.Transaction) (interface{}, error) {
-//		tr.Set(blobKey, blobData)
-//		if shouldPartiallyCommit() {
-//			_ = w.partialCommit(repo, branch, tr)
-//		}
-//		return nil, nil
-//	})
-//	return err
-//}
-//
-//func (w *DBIndex) Delete(repo Repo, branch Branch, path string) error {
-//	blobKey := w.workspace.Pack(tuple.Tuple{repo.ClientID, repo.RepoID, branch, path})
-//	tombStone, _ := proto.Marshal(&model.Blob{Metadata: map[string]string{"tombstone": "true"}})
-//	_, err := w.database.Transact(func(tr fdb.Transaction) (interface{}, error) {
-//		tr.Set(blobKey, tombStone)
-//		if shouldPartiallyCommit() {
-//			_ = w.partialCommit(repo, branch, tr)
-//		}
-//		return nil, nil
-//	})
-//	return err
-//}
-//
-//func (w *DBIndex) List(repo Repo, branch Branch, path string) ([]*model.Entry, error) {
-//	_, err := w.database.Transact(func(tr fdb.Transaction) (interface{}, error) {
-//		err := w.partialCommit(repo, branch, tr)
-//		if err != nil {
-//			return nil, err
-//		}
-//		w.readFromTree(repo, branch, path, tr) // TODO: refactor this method to allow listing.
-//		return nil, nil
-//	})
-//	return nil, err
-//}
-//
-//func (w *DBIndex) Reset(repo Repo, branch Branch) error {
-//	_, err := w.database.Transact(func(tr fdb.Transaction) (interface{}, error) {
-//		return nil, nil
-//	})
-//	return err
-//}
-//
-//func (w *DBIndex) Commit(repo Repo, branch Branch, committer, message string) error {
-//	return nil
-//}
-//func (w *DBIndex) Merge(repo Repo, source, destination Branch) error {
-//	return nil
-//}
-//func (w *DBIndex) DeleteBranch(repo Repo, branch Branch) error {
-//	return nil
-//}
+func (db *DBIndex) Query(repo *model.Repo) *Query {
+	return &Query{
+		workspace: db.workspace,
+		trees:     db.trees,
+		entries:   db.entries,
+		blobs:     db.blobs,
+		commits:   db.commits,
+		branches:  db.branches,
+		refCounts: db.refCounts,
+		repo:      repo,
+	}
+}
+
+func (db *DBIndex) Read(repo *model.Repo, branch, path string) (*model.Object, error) {
+	obj, err := db.database.ReadTransact(func(tx fdb.ReadTransaction) (interface{}, error) {
+		var obj *model.Object
+		reader := db.Query(repo).Reader(tx)
+		we, err := reader.ReadFromWorkspace(branch, path)
+		if err != nil && !xerrors.Is(err, ErrNotFound) {
+			// an actual error has occurred, return it.
+			return nil, err
+		}
+		if we.GetTombstone() != nil {
+			// object was deleted deleted
+			return nil, ErrNotFound
+		}
+		if xerrors.Is(err, ErrNotFound) {
+			// not in workspace, let's try reading it from branch tree
+			obj, err = readFromTree(reader, repo, branch, path)
+		}
+		// we found an object in the workspace
+		obj = we.GetObject()
+		return obj, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return obj.(*model.Object), nil
+}
+
+func resolveReadRoot(r *QueryReader, repo *model.Repo, branch string) (string, error) {
+	var empty string
+	branchData, err := r.ReadBranch(branch)
+	if xerrors.Is(err, ErrNotFound) {
+		// fallback to default branch
+		branchData, err = r.ReadBranch(repo.DefaultBranch)
+		if err != nil {
+			return empty, err
+		}
+	} else if err != nil {
+		return empty, err // unexpected error
+	}
+	if strings.EqualFold(branchData.GetWorkspaceRoot(), "") {
+		return branchData.GetCommitRoot(), nil
+	}
+	return branchData.GetWorkspaceRoot(), nil
+}
+
+func readFromTree(r *QueryReader, repo *model.Repo, branch, path string) (*model.Object, error) {
+	// resolve tree root to read from
+	root, err := resolveReadRoot(r, repo, branch)
+	if err != nil {
+		return nil, err
+	}
+	// get the tree
+	return traverse(r, root, path)
+}
+
+func traverse(r *QueryReader, treeID, path string) (*model.Object, error) {
+	currentAddress := treeID
+	parts := strings.Split(path, PathSeparator)
+	for i, part := range parts {
+		if i == len(parts)-1 {
+			// last item in the path is the blob
+			entry, err := r.ReadEntry(currentAddress, "f", part)
+			if err != nil {
+				return nil, err
+			}
+			blob, err := r.ReadBlob(entry.GetAddress())
+			if err != nil {
+				return nil, err
+			}
+			return &model.Object{
+				Blob:     blob,
+				Metadata: entry.GetMetadata(),
+			}, nil
+		}
+		entry, err := r.ReadEntry(currentAddress, "d", part)
+		if err != nil {
+			return nil, err
+		}
+		currentAddress = entry.GetAddress()
+	}
+	return nil, ErrNotFound
+}
+
+func traverseDir(r *QueryReader, treeID, path string) (string, error) {
+	currentAddress := treeID
+	parts := strings.Split(path, PathSeparator)
+	for _, part := range parts {
+		entry, err := r.ReadEntry(currentAddress, "d", part)
+		if err != nil {
+			return "", err
+		}
+		currentAddress = entry.GetAddress()
+	}
+	return currentAddress, nil
+}
+
+func shouldPartiallyCommit(repo *model.Repo) bool {
+	chosen := rand.Float32()
+	return chosen < repo.GetPartialCommitRatio()
+}
+
+func partialCommit(w *QueryWriter, repo *model.Repo, branch string) (string, error) {
+	// 1. iterate all changes in the current workspace
+	// 2. Apply them to the Merkle root as exists in the branch pointer
+	// 3. calculate new Merkle root
+	// 4. save it in the branch pointer
+	return "", nil
+}
+
+func writeEntryToWorkspace(w *QueryWriter, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
+	err := w.WriteToWorkspacePath(branch, path, entry)
+	if err != nil {
+		return err
+	}
+	if shouldPartiallyCommit(repo) {
+		_, err = partialCommit(w, repo, branch)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (db *DBIndex) Write(repo *model.Repo, branch, path string, object *model.Object) error {
+	_, err := db.database.Transact(func(tx fdb.Transaction) (interface{}, error) {
+		w := db.Query(repo).Writer(tx)
+		err := writeEntryToWorkspace(w, repo, branch, path, &model.WorkspaceEntry{
+			Data: &model.WorkspaceEntry_Object{Object: object},
+		})
+		return nil, err
+	})
+	return err
+}
+
+func (db *DBIndex) Delete(repo *model.Repo, branch, path string) error {
+	_, err := db.database.Transact(func(tx fdb.Transaction) (interface{}, error) {
+		w := db.Query(repo).Writer(tx)
+		err := writeEntryToWorkspace(w, repo, branch, path, &model.WorkspaceEntry{
+			Data: &model.WorkspaceEntry_Tombstone{Tombstone: &model.Tombstone{}},
+		})
+		return nil, err
+	})
+	return err
+}
+
+func (db *DBIndex) List(repo *model.Repo, branch, path string) ([]*model.Entry, error) {
+	entries, err := db.database.Transact(func(tx fdb.Transaction) (interface{}, error) {
+		r := db.Query(repo).Reader(tx)
+		w := db.Query(repo).Writer(tx)
+		_, err := partialCommit(w, repo, branch)
+		if err != nil {
+			return nil, err
+		}
+		root, err := resolveReadRoot(r, repo, branch)
+		if err != nil {
+			return nil, err
+		}
+		addr, err := traverseDir(r, root, path)
+		if err != nil {
+			return nil, err
+		}
+		return r.ListEntries(addr)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return entries.([]*model.Entry), nil
+}
+
+func (db *DBIndex) Reset(repo *model.Repo, branch string) error {
+	// clear workspace, set branch workspace root back to commit root
+	_, err := db.database.Transact(func(tx fdb.Transaction) (interface{}, error) {
+		r := db.Query(repo).Reader(tx)
+		w := db.Query(repo).Writer(tx)
+
+		w.clearPrefix(db.workspace, repo.GetClientId(), repo.GetRepoId(), branch)
+		branchData, err := r.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+		gc(r, w, branchData.GetWorkspaceRoot())
+		branchData.WorkspaceRoot = branchData.GetCommitRoot()
+		return nil, w.WriteBranch(branch, branchData)
+	})
+	return err
+}
+
+func commitHash(commit *model.Commit) string {
+	return "foo"
+}
+
+func (db *DBIndex) Commit(repo *model.Repo, branch, message, committer string, metadata map[string]string) error {
+	_, err := db.database.Transact(func(tx fdb.Transaction) (interface{}, error) {
+		r := db.Query(repo).Reader(tx)
+		w := db.Query(repo).Writer(tx)
+		root, err := partialCommit(w, repo, branch)
+		if err != nil {
+			return nil, err
+		}
+		branchData, err := r.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+		commit := &model.Commit{
+			Tree:      root,
+			Parents:   []string{branchData.GetCommit()},
+			Committer: committer,
+			Message:   message,
+			Timestamp: time.Now().Unix(),
+			Metadata:  metadata,
+		}
+		commitAddr := commitHash(commit)
+		err = w.WriteCommit(commitAddr, commit)
+		if err != nil {
+			return nil, err
+		}
+		branchData.Commit = commitAddr
+		branchData.CommitRoot = commit.GetTree()
+		branchData.WorkspaceRoot = commit.GetTree()
+
+		return nil, w.WriteBranch(branch, branchData)
+	})
+	return err
+}
+
+func gc(r *QueryReader, w *QueryWriter, treeAddress string) {
+
+}
+
+func (db *DBIndex) DeleteBranch(repo *model.Repo, branch string) error {
+	_, err := db.database.Transact(func(tx fdb.Transaction) (interface{}, error) {
+		r := db.Query(repo).Reader(tx)
+		w := db.Query(repo).Writer(tx)
+
+		w.clearPrefix(db.workspace, repo.GetClientId(), repo.GetRepoId(), branch)
+		branchData, err := r.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+		gc(r, w, branchData.GetCommitRoot())
+		gc(r, w, branchData.GetWorkspaceRoot())
+		w.DeleteBranch(branch)
+		return nil, nil
+	})
+	return err
+}
+
 //func (w *DBIndex) Checkout(repo Repo, branch Branch, commit string) error {
 //	return nil
 //}
 //
-//func (w *DBIndex) gc(repo Repo, branch Branch, root string) error {
+
+//func (w *DBIndex) Merge(repo Repo, source, destination Branch) error {
 //	return nil
 //}
