@@ -8,43 +8,9 @@ import (
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 
-type ReadQuery interface {
-	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
-	ReadBranch(branch string) (*model.Branch, error)
-	ReadBlob(addr string) (*model.Blob, error)
-	ReadTree(addr string) (*model.Tree, error)
-	ReadCommit(addr string) (*model.Commit, error)
-	ListEntries(addr string) ([]*model.Entry, error)
-	ReadEntry(treeAddress, entryType, name string) (*model.Entry, error)
-}
-
-type Query interface {
-	ReadQuery
-	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
-	ClearWorkspace(branch string)
-	WriteTree(addr string, tree *model.Tree) error
-	WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error
-	WriteBlob(addr string, blob *model.Blob) error
-	WriteCommit(addr string, commit *model.Commit) error
-	WriteBranch(name string, branch *model.Branch) error
-	DeleteBranch(name string)
-}
-
-type spaces struct {
-	workspace subspace.Subspace // store WorkspaceEntry objects per branch
-	trees     subspace.Subspace // stores tree metadata objects
-	entries   subspace.Subspace // enumerates tree entries (blobs and other trees, directories first)
-	blobs     subspace.Subspace // stores simple blobs
-	commits   subspace.Subspace // store commit objects
-	branches  subspace.Subspace // store branch pointer and metadata
-	refCounts subspace.Subspace // trie reference counts
-}
-
 type readQuery struct {
-	*spaces
 	repo *model.Repo
-
-	tx fdb.ReadTransaction
+	tx   fdb.ReadTransaction
 }
 
 type query struct {
