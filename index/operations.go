@@ -6,9 +6,9 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
-func (r *QueryReader) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
+func (q *readQuery) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
 	// read the blob's hash addr
-	data := r.get(r.query.workspace, branch, path).MustGet()
+	data := q.get(q.workspace, branch, path).MustGet()
 	if data == nil {
 		return nil, ErrNotFound
 	}
@@ -20,9 +20,9 @@ func (r *QueryReader) ReadFromWorkspace(branch, path string) (*model.WorkspaceEn
 	return ent, nil
 }
 
-func (r *QueryReader) ReadBranch(branch string) (*model.Branch, error) {
+func (q *readQuery) ReadBranch(branch string) (*model.Branch, error) {
 	// read branch attributes
-	data := r.get(r.query.branches, branch).MustGet()
+	data := q.get(q.branches, branch).MustGet()
 	if data == nil {
 		return nil, ErrNotFound
 	}
@@ -34,8 +34,8 @@ func (r *QueryReader) ReadBranch(branch string) (*model.Branch, error) {
 	return branchModel, nil
 }
 
-func (r *QueryReader) ReadBlob(addr string) (*model.Blob, error) {
-	blobData := r.get(r.query.blobs, addr).MustGet()
+func (q *readQuery) ReadBlob(addr string) (*model.Blob, error) {
+	blobData := q.get(q.blobs, addr).MustGet()
 	if blobData == nil {
 		return nil, ErrNotFound
 	}
@@ -47,8 +47,8 @@ func (r *QueryReader) ReadBlob(addr string) (*model.Blob, error) {
 	return blob, nil
 }
 
-func (r *QueryReader) ReadTree(addr string) (*model.Tree, error) {
-	data := r.get(r.query.trees, addr).MustGet()
+func (q *readQuery) ReadTree(addr string) (*model.Tree, error) {
+	data := q.get(q.trees, addr).MustGet()
 	if data == nil {
 		return nil, ErrNotFound
 	}
@@ -60,8 +60,8 @@ func (r *QueryReader) ReadTree(addr string) (*model.Tree, error) {
 	return tree, nil
 }
 
-func (r *QueryReader) ReadCommit(addr string) (*model.Commit, error) {
-	data := r.get(r.query.commits, addr).MustGet()
+func (q *readQuery) ReadCommit(addr string) (*model.Commit, error) {
+	data := q.get(q.commits, addr).MustGet()
 	if data == nil {
 		return nil, ErrNotFound
 	}
@@ -73,8 +73,8 @@ func (r *QueryReader) ReadCommit(addr string) (*model.Commit, error) {
 	return commit, nil
 }
 
-func (r *QueryReader) ListEntries(addr string) ([]*model.Entry, error) {
-	iter := r.rangePrefix(r.query.entries, addr)
+func (q *readQuery) ListEntries(addr string) ([]*model.Entry, error) {
+	iter := q.rangePrefix(q.entries, addr)
 	entries := make([]*model.Entry, 0)
 	for iter.Advance() {
 		entryData := iter.MustGet()
@@ -88,8 +88,8 @@ func (r *QueryReader) ListEntries(addr string) ([]*model.Entry, error) {
 	return entries, nil
 }
 
-func (r *QueryReader) ReadEntry(treeAddress, entryType, name string) (*model.Entry, error) {
-	data := r.get(r.query.entries, treeAddress, entryType, name).MustGet()
+func (q *readQuery) ReadEntry(treeAddress, entryType, name string) (*model.Entry, error) {
+	data := q.get(q.entries, treeAddress, entryType, name).MustGet()
 	if data == nil {
 		return nil, ErrNotFound
 	}
@@ -101,60 +101,64 @@ func (r *QueryReader) ReadEntry(treeAddress, entryType, name string) (*model.Ent
 	return entry, nil
 }
 
-func (w *QueryWriter) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
+func (q *query) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
 	data, err := proto.Marshal(entry)
 	if err != nil {
 		return ErrIndexMalformed
 	}
-	w.set(data, w.query.workspace, path)
+	q.set(data, q.workspace, path)
 	return nil
 }
 
-func (w *QueryWriter) WriteTree(addr string, tree *model.Tree) error {
+func (q *query) ClearWorkspace(branch string) {
+	q.clearPrefix(q.workspace, q.repo.GetClientId(), q.repo.GetRepoId(), branch)
+}
+
+func (q *query) WriteTree(addr string, tree *model.Tree) error {
 	data, err := proto.Marshal(tree)
 	if err != nil {
 		return err
 	}
-	w.set(data, w.query.trees, addr)
+	q.set(data, q.trees, addr)
 	return nil
 }
 
-func (w *QueryWriter) WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error {
+func (q *query) WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error {
 	data, err := proto.Marshal(entry)
 	if err != nil {
 		return err
 	}
-	w.set(data, w.query.entries, treeAddress, entryType, name)
+	q.set(data, q.entries, treeAddress, entryType, name)
 	return nil
 }
 
-func (w *QueryWriter) WriteBlob(addr string, blob *model.Blob) error {
+func (q *query) WriteBlob(addr string, blob *model.Blob) error {
 	data, err := proto.Marshal(blob)
 	if err != nil {
 		return err
 	}
-	w.set(data, w.query.blobs, addr)
+	q.set(data, q.blobs, addr)
 	return nil
 }
 
-func (w *QueryWriter) WriteCommit(addr string, commit *model.Commit) error {
+func (q *query) WriteCommit(addr string, commit *model.Commit) error {
 	data, err := proto.Marshal(commit)
 	if err != nil {
 		return err
 	}
-	w.set(data, w.query.commits, addr)
+	q.set(data, q.commits, addr)
 	return nil
 }
 
-func (w *QueryWriter) WriteBranch(name string, branch *model.Branch) error {
+func (q *query) WriteBranch(name string, branch *model.Branch) error {
 	data, err := proto.Marshal(branch)
 	if err != nil {
 		return err
 	}
-	w.set(data, w.query.branches, name)
+	q.set(data, q.branches, name)
 	return nil
 }
 
-func (w *QueryWriter) DeleteBranch(name string) {
-	w.delete(w.query.branches, name)
+func (q *query) DeleteBranch(name string) {
+	q.delete(q.branches, name)
 }

@@ -8,7 +8,29 @@ import (
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 
-type Query struct {
+type ReadQuery interface {
+	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
+	ReadBranch(branch string) (*model.Branch, error)
+	ReadBlob(addr string) (*model.Blob, error)
+	ReadTree(addr string) (*model.Tree, error)
+	ReadCommit(addr string) (*model.Commit, error)
+	ListEntries(addr string) ([]*model.Entry, error)
+	ReadEntry(treeAddress, entryType, name string) (*model.Entry, error)
+}
+
+type Query interface {
+	ReadQuery
+	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
+	ClearWorkspace(branch string)
+	WriteTree(addr string, tree *model.Tree) error
+	WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error
+	WriteBlob(addr string, blob *model.Blob) error
+	WriteCommit(addr string, commit *model.Commit) error
+	WriteBranch(name string, branch *model.Branch) error
+	DeleteBranch(name string)
+}
+
+type readQuery struct {
 	workspace subspace.Subspace // store WorkspaceEntry objects per branch
 	trees     subspace.Subspace // stores tree metadata objects
 	entries   subspace.Subspace // enumerates tree entries (blobs and other trees, directories first)
@@ -18,55 +40,44 @@ type Query struct {
 	refCounts subspace.Subspace // trie reference counts
 
 	repo *model.Repo
+
+	tx fdb.ReadTransaction
 }
 
-type QueryReader struct {
-	query *Query
-	tx    fdb.ReadTransaction
+type query struct {
+	*readQuery
+	tx fdb.Transaction
 }
 
-type QueryWriter struct {
-	query *Query
-	tx    fdb.Transaction
-}
-
-func (q *Query) Reader(tx fdb.ReadTransaction) *QueryReader {
-	return &QueryReader{query: q, tx: tx}
-}
-
-func (q *Query) Writer(tx fdb.Transaction) *QueryWriter {
-	return &QueryWriter{query: q, tx: tx}
-}
-
-func (q *Query) pack(space subspace.Subspace, parts ...tuple.TupleElement) fdb.Key {
+func (q *readQuery) pack(space subspace.Subspace, parts ...tuple.TupleElement) fdb.Key {
 	parts = append(tuple.Tuple{q.repo.GetClientId(), q.repo.GetRepoId()}, parts...)
 	return space.Pack(parts)
 }
 
-func (r *QueryReader) get(space subspace.Subspace, parts ...tuple.TupleElement) fdb.FutureByteSlice {
-	return r.tx.Get(r.query.pack(space, parts...))
+func (q *readQuery) get(space subspace.Subspace, parts ...tuple.TupleElement) fdb.FutureByteSlice {
+	return q.tx.Get(q.pack(space, parts...))
 }
 
-func (r *QueryReader) rangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) *fdb.RangeIterator {
-	begin := r.query.pack(space, parts...)
-	return r.tx.GetRange(fdb.KeyRange{
+func (q *readQuery) rangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) *fdb.RangeIterator {
+	begin := q.pack(space, parts...)
+	return q.tx.GetRange(fdb.KeyRange{
 		Begin: begin,
 		End:   append(begin, 0xFF),
 	}, fdb.RangeOptions{}).Iterator()
 }
 
-func (w *QueryWriter) set(data []byte, space subspace.Subspace, parts ...tuple.TupleElement) {
-	w.tx.Set(w.query.pack(space, parts...), data)
+func (q *query) set(data []byte, space subspace.Subspace, parts ...tuple.TupleElement) {
+	q.tx.Set(q.pack(space, parts...), data)
 }
-func (w *QueryWriter) clearPrefix(space subspace.Subspace, parts ...tuple.TupleElement) {
-	begin := w.query.pack(space, parts...)
+func (q *query) clearPrefix(space subspace.Subspace, parts ...tuple.TupleElement) {
+	begin := q.pack(space, parts...)
 	end := append(begin, 0xFF)
-	w.tx.ClearRange(&fdb.KeyRange{
+	q.tx.ClearRange(&fdb.KeyRange{
 		Begin: begin,
 		End:   end,
 	})
 }
 
-func (w *QueryWriter) delete(space subspace.Subspace, parts ...tuple.TupleElement) {
-	w.tx.Clear(w.query.pack(space, parts...))
+func (q *query) delete(space subspace.Subspace, parts ...tuple.TupleElement) {
+	q.tx.Clear(q.pack(space, parts...))
 }
