@@ -30,7 +30,7 @@ type Query interface {
 	DeleteBranch(name string)
 }
 
-type readQuery struct {
+type spaces struct {
 	workspace subspace.Subspace // store WorkspaceEntry objects per branch
 	trees     subspace.Subspace // stores tree metadata objects
 	entries   subspace.Subspace // enumerates tree entries (blobs and other trees, directories first)
@@ -38,7 +38,10 @@ type readQuery struct {
 	commits   subspace.Subspace // store commit objects
 	branches  subspace.Subspace // store branch pointer and metadata
 	refCounts subspace.Subspace // trie reference counts
+}
 
+type readQuery struct {
+	*spaces
 	repo *model.Repo
 
 	tx fdb.ReadTransaction

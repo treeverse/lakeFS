@@ -155,21 +155,7 @@ func NewDBIndex(db fdb.Database) (*DBIndex, error) {
 
 func (db *DBIndex) ReadQuery(repo *model.Repo, tx fdb.ReadTransaction) ReadQuery {
 	return &readQuery{
-		workspace: db.workspace,
-		trees:     db.trees,
-		entries:   db.entries,
-		blobs:     db.blobs,
-		commits:   db.commits,
-		branches:  db.branches,
-		refCounts: db.refCounts,
-		repo:      repo,
-		tx:        tx,
-	}
-}
-
-func (db *DBIndex) Query(repo *model.Repo, tx fdb.Transaction) Query {
-	return &query{
-		readQuery: &readQuery{
+		spaces: &spaces{
 			workspace: db.workspace,
 			trees:     db.trees,
 			entries:   db.entries,
@@ -177,7 +163,25 @@ func (db *DBIndex) Query(repo *model.Repo, tx fdb.Transaction) Query {
 			commits:   db.commits,
 			branches:  db.branches,
 			refCounts: db.refCounts,
-			repo:      repo,
+		},
+		repo: repo,
+		tx:   tx,
+	}
+}
+
+func (db *DBIndex) Query(repo *model.Repo, tx fdb.Transaction) Query {
+	return &query{
+		readQuery: &readQuery{
+			spaces: &spaces{
+				workspace: db.workspace,
+				trees:     db.trees,
+				entries:   db.entries,
+				blobs:     db.blobs,
+				commits:   db.commits,
+				branches:  db.branches,
+				refCounts: db.refCounts,
+			},
+			repo: repo,
 		},
 		tx: tx,
 	}
