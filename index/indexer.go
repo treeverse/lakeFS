@@ -4,6 +4,7 @@ import (
 	"math/rand"
 	"strings"
 	"time"
+	"versio-index/ident"
 	"versio-index/index/model"
 
 	"golang.org/x/xerrors"
@@ -102,7 +103,19 @@ func shouldPartiallyCommit(repo *model.Repo) bool {
 }
 
 func partialCommit(tx Transaction, repo *model.Repo, branch string) (string, error) {
+	var empty string
 	// 1. iterate all changes in the current workspace
+	entries, err := tx.ListEntries(branch)
+	if err != nil {
+		return empty, err
+	}
+
+	// group by containing tree
+
+	// calc and write all changed trees
+
+	//
+
 	// 2. Apply them to the Merkle root as exists in the branch pointer
 	// 3. calculate new Merkle root
 	// 4. save it in the branch pointer
@@ -111,14 +124,6 @@ func partialCommit(tx Transaction, repo *model.Repo, branch string) (string, err
 
 func gc(tx Transaction, treeAddress string) {
 
-}
-
-func commitHash(commit *model.Commit) string {
-	return "foo" // TODO: add real implementations to tree and commit
-}
-
-func treeHash(tree *model.Tree) string {
-	return "bar"
 }
 
 type Index struct {
@@ -235,7 +240,7 @@ func (index *Index) Commit(repo *model.Repo, branch, message, committer string, 
 			Timestamp: time.Now().Unix(),
 			Metadata:  metadata,
 		}
-		commitAddr := commitHash(commit)
+		commitAddr := ident.Hash(commit)
 		err = tx.WriteCommit(commitAddr, commit)
 		if err != nil {
 			return nil, err
