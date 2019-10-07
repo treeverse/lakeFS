@@ -10,6 +10,7 @@ require (
 	github.com/google/pprof v0.0.0-20190908185732-236ed259b199 // indirect
 	github.com/hashicorp/golang-lru v0.5.3 // indirect
 	github.com/kr/pty v1.1.8 // indirect
+	github.com/multiformats/go-multihash v0.0.8
 	github.com/rogpeppe/go-internal v1.4.0 // indirect
 	go.opencensus.io v0.22.1 // indirect
 	golang.org/x/crypto v0.0.0-20190923035154-9ee001bba392 // indirect
