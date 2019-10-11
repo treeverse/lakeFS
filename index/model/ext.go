@@ -34,8 +34,8 @@ func (m *Entry) Identity() []byte {
 	return identFromStrings(
 		m.Name,
 		fmt.Sprintf("%v", m.Type),
-		strconv.FormatUint(m.Mtime, 10),
-		identMapToString(m.Metadata))
+		strconv.FormatInt(m.GetTimestamp(), 10),
+		identMapToString(m.GetMetadata()))
 }
 
 func (m *Blob) Identity() []byte {
@@ -44,19 +44,19 @@ func (m *Blob) Identity() []byte {
 
 func (m *Commit) Identity() []byte {
 	return append(identFromStrings(
-		m.Tree,
-		m.Committer,
-		m.Message,
-		strconv.FormatInt(m.Timestamp, 10),
-		identMapToString(m.Metadata),
-	), identFromStrings(m.Parents...)...)
+		m.GetTree(),
+		m.GetCommitter(),
+		m.GetMessage(),
+		strconv.FormatInt(m.GetTimestamp(), 10),
+		identMapToString(m.GetMetadata()),
+	), identFromStrings(m.GetParents()...)...)
 }
 
 func (m *Object) Identity() []byte {
 	return append(
-		m.Blob.Identity(),
+		m.GetBlob().Identity(),
 		identFromStrings(
-			identMapToString(m.Metadata),
+			identMapToString(m.GetMetadata()),
 		)...,
 	)
 }

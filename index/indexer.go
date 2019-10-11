@@ -2,17 +2,50 @@ package index
 
 import (
 	"math/rand"
-	"strings"
 	"time"
 	"versio-index/ident"
 	"versio-index/index/model"
+	pth "versio-index/index/path"
 
 	"golang.org/x/xerrors"
 )
 
-const (
-	PathSeparator = "/"
-)
+func getBranchOrDefault(tx ReadOnlyTransaction, repo *model.Repo, branch string) (*model.Branch, error) {
+	branchData, err := tx.ReadBranch(branch)
+	if xerrors.Is(err, ErrNotFound) {
+		branchData, err = tx.ReadBranch(repo.DefaultBranch)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+	return branchData, nil
+}
+
+func getOrCreateBranch(tx Transaction, repo *model.Repo, branch string) (*model.Branch, error) {
+	branchData, err := tx.ReadBranch(branch)
+	if xerrors.Is(err, ErrNotFound) {
+		// create it
+		defaultBranch, err := tx.ReadBranch(repo.DefaultBranch)
+		if err != nil {
+			return nil, err
+		}
+		branchData = &model.Branch{
+			Commit:        defaultBranch.GetCommit(),
+			CommitRoot:    defaultBranch.GetCommitRoot(),
+			WorkspaceRoot: defaultBranch.GetCommitRoot(), // we don't want the other branch's dirty writes.
+		}
+		err = tx.WriteBranch(branch, branchData)
+		if err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+	return branchData, nil
+
+}
 
 func writeEntryToWorkspace(tx Transaction, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
 	err := tx.WriteToWorkspacePath(branch, path, entry)
@@ -37,11 +70,9 @@ func resolveReadRoot(tx ReadOnlyTransaction, repo *model.Repo, branch string) (s
 		if err != nil {
 			return empty, err
 		}
+		return branchData.GetCommitRoot(), nil // when falling back we don't want the dirty writes
 	} else if err != nil {
 		return empty, err // unexpected error
-	}
-	if strings.EqualFold(branchData.GetWorkspaceRoot(), "") {
-		return branchData.GetCommitRoot(), nil
 	}
 	return branchData.GetWorkspaceRoot(), nil
 }
@@ -58,7 +89,7 @@ func readFromTree(tx ReadOnlyTransaction, repo *model.Repo, branch, path string)
 
 func traverse(tx ReadOnlyTransaction, treeID, path string) (*model.Object, error) {
 	currentAddress := treeID
-	parts := strings.Split(path, PathSeparator)
+	parts := pth.New(path).SplitParts()
 	for i, part := range parts {
 		if i == len(parts)-1 {
 			// last item in the path is the blob
@@ -86,7 +117,7 @@ func traverse(tx ReadOnlyTransaction, treeID, path string) (*model.Object, error
 
 func traverseDir(tx ReadOnlyTransaction, treeID, path string) (string, error) {
 	currentAddress := treeID
-	parts := strings.Split(path, PathSeparator)
+	parts := pth.New(path).SplitParts()
 	for _, part := range parts {
 		entry, err := tx.ReadEntry(currentAddress, "d", part)
 		if err != nil {
@@ -100,30 +131,6 @@ func traverseDir(tx ReadOnlyTransaction, treeID, path string) (string, error) {
 func shouldPartiallyCommit(repo *model.Repo) bool {
 	chosen := rand.Float32()
 	return chosen < repo.GetPartialCommitRatio()
-}
-
-func partialCommit(tx Transaction, repo *model.Repo, branch string) (string, error) {
-	var empty string
-	// 1. iterate all changes in the current workspace
-	entries, err := tx.ListEntries(branch)
-	if err != nil {
-		return empty, err
-	}
-
-	// group by containing tree
-
-	// calc and write all changed trees
-
-	//
-
-	// 2. Apply them to the Merkle root as exists in the branch pointer
-	// 3. calculate new Merkle root
-	// 4. save it in the branch pointer
-	return "", nil
-}
-
-func gc(tx Transaction, treeAddress string) {
-
 }
 
 type Index struct {

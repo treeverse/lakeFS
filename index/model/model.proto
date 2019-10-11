@@ -12,10 +12,6 @@ message Blob {
     repeated string blocks = 4;
 }
 
-message Tree {
-    map<string, string> metadata = 2;
-}
-
 message Entry {
     string name = 1;
     string address = 2;
@@ -25,7 +21,7 @@ message Entry {
     }
     Type type = 3;
     map<string, string> metadata = 4;
-    uint64 mtime = 5;
+    int64 timestamp = 5;
 }
 
 message Commit {
@@ -51,9 +47,10 @@ message Object {
 }
 
 message WorkspaceEntry {
+    string path = 1;
     oneof data {
-        Tombstone tombstone = 1;
-        Object object = 2;
+        Tombstone tombstone = 2;
+        Object object = 3;
     }
 }
 

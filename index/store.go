@@ -11,10 +11,10 @@ import (
 )
 
 type ReadOnlyTransaction interface {
+	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadBlob(addr string) (*model.Blob, error)
-	ReadTree(addr string) (*model.Tree, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListEntries(addr string) ([]*model.Entry, error)
 	ReadEntry(treeAddress, entryType, name string) (*model.Entry, error)
@@ -24,7 +24,6 @@ type Transaction interface {
 	ReadOnlyTransaction
 	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string)
-	WriteTree(addr string, tree *model.Tree) error
 	WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error
 	WriteBlob(addr string, blob *model.Blob) error
 	WriteCommit(addr string, commit *model.Commit) error
@@ -112,6 +111,21 @@ type fdbTransaction struct {
 	query query
 }
 
+func (s *fdbReadOnlyTransaction) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
+	iter := s.query.rangePrefix(s.workspace, branch)
+	ws := make([]*model.WorkspaceEntry, 0)
+	for iter.Advance() {
+		kv := iter.MustGet()
+		ent := &model.WorkspaceEntry{}
+		err := proto.Unmarshal(kv.Value, ent)
+		if err != nil {
+			return nil, ErrIndexMalformed
+		}
+		ws = append(ws, ent)
+	}
+	return ws, nil
+}
+
 func (s *fdbReadOnlyTransaction) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
 	// read the blob's hash addr
 	data := s.query.get(s.workspace, branch, path).MustGet()
@@ -151,19 +165,6 @@ func (s *fdbReadOnlyTransaction) ReadBlob(addr string) (*model.Blob, error) {
 		return nil, ErrIndexMalformed
 	}
 	return blob, nil
-}
-
-func (s *fdbReadOnlyTransaction) ReadTree(addr string) (*model.Tree, error) {
-	data := s.query.get(s.trees, addr).MustGet()
-	if data == nil {
-		return nil, ErrNotFound
-	}
-	tree := &model.Tree{}
-	err := proto.Unmarshal(data, tree)
-	if err != nil {
-		return nil, ErrIndexMalformed
-	}
-	return tree, nil
 }
 
 func (s *fdbReadOnlyTransaction) ReadCommit(addr string) (*model.Commit, error) {
@@ -218,15 +219,6 @@ func (s *fdbTransaction) WriteToWorkspacePath(branch, path string, entry *model.
 
 func (s *fdbTransaction) ClearWorkspace(branch string) {
 	s.query.clearPrefix(s.workspace, s.query.repo.GetClientId(), s.query.repo.GetRepoId(), branch)
-}
-
-func (s *fdbTransaction) WriteTree(addr string, tree *model.Tree) error {
-	data, err := proto.Marshal(tree)
-	if err != nil {
-		return err
-	}
-	s.query.set(data, s.trees, addr)
-	return nil
 }
 
 func (s *fdbTransaction) WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error {
