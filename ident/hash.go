@@ -17,12 +17,12 @@ func Hash(thing Identifiable) string {
 	return hex.EncodeToString(encoded)
 }
 
-func HashMulti(things []Identifiable) string {
+// MultiHash combines several hashes into one
+func MultiHash(inp ...string) string {
 	h := sha256.New()
-	for _, thing := range things {
-		h.Write(thing.Identity())
+	for _, str := range inp {
+		h.Write([]byte(str))
 	}
-	hashBytes := h.Sum(nil)
-	encoded, _ := multihash.Encode(hashBytes, multihash.SHA2_256)
+	encoded, _ := multihash.Encode(h.Sum(nil), multihash.SHA2_256)
 	return hex.EncodeToString(encoded)
 }
