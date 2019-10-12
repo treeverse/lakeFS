@@ -1,4 +1,4 @@
-package index
+package store
 
 import (
 	"versio-index/index/model"

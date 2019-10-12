@@ -3,29 +3,61 @@ package index
 import (
 	"sort"
 	"strings"
-	"time"
 	"versio-index/ident"
 	"versio-index/index/model"
 	"versio-index/index/path"
-	pth "versio-index/index/path"
 
 	"golang.org/x/xerrors"
 )
 
-type changeset struct {
-	address string
-	entries []*model.Entry
+type change struct {
+	changeType model.Entry_Type
+	isDeletion bool
+	name       string
+
+	object *model.Object
 }
 
-func groupChangeSet(entries []*model.WorkspaceEntry) (grouped map[string][]*model.WorkspaceEntry, depthIndex []string) {
-	grouped = make(map[string][]*model.WorkspaceEntry)
+func groupChangeSet(entries []*model.WorkspaceEntry) (grouped map[string][]*change, depthIndex []string) {
+	grouped = make(map[string][]*change)
 	for _, entry := range entries {
 		p := path.New(entry.GetPath())
-		treePath, _ := p.Pop()
+		treePath, name := p.Pop()
 		if _, exists := grouped[treePath.String()]; !exists {
-			grouped[treePath.String()] = make([]*model.WorkspaceEntry, 0)
+			grouped[treePath.String()] = make([]*change, 0)
 		}
-		grouped[treePath.String()] = append(grouped[treePath.String()], entry)
+		// write either a tombstone or an entry
+		if entry.GetTombstone() != nil {
+			grouped[treePath.String()] = append(grouped[treePath.String()], &change{
+				changeType: model.Entry_BLOB,
+				isDeletion: true,
+				name:       name,
+			})
+		} else {
+			grouped[treePath.String()] = append(grouped[treePath.String()], &change{
+				changeType: model.Entry_BLOB,
+				isDeletion: false,
+				name:       name,
+				object:     entry.GetObject(),
+			})
+		}
+
+		// ascend up the tree
+		done := false
+		for !done {
+			treePath, name = p.Pop()
+			if _, exists := grouped[treePath.String()]; !exists {
+				grouped[treePath.String()] = make([]*change, 0)
+			}
+			grouped[treePath.String()] = append(grouped[treePath.String()], &change{
+				changeType: model.Entry_TREE,
+				isDeletion: false,
+				name:       name,
+			})
+			if treePath != nil {
+				done = true
+			}
+		}
 	}
 
 	// iterate over groups, starting with the deeper ones and going up
@@ -43,8 +75,7 @@ func groupChangeSet(entries []*model.WorkspaceEntry) (grouped map[string][]*mode
 
 func partialCommit(tx Transaction, repo *model.Repo, branch string) (string, error) {
 	var empty string
-	readCache := make(map[string][]*model.Entry)
-	changeCache := make(map[string]*changeset)
+
 	// 0. read current branch
 	branchData, err := getOrCreateBranch(tx, repo, branch)
 	if err != nil {
@@ -52,155 +83,139 @@ func partialCommit(tx Transaction, repo *model.Repo, branch string) (string, err
 	}
 
 	// 1. iterate all changes in the current workspace
-	entries, err := tx.ListWorkspace(branch)
+	wsEntries, err := tx.ListWorkspace(branch)
 	if err != nil {
 		return empty, err
 	}
 
-	// group by containing tree
-	grouped, depthIndex := groupChangeSet(entries)
+	// 2. group by containing tree
+	changes, depthIndex := groupChangeSet(wsEntries)
 
-	// merge with original tree if it exists
-	currentAddress := branchData.GetWorkspaceRoot()
-
-	// for each directory, starting with the deepest ones
-	var dirEntries []*model.Entry
-	for _, currentPath := range depthIndex {
-		if dirEntries, exist := readCache[currentPath]; !exist {
-			parts := path.New(currentPath).SplitParts()
-			for _, part := range parts {
-				entry, err := tx.ReadEntry(currentAddress, "d", part)
-				if xerrors.Is(err, ErrNotFound) {
-					// new directory
-					dirEntries = make([]*model.Entry, 0)
-					readCache[currentPath] = dirEntries
-					currentAddress = empty
-					break
-				}
-				if err != nil {
-					return "", err
-				}
-				currentAddress = entry.GetAddress()
+	// 4. Iterate all changes starting with where the blobs are
+	for _, containingPath := range depthIndex {
+		// iterate and merge current tree (if exist) with list of entries
+		dir, err := traverseDir(tx, branchData.GetWorkspaceRoot(), containingPath)
+		var mergedEntries []*model.Entry
+		if xerrors.Is(err, ErrNotFound) {
+			// no such tree yet, let's create one.
+			mergedEntries = partialCommitMergeTree(make([]*model.Entry, 0), changes[containingPath])
+		} else if err != nil {
+			return empty, err
+		} else {
+			currentEntries, err := tx.ListEntries(dir)
+			if err != nil {
+				return empty, err
 			}
-			// for the given path, get list of entries
-			dirEntries, err = tx.ListEntries(currentAddress)
-			readCache[currentPath] = dirEntries
+			mergedEntries = partialCommitMergeTree(currentEntries, changes[containingPath])
 		}
+		// write new tree
+		_, name := path.New(containingPath).Pop()
+		addr := hashEntries(mergedEntries)
+
+		// TODO: this is wrong?
+		err = tx.WriteEntry(addr, "d", name, &model.Entry{
+			Name:    name,
+			Address: addr,
+			Type:    model.Entry_TREE,
+		})
 		if err != nil {
 			return empty, err
 		}
+	}
+	return empty, nil
+}
 
-		// merge lists
-		newEntries := grouped[currentPath]
+func hashEntries(entries []*model.Entry) string {
+	hashes := make([]string, len(entries))
+	for i, ent := range entries {
+		hashes[i] = ident.Hash(ent)
+	}
+	return ident.MultiHash(hashes...)
+}
 
-		// iterate sorted lists, merging them
-		combinedEntries := make([]*model.Entry, 0)
-		oldindex := 0
-		newindex := 0
-		var nextold *model.Entry
-		var nextnew *model.WorkspaceEntry
-		for {
-			if oldindex >= len(dirEntries) && newindex >= len(newEntries) {
-				break // done with both lists
-			}
+func partialCommitMergeTree(currentEntries []*model.Entry, changes []*change) []*model.Entry {
+	// iterate sorted lists, merging them
+	combinedEntries := make([]*model.Entry, 0)
+	currentInd := 0
+	changesInd := 0
+	var nextCurrent *model.Entry
+	var nextChange *change
+	for {
+		if currentInd >= len(currentEntries) && changesInd >= len(changes) {
+			break // done with both lists
+		}
 
-			if oldindex < len(dirEntries) {
-				nextold = dirEntries[oldindex]
-			} else {
-				nextold = nil
-			}
-			if newindex < len(newEntries) {
-				nextnew = newEntries[newindex]
-			} else {
-				nextnew = nil
-			}
+		if currentInd < len(currentEntries) {
+			nextCurrent = currentEntries[currentInd]
+		} else {
+			nextCurrent = nil
+		}
+		if changesInd < len(changes) {
+			nextChange = changes[changesInd]
+		} else {
+			nextChange = nil
+		}
 
-			if nextold != nil && nextnew != nil {
-				// compare them
-				_, nextNewName := pth.New(nextnew.GetPath()).Pop()
-				compareResult := strings.Compare(nextold.Name, nextNewName)
-				if compareResult == 0 {
-					// existing path!
-					oldindex++ // we don't need the old value
-					newindex++
-					if nextnew.GetTombstone() != nil {
-						// this is a deletion, simply skip entry
-						// TODO: GC
-						continue
-					} else {
-						// this is an overwrite
-						combinedEntries = append(combinedEntries, &model.Entry{
-							Name:      nextNewName,
-							Address:   ident.Hash(nextnew.GetObject()),
-							Type:      model.Entry_BLOB,
-							Metadata:  nextnew.GetObject().GetMetadata(),
-							Timestamp: time.Now().Unix(),
-						})
-					}
-				} else if compareResult == -1 {
-					// old is bigger, push new
-					if nextnew.GetTombstone() != nil { // makes no sense otherwise
-						combinedEntries = append(combinedEntries, &model.Entry{
-							Name:      nextNewName,
-							Address:   ident.Hash(nextnew.GetObject()),
-							Type:      model.Entry_BLOB,
-							Metadata:  nextnew.GetObject().GetMetadata(),
-							Timestamp: time.Now().Unix(),
-						})
-					}
-					newindex++
+		if nextCurrent != nil && nextChange != nil {
+			// compare them
+			compareResult := strings.Compare(nextCurrent.Name, nextChange.name)
+			if compareResult == 0 {
+				// existing path!
+				currentInd++ // we don't need the old value
+				changesInd++
+				if nextChange.isDeletion {
+					// this is a deletion, simply skip entry
+					// TODO: GC
+					continue
 				} else {
-					// new is bigger, push old
-					combinedEntries = append(combinedEntries, nextold)
-					oldindex++
-				}
-			} else if nextold != nil {
-				combinedEntries = append(combinedEntries, nextold)
-				oldindex++
-			} else if nextnew != nil {
-				_, nextNewName := pth.New(nextnew.GetPath()).Pop()
-				if nextnew.GetTombstone() != nil { // makes no sense otherwise
+					// this is an overwrite
 					combinedEntries = append(combinedEntries, &model.Entry{
-						Name:      nextNewName,
-						Address:   ident.Hash(nextnew.GetObject()),
+						Name:      nextChange.name,
+						Address:   ident.Hash(nextChange.object),
 						Type:      model.Entry_BLOB,
-						Metadata:  nextnew.GetObject().GetMetadata(),
-						Timestamp: time.Now().Unix(),
+						Metadata:  nextChange.object.GetMetadata(),
+						Timestamp: nextChange.object.GetTimestamp(),
 					})
 				}
-				newindex++
+			} else if compareResult == -1 {
+				// old is bigger, push new
+				if !nextChange.isDeletion { // makes no sense otherwise
+					combinedEntries = append(combinedEntries, &model.Entry{
+						Name:      nextChange.name,
+						Address:   ident.Hash(nextChange.object),
+						Type:      model.Entry_BLOB,
+						Metadata:  nextChange.object.GetMetadata(),
+						Timestamp: nextChange.object.GetTimestamp(),
+					})
+				}
+				changesInd++
 			} else {
-				// both are done!!!
-				break
+				// new is bigger, push old
+				combinedEntries = append(combinedEntries, nextCurrent)
+				currentInd++
 			}
-		}
-
-		// create a hash for the new entry
-		hashes := make([]string, len(combinedEntries))
-		for i, ent := range combinedEntries {
-			hashes[i] = ident.Hash(ent)
-		}
-
-		// current metadata along with list of merged list hashed
-
-		// cache new tree
-		changeCache[currentPath] = &changeset{
-			address: ident.MultiHash(hashes...),
-			entries: combinedEntries,
+		} else if nextCurrent != nil {
+			// we only have existing entries left, we'll just append them
+			combinedEntries = append(combinedEntries, nextCurrent)
+			currentInd++
+		} else if nextChange != nil {
+			// we only have new entries left, done with original tree
+			if !nextChange.isDeletion { // makes no sense otherwise
+				combinedEntries = append(combinedEntries, &model.Entry{
+					Name:      nextChange.name,
+					Address:   ident.Hash(nextChange.object),
+					Type:      model.Entry_BLOB,
+					Metadata:  nextChange.object.GetMetadata(),
+					Timestamp: nextChange.object.GetTimestamp(),
+				})
+			} // no else, we discard tombstones for stuff we didnt have before
+			changesInd++
+		} else {
+			// both are done!!!
+			break
 		}
 	}
-
-	// at this point we have a change cache - new trees that reflect workspace changes at their paths
-	// update common ancestors until we reach root
-
-	// calc and write all changed trees
-
-	//
-
-	// 2. Apply them to the Merkle root as exists in the branch pointer
-	// 3. calculate new Merkle root
-	// 4. save it in the branch pointer
-	return "", nil
+	return combinedEntries
 }
 
 func gc(tx Transaction, treeAddress string) {
