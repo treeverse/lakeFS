@@ -66,7 +66,7 @@ func (m *Merkle) writeTree(entries []*model.Entry) (string, error) {
 func (m *Merkle) Update(changes []*model.WorkspaceEntry) (*Merkle, error) {
 	// group changes by containing folder
 	dirtyTrees := getDirtyTrees(changes)
-	plan(dirtyTrees, changes)
+	dirty := group(dirtyTrees, changes)
 	var lastWrite string
 	for _, treePath := range dirtyTrees {
 		currentEntries, err := m.getEntries(treePath)
