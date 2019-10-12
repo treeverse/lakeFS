@@ -1,4 +1,4 @@
-package index
+package errors
 
 import "golang.org/x/xerrors"
 

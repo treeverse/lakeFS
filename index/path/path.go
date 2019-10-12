@@ -2,7 +2,7 @@ package path
 
 import "strings"
 
-const Seperator = '/'
+const Separator = '/'
 
 type Path struct {
 	str string
@@ -19,13 +19,16 @@ func (p *Path) HasParent() bool {
 }
 
 func (p *Path) String() string {
+	if p == nil {
+		return ""
+	}
 	return p.str
 }
 
 func (p *Path) Pop() (*Path, string) {
 	parts := p.SplitParts()
 	if len(parts) > 1 {
-		return New(strings.Join(parts[:len(parts)-1], string(Seperator))), parts[len(parts)-1]
+		return New(strings.Join(parts[:len(parts)-1], string(Separator))), parts[len(parts)-1]
 	}
 	if len(parts) == 1 {
 		return nil, parts[0]
@@ -58,7 +61,7 @@ func (p *Path) SplitParts() []string {
 	var buf strings.Builder
 	separated := true
 	for _, current := range p.str {
-		if current != Seperator {
+		if current != Separator {
 			buf.WriteRune(current)
 			separated = false
 			continue

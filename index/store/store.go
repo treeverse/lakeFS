@@ -1,6 +1,7 @@
-package index
+package store
 
 import (
+	"versio-index/index/errors"
 	"versio-index/index/model"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
@@ -11,20 +12,21 @@ import (
 )
 
 type ReadOnlyTransaction interface {
+	Snapshot() ReadOnlyTransaction
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadBlob(addr string) (*model.Blob, error)
 	ReadCommit(addr string) (*model.Commit, error)
-	ListEntries(addr string) ([]*model.Entry, error)
-	ReadEntry(treeAddress, entryType, name string) (*model.Entry, error)
+	ListTree(addr string) ([]*model.Entry, error)
+	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
 }
 
 type Transaction interface {
 	ReadOnlyTransaction
 	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string)
-	WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error
+	WriteTree(address string, entries []*model.Entry) error
 	WriteBlob(addr string, blob *model.Blob) error
 	WriteCommit(addr string, commit *model.Commit) error
 	WriteBranch(name string, branch *model.Branch) error
@@ -111,6 +113,22 @@ type fdbTransaction struct {
 	query query
 }
 
+func (s *fdbReadOnlyTransaction) Snapshot() ReadOnlyTransaction {
+	return &fdbReadOnlyTransaction{
+		workspace: s.workspace,
+		trees:     s.trees,
+		entries:   s.entries,
+		blobs:     s.blobs,
+		commits:   s.commits,
+		branches:  s.branches,
+		refCounts: s.refCounts,
+		query: readQuery{
+			repo: s.query.repo,
+			tx:   s.query.tx.Snapshot(),
+		},
+	}
+}
+
 func (s *fdbReadOnlyTransaction) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
 	iter := s.query.rangePrefix(s.workspace, branch)
 	ws := make([]*model.WorkspaceEntry, 0)
@@ -119,7 +137,7 @@ func (s *fdbReadOnlyTransaction) ListWorkspace(branch string) ([]*model.Workspac
 		ent := &model.WorkspaceEntry{}
 		err := proto.Unmarshal(kv.Value, ent)
 		if err != nil {
-			return nil, ErrIndexMalformed
+			return nil, errors.ErrIndexMalformed
 		}
 		ws = append(ws, ent)
 	}
@@ -130,12 +148,12 @@ func (s *fdbReadOnlyTransaction) ReadFromWorkspace(branch, path string) (*model.
 	// read the blob's hash addr
 	data := s.query.get(s.workspace, branch, path).MustGet()
 	if data == nil {
-		return nil, ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	ent := &model.WorkspaceEntry{}
 	err := proto.Unmarshal(data, ent)
 	if err != nil {
-		return nil, ErrIndexMalformed
+		return nil, errors.ErrIndexMalformed
 	}
 	return ent, nil
 }
@@ -144,12 +162,12 @@ func (s *fdbReadOnlyTransaction) ReadBranch(branch string) (*model.Branch, error
 	// read branch attributes
 	data := s.query.get(s.branches, branch).MustGet()
 	if data == nil {
-		return nil, ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	branchModel := &model.Branch{}
 	err := proto.Unmarshal(data, branchModel)
 	if err != nil {
-		return nil, ErrIndexMalformed
+		return nil, errors.ErrIndexMalformed
 	}
 	return branchModel, nil
 }
@@ -157,12 +175,12 @@ func (s *fdbReadOnlyTransaction) ReadBranch(branch string) (*model.Branch, error
 func (s *fdbReadOnlyTransaction) ReadBlob(addr string) (*model.Blob, error) {
 	blobData := s.query.get(s.blobs, addr).MustGet()
 	if blobData == nil {
-		return nil, ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	blob := &model.Blob{}
 	err := proto.Unmarshal(blobData, blob)
 	if err != nil {
-		return nil, ErrIndexMalformed
+		return nil, errors.ErrIndexMalformed
 	}
 	return blob, nil
 }
@@ -170,17 +188,17 @@ func (s *fdbReadOnlyTransaction) ReadBlob(addr string) (*model.Blob, error) {
 func (s *fdbReadOnlyTransaction) ReadCommit(addr string) (*model.Commit, error) {
 	data := s.query.get(s.commits, addr).MustGet()
 	if data == nil {
-		return nil, ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	commit := &model.Commit{}
 	err := proto.Unmarshal(data, commit)
 	if err != nil {
-		return nil, ErrIndexMalformed
+		return nil, errors.ErrIndexMalformed
 	}
 	return commit, nil
 }
 
-func (s *fdbReadOnlyTransaction) ListEntries(addr string) ([]*model.Entry, error) {
+func (s *fdbReadOnlyTransaction) ListTree(addr string) ([]*model.Entry, error) {
 	iter := s.query.rangePrefix(s.entries, addr)
 	entries := make([]*model.Entry, 0)
 	for iter.Advance() {
@@ -188,22 +206,22 @@ func (s *fdbReadOnlyTransaction) ListEntries(addr string) ([]*model.Entry, error
 		entry := &model.Entry{}
 		err := proto.Unmarshal(entryData.Value, entry)
 		if err != nil {
-			return nil, ErrIndexMalformed
+			return nil, errors.ErrIndexMalformed
 		}
 		entries = append(entries, entry)
 	}
 	return entries, nil
 }
 
-func (s *fdbReadOnlyTransaction) ReadEntry(treeAddress, entryType, name string) (*model.Entry, error) {
-	data := s.query.get(s.entries, treeAddress, entryType, name).MustGet()
+func (s *fdbReadOnlyTransaction) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
+	data := s.query.get(s.entries, treeAddress, int(entryType), name).MustGet()
 	if data == nil {
-		return nil, ErrNotFound
+		return nil, errors.ErrNotFound
 	}
 	entry := &model.Entry{}
 	err := proto.Unmarshal(data, entry)
 	if err != nil {
-		return nil, ErrIndexMalformed
+		return nil, errors.ErrIndexMalformed
 	}
 	return entry, nil
 }
@@ -211,9 +229,9 @@ func (s *fdbReadOnlyTransaction) ReadEntry(treeAddress, entryType, name string) 
 func (s *fdbTransaction) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
 	data, err := proto.Marshal(entry)
 	if err != nil {
-		return ErrIndexMalformed
+		return errors.ErrIndexMalformed
 	}
-	s.query.set(data, s.workspace, path)
+	s.query.set(data, s.workspace, branch, path)
 	return nil
 }
 
@@ -221,12 +239,14 @@ func (s *fdbTransaction) ClearWorkspace(branch string) {
 	s.query.clearPrefix(s.workspace, s.query.repo.GetClientId(), s.query.repo.GetRepoId(), branch)
 }
 
-func (s *fdbTransaction) WriteEntry(treeAddress, entryType, name string, entry *model.Entry) error {
-	data, err := proto.Marshal(entry)
-	if err != nil {
-		return err
+func (s *fdbTransaction) WriteTree(address string, entries []*model.Entry) error {
+	for _, entry := range entries {
+		data, err := proto.Marshal(entry)
+		if err != nil {
+			return err
+		}
+		s.query.set(data, s.entries, address, int(entry.GetType()), entry.GetName())
 	}
-	s.query.set(data, s.entries, treeAddress, entryType, name)
 	return nil
 }
 

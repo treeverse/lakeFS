@@ -43,7 +43,9 @@ message Tombstone {}
 
 message Object {
      Blob blob = 1;
-     map<string, string> metadata = 3;
+     map<string, string> metadata = 2;
+     int64 timestamp = 3;
+     int64 size = 4;
 }
 
 message WorkspaceEntry {
