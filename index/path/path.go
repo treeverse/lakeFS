@@ -8,6 +8,10 @@ type Path struct {
 	str string
 }
 
+func Join(parts []string) string {
+	return strings.Join(parts, string(Separator))
+}
+
 func New(str string) *Path {
 	return &Path{str}
 }

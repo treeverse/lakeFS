@@ -14,14 +14,12 @@ message Blob {
 
 message Entry {
     string name = 1;
-    string address = 2;
+    string address = 2; // hash of either Object or Entry prefix if tree
     enum Type {
         TREE = 0;
-        BLOB = 1;
+        OBJECT = 1;
     }
     Type type = 3;
-    map<string, string> metadata = 4;
-    int64 timestamp = 5;
 }
 
 message Commit {
@@ -52,7 +50,7 @@ message WorkspaceEntry {
     string path = 1;
     oneof data {
         Tombstone tombstone = 2;
-        Object object = 3;
+        string Address = 3; // address of object
     }
 }
 

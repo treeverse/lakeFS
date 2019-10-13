@@ -16,7 +16,7 @@ type ReadOnlyTransaction interface {
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ReadBranch(branch string) (*model.Branch, error)
-	ReadBlob(addr string) (*model.Blob, error)
+	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr string) ([]*model.Entry, error)
 	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
@@ -27,7 +27,7 @@ type Transaction interface {
 	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string)
 	WriteTree(address string, entries []*model.Entry) error
-	WriteBlob(addr string, blob *model.Blob) error
+	WriteObject(addr string, object *model.Object) error
 	WriteCommit(addr string, commit *model.Commit) error
 	WriteBranch(name string, branch *model.Branch) error
 	DeleteBranch(name string)
@@ -43,7 +43,7 @@ type fdbStore struct {
 	workspace subspace.Subspace
 	trees     subspace.Subspace
 	entries   subspace.Subspace
-	blobs     subspace.Subspace
+	objects   subspace.Subspace
 	commits   subspace.Subspace
 	branches  subspace.Subspace
 	refCounts subspace.Subspace
@@ -55,7 +55,7 @@ func (s *fdbStore) ReadTransact(repo *model.Repo, fn func(transaction ReadOnlyTr
 			workspace: s.workspace,
 			trees:     s.trees,
 			entries:   s.entries,
-			blobs:     s.blobs,
+			objects:   s.objects,
 			commits:   s.commits,
 			branches:  s.branches,
 			refCounts: s.refCounts,
@@ -82,7 +82,7 @@ func (s *fdbStore) Transact(repo *model.Repo, fn func(Transaction) (interface{},
 				workspace: s.workspace,
 				trees:     s.trees,
 				entries:   s.entries,
-				blobs:     s.blobs,
+				objects:   s.objects,
 				commits:   s.commits,
 				branches:  s.branches,
 				refCounts: s.refCounts,
@@ -100,7 +100,7 @@ type fdbReadOnlyTransaction struct {
 	workspace subspace.Subspace
 	trees     subspace.Subspace
 	entries   subspace.Subspace
-	blobs     subspace.Subspace
+	objects   subspace.Subspace
 	commits   subspace.Subspace
 	branches  subspace.Subspace
 	refCounts subspace.Subspace
@@ -118,7 +118,7 @@ func (s *fdbReadOnlyTransaction) Snapshot() ReadOnlyTransaction {
 		workspace: s.workspace,
 		trees:     s.trees,
 		entries:   s.entries,
-		blobs:     s.blobs,
+		objects:   s.objects,
 		commits:   s.commits,
 		branches:  s.branches,
 		refCounts: s.refCounts,
@@ -172,17 +172,17 @@ func (s *fdbReadOnlyTransaction) ReadBranch(branch string) (*model.Branch, error
 	return branchModel, nil
 }
 
-func (s *fdbReadOnlyTransaction) ReadBlob(addr string) (*model.Blob, error) {
-	blobData := s.query.get(s.blobs, addr).MustGet()
-	if blobData == nil {
+func (s *fdbReadOnlyTransaction) ReadObject(addr string) (*model.Object, error) {
+	objData := s.query.get(s.objects, addr).MustGet()
+	if objData == nil {
 		return nil, errors.ErrNotFound
 	}
-	blob := &model.Blob{}
-	err := proto.Unmarshal(blobData, blob)
+	obj := &model.Object{}
+	err := proto.Unmarshal(objData, obj)
 	if err != nil {
 		return nil, errors.ErrIndexMalformed
 	}
-	return blob, nil
+	return obj, nil
 }
 
 func (s *fdbReadOnlyTransaction) ReadCommit(addr string) (*model.Commit, error) {
@@ -250,12 +250,12 @@ func (s *fdbTransaction) WriteTree(address string, entries []*model.Entry) error
 	return nil
 }
 
-func (s *fdbTransaction) WriteBlob(addr string, blob *model.Blob) error {
-	data, err := proto.Marshal(blob)
+func (s *fdbTransaction) WriteObject(addr string, object *model.Object) error {
+	data, err := proto.Marshal(object)
 	if err != nil {
 		return err
 	}
-	s.query.set(data, s.blobs, addr)
+	s.query.set(data, s.objects, addr)
 	return nil
 }
 
