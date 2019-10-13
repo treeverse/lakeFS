@@ -34,9 +34,7 @@ func (m *Entry) Identity() []byte {
 	return identFromStrings(
 		m.GetName(),
 		m.GetAddress(),
-		fmt.Sprintf("%v", m.Type),
-		strconv.FormatInt(m.GetTimestamp(), 10),
-		identMapToString(m.GetMetadata()))
+		fmt.Sprintf("%v", m.Type))
 }
 
 func (m *Blob) Identity() []byte {
@@ -57,6 +55,7 @@ func (m *Object) Identity() []byte {
 	return append(
 		m.GetBlob().Identity(),
 		identFromStrings(
+			strconv.FormatInt(m.GetTimestamp(), 10),
 			identMapToString(m.GetMetadata()),
 		)...,
 	)

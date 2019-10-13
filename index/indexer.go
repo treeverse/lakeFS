@@ -4,56 +4,21 @@ import (
 	"math/rand"
 	"time"
 	"versio-index/ident"
+	"versio-index/index/errors"
+	"versio-index/index/merkle"
 	"versio-index/index/model"
-	pth "versio-index/index/path"
+	"versio-index/index/store"
 
 	"golang.org/x/xerrors"
 )
 
-func getBranchOrDefault(tx ReadOnlyTransaction, repo *model.Repo, branch string) (*model.Branch, error) {
-	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, ErrNotFound) {
-		branchData, err = tx.ReadBranch(repo.DefaultBranch)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, err
-	}
-	return branchData, nil
-}
-
-func getOrCreateBranch(tx Transaction, repo *model.Repo, branch string) (*model.Branch, error) {
-	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, ErrNotFound) {
-		// create it
-		defaultBranch, err := tx.ReadBranch(repo.DefaultBranch)
-		if err != nil {
-			return nil, err
-		}
-		branchData = &model.Branch{
-			Commit:        defaultBranch.GetCommit(),
-			CommitRoot:    defaultBranch.GetCommitRoot(),
-			WorkspaceRoot: defaultBranch.GetCommitRoot(), // we don't want the other branch's dirty writes.
-		}
-		err = tx.WriteBranch(branch, branchData)
-		if err != nil {
-			return nil, err
-		}
-	} else if err != nil {
-		return nil, err
-	}
-	return branchData, nil
-
-}
-
-func writeEntryToWorkspace(tx Transaction, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
+func writeEntryToWorkspace(tx store.Transaction, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
 	err := tx.WriteToWorkspacePath(branch, path, entry)
 	if err != nil {
 		return err
 	}
 	if shouldPartiallyCommit(repo) {
-		_, err = partialCommit(tx, repo, branch)
+		err = partialCommit(tx, branch)
 		if err != nil {
 			return err
 		}
@@ -61,10 +26,10 @@ func writeEntryToWorkspace(tx Transaction, repo *model.Repo, branch, path string
 	return nil
 }
 
-func resolveReadRoot(tx ReadOnlyTransaction, repo *model.Repo, branch string) (string, error) {
+func resolveReadRoot(tx store.ReadOnlyTransaction, repo *model.Repo, branch string) (string, error) {
 	var empty string
 	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, ErrNotFound) {
+	if xerrors.Is(err, errors.ErrNotFound) {
 		// fallback to default branch
 		branchData, err = tx.ReadBranch(repo.DefaultBranch)
 		if err != nil {
@@ -77,92 +42,46 @@ func resolveReadRoot(tx ReadOnlyTransaction, repo *model.Repo, branch string) (s
 	return branchData.GetWorkspaceRoot(), nil
 }
 
-func readFromTree(tx ReadOnlyTransaction, repo *model.Repo, branch, path string) (*model.Object, error) {
-	// resolve tree root to read from
-	root, err := resolveReadRoot(tx, repo, branch)
-	if err != nil {
-		return nil, err
-	}
-	// get the tree
-	return traverse(tx, root, path)
-}
-
-func traverse(tx ReadOnlyTransaction, treeID, path string) (*model.Object, error) {
-	currentAddress := treeID
-	parts := pth.New(path).SplitParts()
-	for i, part := range parts {
-		if i == len(parts)-1 {
-			// last item in the path is the blob
-			entry, err := tx.ReadEntry(currentAddress, "f", part)
-			if err != nil {
-				return nil, err
-			}
-			blob, err := tx.ReadBlob(entry.GetAddress())
-			if err != nil {
-				return nil, err
-			}
-			return &model.Object{
-				Blob:     blob,
-				Metadata: entry.GetMetadata(),
-			}, nil
-		}
-		entry, err := tx.ReadEntry(currentAddress, "d", part)
-		if err != nil {
-			return nil, err
-		}
-		currentAddress = entry.GetAddress()
-	}
-	return nil, ErrNotFound
-}
-
-func traverseDir(tx ReadOnlyTransaction, treeID, path string) (string, error) {
-	currentAddress := treeID
-	parts := pth.New(path).SplitParts()
-	for _, part := range parts {
-		entry, err := tx.ReadEntry(currentAddress, "d", part)
-		if err != nil {
-			return "", err
-		}
-		currentAddress = entry.GetAddress()
-	}
-	return currentAddress, nil
-}
-
 func shouldPartiallyCommit(repo *model.Repo) bool {
 	chosen := rand.Float32()
 	return chosen < repo.GetPartialCommitRatio()
 }
 
 type Index struct {
-	store Store
+	kv store.Store
 }
 
-func NewIndex(store Store) *Index {
+func NewIndex(kv store.Store) *Index {
 	return &Index{
-		store: store,
+		kv: kv,
 	}
 }
 
 // Business logic
-
 func (index *Index) Read(repo *model.Repo, branch, path string) (*model.Object, error) {
-	obj, err := index.store.ReadTransact(repo, func(tx ReadOnlyTransaction) (interface{}, error) {
+	obj, err := index.kv.ReadTransact(repo, func(tx store.ReadOnlyTransaction) (interface{}, error) {
 		var obj *model.Object
 		we, err := tx.ReadFromWorkspace(branch, path)
-		if err != nil && !xerrors.Is(err, ErrNotFound) {
+		if err != nil && !xerrors.Is(err, errors.ErrNotFound) {
 			// an actual error has occurred, return it.
 			return nil, err
 		}
 		if we.GetTombstone() != nil {
 			// object was deleted deleted
-			return nil, ErrNotFound
+			return nil, errors.ErrNotFound
 		}
-		if xerrors.Is(err, ErrNotFound) {
+		if xerrors.Is(err, errors.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
-			obj, err = readFromTree(tx, repo, branch, path)
+			root, err := resolveReadRoot(tx, repo, branch)
+			if err != nil {
+				return nil, err
+			}
+			m := merkle.New(root)
+			obj, err = m.GetObject(tx, path)
+			if err != nil {
+				return nil, err
+			}
 		}
-		// we found an object in the workspace
-		obj = we.GetObject()
 		return obj, nil
 	})
 	if err != nil {
@@ -172,9 +91,15 @@ func (index *Index) Read(repo *model.Repo, branch, path string) (*model.Object, 
 }
 
 func (index *Index) Write(repo *model.Repo, branch, path string, object *model.Object) error {
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
-		err := writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
-			Data: &model.WorkspaceEntry_Object{Object: object},
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
+		addr := ident.Hash(object)
+		err := tx.WriteObject(addr, object)
+		if err != nil {
+			return nil, err
+		}
+		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			Path: path,
+			Data: &model.WorkspaceEntry_Address{Address: addr},
 		})
 		return nil, err
 	})
@@ -182,7 +107,7 @@ func (index *Index) Write(repo *model.Repo, branch, path string, object *model.O
 }
 
 func (index *Index) Delete(repo *model.Repo, branch, path string) error {
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		err := writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Data: &model.WorkspaceEntry_Tombstone{Tombstone: &model.Tombstone{}},
 		})
@@ -191,9 +116,51 @@ func (index *Index) Delete(repo *model.Repo, branch, path string) error {
 	return err
 }
 
+func partialCommit(tx store.Transaction, branch string) error {
+	// see if we have any changes that weren't applied
+	wsEntries, err := tx.ListWorkspace(branch)
+	if err != nil {
+		return err
+	}
+	if len(wsEntries) == 0 {
+		return nil
+	}
+
+	// get branch info (including current workspace root)
+	branchData, err := tx.ReadBranch(branch)
+	if xerrors.Is(err, errors.ErrNotFound) {
+		return nil
+	} else if err != nil {
+		return err // unexpected error
+	}
+
+	// update the immutable merkle tree, getting back a new tree
+	tree := merkle.New(branchData.GetWorkspaceRoot())
+	tree, err = tree.Update(tx, wsEntries)
+	if err != nil {
+		return err
+	}
+
+	// clear workspace entries
+	tx.ClearWorkspace(branch)
+
+	// update branch pointer to point at new workspace
+	err = tx.WriteBranch(branch, &model.Branch{
+		Commit:        branchData.GetCommit(),
+		CommitRoot:    branchData.GetCommitRoot(),
+		WorkspaceRoot: tree.Root(),
+	})
+	if err != nil {
+		return err
+	}
+
+	// done!
+	return nil
+}
+
 func (index *Index) List(repo *model.Repo, branch, path string) ([]*model.Entry, error) {
-	entries, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
-		_, err := partialCommit(tx, repo, branch)
+	entries, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
+		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -202,11 +169,12 @@ func (index *Index) List(repo *model.Repo, branch, path string) ([]*model.Entry,
 		if err != nil {
 			return nil, err
 		}
-		addr, err := traverseDir(tx, root, path)
+		tree := merkle.New(root)
+		addr, err := tree.GetAddress(tx, path, model.Entry_TREE)
 		if err != nil {
 			return nil, err
 		}
-		return tx.ListEntries(addr)
+		return tx.ListTree(addr) // TODO: enrich this list with object metadata
 	})
 	if err != nil {
 		return nil, err
@@ -214,9 +182,13 @@ func (index *Index) List(repo *model.Repo, branch, path string) ([]*model.Entry,
 	return entries.([]*model.Entry), nil
 }
 
+func gc(tx store.Transaction, addr string) {
+	// TODO: impl? here?
+}
+
 func (index *Index) Reset(repo *model.Repo, branch string) error {
 	// clear workspace, set branch workspace root back to commit root
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		tx.ClearWorkspace(branch)
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
@@ -230,8 +202,9 @@ func (index *Index) Reset(repo *model.Repo, branch string) error {
 }
 
 func (index *Index) Commit(repo *model.Repo, branch, message, committer string, metadata map[string]string) error {
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
-		root, err := partialCommit(tx, repo, branch)
+	ts := time.Now().Unix()
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
+		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -240,11 +213,11 @@ func (index *Index) Commit(repo *model.Repo, branch, message, committer string, 
 			return nil, err
 		}
 		commit := &model.Commit{
-			Tree:      root,
+			Tree:      branchData.GetWorkspaceRoot(),
 			Parents:   []string{branchData.GetCommit()},
 			Committer: committer,
 			Message:   message,
-			Timestamp: time.Now().Unix(),
+			Timestamp: ts,
 			Metadata:  metadata,
 		}
 		commitAddr := ident.Hash(commit)
@@ -262,7 +235,7 @@ func (index *Index) Commit(repo *model.Repo, branch, message, committer string, 
 }
 
 func (index *Index) DeleteBranch(repo *model.Repo, branch string) error {
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
@@ -276,7 +249,7 @@ func (index *Index) DeleteBranch(repo *model.Repo, branch string) error {
 }
 
 func (index *Index) Checkout(repo *model.Repo, branch, commit string) error {
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		tx.ClearWorkspace(branch)
 		commitData, err := tx.ReadCommit(commit)
 		if err != nil {
@@ -297,7 +270,7 @@ func (index *Index) Checkout(repo *model.Repo, branch, commit string) error {
 }
 
 func (index *Index) Merge(repo *model.Repo, source, destination string) error {
-	_, err := index.store.Transact(repo, func(tx Transaction) (interface{}, error) {
+	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		return nil, nil // TODO: optimistic concurrency based optimization
 		// i.e. assume source branch receives no new commits since the start of the process
 	})
