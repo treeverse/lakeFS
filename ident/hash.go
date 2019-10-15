@@ -3,8 +3,7 @@ package ident
 import (
 	"crypto/sha256"
 	"encoding/hex"
-
-	"github.com/multiformats/go-multihash"
+	"fmt"
 )
 
 type Identifiable interface {
@@ -12,9 +11,8 @@ type Identifiable interface {
 }
 
 func Hash(thing Identifiable) string {
-	hashBytes := sha256.New().Sum(thing.Identity())
-	encoded, _ := multihash.Encode(hashBytes, multihash.SHA2_256)
-	return hex.EncodeToString(encoded)
+	hashBytes := sha256.Sum256(thing.Identity())
+	return fmt.Sprintf("%x", hashBytes)
 }
 
 // MultiHash combines several hashes into one
@@ -23,6 +21,5 @@ func MultiHash(inp ...string) string {
 	for _, str := range inp {
 		h.Write([]byte(str))
 	}
-	encoded, _ := multihash.Encode(h.Sum(nil), multihash.SHA2_256)
-	return hex.EncodeToString(encoded)
+	return hex.EncodeToString(h.Sum(nil))
 }
