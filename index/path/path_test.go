@@ -52,6 +52,31 @@ func TestPath_SplitParts(t *testing.T) {
 	}
 }
 
+func TestPath_String(t *testing.T) {
+	var nilpath *path.Path
+	testData := []struct {
+		Path   *path.Path
+		String string
+	}{
+		{path.New("/foo/bar"), "foo/bar"},
+		{path.New("/foo///bar"), "foo/bar"},
+		{path.New("////foo///bar/"), "foo/bar"},
+		{path.New("/foo///bar////"), "foo/bar"},
+		{path.New("////foo"), "foo"},
+		{path.New("//"), ""},
+		{path.New("/"), ""},
+		{path.New(""), ""},
+		{path.New("/hello/world/another/level"), "hello/world/another/level"},
+		{path.New("/hello/world/another/level/"), "hello/world/another/level"},
+		{nilpath, ""},
+	}
+	for _, test := range testData {
+		if !strings.EqualFold(test.Path.String(), test.String) {
+			t.Fatalf("expected: \"%s\", got \"%s\" for path: \"%s\"", test.String, test.Path.String(), test.Path)
+		}
+	}
+}
+
 func TestPath_HasParent(t *testing.T) {
 	testData := []struct {
 		Path      string

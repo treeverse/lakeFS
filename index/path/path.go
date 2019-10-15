@@ -26,7 +26,7 @@ func (p *Path) String() string {
 	if p == nil {
 		return ""
 	}
-	return p.str
+	return Join(p.SplitParts())
 }
 
 func (p *Path) Pop() (*Path, string) {
