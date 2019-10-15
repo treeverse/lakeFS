@@ -12,6 +12,9 @@ import (
 	"golang.org/x/xerrors"
 )
 
+// DefaultPartialCommitRatio is the ratio of writes that will trigger a partial commit (number between 0-1)
+const DefaultPartialCommitRatio = 0.02 // ~50 writes before a partial commit
+
 func writeEntryToWorkspace(tx store.Transaction, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
 	err := tx.WriteToWorkspacePath(branch, path, entry)
 	if err != nil {
@@ -47,18 +50,29 @@ func shouldPartiallyCommit(repo *model.Repo) bool {
 	return chosen < repo.GetPartialCommitRatio()
 }
 
-type Index struct {
+type Index interface {
+	Read(repo *model.Repo, branch, path string) (*model.Object, error)
+	Write(repo *model.Repo, branch, path string, object *model.Object) error
+	Delete(repo *model.Repo, branch, path string) error
+	List(repo *model.Repo, branch, path string) ([]*model.Entry, error)
+	Reset(repo *model.Repo, branch string) error
+	Commit(repo *model.Repo, branch, message, committer string, metadata map[string]string) error
+	DeleteBranch(repo *model.Repo, branch string) error
+	Checkout(repo *model.Repo, branch, commit string) error
+	Merge(repo *model.Repo, source, destination string) error
+	CreateRepo(clientId, repoId, defaultBranch string) error
+}
+
+type KVIndex struct {
 	kv store.Store
 }
 
-func NewIndex(kv store.Store) *Index {
-	return &Index{
-		kv: kv,
-	}
+func NewKVIndex(kv store.Store) *KVIndex {
+	return &KVIndex{kv: kv}
 }
 
 // Business logic
-func (index *Index) Read(repo *model.Repo, branch, path string) (*model.Object, error) {
+func (index *KVIndex) Read(repo *model.Repo, branch, path string) (*model.Object, error) {
 	obj, err := index.kv.ReadTransact(repo, func(tx store.ReadOnlyTransaction) (interface{}, error) {
 		var obj *model.Object
 		we, err := tx.ReadFromWorkspace(branch, path)
@@ -90,7 +104,7 @@ func (index *Index) Read(repo *model.Repo, branch, path string) (*model.Object, 
 	return obj.(*model.Object), nil
 }
 
-func (index *Index) Write(repo *model.Repo, branch, path string, object *model.Object) error {
+func (index *KVIndex) Write(repo *model.Repo, branch, path string, object *model.Object) error {
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		addr := ident.Hash(object)
 		err := tx.WriteObject(addr, object)
@@ -106,7 +120,7 @@ func (index *Index) Write(repo *model.Repo, branch, path string, object *model.O
 	return err
 }
 
-func (index *Index) Delete(repo *model.Repo, branch, path string) error {
+func (index *KVIndex) Delete(repo *model.Repo, branch, path string) error {
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		err := writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Data: &model.WorkspaceEntry_Tombstone{Tombstone: &model.Tombstone{}},
@@ -158,7 +172,7 @@ func partialCommit(tx store.Transaction, branch string) error {
 	return nil
 }
 
-func (index *Index) List(repo *model.Repo, branch, path string) ([]*model.Entry, error) {
+func (index *KVIndex) List(repo *model.Repo, branch, path string) ([]*model.Entry, error) {
 	entries, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
@@ -186,7 +200,7 @@ func gc(tx store.Transaction, addr string) {
 	// TODO: impl? here?
 }
 
-func (index *Index) Reset(repo *model.Repo, branch string) error {
+func (index *KVIndex) Reset(repo *model.Repo, branch string) error {
 	// clear workspace, set branch workspace root back to commit root
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		tx.ClearWorkspace(branch)
@@ -201,7 +215,7 @@ func (index *Index) Reset(repo *model.Repo, branch string) error {
 	return err
 }
 
-func (index *Index) Commit(repo *model.Repo, branch, message, committer string, metadata map[string]string) error {
+func (index *KVIndex) Commit(repo *model.Repo, branch, message, committer string, metadata map[string]string) error {
 	ts := time.Now().Unix()
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		err := partialCommit(tx, branch)
@@ -234,7 +248,7 @@ func (index *Index) Commit(repo *model.Repo, branch, message, committer string, 
 	return err
 }
 
-func (index *Index) DeleteBranch(repo *model.Repo, branch string) error {
+func (index *KVIndex) DeleteBranch(repo *model.Repo, branch string) error {
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
@@ -248,7 +262,7 @@ func (index *Index) DeleteBranch(repo *model.Repo, branch string) error {
 	return err
 }
 
-func (index *Index) Checkout(repo *model.Repo, branch, commit string) error {
+func (index *KVIndex) Checkout(repo *model.Repo, branch, commit string) error {
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		tx.ClearWorkspace(branch)
 		commitData, err := tx.ReadCommit(commit)
@@ -269,10 +283,28 @@ func (index *Index) Checkout(repo *model.Repo, branch, commit string) error {
 	return err
 }
 
-func (index *Index) Merge(repo *model.Repo, source, destination string) error {
+func (index *KVIndex) Merge(repo *model.Repo, source, destination string) error {
 	_, err := index.kv.Transact(repo, func(tx store.Transaction) (interface{}, error) {
 		return nil, nil // TODO: optimistic concurrency based optimization
 		// i.e. assume source branch receives no new commits since the start of the process
 	})
 	return err
+}
+
+func (index *KVIndex) CreateRepo(clientId, repoId, defaultBranch string) error {
+	r := &model.Repo{
+		ClientId:           clientId,
+		RepoId:             repoId,
+		DefaultBranch:      defaultBranch,
+		PartialCommitRatio: DefaultPartialCommitRatio,
+	}
+	_, err := index.kv.Transact(r, func(tx store.Transaction) (interface{}, error) {
+		err := tx.WriteRepo(r)
+		return nil, err
+	})
+	return err
+}
+
+func (index *KVIndex) ListRepos(clientId string) error {
+
 }

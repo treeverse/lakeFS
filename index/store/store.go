@@ -7,6 +7,7 @@ import (
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
+	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 
 	"github.com/golang/protobuf/proto"
 )
@@ -29,19 +30,21 @@ type Transaction interface {
 	WriteTree(address string, entries []*model.Entry) error
 	WriteObject(addr string, object *model.Object) error
 	WriteCommit(addr string, commit *model.Commit) error
+	WriteRepo(repo *model.Repo) error
 	WriteBranch(name string, branch *model.Branch) error
 	DeleteBranch(name string)
 }
 
 type Store interface {
+	Repos(clientId string) ([]*model.Repo, error)
 	ReadTransact(*model.Repo, func(transaction ReadOnlyTransaction) (interface{}, error)) (interface{}, error)
 	Transact(*model.Repo, func(Transaction) (interface{}, error)) (interface{}, error)
 }
 
 type fdbStore struct {
 	db        fdb.Database
+	repos     subspace.Subspace
 	workspace subspace.Subspace
-	trees     subspace.Subspace
 	entries   subspace.Subspace
 	objects   subspace.Subspace
 	commits   subspace.Subspace
@@ -49,11 +52,36 @@ type fdbStore struct {
 	refCounts subspace.Subspace
 }
 
+func (s *fdbStore) Repos(clientId string) ([]*model.Repo, error) {
+	repos, err := s.db.ReadTransact(func(tx fdb.ReadTransaction) (interface{}, error) {
+		q := s.repos.Pack(tuple.Tuple{clientId})
+		iter := tx.GetRange(fdb.KeyRange{
+			Begin: q,
+			End:   append(q, 0xFF),
+		}, fdb.RangeOptions{}).Iterator()
+		repos := make([]*model.Repo, 0)
+		for iter.Advance() {
+			repoData := iter.MustGet()
+			repo := &model.Repo{}
+			err := proto.Unmarshal(repoData.Value, repo)
+			if err != nil {
+				return nil, err
+			}
+			repos = append(repos, repo)
+		}
+		return repos, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return repos.([]*model.Repo), nil
+}
+
 func (s *fdbStore) ReadTransact(repo *model.Repo, fn func(transaction ReadOnlyTransaction) (interface{}, error)) (interface{}, error) {
 	return s.db.ReadTransact(func(tx fdb.ReadTransaction) (interface{}, error) {
 		t := &fdbReadOnlyTransaction{
+			repos:     s.repos,
 			workspace: s.workspace,
-			trees:     s.trees,
 			entries:   s.entries,
 			objects:   s.objects,
 			commits:   s.commits,
@@ -79,8 +107,8 @@ func (s *fdbStore) Transact(repo *model.Repo, fn func(Transaction) (interface{},
 				tx: tx,
 			},
 			fdbReadOnlyTransaction: fdbReadOnlyTransaction{
+				repos:     s.repos,
 				workspace: s.workspace,
-				trees:     s.trees,
 				entries:   s.entries,
 				objects:   s.objects,
 				commits:   s.commits,
@@ -97,6 +125,7 @@ func (s *fdbStore) Transact(repo *model.Repo, fn func(Transaction) (interface{},
 }
 
 type fdbReadOnlyTransaction struct {
+	repos     subspace.Subspace
 	workspace subspace.Subspace
 	trees     subspace.Subspace
 	entries   subspace.Subspace
@@ -279,4 +308,13 @@ func (s *fdbTransaction) WriteBranch(name string, branch *model.Branch) error {
 
 func (s *fdbTransaction) DeleteBranch(name string) {
 	s.query.delete(s.branches, name)
+}
+
+func (s *fdbTransaction) WriteRepo(repo *model.Repo) error {
+	data, err := proto.Marshal(repo)
+	if err != nil {
+		return err
+	}
+	s.query.set(data, s.repos)
+	return nil
 }
