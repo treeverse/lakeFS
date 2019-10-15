@@ -1,0 +1,57 @@
+syntax = "proto3";
+
+message User {
+    string client_id = 1;
+    string email = 2;
+    string full_name = 3;
+    string passwd_hash = 4;
+    map<string, string> metadata = 5;
+}
+
+message Application {
+    string client_id = 1;
+    string name = 2;
+    string access_key_id = 3;
+    string access_key_secret = 4;
+    map<string, string> metadata = 5;
+}
+
+message AuditEntry {
+    string client_id = 1;
+    enum Type {
+        LOGIN = 0;
+        API_CALL = 1;
+        PASSWD_RESET = 2;
+        PASSWD_CHANGE = 3;
+    }
+    Type type = 2;
+}
+
+message Group {
+    string client_id = 1;
+    string name = 2;
+}
+
+message Role {
+    string client_id = 1;
+    string name =  2;
+}
+
+message Permission {
+    string client_id = 1;
+    enum Action {
+        // account administration
+        AM_READ = 0;
+        AM_WRITE = 1;
+
+        // manage app/user tokens
+        AM_TOKEN_GEN = 2;
+
+        // repo usage
+        REPO_READ = 3;
+        REPO_WRITE = 4;
+
+    }
+    Action action = 2;
+    repeated string resources = 3;
+}
