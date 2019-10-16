@@ -24,7 +24,7 @@ func NewLocalFSAdapter(path string) (*LocalFSAdapter, error) {
 	if unix.Access(path, unix.W_OK) != nil {
 		return nil, fmt.Errorf("path provided is not writable")
 	}
-	return nil, nil
+	return &LocalFSAdapter{path: path}, nil
 }
 
 func (l *LocalFSAdapter) getPath(identifier string) string {

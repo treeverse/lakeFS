@@ -1,6 +1,7 @@
 package merkle
 
 import (
+	"fmt"
 	"strings"
 	"versio-index/ident"
 	"versio-index/index/errors"
@@ -115,16 +116,22 @@ func New(root string) *Merkle {
 func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeType model.Entry_Type) (string, error) {
 	currentAddress := m.root
 	parts := path.New(pth).SplitParts()
+
 	for i, part := range parts {
+		fmt.Printf("getting part %d (%s) of %s (%d)\n", i, part, parts, len(parts))
 		typ := model.Entry_TREE
 		if nodeType == model.Entry_OBJECT && i == len(parts)-1 {
 			typ = model.Entry_OBJECT
 		}
+		x, y := tx.ListTree(currentAddress)
+		fmt.Printf("addr: %s, entries: %+v, error: %s\n", currentAddress, x, y)
+		fmt.Printf("gonna read type %v for address %s\n", typ, currentAddress)
 		entry, err := tx.ReadTreeEntry(currentAddress, part, typ)
 		if err != nil {
 			return "", err
 		}
 		currentAddress = entry.GetAddress()
+		fmt.Printf("got entry: %s (addr = %s)\n", part, currentAddress)
 	}
 	return currentAddress, nil
 }
@@ -147,7 +154,7 @@ func (m *Merkle) GetObject(tx store.RepoReadOnlyOperations, pth string) (*model.
 }
 
 func (m *Merkle) writeTree(tx store.RepoOperations, entries []*model.Entry) (string, error) {
-	entryHashes := make([]string, 0)
+	entryHashes := make([]string, len(entries))
 	for i, entry := range entries {
 		entryHashes[i] = ident.Hash(entry)
 	}
@@ -235,14 +242,15 @@ func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 			currChange := changes[nextChange]
 			comparison := compareEntries(currEntry, currChange)
 			if comparison == 0 {
+				// this is an override or deletion
+
+				// overwrite
+				if !currChange.Tombstone {
+					merged = append(merged, currChange.AsEntry())
+				}
+				// otherwise, skip both
 				nextCurrent++
 				nextChange++
-				// this is an override or deletion
-				if currChange.Tombstone {
-					continue // remove.
-				}
-				// otherwise, overwrite
-				merged = append(merged, currChange.AsEntry())
 			} else if comparison == -1 {
 				nextCurrent++
 				// current entry comes first
@@ -254,18 +262,19 @@ func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 			}
 		} else if nextChange < len(changes) {
 			// only changes left
-			nextChange++
-			// this is an override or deletion
 			currChange := changes[nextChange]
 			if currChange.Tombstone {
+				// this is an override or deletion
+				nextChange++
 				continue // remove.
 			}
 			merged = append(merged, currChange.AsEntry())
+			nextChange++
 		} else if nextCurrent < len(current) {
 			// only current entries left
-			nextCurrent++
 			currEntry := current[nextCurrent]
 			merged = append(merged, currEntry)
+			nextCurrent++
 		} else {
 			// done with both
 			break

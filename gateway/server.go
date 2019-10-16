@@ -1,13 +1,16 @@
 package gateway
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
+	"versio-index/block"
 	"versio-index/gateway/serde"
+	"versio-index/ident"
 	"versio-index/index"
 	"versio-index/index/errors"
 	"versio-index/index/model"
@@ -17,27 +20,26 @@ import (
 	"github.com/gorilla/mux"
 )
 
-const (
-	RepoPrefixPattern = "{repo:[a-z0-9]+}"
-)
-
 type Server struct {
-	meta   index.Index
+	meta index.Index
+	sink block.Adapter
+
 	server *http.Server
 	router mux.Router
 }
 
-func NewServer(meta index.Index, listenAddr, bareDomain string) *Server {
+func NewServer(meta index.Index, sink block.Adapter, listenAddr, bareDomain string) *Server {
 	r := mux.NewRouter()
 	s := &Server{
 		meta: meta,
+		sink: sink,
 		server: &http.Server{
 			Handler: r,
 			Addr:    listenAddr,
 		},
 	}
 
-	repoSubDomain := fmt.Sprintf("%s.%s", RepoPrefixPattern, bareDomain)
+	repoSubDomain := fmt.Sprintf("{repo:[a-z0-9]+}.%s", bareDomain)
 
 	nakedRouter := r.Host(bareDomain).Subrouter()
 	repoRouter := r.Host(repoSubDomain).Subrouter()
@@ -45,7 +47,16 @@ func NewServer(meta index.Index, listenAddr, bareDomain string) *Server {
 	// non-bucket-specific endpoints
 	nakedRouter.Path("/").Methods(http.MethodGet).HandlerFunc(s.ListBuckets)
 	// weird Boto stuff :(
-	nakedRouter.Path(fmt.Sprintf("/%s", RepoPrefixPattern)).Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
+	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
+	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodGet).HandlerFunc(s.ListObjects)
+	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodDelete).HandlerFunc(s.DeleteBucket)
+	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodHead).HandlerFunc(s.HeadBucket)
+	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
+	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
+	nakedRouter.Path("/{repo:[a-z0-9]+}/{branch}/{key:.*}").Methods(http.MethodDelete).HandlerFunc(s.DeleteObject)
+	nakedRouter.Path("/{repo:[a-z0-9]+}/{branch}/{key:.*}").Methods(http.MethodGet).HandlerFunc(s.GetObject)
+	nakedRouter.Path("/{repo:[a-z0-9]+}/{branch}/{key:.*}").Methods(http.MethodHead).HandlerFunc(s.HeadObject)
+	nakedRouter.Path("/{repo:[a-z0-9]+}/{branch}/{key:.*}").Methods(http.MethodPut).HandlerFunc(s.PutObject)
 
 	// bucket-specific actions that don't relate to a specific key
 	repoRouter.Path("/").Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
@@ -55,10 +66,10 @@ func NewServer(meta index.Index, listenAddr, bareDomain string) *Server {
 	repoRouter.Path("/").Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
 
 	// bucket-specific actions that relate to a key
-	repoRouter.Path("/{branch}/{key}").Methods(http.MethodDelete).HandlerFunc(s.DeleteObject)
-	repoRouter.Path("/{branch}/{key}").Methods(http.MethodGet).HandlerFunc(s.GetObject)
-	repoRouter.Path("/{branch}/{key}").Methods(http.MethodHead).HandlerFunc(s.GetObject)
-	repoRouter.Path("/{branch}/{key}").Methods(http.MethodPut).HandlerFunc(s.PutObject)
+	repoRouter.Path("/{branch}/{key:.*}").Methods(http.MethodDelete).HandlerFunc(s.DeleteObject)
+	repoRouter.Path("/{branch}/{key:.*}").Methods(http.MethodGet).HandlerFunc(s.GetObject)
+	repoRouter.Path("/{branch}/{key:.*}").Methods(http.MethodHead).HandlerFunc(s.HeadObject)
+	repoRouter.Path("/{branch}/{key:.*}").Methods(http.MethodPut).HandlerFunc(s.PutObject)
 
 	return s
 }
@@ -154,21 +165,71 @@ func (s *Server) DeleteObjects(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) GetObject(res http.ResponseWriter, req *http.Request) {
-
-}
-
-func (s *Server) HeadObject(res http.ResponseWriter, req *http.Request) {
-
-}
-
-func (s *Server) PutObject(res http.ResponseWriter, req *http.Request) {
 	scope := getScope(req)
 	repoId := getRepo(req)
 	branch := getBranch(req)
 	key := getKey(req)
-	if strings.EqualFold(req.Header.Get("Expect"), "100-Continue") {
-		res.WriteHeader(http.StatusContinue) // this is to ensure we don't block uploads
+
+	obj, err := s.meta.ReadObject(scope.Client.GetId(), repoId, branch, key)
+	if xerrors.Is(err, errors.ErrNotFound) {
+		res.WriteHeader(http.StatusNotFound)
+		return
 	}
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	blocks := obj.GetBlob().GetBlocks()
+	buf := bytes.NewBuffer(nil)
+	for _, block := range blocks {
+		data, err := s.sink.Get(block)
+		if err != nil {
+			res.WriteHeader(http.StatusInternalServerError)
+			return
+		}
+		buf.Write(data)
+	}
+
+	res.Header().Set("Last-Modified", serde.Timestamp(obj.GetTimestamp()))
+	res.Header().Set("Etag", ident.Hash(obj))
+	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
+
+	_, err = io.Copy(res, buf)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+}
+
+func (s *Server) HeadObject(res http.ResponseWriter, req *http.Request) {
+	scope := getScope(req)
+	clientId := scope.Client.GetId()
+	repoId := getRepo(req)
+	branch := getBranch(req)
+	key := getKey(req)
+
+	obj, err := s.meta.ReadObject(clientId, repoId, branch, key)
+	if xerrors.Is(err, errors.ErrNotFound) {
+		res.WriteHeader(http.StatusNotFound)
+		return
+	}
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	res.Header().Set("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
+	res.Header().Set("Last-Modified", serde.Timestamp(obj.GetTimestamp()))
+	res.Header().Set("Etag", ident.Hash(obj))
+}
+
+func (s *Server) PutObject(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("GOT REQUEST\n")
+	scope := getScope(req)
+	repoId := getRepo(req)
+	branch := getBranch(req)
+	key := getKey(req)
+
 	// handle the upload itself
 	data, err := ioutil.ReadAll(req.Body)
 	if err != nil {
@@ -178,6 +239,13 @@ func (s *Server) PutObject(res http.ResponseWriter, req *http.Request) {
 
 	// write to adapter
 	blocks := make([]string, 0)
+	blockAddr := ident.Bytes(data)
+	err = s.sink.Put(data, blockAddr)
+	if err != nil {
+		res.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+	blocks = append(blocks, blockAddr)
 
 	// write metadata
 	err = s.meta.WriteObject(scope.Client.GetId(), repoId, branch, key, &model.Object{
@@ -193,8 +261,8 @@ func (s *Server) PutObject(res http.ResponseWriter, req *http.Request) {
 		res.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-
 	res.WriteHeader(http.StatusCreated)
+
 }
 
 //CreateMultipartUpload
