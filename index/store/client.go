@@ -9,6 +9,7 @@ import (
 
 type ClientReadOnlyOperations interface {
 	ListRepos() ([]*model.Repo, error)
+	ReadRepo(repoId string) (*model.Repo, error)
 }
 
 type ClientOperations interface {
@@ -25,6 +26,11 @@ type KVClientOperations struct {
 	query db.Query
 }
 
+func (c *KVClientReadOnlyOperations) ReadRepo(repoId string) (*model.Repo, error) {
+	repo := &model.Repo{}
+	return repo, c.query.GetAsProto(repo, c.store.Space(SubspaceRepos), repoId)
+}
+
 func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
 	repos := make([]*model.Repo, 0)
 	iter := c.query.RangePrefix(c.store.Space(SubspaceRepos))
@@ -37,4 +43,5 @@ func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
 		}
 		repos = append(repos, repo)
 	}
+	return repos, nil
 }

@@ -4,8 +4,9 @@ syntax = "proto3";
 message Repo {
     string client_id = 1;
     string repo_id = 2;
-    string default_branch = 3;
-    float partial_commit_ratio = 4;
+    int64 creation_date = 3;
+    string default_branch = 4;
+    float partial_commit_ratio = 5;
 }
 
 message Blob {

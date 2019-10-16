@@ -10,9 +10,18 @@ type Identifiable interface {
 	Identity() []byte
 }
 
-func Hash(thing Identifiable) string {
-	hashBytes := sha256.Sum256(thing.Identity())
+func Empty() string {
+	hashBytes := sha256.Sum256([]byte{})
 	return fmt.Sprintf("%x", hashBytes)
+}
+
+func Bytes(data []byte) string {
+	hashBytes := sha256.Sum256(data)
+	return fmt.Sprintf("%x", hashBytes)
+}
+
+func Hash(thing Identifiable) string {
+	return Bytes(thing.Identity())
 }
 
 // MultiHash combines several hashes into one
