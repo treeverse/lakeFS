@@ -10,6 +10,7 @@ import (
 
 type RepoReadOnlyOperations interface {
 	Snapshot() RepoReadOnlyOperations
+	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ReadBranch(branch string) (*model.Branch, error)
@@ -46,6 +47,11 @@ func (s *KVRepoReadOnlyOperations) Snapshot() RepoReadOnlyOperations {
 		query: s.query.Snapshot(),
 		store: s.store,
 	}
+}
+
+func (s *KVRepoReadOnlyOperations) ReadRepo() (*model.Repo, error) {
+	repo := &model.Repo{}
+	return repo, s.query.GetAsProto(repo, s.store.Space(SubspaceRepos))
 }
 
 func (s *KVRepoReadOnlyOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
