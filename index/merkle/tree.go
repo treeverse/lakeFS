@@ -112,7 +112,7 @@ func New(root string) *Merkle {
 	return &Merkle{root: root}
 }
 
-func (m *Merkle) GetAddress(tx store.ReadOnlyTransaction, pth string, nodeType model.Entry_Type) (string, error) {
+func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeType model.Entry_Type) (string, error) {
 	currentAddress := m.root
 	parts := path.New(pth).SplitParts()
 	for i, part := range parts {
@@ -129,7 +129,7 @@ func (m *Merkle) GetAddress(tx store.ReadOnlyTransaction, pth string, nodeType m
 	return currentAddress, nil
 }
 
-func (m *Merkle) GetEntries(tx store.ReadOnlyTransaction, pth string) ([]*model.Entry, error) {
+func (m *Merkle) GetEntries(tx store.RepoReadOnlyOperations, pth string) ([]*model.Entry, error) {
 	addr, err := m.GetAddress(tx, pth, model.Entry_TREE)
 	if xerrors.Is(err, errors.ErrNotFound) {
 		empty := make([]*model.Entry, 0)
@@ -138,7 +138,7 @@ func (m *Merkle) GetEntries(tx store.ReadOnlyTransaction, pth string) ([]*model.
 	return tx.ListTree(addr)
 }
 
-func (m *Merkle) GetObject(tx store.ReadOnlyTransaction, pth string) (*model.Object, error) {
+func (m *Merkle) GetObject(tx store.RepoReadOnlyOperations, pth string) (*model.Object, error) {
 	addr, err := m.GetAddress(tx, pth, model.Entry_OBJECT)
 	if err != nil {
 		return nil, err
@@ -146,7 +146,7 @@ func (m *Merkle) GetObject(tx store.ReadOnlyTransaction, pth string) (*model.Obj
 	return tx.ReadObject(addr)
 }
 
-func (m *Merkle) writeTree(tx store.Transaction, entries []*model.Entry) (string, error) {
+func (m *Merkle) writeTree(tx store.RepoOperations, entries []*model.Entry) (string, error) {
 	entryHashes := make([]string, 0)
 	for i, entry := range entries {
 		entryHashes[i] = ident.Hash(entry)
@@ -156,7 +156,7 @@ func (m *Merkle) writeTree(tx store.Transaction, entries []*model.Entry) (string
 	return id, err
 }
 
-func (m *Merkle) Update(tx store.Transaction, entries []*model.WorkspaceEntry) (*Merkle, error) {
+func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry) (*Merkle, error) {
 
 	// get the max depth
 	changeTree := newChangeTree(entries)

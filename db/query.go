@@ -1,32 +1,54 @@
 package db
 
 import (
+	"versio-index/index/errors"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	"github.com/golang/protobuf/proto"
 )
 
-type ReadQuery struct {
+type FDBReadQuery struct {
 	Context []tuple.TupleElement
 	tx      fdb.ReadTransaction
 }
 
-type Query struct {
-	*ReadQuery
+type FDBQuery struct {
+	*FDBReadQuery
 	tx fdb.Transaction
 }
 
-func (q *ReadQuery) pack(space subspace.Subspace, parts ...tuple.TupleElement) fdb.Key {
+func (q *FDBReadQuery) Snapshot() ReadQuery {
+	return &FDBReadQuery{
+		Context: q.Context,
+		tx:      q.tx.Snapshot(),
+	}
+}
+
+func (q *FDBReadQuery) pack(space subspace.Subspace, parts ...tuple.TupleElement) fdb.Key {
 	ctxTuple := append(tuple.Tuple{}, q.Context...)
 	parts = append(ctxTuple, parts...)
 	return space.Pack(parts)
 }
 
-func (q *ReadQuery) get(space subspace.Subspace, parts ...tuple.TupleElement) fdb.FutureByteSlice {
+func (q *FDBReadQuery) Get(space subspace.Subspace, parts ...tuple.TupleElement) FutureValue {
 	return q.tx.Get(q.pack(space, parts...))
 }
 
-func (q *ReadQuery) rangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) *fdb.RangeIterator {
+func (q *FDBReadQuery) GetAsProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
+	data := q.Get(space, parts...).MustGet()
+	if data == nil {
+		return errors.ErrNotFound
+	}
+	err := proto.Unmarshal(data, msg)
+	if err != nil {
+		return errors.ErrIndexMalformed
+	}
+	return nil
+}
+
+func (q *FDBReadQuery) RangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) Iterator {
 	begin := q.pack(space, parts...)
 	return q.tx.GetRange(fdb.KeyRange{
 		Begin: begin,
@@ -34,10 +56,20 @@ func (q *ReadQuery) rangePrefix(space subspace.Subspace, parts ...tuple.TupleEle
 	}, fdb.RangeOptions{}).Iterator()
 }
 
-func (q *Query) set(data []byte, space subspace.Subspace, parts ...tuple.TupleElement) {
+func (q *FDBQuery) Set(data []byte, space subspace.Subspace, parts ...tuple.TupleElement) {
 	q.tx.Set(q.pack(space, parts...), data)
 }
-func (q *Query) clearPrefix(space subspace.Subspace, parts ...tuple.TupleElement) {
+
+func (q *FDBQuery) SetProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
+	data, err := proto.Marshal(msg)
+	if err != nil {
+		return errors.ErrIndexMalformed
+	}
+	q.Set(data, space, parts...)
+	return nil
+}
+
+func (q *FDBQuery) ClearPrefix(space subspace.Subspace, parts ...tuple.TupleElement) {
 	begin := q.pack(space, parts...)
 	end := append(begin, 0xFF)
 	q.tx.ClearRange(&fdb.KeyRange{
@@ -46,6 +78,6 @@ func (q *Query) clearPrefix(space subspace.Subspace, parts ...tuple.TupleElement
 	})
 }
 
-func (q *Query) delete(space subspace.Subspace, parts ...tuple.TupleElement) {
+func (q *FDBQuery) Delete(space subspace.Subspace, parts ...tuple.TupleElement) {
 	q.tx.Clear(q.pack(space, parts...))
 }
