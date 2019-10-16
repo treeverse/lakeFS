@@ -7,6 +7,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"time"
+	"versio-index/block"
 	"versio-index/gateway"
 	"versio-index/index"
 	"versio-index/index/store"
@@ -41,7 +42,11 @@ func Run() {
 	fdb.MustAPIVersion(600)
 	str := store.NewKVStore(fdb.MustOpenDefault())
 	ind := index.NewKVIndex(str)
-	server := gateway.NewServer(ind, "0.0.0.0:8000", "s3.local:8000")
+	sink, err := block.NewLocalFSAdapter("/tmp/blocks")
+	if err != nil {
+		panic(err)
+	}
+	server := gateway.NewServer(ind, sink, "0.0.0.0:8000", "s3.local:8000")
 	panic(server.Listen())
 }
 

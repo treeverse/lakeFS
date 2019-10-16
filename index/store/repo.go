@@ -119,7 +119,7 @@ func (s *KVRepoOperations) ClearWorkspace(branch string) {
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
-		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, int(entry.GetType()))
+		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, int(entry.GetType()), entry.GetName())
 		if err != nil {
 			return err
 		}

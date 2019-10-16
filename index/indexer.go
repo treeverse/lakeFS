@@ -1,7 +1,6 @@
 package index
 
 import (
-	"math/rand"
 	"time"
 	"versio-index/ident"
 	"versio-index/index/errors"
@@ -66,8 +65,9 @@ func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch s
 }
 
 func shouldPartiallyCommit(repo *model.Repo) bool {
-	chosen := rand.Float32()
-	return chosen < repo.GetPartialCommitRatio()
+	//chosen := rand.Float32()
+	//return chosen < repo.GetPartialCommitRatio()
+	return true
 }
 
 type KVIndex struct {
@@ -83,14 +83,6 @@ func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.
 	obj, err := index.kv.RepoReadTransact(clientId, repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
 		var obj *model.Object
 		we, err := tx.ReadFromWorkspace(branch, path)
-		if err != nil && !xerrors.Is(err, errors.ErrNotFound) {
-			// an actual error has occurred, return it.
-			return nil, err
-		}
-		if we.GetTombstone() != nil {
-			// object was deleted deleted
-			return nil, errors.ErrNotFound
-		}
 		if xerrors.Is(err, errors.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
 			repo, err := tx.ReadRepo()
@@ -106,6 +98,21 @@ func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.
 			if err != nil {
 				return nil, err
 			}
+			return obj, nil
+		}
+		if err != nil {
+			// an actual error has occurred, return it.
+			return nil, err
+		}
+		if we.GetTombstone() != nil {
+			// object was deleted deleted
+			return nil, errors.ErrNotFound
+		}
+
+		obj, err = tx.ReadObject(we.GetAddress())
+		if err != nil {
+			// an actual error has occurred, return it.
+			return nil, err
 		}
 		return obj, nil
 	})
