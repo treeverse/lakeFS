@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"net/http/httputil"
@@ -38,6 +39,30 @@ func headBucket() {
 	fmt.Printf("%s", dump)
 }
 
+func listBucket() {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	signer := v4.NewSigner(sess.Config.Credentials)
+	//req, _ := http.NewRequest("GET", "http://foobar.s3.local:8000/", nil)
+	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=photos/", nil)
+	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
+	if err != nil {
+		panic(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	//dump, err := httputil.DumpResponse(resp, true)
+	//if err != nil {
+	//	log.Fatal(err)
+	//}
+	d, _ := ioutil.ReadAll(resp.Body)
+	fmt.Printf("%s", d)
+}
+
 func Run() {
 	fdb.MustAPIVersion(600)
 	str := store.NewKVStore(fdb.MustOpenDefault())
@@ -54,6 +79,8 @@ func main() {
 	switch os.Args[1] {
 	case "head":
 		headBucket()
+	case "list":
+		listBucket()
 	case "run":
 		Run()
 	}

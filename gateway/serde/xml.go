@@ -20,5 +20,30 @@ type ListBucketsOutput struct {
 }
 
 type CreateBucketConfiguration struct {
-	LocationConstraint string
+	LocationConstraint string `xml:"LocationConstraint"`
+}
+
+type Contents struct {
+	Key          string `xml:"Key"`
+	LastModified string `xml:"LastModified"`
+	ETag         string `xml:"ETag"`
+	Size         int64  `xml:"Size"`
+	StorageClass string `xml:"StorageClass"`
+}
+
+type CommonPrefixes struct {
+	Prefix string `xml:"Prefix"`
+}
+
+type ListObjectsV2Output struct {
+	Name                  string         `xml:"Name"`
+	IsTruncated           bool           `xml:"IsTruncated"`
+	Prefix                string         `xml:"Prefix"`
+	Delimiter             string         `xml:"Delimiter"`
+	KeyCount              int            `xml:"KeyCount"`
+	MaxKeys               int            `xml:"MaxKeys"`
+	CommonPrefixes        CommonPrefixes `xml:"CommonPrefixes"`
+	NextContinuationToken string         `xml:"NextContinuationToken"`
+	ContinuationToken     string         `xml:"ContinuationToken"`
+	Contents              []Contents     `xml:"Contents"`
 }
