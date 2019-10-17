@@ -23,7 +23,7 @@ type Index interface {
 	ReadObject(clientId, repoId, branch, path string) (*model.Object, error)
 	WriteObject(clientId, repoId, branch, path string, object *model.Object) error
 	DeleteObject(clientId, repoId, branch, path string) error
-	ListObjects(clientId, repoId, branch, path string) ([]*model.Entry, error)
+	ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error)
 	ResetBranch(clientId, repoId, branch string) error
 	Commit(clientId, repoId, branch, message, committer string, metadata map[string]string) error
 	DeleteBranch(clientId, repoId, branch string) error
@@ -198,7 +198,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	return nil
 }
 
-func (index *KVIndex) ListObjects(clientId, repoId, branch, path string) ([]*model.Entry, error) {
+func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error) {
 	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
@@ -217,7 +217,7 @@ func (index *KVIndex) ListObjects(clientId, repoId, branch, path string) ([]*mod
 		if err != nil {
 			return nil, err
 		}
-		return tx.ListTree(addr) // TODO: enrich this list with object metadata
+		return tx.ListTree(addr, from, results) // TODO: enrich this list with object metadata
 	})
 	if err != nil {
 		return nil, err

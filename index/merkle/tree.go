@@ -123,9 +123,6 @@ func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeTyp
 		if nodeType == model.Entry_OBJECT && i == len(parts)-1 {
 			typ = model.Entry_OBJECT
 		}
-		x, y := tx.ListTree(currentAddress)
-		fmt.Printf("addr: %s, entries: %+v, error: %s\n", currentAddress, x, y)
-		fmt.Printf("gonna read type %v for address %s\n", typ, currentAddress)
 		entry, err := tx.ReadTreeEntry(currentAddress, part, typ)
 		if err != nil {
 			return "", err
@@ -142,7 +139,7 @@ func (m *Merkle) GetEntries(tx store.RepoReadOnlyOperations, pth string) ([]*mod
 		empty := make([]*model.Entry, 0)
 		return empty, nil
 	}
-	return tx.ListTree(addr)
+	return tx.ListTree(addr, "", -1)
 }
 
 func (m *Merkle) GetObject(tx store.RepoReadOnlyOperations, pth string) (*model.Object, error) {

@@ -16,7 +16,7 @@ type RepoReadOnlyOperations interface {
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
-	ListTree(addr string) ([]*model.Entry, error)
+	ListTree(addr, from string, results int) ([]*model.Entry, error)
 	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
 }
 
@@ -89,9 +89,10 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 	return commit, s.query.GetAsProto(commit, s.store.Space(SubspaceCommits), addr)
 }
 
-func (s *KVRepoReadOnlyOperations) ListTree(addr string) ([]*model.Entry, error) {
-	iter := s.query.RangePrefix(s.store.Space(SubspaceEntries), addr)
+func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, error) {
+	iter := s.query.RangePrefix(s.store.Space(SubspaceEntries), addr, from)
 	entries := make([]*model.Entry, 0)
+	current := 0
 	for iter.Advance() {
 		entryData := iter.MustGet()
 		entry := &model.Entry{}
@@ -100,6 +101,10 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr string) ([]*model.Entry, error)
 			return nil, errors.ErrIndexMalformed
 		}
 		entries = append(entries, entry)
+		current++
+		if results != -1 && current > results {
+			break
+		}
 	}
 	return entries, nil
 }

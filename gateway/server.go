@@ -48,7 +48,11 @@ func NewServer(meta index.Index, sink block.Adapter, listenAddr, bareDomain stri
 	nakedRouter.Path("/").Methods(http.MethodGet).HandlerFunc(s.ListBuckets)
 	// weird Boto stuff :(
 	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
-	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodGet).HandlerFunc(s.ListObjects)
+	nakedRouter.
+		Path("/{repo:[a-z0-9]+}").
+		Methods(http.MethodGet).
+		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
+		HandlerFunc(s.ListObjects)
 	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodDelete).HandlerFunc(s.DeleteBucket)
 	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodHead).HandlerFunc(s.HeadBucket)
 	nakedRouter.Path("/{repo:[a-z0-9]+}").Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
@@ -60,7 +64,11 @@ func NewServer(meta index.Index, sink block.Adapter, listenAddr, bareDomain stri
 
 	// bucket-specific actions that don't relate to a specific key
 	repoRouter.Path("/").Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
-	repoRouter.Path("/").Methods(http.MethodGet).HandlerFunc(s.ListObjects)
+	repoRouter.
+		Path("/").
+		Methods(http.MethodGet).
+		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
+		HandlerFunc(s.ListObjects)
 	repoRouter.Path("/").Methods(http.MethodDelete).HandlerFunc(s.DeleteBucket)
 	repoRouter.Path("/").Methods(http.MethodHead).HandlerFunc(s.HeadBucket)
 	repoRouter.Path("/").Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
@@ -153,7 +161,11 @@ func (s *Server) ListBuckets(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) ListObjects(res http.ResponseWriter, req *http.Request) {
+	//scope := getScope(req)
+	//repoId := getRepo(req)
+	// get branch and path
 
+	//s.meta.ListObjects(scope.Client.GetId(), repoId, "master", "/")
 }
 
 func (s *Server) DeleteObject(res http.ResponseWriter, req *http.Request) {
