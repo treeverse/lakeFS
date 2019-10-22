@@ -20,72 +20,137 @@ var _ = math.Inf
 // proto package needs to be updated.
 const _ = proto.ProtoPackageIsVersion3 // please upgrade the proto package
 
-type AuditEntry_Type int32
+type APICredentials_Type int32
 
 const (
-	AuditEntry_LOGIN         AuditEntry_Type = 0
-	AuditEntry_API_CALL      AuditEntry_Type = 1
-	AuditEntry_PASSWD_RESET  AuditEntry_Type = 2
-	AuditEntry_PASSWD_CHANGE AuditEntry_Type = 3
+	APICredentials_CREDENTIAL_TYPE_USER        APICredentials_Type = 0
+	APICredentials_CREDENTIAL_TYPE_APPLICATION APICredentials_Type = 1
 )
 
-var AuditEntry_Type_name = map[int32]string{
-	0: "LOGIN",
-	1: "API_CALL",
-	2: "PASSWD_RESET",
-	3: "PASSWD_CHANGE",
+var APICredentials_Type_name = map[int32]string{
+	0: "CREDENTIAL_TYPE_USER",
+	1: "CREDENTIAL_TYPE_APPLICATION",
 }
 
-var AuditEntry_Type_value = map[string]int32{
-	"LOGIN":         0,
-	"API_CALL":      1,
-	"PASSWD_RESET":  2,
-	"PASSWD_CHANGE": 3,
+var APICredentials_Type_value = map[string]int32{
+	"CREDENTIAL_TYPE_USER":        0,
+	"CREDENTIAL_TYPE_APPLICATION": 1,
 }
 
-func (x AuditEntry_Type) String() string {
-	return proto.EnumName(AuditEntry_Type_name, int32(x))
+func (x APICredentials_Type) String() string {
+	return proto.EnumName(APICredentials_Type_name, int32(x))
 }
 
-func (AuditEntry_Type) EnumDescriptor() ([]byte, []int) {
-	return fileDescriptor_4c16552f9fdb66d8, []int{3, 0}
+func (APICredentials_Type) EnumDescriptor() ([]byte, []int) {
+	return fileDescriptor_4c16552f9fdb66d8, []int{0, 0}
 }
 
-type Permission_Action int32
+type Permission_Intent int32
 
 const (
-	// account administration
-	Permission_AM_READ  Permission_Action = 0
-	Permission_AM_WRITE Permission_Action = 1
-	// manage app/user tokens
-	Permission_AM_TOKEN_GEN Permission_Action = 2
 	// repo usage
-	Permission_REPO_READ  Permission_Action = 3
-	Permission_REPO_WRITE Permission_Action = 4
+	Permission_REPO_READ     Permission_Intent = 0
+	Permission_REPO_WRITE    Permission_Intent = 1
+	Permission_ACCOUNT_ADMIN Permission_Intent = 2
 )
 
-var Permission_Action_name = map[int32]string{
-	0: "AM_READ",
-	1: "AM_WRITE",
-	2: "AM_TOKEN_GEN",
-	3: "REPO_READ",
-	4: "REPO_WRITE",
+var Permission_Intent_name = map[int32]string{
+	0: "REPO_READ",
+	1: "REPO_WRITE",
+	2: "ACCOUNT_ADMIN",
 }
 
-var Permission_Action_value = map[string]int32{
-	"AM_READ":      0,
-	"AM_WRITE":     1,
-	"AM_TOKEN_GEN": 2,
-	"REPO_READ":    3,
-	"REPO_WRITE":   4,
+var Permission_Intent_value = map[string]int32{
+	"REPO_READ":     0,
+	"REPO_WRITE":    1,
+	"ACCOUNT_ADMIN": 2,
 }
 
-func (x Permission_Action) String() string {
-	return proto.EnumName(Permission_Action_name, int32(x))
+func (x Permission_Intent) String() string {
+	return proto.EnumName(Permission_Intent_name, int32(x))
 }
 
-func (Permission_Action) EnumDescriptor() ([]byte, []int) {
+func (Permission_Intent) EnumDescriptor() ([]byte, []int) {
 	return fileDescriptor_4c16552f9fdb66d8, []int{6, 0}
+}
+
+type APICredentials struct {
+	AccessKeyId          string              `protobuf:"bytes,1,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
+	AccessSecretKey      string              `protobuf:"bytes,2,opt,name=access_secret_key,json=accessSecretKey,proto3" json:"access_secret_key,omitempty"`
+	CredentialType       APICredentials_Type `protobuf:"varint,3,opt,name=credential_type,json=credentialType,proto3,enum=APICredentials_Type" json:"credential_type,omitempty"`
+	ClientId             string              `protobuf:"bytes,4,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	EntityId             string              `protobuf:"bytes,5,opt,name=entity_id,json=entityId,proto3" json:"entity_id,omitempty"`
+	IssuedDate           int64               `protobuf:"varint,6,opt,name=issued_date,json=issuedDate,proto3" json:"issued_date,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}            `json:"-"`
+	XXX_unrecognized     []byte              `json:"-"`
+	XXX_sizecache        int32               `json:"-"`
+}
+
+func (m *APICredentials) Reset()         { *m = APICredentials{} }
+func (m *APICredentials) String() string { return proto.CompactTextString(m) }
+func (*APICredentials) ProtoMessage()    {}
+func (*APICredentials) Descriptor() ([]byte, []int) {
+	return fileDescriptor_4c16552f9fdb66d8, []int{0}
+}
+
+func (m *APICredentials) XXX_Unmarshal(b []byte) error {
+	return xxx_messageInfo_APICredentials.Unmarshal(m, b)
+}
+func (m *APICredentials) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
+	return xxx_messageInfo_APICredentials.Marshal(b, m, deterministic)
+}
+func (m *APICredentials) XXX_Merge(src proto.Message) {
+	xxx_messageInfo_APICredentials.Merge(m, src)
+}
+func (m *APICredentials) XXX_Size() int {
+	return xxx_messageInfo_APICredentials.Size(m)
+}
+func (m *APICredentials) XXX_DiscardUnknown() {
+	xxx_messageInfo_APICredentials.DiscardUnknown(m)
+}
+
+var xxx_messageInfo_APICredentials proto.InternalMessageInfo
+
+func (m *APICredentials) GetAccessKeyId() string {
+	if m != nil {
+		return m.AccessKeyId
+	}
+	return ""
+}
+
+func (m *APICredentials) GetAccessSecretKey() string {
+	if m != nil {
+		return m.AccessSecretKey
+	}
+	return ""
+}
+
+func (m *APICredentials) GetCredentialType() APICredentials_Type {
+	if m != nil {
+		return m.CredentialType
+	}
+	return APICredentials_CREDENTIAL_TYPE_USER
+}
+
+func (m *APICredentials) GetClientId() string {
+	if m != nil {
+		return m.ClientId
+	}
+	return ""
+}
+
+func (m *APICredentials) GetEntityId() string {
+	if m != nil {
+		return m.EntityId
+	}
+	return ""
+}
+
+func (m *APICredentials) GetIssuedDate() int64 {
+	if m != nil {
+		return m.IssuedDate
+	}
+	return 0
 }
 
 type Client struct {
@@ -100,7 +165,7 @@ func (m *Client) Reset()         { *m = Client{} }
 func (m *Client) String() string { return proto.CompactTextString(m) }
 func (*Client) ProtoMessage()    {}
 func (*Client) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c16552f9fdb66d8, []int{0}
+	return fileDescriptor_4c16552f9fdb66d8, []int{1}
 }
 
 func (m *Client) XXX_Unmarshal(b []byte) error {
@@ -137,10 +202,13 @@ func (m *Client) GetName() string {
 
 type User struct {
 	ClientId             string            `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Email                string            `protobuf:"bytes,2,opt,name=email,proto3" json:"email,omitempty"`
-	FullName             string            `protobuf:"bytes,3,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
-	PasswdHash           string            `protobuf:"bytes,4,opt,name=passwd_hash,json=passwdHash,proto3" json:"passwd_hash,omitempty"`
-	Metadata             map[string]string `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Id                   string            `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Email                string            `protobuf:"bytes,3,opt,name=email,proto3" json:"email,omitempty"`
+	FullName             string            `protobuf:"bytes,4,opt,name=full_name,json=fullName,proto3" json:"full_name,omitempty"`
+	PasswdHash           string            `protobuf:"bytes,5,opt,name=passwd_hash,json=passwdHash,proto3" json:"passwd_hash,omitempty"`
+	Metadata             map[string]string `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Groups               []string          `protobuf:"bytes,7,rep,name=groups,proto3" json:"groups,omitempty"`
+	Roles                []string          `protobuf:"bytes,8,rep,name=roles,proto3" json:"roles,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -150,7 +218,7 @@ func (m *User) Reset()         { *m = User{} }
 func (m *User) String() string { return proto.CompactTextString(m) }
 func (*User) ProtoMessage()    {}
 func (*User) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c16552f9fdb66d8, []int{1}
+	return fileDescriptor_4c16552f9fdb66d8, []int{2}
 }
 
 func (m *User) XXX_Unmarshal(b []byte) error {
@@ -174,6 +242,13 @@ var xxx_messageInfo_User proto.InternalMessageInfo
 func (m *User) GetClientId() string {
 	if m != nil {
 		return m.ClientId
+	}
+	return ""
+}
+
+func (m *User) GetId() string {
+	if m != nil {
+		return m.Id
 	}
 	return ""
 }
@@ -206,12 +281,29 @@ func (m *User) GetMetadata() map[string]string {
 	return nil
 }
 
+func (m *User) GetGroups() []string {
+	if m != nil {
+		return m.Groups
+	}
+	return nil
+}
+
+func (m *User) GetRoles() []string {
+	if m != nil {
+		return m.Roles
+	}
+	return nil
+}
+
 type Application struct {
 	ClientId             string            `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Name                 string            `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	AccessKeyId          string            `protobuf:"bytes,3,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
-	AccessKeySecret      string            `protobuf:"bytes,4,opt,name=access_key_secret,json=accessKeySecret,proto3" json:"access_key_secret,omitempty"`
-	Metadata             map[string]string `protobuf:"bytes,5,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Id                   string            `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Name                 string            `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	AccessKeyId          string            `protobuf:"bytes,4,opt,name=access_key_id,json=accessKeyId,proto3" json:"access_key_id,omitempty"`
+	AccessKeySecret      string            `protobuf:"bytes,5,opt,name=access_key_secret,json=accessKeySecret,proto3" json:"access_key_secret,omitempty"`
+	Metadata             map[string]string `protobuf:"bytes,6,rep,name=metadata,proto3" json:"metadata,omitempty" protobuf_key:"bytes,1,opt,name=key,proto3" protobuf_val:"bytes,2,opt,name=value,proto3"`
+	Groups               []string          `protobuf:"bytes,7,rep,name=groups,proto3" json:"groups,omitempty"`
+	Roles                []string          `protobuf:"bytes,8,rep,name=roles,proto3" json:"roles,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -221,7 +313,7 @@ func (m *Application) Reset()         { *m = Application{} }
 func (m *Application) String() string { return proto.CompactTextString(m) }
 func (*Application) ProtoMessage()    {}
 func (*Application) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c16552f9fdb66d8, []int{2}
+	return fileDescriptor_4c16552f9fdb66d8, []int{3}
 }
 
 func (m *Application) XXX_Unmarshal(b []byte) error {
@@ -245,6 +337,13 @@ var xxx_messageInfo_Application proto.InternalMessageInfo
 func (m *Application) GetClientId() string {
 	if m != nil {
 		return m.ClientId
+	}
+	return ""
+}
+
+func (m *Application) GetId() string {
+	if m != nil {
+		return m.Id
 	}
 	return ""
 }
@@ -277,56 +376,25 @@ func (m *Application) GetMetadata() map[string]string {
 	return nil
 }
 
-type AuditEntry struct {
-	ClientId             string          `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Type                 AuditEntry_Type `protobuf:"varint,2,opt,name=type,proto3,enum=AuditEntry_Type" json:"type,omitempty"`
-	XXX_NoUnkeyedLiteral struct{}        `json:"-"`
-	XXX_unrecognized     []byte          `json:"-"`
-	XXX_sizecache        int32           `json:"-"`
-}
-
-func (m *AuditEntry) Reset()         { *m = AuditEntry{} }
-func (m *AuditEntry) String() string { return proto.CompactTextString(m) }
-func (*AuditEntry) ProtoMessage()    {}
-func (*AuditEntry) Descriptor() ([]byte, []int) {
-	return fileDescriptor_4c16552f9fdb66d8, []int{3}
-}
-
-func (m *AuditEntry) XXX_Unmarshal(b []byte) error {
-	return xxx_messageInfo_AuditEntry.Unmarshal(m, b)
-}
-func (m *AuditEntry) XXX_Marshal(b []byte, deterministic bool) ([]byte, error) {
-	return xxx_messageInfo_AuditEntry.Marshal(b, m, deterministic)
-}
-func (m *AuditEntry) XXX_Merge(src proto.Message) {
-	xxx_messageInfo_AuditEntry.Merge(m, src)
-}
-func (m *AuditEntry) XXX_Size() int {
-	return xxx_messageInfo_AuditEntry.Size(m)
-}
-func (m *AuditEntry) XXX_DiscardUnknown() {
-	xxx_messageInfo_AuditEntry.DiscardUnknown(m)
-}
-
-var xxx_messageInfo_AuditEntry proto.InternalMessageInfo
-
-func (m *AuditEntry) GetClientId() string {
+func (m *Application) GetGroups() []string {
 	if m != nil {
-		return m.ClientId
+		return m.Groups
 	}
-	return ""
+	return nil
 }
 
-func (m *AuditEntry) GetType() AuditEntry_Type {
+func (m *Application) GetRoles() []string {
 	if m != nil {
-		return m.Type
+		return m.Roles
 	}
-	return AuditEntry_LOGIN
+	return nil
 }
 
 type Group struct {
 	ClientId             string   `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	Id                   string   `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Name                 string   `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Roles                []string `protobuf:"bytes,4,rep,name=roles,proto3" json:"roles,omitempty"`
 	XXX_NoUnkeyedLiteral struct{} `json:"-"`
 	XXX_unrecognized     []byte   `json:"-"`
 	XXX_sizecache        int32    `json:"-"`
@@ -364,6 +432,13 @@ func (m *Group) GetClientId() string {
 	return ""
 }
 
+func (m *Group) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
 func (m *Group) GetName() string {
 	if m != nil {
 		return m.Name
@@ -371,12 +446,21 @@ func (m *Group) GetName() string {
 	return ""
 }
 
+func (m *Group) GetRoles() []string {
+	if m != nil {
+		return m.Roles
+	}
+	return nil
+}
+
 type Role struct {
-	ClientId             string   `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Name                 string   `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
-	XXX_NoUnkeyedLiteral struct{} `json:"-"`
-	XXX_unrecognized     []byte   `json:"-"`
-	XXX_sizecache        int32    `json:"-"`
+	ClientId             string        `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
+	Id                   string        `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Name                 string        `protobuf:"bytes,3,opt,name=name,proto3" json:"name,omitempty"`
+	Permissions          []*Permission `protobuf:"bytes,4,rep,name=permissions,proto3" json:"permissions,omitempty"`
+	XXX_NoUnkeyedLiteral struct{}      `json:"-"`
+	XXX_unrecognized     []byte        `json:"-"`
+	XXX_sizecache        int32         `json:"-"`
 }
 
 func (m *Role) Reset()         { *m = Role{} }
@@ -411,6 +495,13 @@ func (m *Role) GetClientId() string {
 	return ""
 }
 
+func (m *Role) GetId() string {
+	if m != nil {
+		return m.Id
+	}
+	return ""
+}
+
 func (m *Role) GetName() string {
 	if m != nil {
 		return m.Name
@@ -418,10 +509,18 @@ func (m *Role) GetName() string {
 	return ""
 }
 
+func (m *Role) GetPermissions() []*Permission {
+	if m != nil {
+		return m.Permissions
+	}
+	return nil
+}
+
 type Permission struct {
 	ClientId             string            `protobuf:"bytes,1,opt,name=client_id,json=clientId,proto3" json:"client_id,omitempty"`
-	Action               Permission_Action `protobuf:"varint,2,opt,name=action,proto3,enum=Permission_Action" json:"action,omitempty"`
-	Resources            []string          `protobuf:"bytes,3,rep,name=resources,proto3" json:"resources,omitempty"`
+	Id                   string            `protobuf:"bytes,2,opt,name=id,proto3" json:"id,omitempty"`
+	Intent               Permission_Intent `protobuf:"varint,3,opt,name=intent,proto3,enum=Permission_Intent" json:"intent,omitempty"`
+	SubjectArn           string            `protobuf:"bytes,4,opt,name=subject_arn,json=subjectArn,proto3" json:"subject_arn,omitempty"`
 	XXX_NoUnkeyedLiteral struct{}          `json:"-"`
 	XXX_unrecognized     []byte            `json:"-"`
 	XXX_sizecache        int32             `json:"-"`
@@ -459,29 +558,36 @@ func (m *Permission) GetClientId() string {
 	return ""
 }
 
-func (m *Permission) GetAction() Permission_Action {
+func (m *Permission) GetId() string {
 	if m != nil {
-		return m.Action
+		return m.Id
 	}
-	return Permission_AM_READ
+	return ""
 }
 
-func (m *Permission) GetResources() []string {
+func (m *Permission) GetIntent() Permission_Intent {
 	if m != nil {
-		return m.Resources
+		return m.Intent
 	}
-	return nil
+	return Permission_REPO_READ
+}
+
+func (m *Permission) GetSubjectArn() string {
+	if m != nil {
+		return m.SubjectArn
+	}
+	return ""
 }
 
 func init() {
-	proto.RegisterEnum("AuditEntry_Type", AuditEntry_Type_name, AuditEntry_Type_value)
-	proto.RegisterEnum("Permission_Action", Permission_Action_name, Permission_Action_value)
+	proto.RegisterEnum("APICredentials_Type", APICredentials_Type_name, APICredentials_Type_value)
+	proto.RegisterEnum("Permission_Intent", Permission_Intent_name, Permission_Intent_value)
+	proto.RegisterType((*APICredentials)(nil), "APICredentials")
 	proto.RegisterType((*Client)(nil), "Client")
 	proto.RegisterType((*User)(nil), "User")
 	proto.RegisterMapType((map[string]string)(nil), "User.MetadataEntry")
 	proto.RegisterType((*Application)(nil), "Application")
 	proto.RegisterMapType((map[string]string)(nil), "Application.MetadataEntry")
-	proto.RegisterType((*AuditEntry)(nil), "AuditEntry")
 	proto.RegisterType((*Group)(nil), "Group")
 	proto.RegisterType((*Role)(nil), "Role")
 	proto.RegisterType((*Permission)(nil), "Permission")
@@ -490,37 +596,44 @@ func init() {
 func init() { proto.RegisterFile("model.proto", fileDescriptor_4c16552f9fdb66d8) }
 
 var fileDescriptor_4c16552f9fdb66d8 = []byte{
-	// 506 bytes of a gzipped FileDescriptorProto
-	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xb4, 0x93, 0xdf, 0x8a, 0xd3, 0x40,
-	0x14, 0xc6, 0xcd, 0x9f, 0xd6, 0xcd, 0xc9, 0xb6, 0x66, 0x8f, 0x5e, 0x94, 0x55, 0xb0, 0x04, 0x2f,
-	0xca, 0x22, 0x11, 0x56, 0xd0, 0x45, 0xaf, 0x42, 0x1b, 0xba, 0x65, 0xfb, 0x8f, 0x69, 0x65, 0x2f,
-	0x87, 0x31, 0x19, 0x69, 0xd8, 0xa4, 0x09, 0x99, 0x54, 0xc9, 0xb5, 0xcf, 0xe0, 0x43, 0xf9, 0x20,
-	0xbe, 0x87, 0x64, 0x26, 0xb6, 0x2b, 0xca, 0xca, 0x5e, 0x78, 0x37, 0xe7, 0x3b, 0xdf, 0x6f, 0x38,
-	0xe7, 0x9b, 0x04, 0xec, 0x34, 0x8b, 0x78, 0xe2, 0xe5, 0x45, 0x56, 0x66, 0xee, 0x4b, 0x68, 0x0f,
-	0x93, 0x98, 0x6f, 0x4b, 0xec, 0x82, 0x1e, 0x47, 0x3d, 0xad, 0xaf, 0x0d, 0x2c, 0xa2, 0xc7, 0x11,
-	0x22, 0x98, 0x5b, 0x96, 0xf2, 0x9e, 0x2e, 0x15, 0x79, 0x76, 0x7f, 0x68, 0x60, 0x7e, 0x10, 0xbc,
-	0xc0, 0xa7, 0x60, 0x85, 0x12, 0xa3, 0x7b, 0xe6, 0x48, 0x09, 0x93, 0x08, 0x9f, 0x40, 0x8b, 0xa7,
-	0x2c, 0x4e, 0x1a, 0x54, 0x15, 0x35, 0xf2, 0x69, 0x97, 0x24, 0x54, 0x5e, 0x6a, 0x28, 0xa4, 0x16,
-	0xe6, 0x2c, 0xe5, 0xf8, 0x1c, 0xec, 0x9c, 0x09, 0xf1, 0x25, 0xa2, 0x1b, 0x26, 0x36, 0x3d, 0x53,
-	0xb6, 0x41, 0x49, 0x97, 0x4c, 0x6c, 0xf0, 0x15, 0x1c, 0xa5, 0xbc, 0x64, 0x11, 0x2b, 0x59, 0xaf,
-	0xd5, 0x37, 0x06, 0xf6, 0xf9, 0x63, 0xaf, 0x9e, 0xc4, 0x9b, 0x35, 0x6a, 0xb0, 0x2d, 0x8b, 0x8a,
-	0xec, 0x4d, 0xa7, 0xef, 0xa1, 0xf3, 0x5b, 0x0b, 0x1d, 0x30, 0x6e, 0x78, 0xd5, 0x0c, 0x5b, 0x1f,
-	0xeb, 0x39, 0x3f, 0xb3, 0x64, 0xf7, 0x6b, 0x45, 0x55, 0xbc, 0xd3, 0x2f, 0x34, 0xf7, 0xab, 0x0e,
-	0xb6, 0x9f, 0xe7, 0x49, 0x1c, 0xb2, 0x32, 0xce, 0xb6, 0x77, 0xaf, 0xfb, 0x97, 0xa0, 0xd0, 0x85,
-	0x0e, 0x0b, 0x43, 0x2e, 0x04, 0xbd, 0xe1, 0x55, 0x0d, 0xa9, 0x85, 0x6d, 0x25, 0x5e, 0xf1, 0x6a,
-	0x12, 0xe1, 0x19, 0x9c, 0xdc, 0xf2, 0x08, 0x1e, 0x16, 0xbc, 0x6c, 0x36, 0x7f, 0xb4, 0xf7, 0xad,
-	0xa4, 0x8c, 0x6f, 0xfe, 0x58, 0xff, 0xd4, 0xbb, 0x35, 0xe0, 0xff, 0x49, 0xe1, 0x9b, 0x06, 0xe0,
-	0xef, 0xa2, 0xb8, 0x54, 0xe8, 0x9d, 0x21, 0xbc, 0x00, 0xb3, 0xac, 0x72, 0x75, 0x49, 0xf7, 0xdc,
-	0xf1, 0x0e, 0x9c, 0xb7, 0xae, 0x72, 0x4e, 0x64, 0xd7, 0x1d, 0x81, 0x59, 0x57, 0x68, 0x41, 0x6b,
-	0xba, 0x18, 0x4f, 0xe6, 0xce, 0x03, 0x3c, 0x86, 0x23, 0x7f, 0x39, 0xa1, 0x43, 0x7f, 0x3a, 0x75,
-	0x34, 0x74, 0xe0, 0x78, 0xe9, 0xaf, 0x56, 0xd7, 0x23, 0x4a, 0x82, 0x55, 0xb0, 0x76, 0x74, 0x3c,
-	0x81, 0x4e, 0xa3, 0x0c, 0x2f, 0xfd, 0xf9, 0x38, 0x70, 0x0c, 0xf7, 0x02, 0x5a, 0xe3, 0x22, 0xdb,
-	0xe5, 0xf7, 0x7e, 0x16, 0xf7, 0x2d, 0x98, 0x24, 0x4b, 0xf8, 0xfd, 0xc1, 0xef, 0x1a, 0xc0, 0x92,
-	0x17, 0x69, 0x2c, 0xc4, 0x3f, 0xbf, 0x87, 0x33, 0x68, 0xb3, 0xb0, 0x7e, 0x95, 0x26, 0x0c, 0xf4,
-	0x0e, 0xa4, 0xe7, 0xcb, 0x0e, 0x69, 0x1c, 0xf8, 0x0c, 0xac, 0x82, 0x8b, 0x6c, 0x57, 0x84, 0x5c,
-	0xf4, 0x8c, 0xbe, 0x31, 0xb0, 0xc8, 0x41, 0x70, 0xd7, 0xd0, 0x56, 0x7e, 0xb4, 0xe1, 0xa1, 0x3f,
-	0xa3, 0x24, 0xf0, 0x47, 0x4d, 0x64, 0x33, 0x7a, 0x4d, 0x26, 0xeb, 0x40, 0x45, 0xe6, 0xcf, 0xe8,
-	0x7a, 0x71, 0x15, 0xcc, 0xe9, 0x38, 0x98, 0x3b, 0x3a, 0x76, 0xc0, 0x22, 0xc1, 0x72, 0xa1, 0xec,
-	0x06, 0x76, 0x01, 0x64, 0xa9, 0x00, 0xf3, 0x63, 0x5b, 0xfe, 0xf9, 0xaf, 0x7f, 0x06, 0x00, 0x00,
-	0xff, 0xff, 0xe4, 0xa3, 0x79, 0xa4, 0x08, 0x04, 0x00, 0x00,
+	// 616 bytes of a gzipped FileDescriptorProto
+	0x1f, 0x8b, 0x08, 0x00, 0x00, 0x00, 0x00, 0x00, 0x02, 0xff, 0xcc, 0x54, 0xc1, 0x6a, 0xdb, 0x40,
+	0x10, 0x8d, 0x64, 0x47, 0x8d, 0x47, 0xd8, 0x71, 0xb6, 0xa1, 0x88, 0xe4, 0x10, 0xa3, 0x93, 0x09,
+	0xad, 0x0a, 0x29, 0x94, 0x92, 0xd2, 0x83, 0xb0, 0x45, 0x2b, 0x92, 0x38, 0x66, 0xe3, 0x50, 0x7a,
+	0xa9, 0xd8, 0x48, 0xd3, 0x46, 0xad, 0x2c, 0x09, 0xed, 0x3a, 0xc5, 0xdf, 0xd3, 0xef, 0xe8, 0xa1,
+	0xfd, 0xb2, 0xb2, 0xbb, 0x8a, 0xe2, 0x24, 0x50, 0x08, 0xb9, 0xf4, 0xa6, 0x79, 0xf3, 0x34, 0xef,
+	0xcd, 0x63, 0x24, 0xb0, 0xe7, 0x45, 0x82, 0x99, 0x57, 0x56, 0x85, 0x28, 0xdc, 0x5f, 0x26, 0xf4,
+	0xfc, 0x69, 0x38, 0xaa, 0x30, 0xc1, 0x5c, 0xa4, 0x2c, 0xe3, 0xc4, 0x85, 0x2e, 0x8b, 0x63, 0xe4,
+	0x3c, 0xfa, 0x8e, 0xcb, 0x28, 0x4d, 0x1c, 0x63, 0x60, 0x0c, 0x3b, 0xd4, 0xd6, 0xe0, 0x11, 0x2e,
+	0xc3, 0x84, 0xec, 0xc3, 0x56, 0xcd, 0xe1, 0x18, 0x57, 0x28, 0x24, 0xd5, 0x31, 0x15, 0x6f, 0x53,
+	0x37, 0xce, 0x14, 0x7e, 0x84, 0x4b, 0xf2, 0x0e, 0x36, 0xe3, 0x66, 0x7c, 0x24, 0x96, 0x25, 0x3a,
+	0xad, 0x81, 0x31, 0xec, 0x1d, 0x6c, 0x7b, 0xb7, 0x95, 0xbd, 0xd9, 0xb2, 0x44, 0xda, 0xbb, 0x21,
+	0xcb, 0x9a, 0xec, 0x42, 0x27, 0xce, 0x52, 0xcc, 0x85, 0xb4, 0xd2, 0x56, 0x12, 0x1b, 0x1a, 0x08,
+	0x13, 0xd9, 0x94, 0x54, 0xa1, 0x7c, 0xae, 0xeb, 0xa6, 0x06, 0xc2, 0x84, 0xec, 0x81, 0x9d, 0x72,
+	0xbe, 0xc0, 0x24, 0x4a, 0x98, 0x40, 0xc7, 0x1a, 0x18, 0xc3, 0x16, 0x05, 0x0d, 0x8d, 0x99, 0x40,
+	0xd7, 0x87, 0xb6, 0x92, 0x70, 0x60, 0x7b, 0x44, 0x83, 0x71, 0x30, 0x99, 0x85, 0xfe, 0x71, 0x34,
+	0xfb, 0x34, 0x0d, 0xa2, 0xf3, 0xb3, 0x80, 0xf6, 0xd7, 0xc8, 0x1e, 0xec, 0xde, 0xed, 0xf8, 0xd3,
+	0xe9, 0x71, 0x38, 0xf2, 0x67, 0xe1, 0xe9, 0xa4, 0x6f, 0xb8, 0xcf, 0xc1, 0x1a, 0x29, 0x33, 0xa4,
+	0x07, 0x66, 0x93, 0x95, 0x99, 0x26, 0x84, 0x40, 0x3b, 0x67, 0x73, 0xac, 0x53, 0x51, 0xcf, 0xee,
+	0x4f, 0x13, 0xda, 0xe7, 0x1c, 0xab, 0xdb, 0x4b, 0x19, 0x77, 0x96, 0xd2, 0x93, 0xcc, 0x66, 0xd2,
+	0x36, 0xac, 0xe3, 0x9c, 0xa5, 0x99, 0x8a, 0xad, 0x43, 0x75, 0x21, 0x47, 0x7c, 0x59, 0x64, 0x59,
+	0xa4, 0x44, 0xea, 0x5c, 0x24, 0x30, 0x61, 0x73, 0x94, 0xab, 0x97, 0x8c, 0xf3, 0x1f, 0x49, 0x74,
+	0xc9, 0xf8, 0x65, 0x9d, 0x0c, 0x68, 0xe8, 0x03, 0xe3, 0x97, 0xe4, 0x25, 0x6c, 0xcc, 0x51, 0xb0,
+	0x84, 0x09, 0xe6, 0x58, 0x83, 0xd6, 0xd0, 0x3e, 0x78, 0xea, 0x49, 0x67, 0xde, 0x49, 0x8d, 0x06,
+	0xb9, 0xa8, 0x96, 0xb4, 0x21, 0x91, 0x67, 0x60, 0x7d, 0xad, 0x8a, 0x45, 0xc9, 0x9d, 0x27, 0x83,
+	0xd6, 0xb0, 0x43, 0xeb, 0x4a, 0x9a, 0xab, 0x8a, 0x0c, 0xb9, 0xb3, 0xa1, 0x60, 0x5d, 0xec, 0xbc,
+	0x85, 0xee, 0xad, 0x41, 0xa4, 0x0f, 0x2d, 0x79, 0x22, 0x7a, 0x55, 0xf9, 0x28, 0x5f, 0xbc, 0x62,
+	0xd9, 0xe2, 0x3a, 0x20, 0x5d, 0x1c, 0x9a, 0x6f, 0x0c, 0xf7, 0xb7, 0x09, 0xb6, 0x5f, 0x96, 0x59,
+	0x1a, 0x33, 0x91, 0x16, 0xf9, 0xc3, 0xc2, 0xba, 0x8e, 0xbd, 0x75, 0x13, 0xfb, 0xfd, 0x8b, 0x6e,
+	0xff, 0xeb, 0xa2, 0x25, 0x47, 0x5f, 0x75, 0x9d, 0xdb, 0x66, 0xc3, 0xd3, 0x47, 0x4d, 0x5e, 0xdf,
+	0x0b, 0x6f, 0xc7, 0x5b, 0x31, 0xfc, 0x3f, 0x64, 0xf8, 0x19, 0xd6, 0xdf, 0xcb, 0xe1, 0x8f, 0x0f,
+	0xaf, 0x31, 0xd7, 0x5e, 0x31, 0xe7, 0x5e, 0x41, 0x9b, 0x16, 0x19, 0x3e, 0x7e, 0xfc, 0x0b, 0xb0,
+	0x4b, 0xac, 0xe6, 0x29, 0xe7, 0x69, 0x91, 0x6b, 0x11, 0xfb, 0xc0, 0xf6, 0xa6, 0x0d, 0x46, 0x57,
+	0xfb, 0xee, 0x1f, 0x03, 0xe0, 0xa6, 0xf7, 0x30, 0xf9, 0x7d, 0xb0, 0xd2, 0x5c, 0x60, 0x2e, 0xea,
+	0xff, 0x0f, 0x59, 0x51, 0xf1, 0x42, 0xd5, 0xa1, 0x35, 0x43, 0x7e, 0x40, 0x7c, 0x71, 0xf1, 0x0d,
+	0x63, 0x11, 0xb1, 0x2a, 0xaf, 0x0f, 0x06, 0x6a, 0xc8, 0xaf, 0x72, 0xf7, 0x10, 0x2c, 0xfd, 0x0a,
+	0xe9, 0x42, 0x87, 0x06, 0xd3, 0xd3, 0x88, 0x06, 0xfe, 0xb8, 0xbf, 0x46, 0x7a, 0x00, 0xaa, 0xfc,
+	0x48, 0xc3, 0x59, 0xd0, 0x37, 0xc8, 0x16, 0x74, 0xfd, 0xd1, 0xe8, 0xf4, 0x7c, 0x32, 0x8b, 0xfc,
+	0xf1, 0x49, 0x38, 0xe9, 0x9b, 0x17, 0x96, 0xfa, 0xf7, 0xbe, 0xfa, 0x1b, 0x00, 0x00, 0xff, 0xff,
+	0x3f, 0x4f, 0x7f, 0x23, 0x8a, 0x05, 0x00, 0x00,
 }

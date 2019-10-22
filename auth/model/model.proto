@@ -1,5 +1,18 @@
 syntax = "proto3";
 
+message APICredentials {
+    string access_key_id = 1;
+    string access_secret_key = 2;
+    enum Type {
+        CREDENTIAL_TYPE_USER = 0;
+        CREDENTIAL_TYPE_APPLICATION = 1;
+    }
+    Type credential_type = 3;
+    string client_id = 4;
+    string entity_id = 5; // either the user ID if a user credential or app ID if application credential
+    int64 issued_date = 6;
+}
+
 message Client {
     string id = 1;
     string name = 2;
@@ -7,56 +20,53 @@ message Client {
 
 message User {
     string client_id = 1;
-    string email = 2;
-    string full_name = 3;
-    string passwd_hash = 4;
-    map<string, string> metadata = 5;
+    string id = 2;
+    string email = 3;
+    string full_name = 4;
+    string passwd_hash = 5;
+    map<string, string> metadata = 6;
+
+    repeated string groups = 7;
+    repeated string roles = 8;
 }
 
 message Application {
     string client_id = 1;
-    string name = 2;
-    string access_key_id = 3;
-    string access_key_secret = 4;
-    map<string, string> metadata = 5;
-}
+    string id = 2;
+    string name = 3;
+    string access_key_id = 4;
+    string access_key_secret = 5;
+    map<string, string> metadata = 6;
 
-message AuditEntry {
-    string client_id = 1;
-    enum Type {
-        LOGIN = 0;
-        API_CALL = 1;
-        PASSWD_RESET = 2;
-        PASSWD_CHANGE = 3;
-    }
-    Type type = 2;
+    repeated string groups = 7;
+    repeated string roles = 8;
 }
 
 message Group {
     string client_id = 1;
-    string name = 2;
+    string id = 2;
+    string name = 3;
+
+    repeated string roles = 4;
 }
 
 message Role {
     string client_id = 1;
-    string name =  2;
+    string id = 2;
+    string name =  3;
+
+    repeated Permission permissions = 4;
 }
 
 message Permission {
     string client_id = 1;
-    enum Action {
-        // account administration
-        AM_READ = 0;
-        AM_WRITE = 1;
-
-        // manage app/user tokens
-        AM_TOKEN_GEN = 2;
-
+    string id = 2;
+    enum Intent {
         // repo usage
-        REPO_READ = 3;
-        REPO_WRITE = 4;
-
+        REPO_READ = 0;
+        REPO_WRITE = 1;
+        ACCOUNT_ADMIN = 2;
     }
-    Action action = 2;
-    repeated string resources = 3;
+    Intent intent = 3;
+    string subject_arn = 4;
 }
