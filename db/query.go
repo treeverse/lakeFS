@@ -39,7 +39,7 @@ func (q *FDBReadQuery) Get(space subspace.Subspace, parts ...tuple.TupleElement)
 func (q *FDBReadQuery) GetAsProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
 	data := q.Get(space, parts...).MustGet()
 	if data == nil {
-		return errors.ErrNotFound
+		return ErrNotFound
 	}
 	err := proto.Unmarshal(data, msg)
 	if err != nil {

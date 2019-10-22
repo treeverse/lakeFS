@@ -2,8 +2,8 @@ package index
 
 import (
 	"time"
+	"versio-index/db"
 	"versio-index/ident"
-	"versio-index/index/errors"
 	"versio-index/index/merkle"
 	"versio-index/index/model"
 	"versio-index/index/store"
@@ -51,7 +51,7 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch string) (string, error) {
 	var empty string
 	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, errors.ErrNotFound) {
+	if xerrors.Is(err, db.ErrNotFound) {
 		// fallback to default branch
 		branchData, err = tx.ReadBranch(repo.DefaultBranch)
 		if err != nil {
@@ -83,7 +83,7 @@ func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.
 	obj, err := index.kv.RepoReadTransact(clientId, repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
 		var obj *model.Object
 		we, err := tx.ReadFromWorkspace(branch, path)
-		if xerrors.Is(err, errors.ErrNotFound) {
+		if xerrors.Is(err, db.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
 			repo, err := tx.ReadRepo()
 			if err != nil {
@@ -106,7 +106,7 @@ func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.
 		}
 		if we.GetTombstone() != nil {
 			// object was deleted deleted
-			return nil, errors.ErrNotFound
+			return nil, db.ErrNotFound
 		}
 
 		obj, err = tx.ReadObject(we.GetAddress())
@@ -168,7 +168,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 
 	// get branch info (including current workspace root)
 	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, errors.ErrNotFound) {
+	if xerrors.Is(err, db.ErrNotFound) {
 		return nil
 	} else if err != nil {
 		return err // unexpected error
