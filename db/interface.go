@@ -7,6 +7,8 @@ import (
 	"github.com/golang/protobuf/proto"
 )
 
+type ProtoGenFn func() proto.Message
+
 type Iterator interface {
 	Advance() bool
 	Get() (kv fdb.KeyValue, e error)
@@ -19,10 +21,16 @@ type FutureValue interface {
 	Cancel()
 }
 
+type FutureProtoValue interface {
+	Get() (proto.Message, error)
+	Cancel()
+}
+
 type ReadQuery interface {
 	Snapshot() ReadQuery
 	Get(space subspace.Subspace, parts ...tuple.TupleElement) FutureValue
 	GetAsProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error
+	FutureProto(generator ProtoGenFn, space subspace.Subspace, parts ...tuple.TupleElement) FutureProtoValue
 	RangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) Iterator
 }
 

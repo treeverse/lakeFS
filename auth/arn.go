@@ -2,15 +2,11 @@ package auth
 
 import (
 	"strings"
-
-	"golang.org/x/xerrors"
 )
 
 // arn:${Partition}:s3:::${BucketName}
 // e.g. arn:aws:s3:::myrepo
 // in our case, arn:versio:repos:::myrepo
-
-var ErrInvalidArn = xerrors.New("invalid ARN")
 
 type Arn struct {
 	Partition  string
@@ -37,14 +33,8 @@ func arnParseField(arn *Arn, field string, fieldIndex int) error {
 		}
 		arn.Service = field
 	case 3:
-		if len(field) != 0 {
-			return ErrInvalidArn
-		}
 		arn.Region = field
 	case 4:
-		if len(field) != 0 {
-			return ErrInvalidArn
-		}
 		arn.AccountId = field
 	case 5:
 		if len(field) < 1 {
@@ -60,7 +50,7 @@ func ParseARN(arnString string) (*Arn, error) {
 	var buf strings.Builder
 	currField := 0
 	for _, ch := range arnString {
-		if ch == ':' || currField == 5 && ch == '/' {
+		if ch == ':' || currField == 4 && ch == '/' {
 			// collect buffer into current field
 			err := arnParseField(a, buf.String(), currField)
 			if err != nil {
@@ -73,15 +63,24 @@ func ParseARN(arnString string) (*Arn, error) {
 			buf.WriteRune(ch)
 		}
 	}
+	if buf.Len() > 0 {
+		err := arnParseField(a, buf.String(), currField)
+		if err != nil {
+			return a, err
+		}
+	}
+	if currField < 5 {
+		return nil, ErrInvalidArn
+	}
 	return a, nil
 }
 
-func ArnMatch(a, b string) bool {
-	source, err := ParseARN(a)
+func ArnMatch(src, dst string) bool {
+	source, err := ParseARN(src)
 	if err != nil {
 		return false
 	}
-	dest, err := ParseARN(b)
+	dest, err := ParseARN(dst)
 	if err != nil {
 		return false
 	}
