@@ -1,5 +1,13 @@
 package serde
 
+type Error struct {
+	Code      string `xml:"Code"`
+	Message   string `xml:"Message"`
+	Region    string `xml:"Region"`
+	RequestId string `xml:"RequestId"`
+	HostId    string `xml:"HostId"`
+}
+
 type Owner struct {
 	DisplayName string `xml:"DisplayName"`
 	ID          string `xml:"ID"`

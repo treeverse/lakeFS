@@ -3,6 +3,7 @@ package auth
 import (
 	crand "crypto/rand"
 	"encoding/base64"
+	"encoding/hex"
 	"strings"
 )
 
@@ -35,6 +36,20 @@ func Base64StringGenerator(bytes int) string {
 			continue
 		}
 		ret = base64.StdEncoding.EncodeToString(bbuf)
+		break
+	}
+	return ret
+}
+
+func HexStringGenerator(bytes int) string {
+	var ret string
+	bbuf := make([]byte, bytes)
+	for {
+		_, err := crand.Read(bbuf)
+		if err != nil {
+			continue
+		}
+		ret = strings.ToUpper(hex.EncodeToString(bbuf))
 		break
 	}
 	return ret

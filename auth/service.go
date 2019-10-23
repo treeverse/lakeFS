@@ -6,6 +6,10 @@ import (
 	"versio-index/auth/model"
 	"versio-index/db"
 
+	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
+
+	"github.com/apple/foundationdb/bindings/go/src/fdb"
+
 	"golang.org/x/xerrors"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
@@ -14,6 +18,7 @@ import (
 const (
 	SubspaceAuthKeys   = "keys"
 	SubspacesAuthUsers = "users"
+	SubspaceAuthGroups = "groups"
 	SubspacesAuthRoles = "roles"
 )
 
@@ -54,8 +59,13 @@ type KVAuthService struct {
 	kv db.Store
 }
 
-func NewKVAuthService(kv db.Store) *KVAuthService {
-	return &KVAuthService{kv: kv}
+func NewKVAuthService(database fdb.Database) *KVAuthService {
+	return &KVAuthService{kv: db.NewFDBStore(database, map[string]subspace.Subspace{
+		SubspaceAuthKeys:   subspace.FromBytes([]byte(SubspaceAuthKeys)),
+		SubspacesAuthUsers: subspace.FromBytes([]byte(SubspacesAuthUsers)),
+		SubspaceAuthGroups: subspace.FromBytes([]byte(SubspaceAuthGroups)),
+		SubspacesAuthRoles: subspace.FromBytes([]byte(SubspacesAuthRoles)),
+	})}
 }
 
 func genAccessKeyId() string {
@@ -128,7 +138,7 @@ func (s *KVAuthService) Authenticate(req *AuthenticationRequest) (*Authenticatio
 }
 
 func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	s.kv.ReadTransact([]tuple.TupleElement{req.ClientID}, func(q db.ReadQuery) (interface{}, error) {
+	resp, err := s.kv.ReadTransact([]tuple.TupleElement{req.ClientID}, func(q db.ReadQuery) (interface{}, error) {
 		// get the user
 		user := &model.User{}
 		err := q.GetAsProto(user, s.kv.Space(SubspacesAuthUsers), req.UserID)
@@ -157,16 +167,44 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 			}
 		}
 
+		// get all groups together
 		groupIds := user.GetGroups()
 		for _, g := range groupIds {
 			group := &model.Group{}
-			err := q.GetAsProto(group, s.kv.Space(SubspacesAuthUsers), g)
+			err := q.GetAsProto(group, s.kv.Space(SubspaceAuthGroups), g)
 			if err != nil {
 				return nil, err
 			}
+			// get roles if we don't already have them from the user
+			for _, rid := range group.GetRoles() {
+				if _, exists := roles[rid]; exists {
+					continue // we've already testsed that one
+				}
+				role := &model.Role{}
+				err := q.GetAsProto(role, s.kv.Space(SubspacesAuthRoles), rid)
+				if err != nil {
+					return nil, err
+				}
+				roles[rid] = role
+				for _, p := range role.GetPermissions() {
+					// get permissions....
+					if p.Intent == req.Intent && ArnMatch(p.SubjectArn, req.SubjectARN) {
+						return &AuthorizationResponse{
+							Allowed: true,
+							Error:   nil,
+						}, nil
+					}
+				}
+			}
 		}
 
-		return nil, nil
+		return &AuthorizationResponse{
+			Allowed: false,
+			Error:   ErrInsufficientPermissions,
+		}, nil
 	})
-	return nil, nil
+	if err != nil {
+		return nil, err
+	}
+	return resp.(*AuthorizationResponse), nil
 }

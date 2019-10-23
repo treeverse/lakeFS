@@ -3,8 +3,8 @@ package merkle
 import (
 	"fmt"
 	"strings"
+	"versio-index/db"
 	"versio-index/ident"
-	"versio-index/index/errors"
 	"versio-index/index/model"
 	"versio-index/index/path"
 	"versio-index/index/store"
@@ -135,7 +135,7 @@ func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeTyp
 
 func (m *Merkle) GetEntries(tx store.RepoReadOnlyOperations, pth string) ([]*model.Entry, error) {
 	addr, err := m.GetAddress(tx, pth, model.Entry_TREE)
-	if xerrors.Is(err, errors.ErrNotFound) {
+	if xerrors.Is(err, db.ErrNotFound) {
 		empty := make([]*model.Entry, 0)
 		return empty, nil
 	}

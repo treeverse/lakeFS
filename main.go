@@ -8,6 +8,7 @@ import (
 	"net/http/httputil"
 	"os"
 	"time"
+	"versio-index/auth"
 	"versio-index/block"
 	"versio-index/gateway"
 	"versio-index/index"
@@ -46,7 +47,7 @@ func listBucket() {
 
 	signer := v4.NewSigner(sess.Config.Credentials)
 	//req, _ := http.NewRequest("GET", "http://foobar.s3.local:8000/", nil)
-	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=photos/", nil)
+	req, _ := http.NewRequest("GET", "https://shmeps123123123.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=photos/", nil)
 	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
 	if err != nil {
 		panic(err)
@@ -60,18 +61,29 @@ func listBucket() {
 	//	log.Fatal(err)
 	//}
 	d, _ := ioutil.ReadAll(resp.Body)
+	os.Stderr.WriteString(fmt.Sprintf("status code: %d\n", resp.StatusCode))
 	fmt.Printf("%s", d)
 }
 
 func Run() {
+	// init fdb
 	fdb.MustAPIVersion(600)
-	str := store.NewKVStore(fdb.MustOpenDefault())
-	ind := index.NewKVIndex(str)
-	sink, err := block.NewLocalFSAdapter("/tmp/blocks")
+	db := fdb.MustOpenDefault()
+
+	// init index
+	index := index.NewKVIndex(store.NewKVStore(db))
+
+	// init block store
+	blockStore, err := block.NewLocalFSAdapter("/tmp/blocks")
 	if err != nil {
 		panic(err)
 	}
-	server := gateway.NewServer(ind, sink, "0.0.0.0:8000", "s3.local:8000")
+
+	// init authentication
+	authService := auth.NewKVAuthService(db)
+
+	// init gateway server
+	server := gateway.NewServer(index, blockStore, authService, "0.0.0.0:8000", "s3.local:8000")
 	panic(server.Listen())
 }
 

@@ -48,6 +48,37 @@ func (q *FDBReadQuery) GetAsProto(msg proto.Message, space subspace.Subspace, pa
 	return nil
 }
 
+type fdbFutureProtoValue struct {
+	f  FutureValue
+	fn ProtoGenFn
+}
+
+func (v *fdbFutureProtoValue) Get() (proto.Message, error) {
+	data, err := v.f.Get()
+	if data == nil {
+		return nil, ErrNotFound
+	}
+	if err != nil {
+		return nil, err
+	}
+	msg := v.fn()
+	err = proto.Unmarshal(data, msg)
+	if err != nil {
+		return nil, err
+	}
+	return msg, nil
+}
+func (v *fdbFutureProtoValue) Cancel() {
+	v.f.Cancel()
+}
+
+func (q *FDBReadQuery) FutureProto(generator ProtoGenFn, space subspace.Subspace, parts ...tuple.TupleElement) FutureProtoValue {
+	return &fdbFutureProtoValue{
+		f:  q.Get(space, parts...),
+		fn: generator,
+	}
+}
+
 func (q *FDBReadQuery) RangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) Iterator {
 	begin := q.pack(space, parts...)
 	return q.tx.GetRange(fdb.KeyRange{
