@@ -75,6 +75,44 @@ func ParseARN(arnString string) (*Arn, error) {
 	return a, nil
 }
 
+func ResolveARN(arnString string, context map[string]string) string {
+	// parse the arn to extract placeholders and locations
+	inTag := false
+	openTag := '{'
+	closeTag := '}'
+	type tag struct {
+		startIndex int
+		endIndex   int
+		key        string
+	}
+	tags := make([]tag, 0)
+	currentTag := tag{}
+	for i, ch := range arnString {
+		if ch == openTag && !inTag {
+			currentTag = tag{startIndex: i}
+			inTag = true
+		} else if ch == closeTag && inTag {
+			currentTag.endIndex = i
+			tags = append(tags, currentTag)
+			currentTag = tag{}
+			inTag = false
+		} else if inTag {
+			currentTag.key = currentTag.key + string(ch)
+		}
+	}
+	// replace placeholders with values found in the context
+	lengthCompansation := 0
+	for _, tag := range tags {
+		value := context[tag.key]
+		prefix := arnString[0 : tag.startIndex+lengthCompansation]
+		suffix := arnString[tag.endIndex+1+lengthCompansation:]
+		arnString = prefix + value + suffix
+		// now account for changes in length of string?!
+		lengthCompansation = lengthCompansation + len(value) - (tag.endIndex - tag.startIndex + 1) // string is now lengthCompansation longer than it was.
+	}
+	return arnString
+}
+
 func ArnMatch(src, dst string) bool {
 	source, err := ParseARN(src)
 	if err != nil {

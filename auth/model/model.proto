@@ -65,7 +65,8 @@ message Permission {
         // repo usage
         REPO_READ = 0;
         REPO_WRITE = 1;
-        ACCOUNT_ADMIN = 2;
+        REPOS_LIST  = 2;
+        ACCOUNT_ADMIN = 3;
     }
     Intent intent = 3;
     string subject_arn = 4;

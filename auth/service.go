@@ -16,6 +16,7 @@ import (
 )
 
 const (
+	SubspaceClients    = "clients"
 	SubspaceAuthKeys   = "keys"
 	SubspacesAuthUsers = "users"
 	SubspaceAuthGroups = "groups"
@@ -48,6 +49,7 @@ type AuthorizationResponse struct {
 }
 
 type Service interface {
+	GetClient(clientId string) (*model.Client, error)
 	CreateAppCredentials(application *model.Application) (*model.APICredentials, error)
 	CreateUserCredentials(user *model.User) (*model.APICredentials, error)
 	GetAPICredentials(accessKey string) (*model.APICredentials, error)
@@ -61,6 +63,7 @@ type KVAuthService struct {
 
 func NewKVAuthService(database fdb.Database) *KVAuthService {
 	return &KVAuthService{kv: db.NewFDBStore(database, map[string]subspace.Subspace{
+		SubspaceClients:    subspace.FromBytes([]byte(SubspaceClients)),
 		SubspaceAuthKeys:   subspace.FromBytes([]byte(SubspaceAuthKeys)),
 		SubspacesAuthUsers: subspace.FromBytes([]byte(SubspacesAuthUsers)),
 		SubspaceAuthGroups: subspace.FromBytes([]byte(SubspaceAuthGroups)),
@@ -113,6 +116,17 @@ func (s *KVAuthService) CreateUserCredentials(user *model.User) (*model.APICrede
 		return creds, err
 	})
 	return creds.(*model.APICredentials), err
+}
+
+func (s *KVAuthService) GetClient(clientId string) (*model.Client, error) {
+	client, err := s.kv.ReadTransact([]tuple.TupleElement{}, func(q db.ReadQuery) (interface{}, error) {
+		client := &model.Client{}
+		return client, q.GetAsProto(client, s.kv.Space(SubspaceClients), clientId)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return client.(*model.Client), nil
 }
 
 func (s *KVAuthService) GetAPICredentials(accessKey string) (*model.APICredentials, error) {

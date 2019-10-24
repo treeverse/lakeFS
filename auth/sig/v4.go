@@ -269,7 +269,6 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	}
 
 	// parse date
-	fmt.Printf("got amzdate: %s\n\n\n", amzDate)
 	ts, err := time.Parse(timeFormat, amzDate)
 	if err != nil {
 		return "", ErrDateHeaderMalformed
