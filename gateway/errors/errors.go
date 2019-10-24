@@ -1,4 +1,9 @@
-package gateway
+package errors
+
+import (
+	"encoding/xml"
+	"net/http"
+)
 
 /*
  * TAKEN FROM THE MinIO project and adapted for embedding in Versio
@@ -17,11 +22,6 @@ package gateway
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-
-import (
-	"encoding/xml"
-	"net/http"
-)
 
 // APIError structure
 type APIError struct {
@@ -180,7 +180,7 @@ func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
 
 // error code to APIError structure, these fields carry respective
 // descriptions for all the error responses.
-var errorCodes = errorCodeMap{
+var Codes = errorCodeMap{
 	ErrInvalidCopyDest: {
 		Code:           "InvalidRequest",
 		Description:    "This copy request is illegal because it is trying to copy an object to itself without changing the object's metadata, storage class, website redirect location or encryption attributes.",
