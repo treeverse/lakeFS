@@ -8,9 +8,11 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"time"
 	"versio-index/auth"
 	authmodel "versio-index/auth/model"
+	"versio-index/auth/sig"
 	"versio-index/block"
 	"versio-index/db"
 	"versio-index/gateway/serde"
@@ -30,6 +32,7 @@ const (
 )
 
 type Server struct {
+	region      string
 	meta        index.Index
 	blockStore  block.Adapter
 	authService auth.Service
@@ -41,10 +44,7 @@ type Server struct {
 type Operation struct {
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
-
-	Client      *authmodel.Client
-	User        *authmodel.User
-	Application *authmodel.Application
+	Region         string
 }
 
 func (o *Operation) RequestId() string {
@@ -70,18 +70,28 @@ func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
 	}
 }
 
-func (o *Operation) EncodeError(code, message, region string, statusCode int) {
-	o.EncodeResponse(&serde.Error{
-		Code:      code,
-		Message:   message,
-		Region:    region,
-		RequestId: o.RequestId(),
-		HostId:    auth.Base64StringGenerator(56), // this is just for compatibility for now.
-	}, statusCode)
+func (o *Operation) EncodeError(err APIError) {
+	o.EncodeResponse(APIErrorResponse{
+		Code:       err.Code,
+		Message:    err.Description,
+		BucketName: "",
+		Key:        "",
+		Resource:   "",
+		Region:     o.Region,
+		RequestID:  o.RequestId(),
+		HostID:     auth.HexStringGenerator(8),
+	}, err.HTTPStatusCode)
+}
+
+type AuthenticatedOperation struct {
+	Operation
+	ClientId    string
+	SubjectId   string
+	SubjectType authmodel.APICredentials_Type
 }
 
 type RepoOperation struct {
-	Operation
+	AuthenticatedOperation
 	Repo string
 }
 
@@ -95,41 +105,74 @@ type PathOperation struct {
 	Path string
 }
 
-/*
-
-RepoOperation
-
-	RegisterRepoPathOperation(
-		pathBasedRepo.Methods(http.MethodDelete),
-		authmodel.READ_BUCKET,
-		"versio:repos::{repo}",
-		func(op, req) {
-			op.Repo
-			op.Path
-			op.User
-		})
-
-
-
-*/
-
 type OperationHandler func(operation *Operation)
 
 func (s *Server) RegisterOperation(route *mux.Route, intent authmodel.Permission_Intent, arn string, fn OperationHandler) {
 	route.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		o := &Operation{
+			Request:        request,
+			ResponseWriter: writer,
+			Region:         s.region,
+		}
 		// authenticate
-		accessKey := req.
-			s.authService.GetAPICredentials()
+		authContext, err := sig.ParseV4AuthContext(request)
+		if err != nil {
+			o.EncodeError(errorCodes.ToAPIErr(ErrAccessDenied))
+			return
+		}
+
+		creds, err := s.authService.GetAPICredentials(authContext.AccessKeyId)
+		if err != nil {
+			if !xerrors.Is(err, db.ErrNotFound) {
+				o.EncodeError(errorCodes.ToAPIErr(ErrInternalError))
+			} else {
+				o.EncodeError(errorCodes.ToAPIErr(ErrAccessDenied))
+			}
+			return
+		}
+
+		err = sig.V4Verify(authContext, creds, request)
+		if err != nil {
+			o.EncodeError(errorCodes.ToAPIErr(ErrAccessDenied))
+			return
+		}
+
+		// we are verified!
+		op := &AuthenticatedOperation{
+			Operation:   *o,
+			ClientId:    creds.GetClientId(),
+			SubjectId:   creds.GetEntityId(),
+			SubjectType: creds.GetCredentialType(),
+		}
+
 		// authorize
+		authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
+			ClientID:   op.ClientId,
+			UserID:     op.SubjectId,
+			Intent:     intent,
+			SubjectARN: arn,
+		})
+		if err != nil {
+			o.EncodeError(errorCodes.ToAPIErr(ErrInternalError))
+			return
+		}
+
+		if authResp.Error != nil || !authResp.Allowed {
+			o.EncodeError(errorCodes.ToAPIErr(ErrAccessDenied))
+			return
+		}
+
 		// structure operation
 		// run callback
+		fn(&op.Operation)
 	})
 }
 
-func NewServer(meta index.Index, blockStore block.Adapter, authService auth.Service, listenAddr, bareDomain string) *Server {
+func NewServer(region string, meta index.Index, blockStore block.Adapter, authService auth.Service, listenAddr, bareDomain string) *Server {
 	r := mux.NewRouter()
 	s := &Server{
 		meta:        meta,
+		region:      region,
 		blockStore:  blockStore,
 		authService: authService,
 		server: &http.Server{
@@ -142,9 +185,16 @@ func NewServer(meta index.Index, blockStore block.Adapter, authService auth.Serv
 
 	// non-bucket-specific endpoints
 	serviceEndpoint := r.Host(bareDomain).Subrouter()
-	serviceEndpoint.Path("/").Methods(http.MethodGet).HandlerFunc(s.ListBuckets)
-	// weird Boto stuff :(
-	pathBasedRepo := serviceEndpoint.Path(fmt.Sprintf("/%s", RepoMatch)).Subrouter()
+	// global level
+	serviceEndpoint.PathPrefix("/").Methods(http.MethodGet).HandlerFunc(s.ListBuckets)
+	// repo level
+	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", RepoMatch)).Subrouter()
+	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
+	pathBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(s.DeleteObject)
+	pathBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(s.GetObject)
+	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(s.HeadObject)
+	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(s.PutObject)
+
 	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
 	pathBasedRepo.
 		Methods(http.MethodGet).
@@ -155,31 +205,24 @@ func NewServer(meta index.Index, blockStore block.Adapter, authService auth.Serv
 	pathBasedRepo.Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
 	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
 
-	pathBasedRepoWithKey := pathBasedRepo.Path(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
-	pathBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(s.DeleteObject)
-	pathBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(s.GetObject)
-	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(s.HeadObject)
-	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(s.PutObject)
-
 	// sub-domain based routing
 
-	// bucket-specific actions that don't relate to a specific key
 	subDomainBasedRepo := r.Host(fmt.Sprintf("%s.%s", RepoMatch, bareDomain)).Subrouter()
-	subDomainBasedRepo.Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
-	subDomainBasedRepo.
-		Methods(http.MethodGet).
-		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
-		HandlerFunc(s.ListObjects)
-	subDomainBasedRepo.Methods(http.MethodDelete).HandlerFunc(s.DeleteBucket)
-	subDomainBasedRepo.Methods(http.MethodHead).HandlerFunc(s.HeadBucket)
-	subDomainBasedRepo.Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
-
 	// bucket-specific actions that relate to a key
-	subDomainBasedRepoWithKey := subDomainBasedRepo.Path(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
+	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
 	subDomainBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(s.DeleteObject)
 	subDomainBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(s.GetObject)
 	subDomainBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(s.HeadObject)
 	subDomainBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(s.PutObject)
+	// bucket-specific actions that don't relate to a specific key
+	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(s.CreateBucket)
+	subDomainBasedRepo.
+		Methods(http.MethodGet).
+		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
+		HandlerFunc(s.ListObjects)
+	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(s.DeleteBucket)
+	subDomainBasedRepo.Path("/").Methods(http.MethodHead).HandlerFunc(s.HeadBucket)
+	subDomainBasedRepo.Path("/").Methods(http.MethodPost).HandlerFunc(s.DeleteObjects)
 
 	return s
 }
@@ -208,6 +251,7 @@ func (s *Server) DeleteBucket(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) CreateBucket(res http.ResponseWriter, req *http.Request) {
+	fmt.Printf("create bucket!!!\n\n\n")
 	scope := getScope(req)
 	repoId := getRepo(req)
 	err := s.meta.CreateRepo(scope.Client.GetId(), repoId, index.DefaultBranch)
@@ -232,6 +276,7 @@ func (s *Server) HeadBucket(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) ListBuckets(res http.ResponseWriter, req *http.Request) {
+
 	scope := getScope(req)
 	repos, err := s.meta.ListRepos(scope.Client.GetId())
 	if err != nil {
@@ -338,7 +383,18 @@ func (s *Server) HeadObject(res http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) PutObject(res http.ResponseWriter, req *http.Request) {
-	fmt.Printf("GOT REQUEST\n")
+	bytes, _ := httputil.DumpRequest(req, true)
+	_ = ioutil.WriteFile("/tmp/request", bytes, 0755)
+	fmt.Printf("got header: \"%s\"\n", req.Header.Get("Authorization"))
+	verifier := sig.NewV4Verifier(&authmodel.APICredentials{
+		AccessKeyId:     "AKIAYRJJ6GNGCYQEPB7A",
+		AccessSecretKey: "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",
+	})
+	err := verifier.Verify(req)
+	if err != nil {
+		panic(fmt.Sprintf("GOT FAILURE TO VERIFY: %+v\n", err))
+	}
+
 	scope := getScope(req)
 	repoId := getRepo(req)
 	branch := getBranch(req)
