@@ -101,14 +101,14 @@ func ResolveARN(arnString string, context map[string]string) string {
 		}
 	}
 	// replace placeholders with values found in the context
-	lengthCompansation := 0
+	lengthCompensation := 0
 	for _, tag := range tags {
 		value := context[tag.key]
-		prefix := arnString[0 : tag.startIndex+lengthCompansation]
-		suffix := arnString[tag.endIndex+1+lengthCompansation:]
+		prefix := arnString[0 : tag.startIndex+lengthCompensation]
+		suffix := arnString[tag.endIndex+1+lengthCompensation:]
 		arnString = prefix + value + suffix
 		// now account for changes in length of string?!
-		lengthCompansation = lengthCompansation + len(value) - (tag.endIndex - tag.startIndex + 1) // string is now lengthCompansation longer than it was.
+		lengthCompensation = lengthCompensation + len(value) - (tag.endIndex - tag.startIndex + 1) // string is now lengthCompensation longer than it was.
 	}
 	return arnString
 }
