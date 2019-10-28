@@ -69,6 +69,19 @@ type RepoOperation struct {
 	Repo string
 }
 
+func (o *RepoOperation) EncodeError(err errors.APIError) {
+	o.EncodeResponse(errors.APIErrorResponse{
+		Code:       err.Code,
+		Message:    err.Description,
+		BucketName: o.Repo,
+		Key:        "",
+		Resource:   o.Repo,
+		Region:     o.Region,
+		RequestID:  o.RequestId(),
+		HostID:     auth.HexStringGenerator(8),
+	}, err.HTTPStatusCode)
+}
+
 type BranchOperation struct {
 	*RepoOperation
 	Branch string
@@ -77,6 +90,19 @@ type BranchOperation struct {
 type PathOperation struct {
 	*BranchOperation
 	Path string
+}
+
+func (o *PathOperation) EncodeError(err errors.APIError) {
+	o.EncodeResponse(errors.APIErrorResponse{
+		Code:       err.Code,
+		Message:    err.Description,
+		BucketName: o.Repo,
+		Key:        o.Path,
+		Resource:   o.Repo,
+		Region:     o.Region,
+		RequestID:  o.RequestId(),
+		HostID:     auth.HexStringGenerator(8),
+	}, err.HTTPStatusCode)
 }
 
 type BaseOperationHandler interface {
