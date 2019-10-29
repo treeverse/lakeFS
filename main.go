@@ -125,6 +125,41 @@ func createCreds() {
 	if err != nil {
 		panic(err)
 	}
+
+	err = authService.CreateRole(&model.Role{
+		ClientId: "examplecid",
+		Id:       "examplerid",
+		Name:     "Admins",
+		Permissions: []*model.Permission{
+			{
+				ClientId:   "examplecid",
+				Id:         "xyz1",
+				Intent:     model.Permission_ACCOUNT_ADMIN,
+				SubjectArn: "versio:repos:::*",
+			},
+			{
+				ClientId:   "examplecid",
+				Id:         "xyz2",
+				Intent:     model.Permission_REPO_WRITE,
+				SubjectArn: "versio:repos:::*",
+			},
+			{
+				ClientId:   "examplecid",
+				Id:         "xyz3",
+				Intent:     model.Permission_REPO_READ,
+				SubjectArn: "versio:repos:::*",
+			},
+		},
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	err = authService.AssignRoleToUser("examplecid", "examplerid", "exampleuid")
+	if err != nil {
+		panic(err)
+	}
+
 	creds, err := authService.CreateUserCredentials(&model.User{
 		ClientId: "examplecid",
 		Id:       "exampleuid",

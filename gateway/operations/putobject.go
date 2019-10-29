@@ -53,5 +53,4 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		return
 	}
 	o.ResponseWriter.WriteHeader(http.StatusCreated)
-
 }

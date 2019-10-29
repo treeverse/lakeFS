@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"bytes"
 	"context"
 	"encoding/xml"
 	"net/http"
@@ -34,13 +35,18 @@ func (o *Operation) RequestId() string {
 }
 
 func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
-	encoder := xml.NewEncoder(o.ResponseWriter)
-	err := encoder.Encode(entity)
+	payload, err := xml.MarshalIndent(entity, "", "  ")
 	if err != nil {
 		o.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		return
-	} else if statusCode != http.StatusOK {
-		o.ResponseWriter.WriteHeader(statusCode)
+	}
+	o.ResponseWriter.WriteHeader(statusCode)
+	var b bytes.Buffer
+	b.WriteString(xml.Header)
+	b.Write(payload)
+	_, err = b.WriteTo(o.ResponseWriter)
+	if err != nil {
+		// TODO: log error?
 	}
 }
 
@@ -53,7 +59,7 @@ func (o *Operation) EncodeError(err errors.APIError) {
 		Resource:   "",
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
-		HostID:     auth.HexStringGenerator(8),
+		HostID:     auth.HexStringGenerator(8), // just for compatibility, meaningless in our case
 	}, err.HTTPStatusCode)
 }
 
