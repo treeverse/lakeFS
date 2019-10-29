@@ -129,7 +129,6 @@ func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http
 	// authenticate
 	authContext, err := sig.ParseV4AuthContext(request)
 	if err != nil {
-		fmt.Printf("couldn't get parse v4 auth context for request: %s\n", err)
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
@@ -139,7 +138,6 @@ func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http
 		if !xerrors.Is(err, db.ErrNotFound) {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		} else {
-			fmt.Printf("couldn't get credentials for key: %s\n", authContext.AccessKeyId)
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		}
 		return nil
@@ -147,7 +145,6 @@ func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http
 
 	err = sig.V4Verify(authContext, creds, request)
 	if err != nil {
-		fmt.Printf("signature verification error: %s\n", err)
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
@@ -171,13 +168,11 @@ func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http
 		SubjectARN: arn,
 	})
 	if err != nil {
-		fmt.Printf("authorization failed: %s\n", err)
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return nil
 	}
 
 	if authResp.Error != nil || !authResp.Allowed {
-		fmt.Printf("auth resp error: %s, allowed: %v\n", authResp.Error, authResp.Allowed)
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
@@ -187,7 +182,7 @@ func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http
 }
 
 type ResponseRecordingWriter struct {
-	status       int
+	statusCode   int
 	body         bytes.Buffer
 	responseSize int64
 	writer       http.ResponseWriter
@@ -207,7 +202,7 @@ func (w *ResponseRecordingWriter) Write(data []byte) (int, error) {
 }
 
 func (w *ResponseRecordingWriter) WriteHeader(statusCode int) {
-	w.status = statusCode
+	w.statusCode = statusCode
 	w.writer.WriteHeader(statusCode)
 }
 
@@ -233,7 +228,7 @@ func NewServer(region string, meta index.Index, blockStore block.Adapter, authSe
 			// Call the next handler, which can be another middleware in the chain, or the final handler.
 			writer := &ResponseRecordingWriter{writer: w}
 			next.ServeHTTP(writer, r)
-			fmt.Printf("\ttook: %.2fms, status: %d, sent: %d bytes\n\t%s\n", time.Since(before).Seconds()*1000.0, writer.status, writer.responseSize, writer.body.String())
+			fmt.Printf("-> took: %.2fms, statusCode: %d, sent: %d, bytes: %s\n", time.Since(before).Seconds()*1000.0, writer.statusCode, writer.responseSize, writer.body.String())
 		})
 	})
 

@@ -56,10 +56,15 @@ type Service interface {
 	CreateClient(*model.Client) error
 	CreateUser(user *model.User) error
 	CreateGroup(group *model.Group) error
+	CreateRole(group *model.Role) error
+
+	AssignRoleToUser(clientId, roleId, userId string) error
+	AssignRoleToGroup(clientId, roleId, groupId string) error
 
 	GetClient(clientId string) (*model.Client, error)
 	GetUser(clientId, userId string) (*model.User, error)
 	GetGroup(clientId, groupId string) (*model.Group, error)
+	GetRole(clientId, roleId string) (*model.Role, error)
 
 	CreateAppCredentials(application *model.Application) (*model.APICredentials, error)
 	CreateUserCredentials(user *model.User) (*model.APICredentials, error)
@@ -114,6 +119,17 @@ func (s *KVAuthService) CreateUser(user *model.User) error {
 func (s *KVAuthService) CreateGroup(group *model.Group) error {
 	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
 		err := q.SetProto(group, s.kv.Space(SubspaceAuthGroups), group.GetClientId(), group.GetId())
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	return err
+}
+
+func (s *KVAuthService) CreateRole(role *model.Role) error {
+	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		err := q.SetProto(role, s.kv.Space(SubspacesAuthRoles), role.GetClientId(), role.GetId())
 		if err != nil {
 			return nil, err
 		}
@@ -232,6 +248,76 @@ func (s *KVAuthService) GetGroup(clientId, groupId string) (*model.Group, error)
 		return nil, err
 	}
 	return group.(*model.Group), nil
+}
+
+func (s *KVAuthService) GetRole(clientId, roleId string) (*model.Role, error) {
+	role, err := s.kv.ReadTransact([]tuple.TupleElement{}, func(q db.ReadQuery) (interface{}, error) {
+		client := &model.Client{}
+		err := q.GetAsProto(client, s.kv.Space(SubspaceClients), clientId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrClientNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		role := &model.Role{}
+		err = q.GetAsProto(role, s.kv.Space(SubspacesAuthRoles), clientId, roleId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrRoleNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return role, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return role.(*model.Role), nil
+}
+
+func (s *KVAuthService) AssignRoleToUser(clientId, roleId, userId string) error {
+	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		// get user
+		user := &model.User{}
+		err := q.GetAsProto(user, s.kv.Space(SubspacesAuthUsers), clientId, userId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrUserNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		// get roles
+		roles := user.Roles
+		if roles == nil {
+			roles = []string{}
+		}
+		user.Roles = append(roles, roleId)
+		return nil, q.SetProto(user, s.kv.Space(SubspacesAuthUsers), clientId, userId)
+	})
+	return err
+}
+
+func (s *KVAuthService) AssignRoleToGroup(clientId, roleId, groupId string) error {
+	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		// get user
+		group := &model.Group{}
+		err := q.GetAsProto(group, s.kv.Space(SubspaceAuthGroups), clientId, groupId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrGroupNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		// get roles
+		roles := group.Roles
+		if roles == nil {
+			roles = []string{}
+		}
+		group.Roles = append(roles, roleId)
+		return nil, q.SetProto(group, s.kv.Space(SubspaceAuthGroups), clientId, groupId)
+	})
+	return err
 }
 
 func (s *KVAuthService) GetAPICredentials(accessKey string) (*model.APICredentials, error) {
