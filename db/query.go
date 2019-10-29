@@ -1,8 +1,6 @@
 package db
 
 import (
-	"versio-index/index/errors"
-
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
@@ -39,11 +37,12 @@ func (q *FDBReadQuery) Get(space subspace.Subspace, parts ...tuple.TupleElement)
 func (q *FDBReadQuery) GetAsProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
 	data := q.Get(space, parts...).MustGet()
 	if data == nil {
+
 		return ErrNotFound
 	}
 	err := proto.Unmarshal(data, msg)
 	if err != nil {
-		return errors.ErrIndexMalformed
+		return ErrSerialization
 	}
 	return nil
 }
@@ -64,7 +63,7 @@ func (v *fdbFutureProtoValue) Get() (proto.Message, error) {
 	msg := v.fn()
 	err = proto.Unmarshal(data, msg)
 	if err != nil {
-		return nil, err
+		return nil, ErrSerialization
 	}
 	return msg, nil
 }
@@ -94,7 +93,7 @@ func (q *FDBQuery) Set(data []byte, space subspace.Subspace, parts ...tuple.Tupl
 func (q *FDBQuery) SetProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
 	data, err := proto.Marshal(msg)
 	if err != nil {
-		return errors.ErrIndexMalformed
+		return ErrSerialization
 	}
 	q.Set(data, space, parts...)
 	return nil

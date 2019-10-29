@@ -3,6 +3,8 @@ package store
 import (
 	"versio-index/db"
 
+	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
@@ -31,15 +33,15 @@ type KVStore struct {
 	kv db.Store
 }
 
-func NewKVStore(database fdb.Database) *KVStore {
+func NewKVStore(database fdb.Database, dir directory.DirectorySubspace) *KVStore {
 	kv := db.NewFDBStore(database, map[string]subspace.Subspace{
-		SubspaceRepos:     subspace.FromBytes([]byte(SubspaceRepos)),
-		SubspaceWorkspace: subspace.FromBytes([]byte(SubspaceWorkspace)),
-		SubspaceEntries:   subspace.FromBytes([]byte(SubspaceEntries)),
-		SubspaceObjects:   subspace.FromBytes([]byte(SubspaceObjects)),
-		SubspaceCommits:   subspace.FromBytes([]byte(SubspaceCommits)),
-		SubspaceBranches:  subspace.FromBytes([]byte(SubspaceBranches)),
-		SubspaceRefCounts: subspace.FromBytes([]byte(SubspaceRefCounts)),
+		SubspaceRepos:     dir.Sub(SubspaceRepos),
+		SubspaceWorkspace: dir.Sub(SubspaceWorkspace),
+		SubspaceEntries:   dir.Sub(SubspaceEntries),
+		SubspaceObjects:   dir.Sub(SubspaceObjects),
+		SubspaceCommits:   dir.Sub(SubspaceCommits),
+		SubspaceBranches:  dir.Sub(SubspaceBranches),
+		SubspaceRefCounts: dir.Sub(SubspaceRefCounts),
 	})
 	return &KVStore{kv: kv}
 }

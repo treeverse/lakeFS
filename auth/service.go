@@ -6,6 +6,8 @@ import (
 	"versio-index/auth/model"
 	"versio-index/db"
 
+	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
+
 	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
@@ -24,8 +26,10 @@ const (
 )
 
 var (
-	AuthenticationError = xerrors.New("authentication failure")
-	AuthorizationError  = xerrors.New("authorization failure")
+	ErrClientNotFound = xerrors.Errorf("client: %w", db.ErrNotFound)
+	ErrUserNotFound   = xerrors.Errorf("user: %w", db.ErrNotFound)
+	ErrGroupNotFound  = xerrors.Errorf("group: %w", db.ErrNotFound)
+	ErrRoleNotFound   = xerrors.Errorf("role: %w", db.ErrNotFound)
 )
 
 // AuthenticationRequest/AuthenticationResponse are used for user login information
@@ -49,7 +53,14 @@ type AuthorizationResponse struct {
 }
 
 type Service interface {
+	CreateClient(*model.Client) error
+	CreateUser(user *model.User) error
+	CreateGroup(group *model.Group) error
+
 	GetClient(clientId string) (*model.Client, error)
+	GetUser(clientId, userId string) (*model.User, error)
+	GetGroup(clientId, groupId string) (*model.Group, error)
+
 	CreateAppCredentials(application *model.Application) (*model.APICredentials, error)
 	CreateUserCredentials(user *model.User) (*model.APICredentials, error)
 	GetAPICredentials(accessKey string) (*model.APICredentials, error)
@@ -61,13 +72,13 @@ type KVAuthService struct {
 	kv db.Store
 }
 
-func NewKVAuthService(database fdb.Database) *KVAuthService {
+func NewKVAuthService(database fdb.Database, dir directory.DirectorySubspace) *KVAuthService {
 	return &KVAuthService{kv: db.NewFDBStore(database, map[string]subspace.Subspace{
-		SubspaceClients:    subspace.FromBytes([]byte(SubspaceClients)),
-		SubspaceAuthKeys:   subspace.FromBytes([]byte(SubspaceAuthKeys)),
-		SubspacesAuthUsers: subspace.FromBytes([]byte(SubspacesAuthUsers)),
-		SubspaceAuthGroups: subspace.FromBytes([]byte(SubspaceAuthGroups)),
-		SubspacesAuthRoles: subspace.FromBytes([]byte(SubspacesAuthRoles)),
+		SubspaceClients:    dir.Sub(SubspaceClients),
+		SubspaceAuthKeys:   dir.Sub(SubspaceAuthKeys),
+		SubspacesAuthUsers: dir.Sub(SubspacesAuthUsers),
+		SubspaceAuthGroups: dir.Sub(SubspaceAuthGroups),
+		SubspacesAuthRoles: dir.Sub(SubspacesAuthRoles),
 	})}
 }
 
@@ -78,6 +89,37 @@ func genAccessKeyId() string {
 
 func genAccessSecretKey() string {
 	return Base64StringGenerator(30)
+}
+
+func (s *KVAuthService) CreateClient(client *model.Client) error {
+	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		err := q.SetProto(client, s.kv.Space(SubspaceClients), client.GetId())
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	return err
+}
+func (s *KVAuthService) CreateUser(user *model.User) error {
+	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		err := q.SetProto(user, s.kv.Space(SubspacesAuthUsers), user.GetClientId(), user.GetId())
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	return err
+}
+func (s *KVAuthService) CreateGroup(group *model.Group) error {
+	_, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		err := q.SetProto(group, s.kv.Space(SubspaceAuthGroups), group.GetClientId(), group.GetId())
+		if err != nil {
+			return nil, err
+		}
+		return nil, nil
+	})
+	return err
 }
 
 func (s *KVAuthService) CreateAppCredentials(application *model.Application) (*model.APICredentials, error) {
@@ -102,8 +144,16 @@ func (s *KVAuthService) CreateAppCredentials(application *model.Application) (*m
 func (s *KVAuthService) CreateUserCredentials(user *model.User) (*model.APICredentials, error) {
 	now := time.Now().Unix()
 	accessKey := genAccessKeyId()
-	secretKey := genAccessSecretKey() // TODO: Encrypt this?
+	secretKey := genAccessSecretKey() // TODO: Encrypt this before saving, probably with the client ID as part of the salt
 	creds, err := s.kv.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
+		// ensure user exists
+		_, err := q.Get(s.kv.Space(SubspacesAuthUsers), user.GetClientId(), user.GetId()).Get()
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrUserNotFound
+		}
+		if err != nil {
+			return nil, err // could not validate user
+		}
 		creds := &model.APICredentials{
 			AccessKeyId:     accessKey,
 			AccessSecretKey: secretKey,
@@ -112,7 +162,7 @@ func (s *KVAuthService) CreateUserCredentials(user *model.User) (*model.APICrede
 			EntityId:        user.GetId(),
 			IssuedDate:      now,
 		}
-		err := q.SetProto(creds, s.kv.Space(SubspaceAuthKeys), accessKey)
+		err = q.SetProto(creds, s.kv.Space(SubspaceAuthKeys), accessKey)
 		return creds, err
 	})
 	return creds.(*model.APICredentials), err
@@ -123,10 +173,65 @@ func (s *KVAuthService) GetClient(clientId string) (*model.Client, error) {
 		client := &model.Client{}
 		return client, q.GetAsProto(client, s.kv.Space(SubspaceClients), clientId)
 	})
+	if xerrors.Is(err, db.ErrNotFound) {
+		return nil, ErrClientNotFound
+	}
 	if err != nil {
 		return nil, err
 	}
 	return client.(*model.Client), nil
+}
+
+func (s *KVAuthService) GetUser(clientId, userId string) (*model.User, error) {
+	user, err := s.kv.ReadTransact([]tuple.TupleElement{}, func(q db.ReadQuery) (interface{}, error) {
+		client := &model.Client{}
+		err := q.GetAsProto(client, s.kv.Space(SubspaceClients), clientId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrClientNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		user := &model.User{}
+		err = q.GetAsProto(user, s.kv.Space(SubspacesAuthUsers), clientId, userId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrUserNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return user, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return user.(*model.User), nil
+}
+
+func (s *KVAuthService) GetGroup(clientId, groupId string) (*model.Group, error) {
+	group, err := s.kv.ReadTransact([]tuple.TupleElement{}, func(q db.ReadQuery) (interface{}, error) {
+		client := &model.Client{}
+		err := q.GetAsProto(client, s.kv.Space(SubspaceClients), clientId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrClientNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		group := &model.Group{}
+		err = q.GetAsProto(group, s.kv.Space(SubspaceAuthGroups), clientId, groupId)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrGroupNotFound
+		}
+		if err != nil {
+			return nil, err
+		}
+		return group, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return group.(*model.Group), nil
 }
 
 func (s *KVAuthService) GetAPICredentials(accessKey string) (*model.APICredentials, error) {
@@ -156,6 +261,9 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		// get the user
 		user := &model.User{}
 		err := q.GetAsProto(user, s.kv.Space(SubspacesAuthUsers), req.UserID)
+		if xerrors.Is(err, db.ErrNotFound) {
+			return nil, ErrUserNotFound
+		}
 		if err != nil {
 			return nil, err
 		}
@@ -166,6 +274,9 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		for _, rid := range user.GetRoles() {
 			role := &model.Role{}
 			err := q.GetAsProto(role, s.kv.Space(SubspacesAuthRoles), rid)
+			if xerrors.Is(err, db.ErrNotFound) {
+				return nil, ErrRoleNotFound
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -186,6 +297,9 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		for _, g := range groupIds {
 			group := &model.Group{}
 			err := q.GetAsProto(group, s.kv.Space(SubspaceAuthGroups), g)
+			if xerrors.Is(err, db.ErrNotFound) {
+				return nil, ErrGroupNotFound
+			}
 			if err != nil {
 				return nil, err
 			}
@@ -196,6 +310,9 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 				}
 				role := &model.Role{}
 				err := q.GetAsProto(role, s.kv.Space(SubspacesAuthRoles), rid)
+				if xerrors.Is(err, db.ErrNotFound) {
+					return nil, ErrRoleNotFound
+				}
 				if err != nil {
 					return nil, err
 				}

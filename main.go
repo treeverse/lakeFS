@@ -9,10 +9,13 @@ import (
 	"os"
 	"time"
 	"versio-index/auth"
+	"versio-index/auth/model"
 	"versio-index/block"
 	"versio-index/gateway"
 	"versio-index/index"
 	"versio-index/index/store"
+
+	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -69,9 +72,17 @@ func Run() {
 	// init fdb
 	fdb.MustAPIVersion(600)
 	db := fdb.MustOpenDefault()
+	authdir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
+	if err != nil {
+		panic(err)
+	}
+	indexdir, err := directory.CreateOrOpen(db, []string{"index"}, nil)
+	if err != nil {
+		panic(err)
+	}
 
 	// init index
-	index := index.NewKVIndex(store.NewKVStore(db))
+	meta := index.NewKVIndex(store.NewKVStore(db, indexdir))
 
 	// init block store
 	blockStore, err := block.NewLocalFSAdapter("/tmp/blocks")
@@ -80,11 +91,65 @@ func Run() {
 	}
 
 	// init authentication
-	authService := auth.NewKVAuthService(db)
+	authService := auth.NewKVAuthService(db, authdir)
 
 	// init gateway server
-	server := gateway.NewServer("us-east-1", index, blockStore, authService, "0.0.0.0:8000", "s3.local:8000")
+	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local:8000")
 	panic(server.Listen())
+}
+
+func createCreds() {
+	// init fdb
+	fdb.MustAPIVersion(600)
+	db := fdb.MustOpenDefault()
+	dir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// init auth
+	authService := auth.NewKVAuthService(db, dir)
+	err = authService.CreateClient(&model.Client{
+		Id:   "examplecid",
+		Name: "exampleuid",
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = authService.CreateUser(&model.User{
+		ClientId: "examplecid",
+		Id:       "exampleuid",
+		Email:    "ozkatz100@gmail.com",
+		FullName: "Oz Katz",
+	})
+	if err != nil {
+		panic(err)
+	}
+	creds, err := authService.CreateUserCredentials(&model.User{
+		ClientId: "examplecid",
+		Id:       "exampleuid",
+	})
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("creds:\naccess: %s\nsecret: %s\n", creds.GetAccessKeyId(), creds.GetAccessSecretKey())
+}
+
+func getuser() {
+	fdb.MustAPIVersion(600)
+	db := fdb.MustOpenDefault()
+	dir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// init auth
+	authService := auth.NewKVAuthService(db, dir)
+	user, err := authService.GetUser("examplecid", "exampleuid")
+	if err != nil {
+		panic(err)
+	}
+	fmt.Printf("user: %+v\n", user)
 }
 
 func main() {
@@ -95,5 +160,9 @@ func main() {
 		listBucket()
 	case "run":
 		Run()
+	case "user":
+		getuser()
+	case "creds":
+		createCreds()
 	}
 }
