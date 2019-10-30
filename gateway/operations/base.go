@@ -2,7 +2,6 @@ package operations
 
 import (
 	"bytes"
-	"context"
 	"encoding/xml"
 	"fmt"
 	"net/http"
@@ -10,7 +9,10 @@ import (
 	authmodel "versio-index/auth/model"
 	"versio-index/block"
 	"versio-index/gateway/errors"
+	ghttp "versio-index/gateway/http"
 	"versio-index/index"
+
+	log "github.com/sirupsen/logrus"
 )
 
 type Operation struct {
@@ -24,15 +26,16 @@ type Operation struct {
 }
 
 func (o *Operation) RequestId() string {
-	var reqId string
-	ctx := o.Request.Context()
-	resp := ctx.Value("request_id")
-	if resp == nil {
-		// assign a request ID for this request
-		reqId = auth.HexStringGenerator(8)
-		o.Request = o.Request.WithContext(context.WithValue(ctx, "request_id", reqId))
-	}
-	return reqId
+	req, rid := ghttp.RequestId(o.Request)
+	o.Request = req
+	return rid
+}
+
+func (o *Operation) Log() *log.Entry {
+	return log.WithFields(log.Fields{
+		"request_id": o.RequestId(),
+		"region":     o.Region,
+	})
 }
 
 func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
