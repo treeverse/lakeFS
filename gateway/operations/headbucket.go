@@ -1,9 +1,9 @@
 package operations
 
 import (
-	authmodel "versio-index/auth/model"
 	"versio-index/db"
 	"versio-index/gateway/errors"
+	"versio-index/gateway/permissions"
 
 	"golang.org/x/xerrors"
 )
@@ -11,11 +11,11 @@ import (
 type HeadBucket struct{}
 
 func (controller *HeadBucket) GetArn() string {
-	return "versio:repos:::{bucket}"
+	return "arn:versio:repos:::{bucket}"
 }
 
-func (controller *HeadBucket) GetIntent() authmodel.Permission_Intent {
-	return authmodel.Permission_REPO_READ
+func (controller *HeadBucket) GetPermission() string {
+	return permissions.PermissionReadRepo
 }
 
 func (controller *HeadBucket) Handle(o *RepoOperation) {

@@ -1,17 +1,17 @@
 package operations
 
 import (
-	authmodel "versio-index/auth/model"
+	"versio-index/gateway/permissions"
 )
 
 type DeleteBucket struct{}
 
 func (controller *DeleteBucket) GetArn() string {
-	return "versio:repos:::*"
+	return "arn:versio:repos:::*"
 }
 
-func (controller *DeleteBucket) GetIntent() authmodel.Permission_Intent {
-	return authmodel.Permission_ACCOUNT_ADMIN
+func (controller *DeleteBucket) GetPermission() string {
+	return permissions.PermissionManageRepos
 }
 
 func (controller *DeleteBucket) Handle(o *RepoOperation) {

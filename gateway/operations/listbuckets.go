@@ -2,19 +2,19 @@ package operations
 
 import (
 	"net/http"
-	authmodel "versio-index/auth/model"
 	"versio-index/gateway/errors"
+	"versio-index/gateway/permissions"
 	"versio-index/gateway/serde"
 )
 
 type ListBuckets struct{}
 
 func (controller *ListBuckets) GetArn() string {
-	return "versio:repos:::*"
+	return "arn:versio:repos:::*"
 }
 
-func (controller *ListBuckets) GetIntent() authmodel.Permission_Intent {
-	return authmodel.Permission_REPOS_LIST
+func (controller *ListBuckets) GetPermission() string {
+	return permissions.PermissionReadRepo
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {

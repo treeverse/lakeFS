@@ -12,6 +12,7 @@ import (
 	"versio-index/auth/model"
 	"versio-index/block"
 	"versio-index/gateway"
+	"versio-index/gateway/permissions"
 	"versio-index/index"
 	"versio-index/index/store"
 
@@ -129,25 +130,19 @@ func createCreds() {
 	err = authService.CreateRole(&model.Role{
 		ClientId: "examplecid",
 		Id:       "examplerid",
-		Name:     "Admins",
-		Permissions: []*model.Permission{
+		Name:     "AdminRole",
+		Policies: []*model.Policy{
 			{
-				ClientId:   "examplecid",
-				Id:         "xyz1",
-				Intent:     model.Permission_ACCOUNT_ADMIN,
-				SubjectArn: "versio:repos:::*",
+				Permission: permissions.PermissionManageRepos,
+				Arn:        "arn:versio:repos:::*",
 			},
 			{
-				ClientId:   "examplecid",
-				Id:         "xyz2",
-				Intent:     model.Permission_REPO_WRITE,
-				SubjectArn: "versio:repos:::*",
+				Permission: permissions.PermissionReadRepo,
+				Arn:        "arn:versio:repos:::*",
 			},
 			{
-				ClientId:   "examplecid",
-				Id:         "xyz3",
-				Intent:     model.Permission_REPO_READ,
-				SubjectArn: "versio:repos:::*",
+				Permission: permissions.PermissionWriteRepo,
+				Arn:        "arn:versio:repos:::*",
 			},
 		},
 	})

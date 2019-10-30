@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"strings"
 	"time"
 	"versio-index/auth/model"
 	"versio-index/db"
@@ -43,7 +44,7 @@ type AuthenticationResponse struct {
 type AuthorizationRequest struct {
 	ClientID   string
 	UserID     string
-	Intent     model.Permission_Intent
+	Permission string
 	SubjectARN string
 }
 
@@ -367,9 +368,9 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 				return nil, err
 			}
 			roles[rid] = role
-			for _, p := range role.GetPermissions() {
+			for _, p := range role.GetPolicies() {
 				// get permissions....
-				if p.Intent == req.Intent && ArnMatch(p.SubjectArn, req.SubjectARN) {
+				if strings.EqualFold(p.GetPermission(), req.Permission) && ArnMatch(p.GetArn(), req.SubjectARN) {
 					return &AuthorizationResponse{
 						Allowed: true,
 						Error:   nil,
@@ -403,9 +404,9 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 					return nil, err
 				}
 				roles[rid] = role
-				for _, p := range role.GetPermissions() {
+				for _, p := range role.GetPolicies() {
 					// get permissions....
-					if p.Intent == req.Intent && ArnMatch(p.SubjectArn, req.SubjectARN) {
+					if strings.EqualFold(p.GetPermission(), req.Permission) && ArnMatch(p.GetArn(), req.SubjectARN) {
 						return &AuthorizationResponse{
 							Allowed: true,
 							Error:   nil,

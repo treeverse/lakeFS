@@ -4,8 +4,8 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-	authmodel "versio-index/auth/model"
 	"versio-index/gateway/errors"
+	"versio-index/gateway/permissions"
 	"versio-index/ident"
 	"versio-index/index/model"
 )
@@ -13,11 +13,11 @@ import (
 type PutObject struct{}
 
 func (controller *PutObject) GetArn() string {
-	return "versio:repos:::{bucket}"
+	return "arn:versio:repos:::{bucket}"
 }
 
-func (controller *PutObject) GetIntent() authmodel.Permission_Intent {
-	return authmodel.Permission_REPO_WRITE
+func (controller *PutObject) GetPermission() string {
+	return permissions.PermissionWriteRepo
 }
 
 func (controller *PutObject) Handle(o *PathOperation) {

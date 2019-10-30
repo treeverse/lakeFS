@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"time"
 	"versio-index/auth"
-	authmodel "versio-index/auth/model"
 	"versio-index/auth/sig"
 	"versio-index/block"
 	"versio-index/db"
@@ -53,7 +52,7 @@ type Server struct {
 func (s *Server) RegisterOperation(route *mux.Route, handler operations.AuthenticatedOperationHandler) {
 	route.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := s.authenticateOperation(writer, request, handler.GetIntent(), handler.GetArn())
+		authOp := s.authenticateOperation(writer, request, handler.GetPermission(), handler.GetArn())
 		if authOp == nil {
 			return
 		}
@@ -65,7 +64,7 @@ func (s *Server) RegisterOperation(route *mux.Route, handler operations.Authenti
 func (s *Server) RegisterRepoOperation(route *mux.Route, handler operations.RepoOperationHandler) {
 	route.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := s.authenticateOperation(writer, request, handler.GetIntent(), handler.GetArn())
+		authOp := s.authenticateOperation(writer, request, handler.GetPermission(), handler.GetArn())
 		if authOp == nil {
 			return
 		}
@@ -80,7 +79,7 @@ func (s *Server) RegisterRepoOperation(route *mux.Route, handler operations.Repo
 func (s *Server) RegisterPathOperation(route *mux.Route, handler operations.PathOperationHandler) {
 	route.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := s.authenticateOperation(writer, request, handler.GetIntent(), handler.GetArn())
+		authOp := s.authenticateOperation(writer, request, handler.GetPermission(), handler.GetArn())
 		if authOp == nil {
 			return
 		}
@@ -101,7 +100,7 @@ func (s *Server) RegisterPathOperation(route *mux.Route, handler operations.Path
 func (s *Server) RegisterBranchOperation(route *mux.Route, handler operations.BranchOperationHandler) {
 	route.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := s.authenticateOperation(writer, request, handler.GetIntent(), handler.GetArn())
+		authOp := s.authenticateOperation(writer, request, handler.GetPermission(), handler.GetArn())
 		if authOp == nil {
 			return
 		}
@@ -116,7 +115,7 @@ func (s *Server) RegisterBranchOperation(route *mux.Route, handler operations.Br
 	})
 }
 
-func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http.Request, intent authmodel.Permission_Intent, arn string) *operations.AuthenticatedOperation {
+func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http.Request, permission, arn string) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -164,7 +163,7 @@ func (s *Server) authenticateOperation(writer http.ResponseWriter, request *http
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		ClientID:   op.ClientId,
 		UserID:     op.SubjectId,
-		Intent:     intent,
+		Permission: permission,
 		SubjectARN: arn,
 	})
 	if err != nil {
