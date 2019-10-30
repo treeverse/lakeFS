@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"strings"
-	"time"
 	"versio-index/auth"
 	"versio-index/auth/sig"
 	"versio-index/block"
@@ -18,7 +17,6 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/gorilla/mux"
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -65,11 +63,14 @@ func NewServer(region string, meta index.Index, blockStore block.Adapter, authSe
 		authService: authService,
 	}
 
+	// setup routes
 	router := mux.NewRouter()
 	attachDebug(router)
 	attachRoutes(bareDomain, router, ctx)
+	router.Use(ghttp.LoggingMiddleWare)
 
-	s := &Server{
+	// assemble server
+	return &Server{
 		ctx:        ctx,
 		bareDomain: bareDomain,
 		server: &http.Server{
@@ -77,31 +78,13 @@ func NewServer(region string, meta index.Index, blockStore block.Adapter, authSe
 			Addr:    listenAddr,
 		},
 	}
+}
 
-	// register middleware
-	router.Use(func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Do stuff here
-			before := time.Now()
-			// Call the next handler, which can be another middleware in the chain, or the final handler.
-			writer := &ghttp.ResponseRecordingWriter{Writer: w}
-			r, reqId := ghttp.RequestId(r)
-			next.ServeHTTP(writer, r)
-			log.WithFields(log.Fields{
-				"request_id":  reqId,
-				"path":        r.RequestURI,
-				"method":      r.Method,
-				"took":        time.Since(before),
-				"status_code": writer.StatusCode,
-				"sent_bytes":  writer.ResponseSize,
-			}).Debug("S3 gateway called")
-		})
-	})
-	return s
+func (s *Server) Listen() error {
+	return s.server.ListenAndServe()
 }
 
 func attachDebug(router *mux.Router) {
-
 	r := router.Host("localhost:8000").Subrouter()
 	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
@@ -118,8 +101,6 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// path based routing
 	// non-bucket-specific endpoints
 	serviceEndpoint := router.Host(bareDomain).Subrouter()
-	// global level
-	serviceEndpoint.PathPrefix("/").Methods(http.MethodGet).HandlerFunc(OperationHandler(ctx, &operations.ListBuckets{}))
 	// repo-specific actions that relate to a key
 	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", RepoMatch)).Subrouter()
 	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
@@ -133,10 +114,11 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 		Methods(http.MethodGet).
 		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
 		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
-
 	pathBasedRepo.Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
 	pathBasedRepo.Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
 	pathBasedRepo.Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
+	// global level
+	serviceEndpoint.PathPrefix("/").Methods(http.MethodGet).HandlerFunc(OperationHandler(ctx, &operations.ListBuckets{}))
 
 	// sub-domain based routing
 	subDomainBasedRepo := router.Host(strings.Join([]string{RepoMatch, bareDomain}, ".")).Subrouter()
@@ -147,19 +129,15 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	subDomainBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
 	// bucket-specific actions that don't relate to a specific key
-	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(RepoOperationHandler(ctx, &operations.CreateBucket{}))
 	subDomainBasedRepo.
 		Methods(http.MethodGet).
 		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
 		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
-
 	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
-}
+	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(RepoOperationHandler(ctx, &operations.CreateBucket{}))
 
-func (s *Server) Listen() error {
-	return s.server.ListenAndServe()
 }
 
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {
@@ -206,24 +184,6 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 				Branch: getBranch(request),
 			},
 			Path: getKey(request),
-		})
-	}
-}
-
-func BranchOperationHandler(ctx *ServerContext, handler operations.BranchOperationHandler) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
-		if authOp == nil {
-			return
-		}
-		// run callback
-		handler.Handle(&operations.BranchOperation{
-			RepoOperation: &operations.RepoOperation{
-				AuthenticatedOperation: authOp,
-				Repo:                   getRepo(request),
-			},
-			Branch: getBranch(request),
 		})
 	}
 }
