@@ -131,6 +131,7 @@ func ArnMatch(src, dst string) bool {
 	if source.AccountId != dest.AccountId {
 		return false
 	}
+	// wildcards are allowed for resources only
 	if strings.EqualFold(source.ResourceId, "*") || source.ResourceId == dest.ResourceId {
 		return true
 	}

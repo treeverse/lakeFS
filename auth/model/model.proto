@@ -55,19 +55,10 @@ message Role {
     string id = 2;
     string name =  3;
 
-    repeated Permission permissions = 4;
+    repeated Policy policies = 4;
 }
 
-message Permission {
-    string client_id = 1;
-    string id = 2;
-    enum Intent {
-        // repo usage
-        REPO_READ = 0;
-        REPO_WRITE = 1;
-        REPOS_LIST  = 2;
-        ACCOUNT_ADMIN = 3;
-    }
-    Intent intent = 3;
-    string subject_arn = 4;
+message Policy {
+    string permission = 1;
+    string arn = 2;
 }

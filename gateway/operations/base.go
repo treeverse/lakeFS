@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/xml"
+	"fmt"
 	"net/http"
 	"versio-index/auth"
 	authmodel "versio-index/auth/model"
@@ -104,7 +105,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		Message:    err.Description,
 		BucketName: o.Repo,
 		Key:        o.Path,
-		Resource:   o.Repo,
+		Resource:   fmt.Sprintf("%s@%s", o.Branch, o.Repo),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
@@ -113,7 +114,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 
 type BaseOperationHandler interface {
 	GetArn() string
-	GetIntent() authmodel.Permission_Intent
+	GetPermission() string
 }
 
 type OperationHandler interface {

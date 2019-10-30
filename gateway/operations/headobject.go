@@ -2,9 +2,9 @@ package operations
 
 import (
 	"strconv"
-	authmodel "versio-index/auth/model"
 	"versio-index/db"
 	"versio-index/gateway/errors"
+	"versio-index/gateway/permissions"
 	"versio-index/gateway/serde"
 	"versio-index/ident"
 
@@ -14,11 +14,11 @@ import (
 type HeadObject struct{}
 
 func (controller *HeadObject) GetArn() string {
-	return "versio:repos:::{bucket}"
+	return "arn:versio:repos:::{bucket}"
 }
 
-func (controller *HeadObject) GetIntent() authmodel.Permission_Intent {
-	return authmodel.Permission_REPO_READ
+func (controller *HeadObject) GetPermission() string {
+	return permissions.PermissionReadRepo
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {

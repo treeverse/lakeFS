@@ -2,19 +2,19 @@ package operations
 
 import (
 	"net/http"
-	authmodel "versio-index/auth/model"
 	"versio-index/gateway/errors"
+	"versio-index/gateway/permissions"
 	"versio-index/index"
 )
 
 type CreateBucket struct{}
 
 func (controller *CreateBucket) GetArn() string {
-	return "versio:repos:::*"
+	return "arn:versio:repos:::*"
 }
 
-func (controller *CreateBucket) GetIntent() authmodel.Permission_Intent {
-	return authmodel.Permission_ACCOUNT_ADMIN
+func (controller *CreateBucket) GetPermission() string {
+	return permissions.PermissionManageRepos
 }
 
 func (controller *CreateBucket) Handle(o *RepoOperation) {
