@@ -3,7 +3,6 @@ package main
 import (
 	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -16,9 +15,10 @@ import (
 	"versio-index/index"
 	"versio-index/index/store"
 
-	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
-
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
+	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
+	log "github.com/sirupsen/logrus"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
@@ -60,43 +60,9 @@ func listBucket() {
 	if err != nil {
 		panic(err)
 	}
-	//dump, err := httputil.DumpResponse(resp, true)
-	//if err != nil {
-	//	log.Fatal(err)
-	//}
 	d, _ := ioutil.ReadAll(resp.Body)
 	os.Stderr.WriteString(fmt.Sprintf("status code: %d\n", resp.StatusCode))
 	fmt.Printf("%s", d)
-}
-
-func Run() {
-	// init fdb
-	fdb.MustAPIVersion(600)
-	db := fdb.MustOpenDefault()
-	authdir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
-	if err != nil {
-		panic(err)
-	}
-	indexdir, err := directory.CreateOrOpen(db, []string{"index"}, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	// init index
-	meta := index.NewKVIndex(store.NewKVStore(db, indexdir))
-
-	// init block store
-	blockStore, err := block.NewLocalFSAdapter("/tmp/blocks")
-	if err != nil {
-		panic(err)
-	}
-
-	// init authentication
-	authService := auth.NewKVAuthService(db, authdir)
-
-	// init gateway server
-	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local:8000")
-	panic(server.Listen())
 }
 
 func createCreds() {
@@ -162,6 +128,20 @@ func createCreds() {
 	if err != nil {
 		panic(err)
 	}
+
+	// now create the repo
+	indexdir, err := directory.CreateOrOpen(db, []string{"index"}, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// init index
+	meta := index.NewKVIndex(store.NewKVStore(db, indexdir))
+	err = meta.CreateRepo("examplecid", "example", index.DefaultBranch)
+	if err != nil {
+		panic(err)
+	}
+
 	fmt.Printf("creds:\naccess: %s\nsecret: %s\n", creds.GetAccessKeyId(), creds.GetAccessSecretKey())
 }
 
@@ -180,6 +160,45 @@ func getuser() {
 		panic(err)
 	}
 	fmt.Printf("user: %+v\n", user)
+}
+
+func Run() {
+	// logger
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: true,
+	})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.TraceLevel) // for now
+
+	// init fdb
+	fdb.MustAPIVersion(600)
+	db := fdb.MustOpenDefault()
+	authdir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
+	if err != nil {
+		panic(err)
+	}
+	indexdir, err := directory.CreateOrOpen(db, []string{"index"}, nil)
+	if err != nil {
+		panic(err)
+	}
+
+	// init index
+	meta := index.NewKVIndex(store.NewKVStore(db, indexdir))
+
+	// init block store
+	blockStore, err := block.NewLocalFSAdapter("/tmp/blocks")
+	if err != nil {
+		panic(err)
+	}
+
+	// init authentication
+	authService := auth.NewKVAuthService(db, authdir)
+
+	// init gateway server
+	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local:8000")
+	panic(server.Listen())
 }
 
 func main() {
