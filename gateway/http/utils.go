@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"context"
 	"net/http"
+	"time"
 	"versio-index/auth"
+
+	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -47,4 +50,23 @@ func RequestId(r *http.Request) (*http.Request, string) {
 		r = r.WithContext(context.WithValue(ctx, RequestIdContextKey, reqId))
 	}
 	return r, reqId
+}
+
+func LoggingMiddleWare(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// Do stuff here
+		before := time.Now()
+		// Call the next handler, which can be another middleware in the chain, or the final handler.
+		writer := &ResponseRecordingWriter{Writer: w}
+		r, reqId := RequestId(r)
+		next.ServeHTTP(writer, r)
+		log.WithFields(log.Fields{
+			"request_id":  reqId,
+			"path":        r.RequestURI,
+			"method":      r.Method,
+			"took":        time.Since(before),
+			"status_code": writer.StatusCode,
+			"sent_bytes":  writer.ResponseSize,
+		}).Debug("S3 gateway called")
+	})
 }

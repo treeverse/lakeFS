@@ -3,6 +3,7 @@ package operations
 import (
 	"bytes"
 	"io"
+	"time"
 	"versio-index/db"
 	"versio-index/gateway/errors"
 	"versio-index/gateway/permissions"
@@ -23,7 +24,11 @@ func (controller *GetObject) GetPermission() string {
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {
+	beforeMeta := time.Now()
 	obj, err := o.Index.ReadObject(o.ClientId, o.Repo, o.Branch, o.Path)
+	metaTook := time.Since(beforeMeta)
+	o.Log().WithField("took", metaTook).Info("metadata operation to retrieve object done")
+
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))
