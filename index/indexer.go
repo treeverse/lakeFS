@@ -200,7 +200,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 
 func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error) {
 	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
+		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
 		if err != nil {
 			return nil, err
 		}

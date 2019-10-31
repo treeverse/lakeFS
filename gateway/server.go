@@ -112,7 +112,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(RepoOperationHandler(ctx, &operations.CreateBucket{}))
 	pathBasedRepo.
 		Methods(http.MethodGet).
-		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
+		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
 		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
 	pathBasedRepo.Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
 	pathBasedRepo.Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
@@ -131,13 +131,12 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// bucket-specific actions that don't relate to a specific key
 	subDomainBasedRepo.
 		Methods(http.MethodGet).
-		Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
+		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
 		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(RepoOperationHandler(ctx, &operations.CreateBucket{}))
-
 }
 
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {

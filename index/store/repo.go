@@ -90,7 +90,13 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 }
 
 func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, error) {
-	iter := s.query.RangePrefix(s.store.Space(SubspaceEntries), addr, from)
+	// entry keys: (client, repo, parent, name, type)
+	var iter db.Iterator
+	if len(from) > 0 {
+		iter = s.query.RangePrefix(s.store.Space(SubspaceEntries), addr, from)
+	} else {
+		iter = s.query.RangePrefix(s.store.Space(SubspaceEntries), addr)
+	}
 	entries := make([]*model.Entry, 0)
 	current := 0
 	for iter.Advance() {
@@ -111,7 +117,8 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 
 func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
 	entry := &model.Entry{}
-	return entry, s.query.GetAsProto(entry, s.store.Space(SubspaceEntries), treeAddress, int(entryType), name)
+	// entry keys: (client, repo, parent, name, type)
+	return entry, s.query.GetAsProto(entry, s.store.Space(SubspaceEntries), treeAddress, name, int(entryType))
 }
 
 func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
@@ -124,7 +131,8 @@ func (s *KVRepoOperations) ClearWorkspace(branch string) {
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
-		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, int(entry.GetType()), entry.GetName())
+		// entry keys: (client, repo, parent, name, type)
+		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, entry.GetName(), int(entry.GetType()))
 		if err != nil {
 			return err
 		}

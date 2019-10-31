@@ -1,7 +1,6 @@
 package merkle
 
 import (
-	"fmt"
 	"strings"
 	"versio-index/db"
 	"versio-index/ident"
@@ -118,7 +117,6 @@ func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeTyp
 	parts := path.New(pth).SplitParts()
 
 	for i, part := range parts {
-		fmt.Printf("getting part %d (%s) of %s (%d)\n", i, part, parts, len(parts))
 		typ := model.Entry_TREE
 		if nodeType == model.Entry_OBJECT && i == len(parts)-1 {
 			typ = model.Entry_OBJECT
@@ -128,7 +126,6 @@ func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeTyp
 			return "", err
 		}
 		currentAddress = entry.GetAddress()
-		fmt.Printf("got entry: %s (addr = %s)\n", part, currentAddress)
 	}
 	return currentAddress, nil
 }
