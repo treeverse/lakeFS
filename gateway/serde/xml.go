@@ -44,14 +44,14 @@ type CommonPrefixes struct {
 }
 
 type ListObjectsV2Output struct {
-	Name                  string         `xml:"Name"`
-	IsTruncated           bool           `xml:"IsTruncated"`
-	Prefix                string         `xml:"Prefix"`
-	Delimiter             string         `xml:"Delimiter"`
-	KeyCount              int            `xml:"KeyCount"`
-	MaxKeys               int            `xml:"MaxKeys"`
-	CommonPrefixes        CommonPrefixes `xml:"CommonPrefixes"`
-	NextContinuationToken string         `xml:"NextContinuationToken"`
-	ContinuationToken     string         `xml:"ContinuationToken"`
-	Contents              []Contents     `xml:"Contents"`
+	Name                  string           `xml:"Name"`
+	IsTruncated           bool             `xml:"IsTruncated"`
+	Prefix                string           `xml:"Prefix"`
+	Delimiter             string           `xml:"Delimiter,omitempty"`
+	KeyCount              int              `xml:"KeyCount"`
+	MaxKeys               int              `xml:"MaxKeys"`
+	CommonPrefixes        []CommonPrefixes `xml:"CommonPrefixes"`
+	NextContinuationToken string           `xml:"NextContinuationToken,omitempty"`
+	ContinuationToken     string           `xml:"ContinuationToken,omitempty"`
+	Contents              []Contents       `xml:"Contents"`
 }

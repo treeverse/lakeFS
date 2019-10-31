@@ -51,7 +51,7 @@ func listBucket() {
 
 	signer := v4.NewSigner(sess.Config.Credentials)
 	//req, _ := http.NewRequest("GET", "http://foobar.s3.local:8000/", nil)
-	req, _ := http.NewRequest("GET", "https://shmeps123123123.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=photos/", nil)
+	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=photos/", nil)
 	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
 	if err != nil {
 		panic(err)
@@ -125,19 +125,6 @@ func createCreds() {
 		ClientId: "examplecid",
 		Id:       "exampleuid",
 	})
-	if err != nil {
-		panic(err)
-	}
-
-	// now create the repo
-	indexdir, err := directory.CreateOrOpen(db, []string{"index"}, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	// init index
-	meta := index.NewKVIndex(store.NewKVStore(db, indexdir))
-	err = meta.CreateRepo("examplecid", "example", index.DefaultBranch)
 	if err != nil {
 		panic(err)
 	}

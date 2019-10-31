@@ -41,6 +41,7 @@ func (o *Operation) Log() *log.Entry {
 func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
 	payload, err := xml.MarshalIndent(entity, "", "  ")
 	if err != nil {
+		o.Log().WithError(err).Error("could not marshal response to XML")
 		o.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		return
 	}
@@ -51,6 +52,7 @@ func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
 	_, err = b.WriteTo(o.ResponseWriter)
 	if err != nil {
 		// TODO: log error?
+		o.Log().WithError(err).Error("could not write response to HTTP client")
 	}
 }
 
