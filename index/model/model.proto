@@ -21,6 +21,8 @@ message Entry {
         OBJECT = 1;
     }
     Type type = 3;
+    int64 timestamp = 4; // timestamp and size are denormalized here for quick listing
+    int64 size = 5;
 }
 
 message Commit {
@@ -33,9 +35,10 @@ message Commit {
 }
 
 message Branch {
-    string commit = 1;
-    string commit_root = 2; // denormalization to save a round trip
-    string workspace_root = 3;
+    string name = 1;
+    string commit = 2;
+    string commit_root = 3; // de-normalization to save a round trip
+    string workspace_root = 4;
 }
 
 message Tombstone {}
@@ -51,7 +54,7 @@ message WorkspaceEntry {
     string path = 1;
     oneof data {
         Tombstone tombstone = 2;
-        string Address = 3; // address of object
+        Object object = 3;
     }
 }
 

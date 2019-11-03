@@ -4,13 +4,17 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"time"
+	"versio-index/db"
 	"versio-index/gateway/errors"
 	"versio-index/gateway/permissions"
 	"versio-index/gateway/serde"
 	"versio-index/index/model"
 	"versio-index/index/path"
+
+	"golang.org/x/xerrors"
 )
+
+const VersioningResponse = `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`
 
 type ListObjects struct{}
 
@@ -25,28 +29,45 @@ func (controller *ListObjects) GetPermission() string {
 func (controller *ListObjects) Handle(o *RepoOperation) {
 	// parse request parameters
 	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
+
+	// handle GET /?versioning
+	keys := o.Request.URL.Query()
+	for k, _ := range keys {
+		if strings.EqualFold(k, "versioning") {
+			// this is a versioning request
+			o.EncodeXMLBytes([]byte(VersioningResponse), http.StatusOK)
+			return
+		}
+	}
+
 	params := o.Request.URL.Query()
 	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
-	if !strings.EqualFold(delimiter, "/") {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		return
-	}
 
 	// parse delimiter (everything other than "/" is illegal)
 	prefixPath := path.New(prefix)
 	prefixParts := prefixPath.SplitParts()
+	var results []*model.Entry
+	var err error
 	if len(prefixParts) == 0 {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		return
-	}
-	branch := prefixParts[0]
-	parsedPath := path.Join(prefixParts[1:])
-
-	// TODO: continuation token
-	results, err := o.Index.ListObjects(o.ClientId, o.Repo, branch, parsedPath, "", 1000)
-	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		// list branches then.
+		results, err = o.Index.ListBranches(o.ClientId, o.Repo, -1)
+		if err != nil {
+			// TODO incorrect error type
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			return
+		}
+	} else {
+		branch := prefixParts[0]
+		parsedPath := path.Join(prefixParts[1:])
+		// TODO: continuation token
+		results, err = o.Index.ListObjects(o.ClientId, o.Repo, branch, parsedPath, "", -1)
+		if xerrors.Is(err, db.ErrNotFound) {
+			results = make([]*model.Entry, 0) // no results found
+		} else if err != nil {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			return
+		}
 	}
 
 	dirs := make([]serde.CommonPrefixes, 0)
@@ -58,15 +79,14 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),
-				LastModified: serde.Timestamp(time.Now().Unix()),
+				LastModified: serde.Timestamp(res.GetTimestamp()),
 				ETag:         fmt.Sprintf("\"%s\"", res.GetAddress()),
-				Size:         1000,
+				Size:         res.GetSize(),
 				StorageClass: "STANDARD",
 			})
 		}
 	}
 
-	// build response
 	o.EncodeResponse(serde.ListObjectsV2Output{
 		Name:           o.Repo,
 		IsTruncated:    false,

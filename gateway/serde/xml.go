@@ -24,7 +24,7 @@ type Bucket struct {
 
 type ListBucketsOutput struct {
 	Buckets Buckets `xml:"Buckets"`
-	Owner   Owner   `xml:"owner"`
+	Owner   Owner   `xml:"Owner"`
 }
 
 type CreateBucketConfiguration struct {

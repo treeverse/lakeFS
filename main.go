@@ -51,7 +51,7 @@ func listBucket() {
 
 	signer := v4.NewSigner(sess.Config.Credentials)
 	//req, _ := http.NewRequest("GET", "http://foobar.s3.local:8000/", nil)
-	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/?list-type=2&delimiter=/&prefix=photos/", nil)
+	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/?prefix", nil)
 	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
 	if err != nil {
 		panic(err)
@@ -184,7 +184,7 @@ func Run() {
 	authService := auth.NewKVAuthService(db, authdir)
 
 	// init gateway server
-	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local:8000")
+	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local")
 	panic(server.Listen())
 }
 

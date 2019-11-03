@@ -38,6 +38,18 @@ func (o *Operation) Log() *log.Entry {
 	})
 }
 
+func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
+	o.ResponseWriter.WriteHeader(statusCode)
+	var b bytes.Buffer
+	b.WriteString(xml.Header)
+	b.Write(t)
+	_, err := b.WriteTo(o.ResponseWriter)
+	if err != nil {
+		// TODO: log error?
+		o.Log().WithError(err).Error("could not write response to HTTP client")
+	}
+}
+
 func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
 	payload, err := xml.MarshalIndent(entity, "", "  ")
 	if err != nil {
@@ -45,15 +57,7 @@ func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
 		o.ResponseWriter.WriteHeader(http.StatusInternalServerError)
 		return
 	}
-	o.ResponseWriter.WriteHeader(statusCode)
-	var b bytes.Buffer
-	b.WriteString(xml.Header)
-	b.Write(payload)
-	_, err = b.WriteTo(o.ResponseWriter)
-	if err != nil {
-		// TODO: log error?
-		o.Log().WithError(err).Error("could not write response to HTTP client")
-	}
+	o.EncodeXMLBytes(payload, statusCode)
 }
 
 func (o *Operation) EncodeError(err errors.APIError) {

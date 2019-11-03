@@ -1,6 +1,7 @@
 package merkle
 
 import (
+	"fmt"
 	"strings"
 	"versio-index/db"
 	"versio-index/ident"
@@ -22,6 +23,7 @@ type change struct {
 	Name      string
 	Address   string
 	Tombstone bool
+	Object    *model.Object
 }
 
 func (c *change) GetType() model.Entry_Type {
@@ -37,10 +39,20 @@ func (c *change) GetAddress() string {
 }
 
 func (c *change) AsEntry() *model.Entry {
+	if c.Tombstone || c.Type == model.Entry_TREE {
+		return &model.Entry{
+			Name:    c.Name,
+			Address: c.Address,
+			Type:    c.Type,
+		}
+	}
+	// for object writes we also include the model's size and timestamp
 	return &model.Entry{
-		Name:    c.GetName(),
-		Address: c.GetAddress(),
-		Type:    c.GetType(),
+		Name:      c.Name,
+		Address:   c.Address,
+		Type:      c.Type,
+		Timestamp: c.Object.GetTimestamp(),
+		Size:      c.Object.GetSize(),
 	}
 }
 
@@ -69,7 +81,8 @@ func newChangeTree(entries []*model.WorkspaceEntry) *changeTree {
 			chg = &change{
 				Type:      model.Entry_OBJECT,
 				Name:      name,
-				Address:   entry.GetAddress(),
+				Address:   ident.Hash(entry.GetObject()),
+				Object:    entry.GetObject(),
 				Tombstone: false,
 			}
 		}
@@ -121,12 +134,16 @@ func (m *Merkle) GetAddress(tx store.RepoReadOnlyOperations, pth string, nodeTyp
 		if nodeType == model.Entry_OBJECT && i == len(parts)-1 {
 			typ = model.Entry_OBJECT
 		}
+		fmt.Printf("-----> Reading tree entry: %s (from addr = %s)\n", part, currentAddress)
 		entry, err := tx.ReadTreeEntry(currentAddress, part, typ)
 		if err != nil {
+			fmt.Printf("-----> NO NEW ADDR: Got ERROR: %v\n", err)
 			return "", err
 		}
+		fmt.Printf("-----> New addr = %s\n", entry.GetAddress())
 		currentAddress = entry.GetAddress()
 	}
+	fmt.Printf("--------------> Match = %s\n", currentAddress)
 	return currentAddress, nil
 }
 
@@ -182,8 +199,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 			}
 			parent, name := path.New(treePath).Pop()
 			if len(mergedEntries) == 0 {
-				// we need to add a change to the level above us saying this folder should be removed
-				// TODO
+				// TODO: we need to add a change to the level above us saying this folder should be removed
 				changeTree.Add(i-1, parent.String(), &change{
 					Type:      model.Entry_TREE,
 					Name:      name,

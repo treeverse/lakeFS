@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"versio-index/db"
 	"versio-index/index/errors"
 	"versio-index/index/model"
@@ -13,6 +14,7 @@ type RepoReadOnlyOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
+	ListBranches() ([]*model.Branch, error)
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
@@ -74,6 +76,21 @@ func (s *KVRepoReadOnlyOperations) ReadFromWorkspace(branch, path string) (*mode
 	return ent, s.query.GetAsProto(ent, s.store.Space(SubspaceWorkspace), branch, path)
 }
 
+func (s *KVRepoReadOnlyOperations) ListBranches() ([]*model.Branch, error) {
+	iter := s.query.RangePrefix(s.store.Space(SubspaceBranches))
+	branches := make([]*model.Branch, 0)
+	for iter.Advance() {
+		branch := &model.Branch{}
+		kv := iter.MustGet()
+		err := proto.Unmarshal(kv.Value, branch)
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		branches = append(branches, branch)
+	}
+	return branches, nil
+}
+
 func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, error) {
 	b := &model.Branch{}
 	return b, s.query.GetAsProto(b, s.store.Space(SubspaceBranches), branch)
@@ -107,10 +124,11 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 			return nil, errors.ErrIndexMalformed
 		}
 		entries = append(entries, entry)
+		fmt.Printf("GOT ENTRY: %s\n", entry.GetName())
 		current++
-		if results != -1 && current > results {
-			break
-		}
+		//if results != -1 && current > results {
+		//	break
+		//}
 	}
 	return entries, nil
 }
