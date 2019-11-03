@@ -126,16 +126,15 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 		entries = append(entries, entry)
 		fmt.Printf("GOT ENTRY: %s\n", entry.GetName())
 		current++
-		//if results != -1 && current > results {
-		//	break
-		//}
+		if results != -1 && current > results {
+			break
+		}
 	}
 	return entries, nil
 }
 
 func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
 	entry := &model.Entry{}
-	// entry keys: (client, repo, parent, name, type)
 	return entry, s.query.GetAsProto(entry, s.store.Space(SubspaceEntries), treeAddress, name, int(entryType))
 }
 
@@ -148,12 +147,13 @@ func (s *KVRepoOperations) ClearWorkspace(branch string) {
 }
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
+	fmt.Printf("Writing Tree %s\n", address)
 	for _, entry := range entries {
-		// entry keys: (client, repo, parent, name, type)
 		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, entry.GetName(), int(entry.GetType()))
 		if err != nil {
 			return err
 		}
+		fmt.Printf("\t%s\t%s\n", entry.GetAddress(), entry.GetName())
 	}
 	return nil
 }

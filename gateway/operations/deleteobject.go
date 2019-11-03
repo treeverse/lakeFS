@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"versio-index/gateway/errors"
 	"versio-index/gateway/permissions"
 )
 
@@ -15,5 +16,10 @@ func (controller *DeleteObject) GetPermission() string {
 }
 
 func (controller *DeleteObject) Handle(o *PathOperation) {
-
+	err := o.Index.DeleteObject(o.ClientId, o.Repo, o.Branch, o.Path)
+	if err != nil {
+		o.Log().WithError(err).Error("could not delete key")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
 }
