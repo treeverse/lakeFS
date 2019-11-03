@@ -24,6 +24,7 @@ type Index interface {
 	WriteObject(clientId, repoId, branch, path string, object *model.Object) error
 	DeleteObject(clientId, repoId, branch, path string) error
 	ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error)
+	ListBranches(clientId, repoId string, results int) ([]*model.Entry, error)
 	ResetBranch(clientId, repoId, branch string) error
 	Commit(clientId, repoId, branch, message, committer string, metadata map[string]string) error
 	DeleteBranch(clientId, repoId, branch string) error
@@ -109,12 +110,7 @@ func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.
 			return nil, db.ErrNotFound
 		}
 
-		obj, err = tx.ReadObject(we.GetAddress())
-		if err != nil {
-			// an actual error has occurred, return it.
-			return nil, err
-		}
-		return obj, nil
+		return we.GetObject(), nil
 	})
 	if err != nil {
 		return nil, err
@@ -133,9 +129,10 @@ func (index *KVIndex) WriteObject(clientId, repoId, branch, path string, object 
 		if err != nil {
 			return nil, err
 		}
+		//Data: &model.WorkspaceEntry_Address{Address: addr},
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
-			Data: &model.WorkspaceEntry_Address{Address: addr},
+			Data: &model.WorkspaceEntry_Object{Object: object},
 		})
 		return nil, err
 	})
@@ -186,6 +183,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 
 	// update branch pointer to point at new workspace
 	err = tx.WriteBranch(branch, &model.Branch{
+		Name:          branch,
 		Commit:        branchData.GetCommit(),
 		CommitRoot:    branchData.GetCommitRoot(),
 		WorkspaceRoot: tree.Root(),
@@ -196,6 +194,32 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 
 	// done!
 	return nil
+}
+
+func (index *KVIndex) ListBranches(clientId, repoId string, results int) ([]*model.Entry, error) {
+	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+		_, err := tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		branches, err := tx.ListBranches()
+		if err != nil {
+			return nil, err
+		}
+		entries := make([]*model.Entry, len(branches))
+		for i, branch := range branches {
+			entries[i] = &model.Entry{
+				Name:    branch.GetName(),
+				Address: branch.GetName(),
+				Type:    model.Entry_TREE,
+			}
+		}
+		return entries, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return entries.([]*model.Entry), nil
 }
 
 func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error) {
@@ -351,6 +375,7 @@ func (index *KVIndex) CreateRepo(clientId, repoId, defaultBranch string) error {
 			return nil, err
 		}
 		err = tx.WriteBranch(repo.GetDefaultBranch(), &model.Branch{
+			Name:          repo.GetDefaultBranch(),
 			Commit:        commitId,
 			CommitRoot:    commit.GetTree(),
 			WorkspaceRoot: commit.GetTree(),

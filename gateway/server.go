@@ -200,6 +200,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	// authenticate
 	authContext, err := sig.ParseV4AuthContext(request)
 	if err != nil {
+		o.Log().WithError(err).Warn("could not parse v4 auth context")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
@@ -207,8 +208,10 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	creds, err := s.authService.GetAPICredentials(authContext.AccessKeyId)
 	if err != nil {
 		if !xerrors.Is(err, db.ErrNotFound) {
+			o.Log().WithError(err).WithField("key", authContext.AccessKeyId).Warn("error getting access key")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		} else {
+			o.Log().WithError(err).WithField("key", authContext.AccessKeyId).Warn("could not find access key")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		}
 		return nil
@@ -216,6 +219,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	err = sig.V4Verify(authContext, creds, request)
 	if err != nil {
+		o.Log().WithError(err).WithField("key", authContext.AccessKeyId).Warn("error verifying credentials for key")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
@@ -244,6 +248,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	if authResp.Error != nil || !authResp.Allowed {
+		o.Log().WithError(authResp.Error).WithField("key", authContext.AccessKeyId).Warn("no permission")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
