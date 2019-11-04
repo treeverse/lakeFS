@@ -1,8 +1,8 @@
 package operations
 
 import (
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
 )
 
 type DeleteBucket struct{}

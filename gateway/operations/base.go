@@ -6,12 +6,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"versio-index/auth"
-	authmodel "versio-index/auth/model"
-	"versio-index/block"
-	"versio-index/gateway/errors"
-	ghttp "versio-index/gateway/http"
-	"versio-index/index"
+	"treeverse-lake/auth"
+	authmodel "treeverse-lake/auth/model"
+	"treeverse-lake/block"
+	"treeverse-lake/gateway/errors"
+	ghttp "treeverse-lake/gateway/http"
+	"treeverse-lake/index"
 
 	log "github.com/sirupsen/logrus"
 )

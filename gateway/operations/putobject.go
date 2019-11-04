@@ -4,10 +4,10 @@ import (
 	"io/ioutil"
 	"net/http"
 	"time"
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
-	"versio-index/ident"
-	"versio-index/index/model"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
+	"treeverse-lake/ident"
+	"treeverse-lake/index/model"
 
 	log "github.com/sirupsen/logrus"
 )

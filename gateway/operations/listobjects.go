@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-	"versio-index/db"
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
-	"versio-index/gateway/serde"
-	"versio-index/index/model"
-	"versio-index/index/path"
+	"treeverse-lake/db"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
+	"treeverse-lake/gateway/serde"
+	"treeverse-lake/index/model"
+	"treeverse-lake/index/path"
 
 	"golang.org/x/xerrors"
 )

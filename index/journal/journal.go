@@ -1,8 +1,8 @@
 package journal
 
 import (
-	"versio-index/db"
-	"versio-index/ident"
+	"treeverse-lake/db"
+	"treeverse-lake/ident"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )

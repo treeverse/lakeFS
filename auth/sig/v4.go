@@ -17,7 +17,7 @@ import (
 
 	"golang.org/x/xerrors"
 
-	authmodel "versio-index/auth/model"
+	authmodel "treeverse-lake/auth/model"
 )
 
 const (

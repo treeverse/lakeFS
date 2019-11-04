@@ -1,9 +1,9 @@
 package operations
 
 import (
-	"versio-index/db"
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
+	"treeverse-lake/db"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
 
 	"golang.org/x/xerrors"
 )

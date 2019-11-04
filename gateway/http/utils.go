@@ -5,7 +5,7 @@ import (
 	"context"
 	"net/http"
 	"time"
-	"versio-index/auth"
+	"treeverse-lake/auth"
 
 	log "github.com/sirupsen/logrus"
 )

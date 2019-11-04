@@ -4,7 +4,7 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"versio-index/index/model"
+	"treeverse-lake/index/model"
 )
 
 type entryLike interface {

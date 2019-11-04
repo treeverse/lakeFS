@@ -2,11 +2,11 @@ package operations
 
 import (
 	"strconv"
-	"versio-index/db"
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
-	"versio-index/gateway/serde"
-	"versio-index/ident"
+	"treeverse-lake/db"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
+	"treeverse-lake/gateway/serde"
+	"treeverse-lake/ident"
 
 	"golang.org/x/xerrors"
 )

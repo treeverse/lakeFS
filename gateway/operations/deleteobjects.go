@@ -3,10 +3,10 @@ package operations
 import (
 	"fmt"
 	"net/http"
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
-	"versio-index/gateway/serde"
-	"versio-index/index/path"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
+	"treeverse-lake/gateway/serde"
+	"treeverse-lake/index/path"
 )
 
 type DeleteObjects struct{}
