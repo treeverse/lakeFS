@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"versio-index/ident"
+	"treeverse-lake/ident"
 )
 
 type IdentifiableString string

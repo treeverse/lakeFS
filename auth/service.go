@@ -4,18 +4,15 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"versio-index/auth/model"
-	"versio-index/db"
-
-	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
-
-	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
+	"treeverse-lake/auth/model"
+	"treeverse-lake/db"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
+	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
+	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
+	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 
 	"golang.org/x/xerrors"
-
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 
 const (

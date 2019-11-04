@@ -3,11 +3,11 @@ package merkle
 import (
 	"fmt"
 	"strings"
-	"versio-index/db"
-	"versio-index/ident"
-	"versio-index/index/model"
-	"versio-index/index/path"
-	"versio-index/index/store"
+	"treeverse-lake/db"
+	"treeverse-lake/ident"
+	"treeverse-lake/index/model"
+	"treeverse-lake/index/path"
+	"treeverse-lake/index/store"
 
 	"golang.org/x/xerrors"
 )

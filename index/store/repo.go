@@ -1,9 +1,9 @@
 package store
 
 import (
-	"versio-index/db"
-	"versio-index/index/errors"
-	"versio-index/index/model"
+	"treeverse-lake/db"
+	"treeverse-lake/index/errors"
+	"treeverse-lake/index/model"
 
 	"github.com/golang/protobuf/proto"
 )

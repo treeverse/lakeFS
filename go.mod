@@ -1,4 +1,4 @@
-module versio-index
+module treeverse-lake
 
 go 1.12
 

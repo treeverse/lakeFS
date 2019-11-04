@@ -2,7 +2,7 @@ package auth_test
 
 import (
 	"testing"
-	"versio-index/auth"
+	"treeverse-lake/auth"
 )
 
 func TestParseARN(t *testing.T) {

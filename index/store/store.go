@@ -1,14 +1,11 @@
 package store
 
 import (
-	"versio-index/db"
-
-	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
-
-	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
+	"treeverse-lake/db"
 
 	"github.com/apple/foundationdb/bindings/go/src/fdb"
-
+	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
+	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
 	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 

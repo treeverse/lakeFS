@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"versio-index/index/path"
+	"treeverse-lake/index/path"
 )
 
 func equalStrings(a, b []string) bool {

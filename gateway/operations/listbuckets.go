@@ -2,9 +2,9 @@ package operations
 
 import (
 	"net/http"
-	"versio-index/gateway/errors"
-	"versio-index/gateway/permissions"
-	"versio-index/gateway/serde"
+	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/permissions"
+	"treeverse-lake/gateway/serde"
 )
 
 type ListBuckets struct{}

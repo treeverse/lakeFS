@@ -4,11 +4,11 @@ import (
 	"fmt"
 	"math/rand"
 	"time"
-	"versio-index/db"
-	"versio-index/ident"
-	"versio-index/index/merkle"
-	"versio-index/index/model"
-	"versio-index/index/store"
+	"treeverse-lake/db"
+	"treeverse-lake/ident"
+	"treeverse-lake/index/merkle"
+	"treeverse-lake/index/model"
+	"treeverse-lake/index/store"
 
 	"golang.org/x/xerrors"
 )
