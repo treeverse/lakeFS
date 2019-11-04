@@ -2,6 +2,7 @@ package index
 
 import (
 	"fmt"
+	"math/rand"
 	"time"
 	"versio-index/db"
 	"versio-index/ident"
@@ -34,6 +35,7 @@ type Index interface {
 	CreateRepo(clientId, repoId, defaultBranch string) error
 	ListRepos(clientId string) ([]*model.Repo, error)
 	GetRepo(clientId, repoId string) (*model.Repo, error)
+	DeleteRepo(clientId, repoId string) error
 }
 
 func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
@@ -67,9 +69,8 @@ func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch s
 }
 
 func shouldPartiallyCommit(repo *model.Repo) bool {
-	//chosen := rand.Float32()
-	//return chosen < repo.GetPartialCommitRatio()
-	return false
+	chosen := rand.Float32()
+	return chosen < repo.GetPartialCommitRatio()
 }
 
 type KVIndex struct {
@@ -405,4 +406,12 @@ func (index *KVIndex) GetRepo(clientId, repoId string) (*model.Repo, error) {
 		return nil, err
 	}
 	return repo.(*model.Repo), nil
+}
+
+func (index *KVIndex) DeleteRepo(clientId, repoId string) error {
+	_, err := index.kv.ClientTransact(clientId, func(tx store.ClientOperations) (interface{}, error) {
+		tx.DeleteRepo(repoId)
+		return nil, nil
+	})
+	return err
 }

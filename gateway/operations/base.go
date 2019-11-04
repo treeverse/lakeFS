@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"versio-index/auth"
 	authmodel "versio-index/auth/model"
@@ -58,6 +59,19 @@ func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
 		return
 	}
 	o.EncodeXMLBytes(payload, statusCode)
+}
+
+func (o *Operation) DecodeXMLBody(entity interface{}) error {
+	body := o.Request.Body
+	content, err := ioutil.ReadAll(body)
+	if err != nil {
+		return err
+	}
+	err = xml.Unmarshal(content, entity)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (o *Operation) EncodeError(err errors.APIError) {
