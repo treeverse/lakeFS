@@ -1,9 +1,10 @@
 package journal
 
 import (
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 	"versio-index/db"
 	"versio-index/ident"
+
+	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 
 type OpCode int
@@ -28,13 +29,13 @@ type Journal interface {
 }
 
 type KVJournal struct {
-	store         db.Store
+	store      db.Store
 	TopicName  string
 	Partitions int
 }
 
 func (kv *KVJournal) Log(e Event) error {
-	_, err := kv.store.Transact([]tuple.TupleElement, func(q db.Query) ( interface{}, error) {
+	_, err := kv.store.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
 
 		return nil, nil
 	})

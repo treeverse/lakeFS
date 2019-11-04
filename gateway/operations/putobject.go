@@ -15,7 +15,7 @@ import (
 type PutObject struct{}
 
 func (controller *PutObject) GetArn() string {
-	return "arn:versio:repos:::{bucket}"
+	return "arn:treeverse:repos:::{bucket}"
 }
 
 func (controller *PutObject) GetPermission() string {

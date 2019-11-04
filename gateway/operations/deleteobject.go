@@ -8,7 +8,7 @@ import (
 type DeleteObject struct{}
 
 func (controller *DeleteObject) GetArn() string {
-	return "arn:versio:repos:::{bucket}"
+	return "arn:treeverse:repos:::{bucket}"
 }
 
 func (controller *DeleteObject) GetPermission() string {

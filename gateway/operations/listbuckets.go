@@ -10,7 +10,7 @@ import (
 type ListBuckets struct{}
 
 func (controller *ListBuckets) GetArn() string {
-	return "arn:versio:repos:::*"
+	return "arn:treeverse:repos:::*"
 }
 
 func (controller *ListBuckets) GetPermission() string {

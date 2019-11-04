@@ -12,33 +12,33 @@ func TestParseARN(t *testing.T) {
 		Error bool
 	}{
 		{Input: "", Error: true},
-		{Input: "arn:versio:repo", Error: true},
-		{Input: "arn:versio:repos:a:b:myrepo", Arn: auth.Arn{
-			Partition:  "versio",
+		{Input: "arn:treeverse:repo", Error: true},
+		{Input: "arn:treeverse:repos:a:b:myrepo", Arn: auth.Arn{
+			Partition:  "treeverse",
 			Service:    "repos",
 			Region:     "a",
 			AccountId:  "b",
 			ResourceId: "myrepo"}},
-		{Input: "arn:versio:repos:a:b/myrepo", Arn: auth.Arn{
-			Partition:  "versio",
+		{Input: "arn:treeverse:repos:a:b/myrepo", Arn: auth.Arn{
+			Partition:  "treeverse",
 			Service:    "repos",
 			Region:     "a",
 			AccountId:  "b",
 			ResourceId: "myrepo"}},
-		{Input: "arn:versio:repos:a::myrepo", Arn: auth.Arn{
-			Partition:  "versio",
+		{Input: "arn:treeverse:repos:a::myrepo", Arn: auth.Arn{
+			Partition:  "treeverse",
 			Service:    "repos",
 			Region:     "a",
 			AccountId:  "",
 			ResourceId: "myrepo"}},
-		{Input: "arn:versio:repos::b:myrepo", Arn: auth.Arn{
-			Partition:  "versio",
+		{Input: "arn:treeverse:repos::b:myrepo", Arn: auth.Arn{
+			Partition:  "treeverse",
 			Service:    "repos",
 			Region:     "",
 			AccountId:  "b",
 			ResourceId: "myrepo"}},
-		{Input: "arn:versio:repos::/myrepo", Arn: auth.Arn{
-			Partition:  "versio",
+		{Input: "arn:treeverse:repos::/myrepo", Arn: auth.Arn{
+			Partition:  "treeverse",
 			Service:    "repos",
 			Region:     "",
 			AccountId:  "",
@@ -78,12 +78,12 @@ func TestArnMatch(t *testing.T) {
 		InputDestination string
 		Match            bool
 	}{
-		{"arn:versio:repos::b:myrepo", "arn:versio:repos::b:myrepo", true},
-		{"arn:versio:repos::b:*", "arn:versio:repos::b:myrepo", true},
-		{"arn:versio:repos::b:myrepo", "arn:versio:repos::b:*", false},
-		{"arn:versio:repos::b/myrepo", "arn:versio:repos::b/*", false},
-		{"arn:versio:repos::b/*", "arn:versio:repos::b/myrepo", true},
-		{"arn:versio:repo", "arn:versio:repo", false},
+		{"arn:treeverse:repos::b:myrepo", "arn:treeverse:repos::b:myrepo", true},
+		{"arn:treeverse:repos::b:*", "arn:treeverse:repos::b:myrepo", true},
+		{"arn:treeverse:repos::b:myrepo", "arn:treeverse:repos::b:*", false},
+		{"arn:treeverse:repos::b/myrepo", "arn:treeverse:repos::b/*", false},
+		{"arn:treeverse:repos::b/*", "arn:treeverse:repos::b/myrepo", true},
+		{"arn:treeverse:repo", "arn:treeverse:repo", false},
 	}
 
 	for _, c := range cases {

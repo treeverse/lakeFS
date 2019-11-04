@@ -8,7 +8,7 @@ import (
 type DeleteBucket struct{}
 
 func (controller *DeleteBucket) GetArn() string {
-	return "arn:versio:repos:::*"
+	return "arn:treeverse:repos:::*"
 }
 
 func (controller *DeleteBucket) GetPermission() string {

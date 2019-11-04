@@ -6,7 +6,7 @@ import (
 
 // arn:${Partition}:s3:::${BucketName}
 // e.g. arn:aws:s3:::myrepo
-// in our case, arn:versio:repos:::myrepo
+// in our case, arn:treeverse:repos:::myrepo
 
 type Arn struct {
 	Partition  string
@@ -23,7 +23,7 @@ func arnParseField(arn *Arn, field string, fieldIndex int) error {
 			return ErrInvalidArn
 		}
 	case 1:
-		if !strings.EqualFold(field, "versio") {
+		if !strings.EqualFold(field, "treeverse") {
 			return ErrInvalidArn
 		}
 		arn.Partition = field

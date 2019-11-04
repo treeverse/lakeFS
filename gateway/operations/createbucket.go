@@ -10,7 +10,7 @@ import (
 type CreateBucket struct{}
 
 func (controller *CreateBucket) GetArn() string {
-	return "arn:versio:repos:::*"
+	return "arn:treeverse:repos:::*"
 }
 
 func (controller *CreateBucket) GetPermission() string {
