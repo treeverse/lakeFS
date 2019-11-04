@@ -1,6 +1,7 @@
 package index
 
 import (
+	"fmt"
 	"time"
 	"versio-index/db"
 	"versio-index/ident"
@@ -68,7 +69,7 @@ func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch s
 func shouldPartiallyCommit(repo *model.Repo) bool {
 	//chosen := rand.Float32()
 	//return chosen < repo.GetPartialCommitRatio()
-	return true
+	return false
 }
 
 type KVIndex struct {
@@ -182,11 +183,12 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	tx.ClearWorkspace(branch)
 
 	// update branch pointer to point at new workspace
+	fmt.Printf("\n\n\n\n\nNew workspace root: %s\n\n\n\n\n", tree.Root())
 	err = tx.WriteBranch(branch, &model.Branch{
 		Name:          branch,
 		Commit:        branchData.GetCommit(),
 		CommitRoot:    branchData.GetCommitRoot(),
-		WorkspaceRoot: tree.Root(),
+		WorkspaceRoot: tree.Root(), // does this happen properly?
 	})
 	if err != nil {
 		return err

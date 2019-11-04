@@ -23,6 +23,7 @@ func (controller *PutObject) GetPermission() string {
 }
 
 func (controller *PutObject) Handle(o *PathOperation) {
+
 	// handle the upload itself
 	data, err := ioutil.ReadAll(o.Request.Body)
 	if err != nil {

@@ -1,6 +1,7 @@
 package merkle
 
 import (
+	"fmt"
 	"strings"
 	"versio-index/db"
 	"versio-index/ident"
@@ -168,6 +169,22 @@ func (m *Merkle) writeTree(tx store.RepoOperations, entries []*model.Entry) (str
 	return id, err
 }
 
+func printEntries(entries []*model.Entry) string {
+	b := make([]string, len(entries))
+	for i, e := range entries {
+		b[i] = fmt.Sprintf("%s/%s", e.GetName(), e.GetAddress())
+	}
+	return strings.Join(b, ", ")
+}
+
+func printChanges(changes []*change) string {
+	b := make([]string, len(changes))
+	for i, c := range changes {
+		b[i] = fmt.Sprintf("%v-%s/%s", c.GetType(), c.GetName(), c.GetAddress())
+	}
+	return strings.Join(b, ", ")
+}
+
 func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry) (*Merkle, error) {
 
 	// get the max depth
@@ -190,6 +207,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 					return nil, err
 				}
 				rootAddr = addr
+				break // no more changes to make
 			}
 			parent, name := path.New(treePath).Pop()
 			if len(mergedEntries) == 0 {
@@ -222,23 +240,30 @@ func (m *Merkle) Root() string {
 }
 
 func compareEntries(a, b entryLike) int {
-	// directories first
-	if a.GetType() != b.GetType() {
+	// names first
+	eqs := strings.Compare(a.GetName(), b.GetName())
+	// directories second
+	if eqs == 0 && a.GetType() != b.GetType() {
 		if a.GetType() < b.GetType() {
-			return -1
+			eqs = -1
 		} else if a.GetType() > b.GetType() {
-			return 1
+			eqs = 1
+		} else {
+			eqs = 0
 		}
-		return 0
 	}
-	// then sort by name
-	return strings.Compare(a.GetName(), b.GetName())
+	return eqs
 }
 
 func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 	merged := make([]*model.Entry, 0)
 	nextCurrent := 0
 	nextChange := 0
+	for _, c := range changes {
+		if strings.EqualFold(c.GetName(), "hash_test.go") {
+			fmt.Printf("boom?")
+		}
+	}
 	for {
 		// if both lists still have values, compare
 		if nextChange < len(changes) && nextCurrent < len(current) {

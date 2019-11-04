@@ -1,7 +1,6 @@
 package store
 
 import (
-	"fmt"
 	"versio-index/db"
 	"versio-index/index/errors"
 	"versio-index/index/model"
@@ -124,7 +123,6 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 			return nil, errors.ErrIndexMalformed
 		}
 		entries = append(entries, entry)
-		fmt.Printf("GOT ENTRY: %s\n", entry.GetName())
 		current++
 		if results != -1 && current > results {
 			break
@@ -147,13 +145,11 @@ func (s *KVRepoOperations) ClearWorkspace(branch string) {
 }
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
-	fmt.Printf("Writing Tree %s\n", address)
 	for _, entry := range entries {
 		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, entry.GetName(), int(entry.GetType()))
 		if err != nil {
 			return err
 		}
-		fmt.Printf("\t%s\t%s\n", entry.GetAddress(), entry.GetName())
 	}
 	return nil
 }
