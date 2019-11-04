@@ -11,7 +11,7 @@ import (
 type HeadBucket struct{}
 
 func (controller *HeadBucket) GetArn() string {
-	return "arn:versio:repos:::{bucket}"
+	return "arn:treeverse:repos:::{bucket}"
 }
 
 func (controller *HeadBucket) GetPermission() string {

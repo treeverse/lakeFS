@@ -14,7 +14,7 @@ import (
 type HeadObject struct{}
 
 func (controller *HeadObject) GetArn() string {
-	return "arn:versio:repos:::{bucket}"
+	return "arn:treeverse:repos:::{bucket}"
 }
 
 func (controller *HeadObject) GetPermission() string {

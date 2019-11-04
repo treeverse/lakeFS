@@ -19,7 +19,7 @@ const VersioningResponse = `<VersioningConfiguration xmlns="http://s3.amazonaws.
 type ListObjects struct{}
 
 func (controller *ListObjects) GetArn() string {
-	return "arn:versio:repos:::{bucket}"
+	return "arn:treeverse:repos:::{bucket}"
 }
 
 func (controller *ListObjects) GetPermission() string {

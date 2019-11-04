@@ -12,7 +12,7 @@ import (
 type DeleteObjects struct{}
 
 func (controller *DeleteObjects) GetArn() string {
-	return "arn:versio:repos:::{bucket}"
+	return "arn:treeverse:repos:::{bucket}"
 }
 
 func (controller *DeleteObjects) GetPermission() string {
