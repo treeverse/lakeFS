@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"versio-index/gateway/errors"
 	"versio-index/gateway/permissions"
 )
 
@@ -15,5 +16,9 @@ func (controller *DeleteBucket) GetPermission() string {
 }
 
 func (controller *DeleteBucket) Handle(o *RepoOperation) {
-
+	err := o.Index.DeleteRepo(o.ClientId, o.Repo)
+	if err != nil {
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
 }

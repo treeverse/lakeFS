@@ -14,6 +14,7 @@ type ClientReadOnlyOperations interface {
 
 type ClientOperations interface {
 	ClientReadOnlyOperations
+	DeleteRepo(repoId string)
 }
 
 type KVClientReadOnlyOperations struct {
@@ -44,4 +45,15 @@ func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
 		repos = append(repos, repo)
 	}
 	return repos, nil
+}
+
+func (c *KVClientOperations) DeleteRepo(repoId string) {
+	// clear all workspaces, branches, entries, etc.
+	c.query.ClearPrefix(c.store.Space(SubspaceWorkspace), repoId)
+	c.query.ClearPrefix(c.store.Space(SubspaceBranches), repoId)
+	c.query.ClearPrefix(c.store.Space(SubspaceCommits), repoId)
+	c.query.ClearPrefix(c.store.Space(SubspaceEntries), repoId)
+	c.query.ClearPrefix(c.store.Space(SubspaceObjects), repoId)
+	c.query.ClearPrefix(c.store.Space(SubspaceRefCounts), repoId)
+	c.query.ClearPrefix(c.store.Space(SubspaceRepos), repoId)
 }

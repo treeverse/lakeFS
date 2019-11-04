@@ -55,3 +55,32 @@ type ListObjectsV2Output struct {
 	ContinuationToken     string           `xml:"ContinuationToken,omitempty"`
 	Contents              []Contents       `xml:"Contents"`
 }
+
+type Object struct {
+	Key       string `xml:"Key"`
+	VersionId string `xml:"VersionId"`
+}
+
+type Delete struct {
+	Object []Object `xml:"Object"`
+	Quiet  bool     `xml:"Quiet"`
+}
+
+type Deleted struct {
+	DeleteMarker          bool   `xml:"DeleteMarker"`
+	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId"`
+	Key                   string `xml:"Key"`
+	VersionId             string `xml:"versionId"`
+}
+
+type DeleteError struct {
+	Code      string `xml:"Code"`
+	Key       string `xml:"Key"`
+	Message   string `xml:"Message"`
+	VersionId string `xml:"VersionId"`
+}
+
+type DeleteObjectsOutput struct {
+	Deleted []Deleted     `xml:"Deleted"`
+	Error   []DeleteError `xml:"Error"`
+}
