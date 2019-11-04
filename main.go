@@ -100,15 +100,15 @@ func createCreds() {
 		Policies: []*model.Policy{
 			{
 				Permission: permissions.PermissionManageRepos,
-				Arn:        "arn:versio:repos:::*",
+				Arn:        "arn:treeverse:repos:::*",
 			},
 			{
 				Permission: permissions.PermissionReadRepo,
-				Arn:        "arn:versio:repos:::*",
+				Arn:        "arn:treeverse:repos:::*",
 			},
 			{
 				Permission: permissions.PermissionWriteRepo,
-				Arn:        "arn:versio:repos:::*",
+				Arn:        "arn:treeverse:repos:::*",
 			},
 		},
 	})
