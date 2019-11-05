@@ -32,6 +32,7 @@ type ReadQuery interface {
 	GetAsProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error
 	FutureProto(generator ProtoGenFn, space subspace.Subspace, parts ...tuple.TupleElement) FutureProtoValue
 	RangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) Iterator
+	RangePrefixGreaterThan(space subspace.Subspace, from tuple.TupleElement, parts ...tuple.TupleElement) Iterator
 }
 
 type Query interface {

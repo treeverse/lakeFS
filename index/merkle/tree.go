@@ -148,7 +148,8 @@ func (m *Merkle) GetEntries(tx store.RepoReadOnlyOperations, pth string) ([]*mod
 		empty := make([]*model.Entry, 0)
 		return empty, nil
 	}
-	return tx.ListTree(addr, "", -1)
+	res, _, err := tx.ListTree(addr, "", -1) // request all results
+	return res, err
 }
 
 func (m *Merkle) GetObject(tx store.RepoReadOnlyOperations, pth string) (*model.Object, error) {

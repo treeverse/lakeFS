@@ -78,12 +78,20 @@ func (q *FDBReadQuery) FutureProto(generator ProtoGenFn, space subspace.Subspace
 	}
 }
 
+func (q *FDBReadQuery) RangePrefixGreaterThan(space subspace.Subspace, from tuple.TupleElement, parts ...tuple.TupleElement) Iterator {
+	rang, _ := fdb.PrefixRange(q.pack(space, parts...).FDBKey())
+	off := fdb.FirstGreaterThan(q.pack(space, append(parts, from)...))
+	off.Offset = 2
+	selector := fdb.SelectorRange{
+		Begin: off,
+		End:   fdb.LastLessOrEqual(rang.End),
+	}
+	return q.tx.GetRange(selector, fdb.RangeOptions{}).Iterator()
+}
+
 func (q *FDBReadQuery) RangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) Iterator {
-	begin := q.pack(space, parts...)
-	return q.tx.GetRange(fdb.KeyRange{
-		Begin: begin,
-		End:   append(begin, 0xFF),
-	}, fdb.RangeOptions{}).Iterator()
+	rang, _ := fdb.PrefixRange(q.pack(space, parts...).FDBKey())
+	return q.tx.GetRange(rang, fdb.RangeOptions{}).Iterator()
 }
 
 func (q *FDBQuery) Set(data []byte, space subspace.Subspace, parts ...tuple.TupleElement) {
@@ -100,12 +108,8 @@ func (q *FDBQuery) SetProto(msg proto.Message, space subspace.Subspace, parts ..
 }
 
 func (q *FDBQuery) ClearPrefix(space subspace.Subspace, parts ...tuple.TupleElement) {
-	begin := q.pack(space, parts...)
-	end := append(begin, 0xFF)
-	q.tx.ClearRange(&fdb.KeyRange{
-		Begin: begin,
-		End:   end,
-	})
+	rang, _ := fdb.PrefixRange(q.pack(space, parts...).FDBKey())
+	q.tx.ClearRange(rang)
 }
 
 func (q *FDBQuery) Delete(space subspace.Subspace, parts ...tuple.TupleElement) {

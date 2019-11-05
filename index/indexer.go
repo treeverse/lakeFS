@@ -25,7 +25,7 @@ type Index interface {
 	ReadObject(clientId, repoId, branch, path string) (*model.Object, error)
 	WriteObject(clientId, repoId, branch, path string, object *model.Object) error
 	DeleteObject(clientId, repoId, branch, path string) error
-	ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error)
+	ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
 	ListBranches(clientId, repoId string, results int) ([]*model.Entry, error)
 	ResetBranch(clientId, repoId, branch string) error
 	Commit(clientId, repoId, branch, message, committer string, metadata map[string]string) error
@@ -225,7 +225,11 @@ func (index *KVIndex) ListBranches(clientId, repoId string, results int) ([]*mod
 	return entries.([]*model.Entry), nil
 }
 
-func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, error) {
+func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
+	type result struct {
+		hasMore bool
+		results []*model.Entry
+	}
 	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
 		if err != nil {
@@ -244,12 +248,16 @@ func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, r
 		if err != nil {
 			return nil, err
 		}
-		return tx.ListTree(addr, from, results) // TODO: enrich this list with object metadata
+		res, hasMore, err := tx.ListTree(addr, from, results)
+		if err != nil {
+			return nil, err
+		}
+		return &result{hasMore, res}, nil
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return entries.([]*model.Entry), nil
+	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
 func gc(tx store.RepoOperations, addr string) {

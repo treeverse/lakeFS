@@ -17,7 +17,7 @@ type RepoReadOnlyOperations interface {
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
-	ListTree(addr, from string, results int) ([]*model.Entry, error)
+	ListTree(addr, from string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
 }
 
@@ -105,11 +105,12 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 	return commit, s.query.GetAsProto(commit, s.store.Space(SubspaceCommits), addr)
 }
 
-func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, error) {
+func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
 	// entry keys: (client, repo, parent, name, type)
 	var iter db.Iterator
+	var hasMore bool
 	if len(from) > 0 {
-		iter = s.query.RangePrefix(s.store.Space(SubspaceEntries), addr, from)
+		iter = s.query.RangePrefixGreaterThan(s.store.Space(SubspaceEntries), from, addr)
 	} else {
 		iter = s.query.RangePrefix(s.store.Space(SubspaceEntries), addr)
 	}
@@ -120,15 +121,16 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 		entry := &model.Entry{}
 		err := proto.Unmarshal(entryData.Value, entry)
 		if err != nil {
-			return nil, errors.ErrIndexMalformed
+			return nil, false, errors.ErrIndexMalformed
 		}
 		entries = append(entries, entry)
 		current++
-		if results != -1 && current > results {
+		if results != -1 && current >= results {
+			hasMore = iter.Advance() // will return true if the iterator still has values to read
 			break
 		}
 	}
-	return entries, nil
+	return entries, hasMore, nil
 }
 
 func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
