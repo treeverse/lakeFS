@@ -56,6 +56,19 @@ type ListObjectsV2Output struct {
 	Contents              []Contents       `xml:"Contents"`
 }
 
+type ListObjectsOutput struct {
+	Name           string           `xml:"Name"`
+	IsTruncated    bool             `xml:"IsTruncated"`
+	Prefix         string           `xml:"Prefix"`
+	Delimiter      string           `xml:"Delimiter,omitempty"`
+	KeyCount       int              `xml:"KeyCount"`
+	MaxKeys        int              `xml:"MaxKeys"`
+	CommonPrefixes []CommonPrefixes `xml:"CommonPrefixes"`
+	Marker         string           `xml:"Marker"`
+	NextMarker     string           `xml:"NextMarker"`
+	Contents       []Contents       `xml:"Contents"`
+}
+
 type Object struct {
 	Key       string `xml:"Key"`
 	VersionId string `xml:"VersionId"`
