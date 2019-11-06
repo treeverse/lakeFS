@@ -12,6 +12,7 @@ import (
 	"treeverse-lake/index/model"
 	"treeverse-lake/index/path"
 
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -37,8 +38,9 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	if len(delimiter) != 1 || delimiter[0] != path.Separator {
 		// we only support "/" as a delimiter
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		return
+		delimiter = "/"
+		//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		//return
 	}
 
 	// see if we have a continuation token in the request to pick up from
@@ -54,6 +56,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		results, err = o.Index.ListBranches(o.ClientId, o.Repo, -1)
 		if err != nil {
 			// TODO incorrect error type
+			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
@@ -74,6 +77,10 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
+			o.Log().WithError(err).WithFields(log.Fields{
+				"branch": branch,
+				"path":   parsedPath,
+			}).Error("could not list objects in path")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
@@ -143,8 +150,9 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 
 	if len(delimiter) != 1 || delimiter[0] != path.Separator {
 		// we only support "/" as a delimiter
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		return
+		delimiter = "/"
+		//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		//return
 	}
 
 	// see if we have a continuation token in the request to pick up from
@@ -160,6 +168,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		results, err = o.Index.ListBranches(o.ClientId, o.Repo, -1)
 		if err != nil {
 			// TODO incorrect error type
+			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
@@ -170,6 +179,10 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
+			o.Log().WithError(err).WithFields(log.Fields{
+				"branch": branch,
+				"path":   parsedPath,
+			}).Error("could not list objects in path")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}

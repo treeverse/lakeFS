@@ -9,8 +9,13 @@ message Repo {
     float partial_commit_ratio = 5;
 }
 
+message Block {
+    string address = 1;
+    int64 size = 2;
+}
+
 message Blob {
-    repeated string blocks = 4;
+    repeated Block blocks = 4;
 }
 
 message Entry {

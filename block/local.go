@@ -40,3 +40,17 @@ func (l *LocalFSAdapter) Get(identifier string) (block []byte, err error) {
 	path := l.getPath(identifier)
 	return ioutil.ReadFile(path)
 }
+
+func (l *LocalFSAdapter) GetOffset(identifier string, from, to int64) (block []byte, err error) {
+	path := l.getPath(identifier)
+	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	if err != nil {
+		return nil, err
+	}
+	buf := make([]byte, to-from)
+	_, err = f.ReadAt(buf, from)
+	if err != nil {
+		return nil, err
+	}
+	return buf, nil
+}

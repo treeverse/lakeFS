@@ -1,7 +1,7 @@
 package operations
 
 import (
-	"io/ioutil"
+	"io"
 	"net/http"
 	"time"
 	"treeverse-lake/gateway/errors"
@@ -10,6 +10,12 @@ import (
 	"treeverse-lake/index/model"
 
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	// size of physical object to store in the underlying block adapter
+	// TODO: should probably be a configuration parameter
+	ObjectBlockSize = 128 * 1024 * 1024
 )
 
 type PutObject struct{}
@@ -25,35 +31,59 @@ func (controller *PutObject) GetPermission() string {
 func (controller *PutObject) Handle(o *PathOperation) {
 
 	// handle the upload itself
-	data, err := ioutil.ReadAll(o.Request.Body)
-	if err != nil {
-		o.Log().WithError(err).Error("could not read request body")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
-	}
+	body := o.Request.Body
+	blocks := make([]*model.Block, 0)
+	var totalSize int64
+	var done bool
+	for !done {
+		buf := make([]byte, ObjectBlockSize)
+		n, err := body.Read(buf)
 
-	// write to adapter
-	blocks := make([]string, 0)
-	blockAddr := ident.Bytes(data)
-	err = o.BlockStore.Put(data, blockAddr)
-	if err != nil {
-		o.Log().WithError(err).Error("could not write to block store")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
+		// unexpected error
+		if err != nil && err != io.EOF {
+			o.Log().WithError(err).Error("could not read request body")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+
+		// body is completely drained and we read nothing
+		if err == io.EOF && n == 0 {
+			break // nothing left to do, we read the whole thing
+		}
+
+		// body is completely drained and we read the remainder
+		if err == io.EOF {
+			done = true
+		}
+
+		// write a block
+		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
+		err = o.BlockStore.Put(buf[:n], blockAddr)
+		if err != nil {
+			o.Log().WithError(err).Error("could not write to block store")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+		blocks = append(blocks, &model.Block{
+			Address: blockAddr,
+			Size:    int64(n),
+		})
+		totalSize += int64(n)
+
+		if done {
+			break
+		}
 	}
-	blocks = append(blocks, blockAddr)
 
 	// write metadata
-	before := time.Now()
-	err = o.Index.WriteObject(o.ClientId, o.Repo, o.Branch, o.Path, &model.Object{
-		Blob: &model.Blob{
-			Blocks: blocks,
-		},
-		Metadata:  nil,
-		Timestamp: time.Now().Unix(),
-		Size:      int64(len(data)),
+	writeTime := time.Now()
+	err := o.Index.WriteObject(o.ClientId, o.Repo, o.Branch, o.Path, &model.Object{
+		Blob:      &model.Blob{Blocks: blocks},
+		Metadata:  nil, // TODO: Read whatever metadata came from the request headers/params and add here
+		Timestamp: writeTime.Unix(),
+		Size:      totalSize,
 	})
-	tookMeta := time.Since(before)
+	tookMeta := time.Since(writeTime)
 
 	if err != nil {
 		o.Log().WithError(err).Error("could not update metadata")

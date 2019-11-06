@@ -1,7 +1,6 @@
 package index
 
 import (
-	"fmt"
 	"math/rand"
 	"time"
 	"treeverse-lake/db"
@@ -184,7 +183,6 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	tx.ClearWorkspace(branch)
 
 	// update branch pointer to point at new workspace
-	fmt.Printf("\n\n\n\n\nNew workspace root: %s\n\n\n\n\n", tree.Root())
 	err = tx.WriteBranch(branch, &model.Branch{
 		Name:          branch,
 		Commit:        branchData.GetCommit(),
