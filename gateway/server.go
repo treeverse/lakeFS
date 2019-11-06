@@ -256,13 +256,3 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	// authentication and authorization complete!
 	return op
 }
-
-//CreateMultipartUpload
-//
-//CompleteMultipartUpload
-//
-//AbortMultipartUpload
-//
-//ListMultipartUploads
-//
-//UploadPart

@@ -260,11 +260,6 @@ func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 	merged := make([]*model.Entry, 0)
 	nextCurrent := 0
 	nextChange := 0
-	for _, c := range changes {
-		if strings.EqualFold(c.GetName(), "hash_test.go") {
-			fmt.Printf("boom?")
-		}
-	}
 	for {
 		// if both lists still have values, compare
 		if nextChange < len(changes) && nextCurrent < len(current) {

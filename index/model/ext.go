@@ -38,7 +38,11 @@ func (m *Entry) Identity() []byte {
 }
 
 func (m *Blob) Identity() []byte {
-	return identFromStrings(m.Blocks...)
+	addresses := make([]string, len(m.GetBlocks()))
+	for i, block := range m.GetBlocks() {
+		addresses[i] = block.GetAddress()
+	}
+	return identFromStrings(addresses...)
 }
 
 func (m *Commit) Identity() []byte {
