@@ -48,6 +48,8 @@ func RequestId(r *http.Request) (*http.Request, string) {
 		// assign a request ID for this request
 		reqId = auth.HexStringGenerator(RequestIdByteLength)
 		r = r.WithContext(context.WithValue(ctx, RequestIdContextKey, reqId))
+	} else {
+		reqId = resp.(string)
 	}
 	return r, reqId
 }
