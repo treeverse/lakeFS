@@ -1,6 +1,9 @@
 package operations
 
 import (
+	"fmt"
+	"io"
+	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -50,7 +53,26 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.ResponseWriter.Header().Set("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
-	// assemble a response body
+	// range query?
+	rangeSpec := o.Request.Header.Get("Range")
+	if len(rangeSpec) > 0 {
+		ranger, err := NewObjectRanger(rangeSpec, obj, o.BlockStore)
+		if err != nil {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidRange))
+			return
+		}
+		// range query response
+		o.ResponseWriter.WriteHeader(http.StatusPartialContent)
+		o.ResponseWriter.Header().Set("Content-Range",
+			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
+		_, err = io.Copy(o.ResponseWriter, ranger)
+		if err != nil {
+			o.Log().WithError(err).Errorf("could not copy range to response")
+		}
+		return
+	}
+
+	// assemble a response body (range-less query)
 	blocks := obj.GetBlob().GetBlocks()
 	for _, block := range blocks {
 		data, err := o.BlockStore.Get(block.GetAddress())
@@ -126,11 +148,13 @@ func ParseHTTPRange(spec string, length int64) (HttpRange, error) {
 
 // Utility tool to help with range requests
 type ObjectRanger struct {
-	rang    HttpRange
+	Range   HttpRange
 	obj     *model.Object
 	adapter block.Adapter
 
-	offset int64
+	offset       int64 // offset within the range
+	rangeBuffer  []byte
+	rangeAddress string
 }
 
 func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter) (*ObjectRanger, error) {
@@ -141,26 +165,69 @@ func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter) (*Ob
 		return nil, err
 	}
 	return &ObjectRanger{
-		rang:    rang,
-		obj:     obj,
-		adapter: adapter,
+		Range:       rang,
+		obj:         obj,
+		adapter:     adapter,
+		rangeBuffer: make([]byte, 0),
 	}, nil
-
 }
 
 // implement io.Reader
 func (r *ObjectRanger) Read(p []byte) (n int, err error) {
-	begin := r.rang.StartOffset
-	end := r.rang.EndOffset
+	rangeStart := r.Range.StartOffset + r.offset // assuming we already read some of that range
+	rangeEnd := r.Range.EndOffset
 	var scanned int64
 	bufSize := len(p)
+
 	for _, block := range r.obj.GetBlob().GetBlocks() {
 		// see what range we need from this block
-		bytes, err := r.adapter.GetOffset(block.GetAddress(), ?, ?)
-		if err != nil {
-			return
+		thisBlockStart := scanned
+		thisBlockEnd := scanned + block.GetSize()
+		scanned += block.GetSize()
+
+		if thisBlockStart > rangeEnd {
+			break // we're done, no need to read further blocks
 		}
-		scanned += blockSize
+
+		if thisBlockEnd < rangeStart {
+			continue // we haven't yet reached a block we need
+		}
+
+		// by now we're at a block that we at least need a range from, let's determine it, start position first
+		var startPosition, endPosition int64
+		if rangeStart > thisBlockStart {
+			startPosition = rangeStart - thisBlockStart
+		} else {
+			startPosition = 0
+		}
+
+		if rangeEnd > thisBlockEnd {
+			endPosition = block.GetSize()
+		} else {
+			endPosition = block.GetSize() - (scanned - rangeEnd)
+		}
+
+		// read the actual data required from the block
+		var data []byte
+		if strings.EqualFold(r.rangeAddress, block.GetAddress()) {
+			data = r.rangeBuffer
+		} else {
+			data, err := r.adapter.GetOffset(block.GetAddress(), startPosition, endPosition)
+			if err != nil {
+				return
+			}
+			r.rangeBuffer = data
+			r.rangeAddress = block.GetAddress()
+		}
+
+		// feed it into the buffer until no more space in buffer or no more data left
+		i := 0
+		for n < bufSize && i < len(data) {
+			n++
+			i++
+			r.offset++
+			p[n] = data[i]
+		}
 	}
 	return
 }
