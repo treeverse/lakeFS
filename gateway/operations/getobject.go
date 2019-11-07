@@ -4,22 +4,19 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 	"treeverse-lake/block"
 	"treeverse-lake/db"
 	"treeverse-lake/gateway/errors"
+	ghttp "treeverse-lake/gateway/http"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 
+	"github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
-)
-
-var (
-	ErrBadRange = xerrors.Errorf("unsatisfiable range")
 )
 
 type GetObject struct{}
@@ -56,15 +53,15 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query?
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		ranger, err := NewObjectRanger(rangeSpec, obj, o.BlockStore)
+		ranger, err := NewObjectRanger(rangeSpec, obj, o.BlockStore, o.Log())
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidRange))
 			return
 		}
 		// range query response
-		o.ResponseWriter.WriteHeader(http.StatusPartialContent)
 		o.ResponseWriter.Header().Set("Content-Range",
 			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
+		o.ResponseWriter.WriteHeader(http.StatusPartialContent)
 		_, err = io.Copy(o.ResponseWriter, ranger)
 		if err != nil {
 			o.Log().WithError(err).Errorf("could not copy range to response")
@@ -87,86 +84,29 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 }
 
-type HttpRange struct {
-	StartOffset int64
-	EndOffset   int64
-}
-
-func ParseHTTPRange(spec string, length int64) (HttpRange, error) {
-	// Amazon S3 doesn't support retrieving multiple ranges of data per GET request.
-	var r HttpRange
-	if !strings.HasPrefix(spec, "bytes=") {
-		return r, ErrBadRange
-	}
-	spec = strings.TrimSuffix(spec, "bytes=")
-	parts := strings.Split(spec, "-")
-	if len(parts) != 2 {
-		return r, ErrBadRange
-	}
-
-	fromString := parts[0]
-	toString := parts[1]
-	if len(fromString) == 0 && len(toString) == 0 {
-		return r, ErrBadRange
-	}
-	// negative only
-	if len(fromString) == 0 {
-		endOffset, err := strconv.ParseInt(toString, 10, 64)
-		if err != nil || endOffset > length {
-			return r, ErrBadRange
-		}
-		r.StartOffset = length - endOffset
-		r.EndOffset = length - 1
-		return r, nil
-	}
-	// positive only
-	if len(toString) == 0 {
-		beginOffset, err := strconv.ParseInt(fromString, 10, 64)
-		if err != nil || beginOffset > length-1 {
-			return r, ErrBadRange
-		}
-		r.StartOffset = beginOffset
-		r.EndOffset = length - 1
-		return r, nil
-	}
-	// both set
-	beginOffset, err := strconv.ParseInt(fromString, 10, 64)
-	if err != nil {
-		return r, ErrBadRange
-	}
-	endOffset, err := strconv.ParseInt(toString, 10, 64)
-	if err != nil {
-		return r, ErrBadRange
-	}
-	if beginOffset > length-1 || endOffset > length {
-		return r, ErrBadRange
-	}
-	r.StartOffset = beginOffset
-	r.EndOffset = endOffset
-	return r, nil
-}
-
 // Utility tool to help with range requests
 type ObjectRanger struct {
-	Range   HttpRange
+	Range   ghttp.HttpRange
 	obj     *model.Object
 	adapter block.Adapter
+	logger  *logrus.Entry
 
 	offset       int64 // offset within the range
 	rangeBuffer  []byte
 	rangeAddress string
 }
 
-func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter) (*ObjectRanger, error) {
+func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter, logger *logrus.Entry) (*ObjectRanger, error) {
 	// let's start by deciding which blocks we actually need
-	// TODO: we can later pass on the range queries to S3 itself
-	rang, err := ParseHTTPRange(spec, obj.GetSize())
+	rang, err := ghttp.ParseHTTPRange(spec, obj.GetSize())
 	if err != nil {
+		logger.WithError(err).Error("failed to parse spec")
 		return nil, err
 	}
 	return &ObjectRanger{
 		Range:       rang,
 		obj:         obj,
+		logger:      logger,
 		adapter:     adapter,
 		rangeBuffer: make([]byte, 0),
 	}, nil
@@ -186,6 +126,7 @@ func (r *ObjectRanger) Read(p []byte) (n int, err error) {
 		scanned += block.GetSize()
 
 		if thisBlockStart > rangeEnd {
+			err = io.EOF
 			break // we're done, no need to read further blocks
 		}
 
@@ -212,7 +153,7 @@ func (r *ObjectRanger) Read(p []byte) (n int, err error) {
 		if strings.EqualFold(r.rangeAddress, block.GetAddress()) {
 			data = r.rangeBuffer
 		} else {
-			data, err := r.adapter.GetOffset(block.GetAddress(), startPosition, endPosition)
+			data, err = r.adapter.GetOffset(block.GetAddress(), startPosition, endPosition)
 			if err != nil {
 				return
 			}
@@ -223,11 +164,15 @@ func (r *ObjectRanger) Read(p []byte) (n int, err error) {
 		// feed it into the buffer until no more space in buffer or no more data left
 		i := 0
 		for n < bufSize && i < len(data) {
+			p[n] = data[i]
 			n++
 			i++
 			r.offset++
-			p[n] = data[i]
 		}
+	}
+	// done
+	if n < bufSize {
+		err = io.EOF
 	}
 	return
 }
