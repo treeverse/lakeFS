@@ -129,7 +129,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 
 	// handle GET /?versioning
 	keys := o.Request.URL.Query()
-	for k, _ := range keys {
+	for k := range keys {
 		if strings.EqualFold(k, "versioning") {
 			// this is a versioning request
 			o.EncodeXMLBytes([]byte(VersioningResponse), http.StatusOK)
