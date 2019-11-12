@@ -116,7 +116,3 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 func (m *Merkle) Root() string {
 	return m.root
 }
-
-func (m *Merkle) Walk(tx store.RepoReadOnlyOperations, prefix string, maxResults int) {
-
-}
