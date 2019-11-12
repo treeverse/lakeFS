@@ -17,7 +17,7 @@ func identFromStrings(strings ...string) []byte {
 func identMapToString(data map[string]string) string {
 	keys := make([]string, len(data))
 	i := 0
-	for k, _ := range data {
+	for k := range data {
 		keys[i] = k
 		i++
 	}

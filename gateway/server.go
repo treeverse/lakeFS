@@ -50,7 +50,6 @@ type ServerContext struct {
 type Server struct {
 	ctx        *ServerContext
 	server     *http.Server
-	router     mux.Router
 	bareDomain string
 }
 

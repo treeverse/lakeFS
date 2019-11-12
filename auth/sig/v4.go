@@ -69,7 +69,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	headerValue := r.Header.Get(authHeaderName)
 	if len(headerValue) > 0 {
 		match := AuthHeaderRegexp.FindStringSubmatch(headerValue)
-		if match == nil || len(match) == 0 {
+		if len(match) == 0 {
 			return ctx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
@@ -105,7 +105,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 		return ctx, ErrMissingAuthData
 	}
 	credsMatch := CredentialScopeRegexp.FindStringSubmatch(credentialScope)
-	if credsMatch == nil || len(credsMatch) == 0 {
+	if len(credsMatch) == 0 {
 		return ctx, ErrHeaderMalformed
 	}
 	credsResult := make(map[string]string)
@@ -176,7 +176,7 @@ func (ctx *verificationCtx) queryEscape(str string) string {
 func (ctx *verificationCtx) canonicalizeQueryString() string {
 	queryNames := make([]string, len(ctx.Query))
 	index := 0
-	for k, _ := range ctx.Query {
+	for k := range ctx.Query {
 		queryNames[index] = k
 		index++
 	}

@@ -13,8 +13,8 @@ import (
 )
 
 const (
-	// DefaultPartialCommitRatio is the ratio of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 0.02 // ~50 writes before a partial commit
+	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
+	DefaultPartialCommitRatio = 0.005 // ~200 writes before a partial commit
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -70,6 +70,53 @@ func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch s
 func shouldPartiallyCommit(repo *model.Repo) bool {
 	chosen := rand.Float32()
 	return chosen < repo.GetPartialCommitRatio()
+}
+
+func partialCommit(tx store.RepoOperations, branch string) error {
+	// see if we have any changes that weren't applied
+	wsEntries, err := tx.ListWorkspace(branch)
+	if err != nil {
+		return err
+	}
+	if len(wsEntries) == 0 {
+		return nil
+	}
+
+	// get branch info (including current workspace root)
+	branchData, err := tx.ReadBranch(branch)
+	if xerrors.Is(err, db.ErrNotFound) {
+		return nil
+	} else if err != nil {
+		return err // unexpected error
+	}
+
+	// update the immutable Merkle tree, getting back a new tree
+	tree := merkle.New(branchData.GetWorkspaceRoot())
+	tree, err = tree.Update(tx, wsEntries)
+	if err != nil {
+		return err
+	}
+
+	// clear workspace entries
+	tx.ClearWorkspace(branch)
+
+	// update branch pointer to point at new workspace
+	err = tx.WriteBranch(branch, &model.Branch{
+		Name:          branch,
+		Commit:        branchData.GetCommit(),
+		CommitRoot:    branchData.GetCommitRoot(),
+		WorkspaceRoot: tree.Root(), // does this happen properly?
+	})
+	if err != nil {
+		return err
+	}
+
+	// done!
+	return nil
+}
+
+func gc(tx store.RepoOperations, addr string) {
+	// TODO: impl? here?
 }
 
 type KVIndex struct {
@@ -154,49 +201,6 @@ func (index *KVIndex) DeleteObject(clientId, repoId, branch, path string) error 
 	return err
 }
 
-func partialCommit(tx store.RepoOperations, branch string) error {
-	// see if we have any changes that weren't applied
-	wsEntries, err := tx.ListWorkspace(branch)
-	if err != nil {
-		return err
-	}
-	if len(wsEntries) == 0 {
-		return nil
-	}
-
-	// get branch info (including current workspace root)
-	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, db.ErrNotFound) {
-		return nil
-	} else if err != nil {
-		return err // unexpected error
-	}
-
-	// update the immutable Merkle tree, getting back a new tree
-	tree := merkle.New(branchData.GetWorkspaceRoot())
-	tree, err = tree.Update(tx, wsEntries)
-	if err != nil {
-		return err
-	}
-
-	// clear workspace entries
-	tx.ClearWorkspace(branch)
-
-	// update branch pointer to point at new workspace
-	err = tx.WriteBranch(branch, &model.Branch{
-		Name:          branch,
-		Commit:        branchData.GetCommit(),
-		CommitRoot:    branchData.GetCommitRoot(),
-		WorkspaceRoot: tree.Root(), // does this happen properly?
-	})
-	if err != nil {
-		return err
-	}
-
-	// done!
-	return nil
-}
-
 func (index *KVIndex) ListBranches(clientId, repoId string, results int) ([]*model.Entry, error) {
 	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
 		_, err := tx.ReadRepo()
@@ -256,10 +260,6 @@ func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, r
 		return nil, false, err
 	}
 	return entries.(*result).results, entries.(*result).hasMore, nil
-}
-
-func gc(tx store.RepoOperations, addr string) {
-	// TODO: impl? here?
 }
 
 func (index *KVIndex) ResetBranch(clientId, repoId, branch string) error {
