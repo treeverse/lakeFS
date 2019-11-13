@@ -62,6 +62,7 @@ func LoggingMiddleWare(next http.Handler) http.Handler {
 		writer := &ResponseRecordingWriter{Writer: w}
 		r, reqId := RequestId(r)
 		next.ServeHTTP(writer, r)
+		writer.Header().Set("X-Amz-Request-Id", reqId)
 		log.WithFields(log.Fields{
 			"request_id":  reqId,
 			"path":        r.RequestURI,
