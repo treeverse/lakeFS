@@ -45,7 +45,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		return
 	}
 
-	o.ResponseWriter.Header().Set("Last-Modified", serde.Timestamp(obj.GetTimestamp()))
+	o.ResponseWriter.Header().Set("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
 	o.ResponseWriter.Header().Set("Etag", ident.Hash(obj))
 	o.ResponseWriter.Header().Set("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html

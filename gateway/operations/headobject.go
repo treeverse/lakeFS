@@ -1,7 +1,7 @@
 package operations
 
 import (
-	"strconv"
+	"fmt"
 	"treeverse-lake/db"
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/permissions"
@@ -33,7 +33,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		return
 	}
 	res := o.ResponseWriter
-	res.Header().Set("Content-Length", strconv.FormatInt(obj.GetSize(), 10))
-	res.Header().Set("Last-Modified", serde.Timestamp(obj.GetTimestamp()))
-	res.Header().Set("Etag", ident.Hash(obj))
+	res.Header().Set("Accept-Ranges", "bytes")
+	res.Header().Set("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
+	res.Header().Set("Etag", fmt.Sprintf("\"%s\"", ident.Hash(obj)))
 }

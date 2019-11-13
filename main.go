@@ -44,6 +44,29 @@ func headBucket() {
 	fmt.Printf("%s", dump)
 }
 
+func headObject() {
+	sess := session.Must(session.NewSessionWithOptions(session.Options{
+		SharedConfigState: session.SharedConfigEnable,
+	}))
+
+	signer := v4.NewSigner(sess.Config.Credentials)
+	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/photos/999.jpg", nil)
+	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
+	if err != nil {
+		panic(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	_, _ = os.Stderr.WriteString(fmt.Sprintf("status code: %d\n", resp.StatusCode))
+	dump, err := httputil.DumpResponse(resp, true)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Printf("%s", dump)
+}
+
 func listBucket() {
 	sess := session.Must(session.NewSessionWithOptions(session.Options{
 		SharedConfigState: session.SharedConfigEnable,
@@ -190,10 +213,12 @@ func Run() {
 
 func main() {
 	switch os.Args[1] {
-	case "head":
+	case "headbucket":
 		headBucket()
-	case "list":
+	case "listbucket":
 		listBucket()
+	case "headobject":
+		headObject()
 	case "run":
 		Run()
 	case "user":
