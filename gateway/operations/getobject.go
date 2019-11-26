@@ -50,7 +50,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.ResponseWriter.Header().Set("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
-	// range query?
+	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
 		ranger, err := NewObjectRanger(rangeSpec, obj, o.BlockStore, o.Log())
