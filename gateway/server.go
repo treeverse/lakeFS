@@ -226,7 +226,6 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
 		Operation:   o,
-		ClientId:    creds.GetClientId(),
 		SubjectId:   creds.GetEntityId(),
 		SubjectType: creds.GetCredentialType(),
 	}
@@ -236,12 +235,12 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
-		ClientID:   op.ClientId,
 		UserID:     op.SubjectId,
 		Permission: permission,
 		SubjectARN: arn,
 	})
 	if err != nil {
+		o.Log().WithError(err).Error("failed to authorize")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return nil
 	}

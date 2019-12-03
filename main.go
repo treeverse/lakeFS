@@ -99,15 +99,7 @@ func createCreds() {
 
 	// init auth
 	authService := auth.NewKVAuthService(db, dir)
-	err = authService.CreateClient(&model.Client{
-		Id:   "examplecid",
-		Name: "exampleuid",
-	})
-	if err != nil {
-		panic(err)
-	}
 	err = authService.CreateUser(&model.User{
-		ClientId: "examplecid",
 		Id:       "exampleuid",
 		Email:    "ozkatz100@gmail.com",
 		FullName: "Oz Katz",
@@ -117,9 +109,8 @@ func createCreds() {
 	}
 
 	err = authService.CreateRole(&model.Role{
-		ClientId: "examplecid",
-		Id:       "examplerid",
-		Name:     "AdminRole",
+		Id:   "examplerid",
+		Name: "AdminRole",
 		Policies: []*model.Policy{
 			{
 				Permission: permissions.PermissionManageRepos,
@@ -139,15 +130,12 @@ func createCreds() {
 		panic(err)
 	}
 
-	err = authService.AssignRoleToUser("examplecid", "examplerid", "exampleuid")
+	err = authService.AssignRoleToUser("examplerid", "exampleuid")
 	if err != nil {
 		panic(err)
 	}
 
-	creds, err := authService.CreateUserCredentials(&model.User{
-		ClientId: "examplecid",
-		Id:       "exampleuid",
-	})
+	creds, err := authService.CreateUserCredentials(&model.User{Id: "exampleuid"})
 	if err != nil {
 		panic(err)
 	}
@@ -165,7 +153,7 @@ func getuser() {
 
 	// init auth
 	authService := auth.NewKVAuthService(db, dir)
-	user, err := authService.GetUser("examplecid", "exampleuid")
+	user, err := authService.GetUser("exampleuid")
 	if err != nil {
 		panic(err)
 	}

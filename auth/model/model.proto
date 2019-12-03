@@ -8,18 +8,11 @@ message APICredentials {
         CREDENTIAL_TYPE_APPLICATION = 1;
     }
     Type credential_type = 3;
-    string client_id = 4;
     string entity_id = 5; // either the user ID if a user credential or app ID if application credential
     int64 issued_date = 6;
 }
 
-message Client {
-    string id = 1;
-    string name = 2;
-}
-
 message User {
-    string client_id = 1;
     string id = 2;
     string email = 3;
     string full_name = 4;
@@ -31,7 +24,6 @@ message User {
 }
 
 message Application {
-    string client_id = 1;
     string id = 2;
     string name = 3;
     string access_key_id = 4;
@@ -43,7 +35,6 @@ message Application {
 }
 
 message Group {
-    string client_id = 1;
     string id = 2;
     string name = 3;
 
@@ -51,7 +42,6 @@ message Group {
 }
 
 message Role {
-    string client_id = 1;
     string id = 2;
     string name =  3;
 

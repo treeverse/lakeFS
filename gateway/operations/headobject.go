@@ -22,7 +22,7 @@ func (controller *HeadObject) GetPermission() string {
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
-	obj, err := o.Index.ReadObject(o.ClientId, o.Repo, o.Branch, o.Path)
+	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))

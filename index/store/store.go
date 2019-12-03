@@ -20,10 +20,10 @@ const (
 )
 
 type Store interface {
-	ClientReadTransact(clientId string, fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error)
-	ClientTransact(clientId string, fn func(ops ClientOperations) (interface{}, error)) (interface{}, error)
-	RepoReadTransact(clientId, repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error)
-	RepoTransact(clientId, repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error)
+	ReadTransact(fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error)
+	Transact(fn func(ops ClientOperations) (interface{}, error)) (interface{}, error)
+	RepoReadTransact(repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error)
+	RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error)
 }
 
 type KVStore struct {
@@ -43,8 +43,8 @@ func NewKVStore(database fdb.Database, dir directory.DirectorySubspace) *KVStore
 	return &KVStore{kv: kv}
 }
 
-func (s *KVStore) ClientReadTransact(clientId string, fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.ReadTransact(tuple.Tuple{clientId}, func(q db.ReadQuery) (interface{}, error) {
+func (s *KVStore) ReadTransact(fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error) {
+	return s.kv.ReadTransact(tuple.Tuple{}, func(q db.ReadQuery) (interface{}, error) {
 		return fn(&KVClientReadOnlyOperations{
 			query: q,
 			store: s.kv,
@@ -52,8 +52,8 @@ func (s *KVStore) ClientReadTransact(clientId string, fn func(ops ClientReadOnly
 	})
 }
 
-func (s *KVStore) ClientTransact(clientId string, fn func(ops ClientOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.Transact(tuple.Tuple{clientId}, func(q db.Query) (interface{}, error) {
+func (s *KVStore) Transact(fn func(ops ClientOperations) (interface{}, error)) (interface{}, error) {
+	return s.kv.Transact(tuple.Tuple{}, func(q db.Query) (interface{}, error) {
 		return fn(&KVClientOperations{
 			KVClientReadOnlyOperations: &KVClientReadOnlyOperations{
 				query: q,
@@ -64,8 +64,8 @@ func (s *KVStore) ClientTransact(clientId string, fn func(ops ClientOperations) 
 	})
 }
 
-func (s *KVStore) RepoReadTransact(clientId, repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.ReadTransact(tuple.Tuple{clientId, repoId}, func(q db.ReadQuery) (interface{}, error) {
+func (s *KVStore) RepoReadTransact(repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error) {
+	return s.kv.ReadTransact(tuple.Tuple{repoId}, func(q db.ReadQuery) (interface{}, error) {
 		return fn(&KVRepoReadOnlyOperations{
 			query: q,
 			store: s.kv,
@@ -73,8 +73,8 @@ func (s *KVStore) RepoReadTransact(clientId, repoId string, fn func(ops RepoRead
 	})
 }
 
-func (s *KVStore) RepoTransact(clientId, repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.Transact(tuple.Tuple{clientId, repoId}, func(q db.Query) (interface{}, error) {
+func (s *KVStore) RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error) {
+	return s.kv.Transact(tuple.Tuple{repoId}, func(q db.Query) (interface{}, error) {
 		return fn(&KVRepoOperations{
 			KVRepoReadOnlyOperations: &KVRepoReadOnlyOperations{
 				query: q,

@@ -19,7 +19,7 @@ func (controller *HeadBucket) GetPermission() string {
 }
 
 func (controller *HeadBucket) Handle(o *RepoOperation) {
-	_, err := o.Index.GetRepo(o.ClientId, o.Repo)
+	_, err := o.Index.GetRepo(o.Repo)
 	if xerrors.Is(err, db.ErrNotFound) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
 		return

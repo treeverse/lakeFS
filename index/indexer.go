@@ -21,20 +21,20 @@ const (
 )
 
 type Index interface {
-	ReadObject(clientId, repoId, branch, path string) (*model.Object, error)
-	WriteObject(clientId, repoId, branch, path string, object *model.Object) error
-	DeleteObject(clientId, repoId, branch, path string) error
-	ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
-	ListBranches(clientId, repoId string, results int) ([]*model.Entry, error)
-	ResetBranch(clientId, repoId, branch string) error
-	Commit(clientId, repoId, branch, message, committer string, metadata map[string]string) error
-	DeleteBranch(clientId, repoId, branch string) error
-	Checkout(clientId, repoId, branch, commit string) error
-	Merge(clientId, repoId, source, destination string) error
-	CreateRepo(clientId, repoId, defaultBranch string) error
-	ListRepos(clientId string) ([]*model.Repo, error)
-	GetRepo(clientId, repoId string) (*model.Repo, error)
-	DeleteRepo(clientId, repoId string) error
+	ReadObject(repoId, branch, path string) (*model.Object, error)
+	WriteObject(repoId, branch, path string, object *model.Object) error
+	DeleteObject(repoId, branch, path string) error
+	ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
+	ListBranches(repoId string, results int) ([]*model.Entry, error)
+	ResetBranch(repoId, branch string) error
+	Commit(repoId, branch, message, committer string, metadata map[string]string) error
+	DeleteBranch(repoId, branch string) error
+	Checkout(repoId, branch, commit string) error
+	Merge(repoId, source, destination string) error
+	CreateRepo(repoId, defaultBranch string) error
+	ListRepos() ([]*model.Repo, error)
+	GetRepo(repoId string) (*model.Repo, error)
+	DeleteRepo(repoId string) error
 }
 
 func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
@@ -128,8 +128,8 @@ func NewKVIndex(kv store.Store) *KVIndex {
 }
 
 // Business logic
-func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.Object, error) {
-	obj, err := index.kv.RepoReadTransact(clientId, repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
+func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, error) {
+	obj, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
 		var obj *model.Object
 		we, err := tx.ReadFromWorkspace(branch, path)
 		if xerrors.Is(err, db.ErrNotFound) {
@@ -166,8 +166,8 @@ func (index *KVIndex) ReadObject(clientId, repoId, branch, path string) (*model.
 	return obj.(*model.Object), nil
 }
 
-func (index *KVIndex) WriteObject(clientId, repoId, branch, path string, object *model.Object) error {
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Object) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		addr := ident.Hash(object)
 		err := tx.WriteObject(addr, object)
 		if err != nil {
@@ -187,8 +187,8 @@ func (index *KVIndex) WriteObject(clientId, repoId, branch, path string, object 
 	return err
 }
 
-func (index *KVIndex) DeleteObject(clientId, repoId, branch, path string) error {
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		repo, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
@@ -201,8 +201,8 @@ func (index *KVIndex) DeleteObject(clientId, repoId, branch, path string) error 
 	return err
 }
 
-func (index *KVIndex) ListBranches(clientId, repoId string, results int) ([]*model.Entry, error) {
-	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Entry, error) {
+	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
@@ -227,12 +227,12 @@ func (index *KVIndex) ListBranches(clientId, repoId string, results int) ([]*mod
 	return entries.([]*model.Entry), nil
 }
 
-func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
+func (index *KVIndex) ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
 	type result struct {
 		hasMore bool
 		results []*model.Entry
 	}
-	entries, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
 		if err != nil {
 			return nil, err
@@ -262,9 +262,9 @@ func (index *KVIndex) ListObjects(clientId, repoId, branch, path, from string, r
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
-func (index *KVIndex) ResetBranch(clientId, repoId, branch string) error {
+func (index *KVIndex) ResetBranch(repoId, branch string) error {
 	// clear workspace, set branch workspace root back to commit root
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		tx.ClearWorkspace(branch)
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
@@ -277,9 +277,9 @@ func (index *KVIndex) ResetBranch(clientId, repoId, branch string) error {
 	return err
 }
 
-func (index *KVIndex) Commit(clientId, repoId, branch, message, committer string, metadata map[string]string) error {
+func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) error {
 	ts := time.Now().Unix()
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
@@ -310,8 +310,8 @@ func (index *KVIndex) Commit(clientId, repoId, branch, message, committer string
 	return err
 }
 
-func (index *KVIndex) DeleteBranch(clientId, repoId, branch string) error {
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) DeleteBranch(repoId, branch string) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
@@ -324,8 +324,8 @@ func (index *KVIndex) DeleteBranch(clientId, repoId, branch string) error {
 	return err
 }
 
-func (index *KVIndex) Checkout(clientId, repoId, branch, commit string) error {
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) Checkout(repoId, branch, commit string) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		tx.ClearWorkspace(branch)
 		commitData, err := tx.ReadCommit(commit)
 		if err != nil {
@@ -345,20 +345,19 @@ func (index *KVIndex) Checkout(clientId, repoId, branch, commit string) error {
 	return err
 }
 
-func (index *KVIndex) Merge(clientId, repoId, source, destination string) error {
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) Merge(repoId, source, destination string) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		return nil, nil // TODO: optimistic concurrency based optimization
 		// i.e. assume source branch receives no new commits since the start of the process
 	})
 	return err
 }
 
-func (index *KVIndex) CreateRepo(clientId, repoId, defaultBranch string) error {
+func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
 	creationDate := time.Now().Unix()
 
 	repo := &model.Repo{
-		ClientId:           clientId,
 		RepoId:             repoId,
 		CreationDate:       creationDate,
 		DefaultBranch:      defaultBranch,
@@ -366,7 +365,7 @@ func (index *KVIndex) CreateRepo(clientId, repoId, defaultBranch string) error {
 	}
 
 	// create repository, an empty commit and tree, and the default branch
-	_, err := index.kv.RepoTransact(clientId, repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := tx.WriteRepo(repo)
 		if err != nil {
 			return nil, err
@@ -394,8 +393,8 @@ func (index *KVIndex) CreateRepo(clientId, repoId, defaultBranch string) error {
 	return err
 }
 
-func (index *KVIndex) ListRepos(clientId string) ([]*model.Repo, error) {
-	repos, err := index.kv.ClientReadTransact(clientId, func(tx store.ClientReadOnlyOperations) (interface{}, error) {
+func (index *KVIndex) ListRepos() ([]*model.Repo, error) {
+	repos, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
 		return tx.ListRepos()
 	})
 	if err != nil {
@@ -404,8 +403,8 @@ func (index *KVIndex) ListRepos(clientId string) ([]*model.Repo, error) {
 	return repos.([]*model.Repo), nil
 }
 
-func (index *KVIndex) GetRepo(clientId, repoId string) (*model.Repo, error) {
-	repo, err := index.kv.ClientReadTransact(clientId, func(tx store.ClientReadOnlyOperations) (interface{}, error) {
+func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
+	repo, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
 		return tx.ReadRepo(repoId)
 	})
 	if err != nil {
@@ -414,8 +413,8 @@ func (index *KVIndex) GetRepo(clientId, repoId string) (*model.Repo, error) {
 	return repo.(*model.Repo), nil
 }
 
-func (index *KVIndex) DeleteRepo(clientId, repoId string) error {
-	_, err := index.kv.ClientTransact(clientId, func(tx store.ClientOperations) (interface{}, error) {
+func (index *KVIndex) DeleteRepo(repoId string) error {
+	_, err := index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
 		tx.DeleteRepo(repoId)
 		return nil, nil
 	})

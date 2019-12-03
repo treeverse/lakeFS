@@ -18,7 +18,7 @@ func (controller *ListBuckets) GetPermission() string {
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
-	repos, err := o.Index.ListRepos(o.ClientId)
+	repos, err := o.Index.ListRepos()
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
@@ -32,20 +32,10 @@ func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
 			Name:         repo.GetRepoId(),
 		}
 	}
-	// get client
-	client, err := o.Auth.GetClient(o.ClientId)
-	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
-	}
 
 	// write response
 	o.EncodeResponse(serde.ListBucketsOutput{
 		Buckets: serde.Buckets{Bucket: buckets},
-		Owner: serde.Owner{
-			DisplayName: client.GetName(),
-			ID:          client.GetId(),
-		},
 	}, http.StatusOK)
 
 }
