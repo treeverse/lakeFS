@@ -53,7 +53,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	var err error
 	if len(prefixParts) == 0 {
 		// list branches then.
-		results, err = o.Index.ListBranches(o.ClientId, o.Repo, -1)
+		results, err = o.Index.ListBranches(o.Repo, -1)
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -73,7 +73,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			}
 			continuationToken = string(continuationTokenStr)
 		}
-		results, hasMore, err = o.Index.ListObjects(o.ClientId, o.Repo, branch, parsedPath, continuationToken, ListObjectMaxKeys)
+		results, hasMore, err = o.Index.ListObjects(o.Repo, branch, parsedPath, continuationToken, ListObjectMaxKeys)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -165,7 +165,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	var err error
 	if len(prefixParts) == 0 {
 		// list branches then.
-		results, err = o.Index.ListBranches(o.ClientId, o.Repo, -1)
+		results, err = o.Index.ListBranches(o.Repo, -1)
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -175,7 +175,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	} else {
 		branch := prefixParts[0]
 		parsedPath := path.Join(prefixParts[1:])
-		results, hasMore, err = o.Index.ListObjects(o.ClientId, o.Repo, branch, parsedPath, marker, ListObjectMaxKeys)
+		results, hasMore, err = o.Index.ListObjects(o.Repo, branch, parsedPath, marker, ListObjectMaxKeys)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {

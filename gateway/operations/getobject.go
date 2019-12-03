@@ -31,7 +31,7 @@ func (controller *GetObject) GetPermission() string {
 
 func (controller *GetObject) Handle(o *PathOperation) {
 	beforeMeta := time.Now()
-	obj, err := o.Index.ReadObject(o.ClientId, o.Repo, o.Branch, o.Path)
+	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().WithField("took", metaTook).Info("metadata operation to retrieve object done")
 

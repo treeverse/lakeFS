@@ -89,7 +89,6 @@ func (o *Operation) EncodeError(err errors.APIError) {
 
 type AuthenticatedOperation struct {
 	*Operation
-	ClientId    string
 	SubjectId   string
 	SubjectType authmodel.APICredentials_Type
 }

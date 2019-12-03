@@ -77,7 +77,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	// write metadata
 	writeTime := time.Now()
-	err := o.Index.WriteObject(o.ClientId, o.Repo, o.Branch, o.Path, &model.Object{
+	err := o.Index.WriteObject(o.Repo, o.Branch, o.Path, &model.Object{
 		Blob:      &model.Blob{Blocks: blocks},
 		Metadata:  nil, // TODO: Read whatever metadata came from the request headers/params and add here
 		Timestamp: writeTime.Unix(),
@@ -92,7 +92,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 	o.Log().WithFields(log.Fields{
 		"took":   tookMeta,
-		"client": o.ClientId,
 		"repo":   o.Repo,
 		"branch": o.Branch,
 		"path":   o.Path,

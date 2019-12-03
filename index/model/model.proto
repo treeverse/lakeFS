@@ -2,7 +2,6 @@ syntax = "proto3";
 
 // Data model
 message Repo {
-    string client_id = 1;
     string repo_id = 2;
     int64 creation_date = 3;
     string default_branch = 4;

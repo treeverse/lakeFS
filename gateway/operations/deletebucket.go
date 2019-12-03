@@ -16,7 +16,7 @@ func (controller *DeleteBucket) GetPermission() string {
 }
 
 func (controller *DeleteBucket) Handle(o *RepoOperation) {
-	err := o.Index.DeleteRepo(o.ClientId, o.Repo)
+	err := o.Index.DeleteRepo(o.Repo)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

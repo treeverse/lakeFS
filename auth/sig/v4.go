@@ -155,7 +155,6 @@ func V4Verify(auth V4Auth, credentials *authmodel.APICredentials, r *http.Reques
 	signature := hex.EncodeToString(ctx.sign(signingKey, stringToSign))
 
 	// compare signatures
-	fmt.Printf("request sig: %s\ncalced  sig: %s\n", auth.Signature, signature)
 	if !strings.EqualFold(signature, auth.Signature) {
 		return ErrBadSignature
 	}

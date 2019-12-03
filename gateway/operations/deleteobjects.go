@@ -33,7 +33,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		parts := prefixPath.SplitParts()
 		branch := parts[0]
 
-		err := o.Index.DeleteObject(o.ClientId, o.Repo, branch, path.Join(parts[1:]))
+		err := o.Index.DeleteObject(o.Repo, branch, path.Join(parts[1:]))
 		if err != nil {
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",
