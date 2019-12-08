@@ -3,20 +3,17 @@ package store
 import (
 	"treeverse-lake/db"
 
-	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	"github.com/dgraph-io/badger"
 )
 
-const (
-	SubspaceRepos     = "repos"
-	SubspaceWorkspace = "workspace"
-	SubspaceEntries   = "entries"
-	SubspaceObjects   = "objects"
-	SubspaceCommits   = "commits"
-	SubspaceBranches  = "branches"
-	SubspaceRefCounts = "refCounts"
+var (
+	SubspaceRepos     = db.Namespace("repos")
+	SubspaceWorkspace = db.Namespace("workspace")
+	SubspaceEntries   = db.Namespace("entries")
+	SubspaceObjects   = db.Namespace("objects")
+	SubspaceCommits   = db.Namespace("commits")
+	SubspaceBranches  = db.Namespace("branches")
+	SubspaceRefCounts = db.Namespace("refCounts")
 )
 
 type Store interface {
@@ -30,21 +27,13 @@ type KVStore struct {
 	kv db.Store
 }
 
-func NewKVStore(database fdb.Database, dir directory.DirectorySubspace) *KVStore {
-	kv := db.NewFDBStore(database, map[string]subspace.Subspace{
-		SubspaceRepos:     dir.Sub(SubspaceRepos),
-		SubspaceWorkspace: dir.Sub(SubspaceWorkspace),
-		SubspaceEntries:   dir.Sub(SubspaceEntries),
-		SubspaceObjects:   dir.Sub(SubspaceObjects),
-		SubspaceCommits:   dir.Sub(SubspaceCommits),
-		SubspaceBranches:  dir.Sub(SubspaceBranches),
-		SubspaceRefCounts: dir.Sub(SubspaceRefCounts),
-	})
+func NewKVStore(database *badger.DB) *KVStore {
+	kv := db.NewDBStore(database)
 	return &KVStore{kv: kv}
 }
 
 func (s *KVStore) ReadTransact(fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.ReadTransact(tuple.Tuple{}, func(q db.ReadQuery) (interface{}, error) {
+	return s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
 		return fn(&KVClientReadOnlyOperations{
 			query: q,
 			store: s.kv,
@@ -53,7 +42,7 @@ func (s *KVStore) ReadTransact(fn func(ops ClientReadOnlyOperations) (interface{
 }
 
 func (s *KVStore) Transact(fn func(ops ClientOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.Transact(tuple.Tuple{}, func(q db.Query) (interface{}, error) {
+	return s.kv.Transact(func(q db.Query) (interface{}, error) {
 		return fn(&KVClientOperations{
 			KVClientReadOnlyOperations: &KVClientReadOnlyOperations{
 				query: q,
@@ -65,20 +54,22 @@ func (s *KVStore) Transact(fn func(ops ClientOperations) (interface{}, error)) (
 }
 
 func (s *KVStore) RepoReadTransact(repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.ReadTransact(tuple.Tuple{repoId}, func(q db.ReadQuery) (interface{}, error) {
+	return s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
 		return fn(&KVRepoReadOnlyOperations{
-			query: q,
-			store: s.kv,
+			query:  q,
+			store:  s.kv,
+			repoId: repoId,
 		})
 	})
 }
 
 func (s *KVStore) RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.Transact(tuple.Tuple{repoId}, func(q db.Query) (interface{}, error) {
+	return s.kv.Transact(func(q db.Query) (interface{}, error) {
 		return fn(&KVRepoOperations{
 			KVRepoReadOnlyOperations: &KVRepoReadOnlyOperations{
-				query: q,
-				store: s.kv,
+				query:  q,
+				store:  s.kv,
+				repoId: repoId,
 			},
 			query: q,
 		})

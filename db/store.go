@@ -1,46 +1,45 @@
 package db
 
 import (
-	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	"github.com/dgraph-io/badger"
 )
 
-type FDBStore struct {
-	db     fdb.Database
-	spaces map[string]subspace.Subspace
+type DBStore struct {
+	db *badger.DB
 }
 
-func NewFDBStore(db fdb.Database, spaces map[string]subspace.Subspace) *FDBStore {
-	return &FDBStore{
-		db:     db,
-		spaces: spaces,
+func NewDBStore(db *badger.DB) *DBStore {
+	return &DBStore{db: db}
+}
+
+func (s *DBStore) ReadTransact(fn func(q ReadQuery) (interface{}, error)) (interface{}, error) {
+	var val interface{}
+	err := s.db.View(func(tx *badger.Txn) error {
+		q := &DBReadQuery{tx: tx}
+		v, err := fn(q)
+		val = v
+		return err
+
+	})
+	if err != nil {
+		return nil, err
 	}
+	return val, nil
 }
 
-func (s *FDBStore) Space(name string) subspace.Subspace {
-	return s.spaces[name]
-}
-
-func (s *FDBStore) ReadTransact(ctx []tuple.TupleElement, fn func(q ReadQuery) (interface{}, error)) (interface{}, error) {
-	return s.db.ReadTransact(func(tx fdb.ReadTransaction) (interface{}, error) {
-		q := &FDBReadQuery{
-			Context: ctx,
-			tx:      tx,
+func (s *DBStore) Transact(fn func(q Query) (interface{}, error)) (interface{}, error) {
+	//return s.db.Transact(func(tx fdb.Transaction) (interface{}, error) {
+	var val interface{}
+	err := s.db.Update(func(tx *badger.Txn) error {
+		q := &DBQuery{
+			&DBReadQuery{tx: tx},
 		}
-		return fn(q)
+		v, err := fn(q)
+		val = v
+		return err
 	})
-}
-
-func (s *FDBStore) Transact(ctx []tuple.TupleElement, fn func(q Query) (interface{}, error)) (interface{}, error) {
-	return s.db.Transact(func(tx fdb.Transaction) (interface{}, error) {
-		q := &FDBQuery{
-			FDBReadQuery: &FDBReadQuery{
-				Context: ctx,
-				tx:      tx,
-			},
-			tx: tx,
-		}
-		return fn(q)
-	})
+	if err != nil {
+		return nil, err
+	}
+	return val, nil
 }

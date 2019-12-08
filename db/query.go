@@ -1,117 +1,135 @@
 package db
 
 import (
-	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/subspace"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
+	"bytes"
+
+	"github.com/dgraph-io/badger"
 	"github.com/golang/protobuf/proto"
 )
 
-type FDBReadQuery struct {
-	Context []tuple.TupleElement
-	tx      fdb.ReadTransaction
+type DBReadQuery struct {
+	tx *badger.Txn
 }
 
-type FDBQuery struct {
-	*FDBReadQuery
-	tx fdb.Transaction
+type DBQuery struct {
+	*DBReadQuery
 }
 
-func (q *FDBReadQuery) Snapshot() ReadQuery {
-	return &FDBReadQuery{
-		Context: q.Context,
-		tx:      q.tx.Snapshot(),
+type dbPrefixIterator struct {
+	skip   []byte
+	prefix []byte
+	iter   *badger.Iterator
+}
+
+func (it *dbPrefixIterator) Advance() bool {
+	it.iter.Next()
+	underPrefix := it.iter.ValidForPrefix(it.prefix)
+	if !underPrefix {
+		return false // no longer ranging the requested prefix
 	}
-}
-
-func (q *FDBReadQuery) pack(space subspace.Subspace, parts ...tuple.TupleElement) fdb.Key {
-	ctxTuple := append(tuple.Tuple{}, q.Context...)
-	parts = append(ctxTuple, parts...)
-	return space.Pack(parts)
-}
-
-func (q *FDBReadQuery) Get(space subspace.Subspace, parts ...tuple.TupleElement) FutureValue {
-	return q.tx.Get(q.pack(space, parts...))
-}
-
-func (q *FDBReadQuery) GetAsProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
-	data := q.Get(space, parts...).MustGet()
-	if data == nil {
-
-		return ErrNotFound
+	if it.skip != nil && bytes.Equal(it.iter.Item().Key(), it.skip) {
+		it.iter.Next() // skip this requested key
+		return it.iter.ValidForPrefix(it.prefix)
 	}
-	err := proto.Unmarshal(data, msg)
+	return true
+
+}
+func (it *dbPrefixIterator) Get() (KeyValue, error) {
+	var err error
+	kv := KeyValue{}
+	item := it.iter.Item()
+	kv.Key = item.Key()
+	kv.Value, err = item.ValueCopy(nil)
+	return kv, err
+}
+func (it *dbPrefixIterator) Close() {
+	it.iter.Close()
+}
+
+func (q *DBReadQuery) pack(ns Namespace, key CompositeKey) []byte {
+	parts := CompositeKey{ns}
+	parts = parts.With(key...)
+	return parts.AsKey()
+}
+
+func (q *DBReadQuery) Get(space Namespace, key CompositeKey) (KeyValue, error) {
+	kv := KeyValue{}
+	item, err := q.tx.Get(q.pack(space, key))
+	if err != nil {
+		return kv, err
+	}
+	kv.Key = item.Key()
+	kv.Value, err = item.ValueCopy(nil)
+	return kv, err
+
+}
+
+func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key CompositeKey) error {
+	data, err := q.Get(space, key)
+	if err != nil {
+		return err
+	}
+	err = proto.Unmarshal(data.Value, msg)
 	if err != nil {
 		return ErrSerialization
 	}
 	return nil
 }
 
-type fdbFutureProtoValue struct {
-	f  FutureValue
-	fn ProtoGenFn
+func (q *DBReadQuery) Range(space Namespace) Iterator {
+	opts := badger.DefaultIteratorOptions
+	it := q.tx.NewIterator(opts)
+	return &dbPrefixIterator{iter: it}
 }
 
-func (v *fdbFutureProtoValue) Get() (proto.Message, error) {
-	data, err := v.f.Get()
-	if data == nil {
-		return nil, ErrNotFound
-	}
-	if err != nil {
-		return nil, err
-	}
-	msg := v.fn()
-	err = proto.Unmarshal(data, msg)
-	if err != nil {
-		return nil, ErrSerialization
-	}
-	return msg, nil
-}
-func (v *fdbFutureProtoValue) Cancel() {
-	v.f.Cancel()
-}
-
-func (q *FDBReadQuery) FutureProto(generator ProtoGenFn, space subspace.Subspace, parts ...tuple.TupleElement) FutureProtoValue {
-	return &fdbFutureProtoValue{
-		f:  q.Get(space, parts...),
-		fn: generator,
+func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) Iterator {
+	opts := badger.DefaultIteratorOptions
+	it := q.tx.NewIterator(opts)
+	it.Seek(q.pack(space, prefix)) // go to the correct offset
+	return &dbPrefixIterator{
+		prefix: prefix.AsKey(),
+		iter:   it,
 	}
 }
 
-func (q *FDBReadQuery) RangePrefixGreaterThan(space subspace.Subspace, from tuple.TupleElement, parts ...tuple.TupleElement) Iterator {
-	rang, _ := fdb.PrefixRange(q.pack(space, parts...).FDBKey())
-	off := fdb.FirstGreaterThan(q.pack(space, append(parts, from)...))
-	off.Offset = 2
-	selector := fdb.SelectorRange{
-		Begin: off,
-		End:   fdb.LastLessOrEqual(rang.End),
+func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan []byte) Iterator {
+	opts := badger.DefaultIteratorOptions
+	it := q.tx.NewIterator(opts)
+	offset := prefix.With(greaterThan)
+	it.Seek(q.pack(space, offset)) // go to the correct offset
+	return &dbPrefixIterator{
+		prefix: prefix.AsKey(),
+		skip:   offset.AsKey(),
+		iter:   it,
 	}
-	return q.tx.GetRange(selector, fdb.RangeOptions{}).Iterator()
 }
 
-func (q *FDBReadQuery) RangePrefix(space subspace.Subspace, parts ...tuple.TupleElement) Iterator {
-	rang, _ := fdb.PrefixRange(q.pack(space, parts...).FDBKey())
-	return q.tx.GetRange(rang, fdb.RangeOptions{}).Iterator()
+func (q *DBQuery) Set(data []byte, space Namespace, key CompositeKey) error {
+	return q.tx.Set(q.pack(space, key), data)
 }
 
-func (q *FDBQuery) Set(data []byte, space subspace.Subspace, parts ...tuple.TupleElement) {
-	q.tx.Set(q.pack(space, parts...), data)
-}
-
-func (q *FDBQuery) SetProto(msg proto.Message, space subspace.Subspace, parts ...tuple.TupleElement) error {
+func (q *DBQuery) SetProto(msg proto.Message, space Namespace, key CompositeKey) error {
 	data, err := proto.Marshal(msg)
 	if err != nil {
 		return ErrSerialization
 	}
-	q.Set(data, space, parts...)
-	return nil
+	return q.Set(data, space, key)
 }
 
-func (q *FDBQuery) ClearPrefix(space subspace.Subspace, parts ...tuple.TupleElement) {
-	rang, _ := fdb.PrefixRange(q.pack(space, parts...).FDBKey())
-	q.tx.ClearRange(rang)
+func (q *DBQuery) ClearPrefix(space Namespace, key CompositeKey) error {
+	opts := badger.DefaultIteratorOptions
+	prefix := q.pack(space, key) // go to the correct offset
+	it := q.tx.NewIterator(opts)
+	var err error
+	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
+		err = q.tx.Delete(it.Item().Key())
+		if err != nil {
+			return err
+		}
+	}
+	return err
 }
 
-func (q *FDBQuery) Delete(space subspace.Subspace, parts ...tuple.TupleElement) {
-	q.tx.Clear(q.pack(space, parts...))
+func (q *DBQuery) Delete(space Namespace, key CompositeKey) error {
+	return q.tx.Delete(q.pack(space, key))
 }

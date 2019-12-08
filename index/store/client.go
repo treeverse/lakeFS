@@ -14,7 +14,7 @@ type ClientReadOnlyOperations interface {
 
 type ClientOperations interface {
 	ClientReadOnlyOperations
-	DeleteRepo(repoId string)
+	DeleteRepo(repoId string) error
 }
 
 type KVClientReadOnlyOperations struct {
@@ -29,16 +29,19 @@ type KVClientOperations struct {
 
 func (c *KVClientReadOnlyOperations) ReadRepo(repoId string) (*model.Repo, error) {
 	repo := &model.Repo{}
-	return repo, c.query.GetAsProto(repo, c.store.Space(SubspaceRepos), repoId)
+	return repo, c.query.GetAsProto(repo, SubspaceRepos, db.CompositeStrings(repoId))
 }
 
 func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
 	repos := make([]*model.Repo, 0)
-	iter := c.query.RangePrefix(c.store.Space(SubspaceRepos))
+	iter := c.query.Range(SubspaceRepos)
 	for iter.Advance() {
-		kv := iter.MustGet()
+		kv, err := iter.Get()
+		if err != nil {
+			return nil, err
+		}
 		repo := &model.Repo{}
-		err := proto.Unmarshal(kv.Value, repo)
+		err = proto.Unmarshal(kv.Value, repo)
 		if err != nil {
 			return nil, err
 		}
@@ -47,13 +50,22 @@ func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
 	return repos, nil
 }
 
-func (c *KVClientOperations) DeleteRepo(repoId string) {
+func (c *KVClientOperations) DeleteRepo(repoId string) error {
 	// clear all workspaces, branches, entries, etc.
-	c.query.ClearPrefix(c.store.Space(SubspaceWorkspace), repoId)
-	c.query.ClearPrefix(c.store.Space(SubspaceBranches), repoId)
-	c.query.ClearPrefix(c.store.Space(SubspaceCommits), repoId)
-	c.query.ClearPrefix(c.store.Space(SubspaceEntries), repoId)
-	c.query.ClearPrefix(c.store.Space(SubspaceObjects), repoId)
-	c.query.ClearPrefix(c.store.Space(SubspaceRefCounts), repoId)
-	c.query.ClearPrefix(c.store.Space(SubspaceRepos), repoId)
+	namespaces := []db.Namespace{
+		SubspaceWorkspace,
+		SubspaceBranches,
+		SubspaceCommits,
+		SubspaceEntries,
+		SubspaceObjects,
+		SubspaceRefCounts,
+		SubspaceRepos,
+	}
+	for _, ns := range namespaces {
+		err := c.query.ClearPrefix(ns, db.CompositeStrings(repoId))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }

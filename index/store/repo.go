@@ -1,6 +1,7 @@
 package store
 
 import (
+	"strconv"
 	"treeverse-lake/db"
 	"treeverse-lake/index/errors"
 	"treeverse-lake/index/model"
@@ -9,7 +10,6 @@ import (
 )
 
 type RepoReadOnlyOperations interface {
-	Snapshot() RepoReadOnlyOperations
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
@@ -34,8 +34,9 @@ type RepoOperations interface {
 }
 
 type KVRepoReadOnlyOperations struct {
-	query db.ReadQuery
-	store db.Store
+	query  db.ReadQuery
+	store  db.Store
+	repoId string
 }
 
 type KVRepoOperations struct {
@@ -43,25 +44,21 @@ type KVRepoOperations struct {
 	query db.Query
 }
 
-func (s *KVRepoReadOnlyOperations) Snapshot() RepoReadOnlyOperations {
-	return &KVRepoReadOnlyOperations{
-		query: s.query.Snapshot(),
-		store: s.store,
-	}
-}
-
 func (s *KVRepoReadOnlyOperations) ReadRepo() (*model.Repo, error) {
 	repo := &model.Repo{}
-	return repo, s.query.GetAsProto(repo, s.store.Space(SubspaceRepos))
+	return repo, s.query.GetAsProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
 }
 
 func (s *KVRepoReadOnlyOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
-	iter := s.query.RangePrefix(s.store.Space(SubspaceWorkspace), branch)
+	iter := s.query.RangePrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
 	ws := make([]*model.WorkspaceEntry, 0)
 	for iter.Advance() {
-		kv := iter.MustGet()
+		kv, err := iter.Get()
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
 		ent := &model.WorkspaceEntry{}
-		err := proto.Unmarshal(kv.Value, ent)
+		err = proto.Unmarshal(kv.Value, ent)
 		if err != nil {
 			return nil, errors.ErrIndexMalformed
 		}
@@ -72,16 +69,19 @@ func (s *KVRepoReadOnlyOperations) ListWorkspace(branch string) ([]*model.Worksp
 
 func (s *KVRepoReadOnlyOperations) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
 	ent := &model.WorkspaceEntry{}
-	return ent, s.query.GetAsProto(ent, s.store.Space(SubspaceWorkspace), branch, path)
+	return ent, s.query.GetAsProto(ent, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }
 
 func (s *KVRepoReadOnlyOperations) ListBranches() ([]*model.Branch, error) {
-	iter := s.query.RangePrefix(s.store.Space(SubspaceBranches))
+	iter := s.query.RangePrefix(SubspaceBranches, db.CompositeStrings(s.repoId))
 	branches := make([]*model.Branch, 0)
 	for iter.Advance() {
 		branch := &model.Branch{}
-		kv := iter.MustGet()
-		err := proto.Unmarshal(kv.Value, branch)
+		kv, err := iter.Get()
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		err = proto.Unmarshal(kv.Value, branch)
 		if err != nil {
 			return nil, errors.ErrIndexMalformed
 		}
@@ -92,17 +92,17 @@ func (s *KVRepoReadOnlyOperations) ListBranches() ([]*model.Branch, error) {
 
 func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, error) {
 	b := &model.Branch{}
-	return b, s.query.GetAsProto(b, s.store.Space(SubspaceBranches), branch)
+	return b, s.query.GetAsProto(b, SubspaceBranches, db.CompositeStrings(s.repoId, branch))
 }
 
 func (s *KVRepoReadOnlyOperations) ReadObject(addr string) (*model.Object, error) {
 	obj := &model.Object{}
-	return obj, s.query.GetAsProto(obj, s.store.Space(SubspaceObjects), addr)
+	return obj, s.query.GetAsProto(obj, SubspaceObjects, db.CompositeStrings(s.repoId, addr))
 }
 
 func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error) {
 	commit := &model.Commit{}
-	return commit, s.query.GetAsProto(commit, s.store.Space(SubspaceCommits), addr)
+	return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
 }
 
 func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
@@ -110,16 +110,19 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 	var iter db.Iterator
 	var hasMore bool
 	if len(from) > 0 {
-		iter = s.query.RangePrefixGreaterThan(s.store.Space(SubspaceEntries), from, addr)
+		iter = s.query.RangePrefixGreaterThan(SubspaceEntries, db.CompositeStrings(s.repoId, addr), []byte(from))
 	} else {
-		iter = s.query.RangePrefix(s.store.Space(SubspaceEntries), addr)
+		iter = s.query.RangePrefix(SubspaceEntries, db.CompositeStrings(s.repoId, addr))
 	}
 	entries := make([]*model.Entry, 0)
 	current := 0
 	for iter.Advance() {
-		entryData := iter.MustGet()
+		entryData, err := iter.Get()
+		if err != nil {
+			return nil, false, errors.ErrIndexMalformed
+		}
 		entry := &model.Entry{}
-		err := proto.Unmarshal(entryData.Value, entry)
+		err = proto.Unmarshal(entryData.Value, entry)
 		if err != nil {
 			return nil, false, errors.ErrIndexMalformed
 		}
@@ -135,20 +138,20 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 
 func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
 	entry := &model.Entry{}
-	return entry, s.query.GetAsProto(entry, s.store.Space(SubspaceEntries), treeAddress, name, int(entryType))
+	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name, strconv.Itoa(int(entryType))))
 }
 
 func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
-	return s.query.SetProto(entry, s.store.Space(SubspaceWorkspace), branch, path)
+	return s.query.SetProto(entry, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }
 
 func (s *KVRepoOperations) ClearWorkspace(branch string) {
-	s.query.ClearPrefix(s.store.Space(SubspaceWorkspace), branch)
+	s.query.ClearPrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
 }
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
-		err := s.query.SetProto(entry, s.store.Space(SubspaceEntries), address, entry.GetName(), int(entry.GetType()))
+		err := s.query.SetProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, address, entry.GetName(), strconv.Itoa(int(entry.GetType()))))
 		if err != nil {
 			return err
 		}
@@ -157,21 +160,21 @@ func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) err
 }
 
 func (s *KVRepoOperations) WriteObject(addr string, object *model.Object) error {
-	return s.query.SetProto(object, s.store.Space(SubspaceObjects), addr)
+	return s.query.SetProto(object, SubspaceObjects, db.CompositeStrings(s.repoId, addr))
 }
 
 func (s *KVRepoOperations) WriteCommit(addr string, commit *model.Commit) error {
-	return s.query.SetProto(commit, s.store.Space(SubspaceCommits), addr)
+	return s.query.SetProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
 }
 
 func (s *KVRepoOperations) WriteBranch(name string, branch *model.Branch) error {
-	return s.query.SetProto(branch, s.store.Space(SubspaceBranches), name)
+	return s.query.SetProto(branch, SubspaceBranches, db.CompositeStrings(s.repoId, name))
 }
 
 func (s *KVRepoOperations) DeleteBranch(name string) {
-	s.query.Delete(s.store.Space(SubspaceBranches), name)
+	s.query.Delete(SubspaceBranches, db.CompositeStrings(s.repoId, name))
 }
 
 func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
-	return s.query.SetProto(repo, s.store.Space(SubspaceRepos))
+	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
 }
