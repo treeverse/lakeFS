@@ -3,8 +3,6 @@ package journal
 import (
 	"treeverse-lake/db"
 	"treeverse-lake/ident"
-
-	"github.com/apple/foundationdb/bindings/go/src/fdb/tuple"
 )
 
 type OpCode int
@@ -35,8 +33,7 @@ type KVJournal struct {
 }
 
 func (kv *KVJournal) Log(e Event) error {
-	_, err := kv.store.Transact([]tuple.TupleElement{}, func(q db.Query) (interface{}, error) {
-
+	_, err := kv.store.Transact(func(q db.Query) (interface{}, error) {
 		return nil, nil
 	})
 	return err
