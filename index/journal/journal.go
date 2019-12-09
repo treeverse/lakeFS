@@ -8,7 +8,7 @@ import (
 type OpCode int
 
 type Event struct {
-	Time        int64             // logical timestamp derived from the fdb transaction ID
+	Time        int64             // logical timestamp derived from a transaction ID
 	RepoId      string            // requesting repo
 	ClientId    string            // requesting Client
 	Operation   OpCode            // what did we perform?
