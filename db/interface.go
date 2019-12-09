@@ -19,11 +19,9 @@ type CompositeKey [][]byte
 
 func (c CompositeKey) AsKey() []byte {
 	var buf bytes.Buffer
-	for i, part := range c {
+	for _, part := range c {
 		buf.Write(part)
-		if i < len(c)-1 {
-			buf.WriteByte(0x00)
-		}
+		buf.WriteByte(0x00)
 	}
 	return buf.Bytes()
 }
