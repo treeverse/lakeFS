@@ -34,7 +34,8 @@ func (c *KVClientReadOnlyOperations) ReadRepo(repoId string) (*model.Repo, error
 
 func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
 	repos := make([]*model.Repo, 0)
-	iter := c.query.Range(SubspaceRepos)
+	iter, itclose := c.query.Range(SubspaceRepos)
+	defer itclose()
 	for iter.Advance() {
 		kv, err := iter.Get()
 		if err != nil {

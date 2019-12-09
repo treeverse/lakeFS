@@ -24,12 +24,12 @@ type RepoReadOnlyOperations interface {
 type RepoOperations interface {
 	RepoReadOnlyOperations
 	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
-	ClearWorkspace(branch string)
+	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
 	WriteObject(addr string, object *model.Object) error
 	WriteCommit(addr string, commit *model.Commit) error
 	WriteBranch(name string, branch *model.Branch) error
-	DeleteBranch(name string)
+	DeleteBranch(name string) error
 	WriteRepo(repo *model.Repo) error
 }
 
@@ -50,7 +50,8 @@ func (s *KVRepoReadOnlyOperations) ReadRepo() (*model.Repo, error) {
 }
 
 func (s *KVRepoReadOnlyOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
-	iter := s.query.RangePrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
+	iter, itclose := s.query.RangePrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
+	defer itclose()
 	ws := make([]*model.WorkspaceEntry, 0)
 	for iter.Advance() {
 		kv, err := iter.Get()
@@ -73,7 +74,8 @@ func (s *KVRepoReadOnlyOperations) ReadFromWorkspace(branch, path string) (*mode
 }
 
 func (s *KVRepoReadOnlyOperations) ListBranches() ([]*model.Branch, error) {
-	iter := s.query.RangePrefix(SubspaceBranches, db.CompositeStrings(s.repoId))
+	iter, itclose := s.query.RangePrefix(SubspaceBranches, db.CompositeStrings(s.repoId))
+	defer itclose()
 	branches := make([]*model.Branch, 0)
 	for iter.Advance() {
 		branch := &model.Branch{}
@@ -108,12 +110,14 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
 	// entry keys: (client, repo, parent, name, type)
 	var iter db.Iterator
+	var itclose db.IteratorCloseFn
 	var hasMore bool
 	if len(from) > 0 {
-		iter = s.query.RangePrefixGreaterThan(SubspaceEntries, db.CompositeStrings(s.repoId, addr), []byte(from))
+		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, db.CompositeStrings(s.repoId, addr), []byte(from))
 	} else {
-		iter = s.query.RangePrefix(SubspaceEntries, db.CompositeStrings(s.repoId, addr))
+		iter, itclose = s.query.RangePrefix(SubspaceEntries, db.CompositeStrings(s.repoId, addr))
 	}
+	defer itclose()
 	entries := make([]*model.Entry, 0)
 	current := 0
 	for iter.Advance() {
@@ -145,8 +149,8 @@ func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *mode
 	return s.query.SetProto(entry, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }
 
-func (s *KVRepoOperations) ClearWorkspace(branch string) {
-	s.query.ClearPrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
+func (s *KVRepoOperations) ClearWorkspace(branch string) error {
+	return s.query.ClearPrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
 }
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
@@ -171,8 +175,8 @@ func (s *KVRepoOperations) WriteBranch(name string, branch *model.Branch) error 
 	return s.query.SetProto(branch, SubspaceBranches, db.CompositeStrings(s.repoId, name))
 }
 
-func (s *KVRepoOperations) DeleteBranch(name string) {
-	s.query.Delete(SubspaceBranches, db.CompositeStrings(s.repoId, name))
+func (s *KVRepoOperations) DeleteBranch(name string) error {
+	return s.query.Delete(SubspaceBranches, db.CompositeStrings(s.repoId, name))
 }
 
 func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {

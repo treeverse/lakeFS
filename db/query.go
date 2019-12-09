@@ -19,27 +19,29 @@ type dbPrefixIterator struct {
 	skip   []byte
 	prefix []byte
 	iter   *badger.Iterator
+	item   *badger.Item
 }
 
 func (it *dbPrefixIterator) Advance() bool {
-	it.iter.Next()
-	underPrefix := it.iter.ValidForPrefix(it.prefix)
-	if !underPrefix {
-		return false // no longer ranging the requested prefix
+	if !it.iter.Valid() {
+		return false
 	}
-	if it.skip != nil && bytes.Equal(it.iter.Item().Key(), it.skip) {
-		it.iter.Next() // skip this requested key
-		return it.iter.ValidForPrefix(it.prefix)
+	if len(it.prefix) > 0 && !it.iter.ValidForPrefix(it.prefix) {
+		return false
+	}
+	it.item = it.iter.Item()
+	it.iter.Next()
+	if len(it.skip) > 0 && bytes.Equal(it.item.Key(), it.skip) {
+		return it.Advance()
 	}
 	return true
-
 }
+
 func (it *dbPrefixIterator) Get() (KeyValue, error) {
 	var err error
 	kv := KeyValue{}
-	item := it.iter.Item()
-	kv.Key = item.Key()
-	kv.Value, err = item.ValueCopy(nil)
+	kv.Key = it.item.Key()
+	kv.Value, err = it.item.ValueCopy(nil)
 	return kv, err
 }
 func (it *dbPrefixIterator) Close() {
@@ -55,6 +57,9 @@ func (q *DBReadQuery) pack(ns Namespace, key CompositeKey) []byte {
 func (q *DBReadQuery) Get(space Namespace, key CompositeKey) (KeyValue, error) {
 	kv := KeyValue{}
 	item, err := q.tx.Get(q.pack(space, key))
+	if err == badger.ErrKeyNotFound {
+		return kv, ErrNotFound
+	}
 	if err != nil {
 		return kv, err
 	}
@@ -76,32 +81,45 @@ func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key Composi
 	return nil
 }
 
-func (q *DBReadQuery) Range(space Namespace) Iterator {
+func (q *DBReadQuery) Range(space Namespace) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)
-	return &dbPrefixIterator{iter: it}
+	pref := CompositeKey{space}.AsKey()
+	it.Seek(pref) // go to the correct offset
+	return &dbPrefixIterator{
+			prefix: pref,
+			iter:   it,
+		}, func() {
+			it.Close()
+		}
 }
 
-func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) Iterator {
+func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)
-	it.Seek(q.pack(space, prefix)) // go to the correct offset
+	pref := q.pack(space, prefix)
+	it.Seek(pref) // go to the correct offset
 	return &dbPrefixIterator{
-		prefix: prefix.AsKey(),
-		iter:   it,
-	}
+			prefix: pref,
+			iter:   it,
+		}, func() {
+			it.Close()
+		}
 }
 
-func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan []byte) Iterator {
+func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan []byte) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)
-	offset := prefix.With(greaterThan)
-	it.Seek(q.pack(space, offset)) // go to the correct offset
+	pref := q.pack(space, prefix)
+	offset := q.pack(space, prefix.With(greaterThan))
+	it.Seek(pref) // go to the correct offset
 	return &dbPrefixIterator{
-		prefix: prefix.AsKey(),
-		skip:   offset.AsKey(),
-		iter:   it,
-	}
+			prefix: pref,
+			skip:   offset,
+			iter:   it,
+		}, func() {
+			it.Close()
+		}
 }
 
 func (q *DBQuery) Set(data []byte, space Namespace, key CompositeKey) error {
@@ -127,6 +145,7 @@ func (q *DBQuery) ClearPrefix(space Namespace, key CompositeKey) error {
 			return err
 		}
 	}
+	it.Close()
 	return err
 }
 
