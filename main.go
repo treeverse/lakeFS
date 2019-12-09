@@ -10,13 +10,14 @@ import (
 	"treeverse-lake/auth"
 	"treeverse-lake/auth/model"
 	"treeverse-lake/block"
+	db2 "treeverse-lake/db"
 	"treeverse-lake/gateway"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/index"
 	"treeverse-lake/index/store"
 
-	"github.com/apple/foundationdb/bindings/go/src/fdb"
-	"github.com/apple/foundationdb/bindings/go/src/fdb/directory"
+	"github.com/dgraph-io/badger"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -90,15 +91,13 @@ func listBucket() {
 
 func createCreds() {
 	// init fdb
-	fdb.MustAPIVersion(600)
-	db := fdb.MustOpenDefault()
-	dir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
+	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		panic(err)
 	}
 
 	// init auth
-	authService := auth.NewKVAuthService(db, dir)
+	authService := auth.NewKVAuthService(db)
 	err = authService.CreateUser(&model.User{
 		Id:       "exampleuid",
 		Email:    "ozkatz100@gmail.com",
@@ -144,15 +143,13 @@ func createCreds() {
 }
 
 func getuser() {
-	fdb.MustAPIVersion(600)
-	db := fdb.MustOpenDefault()
-	dir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
+	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		panic(err)
 	}
 
 	// init auth
-	authService := auth.NewKVAuthService(db, dir)
+	authService := auth.NewKVAuthService(db)
 	user, err := authService.GetUser("exampleuid")
 	if err != nil {
 		panic(err)
@@ -171,19 +168,13 @@ func Run() {
 	log.SetLevel(log.TraceLevel) // for now
 
 	// init fdb
-	fdb.MustAPIVersion(600)
-	db := fdb.MustOpenDefault()
-	authdir, err := directory.CreateOrOpen(db, []string{"auth"}, nil)
-	if err != nil {
-		panic(err)
-	}
-	indexdir, err := directory.CreateOrOpen(db, []string{"index"}, nil)
+	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		panic(err)
 	}
 
 	// init index
-	meta := index.NewKVIndex(store.NewKVStore(db, indexdir))
+	meta := index.NewKVIndex(store.NewKVStore(db))
 
 	// init block store
 	blockStore, err := block.NewLocalFSAdapter("/tmp/blocks")
@@ -192,11 +183,39 @@ func Run() {
 	}
 
 	// init authentication
-	authService := auth.NewKVAuthService(db, authdir)
+	authService := auth.NewKVAuthService(db)
 
 	// init gateway server
 	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local")
 	panic(server.Listen())
+}
+
+func keys() {
+	// init fdb
+	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
+	if err != nil {
+		panic(err)
+	}
+	err = db.View(func(tx *badger.Txn) error {
+		opts := badger.DefaultIteratorOptions
+		opts.PrefetchValues = false
+		iter := tx.NewIterator(opts)
+		defer iter.Close()
+		for iter.Rewind(); iter.Valid(); iter.Next() {
+			item := iter.Item()
+			key := item.Key()
+			k := db2.KeyFromBytes(key)
+			fmt.Printf("%s\n", k)
+		}
+		return nil
+	})
+	if err != nil {
+		panic(err)
+	}
+	err = db.Close()
+	if err != nil {
+		panic(err)
+	}
 }
 
 func main() {
@@ -213,5 +232,7 @@ func main() {
 		getuser()
 	case "creds":
 		createCreds()
+	case "keys":
+		keys()
 	}
 }

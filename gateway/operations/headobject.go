@@ -25,10 +25,12 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
+		o.Log().WithError(err).Error("path not found")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))
 		return
 	}
 	if err != nil {
+		o.Log().WithError(err).Error("failed querying path")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
@@ -36,4 +38,5 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	res.Header().Set("Accept-Ranges", "bytes")
 	res.Header().Set("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
 	res.Header().Set("Etag", fmt.Sprintf("\"%s\"", ident.Hash(obj)))
+	res.Header().Set("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
 }
