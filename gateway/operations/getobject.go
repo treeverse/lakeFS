@@ -70,6 +70,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	// assemble a response body (range-less query)
+	o.ResponseWriter.Header().Set("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
 	blocks := obj.GetBlob().GetBlocks()
 	for _, block := range blocks {
 		data, err := o.BlockStore.Get(block.GetAddress())

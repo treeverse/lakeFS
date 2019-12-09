@@ -19,7 +19,9 @@ type dbPrefixIterator struct {
 	skip   []byte
 	prefix []byte
 	iter   *badger.Iterator
-	item   *badger.Item
+
+	item      KeyValue
+	itemError error
 }
 
 func (it *dbPrefixIterator) Advance() bool {
@@ -29,20 +31,20 @@ func (it *dbPrefixIterator) Advance() bool {
 	if len(it.prefix) > 0 && !it.iter.ValidForPrefix(it.prefix) {
 		return false
 	}
-	it.item = it.iter.Item()
+	item := it.iter.Item()
+	// cache it
+	it.item = KeyValue{}
+	it.item.Key = item.KeyCopy(nil)
+	it.item.Value, it.itemError = item.ValueCopy(nil)
 	it.iter.Next()
-	if len(it.skip) > 0 && bytes.Equal(it.item.Key(), it.skip) {
+	if len(it.skip) > 0 && bytes.Equal(it.item.Key, it.skip) {
 		return it.Advance()
 	}
 	return true
 }
 
 func (it *dbPrefixIterator) Get() (KeyValue, error) {
-	var err error
-	kv := KeyValue{}
-	kv.Key = it.item.Key()
-	kv.Value, err = it.item.ValueCopy(nil)
-	return kv, err
+	return it.item, it.itemError
 }
 func (it *dbPrefixIterator) Close() {
 	it.iter.Close()
@@ -112,7 +114,10 @@ func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKe
 	it := q.tx.NewIterator(opts)
 	pref := q.pack(space, prefix)
 	offset := q.pack(space, prefix.With(greaterThan))
-	it.Seek(pref) // go to the correct offset
+	// remove trailing null byte delimiter - this is an abstraction leak from how composite keys work and should be refactored
+	// TODO: refactor to eliminate abstraction leak
+	offset = offset[:len(offset)-1]
+	it.Seek(offset) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,
 			skip:   offset,

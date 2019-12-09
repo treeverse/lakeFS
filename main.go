@@ -2,11 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
-	"net/http"
-	"net/http/httputil"
 	"os"
-	"time"
 	"treeverse-lake/auth"
 	"treeverse-lake/auth/model"
 	"treeverse-lake/block"
@@ -19,75 +15,7 @@ import (
 	"github.com/dgraph-io/badger"
 
 	log "github.com/sirupsen/logrus"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 )
-
-func headBucket() {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-	signer := v4.NewSigner(sess.Config.Credentials)
-	req, _ := http.NewRequest("HEAD", "http://foobar.s3.local:8000/", nil)
-	_, err := signer.Sign(req, nil, "s3", "us-east-1", time.Now())
-	if err != nil {
-		panic(err)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	dump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s", dump)
-}
-
-func headObject() {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	signer := v4.NewSigner(sess.Config.Credentials)
-	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/photos/999.jpg", nil)
-	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
-	if err != nil {
-		panic(err)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	_, _ = os.Stderr.WriteString(fmt.Sprintf("status code: %d\n", resp.StatusCode))
-	dump, err := httputil.DumpResponse(resp, true)
-	if err != nil {
-		log.Fatal(err)
-	}
-	fmt.Printf("%s", dump)
-}
-
-func listBucket() {
-	sess := session.Must(session.NewSessionWithOptions(session.Options{
-		SharedConfigState: session.SharedConfigEnable,
-	}))
-
-	signer := v4.NewSigner(sess.Config.Credentials)
-	//req, _ := http.NewRequest("GET", "http://foobar.s3.local:8000/", nil)
-	req, _ := http.NewRequest("GET", "https://oztmpbucket1.s3.amazonaws.com/?prefix", nil)
-	_, err := signer.Sign(req, nil, "s3", "us-west-2", time.Now())
-	if err != nil {
-		panic(err)
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		panic(err)
-	}
-	d, _ := ioutil.ReadAll(resp.Body)
-	os.Stderr.WriteString(fmt.Sprintf("status code: %d\n", resp.StatusCode))
-	fmt.Printf("%s", d)
-}
 
 func createCreds() {
 	// init fdb
@@ -140,21 +68,6 @@ func createCreds() {
 	}
 
 	fmt.Printf("creds:\naccess: %s\nsecret: %s\n", creds.GetAccessKeyId(), creds.GetAccessSecretKey())
-}
-
-func getuser() {
-	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
-	if err != nil {
-		panic(err)
-	}
-
-	// init auth
-	authService := auth.NewKVAuthService(db)
-	user, err := authService.GetUser("exampleuid")
-	if err != nil {
-		panic(err)
-	}
-	fmt.Printf("user: %+v\n", user)
 }
 
 func Run() {
@@ -220,16 +133,8 @@ func keys() {
 
 func main() {
 	switch os.Args[1] {
-	case "headbucket":
-		headBucket()
-	case "listbucket":
-		listBucket()
-	case "headobject":
-		headObject()
 	case "run":
 		Run()
-	case "user":
-		getuser()
 	case "creds":
 		createCreds()
 	case "keys":
