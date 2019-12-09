@@ -18,7 +18,7 @@ import (
 )
 
 func createCreds() {
-	// init fdb
+	// init db
 	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		panic(err)
@@ -80,7 +80,7 @@ func Run() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.TraceLevel) // for now
 
-	// init fdb
+	// init db
 	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		panic(err)
@@ -104,7 +104,7 @@ func Run() {
 }
 
 func keys() {
-	// init fdb
+	// init db
 	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
 	if err != nil {
 		panic(err)

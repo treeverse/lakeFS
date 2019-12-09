@@ -28,7 +28,6 @@ func (s *DBStore) ReadTransact(fn func(q ReadQuery) (interface{}, error)) (inter
 }
 
 func (s *DBStore) Transact(fn func(q Query) (interface{}, error)) (interface{}, error) {
-	//return s.db.Transact(func(tx fdb.Transaction) (interface{}, error) {
 	var val interface{}
 	err := s.db.Update(func(tx *badger.Txn) error {
 		q := &DBQuery{
