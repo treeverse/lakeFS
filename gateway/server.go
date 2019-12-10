@@ -12,17 +12,12 @@ import (
 	"treeverse-lake/gateway/errors"
 	ghttp "treeverse-lake/gateway/http"
 	"treeverse-lake/gateway/operations"
+	"treeverse-lake/gateway/path"
 	"treeverse-lake/index"
 
 	"golang.org/x/xerrors"
 
 	"github.com/gorilla/mux"
-)
-
-const (
-	RepoMatch   = "{repo:[a-z0-9]+}"
-	KeyMatch    = "{key:.*}"
-	BranchMatch = "{branch:[a-z0-9\\-]+}"
 )
 
 func getRepo(req *http.Request) string {
@@ -32,12 +27,12 @@ func getRepo(req *http.Request) string {
 
 func getKey(req *http.Request) string {
 	vars := mux.Vars(req)
-	return vars["key"]
+	return vars["path"]
 }
 
 func getBranch(req *http.Request) string {
 	vars := mux.Vars(req)
-	return vars["branch"]
+	return vars["refspec"]
 }
 
 type ServerContext struct {
@@ -101,8 +96,8 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// non-bucket-specific endpoints
 	serviceEndpoint := router.Host(bareDomain).Subrouter()
 	// repo-specific actions that relate to a key
-	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", RepoMatch)).Subrouter()
-	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
+	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
+	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
 	pathBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
@@ -120,9 +115,9 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	serviceEndpoint.PathPrefix("/").Methods(http.MethodGet).HandlerFunc(OperationHandler(ctx, &operations.ListBuckets{}))
 
 	// sub-domain based routing
-	subDomainBasedRepo := router.Host(strings.Join([]string{RepoMatch, bareDomain}, ".")).Subrouter()
+	subDomainBasedRepo := router.Host(strings.Join([]string{path.RepoMatch, bareDomain}, ".")).Subrouter()
 	// repo-specific actions that relate to a key
-	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", BranchMatch, KeyMatch)).Subrouter()
+	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
 	subDomainBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
