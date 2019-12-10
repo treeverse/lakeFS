@@ -78,7 +78,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
-		_, err = o.ResponseWriter.Write(data)
+		_, err = io.Copy(o.ResponseWriter, data)
 		if err != nil {
 			o.Log().Error("could not write response body for object")
 		}
@@ -114,12 +114,14 @@ func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter, logg
 }
 
 // implement io.Reader
-func (r *ObjectRanger) Read(p []byte) (n int, err error) {
+func (r *ObjectRanger) Read(p []byte) (int, error) {
 	rangeStart := r.Range.StartOffset + r.offset // assuming we already read some of that range
 	rangeEnd := r.Range.EndOffset
 	var scanned int64
 	bufSize := len(p)
 
+	var returnedErr error
+	var n int
 	for _, block := range r.obj.GetBlob().GetBlocks() {
 		// see what range we need from this block
 		thisBlockStart := scanned
@@ -127,7 +129,7 @@ func (r *ObjectRanger) Read(p []byte) (n int, err error) {
 		scanned += block.GetSize()
 
 		if thisBlockStart > rangeEnd {
-			err = io.EOF
+			returnedErr = io.EOF
 			break // we're done, no need to read further blocks
 		}
 
@@ -154,10 +156,17 @@ func (r *ObjectRanger) Read(p []byte) (n int, err error) {
 		if strings.EqualFold(r.rangeAddress, block.GetAddress()) {
 			data = r.rangeBuffer
 		} else {
-			data, err = r.adapter.GetOffset(block.GetAddress(), startPosition, endPosition)
+			reader, err := r.adapter.Get(block.GetAddress())
 			if err != nil {
-				return
+				return n, err
 			}
+			data := make([]byte, endPosition-startPosition)
+			currN, err := reader.ReadAt(data, startPosition)
+			_ = reader.Close()
+			if err != nil {
+				return n, err
+			}
+			data = data[0:currN] // truncate unread bytes
 			r.rangeBuffer = data
 			r.rangeAddress = block.GetAddress()
 		}
@@ -173,7 +182,7 @@ func (r *ObjectRanger) Read(p []byte) (n int, err error) {
 	}
 	// done
 	if n < bufSize {
-		err = io.EOF
+		returnedErr = io.EOF
 	}
-	return
+	return n, returnedErr
 }
