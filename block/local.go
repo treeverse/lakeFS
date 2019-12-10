@@ -2,7 +2,7 @@ package block
 
 import (
 	"fmt"
-	"io/ioutil"
+	"io"
 	"os"
 	"path"
 
@@ -13,7 +13,7 @@ type LocalFSAdapter struct {
 	path string
 }
 
-func NewLocalFSAdapter(path string) (*LocalFSAdapter, error) {
+func NewLocalFSAdapter(path string) (Adapter, error) {
 	stt, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -31,26 +31,20 @@ func (l *LocalFSAdapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *LocalFSAdapter) Put(block []byte, identifier string) error {
+func (l *LocalFSAdapter) Put(identifier string) (io.WriteCloser, error) {
 	path := l.getPath(identifier)
-	return ioutil.WriteFile(path, block, 0755)
-}
-
-func (l *LocalFSAdapter) Get(identifier string) (block []byte, err error) {
-	path := l.getPath(identifier)
-	return ioutil.ReadFile(path)
-}
-
-func (l *LocalFSAdapter) GetOffset(identifier string, from, to int64) (block []byte, err error) {
-	path := l.getPath(identifier)
-	f, err := os.OpenFile(path, os.O_RDONLY, 0644)
+	f, err := os.Create(path)
 	if err != nil {
 		return nil, err
 	}
-	buf := make([]byte, to-from)
-	_, err = f.ReadAt(buf, from)
+	return f, nil
+}
+
+func (l *LocalFSAdapter) Get(identifier string) (reader ReadAtCloser, err error) {
+	path := l.getPath(identifier)
+	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
 		return nil, err
 	}
-	return buf, nil
+	return f, nil
 }

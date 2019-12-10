@@ -58,7 +58,14 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 		// write a block
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
-		err = o.BlockStore.Put(buf[:n], blockAddr)
+		w, err := o.BlockStore.Put(blockAddr)
+		if err != nil {
+			o.Log().WithError(err).Error("could not write to block store")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+		_, err = w.Write(buf[:n])
+		_ = w.Close()
 		if err != nil {
 			o.Log().WithError(err).Error("could not write to block store")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

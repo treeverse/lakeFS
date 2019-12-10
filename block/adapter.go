@@ -1,7 +1,14 @@
 package block
 
+import "io"
+
+type ReadAtCloser interface {
+	io.Reader
+	io.ReaderAt
+	io.Closer
+}
+
 type Adapter interface {
-	Put(block []byte, identifier string) error
-	Get(identifier string) (block []byte, err error)
-	GetOffset(identifier string, from, to int64) (block []byte, err error)
+	Put(identifier string) (io.WriteCloser, error)
+	Get(identifier string) (ReadAtCloser, error)
 }
