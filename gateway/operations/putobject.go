@@ -1,11 +1,15 @@
 package operations
 
 import (
+	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
+	"treeverse-lake/gateway/serde"
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 
@@ -16,6 +20,8 @@ const (
 	// size of physical object to store in the underlying block adapter
 	// TODO: should probably be a configuration parameter
 	ObjectBlockSize = 128 * 1024 * 1024
+
+	CopySourceHeader = "x-amz-copy-source"
 )
 
 type PutObject struct{}
@@ -28,7 +34,55 @@ func (controller *PutObject) GetPermission() string {
 	return permissions.PermissionWriteRepo
 }
 
+func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
+	// resolve source branch and source path
+	p, err := path.ResolveAbsolutePath(copySource)
+	if err != nil {
+		o.Log().WithError(err).Error("could not parse copy source path")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
+		return
+	}
+
+	// validate src and dst are in the same repo
+	if !strings.EqualFold(o.Repo, p.Repo) {
+		o.Log().WithError(err).Error("cannot copy objects across repos")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
+		return
+	}
+
+	// update metadata to refer to the source hash in the destination workspace
+	src, err := o.Index.ReadObject(o.Repo, p.Refspec, p.Path)
+	if err != nil {
+		o.Log().WithError(err).WithFields(log.Fields{
+			"repo":   o.Repo,
+			"branch": p.Refspec,
+			"path":   p.Path,
+		}).Error("could not read copy source")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
+		return
+	}
+	// write this object to workspace
+	err = o.Index.WriteObject(o.Repo, o.Branch, o.Path, src)
+	if err != nil {
+		o.Log().WithError(err).Error("could not write copy destination")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
+		return
+	}
+
+	o.EncodeResponse(&serde.CopyObjectResult{
+		LastModified: serde.Timestamp(src.GetTimestamp()),
+		ETag:         fmt.Sprintf("\"%s\"", ident.Hash(src)),
+	}, http.StatusOK)
+}
+
 func (controller *PutObject) Handle(o *PathOperation) {
+	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
+	// A copy operation is identified by the existence of an "x-amz-copy-source" header
+	copySource := o.Request.Header.Get(CopySourceHeader)
+	if len(copySource) > 0 {
+		controller.HandleCopy(o, copySource)
+		return
+	}
 
 	// handle the upload itself
 	body := o.Request.Body

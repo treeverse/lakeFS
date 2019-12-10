@@ -97,3 +97,8 @@ type DeleteObjectsOutput struct {
 	Deleted []Deleted     `xml:"Deleted"`
 	Error   []DeleteError `xml:"Error"`
 }
+
+type CopyObjectResult struct {
+	LastModified string `xml:"LastModified"`
+	ETag         string `xml:"ETag"`
+}
