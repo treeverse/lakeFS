@@ -64,3 +64,7 @@ func (m *Object) Identity() []byte {
 		)...,
 	)
 }
+
+func (m *MultipartUploadPart) Identity() []byte {
+	return m.GetBlob().Identity()
+}

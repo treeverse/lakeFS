@@ -21,9 +21,10 @@ type Operation struct {
 	ResponseWriter http.ResponseWriter
 	Region         string
 
-	Index      index.Index
-	BlockStore block.Adapter
-	Auth       auth.Service
+	Index            index.Index
+	MultipartManager index.MultipartManager
+	BlockStore       block.Adapter
+	Auth             auth.Service
 }
 
 func (o *Operation) RequestId() string {

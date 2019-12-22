@@ -16,6 +16,8 @@ func (controller *DeleteObject) GetPermission() string {
 }
 
 func (controller *DeleteObject) Handle(o *PathOperation) {
+	// TODO: check if this is an AbortMultipartUpload request
+	// TODO: check if this is a
 	err := o.Index.DeleteObject(o.Repo, o.Branch, o.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not delete key")
