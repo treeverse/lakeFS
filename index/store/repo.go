@@ -1,6 +1,7 @@
 package store
 
 import (
+	"fmt"
 	"strconv"
 	"treeverse-lake/db"
 	"treeverse-lake/index/errors"
@@ -19,6 +20,11 @@ type RepoReadOnlyOperations interface {
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, from string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
+
+	// Multipart uploads
+	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
+	ListMultipartUploads() ([]*model.MultipartUpload, error)
+	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
 }
 
 type RepoOperations interface {
@@ -31,6 +37,12 @@ type RepoOperations interface {
 	WriteBranch(name string, branch *model.Branch) error
 	DeleteBranch(name string) error
 	WriteRepo(repo *model.Repo) error
+
+	// Multipart uploads
+	WriteMultipartUpload(upload *model.MultipartUpload) error
+	WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error
+	DeleteMultipartUpload(uploadId, path string) error
+	DeleteMultipartUploadParts(uploadId string) error
 }
 
 type KVRepoReadOnlyOperations struct {
@@ -145,6 +157,49 @@ func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entry
 	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name, strconv.Itoa(int(entryType))))
 }
 
+func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
+	m := &model.MultipartUpload{}
+	return m, s.query.GetAsProto(m, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
+}
+
+func (s *KVRepoReadOnlyOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {
+	iter, itclose := s.query.RangePrefix(SubspacesMultipartUploads, db.CompositeStrings(s.repoId))
+	defer itclose()
+	uploads := make([]*model.MultipartUpload, 0)
+	for iter.Advance() {
+		entryData, err := iter.Get()
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		m := &model.MultipartUpload{}
+		err = proto.Unmarshal(entryData.Value, m)
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		uploads = append(uploads, m)
+	}
+	return uploads, nil
+}
+
+func (s *KVRepoReadOnlyOperations) ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error) {
+	iter, iterclose := s.query.RangePrefix(SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId))
+	defer iterclose()
+	parts := make([]*model.MultipartUploadPart, 0)
+	for iter.Advance() {
+		data, err := iter.Get()
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		m := &model.MultipartUploadPart{}
+		err = proto.Unmarshal(data.Value, m)
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		parts = append(parts, m)
+	}
+	return parts, nil
+}
+
 func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
 	return s.query.SetProto(entry, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }
@@ -181,4 +236,22 @@ func (s *KVRepoOperations) DeleteBranch(name string) error {
 
 func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
 	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
+}
+
+func (s *KVRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
+	return s.query.SetProto(upload, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, upload.GetId()))
+}
+
+func (s *KVRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {
+	// convert part to a string sortable representation
+	partNumSortable := fmt.Sprintf("%.4d", partNumber) // allow up to 10k parts
+	return s.query.SetProto(part, SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId, partNumSortable))
+}
+
+func (s *KVRepoOperations) DeleteMultipartUpload(uploadId, path string) error {
+	return s.query.Delete(SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
+}
+
+func (s *KVRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
+	return s.query.ClearPrefix(SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId))
 }

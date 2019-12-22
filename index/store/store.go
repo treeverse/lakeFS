@@ -7,13 +7,15 @@ import (
 )
 
 var (
-	SubspaceRepos     = db.Namespace("repos")
-	SubspaceWorkspace = db.Namespace("workspace")
-	SubspaceEntries   = db.Namespace("entries")
-	SubspaceObjects   = db.Namespace("objects")
-	SubspaceCommits   = db.Namespace("commits")
-	SubspaceBranches  = db.Namespace("branches")
-	SubspaceRefCounts = db.Namespace("refCounts")
+	SubspaceRepos                 = db.Namespace("repos")
+	SubspaceWorkspace             = db.Namespace("workspace")
+	SubspaceEntries               = db.Namespace("entries")
+	SubspaceObjects               = db.Namespace("objects")
+	SubspaceCommits               = db.Namespace("commits")
+	SubspaceBranches              = db.Namespace("branches")
+	SubspaceRefCounts             = db.Namespace("refCounts")
+	SubspacesMultipartUploads     = db.Namespace("mpus")
+	SubspacesMultipartUploadParts = db.Namespace("mpuparts")
 )
 
 type Store interface {

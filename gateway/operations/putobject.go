@@ -22,6 +22,8 @@ const (
 	ObjectBlockSize = 128 * 1024 * 1024
 
 	CopySourceHeader = "x-amz-copy-source"
+
+	CreateMultipartUploadQueryParam = "uploads"
 )
 
 type PutObject struct{}
@@ -75,12 +77,37 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}, http.StatusOK)
 }
 
+func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
+	uploadId, err := o.MultipartManager.Create(o.Repo, o.Path, time.Now())
+	if err != nil {
+		o.Log().WithError(err).Error("could not create multipart upload")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
+		Bucket:   o.Repo,
+		Key:      o.Path,
+		UploadId: uploadId,
+	}, http.StatusOK)
+}
+
 func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 	copySource := o.Request.Header.Get(CopySourceHeader)
 	if len(copySource) > 0 {
 		controller.HandleCopy(o, copySource)
+		return
+	}
+
+	// TODO: check if this is a Multipart upload - part upload
+	// TODO: check if this isa  Multipart upload - part upload (copy)
+
+	// check if this is a CreateMultipartUpload request (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html)
+	// A CreateMultipartUpload request is identified by the "uploads" query parameter
+	_, mpuCreateParamExist := o.Request.URL.Query()[CreateMultipartUploadQueryParam]
+	if mpuCreateParamExist {
+		controller.HandleCreateMultipartUpload(o)
 		return
 	}
 

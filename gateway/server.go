@@ -36,10 +36,11 @@ func getBranch(req *http.Request) string {
 }
 
 type ServerContext struct {
-	region      string
-	meta        index.Index
-	blockStore  block.Adapter
-	authService auth.Service
+	region           string
+	meta             index.Index
+	multipartManager index.MultipartManager
+	blockStore       block.Adapter
+	authService      auth.Service
 }
 
 type Server struct {
@@ -186,10 +187,11 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Request:        request,
 		ResponseWriter: writer,
 
-		Region:     s.region,
-		Index:      s.meta,
-		BlockStore: s.blockStore,
-		Auth:       s.authService,
+		Region:           s.region,
+		Index:            s.meta,
+		MultipartManager: s.multipartManager,
+		BlockStore:       s.blockStore,
+		Auth:             s.authService,
 	}
 	// authenticate
 	authContext, err := sig.ParseV4AuthContext(request)
