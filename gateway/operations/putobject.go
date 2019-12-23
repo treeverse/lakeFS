@@ -4,8 +4,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
+	"treeverse-lake/block"
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
@@ -23,7 +25,8 @@ const (
 
 	CopySourceHeader = "x-amz-copy-source"
 
-	CreateMultipartUploadQueryParam = "uploads"
+	QueryParamUploadId   = "uploadId"
+	QueryParamPartNumber = "partNumber"
 )
 
 type PutObject struct{}
@@ -78,41 +81,50 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 }
 
 func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
-	uploadId, err := o.MultipartManager.Create(o.Repo, o.Path, time.Now())
+	query := o.Request.URL.Query()
+	uploadId := query.Get(QueryParamUploadId)
+	partNumberStr := query.Get(QueryParamPartNumber)
+
+	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
 	if err != nil {
-		o.Log().WithError(err).Error("could not create multipart upload")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
-	}
-	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
-		Bucket:   o.Repo,
-		Key:      o.Path,
-		UploadId: uploadId,
-	}, http.StatusOK)
-}
-
-func (controller *PutObject) Handle(o *PathOperation) {
-	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
-	// A copy operation is identified by the existence of an "x-amz-copy-source" header
-	copySource := o.Request.Header.Get(CopySourceHeader)
-	if len(copySource) > 0 {
-		controller.HandleCopy(o, copySource)
-		return
-	}
-
-	// TODO: check if this is a Multipart upload - part upload
-	// TODO: check if this isa  Multipart upload - part upload (copy)
-
-	// check if this is a CreateMultipartUpload request (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html)
-	// A CreateMultipartUpload request is identified by the "uploads" query parameter
-	_, mpuCreateParamExist := o.Request.URL.Query()[CreateMultipartUploadQueryParam]
-	if mpuCreateParamExist {
-		controller.HandleCreateMultipartUpload(o)
+		o.Log().WithError(err).Error("invalid part number")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
 		return
 	}
 
 	// handle the upload itself
-	body := o.Request.Body
+	blob, size, err := ReadBlob(o.Request.Body, o.BlockStore)
+	if err != nil {
+		o.Log().WithError(err).Error("could not write request body to block adapter")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+
+	err = o.MultipartManager.UploadPart(o.Repo, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
+		Blob:      blob,
+		Timestamp: time.Now().Unix(),
+		Size:      size,
+	})
+
+	if err != nil {
+		o.Log().WithError(err).Error("error writing mpu uploaded part")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+
+	// must write the etag back
+	// TODO: validate the ETag sent in CompleteMultipartUpload matches the blob for the given part number
+	o.ResponseWriter.Header().Set("ETag", fmt.Sprintf("\"%s\"", ident.Hash(blob)))
+	o.ResponseWriter.WriteHeader(http.StatusOK)
+
+	o.Log().WithFields(log.Fields{
+		"upload_id":   uploadId,
+		"part_number": partNumber,
+	}).Info("MULTI PART PART DONE!")
+}
+
+func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error) {
+	// handle the upload itself
 	blocks := make([]*model.Block, 0)
 	var totalSize int64
 	var done bool
@@ -122,9 +134,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 		// unexpected error
 		if err != nil && err != io.EOF {
-			o.Log().WithError(err).Error("could not read request body")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-			return
+			return nil, 0, err
 		}
 
 		// body is completely drained and we read nothing
@@ -139,18 +149,14 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 		// write a block
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
-		w, err := o.BlockStore.Put(blockAddr)
+		w, err := adapter.Put(blockAddr)
 		if err != nil {
-			o.Log().WithError(err).Error("could not write to block store")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-			return
+			return nil, 0, err
 		}
 		_, err = w.Write(buf[:n])
 		_ = w.Close()
 		if err != nil {
-			o.Log().WithError(err).Error("could not write to block store")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-			return
+			return nil, 0, err
 		}
 		blocks = append(blocks, &model.Block{
 			Address: blockAddr,
@@ -162,14 +168,42 @@ func (controller *PutObject) Handle(o *PathOperation) {
 			break
 		}
 	}
+	return &model.Blob{Blocks: blocks}, totalSize, nil
+}
+
+func (controller *PutObject) Handle(o *PathOperation) {
+	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
+	// A copy operation is identified by the existence of an "x-amz-copy-source" header
+	copySource := o.Request.Header.Get(CopySourceHeader)
+	if len(copySource) > 0 {
+		controller.HandleCopy(o, copySource)
+		return
+	}
+
+	query := o.Request.URL.Query()
+
+	// TODO: check if this is a Multipart upload - part upload
+	_, hasUploadId := query[QueryParamUploadId]
+	if hasUploadId {
+		controller.HandleCreateMultipartUpload(o)
+		return
+	}
+
+	// handle the upload itself
+	blob, size, err := ReadBlob(o.Request.Body, o.BlockStore)
+	if err != nil {
+		o.Log().WithError(err).Error("could not write request body to block adapter")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
 
 	// write metadata
 	writeTime := time.Now()
-	err := o.Index.WriteObject(o.Repo, o.Branch, o.Path, &model.Object{
-		Blob:      &model.Blob{Blocks: blocks},
+	err = o.Index.WriteObject(o.Repo, o.Branch, o.Path, &model.Object{
+		Blob:      blob,
 		Metadata:  nil, // TODO: Read whatever metadata came from the request headers/params and add here
 		Timestamp: writeTime.Unix(),
-		Size:      totalSize,
+		Size:      size,
 	})
 	tookMeta := time.Since(writeTime)
 

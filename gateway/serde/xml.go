@@ -108,3 +108,19 @@ type InitiateMultipartUploadResult struct {
 	Key      string `xml:"Key"`
 	UploadId string `xml:"UploadId"`
 }
+
+type CompleteMultipartUploadPart struct {
+	PartNumber int    `xml:"PartNumber"`
+	ETag       string `xml:"ETag"`
+}
+
+type CompleteMultipartUpload struct {
+	Part []CompleteMultipartUploadPart `xml:"Part"`
+}
+
+type CompleteMultipartUploadResult struct {
+	Location string `xml:"Location"`
+	Bucket   string `xml:"Bucket"`
+	Key      string `xml:"Key"`
+	ETag     string `xml:"ETag"`
+}

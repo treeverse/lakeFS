@@ -18,10 +18,10 @@ const (
 
 type MultipartManager interface {
 	Create(repoId, path string, createTime time.Time) (uploadId string, err error)
-	UploadPart(repoId, path, uploadId string, partNumber int, blob *model.Blob, uploadTime time.Time) error
+	UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart) error
 	CopyPart(repoId, path, uploadId string, partNumber int, sourcePath, sourceBranch string, uploadTime time.Time) error
 	Abort(repoId, uploadId string) error
-	Complete(repoId, branch, path, uploadId string, completionTime time.Time) error
+	Complete(repoId, branch, path, uploadId string, completionTime time.Time) (*model.Object, error)
 }
 
 type KVMultipartManager struct {
@@ -61,7 +61,7 @@ func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (
 	return uploadId.(string), err
 }
 
-func (m *KVMultipartManager) UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart, uploadTime time.Time) error {
+func (m *KVMultipartManager) UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart) error {
 	_, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// verify upload and part number
 		mpu, err := tx.ReadMultipartUpload(uploadId)
@@ -139,8 +139,8 @@ func (m *KVMultipartManager) Abort(repoId, uploadId string) error {
 	return err
 }
 
-func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, completionTime time.Time) error {
-	_, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, completionTime time.Time) (*model.Object, error) {
+	obj, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		var err error
 
 		// create new object in the current workspace for the given branch
@@ -187,7 +187,10 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, com
 
 		// remove MPU part entries for the MPU
 		err = tx.DeleteMultipartUpload(uploadId, upload.GetPath())
-		return nil, err
+		return obj, err
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return obj.(*model.Object), nil
 }

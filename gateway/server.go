@@ -18,6 +18,7 @@ import (
 	"golang.org/x/xerrors"
 
 	"github.com/gorilla/mux"
+	log "github.com/sirupsen/logrus"
 )
 
 func getRepo(req *http.Request) string {
@@ -49,13 +50,14 @@ type Server struct {
 	bareDomain string
 }
 
-func NewServer(region string, meta index.Index, blockStore block.Adapter, authService auth.Service, listenAddr, bareDomain string) *Server {
+func NewServer(region string, meta index.Index, blockStore block.Adapter, authService auth.Service, multipartManager index.MultipartManager, listenAddr, bareDomain string) *Server {
 
 	ctx := &ServerContext{
-		meta:        meta,
-		region:      region,
-		blockStore:  blockStore,
-		authService: authService,
+		meta:             meta,
+		region:           region,
+		blockStore:       blockStore,
+		authService:      authService,
+		multipartManager: multipartManager,
 	}
 
 	// setup routes
@@ -100,6 +102,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
 	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
 	pathBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
+	pathBasedRepoWithKey.Methods(http.MethodPost).HandlerFunc(PathOperationHandler(ctx, &operations.PostObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
@@ -120,6 +123,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// repo-specific actions that relate to a key
 	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
 	subDomainBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
+	subDomainBasedRepoWithKey.Methods(http.MethodPost).HandlerFunc(PathOperationHandler(ctx, &operations.PostObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
@@ -215,7 +219,11 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	err = sig.V4Verify(authContext, creds, request)
 	if err != nil {
-		o.Log().WithError(err).WithField("key", authContext.AccessKeyId).Warn("error verifying credentials for key")
+		o.Log().WithError(err).WithFields(log.Fields{
+			"key": authContext.AccessKeyId,
+			//"uri":    request.RequestURI,
+			//"method": request.Method,
+		}).Warn("error verifying credentials for key")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
