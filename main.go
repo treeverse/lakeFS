@@ -3,6 +3,8 @@ package main
 import (
 	"fmt"
 	"os"
+	"os/user"
+	"path"
 	"treeverse-lake/auth"
 	"treeverse-lake/auth/model"
 	"treeverse-lake/block"
@@ -17,9 +19,22 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
+var (
+	DefaultBlockLocation    = path.Join(home(), "tv_state", "blocks")
+	DefaultMetadataLocation = path.Join(home(), "tv_state", "kv")
+)
+
+func home() string {
+	u, err := user.Current()
+	if err != nil {
+		panic(err)
+	}
+	return u.HomeDir
+}
+
 func createCreds() {
 	// init db
-	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
+	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
 	if err != nil {
 		panic(err)
 	}
@@ -81,7 +96,7 @@ func Run() {
 	log.SetLevel(log.TraceLevel) // for now
 
 	// init db
-	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
+	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
 	if err != nil {
 		panic(err)
 	}
@@ -89,8 +104,11 @@ func Run() {
 	// init index
 	meta := index.NewKVIndex(store.NewKVStore(db))
 
+	// init mpu manager
+	mpu := index.NewKVMultipartManager(store.NewKVStore(db))
+
 	// init block store
-	blockStore, err := block.NewLocalFSAdapter("/tmp/blocks")
+	blockStore, err := block.NewLocalFSAdapter(DefaultBlockLocation)
 	if err != nil {
 		panic(err)
 	}
@@ -99,13 +117,13 @@ func Run() {
 	authService := auth.NewKVAuthService(db)
 
 	// init gateway server
-	server := gateway.NewServer("us-east-1", meta, blockStore, authService, "0.0.0.0:8000", "s3.local")
+	server := gateway.NewServer("us-east-1", meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local")
 	panic(server.Listen())
 }
 
 func keys() {
 	// init db
-	db, err := badger.Open(badger.DefaultOptions("/tmp/badger"))
+	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
 	if err != nil {
 		panic(err)
 	}

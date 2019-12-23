@@ -59,9 +59,9 @@ func LoggingMiddleWare(next http.Handler) http.Handler {
 		// Do stuff here
 		before := time.Now()
 		// Call the next handler, which can be another middleware in the chain, or the final handler.
-		writer := &ResponseRecordingWriter{Writer: w}
+		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 		r, reqId := RequestId(r)
-		next.ServeHTTP(writer, r)
+		next.ServeHTTP(writer, r) // handle the request
 		writer.Header().Set("X-Amz-Request-Id", reqId)
 		log.WithFields(log.Fields{
 			"request_id":  reqId,
