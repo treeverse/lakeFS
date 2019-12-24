@@ -20,7 +20,7 @@ type MultipartManager interface {
 	Create(repoId, path string, createTime time.Time) (uploadId string, err error)
 	UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart) error
 	CopyPart(repoId, path, uploadId string, partNumber int, sourcePath, sourceBranch string, uploadTime time.Time) error
-	Abort(repoId, uploadId string) error
+	Abort(repoId, path, uploadId string) error
 	Complete(repoId, branch, path, uploadId string, parts []*model.MultipartUploadPartRequest, completionTime time.Time) (*model.Object, error)
 }
 
@@ -119,13 +119,19 @@ func (m *KVMultipartManager) CopyPart(repoId, path, uploadId string, partNumber 
 	return err
 }
 
-func (m *KVMultipartManager) Abort(repoId, uploadId string) error {
+func (m *KVMultipartManager) Abort(repoId, path, uploadId string) error {
 	_, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// read it first
 		mpu, err := tx.ReadMultipartUpload(uploadId)
 		if err != nil {
 			return nil, err
 		}
+
+		// ensure its for the correct path
+		if !strings.EqualFold(mpu.GetPath(), path) {
+			return nil, errors.ErrMultipartPathMismatch
+		}
+
 		// delete all part references
 		err = tx.DeleteMultipartUploadParts(uploadId)
 		if err != nil {
