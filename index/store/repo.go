@@ -23,6 +23,7 @@ type RepoReadOnlyOperations interface {
 
 	// Multipart uploads
 	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
+	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
 	ListMultipartUploads() ([]*model.MultipartUpload, error)
 	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
 }
@@ -160,6 +161,12 @@ func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entry
 func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
 	m := &model.MultipartUpload{}
 	return m, s.query.GetAsProto(m, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
+}
+
+func (s *KVRepoReadOnlyOperations) ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error) {
+	m := &model.MultipartUploadPart{}
+	partNumSortable := fmt.Sprintf("%.4d", partNumber) // allow up to 10k parts
+	return m, s.query.GetAsProto(m, SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId, partNumSortable))
 }
 
 func (s *KVRepoReadOnlyOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {

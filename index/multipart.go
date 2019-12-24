@@ -21,7 +21,7 @@ type MultipartManager interface {
 	UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart) error
 	CopyPart(repoId, path, uploadId string, partNumber int, sourcePath, sourceBranch string, uploadTime time.Time) error
 	Abort(repoId, uploadId string) error
-	Complete(repoId, branch, path, uploadId string, completionTime time.Time) (*model.Object, error)
+	Complete(repoId, branch, path, uploadId string, parts []*model.MultipartUploadPartRequest, completionTime time.Time) (*model.Object, error)
 }
 
 type KVMultipartManager struct {
@@ -139,7 +139,7 @@ func (m *KVMultipartManager) Abort(repoId, uploadId string) error {
 	return err
 }
 
-func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, completionTime time.Time) (*model.Object, error) {
+func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, parts []*model.MultipartUploadPartRequest, completionTime time.Time) (*model.Object, error) {
 	obj, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		var err error
 
@@ -149,15 +149,23 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, com
 			return nil, err
 		}
 
-		// TODO: iterate all parts and compose object consisting of their super blob
+		// compare requested parts with saved parts
+		savedParts := make([]*model.MultipartUploadPart, len(parts))
+		for i, part := range parts {
+			// TODO: probably cheaper to read all MPU parts together instead of one by one, as most requests will complete with all uploaded parts anyway
+			savedPart, err := tx.ReadMultipartUploadPart(uploadId, int(part.PartNumber))
+			if err != nil {
+				return nil, err
+			}
+			if !strings.EqualFold(ident.Hash(savedPart), part.Etag) {
+				return nil, errors.ErrMultipartInvalidPartETag
+			}
+			savedParts[i] = savedPart
+		}
+
 		var size int64
 		blocks := make([]*model.Block, 0)
-
-		parts, err := tx.ListMultipartUploadParts(uploadId)
-		if err != nil {
-			return nil, err
-		}
-		for _, part := range parts {
+		for _, part := range savedParts {
 			for _, block := range part.Blob.GetBlocks() {
 				blocks = append(blocks, block)
 			}
@@ -171,6 +179,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, com
 			Size:      size,
 		}
 
+		// write it to branch's workspace
 		err = tx.WriteToWorkspacePath(branch, upload.GetPath(), &model.WorkspaceEntry{
 			Path: upload.GetPath(),
 			Data: &model.WorkspaceEntry_Object{Object: obj},

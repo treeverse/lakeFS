@@ -20,6 +20,7 @@ type Operation struct {
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
 	Region         string
+	FQDN           string
 
 	Index            index.Index
 	MultipartManager index.MultipartManager

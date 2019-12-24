@@ -8,6 +8,7 @@ import (
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
 	"treeverse-lake/ident"
+	"treeverse-lake/index/model"
 )
 
 const (
@@ -39,6 +40,15 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}, http.StatusOK)
 }
 
+func trimQuotes(s string) string {
+	if len(s) >= 2 {
+		if s[0] == '"' && s[len(s)-1] == '"' {
+			return s[1 : len(s)-1]
+		}
+	}
+	return s
+}
+
 func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	uploadId := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
 
@@ -50,15 +60,24 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		return
 	}
 
-	obj, err := o.MultipartManager.Complete(o.Repo, o.Branch, o.Path, uploadId, time.Now())
+	parts := make([]*model.MultipartUploadPartRequest, len(req.Part))
+	for i, part := range req.Part {
+		parts[i] = &model.MultipartUploadPartRequest{
+			PartNumber: int32(part.PartNumber),
+			Etag:       trimQuotes(part.ETag), // XML structure is weird and comes with quotes around the ETag
+		}
+	}
+
+	obj, err := o.MultipartManager.Complete(o.Repo, o.Branch, o.Path, uploadId, parts, time.Now())
 	if err != nil {
 		o.Log().WithError(err).Error("could not complete multipart upload - cannot write metadata")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 		return
 	}
 
+	// TODO: pass scheme instead of hard-coding http instead of https
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
-		Location: fmt.Sprintf("http://%s.s3.local:8000/%s/%s", o.Repo, o.Branch, o.Path),
+		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Branch, o.Path),
 		Bucket:   o.Repo,
 		Key:      o.Path,
 		ETag:     fmt.Sprintf("\"%s\"", ident.Hash(obj)),
@@ -69,7 +88,6 @@ func (controller *PostObject) Handle(o *PathOperation) {
 	// POST is only supported for CreateMultipartUpload/CompleteMultipartUpload
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html
 	// https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html
-
 	_, mpuCreateParamExist := o.Request.URL.Query()[CreateMultipartUploadQueryParam]
 	if mpuCreateParamExist {
 		controller.HandleCreateMultipartUpload(o)

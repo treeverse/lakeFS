@@ -66,6 +66,12 @@ message MultipartUploadPart {
     int64 size = 3;
 }
 
+message MultipartUploadPartRequest {
+    int32 partNumber = 1;
+    string etag = 2;
+}
+
+
 message WorkspaceEntry {
     string path = 1;
     oneof data {
