@@ -182,7 +182,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	query := o.Request.URL.Query()
 
-	// TODO: check if this is a Multipart upload - part upload
 	_, hasUploadId := query[QueryParamUploadId]
 	if hasUploadId {
 		controller.HandleCreateMultipartUpload(o)
