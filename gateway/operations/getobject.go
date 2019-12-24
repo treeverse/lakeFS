@@ -16,6 +16,7 @@ import (
 	"treeverse-lake/index/model"
 
 	"github.com/sirupsen/logrus"
+	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -62,9 +63,21 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		o.ResponseWriter.Header().Set("Content-Range",
 			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
 		o.ResponseWriter.WriteHeader(http.StatusPartialContent)
-		_, err = io.Copy(o.ResponseWriter, ranger)
+		n, err := io.Copy(o.ResponseWriter, ranger)
 		if err != nil {
 			o.Log().WithError(err).Errorf("could not copy range to response")
+		}
+		l := o.Log().WithFields(log.Fields{
+			"range":   ranger.Range,
+			"path":    o.Path,
+			"branch":  o.Branch,
+			"written": n,
+		})
+		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
+		if n != expected {
+			l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
+		} else {
+			l.Info("read the byte range requested")
 		}
 		return
 	}
@@ -105,18 +118,16 @@ func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter, logg
 		return nil, err
 	}
 	return &ObjectRanger{
-		Range:       rang,
-		obj:         obj,
-		logger:      logger,
-		adapter:     adapter,
-		rangeBuffer: make([]byte, 0),
+		Range:   rang,
+		obj:     obj,
+		logger:  logger,
+		adapter: adapter,
 	}, nil
 }
 
-// implement io.Reader
 func (r *ObjectRanger) Read(p []byte) (int, error) {
 	rangeStart := r.Range.StartOffset + r.offset // assuming we already read some of that range
-	rangeEnd := r.Range.EndOffset
+	rangeEnd := r.Range.EndOffset + 1            // we read the last byte inclusively
 	var scanned int64
 	bufSize := len(p)
 
@@ -128,13 +139,13 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 		thisBlockEnd := scanned + block.GetSize()
 		scanned += block.GetSize()
 
-		if thisBlockStart > rangeEnd {
-			returnedErr = io.EOF
-			break // we're done, no need to read further blocks
+		if thisBlockEnd <= rangeStart {
+			continue // we haven't yet reached a block we need
 		}
 
-		if thisBlockEnd < rangeStart {
-			continue // we haven't yet reached a block we need
+		if thisBlockStart >= rangeEnd {
+			returnedErr = io.EOF
+			break // we're done, no need to read further blocks
 		}
 
 		// by now we're at a block that we at least need a range from, let's determine it, start position first
@@ -146,21 +157,23 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 		}
 
 		if rangeEnd > thisBlockEnd {
+			// we need to read this entire block
 			endPosition = block.GetSize()
 		} else {
-			endPosition = block.GetSize() - (scanned - rangeEnd)
+			// we need to read up to rangeEnd
+			endPosition = rangeEnd - thisBlockStart
 		}
 
 		// read the actual data required from the block
 		var data []byte
 		if strings.EqualFold(r.rangeAddress, block.GetAddress()) {
-			data = r.rangeBuffer
+			data = r.rangeBuffer[startPosition:endPosition]
 		} else {
 			reader, err := r.adapter.Get(block.GetAddress())
 			if err != nil {
 				return n, err
 			}
-			data := make([]byte, endPosition-startPosition)
+			data = make([]byte, endPosition-startPosition)
 			currN, err := reader.ReadAt(data, startPosition)
 			_ = reader.Close()
 			if err != nil {
@@ -178,6 +191,10 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 			n++
 			i++
 			r.offset++
+		}
+		if n == bufSize {
+			// buffer is full, next iteration.
+			return n, nil
 		}
 	}
 	// done

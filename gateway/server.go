@@ -38,6 +38,7 @@ func getBranch(req *http.Request) string {
 
 type ServerContext struct {
 	region           string
+	bareDomain       string
 	meta             index.Index
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
@@ -55,6 +56,7 @@ func NewServer(region string, meta index.Index, blockStore block.Adapter, authSe
 	ctx := &ServerContext{
 		meta:             meta,
 		region:           region,
+		bareDomain:       bareDomain,
 		blockStore:       blockStore,
 		authService:      authService,
 		multipartManager: multipartManager,
@@ -190,8 +192,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
+		Region:         s.region,
+		FQDN:           s.bareDomain,
 
-		Region:           s.region,
 		Index:            s.meta,
 		MultipartManager: s.multipartManager,
 		BlockStore:       s.blockStore,

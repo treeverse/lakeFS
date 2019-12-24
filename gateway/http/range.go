@@ -1,6 +1,7 @@
 package http
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 
@@ -15,6 +16,10 @@ var (
 type HttpRange struct {
 	StartOffset int64
 	EndOffset   int64
+}
+
+func (r HttpRange) String() string {
+	return fmt.Sprintf("start=%d, end=%d (total=%d)", r.StartOffset, r.EndOffset, r.EndOffset-r.StartOffset+1)
 }
 
 // ParseHTTPRange parses an HTTP RFC 2616 Range header value and returns an HttpRange object for the given object length
