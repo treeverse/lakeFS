@@ -34,7 +34,12 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	beforeMeta := time.Now()
 	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
 	metaTook := time.Since(beforeMeta)
-	o.Log().WithField("took", metaTook).Info("metadata operation to retrieve object done")
+	o.Log().
+		WithField("took", metaTook).
+		WithField("path", o.Path).
+		WithField("branch", o.Branch).
+		WithError(err).
+		Info("metadata operation to retrieve object done")
 
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
@@ -60,12 +65,16 @@ func (controller *GetObject) Handle(o *PathOperation) {
 			return
 		}
 		// range query response
+		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
 		o.ResponseWriter.Header().Set("Content-Range",
 			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
-		o.ResponseWriter.WriteHeader(http.StatusPartialContent)
+		o.ResponseWriter.Header().Set("Content-Length",
+			fmt.Sprintf("%d", expected))
+		o.ResponseWriter.WriteHeader(http.StatusOK)
 		n, err := io.Copy(o.ResponseWriter, ranger)
 		if err != nil {
 			o.Log().WithError(err).Errorf("could not copy range to response")
+			return
 		}
 		l := o.Log().WithFields(log.Fields{
 			"range":   ranger.Range,
@@ -73,7 +82,6 @@ func (controller *GetObject) Handle(o *PathOperation) {
 			"branch":  o.Branch,
 			"written": n,
 		})
-		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
 		if n != expected {
 			l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
 		} else {
