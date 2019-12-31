@@ -25,7 +25,12 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.Log().WithError(err).Error("path not found")
+		o.Log().
+			WithField("path", o.Path).
+			WithField("branch", o.Branch).
+			WithField("repo", o.Repo).
+			WithError(err).
+			Error("path not found")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))
 		return
 	}

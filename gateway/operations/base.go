@@ -54,7 +54,10 @@ func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
 }
 
 func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
-	payload, err := xml.MarshalIndent(entity, "", "  ")
+	//payload, err := xml.MarshalIndent(entity, "", "  ")
+	// We don't indent the XML document because of Java.
+	// See: https://github.com/spulec/moto/issues/1870
+	payload, err := xml.Marshal(entity)
 	if err != nil {
 		o.Log().WithError(err).Error("could not marshal response to XML")
 		o.ResponseWriter.WriteHeader(http.StatusInternalServerError)

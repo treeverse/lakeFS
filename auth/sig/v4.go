@@ -14,30 +14,20 @@ import (
 	"strings"
 	"time"
 	"unicode"
-
-	"golang.org/x/xerrors"
-
-	authmodel "treeverse-lake/auth/model"
 )
 
 const (
-	authHeaderName   = "Authorization"
-	authHeaderPrefix = "AWS4-HMAC-SHA256"
-	scopeTerminator  = "aws4_request"
-	timeFormat       = "20060102T150405Z"
-	shortTimeFormat  = "20060102"
+	v4authHeaderName   = "Authorization"
+	v4authHeaderPrefix = "AWS4-HMAC-SHA256"
+	v4scopeTerminator  = "aws4_request"
+	v4timeFormat       = "20060102T150405Z"
+	v4shortTimeFormat  = "20060102"
 )
 
 var (
-	ErrHeaderMalformed        = xerrors.New("header malformed")
-	ErrMissingDateHeader      = xerrors.New("missing X-Amz-Date or Date header")
-	ErrDateHeaderMalformed    = xerrors.New("wrong format for date header")
-	ErrSignatureDateMalformed = xerrors.New("signature date malformed")
-	ErrBadSignature           = xerrors.New("bad signature")
-	ErrMissingAuthData        = xerrors.New("missing authorization information")
 	// AWS4-HMAC-SHA256 Credential=AKIAJKKRUNSYM5MZSHDQ/20191031/us-east-1/s3/aws4_request,SignedHeaders=date;host;x-amz-content-sha256;x-amz-date,Signature=54ff856d2908e13d3bee41d1f78f808068d0ee27a9af212561dc0ea56e8cf633
-	AuthHeaderRegexp      = regexp.MustCompile(`AWS4-HMAC-SHA256 Credential=(?P<AccessKeyId>[A-Z0-9]{20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request,\s*SignedHeaders=(?P<SignatureHeaders>[\w\-\;]+),\s*Signature=(?P<Signature>[abcdef0123456789]{64})`)
-	CredentialScopeRegexp = regexp.MustCompile(`(?P<AccessKeyId>[A-Z0-9]{20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request`)
+	V4AuthHeaderRegexp      = regexp.MustCompile(`AWS4-HMAC-SHA256 Credential=(?P<AccessKeyId>[A-Z0-9]{20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request,\s*SignedHeaders=(?P<SignatureHeaders>[\w\-\;]+),\s*Signature=(?P<Signature>[abcdef0123456789]{64})`)
+	V4CredentialScopeRegexp = regexp.MustCompile(`(?P<AccessKeyId>[A-Z0-9]{20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request`)
 )
 
 // Authorization:
@@ -56,6 +46,10 @@ type V4Auth struct {
 	Signature           string
 }
 
+func (a V4Auth) GetAccessKeyId() string {
+	return a.AccessKeyId
+}
+
 func splitHeaders(headers string) ([]string, error) {
 	headerValues := strings.Split(headers, ";")
 	sort.Strings(headerValues)
@@ -66,14 +60,14 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	var ctx V4Auth
 
 	// start by trying to extract the data from the Authorization header
-	headerValue := r.Header.Get(authHeaderName)
+	headerValue := r.Header.Get(v4authHeaderName)
 	if len(headerValue) > 0 {
-		match := AuthHeaderRegexp.FindStringSubmatch(headerValue)
+		match := V4AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
 			return ctx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
-		for i, name := range AuthHeaderRegexp.SubexpNames() {
+		for i, name := range V4AuthHeaderRegexp.SubexpNames() {
 			if i != 0 && name != "" {
 				result[name] = match[i]
 			}
@@ -97,19 +91,19 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	// otherwise, see if we have all the required query parameters
 	query := r.URL.Query()
 	algorithm := query.Get("X-Amz-Algorithm")
-	if len(algorithm) == 0 || !strings.EqualFold(algorithm, authHeaderPrefix) {
+	if len(algorithm) == 0 || !strings.EqualFold(algorithm, v4authHeaderPrefix) {
 		return ctx, ErrMissingAuthData
 	}
 	credentialScope := query.Get("X-Amz-Credential")
 	if len(credentialScope) == 0 {
 		return ctx, ErrMissingAuthData
 	}
-	credsMatch := CredentialScopeRegexp.FindStringSubmatch(credentialScope)
+	credsMatch := V4CredentialScopeRegexp.FindStringSubmatch(credentialScope)
 	if len(credsMatch) == 0 {
 		return ctx, ErrHeaderMalformed
 	}
 	credsResult := make(map[string]string)
-	for i, name := range CredentialScopeRegexp.SubexpNames() {
+	for i, name := range V4CredentialScopeRegexp.SubexpNames() {
 		if i != 0 && name != "" {
 			credsResult[name] = credsMatch[i]
 		}
@@ -129,7 +123,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	return ctx, nil
 }
 
-func V4Verify(auth V4Auth, credentials *authmodel.APICredentials, r *http.Request) error {
+func V4Verify(auth V4Auth, credentials Credentials, r *http.Request) error {
 	// copy body
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -269,13 +263,13 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	}
 
 	// parse date
-	ts, err := time.Parse(timeFormat, amzDate)
+	ts, err := time.Parse(v4timeFormat, amzDate)
 	if err != nil {
 		return "", ErrDateHeaderMalformed
 	}
 
 	// parse signature date
-	sigTs, err := time.Parse(shortTimeFormat, ctx.AuthValue.Date)
+	sigTs, err := time.Parse(v4shortTimeFormat, ctx.AuthValue.Date)
 	if err != nil {
 		return "", ErrSignatureDateMalformed
 	}
@@ -298,18 +292,18 @@ func (ctx *verificationCtx) createSignature(key, dateStamp, region, service stri
 	kDate := ctx.sign([]byte(fmt.Sprintf("AWS4%s", key)), dateStamp)
 	kRegion := ctx.sign(kDate, region)
 	kService := ctx.sign(kRegion, service)
-	kSigning := ctx.sign(kService, scopeTerminator)
+	kSigning := ctx.sign(kService, v4scopeTerminator)
 	return kSigning
 }
 
 func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, error) {
 	// Step 2: Create string to sign
-	algorithm := authHeaderPrefix
+	algorithm := v4authHeaderPrefix
 	credentialScope := strings.Join([]string{
 		ctx.AuthValue.Date,
 		ctx.AuthValue.Region,
 		ctx.AuthValue.Service,
-		scopeTerminator,
+		v4scopeTerminator,
 	}, "/")
 	amzDate, err := ctx.getAmzDate()
 	if err != nil {
@@ -325,4 +319,35 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 		hashedCanonicalRequest,
 	}, "\n")
 	return stringToSign, nil
+}
+
+type V4Authenticator struct {
+	request *http.Request
+	ctx     V4Auth
+}
+
+func (a *V4Authenticator) Parse() (SigContext, error) {
+	var ctx V4Auth
+	var err error
+	ctx, err = ParseV4AuthContext(a.request)
+	if err != nil {
+		return ctx, err
+	}
+	a.ctx = ctx
+	return a.ctx, nil
+}
+
+func (a *V4Authenticator) String() string {
+	return "sigv4"
+}
+
+func (a *V4Authenticator) Verify(creds Credentials) error {
+	return V4Verify(a.ctx, creds, a.request)
+}
+
+func NewV4Authenticatior(r *http.Request) SigAuthenticator {
+	return &V4Authenticator{
+		request: r,
+		ctx:     V4Auth{},
+	}
 }

@@ -117,7 +117,7 @@ func Run() {
 	authService := auth.NewKVAuthService(db)
 
 	// init gateway server
-	server := gateway.NewServer("us-east-1", meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local")
+	server := gateway.NewServer("us-east-1", meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
 	panic(server.Listen())
 }
 

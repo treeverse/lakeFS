@@ -51,7 +51,14 @@ type Server struct {
 	bareDomain string
 }
 
-func NewServer(region string, meta index.Index, blockStore block.Adapter, authService auth.Service, multipartManager index.MultipartManager, listenAddr, bareDomain string) *Server {
+func NewServer(
+	region string,
+	meta index.Index,
+	blockStore block.Adapter,
+	authService auth.Service,
+	multipartManager index.MultipartManager,
+	listenAddr, bareDomain string,
+) *Server {
 
 	ctx := &ServerContext{
 		meta:             meta,
@@ -66,6 +73,12 @@ func NewServer(region string, meta index.Index, blockStore block.Adapter, authSe
 	router := mux.NewRouter()
 	attachDebug(router)
 	attachRoutes(bareDomain, router, ctx)
+	// also attach routes to a host string minus the port, if the host contains them
+	if strings.Contains(bareDomain, ":") {
+		bareDomainWithoutPort := strings.Split(bareDomain, ":")[0]
+		attachRoutes(bareDomainWithoutPort, router, ctx)
+	}
+
 	router.Use(ghttp.LoggingMiddleWare)
 
 	// assemble server
@@ -79,11 +92,22 @@ func NewServer(region string, meta index.Index, blockStore block.Adapter, authSe
 	}
 }
 
+//type h struct {
+//	router *mux.Router
+//}
+//
+//func (x h) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+//	parts := strings.Split(r.Host, ":")
+//	r.Host = parts[0]
+//	x.router.ServeHTTP(w, r)
+//}
+
 func (s *Server) Listen() error {
 	return s.server.ListenAndServe()
 }
 
 func attachDebug(router *mux.Router) {
+	// TODO: configurable host and prefix
 	r := router.Host("localhost:8000").Subrouter()
 	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
 	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
@@ -201,31 +225,37 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Auth:             s.authService,
 	}
 	// authenticate
-	authContext, err := sig.ParseV4AuthContext(request)
+	authenticator := sig.NewV4Authenticatior(request)
+	authContext, err := authenticator.Parse()
 	if err != nil {
-		o.Log().WithError(err).Warn("could not parse v4 auth context")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
-		return nil
+		// fallback to authv2
+		authenticator = sig.NewV2SigAuthenticator(request)
+		authContext, err = authenticator.Parse()
+
+		if err != nil {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+			o.Log().WithError(err).Warn("could not parse v4 or v2 auth context")
+			return nil
+		}
 	}
 
-	creds, err := s.authService.GetAPICredentials(authContext.AccessKeyId)
+	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
 	if err != nil {
 		if !xerrors.Is(err, db.ErrNotFound) {
-			o.Log().WithError(err).WithField("key", authContext.AccessKeyId).Warn("error getting access key")
+			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyId()).Warn("error getting access key")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		} else {
-			o.Log().WithError(err).WithField("key", authContext.AccessKeyId).Warn("could not find access key")
+			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyId()).Warn("could not find access key")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		}
 		return nil
 	}
 
-	err = sig.V4Verify(authContext, creds, request)
+	err = authenticator.Verify(creds)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
-			"key": authContext.AccessKeyId,
-			//"uri":    request.RequestURI,
-			//"method": request.Method,
+			"key":           authContext.GetAccessKeyId(),
+			"authenticator": authenticator,
 		}).Warn("error verifying credentials for key")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
@@ -254,7 +284,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	if authResp.Error != nil || !authResp.Allowed {
-		o.Log().WithError(authResp.Error).WithField("key", authContext.AccessKeyId).Warn("no permission")
+		o.Log().WithError(authResp.Error).WithField("key", authContext.GetAccessKeyId()).Warn("no permission")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
 		return nil
 	}
