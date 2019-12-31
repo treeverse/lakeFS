@@ -177,7 +177,6 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		if err != nil {
 			return nil, err
 		}
-		//Data: &model.WorkspaceEntry_Address{Address: addr},
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Data: &model.WorkspaceEntry_Object{Object: object},

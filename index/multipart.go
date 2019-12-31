@@ -178,11 +178,15 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 			size += part.GetSize()
 		}
 
-		// build object
+		// build and save the object
 		obj := &model.Object{
 			Blob:      &model.Blob{Blocks: blocks},
 			Timestamp: completionTime.Unix(),
 			Size:      size,
+		}
+		err = tx.WriteObject(ident.Hash(obj), obj)
+		if err != nil {
+			return nil, err
 		}
 
 		// write it to branch's workspace
