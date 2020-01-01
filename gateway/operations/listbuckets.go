@@ -34,7 +34,7 @@ func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
 	}
 
 	// write response
-	o.EncodeResponse(serde.ListBucketsOutput{
+	o.EncodeResponse(serde.ListAllMyBucketsResult{
 		Buckets: serde.Buckets{Bucket: buckets},
 	}, http.StatusOK)
 

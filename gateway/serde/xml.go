@@ -22,7 +22,7 @@ type Bucket struct {
 	Name         string `xml:"Name"`
 }
 
-type ListBucketsOutput struct {
+type ListAllMyBucketsResult struct {
 	Buckets Buckets `xml:"Buckets"`
 	Owner   Owner   `xml:"Owner"`
 }
@@ -57,6 +57,19 @@ type ListObjectsV2Output struct {
 }
 
 type ListObjectsOutput struct {
+	Name           string           `xml:"Name"`
+	IsTruncated    bool             `xml:"IsTruncated"`
+	Prefix         string           `xml:"Prefix"`
+	Delimiter      string           `xml:"Delimiter,omitempty"`
+	KeyCount       int              `xml:"KeyCount"`
+	MaxKeys        int              `xml:"MaxKeys"`
+	CommonPrefixes []CommonPrefixes `xml:"CommonPrefixes"`
+	Marker         string           `xml:"Marker"`
+	NextMarker     string           `xml:"NextMarker"`
+	Contents       []Contents       `xml:"Contents"`
+}
+
+type ListBucketResult struct {
 	Name           string           `xml:"Name"`
 	IsTruncated    bool             `xml:"IsTruncated"`
 	Prefix         string           `xml:"Prefix"`
@@ -123,4 +136,8 @@ type CompleteMultipartUploadResult struct {
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
 	ETag     string `xml:"ETag"`
+}
+
+type VersioningConfiguration struct {
+	Enabled bool `xml:"Enabled,omitempty"`
 }

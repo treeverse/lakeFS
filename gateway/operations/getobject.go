@@ -31,6 +31,13 @@ func (controller *GetObject) GetPermission() string {
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {
+
+	query := o.Request.URL.Query()
+	if _, exists := query["versioning"]; exists {
+		o.EncodeResponse(serde.VersioningConfiguration{}, http.StatusOK)
+		return
+	}
+
 	beforeMeta := time.Now()
 	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
 	metaTook := time.Since(beforeMeta)
@@ -174,7 +181,8 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 
 		// read the actual data required from the block
 		var data []byte
-		if strings.EqualFold(r.rangeAddress, block.GetAddress()) {
+		cacheKey := fmt.Sprintf("%s:%d-%d", block.GetAddress(), startPosition, endPosition)
+		if strings.EqualFold(r.rangeAddress, cacheKey) {
 			data = r.rangeBuffer[startPosition:endPosition]
 		} else {
 			reader, err := r.adapter.Get(block.GetAddress())
@@ -189,7 +197,7 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 			}
 			data = data[0:currN] // truncate unread bytes
 			r.rangeBuffer = data
-			r.rangeAddress = block.GetAddress()
+			r.rangeAddress = cacheKey
 		}
 
 		// feed it into the buffer until no more space in buffer or no more data left
