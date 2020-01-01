@@ -81,6 +81,20 @@ func NewServer(
 
 	router.Use(ghttp.LoggingMiddleWare)
 
+	_ = router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
+		for _, m := range mustStrings(route.GetMethods) {
+			if m == http.MethodHead {
+				fmt.Printf("route: methods=%s host=%s path=%s\n",
+					mustStrings(route.GetMethods),
+					mustString(route.GetHostTemplate),
+					mustString(route.GetPathTemplate),
+				)
+			}
+		}
+
+		return nil
+	})
+
 	// assemble server
 	return &Server{
 		ctx:        ctx,
@@ -92,15 +106,14 @@ func NewServer(
 	}
 }
 
-//type h struct {
-//	router *mux.Router
-//}
-//
-//func (x h) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-//	parts := strings.Split(r.Host, ":")
-//	r.Host = parts[0]
-//	x.router.ServeHTTP(w, r)
-//}
+func mustString(f func() (string, error)) string {
+	s, _ := f()
+	return s
+}
+func mustStrings(f func() ([]string, error)) []string {
+	s, _ := f()
+	return s
+}
 
 func (s *Server) Listen() error {
 	return s.server.ListenAndServe()
@@ -146,6 +159,9 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 
 	// sub-domain based routing
 	subDomainBasedRepo := router.Host(strings.Join([]string{path.RepoMatch, bareDomain}, ".")).Subrouter()
+	subDomainBasedRepo.Path(fmt.Sprintf("/%s", path.RefspecMatch)).Methods(http.MethodHead).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusNotFound)
+	})
 	// repo-specific actions that relate to a key
 	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
 	subDomainBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
