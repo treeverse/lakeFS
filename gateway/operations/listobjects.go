@@ -207,7 +207,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		}
 	}
 
-	resp := serde.ListObjectsOutput{
+	resp := serde.ListBucketResult{
 		Name:           o.Repo,
 		Prefix:         prefix,
 		Delimiter:      delimiter,
