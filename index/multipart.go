@@ -163,7 +163,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 			if err != nil {
 				return nil, err
 			}
-			if !strings.EqualFold(ident.Hash(savedPart), part.Etag) {
+			if !strings.EqualFold(savedPart.Blob.GetChecksum(), part.Etag) {
 				return nil, errors.ErrMultipartInvalidPartETag
 			}
 			savedParts[i] = savedPart
@@ -171,16 +171,21 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 
 		var size int64
 		blocks := make([]*model.Block, 0)
+		blockIds := make([]string, 0)
 		for _, part := range savedParts {
 			for _, block := range part.Blob.GetBlocks() {
 				blocks = append(blocks, block)
+				blockIds = append(blockIds, block.GetAddress())
 			}
 			size += part.GetSize()
 		}
 
 		// build and save the object
 		obj := &model.Object{
-			Blob:      &model.Blob{Blocks: blocks},
+			Blob: &model.Blob{
+				Blocks:   blocks,
+				Checksum: ident.MultiHash(blockIds...), // a multipart checksum is a sha of all its block addresses
+			},
 			Timestamp: completionTime.Unix(),
 			Size:      size,
 		}

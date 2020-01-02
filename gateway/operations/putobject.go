@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"crypto/md5"
 	"fmt"
 	"io"
 	"net/http"
@@ -76,7 +77,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 
 	o.EncodeResponse(&serde.CopyObjectResult{
 		LastModified: serde.Timestamp(src.GetTimestamp()),
-		ETag:         fmt.Sprintf("\"%s\"", ident.Hash(src)),
+		ETag:         fmt.Sprintf("\"%s\"", src.GetBlob().GetChecksum()),
 	}, http.StatusOK)
 }
 
@@ -114,9 +115,8 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 
 	// must write the etag back
 	// TODO: validate the ETag sent in CompleteMultipartUpload matches the blob for the given part number
-	o.ResponseWriter.Header().Set("ETag", fmt.Sprintf("\"%s\"", ident.Hash(blob)))
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.GetChecksum()))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
-
 	o.Log().WithFields(log.Fields{
 		"upload_id":   uploadId,
 		"part_number": partNumber,
@@ -126,6 +126,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error) {
 	// handle the upload itself
 	blocks := make([]*model.Block, 0)
+	cksummer := md5.New()
 	var totalSize int64
 	var done bool
 	for !done {
@@ -153,6 +154,7 @@ func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error)
 		if err != nil {
 			return nil, 0, err
 		}
+		cksummer.Write(buf[:n])
 		_, err = w.Write(buf[:n])
 		_ = w.Close()
 		if err != nil {
@@ -168,7 +170,13 @@ func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error)
 			break
 		}
 	}
-	return &model.Blob{Blocks: blocks}, totalSize, nil
+	return &model.Blob{
+		Blocks:               blocks,
+		Checksum:             fmt.Sprintf("%x", cksummer.Sum(nil)),
+		XXX_NoUnkeyedLiteral: struct{}{},
+		XXX_unrecognized:     nil,
+		XXX_sizecache:        0,
+	}, totalSize, nil
 }
 
 func (controller *PutObject) Handle(o *PathOperation) {
@@ -198,12 +206,13 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	// write metadata
 	writeTime := time.Now()
-	err = o.Index.WriteObject(o.Repo, o.Branch, o.Path, &model.Object{
+	obj := &model.Object{
 		Blob:      blob,
 		Metadata:  nil, // TODO: Read whatever metadata came from the request headers/params and add here
 		Timestamp: writeTime.Unix(),
 		Size:      size,
-	})
+	}
+	err = o.Index.WriteObject(o.Repo, o.Branch, o.Path, obj)
 	tookMeta := time.Since(writeTime)
 
 	if err != nil {
@@ -217,5 +226,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		"branch": o.Branch,
 		"path":   o.Path,
 	}).Trace("metadata update complete")
-	o.ResponseWriter.WriteHeader(http.StatusCreated)
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()))
+	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

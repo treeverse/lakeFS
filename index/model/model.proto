@@ -14,7 +14,8 @@ message Block {
 }
 
 message Blob {
-    repeated Block blocks = 4;
+    repeated Block blocks = 1;
+    string checksum = 2; // used as ETag in S3
 }
 
 message Entry {
@@ -27,6 +28,7 @@ message Entry {
     Type type = 3;
     int64 timestamp = 4; // timestamp and size are denormalized here for quick listing
     int64 size = 5;
+    string checksum = 6; // used as ETag in S3
 }
 
 message Commit {
