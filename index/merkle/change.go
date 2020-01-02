@@ -41,6 +41,7 @@ func (c *change) AsEntry() *model.Entry {
 		Type:      c.Type,
 		Timestamp: c.Object.GetTimestamp(),
 		Size:      c.Object.GetSize(),
+		Checksum:  c.Object.GetBlob().GetChecksum(),
 	}
 }
 

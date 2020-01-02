@@ -106,7 +106,7 @@ type DeleteError struct {
 	VersionId string `xml:"VersionId"`
 }
 
-type DeleteObjectsOutput struct {
+type DeleteResult struct {
 	Deleted []Deleted     `xml:"Deleted"`
 	Error   []DeleteError `xml:"Error"`
 }

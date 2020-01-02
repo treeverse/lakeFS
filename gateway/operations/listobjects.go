@@ -98,7 +98,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),
 				LastModified: serde.Timestamp(res.GetTimestamp()),
-				ETag:         fmt.Sprintf("\"%s\"", res.GetAddress()),
+				ETag:         fmt.Sprintf("\"%s\"", res.GetChecksum()),
 				Size:         res.GetSize(),
 				StorageClass: "STANDARD",
 			})
@@ -200,7 +200,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),
 				LastModified: serde.Timestamp(res.GetTimestamp()),
-				ETag:         fmt.Sprintf("\"%s\"", res.GetAddress()),
+				ETag:         fmt.Sprintf("\"%s\"", res.GetChecksum()),
 				Size:         res.GetSize(),
 				StorageClass: "STANDARD",
 			})

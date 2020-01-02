@@ -6,7 +6,6 @@ import (
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
-	"treeverse-lake/ident"
 
 	"golang.org/x/xerrors"
 )
@@ -39,9 +38,8 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	res := o.ResponseWriter
-	res.Header().Set("Accept-Ranges", "bytes")
-	res.Header().Set("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
-	res.Header().Set("Etag", fmt.Sprintf("\"%s\"", ident.Hash(obj)))
-	res.Header().Set("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
+	o.SetHeader("Accept-Ranges", "bytes")
+	o.SetHeader("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()))
+	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
 }

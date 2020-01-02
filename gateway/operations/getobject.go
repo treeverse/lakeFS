@@ -12,7 +12,6 @@ import (
 	ghttp "treeverse-lake/gateway/http"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
-	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 
 	"github.com/sirupsen/logrus"
@@ -58,9 +57,9 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		return
 	}
 
-	o.ResponseWriter.Header().Set("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
-	o.ResponseWriter.Header().Set("Etag", ident.Hash(obj))
-	o.ResponseWriter.Header().Set("Accept-Ranges", "bytes")
+	o.SetHeader("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()))
+	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// range query
@@ -73,9 +72,9 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		}
 		// range query response
 		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
-		o.ResponseWriter.Header().Set("Content-Range",
+		o.SetHeader("Content-Range",
 			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
-		o.ResponseWriter.Header().Set("Content-Length",
+		o.SetHeader("Content-Length",
 			fmt.Sprintf("%d", expected))
 		o.ResponseWriter.WriteHeader(http.StatusOK)
 		n, err := io.Copy(o.ResponseWriter, ranger)
@@ -98,7 +97,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	// assemble a response body (range-less query)
-	o.ResponseWriter.Header().Set("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
+	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
 	blocks := obj.GetBlob().GetBlocks()
 	for _, block := range blocks {
 		data, err := o.BlockStore.Get(block.GetAddress())

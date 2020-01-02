@@ -7,7 +7,6 @@ import (
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
-	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 )
 
@@ -80,7 +79,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Branch, o.Path),
 		Bucket:   o.Repo,
 		Key:      o.Path,
-		ETag:     fmt.Sprintf("\"%s\"", ident.Hash(obj)),
+		ETag:     fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()),
 	}, http.StatusOK)
 }
 

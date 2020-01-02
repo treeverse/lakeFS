@@ -48,7 +48,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		}
 	}
 	// construct response
-	resp := serde.DeleteObjectsOutput{}
+	resp := serde.DeleteResult{}
 	if len(errs) > 0 {
 		resp.Error = errs
 	}

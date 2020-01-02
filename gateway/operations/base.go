@@ -79,6 +79,18 @@ func (o *Operation) DecodeXMLBody(entity interface{}) error {
 	return nil
 }
 
+// SetHeader sets a header on the response while preserving its case
+func (o *Operation) SetHeader(key, value string) {
+	o.ResponseWriter.Header()[key] = []string{value}
+}
+
+// SetHeaders sets a map of headers on the response while preserving the header's case
+func (o *Operation) SetHeaders(headers map[string]string) {
+	for k, v := range headers {
+		o.SetHeader(k, v)
+	}
+}
+
 func (o *Operation) EncodeError(err errors.APIError) {
 	o.EncodeResponse(errors.APIErrorResponse{
 		Code:       err.Code,
