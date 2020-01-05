@@ -67,7 +67,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 
 	// get the max depth
 	changeTree := newChangeTree(entries)
-	var rootAddr string
+	rootAddr := m.root
 	for i := changeTree.MaxDepth(); i >= 0; i-- {
 		// get the changes at this depth
 		changesAtLevel := changeTree.AtDepth(i)

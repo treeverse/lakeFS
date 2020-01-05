@@ -38,7 +38,7 @@ func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 			currChange := changes[nextChange]
 			comparison := compareEntries(currEntry, currChange)
 			if comparison == 0 {
-				// this is an override or deletion
+				// this is an override or deletion - do nothing
 
 				// overwrite
 				if !currChange.Tombstone {
