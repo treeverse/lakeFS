@@ -233,7 +233,7 @@ func (ctx *verificationCtx) payloadHash() string {
 func (ctx *verificationCtx) buildCanonicalRequest() string {
 	// Step 1: Canonical request
 	method := ctx.Request.Method
-	canonicalUri := ctx.Request.URL.Path
+	canonicalUri := EncodePath(ctx.Request.URL.Path)
 	canonicalQueryString := ctx.canonicalizeQueryString()
 	canonicalHeaders := ctx.canonicalizeHeaders(ctx.AuthValue.SignedHeaders)
 	signedHeaders := ctx.AuthValue.SignedHeadersString

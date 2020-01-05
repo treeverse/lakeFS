@@ -1,5 +1,7 @@
 package serde
 
+import "encoding/xml"
+
 type Error struct {
 	Code      string `xml:"Code"`
 	Message   string `xml:"Message"`
@@ -44,6 +46,7 @@ type CommonPrefixes struct {
 }
 
 type ListObjectsV2Output struct {
+	XMLName               xml.Name         `xml:"ListBucketResult"`
 	Name                  string           `xml:"Name"`
 	IsTruncated           bool             `xml:"IsTruncated"`
 	Prefix                string           `xml:"Prefix"`

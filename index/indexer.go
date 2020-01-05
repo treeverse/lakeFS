@@ -193,6 +193,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			Path: path,
 			Data: &model.WorkspaceEntry_Tombstone{Tombstone: &model.Tombstone{}},
 		})
 		return nil, err
