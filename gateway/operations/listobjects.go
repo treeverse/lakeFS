@@ -36,11 +36,48 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
 
-	if len(delimiter) != 1 || delimiter[0] != path.Separator {
-		// we only support "/" as a delimiter
-		delimiter = "/"
-		//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		//return
+	// support non-delimited list requests, but no other delimiter besides "/" is supported
+	if len(delimiter) > 0 && !strings.EqualFold(delimiter, string(path.Separator)) {
+		o.Log().WithField("delimiter", delimiter).Error("got unexpected delimiter")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		return
+	}
+
+	if len(delimiter) == 0 {
+		// no delimiter specified
+		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo, "master", prefix, "", 100000)
+		if err != nil {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			o.Log().WithError(err).WithField("prefix", prefix).WithField("more", more).Error("bad happened when ranging")
+			return
+		}
+		o.Log().WithField("prefix", prefix).WithField("more", more).Warn("good when ranging")
+		files := make([]serde.Contents, 0)
+		for _, f := range entries {
+			files = append(files, serde.Contents{
+				Key:          f.GetName(),
+				LastModified: serde.Timestamp(f.GetTimestamp()),
+				ETag:         serde.ETag(f.GetChecksum()),
+				Size:         f.GetSize(),
+				StorageClass: "STANDARD",
+			})
+		}
+
+		resp := serde.ListObjectsV2Output{
+			Name:      o.Repo,
+			Prefix:    prefix,
+			Delimiter: delimiter,
+			KeyCount:  len(files),
+			MaxKeys:   ListObjectMaxKeys,
+			Contents:  files,
+		}
+
+		if more {
+			resp.IsTruncated = true
+			resp.NextContinuationToken = "do more"
+		}
+		o.EncodeResponse(resp, http.StatusOK)
+		return
 	}
 
 	// see if we have a continuation token in the request to pick up from
@@ -98,7 +135,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),
 				LastModified: serde.Timestamp(res.GetTimestamp()),
-				ETag:         fmt.Sprintf("\"%s\"", res.GetChecksum()),
+				ETag:         serde.ETag(res.GetChecksum()),
 				Size:         res.GetSize(),
 				StorageClass: "STANDARD",
 			})
