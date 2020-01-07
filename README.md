@@ -113,9 +113,9 @@ This is the indexing interface (simplified):
 
 #### Merkle Tree Entry KV
 
-| Key                        | Value                              |
-|----------------------------|------------------------------------|
-| `(repo, hash, type, name)` | `(hash_addr of object|entry tree)` |
+| Key                        | Value                                |
+|----------------------------|--------------------------------------|
+| `(repo, hash, name, type)` | `(hash_addr of object/tree)`         |
 
 
 #### Merkle Object KV 
