@@ -1,10 +1,13 @@
 package merkle
 
 import (
+	"fmt"
+	"strings"
 	"treeverse-lake/db"
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 	"treeverse-lake/index/path"
+	pth "treeverse-lake/index/path"
 	"treeverse-lake/index/store"
 
 	"golang.org/x/xerrors"
@@ -63,8 +66,85 @@ func (m *Merkle) writeTree(tx store.RepoOperations, entries []*model.Entry) (str
 	return id, err
 }
 
-func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry) (*Merkle, error) {
+func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, amount int) ([]*model.Entry, bool, error) {
+	// let's think about the alogirthm
+	// example inputs:
+	// - foo/bar (an existing directory)
+	// - foo/b (a prefix that has a directory(ies and files) under it
+	// - foo/bar/file.json (an existing file)
+	// - foo/bar/file.jsonnnnn (nothing under this path)
+	// - foo/b.file.json (a file that should also match for foo/b for example, lexicographically before b/)
 
+	// Algorithm 1:
+	// 1. start from beginning of the string, take a path part every time and look for directories (i.e. find the deepest tree that can satisfy this query)
+	// 2. let's say we found foo/ included in the path, we now reduce that part from the prefix we received
+	// 3. we now have (bar, b, file.json, file.jsonnnnn, b.file.json)
+	// 4. actually for foo/bar we have (''), since the directory itself is included - recurse through all of it
+	// 5. now we've reduced the input to the deepest tree - from here, BFS.
+	// 	  For every substree we need to get all children and sort lexicographically ourselves since the dirs and files are sorted independently
+	// 6. that intermediate folder where we have a partial match is super annoying because we also need to filter files and dirs by prefix to avoid scanning it all
+	// 7. the api should probably change to reflect a more meaningful continuation token, saving some of that work ("from")
+
+	var p *pth.Path
+	if len(from) > 0 {
+		p = pth.New(from)
+	} else {
+		p = pth.New(path)
+	}
+	parts := p.SplitParts()
+	prefixParts := make([]string, 0)
+
+	firstSubtreeAddr := m.root
+	var firstSubtreePath string
+
+	for _, part := range parts {
+		prefixParts = append(prefixParts, part)
+		currentPrefix := pth.Join(prefixParts)
+		addr, err := m.GetAddress(tx, currentPrefix, model.Entry_TREE)
+		if xerrors.Is(err, db.ErrNotFound) {
+			break
+		}
+		if err != nil {
+			return nil, false, err
+		}
+		firstSubtreePath = currentPrefix
+		firstSubtreeAddr = addr
+	}
+	t := Merkle{root: firstSubtreeAddr}
+	return t.bfs(tx, strings.TrimPrefix(path, firstSubtreePath), amount, &col{[]*model.Entry{}}, p.String())
+}
+
+type col struct {
+	data []*model.Entry
+}
+
+func (m *Merkle) bfs(tx store.RepoReadOnlyOperations, prefix string, amount int, c *col, currentPath string) ([]*model.Entry, bool, error) {
+	//fmt.Printf("doing bfs - path = %s ->(collected so far: %v)\n", currentPath, c.data)
+	entries, hasMore, err := tx.ListTree(m.root, prefix, amount)
+	if err != nil {
+		return nil, false, err
+	}
+	for _, entry := range entries {
+		fullPath := pth.Join([]string{currentPath, entry.GetName()})
+		if entry.GetType() == model.Entry_TREE {
+			t := Merkle{root: entry.GetAddress()}
+			t.bfs(tx, "", amount, c, fullPath)
+		} else {
+			c.data = append(c.data, &model.Entry{
+				Name:      fullPath,
+				Address:   entry.GetAddress(),
+				Type:      entry.GetType(),
+				Timestamp: entry.GetTimestamp(),
+				Size:      entry.GetSize(),
+				Checksum:  entry.GetChecksum(),
+			})
+			fmt.Printf("added %s to collected\n", fullPath)
+		}
+	}
+	return c.data, hasMore, nil
+}
+
+func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry) (*Merkle, error) {
 	// get the max depth
 	changeTree := newChangeTree(entries)
 	rootAddr := m.root
