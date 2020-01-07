@@ -25,6 +25,7 @@ type Index interface {
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	DeleteObject(repoId, branch, path string) error
 	ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
+	ListObjectsByPrefix(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
 	ListBranches(repoId string, results int) ([]*model.Entry, error)
 	ResetBranch(repoId, branch string) error
 	Commit(repoId, branch, message, committer string, metadata map[string]string) error
@@ -227,6 +228,40 @@ func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Entry, 
 	return entries.([]*model.Entry), nil
 }
 
+func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
+	// this is gonna be a shit show now.
+	type result struct {
+		hasMore bool
+		results []*model.Entry
+	}
+
+	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
+		if err != nil {
+			return nil, err
+		}
+		repo, err := tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		root, err := resolveReadRoot(tx, repo, branch)
+		if err != nil {
+			return nil, err
+		}
+		tree := merkle.New(root)
+		res, hasMore, err := tree.PrefixScan(tx, path, from, results)
+		if err != nil {
+			return nil, err
+		}
+		return &result{hasMore, res}, nil
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return entries.(*result).results, entries.(*result).hasMore, nil
+}
+
+// ListObjects returns the list the objects within a logical tree
 func (index *KVIndex) ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
 	type result struct {
 		hasMore bool
