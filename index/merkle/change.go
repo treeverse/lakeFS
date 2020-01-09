@@ -52,8 +52,7 @@ type changeTree struct {
 
 func newChangeTree(entries []*model.WorkspaceEntry) *changeTree {
 	changes := &changeTree{
-		depth: 0,
-		data:  make(map[int]map[string][]*change),
+		data: make(map[int]map[string][]*change),
 	}
 	for _, entry := range entries {
 		var chg *change

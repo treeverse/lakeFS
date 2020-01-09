@@ -81,20 +81,6 @@ func NewServer(
 
 	router.Use(ghttp.LoggingMiddleWare)
 
-	_ = router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		for _, m := range mustStrings(route.GetMethods) {
-			if m == http.MethodHead {
-				fmt.Printf("route: methods=%s host=%s path=%s\n",
-					mustStrings(route.GetMethods),
-					mustString(route.GetHostTemplate),
-					mustString(route.GetPathTemplate),
-				)
-			}
-		}
-
-		return nil
-	})
-
 	// assemble server
 	return &Server{
 		ctx:        ctx,

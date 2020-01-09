@@ -7,6 +7,7 @@ import (
 	"strings"
 	"treeverse-lake/db"
 	"treeverse-lake/gateway/errors"
+	upath "treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
 	"treeverse-lake/index/model"
@@ -44,18 +45,24 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	}
 
 	if len(delimiter) == 0 {
-		// no delimiter specified
-		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo, "master", prefix, "", 100000)
+		p, err := upath.ResolvePath(prefix)
 		if err != nil {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-			o.Log().WithError(err).WithField("prefix", prefix).WithField("more", more).Error("bad happened when ranging")
+			// we don't have a path that properly consists of a branch
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
-		o.Log().WithField("prefix", prefix).WithField("more", more).Warn("good when ranging")
+		// no delimiter specified
+		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo, p.Refspec, p.Path, "", 100000)
+		if err != nil {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			o.Log().WithError(err).WithField("prefix", prefix).Error("bad happened when ranging")
+			return
+		}
+
 		files := make([]serde.Contents, 0)
 		for _, f := range entries {
 			files = append(files, serde.Contents{
-				Key:          f.GetName(),
+				Key:          path.Join([]string{p.Refspec, f.GetName()}),
 				LastModified: serde.Timestamp(f.GetTimestamp()),
 				ETag:         serde.ETag(f.GetChecksum()),
 				Size:         f.GetSize(),
@@ -92,9 +99,8 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// list branches then.
 		results, err = o.Index.ListBranches(o.Repo, -1)
 		if err != nil {
-			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
 	} else {

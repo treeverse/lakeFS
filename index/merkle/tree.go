@@ -111,7 +111,7 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, 
 		firstSubtreeAddr = addr
 	}
 	t := Merkle{root: firstSubtreeAddr}
-	return t.bfs(tx, strings.TrimPrefix(path, firstSubtreePath), amount, &col{[]*model.Entry{}}, p.String())
+	return t.bfs(tx, strings.TrimPrefix(path, firstSubtreePath), amount, &col{[]*model.Entry{}}, firstSubtreePath)
 }
 
 type col struct {
@@ -125,7 +125,12 @@ func (m *Merkle) bfs(tx store.RepoReadOnlyOperations, prefix string, amount int,
 		return nil, false, err
 	}
 	for _, entry := range entries {
-		fullPath := pth.Join([]string{currentPath, entry.GetName()})
+		var fullPath string
+		if len(currentPath) > 0 {
+			fullPath = pth.Join([]string{currentPath, entry.GetName()})
+		} else {
+			fullPath = entry.GetName()
+		}
 		if entry.GetType() == model.Entry_TREE {
 			t := Merkle{root: entry.GetAddress()}
 			t.bfs(tx, "", amount, c, fullPath)
@@ -169,7 +174,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 			}
 			parent, name := path.New(treePath).Pop()
 			if len(mergedEntries) == 0 {
-				// TODO: we need to add a change to the level above us saying this folder should be removed
+				// Add a change to the level above us saying this folder should be removed
 				changeTree.Add(i-1, parent.String(), &change{
 					Type:      model.Entry_TREE,
 					Name:      name,
@@ -181,6 +186,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				if err != nil {
 					return nil, err
 				}
+				// Add a change to the level above us saying this folder should be updated
 				changeTree.Add(i-1, parent.String(), &change{
 					Type:      model.Entry_TREE,
 					Name:      name,
