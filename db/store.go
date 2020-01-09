@@ -2,7 +2,37 @@ package db
 
 import (
 	"github.com/dgraph-io/badger"
+	"github.com/sirupsen/logrus"
 )
+
+/*
+	Errorf(string, ...interface{})
+	Warningf(string, ...interface{})
+	Infof(string, ...interface{})
+	Debugf(string, ...interface{})
+*/
+
+// logging adapter
+type badgerLogger struct {
+	logger *logrus.Entry
+}
+
+func (l *badgerLogger) Errorf(s string, d ...interface{}) {
+	l.logger.Errorf(s, d...)
+}
+func (l *badgerLogger) Warningf(s string, d ...interface{}) {
+	l.logger.Warningf(s, d...)
+}
+func (l *badgerLogger) Infof(s string, d ...interface{}) {
+	l.logger.Infof(s, d...)
+}
+func (l *badgerLogger) Debugf(s string, d ...interface{}) {
+	l.logger.Debugf(s, d...)
+}
+
+func NewBadgerLoggingAdapter(logger *logrus.Entry) badger.Logger {
+	return &badgerLogger{logger: logger}
+}
 
 type DBStore struct {
 	db *badger.DB
