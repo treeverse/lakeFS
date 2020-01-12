@@ -101,7 +101,7 @@ func Run() {
 	// a quick fix for a crash on windows when a server is restarted.
 	// the solution is to delete the value log (*.vlog) files from tv_state\kv directory
 	//todo: check if this is safe in a running system, where objects are added and deleted.
-	// will it lose data?
+	// will it lose data? is there a way to lose less?
 	//todo: the initial allocation in windows is 2GB for each vlog file.
 	// the reason is that badgerDB access the vlog as memory mapped file. on windows mmap-ed
 	// files can not be extended. This is probably way more than a test deployment in windows needs.
