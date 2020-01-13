@@ -241,12 +241,12 @@ func (s *KVRepoOperations) DeleteBranch(name string) error {
 	return s.query.Delete(SubspaceBranches, db.CompositeStrings(s.repoId, name))
 }
 
-func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
-	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
-}
-
 func (s *KVRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
 	return s.query.SetProto(upload, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, upload.GetId()))
+}
+
+func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
+	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
 }
 
 func (s *KVRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {

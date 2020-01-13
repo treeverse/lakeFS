@@ -21,6 +21,7 @@ const (
 )
 
 type Index interface {
+	Tree(repoId string) error
 	ReadObject(repoId, branch, path string) (*model.Object, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	DeleteObject(repoId, branch, path string) error
@@ -408,7 +409,6 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 		commit := &model.Commit{
 			Tree:      ident.Empty(),
 			Parents:   []string{},
-			Message:   "Repository Epoch",
 			Timestamp: creationDate,
 			Metadata:  make(map[string]string),
 		}
@@ -451,6 +451,23 @@ func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
 func (index *KVIndex) DeleteRepo(repoId string) error {
 	_, err := index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
 		tx.DeleteRepo(repoId)
+		return nil, nil
+	})
+	return err
+}
+
+func (index *KVIndex) Tree(repoId string) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		repo, err := tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		r, err := tx.ReadBranch(repo.GetDefaultBranch())
+		if err != nil {
+			return nil, err
+		}
+		m := merkle.New(r.GetWorkspaceRoot())
+		m.WalkAll(tx)
 		return nil, nil
 	})
 	return err
