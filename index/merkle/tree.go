@@ -2,7 +2,10 @@ package merkle
 
 import (
 	"fmt"
+	"os"
 	"strings"
+	"text/template"
+	"time"
 	"treeverse-lake/db"
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
@@ -201,4 +204,43 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 
 func (m *Merkle) Root() string {
 	return m.root
+}
+
+type WalkFn func(path, name, typ string) bool
+
+func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
+	m.walk(tx, 0, m.root)
+}
+
+func (m *Merkle) walk(tx store.RepoReadOnlyOperations, depth int, root string) {
+	format, _ := template.New("treeFormat").Parse("{{.Indent}}{{.Hash}} {{.Type}}\t{{.Time}} {{.Name}}\n")
+	children, _, err := tx.ListTree(root, "", -1)
+	if err != nil {
+		panic(err) // TODO: properly handle errors
+	}
+	for _, child := range children {
+		name := child.GetName()
+		if child.GetType() == model.Entry_TREE {
+			name = fmt.Sprintf("%s/", name)
+		}
+		if len(child.GetAddress()) < 6 {
+			continue
+		}
+		_ = format.Execute(os.Stdout, struct {
+			Indent string
+			Hash   string
+			Type   string
+			Time   string
+			Name   string
+		}{
+			strings.Repeat("\t", depth),
+			child.GetAddress()[:8],
+			child.GetType().String(),
+			time.Unix(child.GetTimestamp(), 0).Format(time.RFC3339),
+			name,
+		})
+		if child.GetType() == model.Entry_TREE {
+			m.walk(tx, depth+1, child.GetAddress())
+		}
+	}
 }
