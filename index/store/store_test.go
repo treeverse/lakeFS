@@ -1,7 +1,6 @@
 package store_test
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"testing"
@@ -24,7 +23,6 @@ func GetIndexStore(t *testing.T) (store.Store, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	fmt.Printf("badger directory: %s\n", dir)
 	opts := badger.DefaultOptions(dir)
 	opts.Logger = nullLogger{}
 	opts.TableLoadingMode = options.LoadToRAM

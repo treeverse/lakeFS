@@ -152,7 +152,7 @@ func keys() {
 	}
 }
 
-func tree(repoId string) {
+func tree(repoId, branch string) {
 	// logger
 	log.SetReportCaller(true)
 	log.SetFormatter(&log.TextFormatter{
@@ -173,7 +173,7 @@ func tree(repoId string) {
 
 	// init index
 	meta := index.NewKVIndex(store.NewKVStore(db))
-	err = meta.Tree(repoId)
+	err = meta.Tree(repoId, branch)
 	if err != nil {
 		panic(err)
 	}
@@ -188,6 +188,6 @@ func main() {
 	case "keys":
 		keys()
 	case "tree":
-		tree(os.Args[2])
+		tree(os.Args[2], os.Args[3])
 	}
 }

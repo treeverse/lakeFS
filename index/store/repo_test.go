@@ -103,31 +103,26 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 		var err error
 		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/bar", &model.WorkspaceEntry{
 			Path: "/foo/bar",
-			Data: &model.WorkspaceEntry_Object{
-				Object: &model.Object{
-					Blob: &model.Blob{
-						Blocks:   []*model.Block{},
-						Checksum: "d41d8cd98f00b204e9800998ecf8427e",
-					},
-					Timestamp: n,
-					Size:      0,
-				},
+			Entry: &model.Entry{
+				Name:      "bar",
+				Address:   "d41d8cd98f00b204e9800998ecf8427e",
+				Type:      model.Entry_OBJECT,
+				Timestamp: n,
+				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
 			},
 		})
+
 		if err != nil {
 			t.Fatal(err)
 		}
 		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/baz/bar", &model.WorkspaceEntry{
 			Path: "/foo/baz/bar",
-			Data: &model.WorkspaceEntry_Object{
-				Object: &model.Object{
-					Blob: &model.Blob{
-						Blocks:   []*model.Block{},
-						Checksum: "d41d8cd98f00b204e9800998ecf8427e",
-					},
-					Timestamp: n,
-					Size:      0,
-				},
+			Entry: &model.Entry{
+				Name:      "bar",
+				Address:   "d41d8cd98f00b204e9800998ecf8427e",
+				Type:      model.Entry_OBJECT,
+				Timestamp: n,
+				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
 			},
 		})
 		if err != nil {
@@ -135,15 +130,12 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 		}
 		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/baz/barrrr", &model.WorkspaceEntry{
 			Path: "/foo/baz/barrrr",
-			Data: &model.WorkspaceEntry_Object{
-				Object: &model.Object{
-					Blob: &model.Blob{
-						Blocks:   []*model.Block{},
-						Checksum: "d41d8cd98f00b204e9800998ecf8427e",
-					},
-					Timestamp: n,
-					Size:      0,
-				},
+			Entry: &model.Entry{
+				Name:      "barrrr",
+				Address:   "d41d8cd98f00b204e9800998ecf8427e",
+				Type:      model.Entry_OBJECT,
+				Timestamp: n,
+				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
 			},
 		})
 		if err != nil {
@@ -209,15 +201,12 @@ func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
 		var err error
 		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/bar", &model.WorkspaceEntry{
 			Path: "/foo/bar",
-			Data: &model.WorkspaceEntry_Object{
-				Object: &model.Object{
-					Blob: &model.Blob{
-						Blocks:   []*model.Block{},
-						Checksum: "d41d8cd98f00b204e9800998ecf8427e",
-					},
-					Timestamp: n,
-					Size:      0,
-				},
+			Entry: &model.Entry{
+				Name:      "bar",
+				Address:   "d41d8cd98f00b204e9800998ecf8427e",
+				Type:      model.Entry_OBJECT,
+				Timestamp: n,
+				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
 			},
 		})
 		if err != nil {
@@ -225,15 +214,12 @@ func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
 		}
 		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/baz/bar", &model.WorkspaceEntry{
 			Path: "/foo/baz/bar",
-			Data: &model.WorkspaceEntry_Object{
-				Object: &model.Object{
-					Blob: &model.Blob{
-						Blocks:   []*model.Block{},
-						Checksum: "d41d8cd98f00b204e9800998ecf8427e",
-					},
-					Timestamp: n,
-					Size:      0,
-				},
+			Entry: &model.Entry{
+				Name:      "bar",
+				Address:   "d41d8cd98f00b204e9800998ecf8427e",
+				Type:      model.Entry_OBJECT,
+				Timestamp: n,
+				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
 			},
 		})
 		if err != nil {
