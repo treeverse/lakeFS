@@ -7,6 +7,7 @@ import (
 	"treeverse-lake/ident"
 	"treeverse-lake/index/merkle"
 	"treeverse-lake/index/model"
+	pth "treeverse-lake/index/path"
 	"treeverse-lake/index/store"
 
 	"golang.org/x/xerrors"
@@ -21,9 +22,12 @@ const (
 )
 
 type Index interface {
-	Tree(repoId string) error
+	Tree(repoId, branch string) error
 	ReadObject(repoId, branch, path string) (*model.Object, error)
+	ReadEntry(repoId, branch, path string) (*model.Entry, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
+	WriteEntry(repoId, branch, path string, entry *model.Entry) error
+	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
 	ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
 	ListObjectsByPrefix(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
@@ -155,12 +159,11 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 			// an actual error has occurred, return it.
 			return nil, err
 		}
-		if we.GetTombstone() != nil {
+		if we.GetTombstone() {
 			// object was deleted deleted
 			return nil, db.ErrNotFound
 		}
-
-		return we.GetObject(), nil
+		return tx.ReadObject(we.GetEntry().GetAddress())
 	})
 	if err != nil {
 		return nil, err
@@ -168,7 +171,80 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	return obj.(*model.Object), nil
 }
 
+func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
+	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
+		var entry *model.Entry
+		we, err := tx.ReadFromWorkspace(branch, path)
+		if xerrors.Is(err, db.ErrNotFound) {
+			// not in workspace, let's try reading it from branch tree
+			repo, err := tx.ReadRepo()
+			if err != nil {
+				return nil, err
+			}
+			root, err := resolveReadRoot(tx, repo, branch)
+			if err != nil {
+				return nil, err
+			}
+			m := merkle.New(root)
+			entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
+			if err != nil {
+				return nil, err
+			}
+			return entry, nil
+		}
+		if err != nil {
+			// an actual error has occurred, return it.
+			return nil, err
+		}
+		if we.GetTombstone() {
+			// object was deleted deleted
+			return nil, db.ErrNotFound
+		}
+		// exists in workspace
+		return we.GetEntry(), nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return entry.(*model.Entry), nil
+}
+
+func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		repo, err := tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		err = tx.WriteObject(ident.Hash(obj), obj)
+		if err != nil {
+			return nil, err
+		}
+		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			Path:  path,
+			Entry: entry,
+		})
+		return nil, err
+	})
+	return err
+}
+
+func (index *KVIndex) WriteEntry(repoId, branch, path string, entry *model.Entry) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		repo, err := tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			Path:  path,
+			Entry: entry,
+		})
+		return nil, err
+	})
+	return err
+}
+
 func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Object) error {
+	timestamp := time.Now()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		addr := ident.Hash(object)
 		err := tx.WriteObject(addr, object)
@@ -179,9 +255,18 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		if err != nil {
 			return nil, err
 		}
+		p := pth.New(path)
+		_, name := p.Pop()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
-			Path: path,
-			Data: &model.WorkspaceEntry_Object{Object: object},
+			Path: p.String(),
+			Entry: &model.Entry{
+				Name:      name,
+				Address:   addr,
+				Type:      model.Entry_OBJECT,
+				Timestamp: timestamp.Unix(),
+				Size:      object.GetSize(),
+				Checksum:  object.GetChecksum(),
+			},
 		})
 		return nil, err
 	})
@@ -195,8 +280,8 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
-			Path: path,
-			Data: &model.WorkspaceEntry_Tombstone{Tombstone: &model.Tombstone{}},
+			Path:      path,
+			Tombstone: true,
 		})
 		return nil, err
 	})
@@ -282,11 +367,11 @@ func (index *KVIndex) ListObjects(repoId, branch, path, from string, results int
 			return nil, err
 		}
 		tree := merkle.New(root)
-		addr, err := tree.GetAddress(tx, path, model.Entry_TREE)
+		entry, err := tree.GetEntry(tx, path, model.Entry_TREE)
 		if err != nil {
 			return nil, err
 		}
-		res, hasMore, err := tx.ListTree(addr, from, results)
+		res, hasMore, err := tx.ListTree(entry.GetAddress(), from, results)
 		if err != nil {
 			return nil, err
 		}
@@ -456,13 +541,13 @@ func (index *KVIndex) DeleteRepo(repoId string) error {
 	return err
 }
 
-func (index *KVIndex) Tree(repoId string) error {
+func (index *KVIndex) Tree(repoId, branch string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
+		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		r, err := tx.ReadBranch(repo.GetDefaultBranch())
+		r, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
 		}

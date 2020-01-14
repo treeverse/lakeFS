@@ -15,6 +15,7 @@ import (
 	"treeverse-lake/gateway/serde"
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
+	pth "treeverse-lake/index/path"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -57,7 +58,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadObject(o.Repo, p.Refspec, p.Path)
+	src, err := o.Index.ReadEntry(o.Repo, p.Refspec, p.Path)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"repo":   o.Repo,
@@ -68,7 +69,8 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 		return
 	}
 	// write this object to workspace
-	err = o.Index.WriteObject(o.Repo, o.Branch, o.Path, src)
+	src.Timestamp = time.Now().Unix() // TODO: move this logic into the Index impl.
+	err = o.Index.WriteEntry(o.Repo, o.Branch, o.Path, src)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -77,7 +79,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 
 	o.EncodeResponse(&serde.CopyObjectResult{
 		LastModified: serde.Timestamp(src.GetTimestamp()),
-		ETag:         fmt.Sprintf("\"%s\"", src.GetBlob().GetChecksum()),
+		ETag:         fmt.Sprintf("\"%s\"", src.GetChecksum()),
 	}, http.StatusOK)
 }
 
@@ -94,7 +96,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, size, err := ReadBlob(o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -102,9 +104,10 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	err = o.MultipartManager.UploadPart(o.Repo, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
-		Blob:      blob,
+		Blocks:    blob.Blocks,
+		Checksum:  blob.Checksum,
 		Timestamp: time.Now().Unix(),
-		Size:      size,
+		Size:      blob.Size,
 	})
 
 	if err != nil {
@@ -115,7 +118,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 
 	// must write the etag back
 	// TODO: validate the ETag sent in CompleteMultipartUpload matches the blob for the given part number
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.GetChecksum()))
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.Checksum))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 	o.Log().WithFields(log.Fields{
 		"upload_id":   uploadId,
@@ -123,7 +126,13 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}).Info("MULTI PART PART DONE!")
 }
 
-func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error) {
+type Blob struct {
+	Blocks   []*model.Block
+	Checksum string
+	Size     int64
+}
+
+func ReadBlob(body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
 	blocks := make([]*model.Block, 0)
 	cksummer := md5.New()
@@ -135,7 +144,7 @@ func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error)
 
 		// unexpected error
 		if err != nil && err != io.EOF {
-			return nil, 0, err
+			return nil, err
 		}
 
 		// body is completely drained and we read nothing
@@ -152,13 +161,13 @@ func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error)
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
 		w, err := adapter.Put(blockAddr)
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		cksummer.Write(buf[:n])
 		_, err = w.Write(buf[:n])
 		_ = w.Close()
 		if err != nil {
-			return nil, 0, err
+			return nil, err
 		}
 		blocks = append(blocks, &model.Block{
 			Address: blockAddr,
@@ -170,13 +179,11 @@ func ReadBlob(body io.Reader, adapter block.Adapter) (*model.Blob, int64, error)
 			break
 		}
 	}
-	return &model.Blob{
-		Blocks:               blocks,
-		Checksum:             fmt.Sprintf("%x", cksummer.Sum(nil)),
-		XXX_NoUnkeyedLiteral: struct{}{},
-		XXX_unrecognized:     nil,
-		XXX_sizecache:        0,
-	}, totalSize, nil
+	return &Blob{
+		Blocks:   blocks,
+		Checksum: fmt.Sprintf("%x", cksummer.Sum(nil)),
+		Size:     totalSize,
+	}, nil
 }
 
 func (controller *PutObject) Handle(o *PathOperation) {
@@ -197,7 +204,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, size, err := ReadBlob(o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -207,12 +214,24 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// write metadata
 	writeTime := time.Now()
 	obj := &model.Object{
-		Blob:      blob,
-		Metadata:  nil, // TODO: Read whatever metadata came from the request headers/params and add here
-		Timestamp: writeTime.Unix(),
-		Size:      size,
+		Blocks:   blob.Blocks,
+		Checksum: blob.Checksum,
+		Metadata: nil, // TODO: Read whatever metadata came from the request headers/params and add here
+		Size:     blob.Size,
 	}
-	err = o.Index.WriteObject(o.Repo, o.Branch, o.Path, obj)
+
+	p := pth.New(o.Path)
+	_, name := p.Pop()
+
+	entry := &model.Entry{
+		Name:      name,
+		Address:   ident.Hash(obj),
+		Type:      model.Entry_OBJECT,
+		Timestamp: writeTime.Unix(),
+		Size:      blob.Size,
+		Checksum:  blob.Checksum,
+	}
+	err = o.Index.WriteFile(o.Repo, o.Branch, o.Path, entry, obj)
 	tookMeta := time.Since(writeTime)
 
 	if err != nil {
@@ -226,6 +245,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		"branch": o.Branch,
 		"path":   o.Path,
 	}).Trace("metadata update complete")
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()))
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetChecksum()))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

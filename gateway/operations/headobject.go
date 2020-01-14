@@ -21,7 +21,7 @@ func (controller *HeadObject) GetPermission() string {
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
-	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
+	entry, err := o.Index.ReadEntry(o.Repo, o.Branch, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log().
@@ -39,7 +39,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		return
 	}
 	o.SetHeader("Accept-Ranges", "bytes")
-	o.SetHeader("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()))
-	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
+	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
+	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", entry.GetChecksum()))
+	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.GetSize()))
 }
