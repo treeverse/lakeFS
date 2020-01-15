@@ -25,7 +25,7 @@ const (
 type ListObjects struct{}
 
 func (controller *ListObjects) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *ListObjects) GetPermission() string {
@@ -52,7 +52,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			return
 		}
 		// no delimiter specified
-		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo, p.Refspec, p.Path, "", 100000)
+		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), p.Refspec, p.Path, "", 100000)
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			o.Log().WithError(err).WithField("prefix", prefix).Error("bad happened when ranging")
@@ -71,7 +71,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		}
 
 		resp := serde.ListObjectsV2Output{
-			Name:      o.Repo,
+			Name:      o.Repo.GetRepoId(),
 			Prefix:    prefix,
 			Delimiter: delimiter,
 			KeyCount:  len(files),
@@ -97,7 +97,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	var err error
 	if len(prefixParts) == 0 {
 		// list branches then.
-		results, err = o.Index.ListBranches(o.Repo, -1)
+		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -116,7 +116,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			}
 			continuationToken = string(continuationTokenStr)
 		}
-		results, hasMore, err = o.Index.ListObjects(o.Repo, branch, parsedPath, continuationToken, ListObjectMaxKeys)
+		results, hasMore, err = o.Index.ListObjects(o.Repo.GetRepoId(), branch, parsedPath, continuationToken, ListObjectMaxKeys)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -149,7 +149,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	}
 
 	resp := serde.ListObjectsV2Output{
-		Name:           o.Repo,
+		Name:           o.Repo.GetRepoId(),
 		Prefix:         prefix,
 		Delimiter:      delimiter,
 		KeyCount:       len(results),
@@ -208,7 +208,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	var err error
 	if len(prefixParts) == 0 {
 		// list branches then.
-		results, err = o.Index.ListBranches(o.Repo, -1)
+		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -218,7 +218,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	} else {
 		branch := prefixParts[0]
 		parsedPath := path.Join(prefixParts[1:])
-		results, hasMore, err = o.Index.ListObjects(o.Repo, branch, parsedPath, marker, ListObjectMaxKeys)
+		results, hasMore, err = o.Index.ListObjects(o.Repo.GetRepoId(), branch, parsedPath, marker, ListObjectMaxKeys)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -251,7 +251,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	}
 
 	resp := serde.ListBucketResult{
-		Name:           o.Repo,
+		Name:           o.Repo.GetRepoId(),
 		Prefix:         prefix,
 		Delimiter:      delimiter,
 		Marker:         marker,

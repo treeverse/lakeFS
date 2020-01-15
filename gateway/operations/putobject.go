@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 	"treeverse-lake/block"
+	"treeverse-lake/db"
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
@@ -16,6 +17,8 @@ import (
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 	pth "treeverse-lake/index/path"
+
+	"golang.org/x/xerrors"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -34,7 +37,7 @@ const (
 type PutObject struct{}
 
 func (controller *PutObject) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *PutObject) GetPermission() string {
@@ -51,14 +54,14 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// validate src and dst are in the same repo
-	if !strings.EqualFold(o.Repo, p.Repo) {
+	if !strings.EqualFold(o.Repo.GetRepoId(), p.Repo) {
 		o.Log().WithError(err).Error("cannot copy objects across repos")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntry(o.Repo, p.Refspec, p.Path)
+	src, err := o.Index.ReadEntry(o.Repo.GetRepoId(), p.Refspec, p.Path)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"repo":   o.Repo,
@@ -70,7 +73,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 	// write this object to workspace
 	src.Timestamp = time.Now().Unix() // TODO: move this logic into the Index impl.
-	err = o.Index.WriteEntry(o.Repo, o.Branch, o.Path, src)
+	err = o.Index.WriteEntry(o.Repo.GetRepoId(), o.Branch, o.Path, src)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -103,7 +106,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 		return
 	}
 
-	err = o.MultipartManager.UploadPart(o.Repo, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
+	err = o.MultipartManager.UploadPart(o.Repo.GetRepoId(), o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
 		Blocks:    blob.Blocks,
 		Checksum:  blob.Checksum,
 		Timestamp: time.Now().Unix(),
@@ -197,10 +200,17 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	query := o.Request.URL.Query()
 
+	// check if this is a multipart upload creation call
 	_, hasUploadId := query[QueryParamUploadId]
 	if hasUploadId {
 		controller.HandleCreateMultipartUpload(o)
 		return
+	}
+
+	// validate repo
+	_, err := o.Index.GetRepo(o.Repo.GetRepoId())
+	if xerrors.Is(err, db.ErrNotFound) {
+		// WHY DOESNT AUTH CHECK THIS FIRST
 	}
 
 	// handle the upload itself
@@ -231,7 +241,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		Size:      blob.Size,
 		Checksum:  blob.Checksum,
 	}
-	err = o.Index.WriteFile(o.Repo, o.Branch, o.Path, entry, obj)
+	err = o.Index.WriteFile(o.Repo.GetRepoId(), o.Branch, o.Path, entry, obj)
 	tookMeta := time.Since(writeTime)
 
 	if err != nil {

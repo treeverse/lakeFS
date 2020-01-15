@@ -13,7 +13,7 @@ import (
 type HeadObject struct{}
 
 func (controller *HeadObject) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *HeadObject) GetPermission() string {
@@ -21,7 +21,7 @@ func (controller *HeadObject) GetPermission() string {
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
-	entry, err := o.Index.ReadEntry(o.Repo, o.Branch, o.Path)
+	entry, err := o.Index.ReadEntry(o.Repo.GetRepoId(), o.Branch, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log().

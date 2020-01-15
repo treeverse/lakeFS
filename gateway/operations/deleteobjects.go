@@ -12,7 +12,7 @@ import (
 type DeleteObjects struct{}
 
 func (controller *DeleteObjects) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *DeleteObjects) GetPermission() string {
@@ -33,7 +33,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		parts := prefixPath.SplitParts()
 		branch := parts[0]
 
-		err := o.Index.DeleteObject(o.Repo, branch, path.Join(parts[1:]))
+		err := o.Index.DeleteObject(o.Repo.GetRepoId(), branch, path.Join(parts[1:]))
 		if err != nil {
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",
