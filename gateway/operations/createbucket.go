@@ -5,6 +5,8 @@ import (
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/index"
+
+	"github.com/gorilla/mux"
 )
 
 type CreateBucket struct{}
@@ -17,13 +19,15 @@ func (controller *CreateBucket) GetPermission() string {
 	return permissions.PermissionManageRepos
 }
 
-func (controller *CreateBucket) Handle(o *RepoOperation) {
+func (controller *CreateBucket) Handle(o *AuthenticatedOperation) {
 	res := o.ResponseWriter
-	err := o.Index.CreateRepo(o.Repo, index.DefaultBranch)
+	repoId := mux.Vars(o.Request)["repo"] // TODO: move this logic elsewhere, a handler shouldn't know about mux
+	err := o.Index.CreateRepo(repoId, index.DefaultBranch)
 	if err != nil {
-		o.Log().WithField("repo", o.Repo).WithError(err).Error("failed to create repo")
+		o.Log().WithField("repo", repoId).WithError(err).Error("failed to create repo")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
+	o.Log().WithField("repo", repoId).Info("repo created successfully")
 	res.WriteHeader(http.StatusCreated)
 }

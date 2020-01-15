@@ -22,7 +22,7 @@ import (
 type GetObject struct{}
 
 func (controller *GetObject) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *GetObject) GetPermission() string {
@@ -38,7 +38,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Index.ReadEntry(o.Repo, o.Branch, o.Path)
+	entry, err := o.Index.ReadEntry(o.Repo.GetRepoId(), o.Branch, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -63,7 +63,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// now we might need the object itself
-	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
+	obj, err := o.Index.ReadObject(o.Repo.GetRepoId(), o.Branch, o.Path)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
