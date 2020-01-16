@@ -15,7 +15,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 0.005 // ~200 writes before a partial commit
+	DefaultPartialCommitRatio = 1 // 1 writes before a partial commit
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -279,8 +279,14 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		if err != nil {
 			return nil, err
 		}
+		p := pth.New(path)
+		_, name := p.Pop()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
-			Path:      path,
+			Path: path,
+			Entry: &model.Entry{
+				Name: name,
+				Type: model.Entry_OBJECT,
+			},
 			Tombstone: true,
 		})
 		return nil, err
@@ -543,7 +549,11 @@ func (index *KVIndex) DeleteRepo(repoId string) error {
 
 func (index *KVIndex) Tree(repoId, branch string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		_, err := tx.ReadRepo()
+		err := partialCommit(tx, branch)
+		if err != nil {
+			return nil, err
+		}
+		_, err = tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}

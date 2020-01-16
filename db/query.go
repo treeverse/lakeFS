@@ -51,8 +51,11 @@ func (it *dbPrefixIterator) Close() {
 }
 
 func (q *DBReadQuery) pack(ns Namespace, key CompositeKey) []byte {
-	parts := CompositeKey{ns}
-	parts = parts.With(key...)
+	parts := make(CompositeKey, len(key)+1)
+	parts[0] = part{data: ns}
+	for i, k := range key {
+		parts[i+1] = k
+	}
 	return parts.AsKey()
 }
 
@@ -65,7 +68,7 @@ func (q *DBReadQuery) Get(space Namespace, key CompositeKey) (KeyValue, error) {
 	if err != nil {
 		return kv, err
 	}
-	kv.Key = item.Key()
+	kv.Key = item.KeyCopy(nil)
 	kv.Value, err = item.ValueCopy(nil)
 	return kv, err
 
@@ -86,7 +89,7 @@ func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key Composi
 func (q *DBReadQuery) Range(space Namespace) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)
-	pref := CompositeKey{space}.AsKey()
+	pref := CompositeKey{part{data: space}}.AsKey()
 	it.Seek(pref) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,
@@ -98,8 +101,8 @@ func (q *DBReadQuery) Range(space Namespace) (Iterator, IteratorCloseFn) {
 
 func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
-	it := q.tx.NewIterator(opts)
 	pref := q.pack(space, prefix)
+	it := q.tx.NewIterator(opts)
 	it.Seek(pref) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,
@@ -111,12 +114,10 @@ func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) (Iterato
 
 func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan []byte) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
-	it := q.tx.NewIterator(opts)
 	pref := q.pack(space, prefix)
-	offset := q.pack(space, prefix.With(greaterThan))
-	// remove trailing null byte delimiter - this is an abstraction leak from how composite keys work and should be refactored
-	// TODO: refactor to eliminate abstraction leak
-	offset = offset[:len(offset)-1]
+	opts.Prefix = pref
+	it := q.tx.NewIterator(opts)
+	offset := q.pack(space, prefix.WithGlob(greaterThan))
 	it.Seek(offset) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,
@@ -144,14 +145,23 @@ func (q *DBQuery) ClearPrefix(space Namespace, key CompositeKey) error {
 	prefix := q.pack(space, key) // go to the correct offset
 	it := q.tx.NewIterator(opts)
 	var err error
+	keys := make([][]byte, 0)
 	for it.Seek(prefix); it.ValidForPrefix(prefix); it.Next() {
-		err = q.tx.Delete(it.Item().Key())
+		k := it.Item().KeyCopy(nil)
+		keys = append(keys, k)
+	}
+	it.Close()
+
+	// do the actual deletion
+	i := 0
+	for _, k := range keys {
+		err = q.tx.Delete(k)
 		if err != nil {
 			return err
 		}
+		i++
 	}
-	it.Close()
-	return err
+	return nil
 }
 
 func (q *DBQuery) Delete(space Namespace, key CompositeKey) error {

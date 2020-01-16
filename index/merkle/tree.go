@@ -26,6 +26,9 @@ func New(root string) *Merkle {
 
 func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, nodeType model.Entry_Type) (*model.Entry, error) {
 	currentAddress := m.root
+	if len(pth) == 0 && nodeType == model.Entry_TREE {
+		return &model.Entry{Address: currentAddress}, nil
+	}
 	parts := path.New(pth).SplitParts()
 	var entry *model.Entry
 	for i, part := range parts {
@@ -37,7 +40,7 @@ func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, nodeType 
 		if err != nil {
 			return entry, err
 		}
-		currentAddress = entry.GetAddress()
+		currentAddress = ent.GetAddress()
 		entry = ent
 	}
 	return entry, nil
@@ -102,12 +105,16 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, 
 	firstSubtreeAddr := m.root
 	var firstSubtreePath string
 
-	for _, part := range parts {
+	for i, part := range parts {
+		isLast := i == len(parts)-1
 		prefixParts = append(prefixParts, part)
 		currentPrefix := pth.Join(prefixParts)
 		entry, err := m.GetEntry(tx, currentPrefix, model.Entry_TREE)
-		if xerrors.Is(err, db.ErrNotFound) {
+		if isLast && xerrors.Is(err, db.ErrNotFound) {
 			break
+		} else if xerrors.Is(err, db.ErrNotFound) && !isLast {
+			// we can return an empty response, no such path exists
+			return make([]*model.Entry, 0), false, nil
 		}
 		if err != nil {
 			return nil, false, err
@@ -116,7 +123,8 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, 
 		firstSubtreeAddr = entry.GetAddress()
 	}
 	t := Merkle{root: firstSubtreeAddr}
-	return t.bfs(tx, strings.TrimPrefix(path, firstSubtreePath), amount, &col{[]*model.Entry{}}, firstSubtreePath)
+	prefix := strings.TrimPrefix(strings.TrimPrefix(path, firstSubtreePath), string(pth.Separator))
+	return t.bfs(tx, prefix, amount, &col{[]*model.Entry{}}, firstSubtreePath)
 }
 
 type col struct {
@@ -124,8 +132,7 @@ type col struct {
 }
 
 func (m *Merkle) bfs(tx store.RepoReadOnlyOperations, prefix string, amount int, c *col, currentPath string) ([]*model.Entry, bool, error) {
-	//fmt.Printf("doing bfs - path = %s ->(collected so far: %v)\n", currentPath, c.data)
-	entries, hasMore, err := tx.ListTree(m.root, prefix, amount)
+	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, prefix, "", amount)
 	if err != nil {
 		return nil, false, err
 	}
@@ -148,7 +155,6 @@ func (m *Merkle) bfs(tx store.RepoReadOnlyOperations, prefix string, amount int,
 				Size:      entry.GetSize(),
 				Checksum:  entry.GetChecksum(),
 			})
-			fmt.Printf("added %s to collected\n", fullPath)
 		}
 	}
 	return c.data, hasMore, nil
@@ -216,7 +222,7 @@ func (m *Merkle) Root() string {
 
 type WalkFn func(path, name, typ string) bool
 
-var format, _ = template.New("treeFormat").Parse("{{.Indent}}{{.Hash}} {{.Type}}\t{{.Time}} {{.Name}}\n")
+var format, _ = template.New("treeFormat").Parse("{{.Indent}}{{.Hash}} {{.Type}} {{.Time}} {{.Size}} {{.Name}}\n")
 
 func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
 	_ = format.Execute(os.Stdout, struct {
@@ -224,12 +230,14 @@ func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
 		Hash   string
 		Type   string
 		Time   string
+		Size   string
 		Name   string
 	}{
-		strings.Repeat("\t", 0),
+		strings.Repeat("  ", 0),
 		m.root[:8],
 		model.Entry_TREE.String(),
 		time.Now().Format(time.RFC3339),
+		fmt.Sprintf("%.10d", 0),
 		"/",
 	})
 	m.walk(tx, 1, m.root)
@@ -254,12 +262,14 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, depth int, root string) {
 			Hash   string
 			Type   string
 			Time   string
+			Size   string
 			Name   string
 		}{
-			strings.Repeat("\t", depth),
+			strings.Repeat("  ", depth),
 			child.GetAddress()[:8],
 			child.GetType().String(),
 			time.Unix(child.GetTimestamp(), 0).Format(time.RFC3339),
+			fmt.Sprintf("%.10d", child.GetSize()),
 			name,
 		})
 		if child.GetType() == model.Entry_TREE {

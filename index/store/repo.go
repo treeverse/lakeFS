@@ -19,6 +19,7 @@ type RepoReadOnlyOperations interface {
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, from string, results int) ([]*model.Entry, bool, error)
+	ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
 
 	// Multipart uploads
@@ -120,15 +121,18 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 	return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
 }
 
-func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
-	// entry keys: (client, repo, parent, name, type)
+func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error) {
 	var iter db.Iterator
 	var itclose db.IteratorCloseFn
 	var hasMore bool
+	key := db.CompositeStrings(s.repoId, addr)
+	if len(prefix) > 0 {
+		key = key.WithGlob([]byte(prefix))
+	}
 	if len(from) > 0 {
-		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, db.CompositeStrings(s.repoId, addr), []byte(from))
+		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, []byte(from))
 	} else {
-		iter, itclose = s.query.RangePrefix(SubspaceEntries, db.CompositeStrings(s.repoId, addr))
+		iter, itclose = s.query.RangePrefix(SubspaceEntries, key)
 	}
 	defer itclose()
 	entries := make([]*model.Entry, 0)
@@ -151,6 +155,10 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 		}
 	}
 	return entries, hasMore, nil
+}
+
+func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
+	return s.ListTreeWithPrefix(addr, "", from, results)
 }
 
 func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {

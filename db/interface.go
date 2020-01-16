@@ -13,29 +13,46 @@ type KeyValue struct {
 	Value []byte
 }
 
+const TupleSeparator = 0x00 // use null byte as part separator
+
 type Namespace []byte
 
-type CompositeKey [][]byte
+type part struct {
+	data []byte
+	open bool
+}
+
+type CompositeKey []part
 
 func (c CompositeKey) AsKey() []byte {
 	var buf bytes.Buffer
 	for _, part := range c {
-		buf.Write(part)
-		buf.WriteByte(0x00)
+		buf.Write(part.data)
+		if !part.open {
+			buf.WriteByte(TupleSeparator)
+		}
 	}
 	return buf.Bytes()
 }
 
 func (c CompositeKey) With(parts ...[]byte) CompositeKey {
+	cparts := make([]part, len(parts))
+	for i, p := range parts {
+		cparts[i] = part{data: p}
+	}
 	n := append(CompositeKey{}, c...)
-	n = append(n, parts...)
+	n = append(n, cparts...)
 	return n
+}
+
+func (c CompositeKey) WithGlob(p []byte) CompositeKey {
+	return append(c, part{data: p, open: true})
 }
 
 func CompositeStrings(parts ...string) CompositeKey {
 	n := CompositeKey{}
 	for _, k := range parts {
-		n = append(n, []byte(k))
+		n = append(n, part{data: []byte(k)})
 	}
 	return n
 }
@@ -43,7 +60,12 @@ func CompositeStrings(parts ...string) CompositeKey {
 func (c CompositeKey) String() string {
 	asString := make([]string, len(c))
 	for i, p := range c {
-		asString[i] = fmt.Sprintf("\"%s\"", string(p))
+		if p.open {
+			asString[i] = fmt.Sprintf("\"%s*\"", string(p.data))
+		} else {
+			asString[i] = fmt.Sprintf("\"%s\"", string(p.data))
+		}
+
 	}
 	partsString := strings.Join(asString, ", ")
 	return fmt.Sprintf("{%s}", partsString)
@@ -53,15 +75,15 @@ func KeyFromBytes(key []byte) CompositeKey {
 	var buf bytes.Buffer
 	ck := CompositeKey{}
 	for _, b := range key {
-		if b == 0x00 {
-			ck = append(ck, buf.Bytes())
+		if b == TupleSeparator {
+			ck = append(ck, part{data: buf.Bytes(), open: false})
 			buf = bytes.Buffer{}
 		} else {
 			buf.WriteByte(b)
 		}
 	}
 	if buf.Len() > 0 {
-		ck = append(ck, buf.Bytes())
+		ck = append(ck, part{data: buf.Bytes(), open: true})
 	}
 	return ck
 }
