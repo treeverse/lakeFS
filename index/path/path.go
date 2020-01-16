@@ -65,11 +65,15 @@ func (p *Path) SplitParts() []string {
 	var buf strings.Builder
 	separated := true
 	for _, current := range p.str {
+		// for anything other than /
 		if current != Separator {
 			buf.WriteRune(current)
 			separated = false
 			continue
 		}
+		// we only get here when we encounter /
+		// how can we tell if we have anything following the / that isn't another /
+		// we can determine this on the next char, if it's not /, write all the /'s we've encountered so far
 		if !separated {
 			parts = append(parts, buf.String())
 			buf.Reset()
