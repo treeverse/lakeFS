@@ -136,7 +136,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		lastKey = res.GetName()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/", res.GetName())})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s/", prefixPath.String(), res.GetName())})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),
@@ -238,7 +238,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		lastKey = res.GetName()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/", res.GetName())})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s/", prefixPath.String(), res.GetName())})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),

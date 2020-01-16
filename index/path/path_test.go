@@ -35,14 +35,14 @@ func TestPath_SplitParts(t *testing.T) {
 	}{
 		{"/foo/bar", []string{"foo", "bar"}},
 		{"/foo///bar", []string{"foo", "bar"}},
-		{"/foo///bar/", []string{"foo", "bar"}},
-		{"/foo///bar////", []string{"foo", "bar"}},
+		{"/foo///bar/", []string{"foo", "bar/"}},
+		{"/foo///bar////", []string{"foo", "bar////"}},
 		{"////foo", []string{"foo"}},
 		{"//", []string{}},
 		{"/", []string{}},
 		{"", []string{}},
 		{"/hello/world/another/level", []string{"hello", "world", "another", "level"}},
-		{"/hello/world/another/level/", []string{"hello", "world", "another", "level"}},
+		{"/hello/world/another/level/", []string{"hello", "world", "another", "level/"}},
 	}
 	for _, test := range testData {
 		p := path.New(test.Path)
@@ -60,14 +60,14 @@ func TestPath_String(t *testing.T) {
 	}{
 		{path.New("/foo/bar"), "foo/bar"},
 		{path.New("/foo///bar"), "foo/bar"},
-		{path.New("////foo///bar/"), "foo/bar"},
-		{path.New("/foo///bar////"), "foo/bar"},
+		{path.New("////foo///bar/"), "foo/bar/"},
+		{path.New("/foo///bar////"), "foo/bar////"},
 		{path.New("////foo"), "foo"},
 		{path.New("//"), ""},
 		{path.New("/"), ""},
 		{path.New(""), ""},
 		{path.New("/hello/world/another/level"), "hello/world/another/level"},
-		{path.New("/hello/world/another/level/"), "hello/world/another/level"},
+		{path.New("/hello/world/another/level/"), "hello/world/another/level/"},
 		{nilpath, ""},
 	}
 	for _, test := range testData {
@@ -105,7 +105,7 @@ func TestPath_Pop(t *testing.T) {
 	}{
 		{Path: "/foo/bar", Remainder: path.New("/foo"), Popped: "bar"},
 		{Path: "/foo/bar/baz", Remainder: path.New("/foo/bar"), Popped: "baz"},
-		{Path: "/foo/bar/baz/", Remainder: path.New("/foo/bar"), Popped: "baz"},
+		{Path: "/foo/bar/baz/", Remainder: path.New("/foo/bar"), Popped: "baz/"},
 		{Path: "/foo", Remainder: nil, Popped: "foo"},
 	}
 
