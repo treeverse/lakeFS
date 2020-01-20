@@ -238,7 +238,7 @@ func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
 		model.Entry_TREE.String(),
 		time.Now().Format(time.RFC3339),
 		fmt.Sprintf("%.10d", 0),
-		"/",
+		fmt.Sprintf("\"%s\"", pth.Separator),
 	})
 	m.walk(tx, 1, m.root)
 }
@@ -252,10 +252,7 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, depth int, root string) {
 	for _, child := range children {
 		name := child.GetName()
 		if child.GetType() == model.Entry_TREE {
-			name = fmt.Sprintf("%s/", name)
-		}
-		if len(child.GetAddress()) < 6 {
-			continue
+			name = fmt.Sprintf("%s", name)
 		}
 		_ = format.Execute(os.Stdout, struct {
 			Indent string
@@ -265,12 +262,12 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, depth int, root string) {
 			Size   string
 			Name   string
 		}{
-			strings.Repeat("  ", depth),
+			strings.Repeat(" - ", depth),
 			child.GetAddress()[:8],
 			child.GetType().String(),
 			time.Unix(child.GetTimestamp(), 0).Format(time.RFC3339),
 			fmt.Sprintf("%.10d", child.GetSize()),
-			name,
+			fmt.Sprintf("\"%s\"", name),
 		})
 		if child.GetType() == model.Entry_TREE {
 			m.walk(tx, depth+1, child.GetAddress())
