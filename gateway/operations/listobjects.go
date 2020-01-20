@@ -52,7 +52,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			return
 		}
 		// no delimiter specified
-		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), p.Refspec, p.Path, "", 100000)
+		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), p.Refspec, p.Path, "", 100000, true)
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			o.Log().WithError(err).WithField("prefix", prefix).Error("bad happened when ranging")
@@ -62,7 +62,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		files := make([]serde.Contents, 0)
 		for _, f := range entries {
 			files = append(files, serde.Contents{
-				Key:          path.Join([]string{p.Refspec, f.GetName()}),
+				Key:          path.Join([]string{p.Refspec, f.GetPath()}),
 				LastModified: serde.Timestamp(f.GetTimestamp()),
 				ETag:         serde.ETag(f.GetChecksum()),
 				Size:         f.GetSize(),
@@ -95,6 +95,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	var results []*model.Entry
 	hasMore := false
 	var err error
+	var branch string
 	if len(prefixParts) == 0 {
 		// list branches then.
 		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
@@ -104,7 +105,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			return
 		}
 	} else {
-		branch := strings.TrimSuffix(prefixParts[0], path.Separator)
+		branch = strings.TrimSuffix(prefixParts[0], path.Separator)
 		parsedPath := path.Join(prefixParts[1:])
 		// TODO: continuation token
 		if len(continuationToken) > 0 {
@@ -117,12 +118,13 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			continuationToken = string(continuationTokenStr)
 		}
 
-		results, hasMore, err = o.Index.ListObjects(
+		results, hasMore, err = o.Index.ListObjectsByPrefix(
 			o.Repo.GetRepoId(),
 			branch,
 			parsedPath,
 			continuationToken,
-			ListObjectMaxKeys)
+			ListObjectMaxKeys,
+			false)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -139,13 +141,13 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	files := make([]serde.Contents, 0)
 	var lastKey string
 	for _, res := range results {
-		lastKey = res.GetName()
+		lastKey = res.GetPath()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{prefixPath.String(), res.GetName()})})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{branch, res.GetPath()})})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
-				Key:          path.Join([]string{prefixPath.String(), res.GetName()}),
+				Key:          path.Join([]string{branch, res.GetPath()}),
 				LastModified: serde.Timestamp(res.GetTimestamp()),
 				ETag:         serde.ETag(res.GetChecksum()),
 				Size:         res.GetSize(),
@@ -207,6 +209,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	// see if we have a continuation token in the request to pick up from
 	marker := params.Get("marker")
 
+	var branch string
 	prefixPath := path.New(prefix)
 	prefixParts := prefixPath.SplitParts()
 	var results []*model.Entry
@@ -222,9 +225,9 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 			return
 		}
 	} else {
-		branch := strings.TrimSuffix(prefixParts[0], path.Separator)
+		branch = strings.TrimSuffix(prefixParts[0], path.Separator)
 		parsedPath := path.Join(prefixParts[1:])
-		results, hasMore, err = o.Index.ListObjects(o.Repo.GetRepoId(), branch, parsedPath, marker, ListObjectMaxKeys)
+		results, hasMore, err = o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), branch, parsedPath, marker, ListObjectMaxKeys, false)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -241,13 +244,13 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	files := make([]serde.Contents, 0)
 	var lastKey string
 	for _, res := range results {
-		lastKey = res.GetName()
+		lastKey = res.GetPath()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{prefixPath.String(), res.GetName()})})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{branch, res.GetPath()})})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
-				Key:          res.GetName(),
+				Key:          path.Join([]string{branch, res.GetPath()}),
 				LastModified: serde.Timestamp(res.GetTimestamp()),
 				ETag:         fmt.Sprintf("\"%s\"", res.GetChecksum()),
 				Size:         res.GetSize(),

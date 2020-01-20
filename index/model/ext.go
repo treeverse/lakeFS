@@ -32,7 +32,7 @@ func identMapToString(data map[string]string) string {
 
 func (m *Entry) Identity() []byte {
 	return identFromStrings(
-		m.GetName(),
+		m.GetPath(),
 		m.GetAddress(),
 		fmt.Sprintf("%v", m.Type))
 }
