@@ -34,20 +34,21 @@ func TestPath_SplitParts(t *testing.T) {
 		Parts []string
 	}{
 		{"/foo/bar", []string{"foo", "bar"}},
-		{"/foo///bar", []string{"foo", "bar"}},
-		{"/foo///bar/", []string{"foo", "bar/"}},
-		{"/foo///bar////", []string{"foo", "bar////"}},
-		{"////foo", []string{"foo"}},
-		{"//", []string{}},
-		{"/", []string{}},
-		{"", []string{}},
+		{"foo/bar/", []string{"foo", "bar", ""}},
+		{"/foo///bar", []string{"foo", "", "", "bar"}},
+		{"/foo///bar/", []string{"foo", "", "", "bar", ""}},
+		{"/foo///bar////", []string{"foo", "", "", "bar", "", "", "", ""}},
+		{"////foo", []string{"", "", "", "foo"}},
+		{"//", []string{"", ""}},
+		{"/", []string{""}},
+		{"", []string{""}},
 		{"/hello/world/another/level", []string{"hello", "world", "another", "level"}},
-		{"/hello/world/another/level/", []string{"hello", "world", "another", "level/"}},
+		{"/hello/world/another/level/", []string{"hello", "world", "another", "level", ""}},
 	}
-	for _, test := range testData {
+	for i, test := range testData {
 		p := path.New(test.Path)
 		if !equalStrings(p.SplitParts(), test.Parts) {
-			t.Fatalf("expected: %s, got %s for path: %s", reprstrings(test.Parts), reprstrings(p.SplitParts()), test.Path)
+			t.Fatalf("expected (%d): %s, got %s for path: %s", i, reprstrings(test.Parts), reprstrings(p.SplitParts()), test.Path)
 		}
 	}
 }
@@ -58,21 +59,14 @@ func TestPath_String(t *testing.T) {
 		Path   *path.Path
 		String string
 	}{
-		{path.New("/foo/bar"), "foo/bar"},
-		{path.New("/foo///bar"), "foo/bar"},
-		{path.New("////foo///bar/"), "foo/bar/"},
-		{path.New("/foo///bar////"), "foo/bar////"},
-		{path.New("////foo"), "foo"},
-		{path.New("//"), ""},
-		{path.New("/"), ""},
-		{path.New(""), ""},
+		{path.New("hello/world/another/level"), "hello/world/another/level"},
 		{path.New("/hello/world/another/level"), "hello/world/another/level"},
 		{path.New("/hello/world/another/level/"), "hello/world/another/level/"},
 		{nilpath, ""},
 	}
-	for _, test := range testData {
+	for i, test := range testData {
 		if !strings.EqualFold(test.Path.String(), test.String) {
-			t.Fatalf("expected: \"%s\", got \"%s\" for path: \"%s\"", test.String, test.Path.String(), test.Path)
+			t.Fatalf("expected (%d): \"%s\", got \"%s\" for path: \"%s\"", i, test.String, test.Path.String(), test.Path)
 		}
 	}
 }
@@ -105,7 +99,7 @@ func TestPath_Pop(t *testing.T) {
 	}{
 		{Path: "/foo/bar", Remainder: path.New("/foo"), Popped: "bar"},
 		{Path: "/foo/bar/baz", Remainder: path.New("/foo/bar"), Popped: "baz"},
-		{Path: "/foo/bar/baz/", Remainder: path.New("/foo/bar"), Popped: "baz/"},
+		{Path: "/foo/bar/baz/", Remainder: path.New("/foo/bar/baz"), Popped: ""},
 		{Path: "/foo", Remainder: nil, Popped: "foo"},
 	}
 
@@ -117,6 +111,47 @@ func TestPath_Pop(t *testing.T) {
 		}
 		if !strings.EqualFold(test.Popped, popped) {
 			t.Fatalf("expected to pop: '%s', got '%s' for path '%s'", test.Popped, popped, test.Path)
+		}
+	}
+}
+
+func TestJoin(t *testing.T) {
+	testData := []struct {
+		parts    []string
+		expected string
+	}{
+		{[]string{"foo/bar", "baz"}, "foo/bar/baz"},
+		{[]string{"foo/bar/", "baz"}, "foo/bar//baz"},
+		{[]string{"foo/bar", "", "baz"}, "foo/bar//baz"},
+		{[]string{"foo//bar", "baz"}, "foo//bar/baz"},
+		{[]string{"foo/bar", ""}, "foo/bar/"},
+		{[]string{"foo/bar/", ""}, "foo/bar//"},
+	}
+	for i, test := range testData {
+		got := path.Join(test.parts)
+		if !strings.EqualFold(got, test.expected) {
+			t.Fatalf("expected (%d): '%s', got '%s' for %v", i, test.expected, got, test.parts)
+		}
+	}
+}
+
+func TestPath_Add(t *testing.T) {
+	testData := []struct {
+		parent   *path.Path
+		child    string
+		expected string
+	}{
+		{path.New("foo/bar"), "baz", "foo/bar/baz"},
+		{path.New("/foo/bar"), "baz", "foo/bar/baz"},
+		{path.New("foo/bar"), "/baz", "foo/bar//baz"},
+		{path.New("foo/bar/"), "baz", "foo/bar//baz"},
+		{path.New("foo/bar"), "/baz", "foo/bar//baz"},
+		{path.New("foo/bar/"), "foo/bar/", "foo/bar//foo/bar/"},
+	}
+	for i, test := range testData {
+		got := test.parent.Add(test.child)
+		if !strings.EqualFold(got.String(), test.expected) {
+			t.Fatalf("expected (%d): '%s', got '%s' for %s, %s", i, test.expected, got, test.parent.String(), test.child)
 		}
 	}
 }

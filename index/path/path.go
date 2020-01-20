@@ -2,14 +2,14 @@ package path
 
 import "strings"
 
-const Separator = '/'
+const Separator = "/"
 
 type Path struct {
 	str string
 }
 
 func Join(parts []string) string {
-	return strings.Join(parts, string(Separator))
+	return strings.Join(parts, Separator)
 }
 
 func New(str string) *Path {
@@ -26,13 +26,14 @@ func (p *Path) String() string {
 	if p == nil {
 		return ""
 	}
-	return Join(p.SplitParts())
+	joined := Join(p.SplitParts())
+	return strings.TrimPrefix(joined, Separator)
 }
 
 func (p *Path) Pop() (*Path, string) {
 	parts := p.SplitParts()
 	if len(parts) > 1 {
-		return New(strings.Join(parts[:len(parts)-1], string(Separator))), parts[len(parts)-1]
+		return New(Join(parts[:len(parts)-1])), parts[len(parts)-1]
 	}
 	if len(parts) == 1 {
 		return nil, parts[0]
@@ -61,27 +62,15 @@ func (p *Path) Equals(other *Path) bool {
 }
 
 func (p *Path) SplitParts() []string {
-	parts := make([]string, 0)
-	var buf strings.Builder
-	separated := true
-	for _, current := range p.str {
-		// for anything other than /
-		if current != Separator {
-			buf.WriteRune(current)
-			separated = false
-			continue
-		}
-		// we only get here when we encounter /
-		// how can we tell if we have anything following the / that isn't another /
-		// we can determine this on the next char, if it's not /, write all the /'s we've encountered so far
-		if !separated {
-			parts = append(parts, buf.String())
-			buf.Reset()
-			separated = true
-		}
-	}
-	if buf.Len() > 0 {
-		parts = append(parts, buf.String())
+	// trim first / if it exists
+	parts := strings.Split(p.str, Separator)
+	if len(parts) >= 2 && len(parts[0]) == 0 {
+		return parts[1:]
 	}
 	return parts
+}
+
+func (p *Path) Add(child string) *Path {
+	return New(Join(append(p.SplitParts(), New(child).SplitParts()...)))
+
 }

@@ -116,7 +116,13 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			}
 			continuationToken = string(continuationTokenStr)
 		}
-		results, hasMore, err = o.Index.ListObjects(o.Repo.GetRepoId(), branch, parsedPath, continuationToken, ListObjectMaxKeys)
+
+		results, hasMore, err = o.Index.ListObjects(
+			o.Repo.GetRepoId(),
+			branch,
+			parsedPath,
+			continuationToken,
+			ListObjectMaxKeys)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -139,7 +145,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s/", prefixPath.String(), res.GetName())})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
-				Key:          res.GetName(),
+				Key:          path.Join([]string{prefixPath.String(), res.GetName()}),
 				LastModified: serde.Timestamp(res.GetTimestamp()),
 				ETag:         serde.ETag(res.GetChecksum()),
 				Size:         res.GetSize(),
@@ -191,7 +197,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
 
-	if len(delimiter) != 1 || delimiter[0] != path.Separator {
+	if len(delimiter) != 1 || delimiter != path.Separator {
 		// we only support "/" as a delimiter
 		delimiter = "/"
 		//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
@@ -238,7 +244,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		lastKey = res.GetName()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s/", prefixPath.String(), res.GetName())})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s", prefixPath.String(), res.GetName())})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),
