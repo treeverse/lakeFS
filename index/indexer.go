@@ -256,7 +256,7 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 			return nil, err
 		}
 		p := pth.New(path)
-		_, name := p.Pop()
+		name := p.Basename()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: p.String(),
 			Entry: &model.Entry{
@@ -280,7 +280,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 		p := pth.New(path)
-		_, name := p.Pop()
+		name := p.Basename()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{

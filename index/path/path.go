@@ -1,6 +1,9 @@
 package path
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
 const Separator = "/"
 
@@ -9,7 +12,15 @@ type Path struct {
 }
 
 func Join(parts []string) string {
-	return strings.Join(parts, Separator)
+	var buf strings.Builder
+	for pos, part := range parts {
+		buf.WriteString(part)
+		if pos != len(parts)-1 && !strings.HasSuffix(part, Separator) {
+			// if it's not the last part, and there's no separator at the end, add it
+			buf.WriteString(Separator)
+		}
+	}
+	return buf.String()
 }
 
 func New(str string) *Path {
@@ -30,15 +41,12 @@ func (p *Path) String() string {
 	return strings.TrimPrefix(joined, Separator)
 }
 
-func (p *Path) Pop() (*Path, string) {
+func (p *Path) Basename() string {
 	parts := p.SplitParts()
-	if len(parts) > 1 {
-		return New(Join(parts[:len(parts)-1])), parts[len(parts)-1]
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
 	}
-	if len(parts) == 1 {
-		return nil, parts[0]
-	}
-	return nil, ""
+	return ""
 }
 
 func (p *Path) Equals(other *Path) bool {
@@ -65,12 +73,15 @@ func (p *Path) SplitParts() []string {
 	// trim first / if it exists
 	parts := strings.Split(p.str, Separator)
 	if len(parts) >= 2 && len(parts[0]) == 0 {
-		return parts[1:]
+		parts = parts[1:]
 	}
-	return parts
-}
-
-func (p *Path) Add(child string) *Path {
-	return New(Join(append(p.SplitParts(), New(child).SplitParts()...)))
-
+	suffixedParts := make([]string, len(parts))
+	for i, part := range parts {
+		suffixedPart := part
+		if i < len(parts)-1 {
+			suffixedPart = fmt.Sprintf("%s%s", part, Separator)
+		}
+		suffixedParts[i] = suffixedPart
+	}
+	return suffixedParts
 }

@@ -231,7 +231,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	p := pth.New(o.Path)
-	_, name := p.Pop()
+	name := p.Basename()
 
 	entry := &model.Entry{
 		Name:      name,
