@@ -29,8 +29,7 @@ type Index interface {
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
-	ListObjectsByPrefix(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error)
+	ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error)
 	ListBranches(repoId string, results int) ([]*model.Entry, error)
 	ResetBranch(repoId, branch string) error
 	Commit(repoId, branch, message, committer string, metadata map[string]string) error
@@ -256,11 +255,10 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 			return nil, err
 		}
 		p := pth.New(path)
-		name := p.Basename()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: p.String(),
 			Entry: &model.Entry{
-				Name:      name,
+				Path:      path,
 				Address:   addr,
 				Type:      model.Entry_OBJECT,
 				Timestamp: timestamp.Unix(),
@@ -279,12 +277,10 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		if err != nil {
 			return nil, err
 		}
-		p := pth.New(path)
-		name := p.Basename()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
-				Name: name,
+				Path: path,
 				Type: model.Entry_OBJECT,
 			},
 			Tombstone: true,
@@ -307,7 +303,7 @@ func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Entry, 
 		entries := make([]*model.Entry, len(branches))
 		for i, branch := range branches {
 			entries[i] = &model.Entry{
-				Name:    branch.GetName(),
+				Path:    branch.GetName(),
 				Address: branch.GetName(),
 				Type:    model.Entry_TREE,
 			}
@@ -320,7 +316,7 @@ func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Entry, 
 	return entries.([]*model.Entry), nil
 }
 
-func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
+func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
 	// this is gonna be a shit show now.
 	type result struct {
 		hasMore bool
@@ -341,43 +337,7 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 			return nil, err
 		}
 		tree := merkle.New(root)
-		res, hasMore, err := tree.PrefixScan(tx, path, from, results)
-		if err != nil {
-			return nil, err
-		}
-		return &result{hasMore, res}, nil
-	})
-	if err != nil {
-		return nil, false, err
-	}
-	return entries.(*result).results, entries.(*result).hasMore, nil
-}
-
-// ListObjects returns the list the objects within a logical tree
-func (index *KVIndex) ListObjects(repoId, branch, path, from string, results int) ([]*model.Entry, bool, error) {
-	type result struct {
-		hasMore bool
-		results []*model.Entry
-	}
-	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
-		if err != nil {
-			return nil, err
-		}
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-		root, err := resolveReadRoot(tx, repo, branch)
-		if err != nil {
-			return nil, err
-		}
-		tree := merkle.New(root)
-		entry, err := tree.GetEntry(tx, path, model.Entry_TREE)
-		if err != nil {
-			return nil, err
-		}
-		res, hasMore, err := tx.ListTree(entry.GetAddress(), from, results)
+		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
 		if err != nil {
 			return nil, err
 		}

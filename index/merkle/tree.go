@@ -34,12 +34,13 @@ func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, nodeType 
 		parts = parts[0 : len(parts)-1]
 	}
 	var entry *model.Entry
-	for i, part := range parts {
+	for i := 1; i <= len(parts); i++ {
 		typ := model.Entry_TREE
-		if nodeType == model.Entry_OBJECT && i == len(parts)-1 {
+		if nodeType == model.Entry_OBJECT && i == len(parts) {
 			typ = model.Entry_OBJECT
 		}
-		ent, err := tx.ReadTreeEntry(currentAddress, part, typ)
+		fullPath := path.Join(parts[0:i])
+		ent, err := tx.ReadTreeEntry(currentAddress, fullPath, typ)
 		if err != nil {
 			return entry, err
 		}
@@ -77,7 +78,7 @@ func (m *Merkle) writeTree(tx store.RepoOperations, entries []*model.Entry) (str
 	return id, err
 }
 
-func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, amount int) ([]*model.Entry, bool, error) {
+func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, amount int, descend bool) ([]*model.Entry, bool, error) {
 	// let's think about the alogirthm
 	// example inputs:
 	// - foo/bar (an existing directory)
@@ -103,31 +104,34 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, path, from string, 
 		p = pth.New(path)
 	}
 	parts := p.SplitParts()
-	prefixParts := make([]string, 0)
 
 	firstSubtreeAddr := m.root
 	var firstSubtreePath string
 
-	for i, part := range parts {
-		isLast := i == len(parts)-1
-		prefixParts = append(prefixParts, part)
-		currentPrefix := pth.Join(prefixParts)
-		entry, err := m.GetEntry(tx, currentPrefix, model.Entry_TREE)
-		if isLast && xerrors.Is(err, db.ErrNotFound) {
+	// start from full path and work our way back
+	firstSubtreePath = p.String()
+	for {
+		entry, err := m.GetEntry(tx, firstSubtreePath, model.Entry_TREE)
+		if err == nil {
+			firstSubtreeAddr = entry.GetAddress()
 			break
-		} else if xerrors.Is(err, db.ErrNotFound) && !isLast {
-			// we can return an empty response, no such path exists
-			return make([]*model.Entry, 0), false, nil
-		}
-		if err != nil {
+		} else if xerrors.Is(err, db.ErrNotFound) {
+			// pop the last element
+			parts = parts[0 : len(parts)-1]
+			p = pth.New(pth.Join(parts))
+			firstSubtreePath = p.String()
+		} else {
+			// actual error
 			return nil, false, err
 		}
-		firstSubtreePath = currentPrefix
-		firstSubtreeAddr = entry.GetAddress()
 	}
-	t := Merkle{root: firstSubtreeAddr}
-	prefix := strings.TrimPrefix(strings.TrimPrefix(path, firstSubtreePath), string(pth.Separator))
-	return t.bfs(tx, prefix, amount, &col{[]*model.Entry{}}, firstSubtreePath)
+
+	if descend {
+		t := Merkle{root: firstSubtreeAddr}
+		return t.bfs(tx, path, amount, &col{[]*model.Entry{}}, firstSubtreePath)
+	}
+	// otherwise, simple listing of all that starts with our prefix with the subtree
+	return tx.ListTreeWithPrefix(firstSubtreeAddr, path, from, amount)
 }
 
 type col struct {
@@ -140,18 +144,12 @@ func (m *Merkle) bfs(tx store.RepoReadOnlyOperations, prefix string, amount int,
 		return nil, false, err
 	}
 	for _, entry := range entries {
-		var fullPath string
-		if len(currentPath) > 0 {
-			fullPath = pth.Join([]string{currentPath, entry.GetName()})
-		} else {
-			fullPath = entry.GetName()
-		}
 		if entry.GetType() == model.Entry_TREE {
 			t := Merkle{root: entry.GetAddress()}
-			t.bfs(tx, "", amount, c, fullPath)
+			t.bfs(tx, "", amount, c, entry.GetPath())
 		} else {
 			c.data = append(c.data, &model.Entry{
-				Name:      fullPath,
+				Path:      entry.GetPath(),
 				Address:   entry.GetAddress(),
 				Type:      entry.GetType(),
 				Timestamp: entry.GetTimestamp(),
@@ -194,7 +192,6 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 			if len(parts[len(parts)-1]) == 0 {
 				parts = parts[0 : len(parts)-1]
 			}
-			name := parts[len(parts)-1]                  // last part
 			parent := path.Join(parts[0 : len(parts)-1]) // all previous parts
 
 			if len(mergedEntries) == 0 {
@@ -202,7 +199,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Name: name,
+						Path: treePath,
 						Type: model.Entry_TREE,
 					},
 					Tombstone: true,
@@ -217,7 +214,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Name:    name,
+						Path:    treePath,
 						Address: addr,
 						Type:    model.Entry_TREE,
 					},
@@ -251,7 +248,7 @@ func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
 		model.Entry_TREE.String(),
 		time.Now().Format(time.RFC3339),
 		fmt.Sprintf("%.10d", 0),
-		fmt.Sprintf("\"%s\"", pth.Separator),
+		"\"\"",
 	})
 	m.walk(tx, 1, m.root)
 }
@@ -263,7 +260,7 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, depth int, root string) {
 		panic(err) // TODO: properly handle errors
 	}
 	for _, child := range children {
-		name := child.GetName()
+		name := child.GetPath()
 		if child.GetType() == model.Entry_TREE {
 			name = fmt.Sprintf("%s", name)
 		}

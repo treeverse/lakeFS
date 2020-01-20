@@ -7,7 +7,7 @@ import (
 
 func compareEntries(a, b *model.Entry) (eqs int) {
 	// names first
-	eqs = strings.Compare(a.GetName(), b.GetName())
+	eqs = strings.Compare(a.GetPath(), b.GetPath())
 	// directories second
 	if eqs == 0 && a.GetType() != b.GetType() {
 		if a.GetType() < b.GetType() {
