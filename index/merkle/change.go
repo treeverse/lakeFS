@@ -16,9 +16,10 @@ func newChangeTree(entries []*model.WorkspaceEntry) *changeTree {
 	}
 	for _, entry := range entries {
 		p := path.New(entry.GetPath())
-		container, _ := p.Pop()
-		depth := len(p.SplitParts()) - 1
-		changes.Add(depth, container.String(), entry)
+		parts := p.SplitParts()
+		container := path.Join(parts[0 : len(parts)-1])
+		depth := len(p.SplitParts())
+		changes.Add(depth, container, entry)
 	}
 	return changes
 }

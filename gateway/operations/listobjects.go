@@ -104,7 +104,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			return
 		}
 	} else {
-		branch := prefixParts[0]
+		branch := strings.TrimSuffix(prefixParts[0], path.Separator)
 		parsedPath := path.Join(prefixParts[1:])
 		// TODO: continuation token
 		if len(continuationToken) > 0 {
@@ -142,7 +142,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		lastKey = res.GetName()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s/", prefixPath.String(), res.GetName())})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{prefixPath.String(), res.GetName()})})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
 				Key:          path.Join([]string{prefixPath.String(), res.GetName()}),
@@ -222,7 +222,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 			return
 		}
 	} else {
-		branch := prefixParts[0]
+		branch := strings.TrimSuffix(prefixParts[0], path.Separator)
 		parsedPath := path.Join(prefixParts[1:])
 		results, hasMore, err = o.Index.ListObjects(o.Repo.GetRepoId(), branch, parsedPath, marker, ListObjectMaxKeys)
 		if xerrors.Is(err, db.ErrNotFound) {
@@ -244,7 +244,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		lastKey = res.GetName()
 		switch res.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: fmt.Sprintf("%s/%s", prefixPath.String(), res.GetName())})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{prefixPath.String(), res.GetName()})})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
 				Key:          res.GetName(),

@@ -195,8 +195,9 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 
 		// write it to branch's workspace
 		p := pth.New(upload.GetPath())
-		_, name := p.Pop()
-		err = tx.WriteToWorkspacePath(branch, p.String(), &model.WorkspaceEntry{
+		name := p.Basename()
+		upath := p.String()
+		err = tx.WriteToWorkspacePath(branch, upath, &model.WorkspaceEntry{
 			Path: upload.GetPath(),
 			Entry: &model.Entry{
 				Name:      name,

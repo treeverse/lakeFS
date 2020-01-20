@@ -30,6 +30,9 @@ func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, nodeType 
 		return &model.Entry{Address: currentAddress}, nil
 	}
 	parts := path.New(pth).SplitParts()
+	if nodeType == model.Entry_TREE && len(parts[len(parts)-1]) == 0 {
+		parts = parts[0 : len(parts)-1]
+	}
 	var entry *model.Entry
 	for i, part := range parts {
 		typ := model.Entry_TREE
@@ -174,7 +177,9 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 			}
 			mergedEntries := mergeChanges(currentEntries, changes)
 
-			if i == 0 {
+			parts := path.New(treePath).SplitParts()
+
+			if len(parts) == 1 {
 				// this is the root node, write it no matter what and return
 				addr, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
@@ -183,10 +188,18 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				rootAddr = addr
 				break // no more changes to make
 			}
-			parent, name := path.New(treePath).Pop()
+
+			// I'm  now getting a parent dir - it's always the non empty part
+			// all that's happening here is for the containing directory
+			if len(parts[len(parts)-1]) == 0 {
+				parts = parts[0 : len(parts)-1]
+			}
+			name := parts[len(parts)-1]                  // last part
+			parent := path.Join(parts[0 : len(parts)-1]) // all previous parts
+
 			if len(mergedEntries) == 0 {
 				// Add a change to the level above us saying this folder should be removed
-				changeTree.Add(i-1, parent.String(), &model.WorkspaceEntry{
+				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
 						Name: name,
@@ -201,7 +214,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 					return nil, err
 				}
 				// Add a change to the level above us saying this folder should be updated
-				changeTree.Add(i-1, parent.String(), &model.WorkspaceEntry{
+				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
 						Name:    name,
