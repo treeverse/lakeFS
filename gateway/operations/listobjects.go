@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 	"treeverse-lake/db"
 	"treeverse-lake/gateway/errors"
@@ -174,42 +175,32 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	o.EncodeResponse(resp, http.StatusOK)
 }
 
-func (controller *ListObjects) Handle(o *RepoOperation) {
-	// parse request parameters
-	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
-
-	// handle GET /?versioning
-	keys := o.Request.URL.Query()
-	for k := range keys {
-		if strings.EqualFold(k, "versioning") {
-			// this is a versioning request
-			o.EncodeXMLBytes([]byte(VersioningResponse), http.StatusOK)
-			return
-		}
-	}
-
-	// handle ListObjectsV2
-	if strings.EqualFold(o.Request.URL.Query().Get("list-type"), "2") {
-		controller.ListV2(o)
-		return
-	}
-
+func (controller *ListObjects) ListV1(o *RepoOperation) {
 	// handle ListObjects (v1)
 	params := o.Request.URL.Query()
 	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
+	descend := true
 
-	if len(delimiter) != 1 || delimiter != path.Separator {
-		// we only support "/" as a delimiter
-		delimiter = "/"
-		//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		//return
+	if len(delimiter) >= 1 {
+		if delimiter != path.Separator {
+			// we only support "/" as a delimiter
+			delimiter = "/"
+			//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			//return
+		}
+		descend = false
 	}
 
-	// see if we have a continuation token in the request to pick up from
-	marker := params.Get("marker")
+	maxKeys := ListObjectMaxKeys
+	if len(params.Get("max-keys")) > 0 {
+		parsedKeys, err := strconv.ParseInt(params.Get("max-keys"), 10, 64)
+		if err == nil {
+			maxKeys = int(parsedKeys)
+		}
+	}
 
-	var branch string
+	var branch, marker string
 	prefixPath := path.New(prefix)
 	prefixParts := prefixPath.SplitParts()
 	var results []*model.Entry
@@ -227,7 +218,27 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	} else {
 		branch = strings.TrimSuffix(prefixParts[0], path.Separator)
 		parsedPath := path.Join(prefixParts[1:])
-		results, hasMore, err = o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), branch, parsedPath, marker, ListObjectMaxKeys, false)
+		// see if we have a continuation token in the request to pick up from
+		marker := params.Get("marker")
+		// strip the branch from the marker
+		if len(marker) > 0 {
+			markerParts := path.New(marker).SplitParts()
+			if len(markerParts) >= 2 {
+				if !strings.EqualFold(prefixParts[0], markerParts[0]) {
+					o.Log().WithError(err).WithFields(log.Fields{
+						"branch": branch,
+						"path":   parsedPath,
+						"marker": marker,
+					}).Error("invalid marker - doesnt start with branch name")
+					o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+					return
+				}
+				marker = path.Join(markerParts[1:]) // assume branch is the prefix
+			}
+
+		}
+
+		results, hasMore, err = o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), branch, parsedPath, marker, maxKeys, descend)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
@@ -265,15 +276,42 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		Delimiter:      delimiter,
 		Marker:         marker,
 		KeyCount:       len(results),
-		MaxKeys:        ListObjectMaxKeys,
+		MaxKeys:        maxKeys,
 		CommonPrefixes: dirs,
 		Contents:       files,
 	}
 
 	if hasMore {
 		resp.IsTruncated = true
-		resp.NextMarker = lastKey
+		if !descend {
+			// NextMarker is only set if a delimiter exists
+			resp.NextMarker = lastKey
+		}
 	}
 
 	o.EncodeResponse(resp, http.StatusOK)
+}
+
+func (controller *ListObjects) Handle(o *RepoOperation) {
+	// parse request parameters
+	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
+
+	// handle GET /?versioning
+	keys := o.Request.URL.Query()
+	for k := range keys {
+		if strings.EqualFold(k, "versioning") {
+			// this is a versioning request
+			o.EncodeXMLBytes([]byte(VersioningResponse), http.StatusOK)
+			return
+		}
+	}
+
+	// handle ListObjectsV2
+	if strings.EqualFold(o.Request.URL.Query().Get("list-type"), "2") {
+		controller.ListV2(o)
+		return
+	}
+
+	// otherwise, handle ListObjectsV1
+	controller.ListV1(o)
 }
