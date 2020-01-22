@@ -7,6 +7,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"net/http"
+	"net/url"
 	"regexp"
 	"sort"
 	"strings"
@@ -18,7 +19,25 @@ const (
 
 var (
 	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>[A-Z0-9]{20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
+	// Both "interesting" arrays are sorted. so once we extract caluses by looping on them = the result is sorted
+	interestingHeaders = [...]string{"content-md5", "content-type", "date"}
+	//sorted by an init function
+	interestingResources = []string{"accelerate", "acl", "cors", "defaultObjectAcl",
+		"location", "logging", "partNumber", "policy",
+		"requestPayment", "torrent",
+		"versioning", "versionId", "versions", "website",
+		"uploads", "uploadId", "response-content-type",
+		"response-content-language", "response-expires",
+		"response-cache-control", "response-content-disposition",
+		"response-content-encoding", "delete", "lifecycle",
+		"tagging", "restore", "storageClass", "notification",
+		"replication", "requestPayment", "analytics", "metrics",
+		"inventory", "select", "select-type"}
 )
+
+func init() {
+	sort.Strings(interestingResources)
+}
 
 type v2Context struct {
 	accessKeyId string
@@ -68,37 +87,38 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 	return ctx, nil
 }
 
-func header_value_to_string(val []string) (return_str string) {
+func headerValueToString(val []string) string {
+	var returnStr string
 	for i, item := range val {
 		if i == 0 {
-			return_str = strings.TrimSpace(item)
+			returnStr = strings.TrimSpace(item)
 		} else {
-			return_str += "," + strings.TrimSpace(item)
+			returnStr += "," + strings.TrimSpace(item)
 		}
 	}
-	return
+	return returnStr
 }
-
-func canonical_standard_headers(headers http.Header) (return_str string) {
-	var interesting_headers = [...]string{"content-md5", "content-type", "date"}
-	for _, hoi := range interesting_headers {
+func canonicalStandardHeaders(headers http.Header) string {
+	var returnStr string
+	for _, hoi := range interestingHeaders {
 		foundHoi := false
 		for key, val := range headers {
 			if len(val) > 0 && strings.ToLower(key) == hoi {
-				return_str += header_value_to_string(val) + "\n"
+				returnStr += headerValueToString(val) + "\n"
 				foundHoi = true
 				break
 			}
 
 		}
 		if !foundHoi {
-			return_str += "\n"
+			returnStr += "\n"
 		}
 	}
-	return
+	return returnStr
 }
 
-func canonical_custom_headers(headers http.Header) (return_str string) {
+func canonicalCustomHeaders(headers http.Header) string {
+	var returnStr string
 	var foundKeys []string
 	for key, _ := range headers {
 		lk := strings.ToLower(key)
@@ -107,20 +127,38 @@ func canonical_custom_headers(headers http.Header) (return_str string) {
 		}
 	}
 	if len(foundKeys) == 0 {
-		return
+		return returnStr
 	}
 	sort.Strings(foundKeys)
 	for _, key := range foundKeys {
-		return_str += fmt.Sprint(key, ":", header_value_to_string(headers[key]), "\n")
+		returnStr += fmt.Sprint(key, ":", headerValueToString(headers[key]), "\n")
 	}
-	return
+	return returnStr
 }
 
-func canonical_string(method /*query,expires,authPath*/ string, headers http.Header) string {
+func canonicalResources(query url.Values, authPath string) string {
+	var foundResources []string
+	var foundResourcesStr string
+	if len(query) > 0 {
+		for _, r := range interestingResources { // the resulting array will be sorted by resource name, because interesting resources array is sorted
+			val, ok := query[r]
+			if ok {
+				newValue := r + "=" + strings.Join(val, ",")
+				foundResources = append(foundResources, newValue)
+			}
+		}
+		if len(foundResources) > 0 {
+			foundResourcesStr = "?" + strings.Join(foundResources, "&")
+		}
+	}
+	return authPath + foundResourcesStr
+}
+
+func canonicalString(method string, query url.Values, path string, headers http.Header) string {
 	cs := strings.ToUpper(method) + "\n"
-	cs += canonical_standard_headers(headers)
-	cs += canonical_custom_headers(headers)
-	// todo:custom resources
+	cs += canonicalStandardHeaders(headers)
+	cs += canonicalCustomHeaders(headers)
+	cs += canonicalResources(query, path)
 	return cs
 }
 
@@ -140,15 +178,22 @@ func (a *V2SigAuthenticator) Verify(creds Credentials) error {
 		source is class botocore.auth.HmacV1Auth
 		steps in building the string to be signed:
 		1. create initial string, with uppercase http method + '\n'
-		2. collect all required headers:
-			standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
+		2. collect all required headers(in order):
+			- standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
 			empty line '\n'. sorted and stringified
-			custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
+			- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
 			are joined with ',' seperator. sorted and stringified.
-			QSA(Query String Arguments) - todo: continue explanation
+			- path of the object
+			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
-	stringToSigh := canonical_string(a.r.Method, a.r.Header)
-	stringToSigh += a.r.URL.Path // todo: hack - move to implementation of custom resources
+	var path string
+	hostParts := strings.Split(a.r.Host, ".")
+	if hostParts[1] == "s3" {
+		path = hostParts[1] + "/" + a.r.URL.Path
+	} else {
+		path = a.r.URL.Path
+	}
+	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
 		return ErrBadSignature
