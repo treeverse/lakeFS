@@ -119,8 +119,19 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 		}
 	}
 
+	// do the same with prefix
+	currentPrefix := ""
+	if len(prefix) > 0 {
+		prefixParts := path.New(prefix).SplitParts()
+		if depth >= len(prefixParts) {
+			currentPrefix = prefix
+		} else {
+			currentPrefix = path.Join(prefixParts[0 : depth+1])
+		}
+	}
+
 	// scan from the root of the tree, every time passing the relevant "from" key that's relevant for the current depth
-	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, prefix, currentFrom, amount-len(c.data)) // need no more than that
+	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)) // need no more than that
 	if err != nil {
 		return nil, false, err
 	}
@@ -131,6 +142,13 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	}
 
 	for i, entry := range entries {
+		if len(c.data) == amount {
+			// we are full!
+			if i < len(entries)-1 {
+				collectedHasMore = true
+			}
+			return c.data, collectedHasMore, nil
+		}
 		switch entry.GetType() {
 		case model.Entry_TREE:
 			t := Merkle{root: entry.GetAddress()}
@@ -143,13 +161,6 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 			}
 		default:
 			c.data = append(c.data, entry)
-			if len(c.data) == amount {
-				// we are full!
-				if i < len(entries)-1 {
-					collectedHasMore = true
-				}
-				return c.data, collectedHasMore, nil
-			}
 		}
 	}
 

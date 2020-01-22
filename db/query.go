@@ -2,6 +2,8 @@ package db
 
 import (
 	"bytes"
+	"fmt"
+	"strings"
 
 	"github.com/dgraph-io/badger"
 	"github.com/golang/protobuf/proto"
@@ -37,6 +39,9 @@ func (it *dbPrefixIterator) Advance() bool {
 	it.item.Key = item.KeyCopy(nil)
 	it.item.Value, it.itemError = item.ValueCopy(nil)
 	it.iter.Next()
+	if strings.Contains(string(it.item.Key), "gz.3") {
+		fmt.Printf("skip == '%v'\nkey ==  '%v'\n", it.skip, it.item.Key)
+	}
 	if len(it.skip) > 0 && bytes.Equal(it.item.Key, it.skip) {
 		return it.Advance()
 	}
