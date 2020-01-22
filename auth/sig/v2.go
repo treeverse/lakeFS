@@ -10,7 +10,7 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
-	"strings"
+	str "strings"
 )
 
 const (
@@ -19,7 +19,7 @@ const (
 
 var (
 	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>[A-Z0-9]{20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
-	// Both "interesting" arrays are sorted. so once we extract caluses by looping on them = the result is sorted
+	// Both "interesting" arrays are sorted. so once we extract relevant items by looping on them = the result is sorted
 	interestingHeaders = [...]string{"content-md5", "content-type", "date"}
 	//sorted by an init function
 	interestingResources = []string{"accelerate", "acl", "cors", "defaultObjectAcl",
@@ -31,7 +31,7 @@ var (
 		"response-cache-control", "response-content-disposition",
 		"response-content-encoding", "delete", "lifecycle",
 		"tagging", "restore", "storageClass", "notification",
-		"replication", "requestPayment", "analytics", "metrics",
+		"replication", "analytics", "metrics",
 		"inventory", "select", "select-type"}
 )
 
@@ -91,19 +91,20 @@ func headerValueToString(val []string) string {
 	var returnStr string
 	for i, item := range val {
 		if i == 0 {
-			returnStr = strings.TrimSpace(item)
+			returnStr = str.TrimSpace(item)
 		} else {
-			returnStr += "," + strings.TrimSpace(item)
+			returnStr += "," + str.TrimSpace(item)
 		}
 	}
 	return returnStr
 }
+
 func canonicalStandardHeaders(headers http.Header) string {
 	var returnStr string
 	for _, hoi := range interestingHeaders {
 		foundHoi := false
 		for key, val := range headers {
-			if len(val) > 0 && strings.ToLower(key) == hoi {
+			if len(val) > 0 && str.ToLower(key) == hoi {
 				returnStr += headerValueToString(val) + "\n"
 				foundHoi = true
 				break
@@ -121,9 +122,8 @@ func canonicalCustomHeaders(headers http.Header) string {
 	var returnStr string
 	var foundKeys []string
 	for key, _ := range headers {
-		lk := strings.ToLower(key)
-		if strings.HasPrefix(lk, "x-amz-") {
-			foundKeys = append(foundKeys, lk)
+		if str.HasPrefix(str.ToLower(key), "x-amz-") {
+			foundKeys = append(foundKeys, key)
 		}
 	}
 	if len(foundKeys) == 0 {
@@ -131,7 +131,7 @@ func canonicalCustomHeaders(headers http.Header) string {
 	}
 	sort.Strings(foundKeys)
 	for _, key := range foundKeys {
-		returnStr += fmt.Sprint(key, ":", headerValueToString(headers[key]), "\n")
+		returnStr += fmt.Sprint(str.ToLower(key), ":", headerValueToString(headers[key]), "\n")
 	}
 	return returnStr
 }
@@ -139,23 +139,27 @@ func canonicalCustomHeaders(headers http.Header) string {
 func canonicalResources(query url.Values, authPath string) string {
 	var foundResources []string
 	var foundResourcesStr string
+	lowercaseQuery := make(url.Values)
 	if len(query) > 0 {
+		for key, val := range query {
+			lowercaseQuery[str.ToLower(key)] = val
+		}
 		for _, r := range interestingResources { // the resulting array will be sorted by resource name, because interesting resources array is sorted
-			val, ok := query[r]
+			val, ok := lowercaseQuery[r]
 			if ok {
-				newValue := r + "=" + strings.Join(val, ",")
+				newValue := r + "=" + str.Join(val, ",")
 				foundResources = append(foundResources, newValue)
 			}
 		}
 		if len(foundResources) > 0 {
-			foundResourcesStr = "?" + strings.Join(foundResources, "&")
+			foundResourcesStr = "?" + str.Join(foundResources, "&")
 		}
 	}
 	return authPath + foundResourcesStr
 }
 
 func canonicalString(method string, query url.Values, path string, headers http.Header) string {
-	cs := strings.ToUpper(method) + "\n"
+	cs := str.ToUpper(method) + "\n"
 	cs += canonicalStandardHeaders(headers)
 	cs += canonicalCustomHeaders(headers)
 	cs += canonicalResources(query, path)
@@ -187,13 +191,14 @@ func (a *V2SigAuthenticator) Verify(creds Credentials) error {
 			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
 	var path string
-	hostParts := strings.Split(a.r.Host, ".")
+	hostParts := str.Split(a.r.Host, ".")
 	if hostParts[1] == "s3" {
 		path = hostParts[1] + "/" + a.r.URL.Path
 	} else {
 		path = a.r.URL.Path
 	}
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
+	fmt.Print(stringToSigh, "\n")
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
 		return ErrBadSignature
