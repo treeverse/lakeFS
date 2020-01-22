@@ -68,7 +68,7 @@ type ListObjectsOutput struct {
 	MaxKeys        int              `xml:"MaxKeys"`
 	CommonPrefixes []CommonPrefixes `xml:"CommonPrefixes"`
 	Marker         string           `xml:"Marker"`
-	NextMarker     string           `xml:"NextMarker"`
+	NextMarker     string           `xml:"NextMarker,omitempty"`
 	Contents       []Contents       `xml:"Contents"`
 }
 
@@ -81,7 +81,7 @@ type ListBucketResult struct {
 	MaxKeys        int              `xml:"MaxKeys"`
 	CommonPrefixes []CommonPrefixes `xml:"CommonPrefixes"`
 	Marker         string           `xml:"Marker"`
-	NextMarker     string           `xml:"NextMarker"`
+	NextMarker     string           `xml:"NextMarker,omitempty"`
 	Contents       []Contents       `xml:"Contents"`
 }
 

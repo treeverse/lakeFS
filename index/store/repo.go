@@ -2,7 +2,7 @@ package store
 
 import (
 	"fmt"
-	"strconv"
+	"strings"
 	"treeverse-lake/db"
 	"treeverse-lake/index/errors"
 	"treeverse-lake/index/model"
@@ -20,7 +20,7 @@ type RepoReadOnlyOperations interface {
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, from string, results int) ([]*model.Entry, bool, error)
 	ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error)
-	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
+	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
 
 	// Multipart uploads
 	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
@@ -130,7 +130,8 @@ func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string,
 		key = key.WithGlob([]byte(prefix))
 	}
 	if len(from) > 0 {
-		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, []byte(from))
+		gtValue := []byte(strings.TrimPrefix(from, prefix))
+		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, gtValue)
 	} else {
 		iter, itclose = s.query.RangePrefix(SubspaceEntries, key)
 	}
@@ -161,9 +162,9 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 	return s.ListTreeWithPrefix(addr, "", from, results)
 }
 
-func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
+func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {
 	entry := &model.Entry{}
-	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name, strconv.Itoa(int(entryType))))
+	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name))
 }
 
 func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
@@ -225,7 +226,7 @@ func (s *KVRepoOperations) ClearWorkspace(branch string) error {
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
-		err := s.query.SetProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, address, entry.GetPath(), strconv.Itoa(int(entry.GetType()))))
+		err := s.query.SetProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, address, entry.GetPath()))
 		if err != nil {
 			return err
 		}
