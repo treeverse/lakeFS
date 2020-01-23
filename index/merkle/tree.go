@@ -92,9 +92,9 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, prefix, from string
 			break
 		} else if xerrors.Is(err, db.ErrNotFound) {
 			if len(pfx) == 1 {
-				// no more pops to make
-				empty := make([]*model.Entry, 0)
-				return empty, false, nil
+				// no more pops to make, start at the root
+				firstSubtreePath = ""
+				break
 			}
 			// pop the last element
 			pfx = pfx[0 : len(pfx)-1]
@@ -131,7 +131,8 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	}
 
 	// scan from the root of the tree, every time passing the relevant "from" key that's relevant for the current depth
-	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)) // need no more than that
+	// we add 1 to amount since if we received a marker, we explicitly skip it.
+	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)+1) // need no more than that
 	if err != nil {
 		return nil, false, err
 	}
@@ -160,6 +161,9 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 				collectedHasMore = true
 			}
 		default:
+			if strings.EqualFold(entry.GetPath(), from) {
+				continue // we skip the marker
+			}
 			c.data = append(c.data, entry)
 		}
 	}

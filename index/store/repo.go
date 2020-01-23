@@ -2,7 +2,6 @@ package store
 
 import (
 	"fmt"
-	"strings"
 	"treeverse-lake/db"
 	"treeverse-lake/index/errors"
 	"treeverse-lake/index/model"
@@ -127,10 +126,10 @@ func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string,
 	var hasMore bool
 	key := db.CompositeStrings(s.repoId, addr)
 	if len(prefix) > 0 {
-		key = key.WithGlob([]byte(prefix))
+		key = key.With([]byte(prefix))
 	}
 	if len(from) > 0 {
-		gtValue := []byte(strings.TrimPrefix(from, prefix))
+		gtValue := db.CompositeStrings(s.repoId, addr, from)
 		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, gtValue)
 	} else {
 		iter, itclose = s.query.RangePrefix(SubspaceEntries, key)

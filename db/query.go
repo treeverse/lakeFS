@@ -1,10 +1,6 @@
 package db
 
 import (
-	"bytes"
-	"fmt"
-	"strings"
-
 	"github.com/dgraph-io/badger"
 	"github.com/golang/protobuf/proto"
 )
@@ -18,7 +14,6 @@ type DBQuery struct {
 }
 
 type dbPrefixIterator struct {
-	skip   []byte
 	prefix []byte
 	iter   *badger.Iterator
 
@@ -39,12 +34,6 @@ func (it *dbPrefixIterator) Advance() bool {
 	it.item.Key = item.KeyCopy(nil)
 	it.item.Value, it.itemError = item.ValueCopy(nil)
 	it.iter.Next()
-	if strings.Contains(string(it.item.Key), "gz.3") {
-		fmt.Printf("skip == '%v'\nkey ==  '%v'\n", it.skip, it.item.Key)
-	}
-	if len(it.skip) > 0 && bytes.Equal(it.item.Key, it.skip) {
-		return it.Advance()
-	}
 	return true
 }
 
@@ -57,7 +46,7 @@ func (it *dbPrefixIterator) Close() {
 
 func (q *DBReadQuery) pack(ns Namespace, key CompositeKey) []byte {
 	parts := make(CompositeKey, len(key)+1)
-	parts[0] = part{data: ns}
+	parts[0] = ns
 	for i, k := range key {
 		parts[i+1] = k
 	}
@@ -94,7 +83,7 @@ func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key Composi
 func (q *DBReadQuery) Range(space Namespace) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)
-	pref := CompositeKey{part{data: space}}.AsKey()
+	pref := CompositeKey{space}.AsKey()
 	it.Seek(pref) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,
@@ -117,16 +106,15 @@ func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) (Iterato
 		}
 }
 
-func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan []byte) (Iterator, IteratorCloseFn) {
+func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan CompositeKey) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	pref := q.pack(space, prefix)
 	opts.Prefix = pref
 	it := q.tx.NewIterator(opts)
-	offset := q.pack(space, prefix.WithGlob(greaterThan))
+	offset := q.pack(space, greaterThan)
 	it.Seek(offset) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,
-			skip:   offset,
 			iter:   it,
 		}, func() {
 			it.Close()

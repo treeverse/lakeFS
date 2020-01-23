@@ -219,7 +219,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		branch = strings.TrimSuffix(prefixParts[0], path.Separator)
 		parsedPath := path.Join(prefixParts[1:])
 		// see if we have a continuation token in the request to pick up from
-		marker := params.Get("marker")
+		marker = params.Get("marker")
 		// strip the branch from the marker
 		if len(marker) > 0 {
 			markerParts := path.New(marker).SplitParts()
@@ -274,7 +274,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		Name:           o.Repo.GetRepoId(),
 		Prefix:         prefix,
 		Delimiter:      delimiter,
-		Marker:         marker,
+		Marker:         params.Get("marker"),
 		KeyCount:       len(results),
 		MaxKeys:        maxKeys,
 		CommonPrefixes: dirs,
@@ -285,7 +285,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		resp.IsTruncated = true
 		if !descend {
 			// NextMarker is only set if a delimiter exists
-			resp.NextMarker = lastKey
+			resp.NextMarker = path.Join([]string{branch, lastKey})
 		}
 	}
 
