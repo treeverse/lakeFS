@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -46,7 +47,11 @@ func (controller *PutObject) GetPermission() string {
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	// resolve source branch and source path
-	p, err := path.ResolveAbsolutePath(copySource)
+	copySourceDecoded, err := url.QueryUnescape(copySource)
+	if err != nil {
+		copySourceDecoded = copySource
+	}
+	p, err := path.ResolveAbsolutePath(copySourceDecoded)
 	if err != nil {
 		o.Log().WithError(err).Error("could not parse copy source path")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
