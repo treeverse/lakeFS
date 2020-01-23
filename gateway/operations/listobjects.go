@@ -1,26 +1,25 @@
 package operations
 
 import (
-	"encoding/base64"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+
 	"treeverse-lake/db"
+
 	"treeverse-lake/gateway/errors"
-	upath "treeverse-lake/gateway/path"
+	"treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
+
 	"treeverse-lake/index/model"
-	"treeverse-lake/index/path"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
 const (
-	ListObjectMaxKeys  = 1000
-	VersioningResponse = `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`
+	ListObjectMaxKeys = 1000
 )
 
 type ListObjects struct{}
@@ -33,71 +32,77 @@ func (controller *ListObjects) GetPermission() string {
 	return permissions.PermissionReadRepo
 }
 
+func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
+	params := o.Request.URL.Query()
+	maxKeys := ListObjectMaxKeys
+	if len(params.Get("max-keys")) > 0 {
+		parsedKeys, err := strconv.ParseInt(params.Get("max-keys"), 10, 64)
+		if err == nil {
+			maxKeys = int(parsedKeys)
+		}
+	}
+	return maxKeys
+}
+
+func (controller *ListObjects) serializeEntries(refspec string, entries []*model.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
+	dirs := make([]serde.CommonPrefixes, 0)
+	files := make([]serde.Contents, 0)
+	var lastKey string
+	for _, entry := range entries {
+		lastKey = entry.GetPath()
+		switch entry.GetType() {
+		case model.Entry_TREE:
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRefspec(entry.GetPath(), refspec)})
+		case model.Entry_OBJECT:
+			files = append(files, serde.Contents{
+				Key:          path.WithRefspec(entry.GetPath(), refspec),
+				LastModified: serde.Timestamp(entry.GetTimestamp()),
+				ETag:         serde.ETag(entry.GetChecksum()),
+				Size:         entry.GetSize(),
+				StorageClass: "STANDARD",
+			})
+		}
+	}
+	return dirs, files, lastKey
+}
+
 func (controller *ListObjects) ListV2(o *RepoOperation) {
 	params := o.Request.URL.Query()
 	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
+	startAfter := params.Get("start-after")
+	continuationToken := params.Get("continuation-token")
 
-	// support non-delimited list requests, but no other delimiter besides "/" is supported
-	if len(delimiter) > 0 && !strings.EqualFold(delimiter, string(path.Separator)) {
-		o.Log().WithField("delimiter", delimiter).Error("got unexpected delimiter")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-		return
+	// resolve "from"
+	var from string
+	if len(startAfter) > 0 {
+		from = startAfter
+	}
+	if len(continuationToken) > 0 {
+		// take this instead
+		from = continuationToken
 	}
 
-	if len(delimiter) == 0 {
-		p, err := upath.ResolvePath(prefix)
-		if err != nil {
-			// we don't have a path that properly consists of a branch
+	maxKeys := controller.getMaxKeys(o)
+
+	// see if this is a recursive call`
+	descend := true
+	if len(delimiter) >= 1 {
+		if delimiter != path.Separator {
+			// we only support "/" as a delimiter
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
-		// no delimiter specified
-		entries, more, err := o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), p.Refspec, p.Path, "", 100000, true)
-		if err != nil {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-			o.Log().WithError(err).WithField("prefix", prefix).Error("bad happened when ranging")
-			return
-		}
-
-		files := make([]serde.Contents, 0)
-		for _, f := range entries {
-			files = append(files, serde.Contents{
-				Key:          path.Join([]string{p.Refspec, f.GetPath()}),
-				LastModified: serde.Timestamp(f.GetTimestamp()),
-				ETag:         serde.ETag(f.GetChecksum()),
-				Size:         f.GetSize(),
-				StorageClass: "STANDARD",
-			})
-		}
-
-		resp := serde.ListObjectsV2Output{
-			Name:      o.Repo.GetRepoId(),
-			Prefix:    prefix,
-			Delimiter: delimiter,
-			KeyCount:  len(files),
-			MaxKeys:   ListObjectMaxKeys,
-			Contents:  files,
-		}
-
-		if more {
-			resp.IsTruncated = true
-			resp.NextContinuationToken = "do more"
-		}
-		o.EncodeResponse(resp, http.StatusOK)
-		return
+		descend = false
 	}
 
-	// see if we have a continuation token in the request to pick up from
-	continuationToken := params.Get("continuation-token")
-
-	prefixPath := path.New(prefix)
-	prefixParts := prefixPath.SplitParts()
 	var results []*model.Entry
 	hasMore := false
 	var err error
-	var branch string
-	if len(prefixParts) == 0 {
+
+	var refspec string
+
+	if len(prefix) == 0 {
 		// list branches then.
 		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
 		if err != nil {
@@ -106,56 +111,34 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			return
 		}
 	} else {
-		branch = strings.TrimSuffix(prefixParts[0], path.Separator)
-		parsedPath := path.Join(prefixParts[1:])
-		// TODO: continuation token
-		if len(continuationToken) > 0 {
-			continuationTokenStr, err := base64.StdEncoding.DecodeString(continuationToken)
-			if err != nil {
-				// TODO incorrect error type
-				o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-				return
-			}
-			continuationToken = string(continuationTokenStr)
+		prefix, err := path.ResolvePath(params.Get("prefix"))
+		if err != nil {
+			o.Log().WithError(err).Error("could not list branches")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			return
 		}
+		refspec = prefix.Refspec
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
 			o.Repo.GetRepoId(),
-			branch,
-			parsedPath,
-			continuationToken,
-			ListObjectMaxKeys,
-			false)
+			prefix.Refspec,
+			prefix.Path,
+			from,
+			maxKeys,
+			descend)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(log.Fields{
-				"branch": branch,
-				"path":   parsedPath,
+				"refspec": prefix.Refspec,
+				"path":    prefix.Path,
 			}).Error("could not list objects in path")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
 	}
 
-	dirs := make([]serde.CommonPrefixes, 0)
-	files := make([]serde.Contents, 0)
-	var lastKey string
-	for _, res := range results {
-		lastKey = res.GetPath()
-		switch res.GetType() {
-		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{branch, res.GetPath()})})
-		case model.Entry_OBJECT:
-			files = append(files, serde.Contents{
-				Key:          path.Join([]string{branch, res.GetPath()}),
-				LastModified: serde.Timestamp(res.GetTimestamp()),
-				ETag:         serde.ETag(res.GetChecksum()),
-				Size:         res.GetSize(),
-				StorageClass: "STANDARD",
-			})
-		}
-	}
+	dirs, files, lastKey := controller.serializeEntries(refspec, results)
 
 	resp := serde.ListObjectsV2Output{
 		Name:           o.Repo.GetRepoId(),
@@ -167,9 +150,13 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		Contents:       files,
 	}
 
+	if strings.EqualFold(continuationToken, from) {
+		resp.ContinuationToken = continuationToken
+	}
+
 	if hasMore {
 		resp.IsTruncated = true
-		resp.NextContinuationToken = base64.StdEncoding.EncodeToString([]byte(lastKey))
+		resp.NextContinuationToken = lastKey
 	}
 
 	o.EncodeResponse(resp, http.StatusOK)
@@ -178,35 +165,26 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 func (controller *ListObjects) ListV1(o *RepoOperation) {
 	// handle ListObjects (v1)
 	params := o.Request.URL.Query()
-	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
 	descend := true
 
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
-			delimiter = "/"
-			//o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-			//return
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			return
 		}
 		descend = false
 	}
 
-	maxKeys := ListObjectMaxKeys
-	if len(params.Get("max-keys")) > 0 {
-		parsedKeys, err := strconv.ParseInt(params.Get("max-keys"), 10, 64)
-		if err == nil {
-			maxKeys = int(parsedKeys)
-		}
-	}
+	maxKeys := controller.getMaxKeys(o)
 
-	var branch, marker string
-	prefixPath := path.New(prefix)
-	prefixParts := prefixPath.SplitParts()
 	var results []*model.Entry
 	hasMore := false
 	var err error
-	if len(prefixParts) == 0 {
+
+	var refspec string
+	if len(params.Get("prefix")) == 0 {
 		// list branches then.
 		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
 		if err != nil {
@@ -216,63 +194,54 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			return
 		}
 	} else {
-		branch = strings.TrimSuffix(prefixParts[0], path.Separator)
-		parsedPath := path.Join(prefixParts[1:])
+		prefix, err := path.ResolvePath(params.Get("prefix"))
+		if err != nil {
+			o.Log().WithError(err).Error("could not list branches")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			return
+		}
+		refspec = prefix.Refspec
 		// see if we have a continuation token in the request to pick up from
-		marker = params.Get("marker")
+		var marker path.ResolvedPath
 		// strip the branch from the marker
-		if len(marker) > 0 {
-			markerParts := path.New(marker).SplitParts()
-			if len(markerParts) >= 2 {
-				if !strings.EqualFold(prefixParts[0], markerParts[0]) {
-					o.Log().WithError(err).WithFields(log.Fields{
-						"branch": branch,
-						"path":   parsedPath,
-						"marker": marker,
-					}).Error("invalid marker - doesnt start with branch name")
-					o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-					return
-				}
-				marker = path.Join(markerParts[1:]) // assume branch is the prefix
+		if len(params.Get("marker")) > 0 {
+			marker, err = path.ResolvePath(params.Get("marker"))
+			if err != nil || !strings.EqualFold(marker.Refspec, prefix.Refspec) {
+				o.Log().WithError(err).WithFields(log.Fields{
+					"branch": prefix.Refspec,
+					"path":   prefix.Path,
+					"marker": marker,
+				}).Error("invalid marker - doesnt start with branch name")
+				o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+				return
 			}
-
 		}
 
-		results, hasMore, err = o.Index.ListObjectsByPrefix(o.Repo.GetRepoId(), branch, parsedPath, marker, maxKeys, descend)
+		results, hasMore, err = o.Index.ListObjectsByPrefix(
+			o.Repo.GetRepoId(),
+			prefix.Refspec,
+			prefix.Path,
+			marker.Path,
+			maxKeys,
+			descend,
+		)
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(log.Fields{
-				"branch": branch,
-				"path":   parsedPath,
+				"branch": prefix.Refspec,
+				"path":   prefix.Path,
 			}).Error("could not list objects in path")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
 	}
 
-	dirs := make([]serde.CommonPrefixes, 0)
-	files := make([]serde.Contents, 0)
-	var lastKey string
-	for _, res := range results {
-		lastKey = res.GetPath()
-		switch res.GetType() {
-		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.Join([]string{branch, res.GetPath()})})
-		case model.Entry_OBJECT:
-			files = append(files, serde.Contents{
-				Key:          path.Join([]string{branch, res.GetPath()}),
-				LastModified: serde.Timestamp(res.GetTimestamp()),
-				ETag:         fmt.Sprintf("\"%s\"", res.GetChecksum()),
-				Size:         res.GetSize(),
-				StorageClass: "STANDARD",
-			})
-		}
-	}
-
+	// build a response
+	dirs, files, lastKey := controller.serializeEntries(refspec, results)
 	resp := serde.ListBucketResult{
 		Name:           o.Repo.GetRepoId(),
-		Prefix:         prefix,
+		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		Marker:         params.Get("marker"),
 		KeyCount:       len(results),
@@ -285,7 +254,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		resp.IsTruncated = true
 		if !descend {
 			// NextMarker is only set if a delimiter exists
-			resp.NextMarker = path.Join([]string{branch, lastKey})
+			resp.NextMarker = path.WithRefspec(lastKey, refspec)
 		}
 	}
 
@@ -301,17 +270,24 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	for k := range keys {
 		if strings.EqualFold(k, "versioning") {
 			// this is a versioning request
-			o.EncodeXMLBytes([]byte(VersioningResponse), http.StatusOK)
+			o.EncodeXMLBytes([]byte(serde.VersioningResponse), http.StatusOK)
 			return
 		}
 	}
 
-	// handle ListObjectsV2
-	if strings.EqualFold(o.Request.URL.Query().Get("list-type"), "2") {
+	// handle ListObjects versions
+	listType := o.Request.URL.Query().Get("list-type")
+	if strings.EqualFold(listType, "2") {
 		controller.ListV2(o)
+	} else if strings.EqualFold(listType, "1") {
+		controller.ListV1(o)
+	} else if len(listType) > 0 {
+		o.Log().WithField("list-type", listType).Error("listObjects version not supported")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 		return
+	} else {
+		// otherwise, handle ListObjectsV1
+		controller.ListV1(o)
 	}
 
-	// otherwise, handle ListObjectsV1
-	controller.ListV1(o)
 }

@@ -145,7 +145,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		Message:    err.Description,
 		BucketName: o.Repo.GetRepoId(),
 		Key:        o.Path,
-		Resource:   fmt.Sprintf("%s@%s", o.Branch, o.Repo),
+		Resource:   fmt.Sprintf("%s@%s", o.Branch, o.Repo.GetRepoId()),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
