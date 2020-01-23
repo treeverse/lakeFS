@@ -2,6 +2,10 @@ package serde
 
 import "encoding/xml"
 
+const (
+	VersioningResponse = `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`
+)
+
 type Error struct {
 	Code      string `xml:"Code"`
 	Message   string `xml:"Message"`

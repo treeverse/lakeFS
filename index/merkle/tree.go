@@ -105,6 +105,22 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, prefix, from string
 		}
 	}
 	// got a subtree
+	if len(from) > 0 {
+		entries, hasMore, err := tx.ListTreeWithPrefix(firstSubtreeAddr, prefix, from, amount+1)
+		if err != nil {
+			return nil, false, err
+		}
+		// if we have entries and the first one == from
+		if len(entries) > 0 && strings.EqualFold(entries[0].GetPath(), from) {
+			// the API means we need to skip the "from" path
+			if len(entries) > 1 {
+				entries = entries[1:]
+			} else {
+				entries = []*model.Entry{}
+			}
+		}
+		return entries, hasMore, err
+	}
 	return tx.ListTreeWithPrefix(firstSubtreeAddr, prefix, from, amount)
 }
 
@@ -161,6 +177,9 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 				collectedHasMore = true
 			}
 		default:
+			if strings.Contains(entry.GetPath(), "=2006") {
+				fmt.Printf("%s\n\n%s\n\n", entry.GetPath(), from)
+			}
 			if strings.EqualFold(entry.GetPath(), from) {
 				continue // we skip the marker
 			}
