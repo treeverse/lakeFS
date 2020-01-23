@@ -20,9 +20,13 @@ const (
 var (
 	V2AuthHeaderRegexp = regexp.MustCompile(`AWS (?P<AccessKeyId>[A-Z0-9]{20}):(?P<Signature>[A-Za-z0-9+/=]+)`)
 	// Both "interesting" arrays are sorted. so once we extract relevant items by looping on them = the result is sorted
-	interestingHeaders = [...]string{"content-md5", "content-type", "date"}
-	//sorted by an init function
-	interestingResources = []string{"accelerate", "acl", "cors", "defaultObjectAcl",
+	interestingHeaders   = [...]string{"content-md5", "content-type", "date"}
+	interestingResources []string // initialized and sorted by the init function
+
+)
+
+func init() {
+	interestingResourcesContainer := []string{"accelerate", "acl", "cors", "defaultObjectAcl",
 		"location", "logging", "partNumber", "policy",
 		"requestPayment", "torrent",
 		"versioning", "versionId", "versions", "website",
@@ -33,10 +37,22 @@ var (
 		"tagging", "restore", "storageClass", "notification",
 		"replication", "analytics", "metrics",
 		"inventory", "select", "select-type"}
-)
-
-func init() {
-	sort.Strings(interestingResources)
+	// check for duplicates in the array - if it happens it is a programmer error that will happen only when that
+	// query parameter is used - may be very hard to find.
+	temp_map := map[string]bool{}
+	var sort_array []string
+	for _, word := range interestingResourcesContainer {
+		if _, ok := temp_map[word]; ok {
+			log.Warn(word + " appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
+		} else {
+			temp_map[word] = true
+		}
+	}
+	for key, _ := range temp_map {
+		sort_array = append(sort_array, key)
+	}
+	sort.Strings(sort_array)
+	interestingResources = sort_array
 }
 
 type v2Context struct {
@@ -172,6 +188,29 @@ func signCanonicalString(msg string, signature []byte) (digest []byte) {
 	digest = h.Sum(nil)
 	return
 }
+
+func buildPath(host, path string) string {
+	hostParts := str.Split(host, ".")
+	var i int
+	// location of 's3' in host string.
+	for i = 0; i < len(hostParts); i++ {
+		if hostParts[i] == "s3" {
+			break
+		}
+	}
+	if i == 0 {
+		return path
+	} else {
+		if i < len(hostParts) {
+			bucketName := str.Join(hostParts[:i-1], "/") // handle case where bucket name contain periods
+			return bucketName + "/" + path
+		} else { // host does not contain 's3'
+			log.Error("Host " + host + " does not contain 's3'")
+			return path
+		}
+	}
+}
+
 func (a *V2SigAuthenticator) Verify(creds Credentials) error {
 	/*
 		s3 sigV2 implementation:
@@ -190,13 +229,7 @@ func (a *V2SigAuthenticator) Verify(creds Credentials) error {
 			- path of the object
 			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
-	var path string
-	hostParts := str.Split(a.r.Host, ".")
-	if hostParts[1] == "s3" {
-		path = hostParts[1] + "/" + a.r.URL.Path
-	} else {
-		path = a.r.URL.Path
-	}
+	path := buildPath(a.r.Host, a.r.URL.Path)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	fmt.Print(stringToSigh, "\n")
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
