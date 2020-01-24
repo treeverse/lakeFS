@@ -199,7 +199,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		err = tx.WriteToWorkspacePath(branch, upath, &model.WorkspaceEntry{
 			Path: upload.GetPath(),
 			Entry: &model.Entry{
-				Path:      upath,
+				Name:      p.Basename(),
 				Address:   ident.Hash(obj),
 				Type:      model.Entry_OBJECT,
 				Timestamp: completionTime.Unix(),

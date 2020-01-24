@@ -85,3 +85,21 @@ func (p *Path) SplitParts() []string {
 	}
 	return suffixedParts
 }
+
+func (p *Path) BaseName() string {
+	var baseName string
+	parts := p.SplitParts()
+	if len(parts) > 0 {
+		baseName = parts[len(parts)-1]
+	}
+	return baseName
+}
+
+func (p *Path) DirName() string {
+	var dirName string
+	parts := p.SplitParts()
+	if len(parts) > 1 && len(parts[len(parts)-1]) == 0 {
+		return parts[len(parts)-2]
+	}
+	return dirName
+}

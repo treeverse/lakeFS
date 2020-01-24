@@ -21,7 +21,7 @@ message Object {
 }
 
 message Entry {
-    string path = 1;
+    string name = 1;
     string address = 2; // hash of either Object or Entry prefix if tree
     enum Type {
         TREE = 0;
@@ -38,7 +38,6 @@ message WorkspaceEntry {
     Entry entry = 2;
     bool tombstone = 3;
 }
-
 
 message Commit {
     string tree = 1;
