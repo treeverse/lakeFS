@@ -49,13 +49,13 @@ func (controller *ListObjects) serializeEntries(refspec string, entries []*model
 	files := make([]serde.Contents, 0)
 	var lastKey string
 	for _, entry := range entries {
-		lastKey = entry.GetPath()
+		lastKey = entry.GetName()
 		switch entry.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRefspec(entry.GetPath(), refspec)})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRefspec(entry.GetName(), refspec)})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
-				Key:          path.WithRefspec(entry.GetPath(), refspec),
+				Key:          path.WithRefspec(entry.GetName(), refspec),
 				LastModified: serde.Timestamp(entry.GetTimestamp()),
 				ETag:         serde.ETag(entry.GetChecksum()),
 				Size:         entry.GetSize(),
@@ -74,14 +74,17 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	continuationToken := params.Get("continuation-token")
 
 	// resolve "from"
-	var from string
+	var fromStr string
 	if len(startAfter) > 0 {
-		from = startAfter
+		fromStr = startAfter
 	}
 	if len(continuationToken) > 0 {
 		// take this instead
-		from = continuationToken
+		fromStr = continuationToken
 	}
+
+	var from path.ResolvedPath
+	var err error
 
 	maxKeys := controller.getMaxKeys(o)
 
@@ -98,7 +101,6 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	var results []*model.Entry
 	hasMore := false
-	var err error
 
 	var refspec string
 
@@ -118,12 +120,24 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			return
 		}
 		refspec = prefix.Refspec
+		if len(fromStr) > 0 {
+			from, err = path.ResolvePath(fromStr)
+			if err != nil || !strings.EqualFold(from.Refspec, prefix.Refspec) {
+				o.Log().WithError(err).WithFields(log.Fields{
+					"branch": prefix.Refspec,
+					"path":   prefix.Path,
+					"from":   fromStr,
+				}).Error("invalid marker - doesnt start with branch name")
+				o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+				return
+			}
+		}
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
 			o.Repo.GetRepoId(),
 			prefix.Refspec,
 			prefix.Path,
-			from,
+			from.Path,
 			maxKeys,
 			descend)
 		if xerrors.Is(err, db.ErrNotFound) {
@@ -145,18 +159,18 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		Prefix:         prefix,
 		Delimiter:      delimiter,
 		KeyCount:       len(results),
-		MaxKeys:        ListObjectMaxKeys,
+		MaxKeys:        maxKeys,
 		CommonPrefixes: dirs,
 		Contents:       files,
 	}
 
-	if strings.EqualFold(continuationToken, from) {
+	if len(continuationToken) > 0 && strings.EqualFold(continuationToken, fromStr) {
 		resp.ContinuationToken = continuationToken
 	}
 
 	if hasMore {
 		resp.IsTruncated = true
-		resp.NextContinuationToken = lastKey
+		resp.NextContinuationToken = path.WithRefspec(lastKey, refspec)
 	}
 
 	o.EncodeResponse(resp, http.StatusOK)

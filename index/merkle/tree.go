@@ -17,25 +17,26 @@ import (
 
 type Merkle struct {
 	root string
+	path string
 }
 
 func New(root string) *Merkle {
 	return &Merkle{root: root}
 }
 
-func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, nodeType model.Entry_Type) (*model.Entry, error) {
+func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, typ model.Entry_Type) (*model.Entry, error) {
 	currentAddress := m.root
-	if len(pth) == 0 && nodeType == model.Entry_TREE {
+	if len(pth) == 0 {
 		return &model.Entry{Address: currentAddress}, nil
 	}
-	parts := path.New(pth).SplitParts()
-	if nodeType == model.Entry_TREE && len(parts[len(parts)-1]) == 0 {
+	parsed := path.New(pth)
+	parts := parsed.SplitParts()
+	if len(parts) > 1 && typ == model.Entry_TREE && len(parsed.BaseName()) == 0 {
 		parts = parts[0 : len(parts)-1]
 	}
 	var entry *model.Entry
-	for i := 1; i <= len(parts); i++ {
-		fullPath := path.Join(parts[0:i])
-		ent, err := tx.ReadTreeEntry(currentAddress, fullPath)
+	for _, part := range parts {
+		ent, err := tx.ReadTreeEntry(currentAddress, part)
 		if err != nil {
 			return entry, err
 		}
@@ -83,35 +84,45 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, prefix, from string
 		return m.walk(tx, prefix, from, amount, &col{data: make([]*model.Entry, 0)}, 0)
 	}
 	pfx := path.New(prefix).SplitParts()
-	firstSubtreeAddr := m.root
-	firstSubtreePath := prefix
-	for {
-		entry, err := m.GetEntry(tx, firstSubtreePath, model.Entry_TREE)
-		if err == nil {
-			firstSubtreeAddr = entry.GetAddress()
-			break
-		} else if xerrors.Is(err, db.ErrNotFound) {
-			if len(pfx) == 1 {
-				// no more pops to make, start at the root
-				firstSubtreePath = ""
-				break
+	subtreeAddr := m.root
+	subtreePath := ""
+	for i, part := range pfx {
+		entry, err := tx.ReadTreeEntry(subtreeAddr, part)
+		if err == nil && entry.GetType() == model.Entry_TREE {
+			subtreeAddr = entry.GetAddress()
+			if len(subtreePath) == 0 {
+				subtreePath = part
+			} else {
+				subtreePath = path.Join([]string{subtreePath, part})
 			}
-			// pop the last element
-			pfx = pfx[0 : len(pfx)-1]
-			firstSubtreePath = path.New(path.Join(pfx)).String()
+		} else if i == len(pfx)-1 && (xerrors.Is(err, db.ErrNotFound) || entry.GetType() == model.Entry_OBJECT) {
+			// if this is the last part, it's ok if it's not found, its a prefix.
+			// otherwise, there's nothing here.
+			break
 		} else {
 			// actual error
 			return nil, false, err
 		}
 	}
+
+	var entries []*model.Entry
+	var hasMore bool
+	var err error
+
 	// got a subtree
+	relativeFrom := strings.TrimPrefix(from, prefix) // only the relative portion
+	pfx = path.New(prefix).SplitParts()
+	relativePrefix := ""
+	if len(pfx) > 0 {
+		relativePrefix = pfx[len(pfx)-1]
+	}
 	if len(from) > 0 {
-		entries, hasMore, err := tx.ListTreeWithPrefix(firstSubtreeAddr, prefix, from, amount+1)
+		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount+1)
 		if err != nil {
 			return nil, false, err
 		}
 		// if we have entries and the first one == from
-		if len(entries) > 0 && strings.EqualFold(entries[0].GetPath(), from) {
+		if len(entries) > 0 && strings.EqualFold(entries[0].GetName(), relativeFrom) {
 			// the API means we need to skip the "from" path
 			if len(entries) > 1 {
 				entries = entries[1:]
@@ -119,19 +130,29 @@ func (m *Merkle) PrefixScan(tx store.RepoReadOnlyOperations, prefix, from string
 				entries = []*model.Entry{}
 			}
 		}
-		return entries, hasMore, err
+	} else {
+		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount)
+		if err != nil {
+			return nil, false, err
+		}
 	}
-	return tx.ListTreeWithPrefix(firstSubtreeAddr, prefix, from, amount)
+	// assemble response as full path
+	if len(subtreePath) > 0 {
+		for _, entry := range entries {
+			entry.Name = path.Join([]string{subtreePath, entry.GetName()})
+		}
+	}
+
+	// return
+	return entries, hasMore, err
 }
 
 func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amount int, c *col, depth int) ([]*model.Entry, bool, error) {
 	currentFrom := ""
 	if len(from) > 0 {
 		fromParts := path.New(from).SplitParts()
-		if depth >= len(fromParts) {
-			currentFrom = from
-		} else {
-			currentFrom = path.Join(fromParts[0 : depth+1])
+		if depth < len(fromParts) {
+			currentFrom = fromParts[depth]
 		}
 	}
 
@@ -139,10 +160,8 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	currentPrefix := ""
 	if len(prefix) > 0 {
 		prefixParts := path.New(prefix).SplitParts()
-		if depth >= len(prefixParts) {
-			currentPrefix = prefix
-		} else {
-			currentPrefix = path.Join(prefixParts[0 : depth+1])
+		if depth < len(prefixParts) {
+			currentPrefix = prefixParts[depth]
 		}
 	}
 
@@ -159,16 +178,13 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	}
 
 	for i, entry := range entries {
-		if len(c.data) == amount {
-			// we are full!
-			if i < len(entries)-1 {
-				collectedHasMore = true
-			}
-			return c.data, collectedHasMore, nil
-		}
 		switch entry.GetType() {
 		case model.Entry_TREE:
-			t := Merkle{root: entry.GetAddress()}
+			dirPath := entry.GetName()
+			if depth > 0 {
+				dirPath = path.Join([]string{m.path, entry.GetName()})
+			}
+			t := Merkle{root: entry.GetAddress(), path: dirPath}
 			_, hadMore, err := t.walk(tx, prefix, from, amount, c, depth+1)
 			if err != nil {
 				return nil, false, err
@@ -177,13 +193,21 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 				collectedHasMore = true
 			}
 		default:
-			if strings.Contains(entry.GetPath(), "=2006") {
-				fmt.Printf("%s\n\n%s\n\n", entry.GetPath(), from)
+			// reassemble path
+			if len(m.path) > 0 {
+				entry.Name = path.Join([]string{m.path, entry.GetName()})
 			}
-			if strings.EqualFold(entry.GetPath(), from) {
+			if strings.EqualFold(entry.GetName(), from) {
 				continue // we skip the marker
 			}
 			c.data = append(c.data, entry)
+		}
+		if len(c.data) == amount {
+			// we are full!
+			if i < len(entries)-1 {
+				collectedHasMore = true
+			}
+			return c.data, collectedHasMore, nil
 		}
 	}
 
@@ -204,7 +228,8 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 			}
 			mergedEntries := mergeChanges(currentEntries, changes)
 
-			parts := path.New(treePath).SplitParts()
+			pth := path.New(treePath)
+			parts := pth.SplitParts()
 
 			if len(parts) == 1 {
 				// this is the root node, write it no matter what and return
@@ -228,7 +253,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Path: treePath,
+						Name: pth.DirName(),
 						Type: model.Entry_TREE,
 					},
 					Tombstone: true,
@@ -243,7 +268,7 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Path:    treePath,
+						Name:    pth.DirName(),
 						Address: addr,
 						Type:    model.Entry_TREE,
 					},
@@ -289,7 +314,7 @@ func (m *Merkle) walkall(tx store.RepoReadOnlyOperations, depth int, root string
 		panic(err) // TODO: properly handle errors
 	}
 	for _, child := range children {
-		name := child.GetPath()
+		name := child.GetName()
 		if child.GetType() == model.Entry_TREE {
 			name = fmt.Sprintf("%s", name)
 		}

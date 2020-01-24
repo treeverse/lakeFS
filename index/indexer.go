@@ -258,7 +258,7 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: p.String(),
 			Entry: &model.Entry{
-				Path:      path,
+				Name:      pth.New(path).Basename(),
 				Address:   addr,
 				Type:      model.Entry_OBJECT,
 				Timestamp: timestamp.Unix(),
@@ -280,7 +280,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
-				Path: path,
+				Name: pth.New(path).Basename(),
 				Type: model.Entry_OBJECT,
 			},
 			Tombstone: true,
@@ -303,7 +303,7 @@ func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Entry, 
 		entries := make([]*model.Entry, len(branches))
 		for i, branch := range branches {
 			entries[i] = &model.Entry{
-				Path:    branch.GetName(),
+				Name:    branch.GetName(),
 				Address: branch.GetName(),
 				Type:    model.Entry_TREE,
 			}

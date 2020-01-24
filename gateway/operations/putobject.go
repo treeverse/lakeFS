@@ -238,7 +238,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	p := pth.New(o.Path)
 
 	entry := &model.Entry{
-		Path:      p.String(),
+		Name:      p.BaseName(),
 		Address:   ident.Hash(obj),
 		Type:      model.Entry_OBJECT,
 		Timestamp: writeTime.Unix(),
