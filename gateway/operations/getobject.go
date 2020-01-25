@@ -58,7 +58,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", entry.GetChecksum()))
+	o.SetHeader("ETag", serde.ETag(entry.GetChecksum()))
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
