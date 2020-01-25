@@ -34,8 +34,7 @@ func home() string {
 
 func createCreds() {
 	// init db
-	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation).
-		WithTruncate(true))
+	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
 	if err != nil {
 		panic(err)
 	}
