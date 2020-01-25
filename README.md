@@ -108,21 +108,21 @@ This is the indexing interface (simplified):
 
 | Key                    | Value                     |
 |------------------------|---------------------------|
-| `(repo, branch, path)` | `(metadata, object_addr)` |
+| `(repo, branch, path)` | `(entry, tombstone)`      |
 
 
 #### Merkle Tree Entry KV
 
-| Key                        | Value                                |
-|----------------------------|--------------------------------------|
-| `(repo, hash, name, type)` | `(hash_addr of object/tree)`         |
+| Key                         | Value      |
+|-----------------------------|------------|
+| `(repo, parent_hash, name)` | `entry`    |
 
 
 #### Merkle Object KV 
 
-| Key            | Value                           |
-|----------------|---------------------------------|
-| `(repo, hash)` | `(metadata, modified, []block)` |
+| Key            | Value         |
+|----------------|---------------|
+| `(repo, hash)` | `(object)`    |
 
 #### Merkle Commits KV
 
