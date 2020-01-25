@@ -79,7 +79,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Branch, o.Path),
 		Bucket:   o.Repo.GetRepoId(),
 		Key:      o.Path,
-		ETag:     fmt.Sprintf("\"%s\"", obj.GetChecksum()),
+		ETag:     serde.ETag(obj.GetChecksum()),
 	}, http.StatusOK)
 }
 

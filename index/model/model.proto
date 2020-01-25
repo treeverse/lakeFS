@@ -55,8 +55,6 @@ message Branch {
     string workspace_root = 4;
 }
 
-message Tombstone {}
-
 message MultipartUpload {
     string path = 1;
     string id = 2;

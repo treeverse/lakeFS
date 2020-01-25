@@ -46,6 +46,6 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	}
 	o.SetHeader("Accept-Ranges", "bytes")
 	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", entry.GetChecksum()))
+	o.SetHeader("ETag", serde.ETag(entry.GetChecksum()))
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.GetSize()))
 }

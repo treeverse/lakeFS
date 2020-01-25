@@ -259,6 +259,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		"branch": o.Branch,
 		"path":   o.Path,
 	}).Trace("metadata update complete")
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetChecksum()))
+	o.SetHeader("ETag", serde.ETag(obj.GetChecksum()))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }
