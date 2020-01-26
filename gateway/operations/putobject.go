@@ -10,7 +10,6 @@ import (
 	"strings"
 	"time"
 	"treeverse-lake/block"
-	"treeverse-lake/db"
 	"treeverse-lake/gateway/errors"
 	"treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
@@ -18,8 +17,6 @@ import (
 	"treeverse-lake/ident"
 	"treeverse-lake/index/model"
 	pth "treeverse-lake/index/path"
-
-	"golang.org/x/xerrors"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -210,12 +207,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	if hasUploadId {
 		controller.HandleCreateMultipartUpload(o)
 		return
-	}
-
-	// validate repo
-	_, err := o.Index.GetRepo(o.Repo.GetRepoId())
-	if xerrors.Is(err, db.ErrNotFound) {
-		// WHY DOESNT AUTH CHECK THIS FIRST
 	}
 
 	// handle the upload itself
