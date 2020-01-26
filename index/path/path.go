@@ -1,15 +1,26 @@
 package path
 
-import "strings"
+import (
+	"fmt"
+	"strings"
+)
 
-const Separator = '/'
+const Separator = "/"
 
 type Path struct {
 	str string
 }
 
 func Join(parts []string) string {
-	return strings.Join(parts, string(Separator))
+	var buf strings.Builder
+	for pos, part := range parts {
+		buf.WriteString(part)
+		if pos != len(parts)-1 && !strings.HasSuffix(part, Separator) {
+			// if it's not the last part, and there's no separator at the end, add it
+			buf.WriteString(Separator)
+		}
+	}
+	return buf.String()
 }
 
 func New(str string) *Path {
@@ -26,18 +37,16 @@ func (p *Path) String() string {
 	if p == nil {
 		return ""
 	}
-	return Join(p.SplitParts())
+	joined := Join(p.SplitParts())
+	return strings.TrimPrefix(joined, Separator)
 }
 
-func (p *Path) Pop() (*Path, string) {
+func (p *Path) Basename() string {
 	parts := p.SplitParts()
-	if len(parts) > 1 {
-		return New(strings.Join(parts[:len(parts)-1], string(Separator))), parts[len(parts)-1]
+	if len(parts) > 0 {
+		return parts[len(parts)-1]
 	}
-	if len(parts) == 1 {
-		return nil, parts[0]
-	}
-	return nil, ""
+	return ""
 }
 
 func (p *Path) Equals(other *Path) bool {
@@ -61,23 +70,36 @@ func (p *Path) Equals(other *Path) bool {
 }
 
 func (p *Path) SplitParts() []string {
-	parts := make([]string, 0)
-	var buf strings.Builder
-	separated := true
-	for _, current := range p.str {
-		if current != Separator {
-			buf.WriteRune(current)
-			separated = false
-			continue
-		}
-		if !separated {
-			parts = append(parts, buf.String())
-			buf.Reset()
-			separated = true
-		}
+	// trim first / if it exists
+	parts := strings.Split(p.str, Separator)
+	if len(parts) >= 2 && len(parts[0]) == 0 {
+		parts = parts[1:]
 	}
-	if buf.Len() > 0 {
-		parts = append(parts, buf.String())
+	suffixedParts := make([]string, len(parts))
+	for i, part := range parts {
+		suffixedPart := part
+		if i < len(parts)-1 {
+			suffixedPart = fmt.Sprintf("%s%s", part, Separator)
+		}
+		suffixedParts[i] = suffixedPart
 	}
-	return parts
+	return suffixedParts
+}
+
+func (p *Path) BaseName() string {
+	var baseName string
+	parts := p.SplitParts()
+	if len(parts) > 0 {
+		baseName = parts[len(parts)-1]
+	}
+	return baseName
+}
+
+func (p *Path) DirName() string {
+	var dirName string
+	parts := p.SplitParts()
+	if len(parts) > 1 && len(parts[len(parts)-1]) == 0 {
+		return parts[len(parts)-2]
+	}
+	return dirName
 }

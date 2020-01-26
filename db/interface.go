@@ -13,29 +13,25 @@ type KeyValue struct {
 	Value []byte
 }
 
+const TupleSeparator = '\x00' // use null byte as part separator
+
 type Namespace []byte
 
 type CompositeKey [][]byte
 
 func (c CompositeKey) AsKey() []byte {
-	var buf bytes.Buffer
-	for _, part := range c {
-		buf.Write(part)
-		buf.WriteByte(0x00)
-	}
-	return buf.Bytes()
+	return bytes.Join(c, []byte{TupleSeparator})
+
 }
 
 func (c CompositeKey) With(parts ...[]byte) CompositeKey {
-	n := append(CompositeKey{}, c...)
-	n = append(n, parts...)
-	return n
+	return append(c, parts...)
 }
 
 func CompositeStrings(parts ...string) CompositeKey {
-	n := CompositeKey{}
-	for _, k := range parts {
-		n = append(n, []byte(k))
+	n := make(CompositeKey, len(parts))
+	for i, k := range parts {
+		n[i] = []byte(k)
 	}
 	return n
 }
@@ -50,20 +46,7 @@ func (c CompositeKey) String() string {
 }
 
 func KeyFromBytes(key []byte) CompositeKey {
-	var buf bytes.Buffer
-	ck := CompositeKey{}
-	for _, b := range key {
-		if b == 0x00 {
-			ck = append(ck, buf.Bytes())
-			buf = bytes.Buffer{}
-		} else {
-			buf.WriteByte(b)
-		}
-	}
-	if buf.Len() > 0 {
-		ck = append(ck, buf.Bytes())
-	}
-	return ck
+	return bytes.Split(key, []byte{TupleSeparator})
 }
 
 type ProtoGenFn func() proto.Message
@@ -81,7 +64,7 @@ type ReadQuery interface {
 	GetAsProto(msg proto.Message, space Namespace, key CompositeKey) error
 	Range(space Namespace) (Iterator, IteratorCloseFn)
 	RangePrefix(space Namespace, prefix CompositeKey) (Iterator, IteratorCloseFn)
-	RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan []byte) (Iterator, IteratorCloseFn)
+	RangePrefixGreaterThan(space Namespace, prefix, greaterThan CompositeKey) (Iterator, IteratorCloseFn)
 }
 
 type Query interface {

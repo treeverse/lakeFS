@@ -9,7 +9,7 @@ import (
 type DeleteObject struct{}
 
 func (controller *DeleteObject) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *DeleteObject) GetPermission() string {
@@ -22,7 +22,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 
 	// ensure this
 
-	err := o.MultipartManager.Abort(o.Repo, o.Path, uploadId)
+	err := o.MultipartManager.Abort(o.Repo.GetRepoId(), o.Path, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -42,7 +42,7 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 		return
 	}
 
-	err := o.Index.DeleteObject(o.Repo, o.Branch, o.Path)
+	err := o.Index.DeleteObject(o.Repo.GetRepoId(), o.Branch, o.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not delete key")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

@@ -4,10 +4,14 @@ import (
 	"fmt"
 	"regexp"
 
+	pth "treeverse-lake/index/path"
+
 	"golang.org/x/xerrors"
 )
 
 const (
+	Separator = "/"
+
 	RepoMatch   = "{repo:[a-z0-9]+}"
 	RepoReMatch = "(?P<repo>[a-z0-9]+)"
 
@@ -69,4 +73,8 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 	r.Path = result["path"]
 	r.Refspec = result["refspec"]
 	return r, nil
+}
+
+func WithRefspec(path, refspec string) string {
+	return pth.Join([]string{refspec, path})
 }

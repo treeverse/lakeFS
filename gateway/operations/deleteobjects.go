@@ -4,15 +4,15 @@ import (
 	"fmt"
 	"net/http"
 	"treeverse-lake/gateway/errors"
+	"treeverse-lake/gateway/path"
 	"treeverse-lake/gateway/permissions"
 	"treeverse-lake/gateway/serde"
-	"treeverse-lake/index/path"
 )
 
 type DeleteObjects struct{}
 
 func (controller *DeleteObjects) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *DeleteObjects) GetPermission() string {
@@ -27,24 +27,28 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 	}
 	// delete all the files and collect responses
 	errs := make([]serde.DeleteError, 0)
-	resps := make([]serde.Deleted, 0)
+	responses := make([]serde.Deleted, 0)
 	for _, obj := range req.Object {
-		prefixPath := path.New(obj.Key)
-		parts := prefixPath.SplitParts()
-		branch := parts[0]
-
-		err := o.Index.DeleteObject(o.Repo, branch, path.Join(parts[1:]))
+		resolvedPath, err := path.ResolvePath(obj.Key)
 		if err != nil {
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",
 				Key:     obj.Key,
 				Message: fmt.Sprintf("error deleting object: %s", err),
 			})
+			continue
 		}
-		if err != nil && !req.Quiet {
-			resps = append(resps, serde.Deleted{
-				Key: obj.Key,
+		err = o.Index.DeleteObject(o.Repo.GetRepoId(), resolvedPath.Refspec, resolvedPath.Path)
+		if err != nil {
+			errs = append(errs, serde.DeleteError{
+				Code:    "ErrDeletingKey",
+				Key:     obj.Key,
+				Message: fmt.Sprintf("error deleting object: %s", err),
 			})
+			continue
+		}
+		if !req.Quiet {
+			responses = append(responses, serde.Deleted{Key: obj.Key})
 		}
 	}
 	// construct response
@@ -52,8 +56,8 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 	if len(errs) > 0 {
 		resp.Error = errs
 	}
-	if !req.Quiet && len(resps) > 0 {
-		resp.Deleted = resps
+	if !req.Quiet && len(responses) > 0 {
+		resp.Deleted = responses
 	}
 	o.EncodeResponse(resp, http.StatusOK)
 }
