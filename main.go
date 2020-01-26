@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"runtime"
+	"strings"
 	"treeverse-lake/auth"
 	"treeverse-lake/auth/model"
 	"treeverse-lake/block"
@@ -14,15 +16,44 @@ import (
 	"treeverse-lake/index"
 	"treeverse-lake/index/store"
 
-	"github.com/dgraph-io/badger"
-
 	log "github.com/sirupsen/logrus"
+
+	"github.com/dgraph-io/badger"
 )
 
 var (
 	DefaultBlockLocation    = path.Join(home(), "tv_state", "blocks")
 	DefaultMetadataLocation = path.Join(home(), "tv_state", "kv")
 )
+
+func setupLogger() {
+	// logger
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: true,
+		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
+			// file relative to "treeverse-lake"
+			fileParts := strings.Split(frame.File, "treeverse-lake")
+			if len(fileParts) > 1 {
+				file = fmt.Sprintf("%s", strings.Join(fileParts[1:], ""))
+			} else {
+				file = frame.File
+			}
+			file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, "/"), frame.Line)
+			return strings.TrimPrefix(frame.Function, "treeverse-lake/"), file
+		},
+	})
+	log.SetOutput(os.Stdout)
+	log.SetLevel(log.TraceLevel) // for now
+}
+
+func setupBadger() (*badger.DB, error) {
+	opts := badger.DefaultOptions(DefaultMetadataLocation).
+		WithTruncate(true).
+		WithLogger(db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
+	return badger.Open(opts)
+}
 
 func home() string {
 	u, err := user.Current()
@@ -34,12 +65,11 @@ func home() string {
 
 func createCreds() {
 	// init db
-	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation).
-		WithTruncate(true))
+	setupLogger()
+	db, err := setupBadger()
 	if err != nil {
 		panic(err)
 	}
-
 	// init auth
 	authService := auth.NewKVAuthService(db)
 	err = authService.CreateUser(&model.User{
@@ -87,22 +117,9 @@ func createCreds() {
 }
 
 func Run() {
-	// logger
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:   true,
-		FullTimestamp: true,
-	})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.TraceLevel) // for now
+	setupLogger()
 
-	// init db
-	opts := badger.DefaultOptions(DefaultMetadataLocation).
-		WithTruncate(true).
-		WithLogger(db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
-
-	db, err := badger.Open(opts)
-
+	db, err := setupBadger()
 	if err != nil {
 		panic(err)
 	}
@@ -130,7 +147,8 @@ func Run() {
 func keys() {
 	// init db
 	// todo: add .WithTruncate(true), like in other places
-	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
+	setupLogger()
+	db, err := setupBadger()
 	if err != nil {
 		panic(err)
 	}
@@ -158,19 +176,8 @@ func keys() {
 
 func tree(repoId, branch string) {
 	// logger
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:   true,
-		FullTimestamp: true,
-	})
-	log.SetOutput(os.Stderr)
-	log.SetLevel(log.ErrorLevel) // for now
-
-	// init db
-	opts := badger.DefaultOptions(DefaultMetadataLocation)
-	opts.Logger = db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger"))
-
-	db, err := badger.Open(opts)
+	setupLogger()
+	db, err := setupBadger()
 	if err != nil {
 		panic(err)
 	}

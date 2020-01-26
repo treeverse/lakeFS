@@ -91,7 +91,7 @@ type ListBucketResult struct {
 
 type Object struct {
 	Key       string `xml:"Key"`
-	VersionId string `xml:"VersionId"`
+	VersionId string `xml:"VersionId,omitempty"`
 }
 
 type Delete struct {
@@ -103,14 +103,14 @@ type Deleted struct {
 	DeleteMarker          bool   `xml:"DeleteMarker"`
 	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId"`
 	Key                   string `xml:"Key"`
-	VersionId             string `xml:"versionId"`
+	VersionId             string `xml:"versionId,omitempty"`
 }
 
 type DeleteError struct {
 	Code      string `xml:"Code"`
 	Key       string `xml:"Key"`
 	Message   string `xml:"Message"`
-	VersionId string `xml:"VersionId"`
+	VersionId string `xml:"VersionId,omitempty"`
 }
 
 type DeleteResult struct {
