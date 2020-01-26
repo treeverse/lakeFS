@@ -2,6 +2,7 @@ package sig
 
 import (
 	"encoding/hex"
+	"fmt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
@@ -85,4 +86,61 @@ type Credentials interface {
 type SigAuthenticator interface {
 	Parse() (SigContext, error)
 	Verify(Credentials) error
+}
+
+type dummySigContext struct {
+	accessKey string
+}
+
+func (d *dummySigContext) GetAccessKeyId() string {
+	return d.accessKey
+}
+
+type dummyAuthenticator struct {
+	ctx *dummySigContext
+}
+
+func (d dummyAuthenticator) Parse() (SigContext, error) {
+	return d.ctx, nil
+}
+
+func (d dummyAuthenticator) Verify(Credentials) error {
+	return nil
+}
+
+func DummyAuthenticator(accessKey string) SigAuthenticator {
+	return &dummyAuthenticator{
+		&dummySigContext{accessKey: accessKey},
+	}
+}
+
+type chainedAuthenticator struct {
+	methods []SigAuthenticator
+	chosen  SigAuthenticator
+}
+
+func ChainedAuthenticator(methods ...SigAuthenticator) SigAuthenticator {
+	return &chainedAuthenticator{methods, nil}
+}
+
+func (c *chainedAuthenticator) Parse() (SigContext, error) {
+	for _, method := range c.methods {
+		ctx, err := method.Parse()
+		if err == nil {
+			c.chosen = method
+			return ctx, nil
+		}
+	}
+	return nil, ErrMissingAuthData
+}
+
+func (c *chainedAuthenticator) Verify(creds Credentials) error {
+	return c.chosen.Verify(creds)
+}
+
+func (c *chainedAuthenticator) String() string {
+	if c.chosen == nil {
+		return "chained authenticator"
+	}
+	return fmt.Sprintf("%s", c.chosen)
 }
