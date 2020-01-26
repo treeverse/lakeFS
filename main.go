@@ -96,8 +96,9 @@ func Run() {
 	log.SetLevel(log.TraceLevel) // for now
 
 	// init db
-	opts := badger.DefaultOptions(DefaultMetadataLocation)
-	opts.Logger = db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger"))
+	opts := badger.DefaultOptions(DefaultMetadataLocation).
+		WithTruncate(true).
+		WithLogger(db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
 
 	db, err := badger.Open(opts)
 	if err != nil {
