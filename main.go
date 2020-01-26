@@ -34,7 +34,8 @@ func home() string {
 
 func createCreds() {
 	// init db
-	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
+	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation).
+		WithTruncate(true))
 	if err != nil {
 		panic(err)
 	}
@@ -101,6 +102,7 @@ func Run() {
 		WithLogger(db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
 
 	db, err := badger.Open(opts)
+
 	if err != nil {
 		panic(err)
 	}
@@ -127,6 +129,7 @@ func Run() {
 
 func keys() {
 	// init db
+	// todo: add .WithTruncate(true), like in other places
 	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation))
 	if err != nil {
 		panic(err)
