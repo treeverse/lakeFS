@@ -17,7 +17,7 @@ func TestTimestamp(t *testing.T) {
 }
 
 func TestMarshal(t *testing.T) {
-	response := serde.ListBucketsOutput{
+	response := serde.ListAllMyBucketsResult{
 		Buckets: serde.Buckets{
 			Bucket: []serde.Bucket{
 				serde.Bucket{

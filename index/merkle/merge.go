@@ -5,13 +5,7 @@ import (
 	"treeverse-lake/index/model"
 )
 
-type entryLike interface {
-	GetType() model.Entry_Type
-	GetName() string
-	GetAddress() string
-}
-
-func compareEntries(a, b entryLike) (eqs int) {
+func compareEntries(a, b *model.Entry) (eqs int) {
 	// names first
 	eqs = strings.Compare(a.GetName(), b.GetName())
 	// directories second
@@ -27,7 +21,7 @@ func compareEntries(a, b entryLike) (eqs int) {
 	return
 }
 
-func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
+func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*model.Entry {
 	merged := make([]*model.Entry, 0)
 	nextCurrent := 0
 	nextChange := 0
@@ -36,13 +30,13 @@ func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 		if nextChange < len(changes) && nextCurrent < len(current) {
 			currEntry := current[nextCurrent]
 			currChange := changes[nextChange]
-			comparison := compareEntries(currEntry, currChange)
+			comparison := compareEntries(currEntry, currChange.GetEntry())
 			if comparison == 0 {
 				// this is an override or deletion - do nothing
 
 				// overwrite
-				if !currChange.Tombstone {
-					merged = append(merged, currChange.AsEntry())
+				if !currChange.GetTombstone() {
+					merged = append(merged, currChange.GetEntry())
 				}
 				// otherwise, skip both
 				nextCurrent++
@@ -54,17 +48,17 @@ func mergeChanges(current []*model.Entry, changes []*change) []*model.Entry {
 			} else {
 				nextChange++
 				// changed entry comes first
-				merged = append(merged, currChange.AsEntry())
+				merged = append(merged, currChange.GetEntry())
 			}
 		} else if nextChange < len(changes) {
 			// only changes left
 			currChange := changes[nextChange]
-			if currChange.Tombstone {
+			if currChange.GetTombstone() {
 				// this is an override or deletion
 				nextChange++
 				continue // remove.
 			}
-			merged = append(merged, currChange.AsEntry())
+			merged = append(merged, currChange.GetEntry())
 			nextChange++
 		} else if nextCurrent < len(current) {
 			// only current entries left

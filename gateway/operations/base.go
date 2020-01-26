@@ -12,6 +12,7 @@ import (
 	"treeverse-lake/gateway/errors"
 	ghttp "treeverse-lake/gateway/http"
 	"treeverse-lake/index"
+	"treeverse-lake/index/model"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -112,16 +113,16 @@ type AuthenticatedOperation struct {
 
 type RepoOperation struct {
 	*AuthenticatedOperation
-	Repo string
+	Repo *model.Repo
 }
 
 func (o *RepoOperation) EncodeError(err errors.APIError) {
 	o.EncodeResponse(errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
-		BucketName: o.Repo,
+		BucketName: o.Repo.GetRepoId(),
 		Key:        "",
-		Resource:   o.Repo,
+		Resource:   o.Repo.GetRepoId(),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
@@ -142,9 +143,9 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 	o.EncodeResponse(errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
-		BucketName: o.Repo,
+		BucketName: o.Repo.GetRepoId(),
 		Key:        o.Path,
-		Resource:   fmt.Sprintf("%s@%s", o.Branch, o.Repo),
+		Resource:   fmt.Sprintf("%s@%s", o.Branch, o.Repo.GetRepoId()),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),

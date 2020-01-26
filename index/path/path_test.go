@@ -33,21 +33,22 @@ func TestPath_SplitParts(t *testing.T) {
 		Path  string
 		Parts []string
 	}{
-		{"/foo/bar", []string{"foo", "bar"}},
-		{"/foo///bar", []string{"foo", "bar"}},
-		{"/foo///bar/", []string{"foo", "bar"}},
-		{"/foo///bar////", []string{"foo", "bar"}},
-		{"////foo", []string{"foo"}},
-		{"//", []string{}},
-		{"/", []string{}},
-		{"", []string{}},
-		{"/hello/world/another/level", []string{"hello", "world", "another", "level"}},
-		{"/hello/world/another/level/", []string{"hello", "world", "another", "level"}},
+		{"/foo/bar", []string{"foo/", "bar"}},
+		{"foo/bar/", []string{"foo/", "bar/", ""}},
+		{"/foo///bar", []string{"foo/", "/", "/", "bar"}},
+		{"/foo///bar/", []string{"foo/", "/", "/", "bar/", ""}},
+		{"/foo///bar////", []string{"foo/", "/", "/", "bar/", "/", "/", "/", ""}},
+		{"////foo", []string{"/", "/", "/", "foo"}},
+		{"//", []string{"/", ""}},
+		{"/", []string{""}},
+		{"", []string{""}},
+		{"/hello/world/another/level", []string{"hello/", "world/", "another/", "level"}},
+		{"/hello/world/another/level/", []string{"hello/", "world/", "another/", "level/", ""}},
 	}
-	for _, test := range testData {
+	for i, test := range testData {
 		p := path.New(test.Path)
 		if !equalStrings(p.SplitParts(), test.Parts) {
-			t.Fatalf("expected: %s, got %s for path: %s", reprstrings(test.Parts), reprstrings(p.SplitParts()), test.Path)
+			t.Fatalf("expected (%d): %s, got %s for path: %s", i, reprstrings(test.Parts), reprstrings(p.SplitParts()), test.Path)
 		}
 	}
 }
@@ -58,21 +59,14 @@ func TestPath_String(t *testing.T) {
 		Path   *path.Path
 		String string
 	}{
-		{path.New("/foo/bar"), "foo/bar"},
-		{path.New("/foo///bar"), "foo/bar"},
-		{path.New("////foo///bar/"), "foo/bar"},
-		{path.New("/foo///bar////"), "foo/bar"},
-		{path.New("////foo"), "foo"},
-		{path.New("//"), ""},
-		{path.New("/"), ""},
-		{path.New(""), ""},
+		{path.New("hello/world/another/level"), "hello/world/another/level"},
 		{path.New("/hello/world/another/level"), "hello/world/another/level"},
-		{path.New("/hello/world/another/level/"), "hello/world/another/level"},
+		{path.New("/hello/world/another/level/"), "hello/world/another/level/"},
 		{nilpath, ""},
 	}
-	for _, test := range testData {
+	for i, test := range testData {
 		if !strings.EqualFold(test.Path.String(), test.String) {
-			t.Fatalf("expected: \"%s\", got \"%s\" for path: \"%s\"", test.String, test.Path.String(), test.Path)
+			t.Fatalf("expected (%d): \"%s\", got \"%s\" for path: \"%s\"", i, test.String, test.Path.String(), test.Path)
 		}
 	}
 }
@@ -97,26 +91,22 @@ func TestPath_HasParent(t *testing.T) {
 	}
 }
 
-func TestPath_Pop(t *testing.T) {
+func TestJoin(t *testing.T) {
 	testData := []struct {
-		Path      string
-		Remainder *path.Path
-		Popped    string
+		parts    []string
+		expected string
 	}{
-		{Path: "/foo/bar", Remainder: path.New("/foo"), Popped: "bar"},
-		{Path: "/foo/bar/baz", Remainder: path.New("/foo/bar"), Popped: "baz"},
-		{Path: "/foo/bar/baz/", Remainder: path.New("/foo/bar"), Popped: "baz"},
-		{Path: "/foo", Remainder: nil, Popped: "foo"},
+		{[]string{"foo/bar", "baz"}, "foo/bar/baz"},
+		{[]string{"foo/bar/", "baz"}, "foo/bar/baz"},
+		{[]string{"foo/bar", "", "baz"}, "foo/bar//baz"},
+		{[]string{"foo//bar", "baz"}, "foo//bar/baz"},
+		{[]string{"foo/bar", ""}, "foo/bar/"},
+		{[]string{"foo/bar/", ""}, "foo/bar/"},
 	}
-
-	for _, test := range testData {
-		p := path.New(test.Path)
-		p, popped := p.Pop()
-		if !p.Equals(test.Remainder) {
-			t.Fatalf("expected remainder: '%s', got '%s' (while popping '%s') for path '%s'", test.Remainder, p, popped, test.Path)
-		}
-		if !strings.EqualFold(test.Popped, popped) {
-			t.Fatalf("expected to pop: '%s', got '%s' for path '%s'", test.Popped, popped, test.Path)
+	for i, test := range testData {
+		got := path.Join(test.parts)
+		if !strings.EqualFold(got, test.expected) {
+			t.Fatalf("expected (%d): '%s', got '%s' for %v", i, test.expected, got, test.parts)
 		}
 	}
 }

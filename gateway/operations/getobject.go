@@ -22,7 +22,7 @@ import (
 type GetObject struct{}
 
 func (controller *GetObject) GetArn() string {
-	return "arn:treeverse:repos:::{bucket}"
+	return "arn:treeverse:repos:::{repo}"
 }
 
 func (controller *GetObject) GetPermission() string {
@@ -38,7 +38,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	obj, err := o.Index.ReadObject(o.Repo, o.Branch, o.Path)
+	entry, err := o.Index.ReadEntry(o.Repo.GetRepoId(), o.Branch, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -57,10 +57,17 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		return
 	}
 
-	o.SetHeader("Last-Modified", serde.HeaderTimestamp(obj.GetTimestamp()))
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", obj.GetBlob().GetChecksum()))
+	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
+	o.SetHeader("ETag", serde.ETag(entry.GetChecksum()))
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
+
+	// now we might need the object itself
+	obj, err := o.Index.ReadObject(o.Repo.GetRepoId(), o.Branch, o.Path)
+	if err != nil {
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
 
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
@@ -98,7 +105,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 
 	// assemble a response body (range-less query)
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
-	blocks := obj.GetBlob().GetBlocks()
+	blocks := obj.GetBlocks()
 	for _, block := range blocks {
 		data, err := o.BlockStore.Get(block.GetAddress())
 		if err != nil {
@@ -147,7 +154,7 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 
 	var returnedErr error
 	var n int
-	for _, block := range r.obj.GetBlob().GetBlocks() {
+	for _, block := range r.obj.GetBlocks() {
 		// see what range we need from this block
 		thisBlockStart := scanned
 		thisBlockEnd := scanned + block.GetSize()
