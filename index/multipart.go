@@ -8,6 +8,7 @@ import (
 	"treeverse-lake/index/errors"
 	"treeverse-lake/index/merkle"
 	"treeverse-lake/index/model"
+	pth "treeverse-lake/index/path"
 	"treeverse-lake/index/store"
 )
 
@@ -110,7 +111,8 @@ func (m *KVMultipartManager) CopyPart(repoId, path, uploadId string, partNumber 
 
 		// copy it as MPU part
 		err = tx.WriteMultipartUploadPart(uploadId, partNumber, &model.MultipartUploadPart{
-			Blob:      obj.GetBlob(),
+			Blocks:    obj.GetBlocks(),
+			Checksum:  obj.GetChecksum(),
 			Timestamp: uploadTime.Unix(),
 			Size:      obj.GetSize(),
 		})
@@ -163,7 +165,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 			if err != nil {
 				return nil, err
 			}
-			if !strings.EqualFold(savedPart.Blob.GetChecksum(), part.Etag) {
+			if !strings.EqualFold(savedPart.GetChecksum(), part.Etag) {
 				return nil, errors.ErrMultipartInvalidPartETag
 			}
 			savedParts[i] = savedPart
@@ -173,7 +175,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		blocks := make([]*model.Block, 0)
 		blockIds := make([]string, 0)
 		for _, part := range savedParts {
-			for _, block := range part.Blob.GetBlocks() {
+			for _, block := range part.GetBlocks() {
 				blocks = append(blocks, block)
 				blockIds = append(blockIds, block.GetAddress())
 			}
@@ -182,12 +184,9 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 
 		// build and save the object
 		obj := &model.Object{
-			Blob: &model.Blob{
-				Blocks:   blocks,
-				Checksum: ident.MultiHash(blockIds...), // a multipart checksum is a sha of all its block addresses
-			},
-			Timestamp: completionTime.Unix(),
-			Size:      size,
+			Blocks:   blocks,
+			Checksum: ident.MultiHash(blockIds...),
+			Size:     size,
 		}
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
@@ -195,9 +194,17 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		}
 
 		// write it to branch's workspace
-		err = tx.WriteToWorkspacePath(branch, upload.GetPath(), &model.WorkspaceEntry{
+		p := pth.New(upload.GetPath())
+		upath := p.String()
+		err = tx.WriteToWorkspacePath(branch, upath, &model.WorkspaceEntry{
 			Path: upload.GetPath(),
-			Data: &model.WorkspaceEntry_Object{Object: obj},
+			Entry: &model.Entry{
+				Name:      p.Basename(),
+				Address:   ident.Hash(obj),
+				Type:      model.Entry_OBJECT,
+				Timestamp: completionTime.Unix(),
+				Size:      obj.GetSize(),
+			},
 		})
 		if err != nil {
 			return nil, err

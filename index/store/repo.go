@@ -2,7 +2,6 @@ package store
 
 import (
 	"fmt"
-	"strconv"
 	"treeverse-lake/db"
 	"treeverse-lake/index/errors"
 	"treeverse-lake/index/model"
@@ -19,7 +18,8 @@ type RepoReadOnlyOperations interface {
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, from string, results int) ([]*model.Entry, bool, error)
-	ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error)
+	ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error)
+	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
 
 	// Multipart uploads
 	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
@@ -120,15 +120,19 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 	return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
 }
 
-func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
-	// entry keys: (client, repo, parent, name, type)
+func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error) {
 	var iter db.Iterator
 	var itclose db.IteratorCloseFn
 	var hasMore bool
+	key := db.CompositeStrings(s.repoId, addr)
+	if len(prefix) > 0 {
+		key = key.With([]byte(prefix))
+	}
 	if len(from) > 0 {
-		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, db.CompositeStrings(s.repoId, addr), []byte(from))
+		gtValue := db.CompositeStrings(s.repoId, addr, from)
+		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, gtValue)
 	} else {
-		iter, itclose = s.query.RangePrefix(SubspaceEntries, db.CompositeStrings(s.repoId, addr))
+		iter, itclose = s.query.RangePrefix(SubspaceEntries, key)
 	}
 	defer itclose()
 	entries := make([]*model.Entry, 0)
@@ -153,9 +157,13 @@ func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*
 	return entries, hasMore, nil
 }
 
-func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string, entryType model.Entry_Type) (*model.Entry, error) {
+func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
+	return s.ListTreeWithPrefix(addr, "", from, results)
+}
+
+func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {
 	entry := &model.Entry{}
-	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name, strconv.Itoa(int(entryType))))
+	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name))
 }
 
 func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
@@ -217,7 +225,7 @@ func (s *KVRepoOperations) ClearWorkspace(branch string) error {
 
 func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
-		err := s.query.SetProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, address, entry.GetName(), strconv.Itoa(int(entry.GetType()))))
+		err := s.query.SetProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, address, entry.GetName()))
 		if err != nil {
 			return err
 		}
@@ -241,12 +249,12 @@ func (s *KVRepoOperations) DeleteBranch(name string) error {
 	return s.query.Delete(SubspaceBranches, db.CompositeStrings(s.repoId, name))
 }
 
-func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
-	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
-}
-
 func (s *KVRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
 	return s.query.SetProto(upload, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, upload.GetId()))
+}
+
+func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
+	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
 }
 
 func (s *KVRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {

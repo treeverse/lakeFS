@@ -96,8 +96,13 @@ func Run() {
 	log.SetOutput(os.Stdout)
 	log.SetLevel(log.TraceLevel) // for now
 
-	db, err := badger.Open(badger.DefaultOptions(DefaultMetadataLocation).
-		WithTruncate(true))
+	// init db
+	opts := badger.DefaultOptions(DefaultMetadataLocation).
+		WithTruncate(true).
+		WithLogger(db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
+
+	db, err := badger.Open(opts)
+
 	if err != nil {
 		panic(err)
 	}
@@ -151,6 +156,33 @@ func keys() {
 	}
 }
 
+func tree(repoId, branch string) {
+	// logger
+	log.SetReportCaller(true)
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors:   true,
+		FullTimestamp: true,
+	})
+	log.SetOutput(os.Stderr)
+	log.SetLevel(log.ErrorLevel) // for now
+
+	// init db
+	opts := badger.DefaultOptions(DefaultMetadataLocation)
+	opts.Logger = db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger"))
+
+	db, err := badger.Open(opts)
+	if err != nil {
+		panic(err)
+	}
+
+	// init index
+	meta := index.NewKVIndex(store.NewKVStore(db))
+	err = meta.Tree(repoId, branch)
+	if err != nil {
+		panic(err)
+	}
+}
+
 func main() {
 	switch os.Args[1] {
 	case "run":
@@ -159,5 +191,7 @@ func main() {
 		createCreds()
 	case "keys":
 		keys()
+	case "tree":
+		tree(os.Args[2], os.Args[3])
 	}
 }

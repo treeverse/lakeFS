@@ -81,20 +81,6 @@ func NewServer(
 
 	router.Use(ghttp.LoggingMiddleWare)
 
-	_ = router.Walk(func(route *mux.Route, router *mux.Router, ancestors []*mux.Route) error {
-		for _, m := range mustStrings(route.GetMethods) {
-			if m == http.MethodHead {
-				fmt.Printf("route: methods=%s host=%s path=%s\n",
-					mustStrings(route.GetMethods),
-					mustString(route.GetHostTemplate),
-					mustString(route.GetPathTemplate),
-				)
-			}
-		}
-
-		return nil
-	})
-
 	// assemble server
 	return &Server{
 		ctx:        ctx,
@@ -146,7 +132,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
 	// bucket-specific actions that don't relate to a specific key
-	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(RepoOperationHandler(ctx, &operations.CreateBucket{}))
+	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 	pathBasedRepo.
 		Methods(http.MethodGet).
 		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
@@ -177,55 +163,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
-	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(RepoOperationHandler(ctx, &operations.CreateBucket{}))
-}
-
-func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
-		if authOp == nil {
-			return
-		}
-		// run callback
-		handler.Handle(authOp)
-	}
-}
-
-func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHandler) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
-		if authOp == nil {
-			return
-		}
-		// run callback
-		handler.Handle(&operations.RepoOperation{
-			AuthenticatedOperation: authOp,
-			Repo:                   getRepo(request),
-		})
-	}
-}
-
-func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHandler) http.HandlerFunc {
-	return func(writer http.ResponseWriter, request *http.Request) {
-		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
-		if authOp == nil {
-			return
-		}
-		// run callback
-		handler.Handle(&operations.PathOperation{
-			BranchOperation: &operations.BranchOperation{
-				RepoOperation: &operations.RepoOperation{
-					AuthenticatedOperation: authOp,
-					Repo:                   getRepo(request),
-				},
-				Branch: getBranch(request),
-			},
-			Path: getKey(request),
-		})
-	}
+	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 }
 
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission, arn string) *operations.AuthenticatedOperation {
@@ -307,4 +245,74 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	// authentication and authorization complete!
 	return op
+}
+
+func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		// structure operation
+		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		if authOp == nil {
+			return
+		}
+		// run callback
+		handler.Handle(authOp)
+	}
+}
+
+func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHandler) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		// structure operation
+		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		if authOp == nil {
+			return
+		}
+
+		// validate repo exists
+		repo, err := authOp.Index.GetRepo(getRepo(request))
+		if xerrors.Is(err, db.ErrNotFound) {
+			writer.WriteHeader(http.StatusNotFound)
+			return // TODO: make sure we replicate S3's response when a bucket is not found
+		} else if err != nil {
+			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+
+		// run callback
+		handler.Handle(&operations.RepoOperation{
+			AuthenticatedOperation: authOp,
+			Repo:                   repo,
+		})
+	}
+}
+
+func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHandler) http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		// structure operation
+		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		if authOp == nil {
+			return
+		}
+
+		// validate repo exists
+		repo, err := authOp.Index.GetRepo(getRepo(request))
+		if xerrors.Is(err, db.ErrNotFound) {
+			writer.WriteHeader(http.StatusNotFound)
+			return // TODO: make sure we replicate S3's response when a bucket is not found
+		} else if err != nil {
+			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+
+		// run callback
+		handler.Handle(&operations.PathOperation{
+			BranchOperation: &operations.BranchOperation{
+				RepoOperation: &operations.RepoOperation{
+					AuthenticatedOperation: authOp,
+					Repo:                   repo,
+				},
+				Branch: getBranch(request),
+			},
+			Path: getKey(request),
+		})
+	}
 }

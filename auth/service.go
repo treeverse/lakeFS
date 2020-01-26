@@ -326,7 +326,7 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 			// get roles if we don't already have them from the user
 			for _, rid := range group.GetRoles() {
 				if _, exists := roles[rid]; exists {
-					continue // we've already testsed that one
+					continue // we've already tested that one
 				}
 				role := &model.Role{}
 				err := q.GetAsProto(role, SubspacesAuthRoles, db.CompositeStrings(rid))

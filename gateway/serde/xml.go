@@ -2,6 +2,10 @@ package serde
 
 import "encoding/xml"
 
+const (
+	VersioningResponse = `<VersioningConfiguration xmlns="http://s3.amazonaws.com/doc/2006-03-01/"/>`
+)
+
 type Error struct {
 	Code      string `xml:"Code"`
 	Message   string `xml:"Message"`
@@ -68,7 +72,7 @@ type ListObjectsOutput struct {
 	MaxKeys        int              `xml:"MaxKeys"`
 	CommonPrefixes []CommonPrefixes `xml:"CommonPrefixes"`
 	Marker         string           `xml:"Marker"`
-	NextMarker     string           `xml:"NextMarker"`
+	NextMarker     string           `xml:"NextMarker,omitempty"`
 	Contents       []Contents       `xml:"Contents"`
 }
 
@@ -81,7 +85,7 @@ type ListBucketResult struct {
 	MaxKeys        int              `xml:"MaxKeys"`
 	CommonPrefixes []CommonPrefixes `xml:"CommonPrefixes"`
 	Marker         string           `xml:"Marker"`
-	NextMarker     string           `xml:"NextMarker"`
+	NextMarker     string           `xml:"NextMarker,omitempty"`
 	Contents       []Contents       `xml:"Contents"`
 }
 

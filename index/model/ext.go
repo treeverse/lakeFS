@@ -37,14 +37,6 @@ func (m *Entry) Identity() []byte {
 		fmt.Sprintf("%v", m.Type))
 }
 
-func (m *Blob) Identity() []byte {
-	addresses := make([]string, len(m.GetBlocks()))
-	for i, block := range m.GetBlocks() {
-		addresses[i] = block.GetAddress()
-	}
-	return identFromStrings(addresses...)
-}
-
 func (m *Commit) Identity() []byte {
 	return append(identFromStrings(
 		m.GetTree(),
@@ -56,15 +48,22 @@ func (m *Commit) Identity() []byte {
 }
 
 func (m *Object) Identity() []byte {
+	addresses := make([]string, len(m.GetBlocks()))
+	for i, block := range m.GetBlocks() {
+		addresses[i] = block.GetAddress()
+	}
 	return append(
-		m.GetBlob().Identity(),
+		identFromStrings(addresses...),
 		identFromStrings(
-			strconv.FormatInt(m.GetTimestamp(), 10),
 			identMapToString(m.GetMetadata()),
 		)...,
 	)
 }
 
 func (m *MultipartUploadPart) Identity() []byte {
-	return m.GetBlob().Identity()
+	addresses := make([]string, len(m.GetBlocks()))
+	for i, block := range m.GetBlocks() {
+		addresses[i] = block.GetAddress()
+	}
+	return identFromStrings(addresses...)
 }

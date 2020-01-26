@@ -15,6 +15,7 @@ type ClientReadOnlyOperations interface {
 type ClientOperations interface {
 	ClientReadOnlyOperations
 	DeleteRepo(repoId string) error
+	WriteRepo(repo *model.Repo) error
 }
 
 type KVClientReadOnlyOperations struct {
@@ -69,4 +70,8 @@ func (c *KVClientOperations) DeleteRepo(repoId string) error {
 		}
 	}
 	return nil
+}
+
+func (s *KVClientOperations) WriteRepo(repo *model.Repo) error {
+	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(repo.GetRepoId()))
 }
