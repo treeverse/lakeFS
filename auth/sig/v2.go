@@ -202,7 +202,7 @@ func buildPath(host, path string) string {
 		return path
 	} else {
 		if i < len(hostParts) {
-			bucketName := str.Join(hostParts[:i-1], "/") // handle case where bucket name contain periods
+			bucketName := str.Join(hostParts[:i], "/") // handle case where bucket name contain periods
 			return bucketName + "/" + path
 		} else { // host does not contain 's3'
 			log.Error("Host " + host + " does not contain 's3'")
