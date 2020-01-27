@@ -28,9 +28,8 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		o.Log().
 			WithField("path", o.Path).
 			WithField("branch", o.Branch).
-			WithField("repo", o.Repo).
-			WithError(err).
-			Error("path not found")
+			WithField("repo", o.Repo.GetRepoId()).
+			Warn("path not found")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))
 		return
 	}
