@@ -2,9 +2,10 @@ package operations
 
 import (
 	"net/http"
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/index"
+
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/index"
 
 	"github.com/gorilla/mux"
 )
