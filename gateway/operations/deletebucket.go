@@ -1,8 +1,8 @@
 package operations
 
 import (
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/permissions"
 )
 
 type DeleteBucket struct{}

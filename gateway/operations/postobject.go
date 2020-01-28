@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"net/http"
 	"time"
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/gateway/serde"
-	"treeverse-lake/index/model"
+
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/index/model"
 )
 
 const (

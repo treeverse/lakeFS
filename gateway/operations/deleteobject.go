@@ -2,8 +2,9 @@ package operations
 
 import (
 	"net/http"
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/permissions"
+
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/permissions"
 )
 
 type DeleteObject struct{}
