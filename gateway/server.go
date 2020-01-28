@@ -185,9 +185,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
-		sig.DummyAuthenticator(os.Getenv(EnvVarAccessKeyId)), // TODO: remove it when sigv2 is working
 		sig.NewV4Authenticatior(request),
-		sig.NewV2SigAuthenticator(request))
+		sig.NewV2SigAuthenticator(request),
+		sig.DummyAuthenticator(os.Getenv(EnvVarAccessKeyId))) // TODO: remove it when sigv2 is working)
 
 	authContext, err := authenticator.Parse()
 	if err != nil {
