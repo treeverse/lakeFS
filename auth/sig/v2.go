@@ -189,29 +189,40 @@ func signCanonicalString(msg string, signature []byte) (digest []byte) {
 	return
 }
 
-func buildPath(host, path string) string {
-	hostParts := str.Split(host, ".")
-	var i int
-	// location of 's3' in host string.
-	for i = 0; i < len(hostParts); i++ {
-		if hostParts[i] == "s3" {
-			break
-		}
-	}
-	if i == 0 {
+func buildPath(host, bareDomain, path string) string {
+	if host == bareDomain {
 		return path
 	} else {
-		if i < len(hostParts) {
-			bucketName := str.Join(hostParts[:i-1], "/") // handle case where bucket name contain periods
-			return bucketName + "/" + path
-		} else { // host does not contain 's3'
-			log.Error("Host " + host + " does not contain 's3'")
-			return path
+		if str.HasSuffix(host, bareDomain) {
+			prePath := host[:len(host)-len(bareDomain)]
+			return prePath + "/" + path
+		} else { // bareDomain is not prefix of the path - how did we get here???
+			log.WithFields(log.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
+			return ""
 		}
 	}
+	//hostParts := str.Split(host, ".")
+	//var i int
+	//// location of 's3' in host string.
+	//for i = 0; i < len(hostParts); i++ {
+	//	if hostParts[i] == "s3" {
+	//		break
+	//	}
+	//}
+	//if i == 0 {
+	//	return path
+	//} else {
+	//	if i < len(hostParts) {
+	//		bucketName := str.Join(hostParts[:i], "/") // handle case where bucket name contain periods
+	//		return bucketName + "/" + path
+	//	} else { // host does not contain 's3'
+	//		log.Error("Host " + host + " does not contain 's3'")
+	//		return path
+	//	}
+	//}
 }
 
-func (a *V2SigAuthenticator) Verify(creds Credentials) error {
+func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error {
 	/*
 		s3 sigV2 implementation:
 		the s3 signature  is somewhat different than general aws signature implementation.
@@ -229,7 +240,7 @@ func (a *V2SigAuthenticator) Verify(creds Credentials) error {
 			- path of the object
 			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
-	path := buildPath(a.r.Host, a.r.URL.Path)
+	path := buildPath(a.r.Host, bareDomain, a.r.URL.Path)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	fmt.Print(stringToSigh, "\n")
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
