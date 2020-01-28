@@ -2,9 +2,10 @@ package store
 
 import (
 	"fmt"
-	"treeverse-lake/db"
-	"treeverse-lake/index/errors"
-	"treeverse-lake/index/model"
+
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/index/model"
 
 	"github.com/golang/protobuf/proto"
 )

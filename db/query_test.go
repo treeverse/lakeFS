@@ -8,7 +8,7 @@ import (
 	"sync"
 	"testing"
 
-	db "treeverse-lake/db"
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/dgraph-io/badger"
 
