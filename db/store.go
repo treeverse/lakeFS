@@ -5,13 +5,6 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-/*
-	Errorf(string, ...interface{})
-	Warningf(string, ...interface{})
-	Infof(string, ...interface{})
-	Debugf(string, ...interface{})
-*/
-
 // logging adapter
 type badgerLogger struct {
 	logger *logrus.Entry
