@@ -3,11 +3,12 @@ package store_test
 import (
 	"testing"
 	"time"
-	"treeverse-lake/db"
-	"treeverse-lake/ident"
-	"treeverse-lake/index"
-	"treeverse-lake/index/model"
-	"treeverse-lake/index/store"
+
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/index/store"
 
 	"golang.org/x/xerrors"
 )

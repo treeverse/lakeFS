@@ -4,7 +4,8 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"treeverse-lake/mime"
+
+	"github.com/treeverse/lakefs/mime"
 )
 
 func TestResolver_Resolve(t *testing.T) {

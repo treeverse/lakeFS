@@ -4,12 +4,13 @@ import (
 	"crypto/rand"
 	"strings"
 	"time"
-	"treeverse-lake/ident"
-	"treeverse-lake/index/errors"
-	"treeverse-lake/index/merkle"
-	"treeverse-lake/index/model"
-	pth "treeverse-lake/index/path"
-	"treeverse-lake/index/store"
+
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/index/merkle"
+	"github.com/treeverse/lakefs/index/model"
+	pth "github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/index/store"
 )
 
 const (
