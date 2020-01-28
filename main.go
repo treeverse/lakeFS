@@ -22,6 +22,11 @@ import (
 	"github.com/dgraph-io/badger"
 )
 
+const (
+	ModuleName = "github.com/treeverse/lakefs"
+	ProjectDirectoryName = "lakefs"
+)
+
 var (
 	DefaultBlockLocation    = path.Join(home(), "tv_state", "blocks")
 	DefaultMetadataLocation = path.Join(home(), "tv_state", "kv")
@@ -35,14 +40,15 @@ func setupLogger() {
 		FullTimestamp: true,
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
 			// file relative to "lakefs"
-			fileParts := strings.Split(frame.File, "lakefs")
-			if len(fileParts) > 1 {
-				file = fmt.Sprintf("%s", strings.Join(fileParts[1:], ""))
+			indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
+			if indexOfModule != -1 {
+				file = frame.File[indexOfModule+len(ProjectDirectoryName):]
 			} else {
 				file = frame.File
 			}
-			file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, "/"), frame.Line)
-			return strings.TrimPrefix(frame.Function, "github.com/treeverse/lakefs/"), file
+			file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
+			function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
+			return
 		},
 	})
 	log.SetOutput(os.Stdout)
