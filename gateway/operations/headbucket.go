@@ -2,7 +2,8 @@ package operations
 
 import (
 	"net/http"
-	"treeverse-lake/gateway/permissions"
+
+	"github.com/treeverse/lakefs/gateway/permissions"
 )
 
 type HeadBucket struct{}

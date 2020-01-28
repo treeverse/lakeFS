@@ -6,15 +6,16 @@ import (
 	"net/http/pprof"
 	"os"
 	"strings"
-	"treeverse-lake/auth"
-	"treeverse-lake/auth/sig"
-	"treeverse-lake/block"
-	"treeverse-lake/db"
-	"treeverse-lake/gateway/errors"
-	ghttp "treeverse-lake/gateway/http"
-	"treeverse-lake/gateway/operations"
-	"treeverse-lake/gateway/path"
-	"treeverse-lake/index"
+
+	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/sig"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/gateway/errors"
+	ghttp "github.com/treeverse/lakefs/gateway/http"
+	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/gateway/path"
+	"github.com/treeverse/lakefs/index"
 
 	"golang.org/x/xerrors"
 
@@ -209,7 +210,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		return nil
 	}
 
-	err = authenticator.Verify(creds)
+	err = authenticator.Verify(creds, s.bareDomain)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"key":           authContext.GetAccessKeyId(),

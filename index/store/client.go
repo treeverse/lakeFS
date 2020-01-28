@@ -1,8 +1,8 @@
 package store
 
 import (
-	"treeverse-lake/db"
-	"treeverse-lake/index/model"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/index/model"
 
 	"github.com/golang/protobuf/proto"
 )

@@ -1,7 +1,7 @@
 package store
 
 import (
-	"treeverse-lake/db"
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/dgraph-io/badger"
 )

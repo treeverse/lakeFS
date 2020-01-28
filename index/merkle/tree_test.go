@@ -4,7 +4,8 @@ import (
 	"strings"
 	"testing"
 	"time"
-	"treeverse-lake/index/model"
+
+	"github.com/treeverse/lakefs/index/model"
 )
 
 type entryLike interface {
