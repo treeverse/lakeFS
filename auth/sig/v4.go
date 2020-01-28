@@ -341,7 +341,7 @@ func (a *V4Authenticator) String() string {
 	return "sigv4"
 }
 
-func (a *V4Authenticator) Verify(creds Credentials) error {
+func (a *V4Authenticator) Verify(creds Credentials, bareDomain string) error {
 	return V4Verify(a.ctx, creds, a.request)
 }
 
