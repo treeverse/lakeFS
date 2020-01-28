@@ -5,14 +5,14 @@ import (
 	"strconv"
 	"strings"
 
-	"treeverse-lake/db"
+	"github.com/treeverse/lakefs/db"
 
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/path"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/gateway/serde"
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/path"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/serde"
 
-	"treeverse-lake/index/model"
+	"github.com/treeverse/lakefs/index/model"
 
 	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"

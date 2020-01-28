@@ -3,7 +3,8 @@ package http_test
 import (
 	"fmt"
 	"testing"
-	"treeverse-lake/gateway/http"
+
+	"github.com/treeverse/lakefs/gateway/http"
 )
 
 func TestParseHTTPRange(t *testing.T) {
