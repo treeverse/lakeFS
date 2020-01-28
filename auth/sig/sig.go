@@ -85,7 +85,7 @@ type Credentials interface {
 
 type SigAuthenticator interface {
 	Parse() (SigContext, error)
-	Verify(Credentials) error
+	Verify(Credentials, string) error
 }
 
 type dummySigContext struct {
