@@ -1,8 +1,8 @@
 package merkle
 
 import (
-	"treeverse-lake/index/model"
-	"treeverse-lake/index/path"
+	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/index/path"
 )
 
 type changeTree struct {

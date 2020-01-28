@@ -2,7 +2,8 @@ package merkle
 
 import (
 	"strings"
-	"treeverse-lake/index/model"
+
+	"github.com/treeverse/lakefs/index/model"
 )
 
 func compareEntries(a, b *model.Entry) (eqs int) {

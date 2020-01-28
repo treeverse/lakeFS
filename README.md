@@ -1,11 +1,11 @@
-# Treeverse Lake
+# lakeFS
 
 This is a draft for a design document describing the capabilities and 
-implementation of Lake 0.1
+implementation of lakeFS 0.1
 
 ## Goals
 
-Lake is data lake management solution, offering at a high level the following capabilities:
+lakeFS is data lake management solution, offering at a high level the following capabilities:
 
 1. Cross-lake ACID operations - change several objects/collections as one atomic operations to avoid inconsistencies during complex migrations/recalculations
 2. Reproducibility - Travel backwards in time and match versions of data to the code that generated it

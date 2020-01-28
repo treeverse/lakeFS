@@ -9,14 +9,15 @@ import (
 	"strconv"
 	"strings"
 	"time"
-	"treeverse-lake/block"
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/path"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/gateway/serde"
-	"treeverse-lake/ident"
-	"treeverse-lake/index/model"
-	pth "treeverse-lake/index/path"
+
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/path"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/index/model"
+	pth "github.com/treeverse/lakefs/index/path"
 
 	log "github.com/sirupsen/logrus"
 )

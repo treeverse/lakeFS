@@ -7,18 +7,24 @@ import (
 	"path"
 	"runtime"
 	"strings"
-	"treeverse-lake/auth"
-	"treeverse-lake/auth/model"
-	"treeverse-lake/block"
-	db2 "treeverse-lake/db"
-	"treeverse-lake/gateway"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/index"
-	"treeverse-lake/index/store"
+
+	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/block"
+	db2 "github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/store"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/dgraph-io/badger"
+)
+
+const (
+	ModuleName = "github.com/treeverse/lakefs"
+	ProjectDirectoryName = "lakefs"
 )
 
 var (
@@ -33,15 +39,16 @@ func setupLogger() {
 		ForceColors:   true,
 		FullTimestamp: true,
 		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-			// file relative to "treeverse-lake"
-			fileParts := strings.Split(frame.File, "treeverse-lake")
-			if len(fileParts) > 1 {
-				file = fmt.Sprintf("%s", strings.Join(fileParts[1:], ""))
+			// file relative to "lakefs"
+			indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
+			if indexOfModule != -1 {
+				file = frame.File[indexOfModule+len(ProjectDirectoryName):]
 			} else {
 				file = frame.File
 			}
-			file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, "/"), frame.Line)
-			return strings.TrimPrefix(frame.Function, "treeverse-lake/"), file
+			file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
+			function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
+			return
 		},
 	})
 	log.SetOutput(os.Stdout)
