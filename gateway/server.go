@@ -205,7 +205,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		return nil
 	}
 
-	err = authenticator.Verify(creds)
+	err = authenticator.Verify(creds, s.bareDomain)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"key":           authContext.GetAccessKeyId(),
