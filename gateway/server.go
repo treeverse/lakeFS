@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/pprof"
+	"os"
 	"strings"
 	"treeverse-lake/auth"
 	"treeverse-lake/auth/sig"
@@ -19,6 +20,10 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
+)
+
+const (
+	EnvVarAccessKeyId = "AWS_ACCESS_KEY_ID"
 )
 
 func getRepo(req *http.Request) string {
@@ -179,20 +184,19 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Auth:             s.authService,
 	}
 	// authenticate
-	authenticator := sig.NewV4Authenticatior(request)
+	authenticator := sig.ChainedAuthenticator(
+		sig.DummyAuthenticator(os.Getenv(EnvVarAccessKeyId)), // TODO: remove it when sigv2 is working
+		sig.NewV4Authenticatior(request),
+		sig.NewV2SigAuthenticator(request))
+
 	authContext, err := authenticator.Parse()
 	if err != nil {
-		// fallback to authv2
-		authenticator = sig.NewV2SigAuthenticator(request)
-		authContext, err = authenticator.Parse()
-
-		if err != nil {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
-			o.Log().WithError(err).Warn("could not parse v4 or v2 auth context")
-			return nil
-		}
+		o.Log().WithError(err).WithFields(log.Fields{
+			"key": authContext.GetAccessKeyId(),
+		}).Warn("error parsing signature")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		return nil
 	}
-
 	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
 	if err != nil {
 		if !xerrors.Is(err, db.ErrNotFound) {
