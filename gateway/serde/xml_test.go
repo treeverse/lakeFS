@@ -4,7 +4,8 @@ import (
 	"encoding/xml"
 	"strings"
 	"testing"
-	"treeverse-lake/gateway/serde"
+
+	"github.com/treeverse/lakefs/gateway/serde"
 )
 
 func TestTimestamp(t *testing.T) {

@@ -2,11 +2,12 @@ package operations
 
 import (
 	"fmt"
-	"treeverse-lake/db"
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/gateway/serde"
-	"treeverse-lake/index/model"
+
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/index/model"
 
 	"golang.org/x/xerrors"
 )

@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"treeverse-lake/ident"
+
+	"github.com/treeverse/lakefs/ident"
 )
 
 type IdentifiableString string
