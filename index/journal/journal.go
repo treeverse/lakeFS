@@ -1,8 +1,8 @@
 package journal
 
 import (
-	"treeverse-lake/db"
-	"treeverse-lake/ident"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/ident"
 )
 
 type OpCode int

@@ -4,7 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"testing"
-	"treeverse-lake/index/store"
+	"github.com/treeverse/lakefs/index/store"
 
 	"github.com/dgraph-io/badger/options"
 

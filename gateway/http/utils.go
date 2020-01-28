@@ -5,7 +5,8 @@ import (
 	"context"
 	"net/http"
 	"time"
-	"treeverse-lake/auth"
+
+	"github.com/treeverse/lakefs/auth"
 
 	log "github.com/sirupsen/logrus"
 )
