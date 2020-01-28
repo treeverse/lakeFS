@@ -6,13 +6,14 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"treeverse-lake/auth"
-	authmodel "treeverse-lake/auth/model"
-	"treeverse-lake/block"
-	"treeverse-lake/gateway/errors"
-	ghttp "treeverse-lake/gateway/http"
-	"treeverse-lake/index"
-	"treeverse-lake/index/model"
+
+	"github.com/treeverse/lakefs/auth"
+	authmodel "github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/gateway/errors"
+	ghttp "github.com/treeverse/lakefs/gateway/http"
+	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/model"
 
 	log "github.com/sirupsen/logrus"
 )

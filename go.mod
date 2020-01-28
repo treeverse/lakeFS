@@ -1,4 +1,4 @@
-module treeverse-lake
+module github.com/treeverse/lakefs
 
 go 1.12
 

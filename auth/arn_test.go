@@ -2,7 +2,8 @@ package auth_test
 
 import (
 	"testing"
-	"treeverse-lake/auth"
+
+	"github.com/treeverse/lakefs/auth"
 )
 
 func TestParseARN(t *testing.T) {
