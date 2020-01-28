@@ -4,7 +4,8 @@ import (
 	"fmt"
 	"strings"
 	"testing"
-	"treeverse-lake/index/path"
+
+	"github.com/treeverse/lakefs/index/path"
 )
 
 func equalStrings(a, b []string) bool {

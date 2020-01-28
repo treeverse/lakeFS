@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"regexp"
 
-	pth "treeverse-lake/index/path"
+	pth "github.com/treeverse/lakefs/index/path"
 
 	"golang.org/x/xerrors"
 )

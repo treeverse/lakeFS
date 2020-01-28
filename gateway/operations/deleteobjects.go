@@ -3,10 +3,11 @@ package operations
 import (
 	"fmt"
 	"net/http"
-	"treeverse-lake/gateway/errors"
-	"treeverse-lake/gateway/path"
-	"treeverse-lake/gateway/permissions"
-	"treeverse-lake/gateway/serde"
+
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/path"
+	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/serde"
 )
 
 type DeleteObjects struct{}

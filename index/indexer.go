@@ -3,12 +3,13 @@ package index
 import (
 	"math/rand"
 	"time"
-	"treeverse-lake/db"
-	"treeverse-lake/ident"
-	"treeverse-lake/index/merkle"
-	"treeverse-lake/index/model"
-	pth "treeverse-lake/index/path"
-	"treeverse-lake/index/store"
+
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/index/merkle"
+	"github.com/treeverse/lakefs/index/model"
+	pth "github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/index/store"
 
 	"golang.org/x/xerrors"
 )

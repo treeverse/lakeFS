@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"strings"
 	"time"
-	"treeverse-lake/auth/model"
-	"treeverse-lake/db"
+
+	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/dgraph-io/badger"
 
