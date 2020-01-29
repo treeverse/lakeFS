@@ -129,6 +129,9 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// path based routing
 	// non-bucket-specific endpoints
 	serviceEndpoint := router.Host(bareDomain).Subrouter()
+	//create bucket
+	serviceEndpoint.HandleFunc(fmt.Sprintf("/%s", path.CreateRepoMatch), OperationHandler(ctx, &operations.CreateBucket{})).Methods(http.MethodPut)
+
 	// repo-specific actions that relate to a key
 	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
 	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
@@ -138,7 +141,6 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
 	// bucket-specific actions that don't relate to a specific key
-	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 	pathBasedRepo.
 		Methods(http.MethodGet).
 		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").

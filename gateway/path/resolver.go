@@ -12,8 +12,10 @@ import (
 const (
 	Separator = "/"
 
-	RepoMatch   = "{repo:[a-z0-9\\-\\.]+}"
-	RepoReMatch = "(?P<repo>[a-z0-9\\-\\.]+)"
+	CreateRepoMatch = "{repo:[^\\/]+}"
+
+	RepoMatch   = "{repo:[a-z0-9\\-]+}"
+	RepoReMatch = "(?P<repo>[a-z0-9\\-]+)"
 
 	PathMatch   = "{path:.*}"
 	PathReMatch = "(?P<path>.*)"
