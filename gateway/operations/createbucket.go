@@ -1,12 +1,12 @@
 package operations
 
 import (
-	"net/http"
-	"regexp"
-
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/index"
+	ierrors "github.com/treeverse/lakefs/index/errors"
+	"golang.org/x/xerrors"
+	"net/http"
 
 	"github.com/gorilla/mux"
 )
@@ -24,16 +24,16 @@ func (controller *CreateBucket) GetPermission() string {
 func (controller *CreateBucket) Handle(o *AuthenticatedOperation) {
 	res := o.ResponseWriter
 	repoId := mux.Vars(o.Request)["repo"] // TODO: move this logic elsewhere, a handler shouldn't know about mux
-	validRepo := regexp.MustCompile(`^[a-z1-9][a-z1-9-]+$`).MatchString(repoId)
-	if !validRepo {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidBucketName))
-		return
-	}
 
 	err := o.Index.CreateRepo(repoId, index.DefaultBranch)
 	if err != nil {
-		o.Log().WithField("repo", repoId).WithError(err).Error("failed to create repo")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		if xerrors.Is(err, ierrors.ErrInvalid) {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidBucketName))
+		} else {
+			o.Log().WithField("repo", repoId).WithError(err).Error("failed to create repo")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		}
+
 		return
 	}
 	o.Log().WithField("repo", repoId).Info("repo created successfully")
