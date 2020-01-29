@@ -2,6 +2,7 @@ package index
 
 import (
 	"math/rand"
+	"regexp"
 	"time"
 
 	"github.com/treeverse/lakefs/db"
@@ -11,6 +12,7 @@ import (
 	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/index/store"
 
+	"github.com/treeverse/lakefs/index/errors"
 	"golang.org/x/xerrors"
 )
 
@@ -441,8 +443,15 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 	return err
 }
 
+func isValidRepoId(repoId string) bool {
+	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]+$`).MatchString(repoId)
+}
+
 func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
+	if !isValidRepoId(repoId) {
+		return errors.ErrInvalidBucketName
+	}
 	creationDate := time.Now().Unix()
 
 	repo := &model.Repo{
