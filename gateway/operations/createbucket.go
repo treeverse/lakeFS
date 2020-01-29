@@ -3,12 +3,11 @@ package operations
 import (
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/permissions"
+	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	ierrors "github.com/treeverse/lakefs/index/errors"
 	"golang.org/x/xerrors"
 	"net/http"
-
-	"github.com/gorilla/mux"
 )
 
 type CreateBucket struct{}
@@ -23,7 +22,7 @@ func (controller *CreateBucket) GetPermission() string {
 
 func (controller *CreateBucket) Handle(o *AuthenticatedOperation) {
 	res := o.ResponseWriter
-	repoId := mux.Vars(o.Request)["repo"] // TODO: move this logic elsewhere, a handler shouldn't know about mux
+	repoId := utils.GetRepo(o.Request)
 
 	err := o.Index.CreateRepo(repoId, index.DefaultBranch)
 	if err != nil {
