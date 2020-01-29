@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/gateway/utils"
 	"net/http"
 	"net/http/pprof"
 	"os"
@@ -26,21 +27,6 @@ import (
 const (
 	EnvVarAccessKeyId = "AWS_ACCESS_KEY_ID"
 )
-
-func getRepo(req *http.Request) string {
-	vars := mux.Vars(req)
-	return vars["repo"]
-}
-
-func getKey(req *http.Request) string {
-	vars := mux.Vars(req)
-	return vars["path"]
-}
-
-func getBranch(req *http.Request) string {
-	vars := mux.Vars(req)
-	return vars["refspec"]
-}
 
 type ServerContext struct {
 	region           string
@@ -275,7 +261,7 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(getRepo(request))
+		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
 		if xerrors.Is(err, db.ErrNotFound) {
 			writer.WriteHeader(http.StatusNotFound)
 			return // TODO: make sure we replicate S3's response when a bucket is not found
@@ -301,7 +287,7 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(getRepo(request))
+		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
 		if xerrors.Is(err, db.ErrNotFound) {
 			writer.WriteHeader(http.StatusNotFound)
 			return // TODO: make sure we replicate S3's response when a bucket is not found
@@ -317,9 +303,9 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 					AuthenticatedOperation: authOp,
 					Repo:                   repo,
 				},
-				Branch: getBranch(request),
+				Branch: utils.GetBranch(request),
 			},
-			Path: getKey(request),
+			Path: utils.GetKey(request),
 		})
 	}
 }
