@@ -5,9 +5,9 @@ import (
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/permissions"
 
 	"golang.org/x/xerrors"
 )
@@ -18,8 +18,8 @@ func (controller *HeadObject) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *HeadObject) GetPermission() string {
-	return permissions.PermissionReadRepo
+func (controller *HeadObject) GetPermission() permissions.Permission {
+	return permissions.ReadRepo
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {

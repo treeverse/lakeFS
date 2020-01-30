@@ -5,11 +5,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 
 	"github.com/treeverse/lakefs/index/model"
@@ -28,8 +29,8 @@ func (controller *ListObjects) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *ListObjects) GetPermission() string {
-	return permissions.PermissionReadRepo
+func (controller *ListObjects) GetPermission() permissions.Permission {
+	return permissions.ReadRepo
 }
 
 func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {

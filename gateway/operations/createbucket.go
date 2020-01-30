@@ -3,8 +3,9 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/index"
 
 	"github.com/gorilla/mux"
@@ -16,8 +17,8 @@ func (controller *CreateBucket) GetArn() string {
 	return "arn:treeverse:repos:::*"
 }
 
-func (controller *CreateBucket) GetPermission() string {
-	return permissions.PermissionManageRepos
+func (controller *CreateBucket) GetPermission() permissions.Permission {
+	return permissions.ManageRepos
 }
 
 func (controller *CreateBucket) Handle(o *AuthenticatedOperation) {

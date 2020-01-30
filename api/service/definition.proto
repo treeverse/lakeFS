@@ -1,0 +1,268 @@
+syntax = "proto3";
+
+package service;
+
+message RequestIdentity {
+    string accessKeyId = 1;
+    string accessSecretKey = 2;
+}
+
+message CreateRepoRequest {
+    RequestIdentity ident = 1;
+    string repoId = 2;
+}
+
+message CreateRepoResponse {
+
+}
+
+message DeleteRepoRequest {
+    RequestIdentity ident = 1;
+    string repoId = 2;
+}
+
+message DeleteRepoResponse {
+
+}
+
+message ListReposRequest {
+    RequestIdentity ident = 1;
+}
+
+message ListReposResponse {
+    repeated string repos = 1;
+}
+
+message GetRepoRequest {
+    RequestIdentity ident = 1;
+}
+
+message GetRepoResponse {
+
+}
+
+message CreateBranchRequest {
+    RequestIdentity ident = 1;
+}
+
+message CreateBranchResponse {
+
+}
+
+message DeleteBranchRequest {
+    RequestIdentity ident = 1;
+}
+
+message DeleteBranchResponse {
+
+}
+
+message ListBranchesRequest {
+    RequestIdentity ident = 1;
+}
+
+message ListBranchesResponse {
+
+}
+
+message GetBranchRequest {
+    RequestIdentity ident = 1;
+}
+
+message GetBranchResponse {
+
+}
+
+message ListEntriesRequest {
+    RequestIdentity ident = 1;
+}
+
+message ListEntriesResponse {
+
+}
+
+message GetEntryRequest {
+    RequestIdentity ident = 1;
+}
+
+message GetEntryResponse {
+    string name = 1;
+}
+
+message PutEntryRequest {
+    RequestIdentity ident = 1;
+}
+
+message PutEntryResponse {
+
+}
+
+message DeleteEntryRequest {
+    RequestIdentity ident = 1;
+}
+
+message DeleteEntryResponse {
+
+}
+
+message DownloadRequest {
+    RequestIdentity ident = 1;
+}
+
+message DownloadResponse {
+
+}
+
+message DiffBranchesAtPathRequest {
+    RequestIdentity ident = 1;
+}
+
+message DiffBranchesAtPathResponse {
+
+}
+
+message CommitRequest {
+    RequestIdentity ident = 1;
+}
+
+message CommitResponse {
+
+}
+
+message ResetBranchRequest {
+    RequestIdentity ident = 1;
+}
+
+message ResetBranchResponse {
+
+}
+
+message CheckoutCommitRequest {
+    RequestIdentity ident = 1;
+}
+
+message CheckoutCommitResponse {
+
+}
+
+message MergeRequest {
+    RequestIdentity ident = 1;
+}
+
+message MergeResponse {
+
+}
+
+message CreateUserRequest {
+    RequestIdentity ident = 1;
+}
+
+message CreateUserResponse {
+
+}
+
+message CreateKeyPairRequest {
+    RequestIdentity ident = 1;
+}
+
+message CreateKeyPairResponse {
+
+}
+
+message AssignRoleToUserRequest {
+    RequestIdentity ident = 1;
+}
+
+message AssignRoleToUserResponse {
+
+}
+
+message ListUsersRequest {
+    RequestIdentity ident = 1;
+}
+
+message ListUsersResponse {
+
+}
+
+message DeleteUserRequest {
+    RequestIdentity ident = 1;
+}
+
+message DeleteUserResponse {
+
+}
+
+message CreateGroupRequest {
+    RequestIdentity ident = 1;
+}
+
+message CreateGroupResponse {
+
+}
+
+message AssignRoleToGroupRequest {
+    RequestIdentity ident = 1;
+}
+
+message AssignRoleToGroupResponse {
+
+}
+
+message ListGroupsRequest {
+    RequestIdentity ident = 1;
+}
+
+message ListGroupsResponse {
+
+}
+
+message AssignUserToGroupRequest {
+    RequestIdentity ident = 1;
+}
+
+message AssignUserToGroupResponse {
+
+}
+
+message DeleteGroupRequest {
+    RequestIdentity ident = 1;
+}
+
+message DeleteGroupResponse {
+
+}
+
+
+service APIServer {
+    // repo level requests
+    rpc CreateRepo(CreateRepoRequest) returns (CreateRepoResponse);
+    rpc DeleteRepo(DeleteRepoRequest) returns (DeleteRepoResponse);
+    rpc ListRepos(ListReposRequest) returns (ListReposResponse);
+    rpc GetRepo(GetRepoRequest) returns (GetRepoResponse);
+
+    // branch level requests
+    rpc CreateBranch(CreateBranchRequest) returns (CreateBranchResponse);
+    rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse);
+    rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
+    rpc GetBranch(GetBranchRequest) returns (GetBranchResponse);
+
+    // filesystem operations
+    rpc ListEntries(ListEntriesRequest) returns (ListEntriesResponse);
+    rpc GetEntry(GetEntryRequest) returns (GetEntryResponse);
+    rpc PutEntry(PutEntryRequest) returns (PutEntryResponse);
+    rpc DeleteEntry(DeleteEntryRequest) returns (DeleteEntryResponse);
+    rpc Download(DownloadRequest) returns (DownloadResponse);
+
+    // authentication/authorization
+    rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
+    rpc CreateKeyPair(CreateKeyPairRequest) returns (CreateKeyPairResponse);
+    rpc AssignRoleToUser(AssignRoleToUserRequest) returns (AssignRoleToUserResponse);
+    rpc ListUsers(ListUsersRequest) returns (ListUsersResponse);
+    rpc DeleteUser(DeleteUserRequest) returns (DeleteUserResponse);
+    rpc CreateGroup(CreateGroupRequest) returns (CreateGroupResponse);
+    rpc AssignRoleToGroup(AssignRoleToGroupRequest) returns (AssignRoleToGroupResponse);
+    rpc ListGroups(ListGroupsRequest) returns (ListGroupsResponse);
+    rpc AssignUserToGroup(AssignUserToGroupRequest) returns (AssignUserToGroupResponse);
+    rpc DeleteGroup(DeleteGroupRequest) returns (DeleteGroupResponse);
+}

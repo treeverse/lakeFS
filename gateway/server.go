@@ -9,6 +9,8 @@ import (
 	"net/http/pprof"
 	"strings"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/sig"
 	"github.com/treeverse/lakefs/db"
@@ -157,7 +159,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission, arn string) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission permissions.Permission, arn string) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
