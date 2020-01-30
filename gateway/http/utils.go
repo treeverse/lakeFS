@@ -65,6 +65,7 @@ func LoggingMiddleWare(next http.Handler) http.Handler {
 		next.ServeHTTP(writer, r) // handle the request
 		writer.Header().Set("X-Amz-Request-Id", reqId)
 		log.WithFields(log.Fields{
+			"service":     "s3_gateway",
 			"request_id":  reqId,
 			"path":        r.RequestURI,
 			"method":      r.Method,

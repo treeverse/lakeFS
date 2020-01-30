@@ -2,14 +2,8 @@ syntax = "proto3";
 
 package service;
 
-message RequestIdentity {
-    string accessKeyId = 1;
-    string accessSecretKey = 2;
-}
-
 message CreateRepoRequest {
-    RequestIdentity ident = 1;
-    string repoId = 2;
+    string repoId = 1;
 }
 
 message CreateRepoResponse {
@@ -17,8 +11,7 @@ message CreateRepoResponse {
 }
 
 message DeleteRepoRequest {
-    RequestIdentity ident = 1;
-    string repoId = 2;
+    string repoId = 1;
 }
 
 message DeleteRepoResponse {
@@ -26,7 +19,7 @@ message DeleteRepoResponse {
 }
 
 message ListReposRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message ListReposResponse {
@@ -34,7 +27,7 @@ message ListReposResponse {
 }
 
 message GetRepoRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message GetRepoResponse {
@@ -42,7 +35,7 @@ message GetRepoResponse {
 }
 
 message CreateBranchRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message CreateBranchResponse {
@@ -50,7 +43,7 @@ message CreateBranchResponse {
 }
 
 message DeleteBranchRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message DeleteBranchResponse {
@@ -58,7 +51,7 @@ message DeleteBranchResponse {
 }
 
 message ListBranchesRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message ListBranchesResponse {
@@ -66,7 +59,7 @@ message ListBranchesResponse {
 }
 
 message GetBranchRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message GetBranchResponse {
@@ -74,7 +67,7 @@ message GetBranchResponse {
 }
 
 message ListEntriesRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message ListEntriesResponse {
@@ -82,7 +75,7 @@ message ListEntriesResponse {
 }
 
 message GetEntryRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message GetEntryResponse {
@@ -90,7 +83,7 @@ message GetEntryResponse {
 }
 
 message PutEntryRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message PutEntryResponse {
@@ -98,7 +91,7 @@ message PutEntryResponse {
 }
 
 message DeleteEntryRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message DeleteEntryResponse {
@@ -106,47 +99,47 @@ message DeleteEntryResponse {
 }
 
 message DownloadRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message DownloadResponse {
 
 }
 
-message DiffBranchesAtPathRequest {
-    RequestIdentity ident = 1;
-}
-
-message DiffBranchesAtPathResponse {
-
-}
-
 message CommitRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message CommitResponse {
 
 }
 
-message ResetBranchRequest {
-    RequestIdentity ident = 1;
-}
-
-message ResetBranchResponse {
+message DiffRequest {
 
 }
 
-message CheckoutCommitRequest {
-    RequestIdentity ident = 1;
+message DiffResponse {
+
 }
 
-message CheckoutCommitResponse {
+message ResetRequest {
+
+}
+
+message ResetResponse {
+
+}
+
+message CheckoutRequest {
+
+}
+
+message CheckoutResponse {
 
 }
 
 message MergeRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message MergeResponse {
@@ -154,7 +147,7 @@ message MergeResponse {
 }
 
 message CreateUserRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message CreateUserResponse {
@@ -162,7 +155,7 @@ message CreateUserResponse {
 }
 
 message CreateKeyPairRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message CreateKeyPairResponse {
@@ -170,7 +163,7 @@ message CreateKeyPairResponse {
 }
 
 message AssignRoleToUserRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message AssignRoleToUserResponse {
@@ -178,7 +171,7 @@ message AssignRoleToUserResponse {
 }
 
 message ListUsersRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message ListUsersResponse {
@@ -186,7 +179,7 @@ message ListUsersResponse {
 }
 
 message DeleteUserRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message DeleteUserResponse {
@@ -194,7 +187,7 @@ message DeleteUserResponse {
 }
 
 message CreateGroupRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message CreateGroupResponse {
@@ -202,7 +195,7 @@ message CreateGroupResponse {
 }
 
 message AssignRoleToGroupRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message AssignRoleToGroupResponse {
@@ -210,7 +203,7 @@ message AssignRoleToGroupResponse {
 }
 
 message ListGroupsRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message ListGroupsResponse {
@@ -218,7 +211,7 @@ message ListGroupsResponse {
 }
 
 message AssignUserToGroupRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message AssignUserToGroupResponse {
@@ -226,7 +219,7 @@ message AssignUserToGroupResponse {
 }
 
 message DeleteGroupRequest {
-    RequestIdentity ident = 1;
+
 }
 
 message DeleteGroupResponse {
@@ -253,6 +246,13 @@ service APIServer {
     rpc PutEntry(PutEntryRequest) returns (PutEntryResponse);
     rpc DeleteEntry(DeleteEntryRequest) returns (DeleteEntryResponse);
     rpc Download(DownloadRequest) returns (DownloadResponse);
+
+    // index operations
+    rpc Commit(CommitRequest) returns (CommitResponse);
+    rpc Diff(DiffRequest) returns (DiffResponse);
+    rpc Checkout(CheckoutRequest) returns (CheckoutResponse);
+    rpc Reset(ResetRequest) returns (ResetResponse);
+    rpc Merge(MergeRequest) returns (MergeResponse);
 
     // authentication/authorization
     rpc CreateUser(CreateUserRequest) returns (CreateUserResponse);
