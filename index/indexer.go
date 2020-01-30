@@ -4,6 +4,8 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/treeverse/lakefs/index/errors"
+
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index/merkle"
@@ -454,7 +456,16 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
 	// create repository, an empty commit and tree, and the default branch
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := tx.WriteRepo(repo)
+		// make sure this repo doesn't already exist
+		_, err := tx.ReadRepo()
+		if err == nil {
+			// couldn't verify this bucket doesn't yet exist
+			return nil, errors.ErrRepoExists
+		} else if !xerrors.Is(err, db.ErrNotFound) {
+			return nil, err // error reading the repo
+		}
+
+		err = tx.WriteRepo(repo)
 		if err != nil {
 			return nil, err
 		}
