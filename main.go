@@ -8,14 +8,15 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	db2 "github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
+	"github.com/treeverse/lakefs/permissions"
 
 	log "github.com/sirupsen/logrus"
 
@@ -23,7 +24,7 @@ import (
 )
 
 const (
-	ModuleName = "github.com/treeverse/lakefs"
+	ModuleName           = "github.com/treeverse/lakefs"
 	ProjectDirectoryName = "lakefs"
 )
 
@@ -93,15 +94,15 @@ func createCreds() {
 		Name: "AdminRole",
 		Policies: []*model.Policy{
 			{
-				Permission: permissions.PermissionManageRepos,
+				Permission: string(permissions.ManageRepos),
 				Arn:        "arn:treeverse:repos:::*",
 			},
 			{
-				Permission: permissions.PermissionReadRepo,
+				Permission: string(permissions.ReadRepo),
 				Arn:        "arn:treeverse:repos:::*",
 			},
 			{
-				Permission: permissions.PermissionWriteRepo,
+				Permission: string(permissions.WriteRepo),
 				Arn:        "arn:treeverse:repos:::*",
 			},
 		},
@@ -197,6 +198,23 @@ func tree(repoId, branch string) {
 	}
 }
 
+func runApi() {
+	setupLogger()
+	db, err := setupBadger()
+	if err != nil {
+		panic(err)
+	}
+
+	// init index
+	meta := index.NewKVIndex(store.NewKVStore(db))
+
+	// init authentication
+	authService := auth.NewKVAuthService(db)
+
+	s := api.NewServer(meta, authService)
+	s.Listen("localhost:8001")
+}
+
 func main() {
 	switch os.Args[1] {
 	case "run":
@@ -207,5 +225,7 @@ func main() {
 		keys()
 	case "tree":
 		tree(os.Args[2], os.Args[3])
+	case "api":
+		runApi()
 	}
 }
