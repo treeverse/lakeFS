@@ -2,29 +2,23 @@ package gateway
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/block"
+	ghttp "github.com/treeverse/lakefs/gateway/http"
+	"github.com/treeverse/lakefs/index"
 	"net/http"
 	"net/http/pprof"
-	"os"
 	"strings"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/sig"
-	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
-	ghttp "github.com/treeverse/lakefs/gateway/http"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
-	"github.com/treeverse/lakefs/index"
-
 	"golang.org/x/xerrors"
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	EnvVarAccessKeyId = "AWS_ACCESS_KEY_ID"
 )
 
 func getRepo(req *http.Request) string {
@@ -96,15 +90,6 @@ func NewServer(
 			Addr:    listenAddr,
 		},
 	}
-}
-
-func mustString(f func() (string, error)) string {
-	s, _ := f()
-	return s
-}
-func mustStrings(f func() ([]string, error)) []string {
-	s, _ := f()
-	return s
 }
 
 func (s *Server) Listen() error {
@@ -186,7 +171,6 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
-		sig.DummyAuthenticator(os.Getenv(EnvVarAccessKeyId)), // TODO: remove it when sigv2 is working
 		sig.NewV4Authenticatior(request),
 		sig.NewV2SigAuthenticator(request))
 
