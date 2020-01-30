@@ -3,14 +3,16 @@ package api
 import (
 	"context"
 	"fmt"
-	"strings"
 
-	"google.golang.org/grpc/metadata"
+	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	log "github.com/sirupsen/logrus"
+
+	"google.golang.org/grpc/codes"
+
+	"google.golang.org/grpc/status"
 
 	"github.com/treeverse/lakefs/auth"
-	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/permissions"
-	"golang.org/x/xerrors"
 
 	"google.golang.org/grpc"
 
@@ -20,59 +22,31 @@ import (
 	"github.com/treeverse/lakefs/index"
 )
 
-var (
-	ErrAuthenticationError = xerrors.New("authentication failed")
-	ErrAuthorizationError  = xerrors.New("you are not permitted to perform this action")
-)
-
 type Server struct {
 	meta        index.Index
 	authService auth.Service
-}
-
-type IdentifiedRequest interface {
-	GetIdent() *service.RequestIdentity
-}
-
-func (s *Server) authenticate(req IdentifiedRequest) (*authmodel.User, error) {
-	ident := req.GetIdent()
-	credentials, err := s.authService.GetAPICredentials(ident.GetAccessKeyId())
-	if err != nil {
-		return nil, ErrAuthenticationError
-	}
-	if strings.EqualFold(credentials.GetAccessSecretKey(), ident.GetAccessSecretKey()) {
-		user, err := s.authService.GetUser(credentials.GetEntityId())
-		if err != nil {
-			return nil, ErrAuthenticationError
-		}
-		return user, nil
-	}
-	return nil, ErrAuthenticationError
 }
 
 func NewServer(meta index.Index, authService auth.Service) *Server {
 	return &Server{meta, authService}
 }
 
-func (s *Server) auth(request IdentifiedRequest, perm permissions.Permission, arn string) (*authmodel.User, error) {
-	user, err := s.authenticate(request)
-	if err != nil {
-		return nil, err
-	}
+func (s *Server) auth(ctx context.Context, perm permissions.Permission, arn string) error {
+	user := getUser(ctx)
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserID: user.GetId(), Permission: perm, SubjectARN: arn})
 	if err != nil {
-		return nil, err
+		return status.Error(codes.PermissionDenied, err.Error())
 	}
 
 	if authResp.Error != nil {
-		return nil, authResp.Error
+		return status.Error(codes.PermissionDenied, authResp.Error.Error())
 	}
 
 	if !authResp.Allowed {
-		return nil, ErrAuthorizationError
+		return status.Error(codes.PermissionDenied, ErrAuthorizationError.Error())
 	}
-	return user, nil
+	return nil
 }
 
 func repoArn(repoId string) string {
@@ -80,13 +54,12 @@ func repoArn(repoId string) string {
 }
 
 func (s *Server) CreateRepo(ctx context.Context, req *service.CreateRepoRequest) (*service.CreateRepoResponse, error) {
-	_, err := s.auth(req, permissions.ManageRepos, repoArn("*"))
-	if err != nil {
+	if err := s.auth(ctx, permissions.ManageRepos, repoArn("*")); err != nil {
 		return nil, err
 	}
 
 	// create
-	err = s.meta.CreateRepo(req.GetRepoId(), index.DefaultBranch)
+	err := s.meta.CreateRepo(req.GetRepoId(), index.DefaultBranch)
 	if err != nil {
 		return nil, err // TODO: is this really what we want to do??
 	}
@@ -94,12 +67,11 @@ func (s *Server) CreateRepo(ctx context.Context, req *service.CreateRepoRequest)
 }
 
 func (s *Server) DeleteRepo(ctx context.Context, req *service.DeleteRepoRequest) (*service.DeleteRepoResponse, error) {
-	_, err := s.auth(req, permissions.ManageRepos, repoArn("*"))
-	if err != nil {
+	if err := s.auth(ctx, permissions.ManageRepos, repoArn("*")); err != nil {
 		return nil, err
 	}
 	// delete
-	err = s.meta.DeleteRepo(req.GetRepoId())
+	err := s.meta.DeleteRepo(req.GetRepoId())
 	if err != nil {
 		return nil, err // TODO: is this really what we want to do??
 	}
@@ -107,8 +79,7 @@ func (s *Server) DeleteRepo(ctx context.Context, req *service.DeleteRepoRequest)
 }
 
 func (s *Server) ListRepos(ctx context.Context, req *service.ListReposRequest) (*service.ListReposResponse, error) {
-	_, err := s.auth(req, permissions.ReadRepo, repoArn("*"))
-	if err != nil {
+	if err := s.auth(ctx, permissions.ReadRepo, repoArn("*")); err != nil {
 		return nil, err
 	}
 
@@ -167,6 +138,26 @@ func (s *Server) Download(ctx context.Context, req *service.DownloadRequest) (*s
 	panic("implement me")
 }
 
+func (s *Server) Commit(context.Context, *service.CommitRequest) (*service.CommitResponse, error) {
+	panic("implement me")
+}
+
+func (s *Server) Diff(context.Context, *service.DiffRequest) (*service.DiffResponse, error) {
+	panic("implement me")
+}
+
+func (s *Server) Checkout(context.Context, *service.CheckoutRequest) (*service.CheckoutResponse, error) {
+	panic("implement me")
+}
+
+func (s *Server) Reset(context.Context, *service.ResetRequest) (*service.ResetResponse, error) {
+	panic("implement me")
+}
+
+func (s *Server) Merge(context.Context, *service.MergeRequest) (*service.MergeResponse, error) {
+	panic("implement me")
+}
+
 func (s *Server) CreateUser(ctx context.Context, req *service.CreateUserRequest) (*service.CreateUserResponse, error) {
 	panic("implement me")
 }
@@ -212,15 +203,21 @@ func (s *Server) Listen(addr string) error {
 	if err != nil {
 		return err
 	}
-	grpcServer := grpc.NewServer(grpc.UnaryInterceptor(func(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (resp interface{}, err error) {
-		// authenticate first
-		md, hasMd := metadata.FromIncomingContext(ctx)
-		x := md.Get("access_key")
-		fmt.Printf("GOT METADATA: %v (%+v) %s", hasMd, md, x)
+	accessKeyAuthenticator := KeyAuthenticator(s.authService)
+	grpcServer := grpc.NewServer(
 
-		resp, err = handler(ctx, req)
-		return
-	}))
+		// pass in a list of unary server interceptors, i.e. the grpc version of middleware
+		grpc.UnaryInterceptor(grpc_middleware.ChainUnaryServer(
+			LoggingUnaryServerInterceptor(log.WithField("service", "api")),
+			AuthenticationUnaryServerInterceptor(accessKeyAuthenticator),
+		)),
+
+		// another set of middleware for streaming calls
+		grpc.StreamInterceptor(grpc_middleware.ChainStreamServer(
+			LoggingStreamServerInterceptor(log.WithField("service", "api")),
+			AuthenticationStreamServerInterceptor(accessKeyAuthenticator),
+		)),
+	)
 	service.RegisterAPIServerServer(grpcServer, s)
 	if err := grpcServer.Serve(lis); err != nil {
 		return err
