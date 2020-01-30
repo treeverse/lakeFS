@@ -194,8 +194,8 @@ func buildPath(host, bareDomain, path string) string {
 		return path
 	} else {
 		if str.HasSuffix(host, bareDomain) {
-			prePath := host[:len(host)-len(bareDomain)]
-			return prePath + "/" + path
+			prePath := host[:len(host)-len(bareDomain)-1]
+			return "/" + prePath + path
 		} else { // bareDomain is not prefix of the path - how did we get here???
 			log.WithFields(log.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
 			return ""
