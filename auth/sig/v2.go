@@ -163,7 +163,10 @@ func canonicalResources(query url.Values, authPath string) string {
 		for _, r := range interestingResources { // the resulting array will be sorted by resource name, because interesting resources array is sorted
 			val, ok := lowercaseQuery[r]
 			if ok {
-				newValue := r + "=" + str.Join(val, ",")
+				newValue := r
+				if len(str.Join(val, "")) > 0 {
+					newValue += "=" + str.Join(val, ",")
+				}
 				foundResources = append(foundResources, newValue)
 			}
 		}
@@ -183,6 +186,7 @@ func canonicalString(method string, query url.Values, path string, headers http.
 }
 
 func signCanonicalString(msg string, signature []byte) (digest []byte) {
+	fmt.Print(msg)
 	h := hmac.New(sha1.New, []byte(signature))
 	h.Write([]byte(msg))
 	digest = h.Sum(nil)
@@ -242,7 +246,6 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 	*/
 	path := buildPath(a.r.Host, bareDomain, a.r.URL.Path)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
-	fmt.Print(stringToSigh, "\n")
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
 		return ErrBadSignature
