@@ -244,7 +244,7 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 			- path of the object
 			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
-	path := buildPath(a.r.Host, bareDomain, a.r.URL.RawPath)
+	path := buildPath(a.r.Host, bareDomain, a.r.URL.RawPath) // changed to RawPath
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
