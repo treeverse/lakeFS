@@ -48,7 +48,7 @@ func init() {
 			temp_map[word] = true
 		}
 	}
-	for key, _ := range temp_map {
+	for key := range temp_map {
 		sort_array = append(sort_array, key)
 	}
 	sort.Strings(sort_array)
@@ -137,7 +137,7 @@ func canonicalStandardHeaders(headers http.Header) string {
 func canonicalCustomHeaders(headers http.Header) string {
 	var returnStr string
 	var foundKeys []string
-	for key, _ := range headers {
+	for key := range headers {
 		if str.HasPrefix(str.ToLower(key), "x-amz-") {
 			foundKeys = append(foundKeys, key)
 		}
@@ -244,7 +244,7 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 			- path of the object
 			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
-	path := buildPath(a.r.Host, bareDomain, a.r.URL.Path)
+	path := buildPath(a.r.Host, bareDomain, a.r.URL.RawPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
