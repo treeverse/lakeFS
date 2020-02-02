@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"github.com/treeverse/lakefs/block"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/index"
 	"net/http"
 	"net/http/pprof"
 	"strings"
@@ -20,10 +20,6 @@ import (
 
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
-)
-
-const (
-	EnvVarAccessKeyId = "AWS_ACCESS_KEY_ID"
 )
 
 type ServerContext struct {
