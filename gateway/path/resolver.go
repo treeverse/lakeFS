@@ -14,8 +14,8 @@ const (
 
 	CreateRepoMatch = "{repo:[^\\/]+}"
 
-	RepoMatch   = "{repo:[a-z0-9\\-]+}"
-	RepoReMatch = "(?P<repo>[a-z0-9\\-]+)"
+	RepoMatch   = "{repo:[a-zA-Z0-9\\-]+}"
+	RepoReMatch = "(?P<repo>[a-zA-Z0-9\\-]+)"
 
 	PathMatch   = "{path:.*}"
 	PathReMatch = "(?P<path>.*)"

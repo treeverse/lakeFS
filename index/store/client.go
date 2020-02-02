@@ -61,13 +61,18 @@ func (c *KVClientOperations) DeleteRepo(repoId string) error {
 		SubspaceEntries,
 		SubspaceObjects,
 		SubspaceRefCounts,
-		SubspaceRepos,
 	}
+
 	for _, ns := range namespaces {
-		err := c.query.Delete(ns, db.CompositeStrings(repoId))
+		err := c.query.ClearChildren(ns, db.CompositeStrings(repoId))
 		if err != nil {
 			return err
 		}
+	}
+
+	err := c.query.Delete(SubspaceRepos, db.CompositeStrings(repoId))
+	if err != nil {
+		return err
 	}
 	return nil
 }
