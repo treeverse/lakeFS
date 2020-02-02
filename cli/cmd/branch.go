@@ -1,22 +1,15 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+
+	"golang.org/x/xerrors"
+
+	"github.com/jedib0t/go-pretty/table"
+
+	"github.com/treeverse/lakefs/api/service"
 
 	"github.com/spf13/cobra"
 )
@@ -24,28 +17,112 @@ import (
 // branchCmd represents the branch command
 var branchCmd = &cobra.Command{
 	Use:   "branch",
-	Short: "manage branches within a repository",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "create and manage branches within a repository",
+	Long:  `Create delete and list branches within a lakeFS repository`,
 	Run: func(cmd *cobra.Command, args []string) {
 		fmt.Println("branch called")
 	},
 }
 
+var branchListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list branches in a repository",
+	Args:  cobra.ExactArgs(0),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+		repo, _ := cmd.Flags().GetString("repo")
+		response, err := client.ListBranches(context.Background(), &service.ListBranchesRequest{
+			RepoId: repo,
+		})
+		if err != nil {
+			return err
+		}
+
+		// generate table
+		t := table.NewWriter()
+		t.SetOutputMirror(os.Stdout)
+		t.AppendHeader(table.Row{"Branch Name", "Commit ID"})
+		for _, branch := range response.GetBranches() {
+			t.AppendRow([]interface{}{branch.GetName(), branch.GetCommitId()})
+		}
+		t.Render()
+
+		// done
+		return nil
+	},
+}
+
+var branchCreateCmd = &cobra.Command{
+	Use:   "create",
+	Short: "create a new branch in a repository",
+	Args:  cobra.ExactArgs(0),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+		repo, _ := cmd.Flags().GetString("repo")
+		sourceBranchName, _ := cmd.Flags().GetString("source")
+		branchName, _ := cmd.Flags().GetString("branch")
+		sourceBranch, err := client.GetBranch(context.Background(), &service.GetBranchRequest{
+			RepoId:     repo,
+			BranchName: sourceBranchName,
+		})
+		if err != nil {
+			return xerrors.Errorf("could not get source branch: %w", err)
+		}
+		fmt.Printf("got source branch '%s', using commit '%s'\n",
+			sourceBranchName, sourceBranch.GetBranch().GetCommitId())
+		_, err = client.CreateBranch(context.Background(), &service.CreateBranchRequest{
+			RepoId:     repo,
+			BranchName: branchName,
+			CommitId:   sourceBranch.GetBranch().GetCommitId(),
+		})
+		return err
+	},
+}
+
+var branchDeleteCmd = &cobra.Command{
+	Use:   "delete",
+	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
+var branchShowCmd = &cobra.Command{
+	Use:   "show",
+	Short: "show branch metadata",
+	Args:  cobra.ExactArgs(0),
+	Run: func(cmd *cobra.Command, args []string) {
+
+	},
+}
+
 func init() {
 	rootCmd.AddCommand(branchCmd)
+	branchCmd.AddCommand(branchCreateCmd)
+	branchCmd.AddCommand(branchDeleteCmd)
+	branchCmd.AddCommand(branchListCmd)
+	branchCmd.AddCommand(branchShowCmd)
 
-	// Here you will define your flags and configuration settings.
+	// for the "branch" command
+	branchCmd.PersistentFlags().StringP("repo", "r", "", "repository name")
+	_ = cobra.MarkFlagRequired(branchCmd.PersistentFlags(), "repo")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// branchCmd.PersistentFlags().String("foo", "", "A help for foo")
+	branchCreateCmd.Flags().StringP("branch", "b", "", "branch name")
+	branchCreateCmd.Flags().StringP("source", "s", "", "source branch name")
+	_ = cobra.MarkFlagRequired(branchCreateCmd.Flags(), "branch")
+	_ = cobra.MarkFlagRequired(branchCreateCmd.Flags(), "from")
 
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// branchCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	branchDeleteCmd.Flags().StringP("branch", "b", "", "branch name")
+	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
+	_ = cobra.MarkFlagRequired(branchDeleteCmd.Flags(), "branch")
+
+	branchShowCmd.Flags().StringP("branch", "b", "", "branch name")
+	_ = cobra.MarkFlagRequired(branchShowCmd.Flags(), "branch")
 }
