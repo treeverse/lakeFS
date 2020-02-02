@@ -1,6 +1,9 @@
 syntax = "proto3";
 
+
 package service;
+
+message Empty {}
 
 message CreateRepoRequest {
     string repoId = 1;
@@ -35,35 +38,37 @@ message GetRepoResponse {
 }
 
 message CreateBranchRequest {
-
+    string repoId = 1;
+    string branchName = 2;
+    string commitId = 3;
 }
 
-message CreateBranchResponse {
-
-}
 
 message DeleteBranchRequest {
 
 }
 
-message DeleteBranchResponse {
-
-}
 
 message ListBranchesRequest {
+    string repoId = 1;
+}
 
+message Branch {
+    string name = 1;
+    string commitId = 2;
 }
 
 message ListBranchesResponse {
-
+    repeated Branch branches = 1;
 }
 
 message GetBranchRequest {
-
+    string repoId = 1;
+    string branchName = 2;
 }
 
 message GetBranchResponse {
-
+    Branch branch = 1;
 }
 
 message ListEntriesRequest {
@@ -235,8 +240,8 @@ service APIServer {
     rpc GetRepo(GetRepoRequest) returns (GetRepoResponse);
 
     // branch level requests
-    rpc CreateBranch(CreateBranchRequest) returns (CreateBranchResponse);
-    rpc DeleteBranch(DeleteBranchRequest) returns (DeleteBranchResponse);
+    rpc CreateBranch(CreateBranchRequest) returns (Empty);
+    rpc DeleteBranch(DeleteBranchRequest) returns (Empty);
     rpc ListBranches(ListBranchesRequest) returns (ListBranchesResponse);
     rpc GetBranch(GetBranchRequest) returns (GetBranchResponse);
 
