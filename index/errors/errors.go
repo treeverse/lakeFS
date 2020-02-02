@@ -8,4 +8,8 @@ var (
 	ErrMultipartPathMismatch      = xerrors.New("invalid path for multipart upload")
 	ErrMultipartInvalidPartNumber = xerrors.New("invalid part number for multipart upload")
 	ErrMultipartInvalidPartETag   = xerrors.New("invalid ETag for multipart upload")
+
+	//validation errors
+	ErrInvalid           = xerrors.New("validation error")
+	ErrInvalidBucketName = xerrors.Errorf("bucket : %w", ErrInvalid)
 )
