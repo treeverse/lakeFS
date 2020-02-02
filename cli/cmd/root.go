@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/treeverse/lakefs/api"
+
+	"github.com/treeverse/lakefs/api/service"
+
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -15,14 +19,14 @@ commands:
 lakectl config init
 
 lakectl repo list
-lakectl repo create foobar
-lakectl repo delete foobar (confirm)
-lakectl repo info foobar
+lakectl repo create --repo foobar
+lakectl repo delete --repo foobar (confirm)
+lakectl repo show --repo foobar
 
-lakectl branch create foorbar feature-new
-lakectl branch delete foobar feature-new
-lakectl branch list foobar
-lakectl branch info foobar master
+lakectl branch create --repo foorbar --branch feature-new --source master
+lakectl branch delete --repo foobar --branch feature-new
+lakectl branch list --repo foobar
+lakectl branch show --repo foobar --branch master
 
 lakectl fs ls foobar master collections/ [--from "collections/some_key"]
 lakectl fs stat foobar master collections/some_key
@@ -49,6 +53,11 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	// Uncomment the following line if your bare application
 	// has an action associated with it:
 	//	Run: func(cmd *cobra.Command, args []string) { },
+}
+
+func getClient() (service.APIServerClient, error) {
+	// TODO: pass config to setup client and credentials
+	return api.NewClient("localhost:8001", "AKIAJKLO4PDKEBQUDHYQ", "aQ+afKWc5IPG+r0P3HVmPSjQN7ehyxwJw/wp9AIz")
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

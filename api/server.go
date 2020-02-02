@@ -31,6 +31,8 @@ func NewServer(meta index.Index, authService auth.Service) *Server {
 	return &Server{meta, authService}
 }
 
+var empty = &service.Empty{}
+
 func (s *Server) auth(ctx context.Context, perm permissions.Permission, arn string) error {
 	user := getUser(ctx)
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
@@ -102,20 +104,43 @@ func (s *Server) GetRepo(ctx context.Context, req *service.GetRepoRequest) (*ser
 	panic("implement me")
 }
 
-func (s *Server) CreateBranch(ctx context.Context, req *service.CreateBranchRequest) (*service.CreateBranchResponse, error) {
-	panic("implement me")
+func (s *Server) CreateBranch(ctx context.Context, req *service.CreateBranchRequest) (*service.Empty, error) {
+	err := s.meta.CreateBranch(req.GetRepoId(), req.GetBranchName(), req.GetCommitId())
+	return empty, err
 }
 
-func (s *Server) DeleteBranch(ctx context.Context, req *service.DeleteBranchRequest) (*service.DeleteBranchResponse, error) {
+func (s *Server) DeleteBranch(ctx context.Context, req *service.DeleteBranchRequest) (*service.Empty, error) {
 	panic("implement me")
 }
 
 func (s *Server) ListBranches(ctx context.Context, req *service.ListBranchesRequest) (*service.ListBranchesResponse, error) {
-	panic("implement me")
+	branches, err := s.meta.ListBranches(req.GetRepoId(), -1)
+	if err != nil {
+		return nil, err
+	}
+	resp := make([]*service.Branch, len(branches))
+	for i, branch := range branches {
+		resp[i] = &service.Branch{
+			Name:     branch.GetName(),
+			CommitId: branch.GetCommit(),
+		}
+	}
+	return &service.ListBranchesResponse{
+		Branches: resp,
+	}, nil
 }
 
 func (s *Server) GetBranch(ctx context.Context, req *service.GetBranchRequest) (*service.GetBranchResponse, error) {
-	panic("implement me")
+	branch, err := s.meta.GetBranch(req.GetRepoId(), req.GetBranchName())
+	if err != nil {
+		return nil, err
+	}
+	return &service.GetBranchResponse{
+		Branch: &service.Branch{
+			Name:     branch.GetName(),
+			CommitId: branch.GetCommit(),
+		},
+	}, nil
 }
 
 func (s *Server) ListEntries(ctx context.Context, req *service.ListEntriesRequest) (*service.ListEntriesResponse, error) {
