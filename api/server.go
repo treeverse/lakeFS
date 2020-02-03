@@ -87,7 +87,7 @@ func (s *Server) CreateRepo(ctx context.Context, req *service.CreateRepoRequest)
 	return &service.CreateRepoResponse{}, nil
 }
 
-func (s *Server) DeleteRepo(ctx context.Context, req *service.DeleteRepoRequest) (*service.DeleteRepoResponse, error) {
+func (s *Server) DeleteRepo(ctx context.Context, req *service.DeleteRepoRequest) (*service.Empty, error) {
 	if err := s.auth(ctx, permissions.ManageRepos, repoArn("*")); err != nil {
 		return nil, err
 	}
@@ -96,7 +96,7 @@ func (s *Server) DeleteRepo(ctx context.Context, req *service.DeleteRepoRequest)
 	if err != nil {
 		return nil, err // TODO: is this really what we want to do??
 	}
-	return &service.DeleteRepoResponse{}, nil
+	return empty, nil
 }
 
 func (s *Server) ListRepos(ctx context.Context, req *service.ListReposRequest) (*service.ListReposResponse, error) {
@@ -129,7 +129,10 @@ func (s *Server) CreateBranch(ctx context.Context, req *service.CreateBranchRequ
 }
 
 func (s *Server) DeleteBranch(ctx context.Context, req *service.DeleteBranchRequest) (*service.Empty, error) {
-	panic("implement me")
+	repo := req.GetRepoId()
+	branch := req.GetBranchName()
+	err := s.meta.DeleteBranch(repo, branch)
+	return empty, err
 }
 
 func (s *Server) ListBranches(ctx context.Context, req *service.ListBranchesRequest) (*service.ListBranchesResponse, error) {

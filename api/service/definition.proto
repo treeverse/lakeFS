@@ -17,9 +17,6 @@ message DeleteRepoRequest {
     string repoId = 1;
 }
 
-message DeleteRepoResponse {
-
-}
 
 message ListReposRequest {
 
@@ -45,7 +42,8 @@ message CreateBranchRequest {
 
 
 message DeleteBranchRequest {
-
+    string repoId = 1;
+    string branchName = 2;
 }
 
 
@@ -235,7 +233,7 @@ message DeleteGroupResponse {
 service APIServer {
     // repo level requests
     rpc CreateRepo(CreateRepoRequest) returns (CreateRepoResponse);
-    rpc DeleteRepo(DeleteRepoRequest) returns (DeleteRepoResponse);
+    rpc DeleteRepo(DeleteRepoRequest) returns (Empty);
     rpc ListRepos(ListReposRequest) returns (ListReposResponse);
     rpc GetRepo(GetRepoRequest) returns (GetRepoResponse);
 
