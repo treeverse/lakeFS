@@ -186,7 +186,6 @@ func canonicalString(method string, query url.Values, path string, headers http.
 }
 
 func signCanonicalString(msg string, signature []byte) (digest []byte) {
-	fmt.Print(msg)
 	h := hmac.New(sha1.New, []byte(signature))
 	h.Write([]byte(msg))
 	digest = h.Sum(nil)
@@ -205,25 +204,7 @@ func buildPath(host, bareDomain, path string) string {
 			return ""
 		}
 	}
-	//hostParts := str.Split(host, ".")
-	//var i int
-	//// location of 's3' in host string.
-	//for i = 0; i < len(hostParts); i++ {
-	//	if hostParts[i] == "s3" {
-	//		break
-	//	}
-	//}
-	//if i == 0 {
-	//	return path
-	//} else {
-	//	if i < len(hostParts) {
-	//		bucketName := str.Join(hostParts[:i], "/") // handle case where bucket name contain periods
-	//		return bucketName + "/" + path
-	//	} else { // host does not contain 's3'
-	//		log.Error("Host " + host + " does not contain 's3'")
-	//		return path
-	//	}
-	//}
+
 }
 
 func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error {
@@ -244,7 +225,8 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 			- path of the object
 			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 	*/
-	path := buildPath(a.r.Host, bareDomain, a.r.URL.RawPath) // changed to RawPath
+	patchedPath := str.ReplaceAll(a.r.URL.Path, "=", "%3D")
+	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
