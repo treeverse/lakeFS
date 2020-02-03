@@ -16,34 +16,34 @@ import (
 
 /*
 commands:
-lakectl config init
+lakectl config init [--path]
 
 lakectl repo list
-lakectl repo create --repo foobar
-lakectl repo delete --repo foobar (confirm)
-lakectl repo show --repo foobar
+lakectl repo create lakefs://myrepo
+lakectl repo delete lakefs://myrepo (confirm)
+lakectl repo show lakefs://myrepo
 
-lakectl branch create --repo foorbar --branch feature-new --source master
-lakectl branch delete --repo foobar --branch feature-new
-lakectl branch list --repo foobar
-lakectl branch show --repo foobar --branch master
+lakectl branch list lakefs://myrepo
+lakectl branch create lakefs://myrepo@feature-new --source lakefs://myrepo@master
+lakectl branch show lakefs://myrepo@feature-new
+lakectl branch delete lakefs://myrepo@feature-new
 
-lakectl fs ls foobar master collections/ [--from "collections/some_key"]
-lakectl fs stat foobar master collections/some_key
-lakectl fs cat foobar master collections/some_key
-lakectl fs upload /path/to/local/file foobar master collections/some_key
-lakectl fs rm foobar master collections/some_key
+lakectl fs ls lakefs://myrepo@master/collections/ [--from "collections/file.csv"]
+lakectl fs stat lakefs://myrepo@master/collections/file.csv
+lakectl fs cat lakefs://myrepo@master/collections/file.csv
+lakectl fs upload /path/to/local/file lakefs://myrepo@master/collections/file.csv
+lakectl fs rm lakefs://myrepo@master/collections/file.csv [--recursive]
 
-lakectl commit foobar master -m "commit message"
-lakectl diff foobar master other-branch --path /
-lakectl checkout foobar master --path collections/some_key
-lakectl reset foobar master
-lakectl merge foobar --source my-branch --destination master
+lakectl commit lakefs://myrepo@master --message "commit message"
+lakectl diff lakefs://myrepo@master other-branch [--path /]
+lakectl checkout lakefs://myrepo@master/collections/file.csv
+lakectl reset lakefs://myrepo@master
+lakectl merge lakefs://myrepo@my-branch lakefs://myrepo@master
 */
 
 var cfgFile string
 
-// rootCmd represents the base command when called without any subcommands
+// rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
 	Use:   "lakectl",
 	Short: "A cli tool to explore manage and work withl lakeFS",
