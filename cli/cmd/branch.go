@@ -89,8 +89,18 @@ var branchDeleteCmd = &cobra.Command{
 	Use:   "delete",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
 	Args:  cobra.ExactArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+		repo, _ := cmd.Flags().GetString("repo")
+		branchName, _ := cmd.Flags().GetString("branch")
+		_, err = client.DeleteBranch(context.Background(), &service.DeleteBranchRequest{
+			RepoId:     repo,
+			BranchName: branchName,
+		})
+		return err
 	},
 }
 
