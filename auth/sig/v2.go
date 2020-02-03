@@ -209,21 +209,25 @@ func buildPath(host, bareDomain, path string) string {
 
 func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error {
 	/*
-		s3 sigV2 implementation:
-		the s3 signature  is somewhat different than general aws signature implementation.
-		in boto3 configuration their value is 's3' and 's3v4' respectively, while the general aws signatures are
-		'v2' and 'v4'.
-		in 2020, the GO aws sdk does not inplement 's3' signature, So i will "translate" it from boto3.
-		source is class botocore.auth.HmacV1Auth
-		steps in building the string to be signed:
-		1. create initial string, with uppercase http method + '\n'
-		2. collect all required headers(in order):
-			- standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
-			empty line '\n'. sorted and stringified
-			- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
-			are joined with ',' seperator. sorted and stringified.
-			- path of the object
-			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
+			s3 sigV2 implementation:
+			the s3 signature  is somewhat different than general aws signature implementation.
+			in boto3 configuration their value is 's3' and 's3v4' respectively, while the general aws signatures are
+			'v2' and 'v4'.
+			in 2020, the GO aws sdk does not inplement 's3' signature, So i will "translate" it from boto3.
+			source is class botocore.auth.HmacV1Auth
+			steps in building the string to be signed:
+			1. create initial string, with uppercase http method + '\n'
+			2. collect all required headers(in order):
+				- standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
+				empty line '\n'. sorted and stringified
+				- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
+				are joined with ',' seperator. sorted and stringified.
+				- path of the object
+				- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
+		/*
+		From my investigation, there is a difference between the way url.pathEscape works and what AWS expect.
+		the problem was manifested in the '=' character. So I did this string replacement. If we find this problem in other
+		corners of the system - we may need a more systematic solution.
 	*/
 	patchedPath := str.ReplaceAll(a.r.URL.Path, "=", "%3D")
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
