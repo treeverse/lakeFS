@@ -4,6 +4,9 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/treeverse/lakefs/uri"
 
 	"golang.org/x/xerrors"
 
@@ -25,17 +28,30 @@ var branchCmd = &cobra.Command{
 }
 
 var branchListCmd = &cobra.Command{
-	Use:   "list",
-	Short: "list branches in a repository",
-	Args:  cobra.ExactArgs(0),
+	Use:     "list [repository uri]",
+	Short:   "list branches in a repository",
+	Example: "lakectl branch list lakefs://myrepo",
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("expected 1 argument")
+		}
+		u, err := uri.Parse(args[0])
+		if err != nil {
+			return err
+		}
+		if !u.IsRepository() {
+			return fmt.Errorf("expected a repository URI")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		repo, _ := cmd.Flags().GetString("repo")
+		u := uri.Must(uri.Parse(args[0]))
 		response, err := client.ListBranches(context.Background(), &service.ListBranchesRequest{
-			RepoId: repo,
+			RepoId: u.Repository,
 		})
 		if err != nil {
 			return err
@@ -56,29 +72,49 @@ var branchListCmd = &cobra.Command{
 }
 
 var branchCreateCmd = &cobra.Command{
-	Use:   "create",
+	Use:   "create [branch uri]",
 	Short: "create a new branch in a repository",
-	Args:  cobra.ExactArgs(0),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("expected 1 argument")
+		}
+		u, err := uri.Parse(args[0])
+		if err != nil {
+			return err
+		}
+		if !u.IsRefspec() {
+			return fmt.Errorf("expected a branch URI")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		repo, _ := cmd.Flags().GetString("repo")
-		sourceBranchName, _ := cmd.Flags().GetString("source")
-		branchName, _ := cmd.Flags().GetString("branch")
+		u := uri.Must(uri.Parse(args[0]))
+
+		sourceRawUri, _ := cmd.Flags().GetString("source")
+		suri, err := uri.Parse(sourceRawUri)
+		if err != nil {
+			return fmt.Errorf("failed to parse source URI: %s", err)
+		}
+		if !strings.EqualFold(suri.Repository, u.Repository) {
+			return fmt.Errorf("source branch must be in the same repository")
+		}
+
 		sourceBranch, err := client.GetBranch(context.Background(), &service.GetBranchRequest{
-			RepoId:     repo,
-			BranchName: sourceBranchName,
+			RepoId:     u.Repository,
+			BranchName: suri.Refspec,
 		})
 		if err != nil {
 			return xerrors.Errorf("could not get source branch: %w", err)
 		}
 		fmt.Printf("got source branch '%s', using commit '%s'\n",
-			sourceBranchName, sourceBranch.GetBranch().GetCommitId())
+			suri.Refspec, sourceBranch.GetBranch().GetCommitId())
 		_, err = client.CreateBranch(context.Background(), &service.CreateBranchRequest{
-			RepoId:     repo,
-			BranchName: branchName,
+			RepoId:     u.Repository,
+			BranchName: u.Refspec,
 			CommitId:   sourceBranch.GetBranch().GetCommitId(),
 		})
 		return err
@@ -86,30 +122,70 @@ var branchCreateCmd = &cobra.Command{
 }
 
 var branchDeleteCmd = &cobra.Command{
-	Use:   "delete",
+	Use:   "delete [branch uri]",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args:  cobra.ExactArgs(0),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("expected 1 argument")
+		}
+		u, err := uri.Parse(args[0])
+		if err != nil {
+			return err
+		}
+		if !u.IsRefspec() {
+			return fmt.Errorf("expected a branch URI")
+		}
+		return nil
+	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		sure, err := cmd.Flags().GetBool("sure")
+		if err != nil || !sure {
+			return fmt.Errorf("please confirm by passing the --sure | -y flag")
+		}
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		repo, _ := cmd.Flags().GetString("repo")
-		branchName, _ := cmd.Flags().GetString("branch")
+		u := uri.Must(uri.Parse(args[0]))
 		_, err = client.DeleteBranch(context.Background(), &service.DeleteBranchRequest{
-			RepoId:     repo,
-			BranchName: branchName,
+			RepoId:     u.Repository,
+			BranchName: u.Refspec,
 		})
 		return err
 	},
 }
 
 var branchShowCmd = &cobra.Command{
-	Use:   "show",
+	Use:   "show [branch uri]",
 	Short: "show branch metadata",
-	Args:  cobra.ExactArgs(0),
-	Run: func(cmd *cobra.Command, args []string) {
-
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != 1 {
+			return fmt.Errorf("expected 1 argument")
+		}
+		u, err := uri.Parse(args[0])
+		if err != nil {
+			return err
+		}
+		if !u.IsRefspec() {
+			return fmt.Errorf("expected a branch URI")
+		}
+		return nil
+	},
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+		u := uri.Must(uri.Parse(args[0]))
+		resp, err := client.GetBranch(context.Background(), &service.GetBranchRequest{
+			RepoId:     u.Repository,
+			BranchName: u.Refspec,
+		})
+		if err != nil {
+			return err
+		}
+		fmt.Printf("%s\t%s\n", resp.Branch.GetName(), resp.Branch.GetCommitId())
+		return nil
 	},
 }
 
@@ -120,19 +196,8 @@ func init() {
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
 
-	// for the "branch" command
-	branchCmd.PersistentFlags().StringP("repo", "r", "", "repository name")
-	_ = cobra.MarkFlagRequired(branchCmd.PersistentFlags(), "repo")
-
-	branchCreateCmd.Flags().StringP("branch", "b", "", "branch name")
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch name")
-	_ = cobra.MarkFlagRequired(branchCreateCmd.Flags(), "branch")
-	_ = cobra.MarkFlagRequired(branchCreateCmd.Flags(), "from")
+	_ = branchCreateCmd.MarkFlagRequired("source")
 
-	branchDeleteCmd.Flags().StringP("branch", "b", "", "branch name")
 	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
-	_ = cobra.MarkFlagRequired(branchDeleteCmd.Flags(), "branch")
-
-	branchShowCmd.Flags().StringP("branch", "b", "", "branch name")
-	_ = cobra.MarkFlagRequired(branchShowCmd.Flags(), "branch")
 }
