@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/api"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
@@ -147,9 +148,17 @@ func Run() {
 	// init authentication
 	authService := auth.NewKVAuthService(db)
 
+	region := "us-east-1"
+
+	// start grpc API
+	apiServer := api.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8001")
+	go func() {
+		panic(apiServer.Listen())
+	}()
+
 	// init gateway server
-	server := gateway.NewServer("us-east-1", meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
-	panic(server.Listen())
+	gatewayServer := gateway.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
+	panic(gatewayServer.Listen())
 }
 
 func keys() {
@@ -198,23 +207,6 @@ func tree(repoId, branch string) {
 	}
 }
 
-func runApi() {
-	setupLogger()
-	db, err := setupBadger()
-	if err != nil {
-		panic(err)
-	}
-
-	// init index
-	meta := index.NewKVIndex(store.NewKVStore(db))
-
-	// init authentication
-	authService := auth.NewKVAuthService(db)
-
-	s := api.NewServer(meta, authService)
-	s.Listen("localhost:8001")
-}
-
 func main() {
 	switch os.Args[1] {
 	case "run":
@@ -225,7 +217,5 @@ func main() {
 		keys()
 	case "tree":
 		tree(os.Args[2], os.Args[3])
-	case "api":
-		runApi()
 	}
 }

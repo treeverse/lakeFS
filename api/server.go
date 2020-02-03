@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/treeverse/lakefs/block"
+
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	log "github.com/sirupsen/logrus"
 
@@ -23,12 +25,29 @@ import (
 )
 
 type Server struct {
-	meta        index.Index
-	authService auth.Service
+	region           string
+	meta             index.Index
+	multipartManager index.MultipartManager
+	authService      auth.Service
+	blockStore       block.Adapter
+	listenAddr       string
 }
 
-func NewServer(meta index.Index, authService auth.Service) *Server {
-	return &Server{meta, authService}
+func NewServer(region string,
+	meta index.Index,
+	blockStore block.Adapter,
+	authService auth.Service,
+	multipartManager index.MultipartManager,
+	listenAddr string,
+) *Server {
+	return &Server{
+		region:           region,
+		meta:             meta,
+		multipartManager: multipartManager,
+		authService:      authService,
+		blockStore:       blockStore,
+		listenAddr:       listenAddr,
+	}
 }
 
 var empty = &service.Empty{}
@@ -223,8 +242,8 @@ func (s *Server) DeleteGroup(ctx context.Context, req *service.DeleteGroupReques
 	panic("implement me")
 }
 
-func (s *Server) Listen(addr string) error {
-	lis, err := net.Listen("tcp", addr)
+func (s *Server) Listen() error {
+	lis, err := net.Listen("tcp", s.listenAddr)
 	if err != nil {
 		return err
 	}
