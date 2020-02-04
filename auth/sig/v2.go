@@ -209,22 +209,23 @@ func buildPath(host, bareDomain, path string) string {
 
 func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error {
 	/*
-			s3 sigV2 implementation:
-			the s3 signature  is somewhat different than general aws signature implementation.
-			in boto3 configuration their value is 's3' and 's3v4' respectively, while the general aws signatures are
-			'v2' and 'v4'.
-			in 2020, the GO aws sdk does not inplement 's3' signature, So i will "translate" it from boto3.
-			source is class botocore.auth.HmacV1Auth
-			steps in building the string to be signed:
-			1. create initial string, with uppercase http method + '\n'
-			2. collect all required headers(in order):
-				- standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
-				empty line '\n'. sorted and stringified
-				- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
-				are joined with ',' seperator. sorted and stringified.
-				- path of the object
-				- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
-		/*
+		s3 sigV2 implementation:
+		the s3 signature  is somewhat different than general aws signature implementation.
+		in boto3 configuration their value is 's3' and 's3v4' respectively, while the general aws signatures are
+		'v2' and 'v4'.
+		in 2020, the GO aws sdk does not inplement 's3' signature, So i will "translate" it from boto3.
+		source is class botocore.auth.HmacV1Auth
+		steps in building the string to be signed:
+		1. create initial string, with uppercase http method + '\n'
+		2. collect all required headers(in order):
+			- standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
+			empty line '\n'. sorted and stringified
+			- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
+			are joined with ',' seperator. sorted and stringified.
+			- path of the object
+			- QSA(Query String Arguments) - query arguments are searched for "interesting Resources". */
+
+	/*
 		URI encoding requirements for aws signature are different from what GO does.
 		This logic is taken from https://docs.aws.amazon.com/AWSECommerceService/latest/DG/Query_QueryAuth.html
 		This replacements are necessary for Java. There is no description about GO, but I found the '=' needs treatment as well
