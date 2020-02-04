@@ -2,6 +2,7 @@ package index
 
 import (
 	"math/rand"
+	"regexp"
 	"time"
 
 	"github.com/treeverse/lakefs/index/errors"
@@ -464,8 +465,15 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 	return err
 }
 
+func isValidRepoId(repoId string) bool {
+	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]{2,62}$`).MatchString(repoId)
+}
+
 func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
+	if !isValidRepoId(repoId) {
+		return errors.ErrInvalidBucketName
+	}
 	creationDate := time.Now().Unix()
 
 	repo := &model.Repo{
