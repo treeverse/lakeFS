@@ -16,7 +16,11 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"os"
+
+	"github.com/mitchellh/go-homedir"
+
+	"github.com/spf13/viper"
 
 	"github.com/spf13/cobra"
 )
@@ -31,8 +35,49 @@ and usage of using your command. For example:
 Cobra is a CLI library for Go that empowers applications.
 This application is a tool to generate the needed files
 to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("config called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// create directory if it doesn't exist
+		configDir, _ := homedir.Expand(DefaultConfigFileDirectory)
+		configFile, _ := homedir.Expand(DefaultConfigFilePath)
+		err := os.MkdirAll(configDir, 0755)
+		if err != nil {
+			return err
+		}
+
+		f, err := os.OpenFile(configFile, os.O_WRONLY|os.O_CREATE, 0644)
+		if err != nil {
+			return err
+		}
+		err = f.Close()
+		if err != nil {
+			return err
+		}
+
+		// write config
+		accessKeyId, err := prompt("access key id")
+		if err != nil {
+			return err
+		}
+		viper.SetDefault(ConfigAccessKeyId, accessKeyId)
+
+		secretAccessKey, err := prompt("secret access key")
+		if err != nil {
+			return err
+		}
+		viper.SetDefault(ConfigSecretAccessKey, secretAccessKey)
+
+		endpointUrl, err := promptUrl("endpoint URL")
+		if err != nil {
+			return err
+		}
+		viper.SetDefault(ConfigServerEndpointUrl, endpointUrl)
+
+		err = viper.WriteConfigAs(configFile)
+		if err != nil {
+			return err
+		}
+		return nil
+
 	},
 }
 
