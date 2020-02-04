@@ -1,0 +1,86 @@
+consumes:
+- application/json
+info:
+  description: lakeFS HTTP API
+  title: lakeFS API
+  version: 0.1.0
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"
+
+
+definitions:
+  repository:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+  refspec:
+    type: object
+    required:
+      - id
+    properties:
+      id:
+        type: string
+      commit_id:
+        type: string
+  object:
+    type: object
+    required:
+      - path
+      - type
+    properties:
+      path:
+        type: string
+      type:
+        type: string
+  error:
+    type: object
+    properties:
+      message:
+        description: short message explaining the error
+        type: string
+
+paths:
+
+  /repositories:
+    get:
+      summary: Returns a list of all repositories
+      responses:
+        200:
+          description: repository list
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/repository"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /repositories/{repositoryId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+    get:
+      summary: Returns a repository for the given ID
+      responses:
+        200:
+          description: repository
+          schema:
+            $ref: "#/definitions/repository"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
