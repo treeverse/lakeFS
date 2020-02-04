@@ -126,8 +126,19 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 
 	_, err := kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		var err error
+		//should not be deleted
 		err = ops.WriteRepo(&model.Repo{
 			RepoId:             "repo1",
+			CreationDate:       now,
+			DefaultBranch:      index.DefaultBranch,
+			PartialCommitRatio: index.DefaultPartialCommitRatio,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		// Should be deleted
+		err = ops.WriteRepo(&model.Repo{
+			RepoId:             "repo1asprefix",
 			CreationDate:       now,
 			DefaultBranch:      index.DefaultBranch,
 			PartialCommitRatio: index.DefaultPartialCommitRatio,
@@ -158,9 +169,69 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected repo to be deleted, instead got error: %v", err)
 		}
+		//check prefix
+		_, err = ops.ReadRepo("repo1asprefix")
+		if xerrors.Is(err, db.ErrNotFound) {
+			t.Fatalf("did not expect repo to be deleted, instead got error: %v", err)
+		}
 		return nil, nil
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestKVClientOperations_WriteRepo(t *testing.T) {
+	kv, close := GetIndexStore(t)
+	defer close()
+
+	now := time.Now().Unix()
+
+	_, err := kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+		var err error
+		err = ops.WriteRepo(&model.Repo{
+			RepoId:             "repo1",
+			CreationDate:       now,
+			DefaultBranch:      index.DefaultBranch,
+			PartialCommitRatio: index.DefaultPartialCommitRatio,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		return nil, err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// expect error on creating existing bucket
+	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+		var err error
+		err = ops.WriteRepo(&model.Repo{
+			RepoId:             "repo1",
+			CreationDate:       now,
+			DefaultBranch:      index.DefaultBranch,
+			PartialCommitRatio: index.DefaultPartialCommitRatio,
+		})
+		if err == nil {
+			t.Errorf("expected to get error when creating existing bucket")
+		}
+		return nil, err
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+		_, err := ops.ReadRepo("repo1")
+		if xerrors.Is(err, db.ErrNotFound) {
+			t.Fatalf("expected to read created repo, instead got error: %v", err)
+		}
+		return nil, nil
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 }
