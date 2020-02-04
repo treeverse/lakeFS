@@ -150,10 +150,10 @@ func Run() {
 
 	region := "us-east-1"
 
-	// start grpc API
-	apiServer := api.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8001")
+	// start API server
+	apiServer := api.NewServer(region, meta, mpu, blockStore, authService)
 	go func() {
-		panic(apiServer.Listen())
+		panic(apiServer.Serve("0.0.0.0", 8001))
 	}()
 
 	// init gateway server
