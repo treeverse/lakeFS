@@ -1,18 +1,17 @@
 package cmd
 
 import (
-	"context"
 	"fmt"
 	"os"
 	"strings"
+
+	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/treeverse/lakefs/uri"
 
 	"golang.org/x/xerrors"
 
 	"github.com/jedib0t/go-pretty/table"
-
-	"github.com/treeverse/lakefs/api/service"
 
 	"github.com/spf13/cobra"
 )
@@ -42,14 +41,12 @@ var branchListCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		u := uri.Must(uri.Parse(args[0]))
-		response, err := client.ListBranches(context.Background(), &service.ListBranchesRequest{
-			RepoId: u.Repository,
-		})
+		response, err := client.ListBranches(u.Repository)
 		if err != nil {
 			return err
 		}
@@ -58,8 +55,8 @@ var branchListCmd = &cobra.Command{
 		t := table.NewWriter()
 		t.SetOutputMirror(os.Stdout)
 		t.AppendHeader(table.Row{"Branch Name", "Commit ID"})
-		for _, branch := range response.GetBranches() {
-			t.AppendRow([]interface{}{branch.GetName(), branch.GetCommitId()})
+		for _, branch := range response {
+			t.AppendRow([]interface{}{*branch.ID, *branch.CommitID})
 		}
 		t.Render()
 
@@ -85,12 +82,11 @@ var branchCreateCmd = &cobra.Command{
 		return nil
 	},
 	RunE: func(cmd *cobra.Command, args []string) error {
+		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		u := uri.Must(uri.Parse(args[0]))
-
 		sourceRawUri, _ := cmd.Flags().GetString("source")
 		suri, err := uri.Parse(sourceRawUri)
 		if err != nil {
@@ -100,19 +96,15 @@ var branchCreateCmd = &cobra.Command{
 			return fmt.Errorf("source branch must be in the same repository")
 		}
 
-		sourceBranch, err := client.GetBranch(context.Background(), &service.GetBranchRequest{
-			RepoId:     u.Repository,
-			BranchName: suri.Refspec,
-		})
+		sourceBranch, err := client.GetBranch(u.Repository, suri.Refspec)
 		if err != nil {
 			return xerrors.Errorf("could not get source branch: %w", err)
 		}
 		fmt.Printf("got source branch '%s', using commit '%s'\n",
-			suri.Refspec, sourceBranch.GetBranch().GetCommitId())
-		_, err = client.CreateBranch(context.Background(), &service.CreateBranchRequest{
-			RepoId:     u.Repository,
-			BranchName: u.Refspec,
-			CommitId:   sourceBranch.GetBranch().GetCommitId(),
+			suri.Refspec, *sourceBranch.CommitID)
+		err = client.CreateBranch(u.Repository, u.Refspec, &models.Refspec{
+			CommitID: sourceBranch.CommitID,
+			ID:       &u.Refspec,
 		})
 		return err
 	},
@@ -137,17 +129,17 @@ var branchDeleteCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		sure, err := cmd.Flags().GetBool("sure")
 		if err != nil || !sure {
-			return fmt.Errorf("please confirm by passing the --sure | -y flag")
+			confirmation, err := confirm("Are you sure you want to delete branch")
+			if err != nil || !confirmation {
+				return fmt.Errorf("please confirm by passing the --sure | -y flag")
+			}
 		}
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
 		u := uri.Must(uri.Parse(args[0]))
-		_, err = client.DeleteBranch(context.Background(), &service.DeleteBranchRequest{
-			RepoId:     u.Repository,
-			BranchName: u.Refspec,
-		})
+		err = client.DeleteBranch(u.Repository, u.Refspec)
 		return err
 	},
 }
@@ -174,14 +166,11 @@ var branchShowCmd = &cobra.Command{
 			return err
 		}
 		u := uri.Must(uri.Parse(args[0]))
-		resp, err := client.GetBranch(context.Background(), &service.GetBranchRequest{
-			RepoId:     u.Repository,
-			BranchName: u.Refspec,
-		})
+		resp, err := client.GetBranch(u.Repository, u.Refspec)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("%s\t%s\n", resp.Branch.GetName(), resp.Branch.GetCommitId())
+		fmt.Printf("%s\t%s\n", *resp.ID, *resp.CommitID)
 		return nil
 	},
 }
@@ -193,7 +182,7 @@ func init() {
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
 
-	branchCreateCmd.Flags().StringP("source", "s", "", "source branch name")
+	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")
 
 	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
