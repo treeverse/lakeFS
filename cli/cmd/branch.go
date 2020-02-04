@@ -22,9 +22,6 @@ var branchCmd = &cobra.Command{
 	Use:   "branch",
 	Short: "create and manage branches within a repository",
 	Long:  `Create delete and list branches within a lakeFS repository`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("branch called")
-	},
 }
 
 var branchListCmd = &cobra.Command{
