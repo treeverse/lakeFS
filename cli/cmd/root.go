@@ -7,8 +7,6 @@ import (
 
 	"github.com/treeverse/lakefs/api"
 
-	"github.com/treeverse/lakefs/api/service"
-
 	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
@@ -44,6 +42,7 @@ lakectl merge lakefs://myrepo@my-branch lakefs://myrepo@master
 
 const (
 	DefaultConfigFileDirectory = "~/.lakefs"
+	DefaultConfigFileBareName  = "config"
 	DefaultConfigFileName      = "config.yaml"
 	DefaultConfigFilePath      = "~/.lakefs/config.yaml"
 
@@ -70,9 +69,12 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	},
 }
 
-func getClient() (service.APIServerClient, error) {
-	// TODO: pass config to setup client and credentials
-	return api.NewClient("localhost:8001", "AKIAJKLO4PDKEBQUDHYQ", "aQ+afKWc5IPG+r0P3HVmPSjQN7ehyxwJw/wp9AIz")
+func getClient() (api.Client, error) {
+	return api.NewClient(
+		viper.GetString(ConfigServerEndpointUrl),
+		viper.GetString(ConfigAccessKeyId),
+		viper.GetString(ConfigSecretAccessKey),
+	)
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -93,6 +95,7 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig(readConf bool) {
+
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
@@ -106,7 +109,7 @@ func initConfig(readConf bool) {
 
 		// Search config in home directory with name ".lakefs" (without extension).
 		viper.AddConfigPath(cfgHome)
-		viper.SetConfigName(DefaultConfigFileName)
+		viper.SetConfigName(DefaultConfigFileBareName)
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
@@ -120,7 +123,7 @@ func initConfig(readConf bool) {
 	if err := viper.ReadInConfig(); err != nil {
 		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
 			// Config file not found; ignore error if desired
-			fmt.Fprintf(os.Stderr, "config file not found, please run \"lakectl config init\" to create one\n")
+			fmt.Fprintf(os.Stderr, "config file not found, please run \"lakectl config init\" to create one\n%s\n", err.Error())
 			os.Exit(1)
 		} else {
 			// Config file was found but another error was produced
