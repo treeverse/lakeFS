@@ -44,13 +44,17 @@ func (it *dbPrefixIterator) Close() {
 	it.iter.Close()
 }
 
-func (q *DBReadQuery) pack(ns Namespace, key CompositeKey) []byte {
+func (q *DBReadQuery) pack(ns Namespace, key CompositeKey) FlatKey {
 	parts := make(CompositeKey, len(key)+1)
 	parts[0] = ns
 	for i, k := range key {
 		parts[i+1] = k
 	}
 	return parts.AsKey()
+}
+
+func (q *DBQuery) children(ns Namespace, key CompositeKey) FlatKey {
+	return q.pack(ns, key).Children()
 }
 
 func (q *DBReadQuery) Get(space Namespace, key CompositeKey) (KeyValue, error) {
@@ -133,9 +137,8 @@ func (q *DBQuery) SetProto(msg proto.Message, space Namespace, key CompositeKey)
 	return q.Set(data, space, key)
 }
 
-func (q *DBQuery) ClearPrefix(space Namespace, key CompositeKey) error {
+func (q *DBQuery) clearKeyPrefix(prefix FlatKey) error {
 	opts := badger.DefaultIteratorOptions
-	prefix := q.pack(space, key) // go to the correct offset
 	it := q.tx.NewIterator(opts)
 	var err error
 	keys := make([][]byte, 0)
@@ -155,6 +158,15 @@ func (q *DBQuery) ClearPrefix(space Namespace, key CompositeKey) error {
 		i++
 	}
 	return nil
+}
+func (q *DBQuery) ClearPrefix(space Namespace, key CompositeKey) error {
+	prefix := q.pack(space, key) // go to the correct offset
+	return q.clearKeyPrefix(prefix)
+}
+
+func (q *DBQuery) ClearChildren(space Namespace, key CompositeKey) error {
+	prefix := q.children(space, key)
+	return q.clearKeyPrefix(prefix)
 }
 
 func (q *DBQuery) Delete(space Namespace, key CompositeKey) error {

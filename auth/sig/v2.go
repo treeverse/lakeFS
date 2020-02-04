@@ -48,7 +48,7 @@ func init() {
 			temp_map[word] = true
 		}
 	}
-	for key, _ := range temp_map {
+	for key := range temp_map {
 		sort_array = append(sort_array, key)
 	}
 	sort.Strings(sort_array)
@@ -137,7 +137,7 @@ func canonicalStandardHeaders(headers http.Header) string {
 func canonicalCustomHeaders(headers http.Header) string {
 	var returnStr string
 	var foundKeys []string
-	for key, _ := range headers {
+	for key := range headers {
 		if str.HasPrefix(str.ToLower(key), "x-amz-") {
 			foundKeys = append(foundKeys, key)
 		}
@@ -163,7 +163,10 @@ func canonicalResources(query url.Values, authPath string) string {
 		for _, r := range interestingResources { // the resulting array will be sorted by resource name, because interesting resources array is sorted
 			val, ok := lowercaseQuery[r]
 			if ok {
-				newValue := r + "=" + str.Join(val, ",")
+				newValue := r
+				if len(str.Join(val, "")) > 0 {
+					newValue += "=" + str.Join(val, ",")
+				}
 				foundResources = append(foundResources, newValue)
 			}
 		}
@@ -201,25 +204,7 @@ func buildPath(host, bareDomain, path string) string {
 			return ""
 		}
 	}
-	//hostParts := str.Split(host, ".")
-	//var i int
-	//// location of 's3' in host string.
-	//for i = 0; i < len(hostParts); i++ {
-	//	if hostParts[i] == "s3" {
-	//		break
-	//	}
-	//}
-	//if i == 0 {
-	//	return path
-	//} else {
-	//	if i < len(hostParts) {
-	//		bucketName := str.Join(hostParts[:i], "/") // handle case where bucket name contain periods
-	//		return bucketName + "/" + path
-	//	} else { // host does not contain 's3'
-	//		log.Error("Host " + host + " does not contain 's3'")
-	//		return path
-	//	}
-	//}
+
 }
 
 func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error {
@@ -238,11 +223,20 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 			- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
 			are joined with ',' seperator. sorted and stringified.
 			- path of the object
-			- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
+			- QSA(Query String Arguments) - query arguments are searched for "interesting Resources". */
+
+	/*
+		URI encoding requirements for aws signature are different from what GO does.
+		This logic is taken from https://docs.aws.amazon.com/AWSECommerceService/latest/DG/Query_QueryAuth.html
+		This replacements are necessary for Java. There is no description about GO, but I found the '=' needs treatment as well
 	*/
-	path := buildPath(a.r.Host, bareDomain, a.r.URL.Path)
+
+	patchedPath := str.ReplaceAll(a.r.URL.Path, "=", "%3D")
+	patchedPath = str.ReplaceAll(patchedPath, "+", "%20")
+	patchedPath = str.ReplaceAll(patchedPath, "*", "%2A")
+	patchedPath = str.ReplaceAll(patchedPath, "%7E", "~")
+	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
-	fmt.Print(stringToSigh, "\n")
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
 	if !hmac.Equal(digest, a.ctx.signature) {
 		return ErrBadSignature
