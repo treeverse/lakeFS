@@ -225,11 +225,15 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 				- path of the object
 				- QSA(Query String Arguments) - query arguments are searched for "interestin Resources".
 		/*
-		From my investigation, there is a difference between the way url.pathEscape works and what AWS expect.
-		the problem was manifested in the '=' character. So I did this string replacement. If we find this problem in other
-		corners of the system - we may need a more systematic solution.
+		URI encoding requirements for aws signature are different from what GO does.
+		This logic is taken from https://docs.aws.amazon.com/AWSECommerceService/latest/DG/Query_QueryAuth.html
+		This replacements are necessary for Java. There is no description about GO, but I found the '=' needs treatment as well
 	*/
+
 	patchedPath := str.ReplaceAll(a.r.URL.Path, "=", "%3D")
+	patchedPath = str.ReplaceAll(patchedPath, "+", "%20")
+	patchedPath = str.ReplaceAll(patchedPath, "*", "%2A")
+	patchedPath = str.ReplaceAll(patchedPath, "%7E", "~")
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
