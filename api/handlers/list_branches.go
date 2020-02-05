@@ -20,12 +20,12 @@ type listBranchesHandler struct {
 func (h *listBranchesHandler) Handle(params operations.ListBranchesParams, user *models.User) middleware.Responder {
 	err := authorize(h.serverContext, user, permissions.ManageRepos, repoArn(params.RepositoryID))
 	if err != nil {
-		return operations.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
+		return operations.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 	}
 
 	branches, err := h.serverContext.GetIndex().ListBranches(params.RepositoryID, -1)
 	if err != nil {
-		return operations.NewListRepositoriesDefault(http.StatusInternalServerError).
+		return operations.NewListBranchesDefault(http.StatusInternalServerError).
 			WithPayload(responseError("could not list branches"))
 	}
 

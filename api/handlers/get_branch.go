@@ -33,7 +33,7 @@ func (h *getBranchHandler) Handle(params operations.GetBranchParams, user *model
 			WithPayload(responseError("branch not found"))
 	} else if err != nil {
 		return operations.NewGetBranchDefault(http.StatusInternalServerError).
-			WithPayload(responseError("error fetching repository"))
+			WithPayload(responseError("error fetching branch"))
 	}
 
 	return operations.NewGetBranchOK().
