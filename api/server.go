@@ -2,7 +2,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/go-openapi/loads"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -106,8 +109,21 @@ func (s *Server) Serve(host string, port int) error {
 
 	srv.ConfigureAPI()
 
+	// add logging to every request
+	srv.SetHandler(&loggingHandler{
+		logger: httputil.LoggingMiddleWare("X-Request-Id", "rest_api", srv.GetHandler()),
+	})
+
 	if err := srv.Serve(); err != nil {
 		return err
 	}
 	return nil
+}
+
+type loggingHandler struct {
+	logger http.Handler
+}
+
+func (l *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	l.logger.ServeHTTP(w, r)
 }

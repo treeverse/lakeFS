@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"strings"
@@ -46,7 +47,7 @@ var branchListCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		response, err := client.ListBranches(u.Repository)
+		response, err := client.ListBranches(context.Background(), u.Repository)
 		if err != nil {
 			return err
 		}
@@ -96,13 +97,13 @@ var branchCreateCmd = &cobra.Command{
 			return fmt.Errorf("source branch must be in the same repository")
 		}
 
-		sourceBranch, err := client.GetBranch(u.Repository, suri.Refspec)
+		sourceBranch, err := client.GetBranch(context.Background(), u.Repository, suri.Refspec)
 		if err != nil {
 			return xerrors.Errorf("could not get source branch: %w", err)
 		}
 		fmt.Printf("got source branch '%s', using commit '%s'\n",
 			suri.Refspec, *sourceBranch.CommitID)
-		err = client.CreateBranch(u.Repository, u.Refspec, &models.Refspec{
+		err = client.CreateBranch(context.Background(), u.Repository, u.Refspec, &models.Refspec{
 			CommitID: sourceBranch.CommitID,
 			ID:       &u.Refspec,
 		})
@@ -139,7 +140,7 @@ var branchDeleteCmd = &cobra.Command{
 			return err
 		}
 		u := uri.Must(uri.Parse(args[0]))
-		err = client.DeleteBranch(u.Repository, u.Refspec)
+		err = client.DeleteBranch(context.Background(), u.Repository, u.Refspec)
 		return err
 	},
 }
@@ -166,7 +167,7 @@ var branchShowCmd = &cobra.Command{
 			return err
 		}
 		u := uri.Must(uri.Parse(args[0]))
-		resp, err := client.GetBranch(u.Repository, u.Refspec)
+		resp, err := client.GetBranch(context.Background(), u.Repository, u.Refspec)
 		if err != nil {
 			return err
 		}

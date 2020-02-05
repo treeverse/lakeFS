@@ -2,13 +2,14 @@ package gateway
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/block"
-	ghttp "github.com/treeverse/lakefs/gateway/http"
-	"github.com/treeverse/lakefs/gateway/utils"
-	"github.com/treeverse/lakefs/index"
 	"net/http"
 	"net/http/pprof"
 	"strings"
+
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/index"
 
 	"github.com/treeverse/lakefs/permissions"
 
@@ -67,7 +68,9 @@ func NewServer(
 		attachRoutes(bareDomainWithoutPort, router, ctx)
 	}
 
-	router.Use(ghttp.LoggingMiddleWare)
+	router.Use(func(next http.Handler) http.Handler {
+		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)
+	})
 
 	// assemble server
 	return &Server{

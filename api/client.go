@@ -43,15 +43,15 @@ PUT  /repositories/myrepo/branches/feature-new/merge/master
 */
 
 type Client interface {
-	ListRepositories() ([]*models.Repository, error)
-	GetRepository(repoId string) (*models.Repository, error)
-	CreateRepository(repoId string, repository *models.RepositoryCreation) error
-	DeleteRepository(repoId string) error
+	ListRepositories(ctx context.Context) ([]*models.Repository, error)
+	GetRepository(ctx context.Context, repoId string) (*models.Repository, error)
+	CreateRepository(ctx context.Context, repoId string, repository *models.RepositoryCreation) error
+	DeleteRepository(ctx context.Context, repoId string) error
 
-	ListBranches(repoId string) ([]*models.Refspec, error)
-	GetBranch(repoId, branchId string) (*models.Refspec, error)
-	CreateBranch(repoId, branchId string, branch *models.Refspec) error
-	DeleteBranch(repoId, branchId string) error
+	ListBranches(ctx context.Context, repoId string) ([]*models.Refspec, error)
+	GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error)
+	CreateBranch(ctx context.Context, repoId, branchId string, branch *models.Refspec) error
+	DeleteBranch(ctx context.Context, repoId, branchId string) error
 }
 
 type client struct {
@@ -59,9 +59,9 @@ type client struct {
 	auth   runtime.ClientAuthInfoWriter
 }
 
-func (c *client) ListRepositories() ([]*models.Repository, error) {
+func (c *client) ListRepositories(ctx context.Context) ([]*models.Repository, error) {
 	resp, err := c.remote.Operations.ListRepositories(&operations.ListRepositoriesParams{
-		Context: context.Background(),
+		Context: ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -69,10 +69,10 @@ func (c *client) ListRepositories() ([]*models.Repository, error) {
 	return resp.GetPayload(), nil
 }
 
-func (c *client) GetRepository(repoId string) (*models.Repository, error) {
+func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repository, error) {
 	resp, err := c.remote.Operations.GetRepository(&operations.GetRepositoryParams{
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -80,7 +80,7 @@ func (c *client) GetRepository(repoId string) (*models.Repository, error) {
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListBranches(repoId string) ([]*models.Refspec, error) {
+func (c *client) ListBranches(ctx context.Context, repoId string) ([]*models.Refspec, error) {
 	resp, err := c.remote.Operations.ListBranches(&operations.ListBranchesParams{
 		RepositoryID: repoId,
 		Context:      context.Background(),
@@ -91,28 +91,28 @@ func (c *client) ListBranches(repoId string) ([]*models.Refspec, error) {
 	return resp.GetPayload(), nil
 }
 
-func (c *client) CreateRepository(repoId string, repository *models.RepositoryCreation) error {
+func (c *client) CreateRepository(ctx context.Context, repoId string, repository *models.RepositoryCreation) error {
 	_, err := c.remote.Operations.CreateRepository(&operations.CreateRepositoryParams{
 		Repository:   repository,
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) DeleteRepository(repoId string) error {
+func (c *client) DeleteRepository(ctx context.Context, repoId string) error {
 	_, err := c.remote.Operations.DeleteRepository(&operations.DeleteRepositoryParams{
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) GetBranch(repoId, branchId string) (*models.Refspec, error) {
+func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error) {
 	resp, err := c.remote.Operations.GetBranch(&operations.GetBranchParams{
 		BranchID:     branchId,
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -120,21 +120,21 @@ func (c *client) GetBranch(repoId, branchId string) (*models.Refspec, error) {
 	return resp.GetPayload(), nil
 }
 
-func (c *client) CreateBranch(repoId, branchId string, branch *models.Refspec) error {
+func (c *client) CreateBranch(ctx context.Context, repoId, branchId string, branch *models.Refspec) error {
 	_, err := c.remote.Operations.CreateBranch(&operations.CreateBranchParams{
 		Branch:       branch,
 		BranchID:     branchId,
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) DeleteBranch(repoId, branchId string) error {
+func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) error {
 	_, err := c.remote.Operations.DeleteBranch(&operations.DeleteBranchParams{
 		BranchID:     branchId,
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	return err
 }
