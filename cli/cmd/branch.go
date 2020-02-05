@@ -28,19 +28,10 @@ var branchListCmd = &cobra.Command{
 	Use:     "list [repository uri]",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://myrepo",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRepository() {
-			return fmt.Errorf("expected a repository URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsRepoURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
@@ -69,19 +60,10 @@ var branchListCmd = &cobra.Command{
 var branchCreateCmd = &cobra.Command{
 	Use:   "create [branch uri]",
 	Short: "create a new branch in a repository",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("expected a branch URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
@@ -114,19 +96,10 @@ var branchCreateCmd = &cobra.Command{
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete [branch uri]",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("expected a branch URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		sure, err := cmd.Flags().GetBool("sure")
 		if err != nil || !sure {
@@ -148,19 +121,10 @@ var branchDeleteCmd = &cobra.Command{
 var branchShowCmd = &cobra.Command{
 	Use:   "show [branch uri]",
 	Short: "show branch metadata",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("expected a branch URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := getClient()
 		if err != nil {
