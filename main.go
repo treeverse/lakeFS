@@ -8,14 +8,16 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/treeverse/lakefs/api"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	db2 "github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
+	"github.com/treeverse/lakefs/permissions"
 
 	log "github.com/sirupsen/logrus"
 
@@ -23,7 +25,7 @@ import (
 )
 
 const (
-	ModuleName = "github.com/treeverse/lakefs"
+	ModuleName           = "github.com/treeverse/lakefs"
 	ProjectDirectoryName = "lakefs"
 )
 
@@ -93,15 +95,15 @@ func createCreds() {
 		Name: "AdminRole",
 		Policies: []*model.Policy{
 			{
-				Permission: permissions.PermissionManageRepos,
+				Permission: string(permissions.ManageRepos),
 				Arn:        "arn:treeverse:repos:::*",
 			},
 			{
-				Permission: permissions.PermissionReadRepo,
+				Permission: string(permissions.ReadRepo),
 				Arn:        "arn:treeverse:repos:::*",
 			},
 			{
-				Permission: permissions.PermissionWriteRepo,
+				Permission: string(permissions.WriteRepo),
 				Arn:        "arn:treeverse:repos:::*",
 			},
 		},
@@ -146,9 +148,17 @@ func Run() {
 	// init authentication
 	authService := auth.NewKVAuthService(db)
 
+	region := "us-east-1"
+
+	// start API server
+	apiServer := api.NewServer(region, meta, mpu, blockStore, authService)
+	go func() {
+		panic(apiServer.Serve("0.0.0.0", 8001))
+	}()
+
 	// init gateway server
-	server := gateway.NewServer("us-east-1", meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
-	panic(server.Listen())
+	gatewayServer := gateway.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
+	panic(gatewayServer.Listen())
 }
 
 func keys() {

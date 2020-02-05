@@ -1,13 +1,15 @@
 package operations
 
 import (
+	"net/http"
+
+	"golang.org/x/xerrors"
+
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	ierrors "github.com/treeverse/lakefs/index/errors"
-	"golang.org/x/xerrors"
-	"net/http"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 type CreateBucket struct{}
@@ -16,8 +18,8 @@ func (controller *CreateBucket) GetArn() string {
 	return "arn:treeverse:repos:::*"
 }
 
-func (controller *CreateBucket) GetPermission() string {
-	return permissions.PermissionManageRepos
+func (controller *CreateBucket) GetPermission() permissions.Permission {
+	return permissions.ManageRepos
 }
 
 func (controller *CreateBucket) Handle(o *AuthenticatedOperation) {
