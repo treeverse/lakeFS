@@ -6,9 +6,9 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 const (
@@ -22,8 +22,8 @@ func (controller *PostObject) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *PostObject) GetPermission() string {
-	return permissions.PermissionWriteRepo
+func (controller *PostObject) GetPermission() permissions.Permission {
+	return permissions.WriteRepo
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {

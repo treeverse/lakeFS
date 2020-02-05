@@ -3,8 +3,9 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 )
 
@@ -14,8 +15,8 @@ func (controller *ListBuckets) GetArn() string {
 	return "arn:treeverse:repos:::*"
 }
 
-func (controller *ListBuckets) GetPermission() string {
-	return permissions.PermissionReadRepo
+func (controller *ListBuckets) GetPermission() permissions.Permission {
+	return permissions.ReadRepo
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {

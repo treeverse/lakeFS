@@ -2,13 +2,16 @@ package gateway
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/block"
-	ghttp "github.com/treeverse/lakefs/gateway/http"
-	"github.com/treeverse/lakefs/gateway/utils"
-	"github.com/treeverse/lakefs/index"
 	"net/http"
 	"net/http/pprof"
 	"strings"
+
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/index"
+
+	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/sig"
@@ -65,7 +68,9 @@ func NewServer(
 		attachRoutes(bareDomainWithoutPort, router, ctx)
 	}
 
-	router.Use(ghttp.LoggingMiddleWare)
+	router.Use(func(next http.Handler) http.Handler {
+		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)
+	})
 
 	// assemble server
 	return &Server{
@@ -145,7 +150,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission, arn string) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission permissions.Permission, arn string) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
