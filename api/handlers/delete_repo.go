@@ -31,7 +31,7 @@ func (h *deleteRepoHandler) Handle(params operations.DeleteRepositoryParams, use
 			WithPayload(responseError("repository not found"))
 	} else if err != nil {
 		return operations.NewDeleteRepositoryDefault(http.StatusInternalServerError).
-			WithPayload(responseError("error fetching repository"))
+			WithPayload(responseError("error deleting repository"))
 	}
 
 	return operations.NewDeleteRepositoryNoContent()
