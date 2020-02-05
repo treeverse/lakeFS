@@ -38,7 +38,8 @@ type Index interface {
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, commitId string) error
 	GetBranch(repoId, branch string) (*model.Branch, error)
-	Commit(repoId, branch, message, committer string, metadata map[string]string) error
+	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
+	GetCommit(repoId, commitId string) (*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
 	Merge(repoId, source, destination string) error
@@ -389,9 +390,9 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), err
 }
 
-func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) error {
+func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	ts := time.Now().Unix()
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
@@ -417,9 +418,22 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 		branchData.CommitRoot = commit.GetTree()
 		branchData.WorkspaceRoot = commit.GetTree()
 
-		return nil, tx.WriteBranch(branch, branchData)
+		return commit, tx.WriteBranch(branch, branchData)
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*model.Commit), nil
+}
+
+func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) {
+	commit, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		return tx.ReadCommit(commitId)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*model.Commit), nil
 }
 
 func (index *KVIndex) DeleteBranch(repoId, branch string) error {

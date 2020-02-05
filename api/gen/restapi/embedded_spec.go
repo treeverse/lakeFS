@@ -293,9 +293,151 @@ func init() {
           "required": true
         }
       ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "post": {
+        "summary": "create commit",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/commit_creation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
     }
   },
   "definitions": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "committer": {
+          "type": "string"
+        },
+        "creation_date": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commit_creation": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "error": {
       "type": "object",
       "properties": {
@@ -701,9 +843,157 @@ func init() {
           "required": true
         }
       ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "post": {
+        "summary": "create commit",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/commit_creation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
     }
   },
   "definitions": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "committer": {
+          "type": "string"
+        },
+        "creation_date": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commit_creation": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "error": {
       "type": "object",
       "properties": {

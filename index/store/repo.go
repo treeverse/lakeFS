@@ -118,7 +118,35 @@ func (s *KVRepoReadOnlyOperations) ReadObject(addr string) (*model.Object, error
 
 func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error) {
 	commit := &model.Commit{}
-	return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
+	if len(addr) == 64 {
+		return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
+	}
+	// otherwise, it could be a truncated commit
+	iter, close := s.query.RangePrefix(SubspaceCommits, db.CompositeStrings(s.repoId, addr))
+	defer close()
+	var hasMatch bool
+	var edata []byte
+	for iter.Advance() {
+		entryData, err := iter.Get()
+		if err != nil {
+			return nil, errors.ErrIndexMalformed
+		}
+		if hasMatch {
+			// we have more than one commit matching the given prefix, this is ambiguous
+			return nil, db.ErrNotFound
+		}
+		edata = entryData.Value
+		hasMatch = true
+	}
+	if !hasMatch {
+		// our iterator had no matches
+		return nil, db.ErrNotFound
+	}
+	err := proto.Unmarshal(edata, commit)
+	if err != nil {
+		return nil, errors.ErrIndexMalformed
+	}
+	return commit, nil
 }
 
 func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error) {

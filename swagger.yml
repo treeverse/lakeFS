@@ -73,6 +73,39 @@ definitions:
       commit_id:
         type: string
 
+  commit:
+    type: object
+    properties:
+      id:
+        type: string
+      parents:
+        type: array
+        items:
+          type: string
+      committer:
+        type: string
+      message:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
+  commit_creation:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
   object:
     type: object
     required:
@@ -199,6 +232,40 @@ paths:
             $ref: "#/definitions/error"
 
 
+  /repositories/{repositoryId}/branches/{branchId}/commits:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+    post:
+      operationId: commit
+      summary: create commit
+      parameters:
+        - in: body
+          name: commit
+          schema:
+            $ref: "#/definitions/commit_creation"
+      responses:
+        201:
+          description: commit
+          schema:
+            $ref: "#/definitions/commit"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repositoryId}/branches/{branchId}:
     parameters:
       - in: path
@@ -260,6 +327,35 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/commits/{commitId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: commitId
+        required: true
+        type: string
+    get:
+      operationId: getCommit
+      summary: get commit
+      responses:
+        200:
+          description: commit
+          schema:
+            $ref: "#/definitions/commit"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit not found
           schema:
             $ref: "#/definitions/error"
         default:
