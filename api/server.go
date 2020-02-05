@@ -73,6 +73,9 @@ func (s *Server) bind(api *operations.LakefsAPI) {
 	api.CreateBranchHandler = handlers.NewCreateBranchHandler(s)
 	api.DeleteBranchHandler = handlers.NewDeleteBranchHandler(s)
 
+	api.CommitHandler = handlers.NewCommitHandler(s)
+	api.GetCommitHandler = handlers.NewGetCommitHandler(s)
+
 }
 
 func (s *Server) Serve(host string, port int) error {

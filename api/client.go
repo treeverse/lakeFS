@@ -15,30 +15,30 @@ import (
 
 /*
 
-GET    /repositories
-GET    /repositories/myrepo
-POST   /repositories/myrepo
-DELETE /repositories/myrepo
+GET    /repositories // list repos
+GET    /repositories/myrepo // get repo
+POST   /repositories/myrepo // create repo
+DELETE /repositories/myrepo // delete repo
 
-GET    /repositories/myrepo/branches
-GET    /repositories/myrepo/branches/feature-new
-POST   /repositories/myrepo/branches/feature-new
-DELETE /repositories/myrepo/branches/feature-new
+GET    /repositories/myrepo/branches // list branches
+GET    /repositories/myrepo/branches/feature-new // get branch
+POST   /repositories/myrepo/branches/feature-new // create branch
+DELETE /repositories/myrepo/branches/feature-new // delete branch
 
-GET    /repositories/myrepo/branches/feature-new/stat/collections/file.csv
-GET    /repositories/myrepo/branches/feature-new/ls/prefix?from="<from_path>"
-GET    /repositories/myrepo/branches/feature-new/objects/collections/file.csv
-PUT    /repositories/myrepo/branches/feature-new/objects/collections/file.csv
-DELETE /repositories/myrepo/branches/feature-new/objects/collections/file.csv
+GET    /repositories/myrepo/branches/feature-new/stat/collections/file.csv // get file metadata
+GET    /repositories/myrepo/branches/feature-new/ls/prefix?from="<from_path>" // list files
+GET    /repositories/myrepo/branches/feature-new/objects/collections/file.csv // get file content
+PUT    /repositories/myrepo/branches/feature-new/objects/collections/file.csv // upload file content
+DELETE /repositories/myrepo/branches/feature-new/objects/collections/file.csv // delete file
 
-POST /repositories/myrepo/branches/feature-new/commits
-GET  /repositories/myrepo/branches/feature-new/commits
-GET  /repositories/myrepo/commits/commit_id
+POST /repositories/myrepo/branches/feature-new/commits // create a commit as head of branch
+GET  /repositories/myrepo/branches/feature-new/commits // list commits for branch
+GET  /repositories/myrepo/commits/commit_id // get commit info
 
-GET  /repositories/myrepo/branches/feature-new/diff/master
-PUT  /repositories/myrepo/branches/feature-new/checkout/collections/file.csv
-PUT  /repositories/myrepo/branches/feature-new/reset
-PUT  /repositories/myrepo/branches/feature-new/merge/master
+GET  /repositories/myrepo/branches/feature-new/diff/master // get diff between branches
+PUT  /repositories/myrepo/branches/feature-new/checkout/collections/file.csv // checkout a given file (i.e. restore it to last committed version)
+PUT  /repositories/myrepo/branches/feature-new/reset // reset (i.e. restore tree to last committed version)
+PUT  /repositories/myrepo/branches/feature-new/merge/master // merge branch into destination
 
 */
 
@@ -52,6 +52,9 @@ type Client interface {
 	GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error)
 	CreateBranch(ctx context.Context, repoId, branchId string, branch *models.Refspec) error
 	DeleteBranch(ctx context.Context, repoId, branchId string) error
+
+	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
+	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
 }
 
 type client struct {
@@ -137,6 +140,34 @@ func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) erro
 		Context:      ctx,
 	}, c.auth)
 	return err
+}
+
+func (c *client) Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error) {
+	commit, err := c.remote.Operations.Commit(&operations.CommitParams{
+		BranchID: branchId,
+		Commit: &models.CommitCreation{
+			Message:  &message,
+			Metadata: metadata,
+		},
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return commit.GetPayload(), nil
+}
+
+func (c *client) GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error) {
+	commit, err := c.remote.Operations.GetCommit(&operations.GetCommitParams{
+		CommitID:     commitId,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return commit.GetPayload(), nil
 }
 
 func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
