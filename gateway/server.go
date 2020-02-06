@@ -2,12 +2,16 @@ package gateway
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/block"
-	ghttp "github.com/treeverse/lakefs/gateway/http"
-	"github.com/treeverse/lakefs/index"
 	"net/http"
 	"net/http/pprof"
 	"strings"
+
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/index"
+
+	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/sig"
@@ -20,21 +24,6 @@ import (
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
-
-func getRepo(req *http.Request) string {
-	vars := mux.Vars(req)
-	return vars["repo"]
-}
-
-func getKey(req *http.Request) string {
-	vars := mux.Vars(req)
-	return vars["path"]
-}
-
-func getBranch(req *http.Request) string {
-	vars := mux.Vars(req)
-	return vars["refspec"]
-}
 
 type ServerContext struct {
 	region           string
@@ -79,7 +68,9 @@ func NewServer(
 		attachRoutes(bareDomainWithoutPort, router, ctx)
 	}
 
-	router.Use(ghttp.LoggingMiddleWare)
+	router.Use(func(next http.Handler) http.Handler {
+		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)
+	})
 
 	// assemble server
 	return &Server{
@@ -114,6 +105,9 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// path based routing
 	// non-bucket-specific endpoints
 	serviceEndpoint := router.Host(bareDomain).Subrouter()
+	//create bucket
+	serviceEndpoint.HandleFunc(fmt.Sprintf("/%s", path.CreateRepoMatch), OperationHandler(ctx, &operations.CreateBucket{})).Methods(http.MethodPut)
+
 	// repo-specific actions that relate to a key
 	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
 	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
@@ -123,7 +117,6 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
 	// bucket-specific actions that don't relate to a specific key
-	pathBasedRepo.Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 	pathBasedRepo.
 		Methods(http.MethodGet).
 		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
@@ -157,7 +150,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission, arn string) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission permissions.Permission, arn string) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -257,7 +250,7 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(getRepo(request))
+		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
 		if xerrors.Is(err, db.ErrNotFound) {
 			writer.WriteHeader(http.StatusNotFound)
 			return // TODO: make sure we replicate S3's response when a bucket is not found
@@ -283,7 +276,7 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(getRepo(request))
+		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
 		if xerrors.Is(err, db.ErrNotFound) {
 			writer.WriteHeader(http.StatusNotFound)
 			return // TODO: make sure we replicate S3's response when a bucket is not found
@@ -299,9 +292,9 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 					AuthenticatedOperation: authOp,
 					Repo:                   repo,
 				},
-				Branch: getBranch(request),
+				Branch: utils.GetBranch(request),
 			},
-			Path: getKey(request),
+			Path: utils.GetKey(request),
 		})
 	}
 }

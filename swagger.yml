@@ -1,0 +1,268 @@
+consumes:
+- application/json
+info:
+  description: lakeFS HTTP API
+  title: lakeFS API
+  version: 0.1.0
+produces:
+- application/json
+schemes:
+- http
+swagger: "2.0"
+
+
+
+securityDefinitions:
+  basic_auth:
+    type: basic
+
+security:
+  - basic_auth: []
+
+
+responses:
+  Unauthorized:
+    description: Unauthorized
+    schema:
+      $ref: "#/definitions/error"
+
+definitions:
+
+  user:
+    type: object
+    properties:
+      id:
+        type: string
+
+  repository:
+    type: object
+    properties:
+      id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+      default_branch:
+        example: "master"
+        type: string
+      bucket_name:
+        type: string
+
+  repository_creation:
+    type: object
+    required:
+      - id
+      - bucket_name
+    properties:
+      id:
+        type: string
+      bucket_name:
+        type: string
+      default_branch:
+        example: "master"
+        type: string
+
+  refspec:
+    type: object
+    required:
+      - id
+      - commit_id
+    properties:
+      id:
+        type: string
+      commit_id:
+        type: string
+
+  object:
+    type: object
+    required:
+      - path
+      - type
+    properties:
+      path:
+        type: string
+      type:
+        type: string
+
+  error:
+    type: object
+    properties:
+      message:
+        description: short message explaining the error
+        type: string
+
+paths:
+
+  /repositories:
+    get:
+      operationId: listRepositories
+      summary: list repositories
+      responses:
+        200:
+          description: repository list
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/repository"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+    get:
+      operationId: getRepository
+      summary: get repository
+      responses:
+        200:
+          description: repository
+          schema:
+            $ref: "#/definitions/repository"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      operationId: createRepository
+      summary: create repository
+      parameters:
+        - in: body
+          name: repository
+          schema:
+            $ref: "#/definitions/repository_creation"
+      responses:
+        201:
+          description: repository
+          schema:
+            $ref: "#/definitions/repository"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      operationId: deleteRepository
+      summary: delete repository
+      responses:
+        204:
+          description: repository deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+    get:
+      operationId: listBranches
+      summary: list branches
+      responses:
+        200:
+          description: branch list
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/refspec"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /repositories/{repositoryId}/branches/{branchId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+    get:
+      operationId: getBranch
+      summary: get branch
+      responses:
+        200:
+          description: branch
+          schema:
+            $ref: "#/definitions/refspec"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      operationId: createBranch
+      summary: create branch
+      parameters:
+        - in: body
+          name: branch
+          schema:
+            $ref: "#/definitions/refspec"
+      responses:
+        201:
+          description: branch
+          schema:
+            $ref: "#/definitions/refspec"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      operationId: deleteBranch
+      summary: delete branch
+      responses:
+        204:
+          description: branch deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"

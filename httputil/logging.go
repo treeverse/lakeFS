@@ -1,4 +1,4 @@
-package http
+package httputil
 
 import (
 	"bytes"
@@ -55,7 +55,7 @@ func RequestId(r *http.Request) (*http.Request, string) {
 	return r, reqId
 }
 
-func LoggingMiddleWare(next http.Handler) http.Handler {
+func LoggingMiddleWare(requestIdHeaderName, serviceName string, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do stuff here
 		before := time.Now()
@@ -63,14 +63,15 @@ func LoggingMiddleWare(next http.Handler) http.Handler {
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 		r, reqId := RequestId(r)
 		next.ServeHTTP(writer, r) // handle the request
-		writer.Header().Set("X-Amz-Request-Id", reqId)
+		writer.Header().Set(requestIdHeaderName, reqId)
 		log.WithFields(log.Fields{
+			"service":     serviceName,
 			"request_id":  reqId,
 			"path":        r.RequestURI,
 			"method":      r.Method,
 			"took":        time.Since(before),
 			"status_code": writer.StatusCode,
 			"sent_bytes":  writer.ResponseSize,
-		}).Debug("S3 gateway called")
+		}).Debug("HTTP call ended")
 	})
 }

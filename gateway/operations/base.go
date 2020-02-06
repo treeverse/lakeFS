@@ -7,11 +7,14 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/treeverse/lakefs/httputil"
+
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/auth"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
-	ghttp "github.com/treeverse/lakefs/gateway/http"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 
@@ -31,7 +34,7 @@ type Operation struct {
 }
 
 func (o *Operation) RequestId() string {
-	req, rid := ghttp.RequestId(o.Request)
+	req, rid := httputil.RequestId(o.Request)
 	o.Request = req
 	return rid
 }
@@ -155,7 +158,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 
 type BaseOperationHandler interface {
 	GetArn() string
-	GetPermission() string
+	GetPermission() permissions.Permission
 }
 
 type OperationHandler interface {

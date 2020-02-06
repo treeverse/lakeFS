@@ -11,9 +11,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/sirupsen/logrus"
 	log "github.com/sirupsen/logrus"
@@ -26,8 +26,8 @@ func (controller *GetObject) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *GetObject) GetPermission() string {
-	return permissions.PermissionReadRepo
+func (controller *GetObject) GetPermission() permissions.Permission {
+	return permissions.ManageRepos
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {

@@ -5,11 +5,12 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 
 	"github.com/treeverse/lakefs/index/model"
@@ -28,8 +29,8 @@ func (controller *ListObjects) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *ListObjects) GetPermission() string {
-	return permissions.PermissionReadRepo
+func (controller *ListObjects) GetPermission() permissions.Permission {
+	return permissions.ReadRepo
 }
 
 func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
@@ -84,7 +85,6 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	}
 
 	var from path.ResolvedPath
-	var err error
 
 	maxKeys := controller.getMaxKeys(o)
 
@@ -106,11 +106,19 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	if len(prefix) == 0 {
 		// list branches then.
-		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
+		branches, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
+		}
+		results = make([]*model.Entry, len(branches))
+		for i, branch := range branches {
+			results[i] = &model.Entry{
+				Name:    branch.GetName(),
+				Address: branch.GetName(),
+				Type:    model.Entry_TREE,
+			}
 		}
 	} else {
 		prefix, err := path.ResolvePath(params.Get("prefix"))
@@ -195,17 +203,24 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	var results []*model.Entry
 	hasMore := false
-	var err error
 
 	var refspec string
 	if len(params.Get("prefix")) == 0 {
 		// list branches then.
-		results, err = o.Index.ListBranches(o.Repo.GetRepoId(), -1)
+		branches, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1)
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
+		}
+		results = make([]*model.Entry, len(branches))
+		for i, branch := range branches {
+			results[i] = &model.Entry{
+				Name:    branch.GetName(),
+				Address: branch.GetName(),
+				Type:    model.Entry_TREE,
+			}
 		}
 	} else {
 		prefix, err := path.ResolvePath(params.Get("prefix"))
