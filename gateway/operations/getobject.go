@@ -73,7 +73,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		ranger, err := NewObjectRanger(rangeSpec, obj, o.BlockStore, o.Log())
+		ranger, err := NewObjectRanger(rangeSpec, o.Repo.RepoId, obj, o.BlockStore, o.Log())
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidRange))
 			return
@@ -108,14 +108,14 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
 	blocks := obj.GetBlocks()
 	for _, block := range blocks {
-		data, err := o.BlockStore.Get(block.GetAddress())
+		data, err := o.BlockStore.Get(o.Repo.GetRepoId(), block.GetAddress())
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
 		_, err = io.Copy(o.ResponseWriter, data)
 		if err != nil {
-			o.Log().Error("could not write response body for object")
+			o.Log().WithError(err).Error("could not write response body for object")
 		}
 	}
 }
@@ -123,6 +123,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 // Utility tool to help with range requests
 type ObjectRanger struct {
 	Range   ghttp.HttpRange
+	Repo    string
 	obj     *model.Object
 	adapter block.Adapter
 	logger  *logrus.Entry
@@ -132,7 +133,7 @@ type ObjectRanger struct {
 	rangeAddress string
 }
 
-func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter, logger *logrus.Entry) (*ObjectRanger, error) {
+func NewObjectRanger(spec string, repo string, obj *model.Object, adapter block.Adapter, logger *log.Entry) (*ObjectRanger, error) {
 	// let's start by deciding which blocks we actually need
 	rang, err := ghttp.ParseHTTPRange(spec, obj.GetSize())
 	if err != nil {
@@ -140,6 +141,7 @@ func NewObjectRanger(spec string, obj *model.Object, adapter block.Adapter, logg
 		return nil, err
 	}
 	return &ObjectRanger{
+		Repo:    repo,
 		Range:   rang,
 		obj:     obj,
 		logger:  logger,
@@ -192,12 +194,12 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 		if strings.EqualFold(r.rangeAddress, cacheKey) {
 			data = r.rangeBuffer[startPosition:endPosition]
 		} else {
-			reader, err := r.adapter.Get(block.GetAddress())
+			reader, err := r.adapter.GetRange(r.Repo, block.GetAddress(), startPosition, endPosition)
 			if err != nil {
 				return n, err
 			}
 			data = make([]byte, endPosition-startPosition)
-			currN, err := reader.ReadAt(data, startPosition)
+			currN, err := reader.Read(data)
 			_ = reader.Close()
 			if err != nil {
 				return n, err
