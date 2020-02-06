@@ -14,11 +14,11 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index/model"
 	pth "github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/permissions"
 
 	log "github.com/sirupsen/logrus"
 )
@@ -40,8 +40,8 @@ func (controller *PutObject) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *PutObject) GetPermission() string {
-	return permissions.PermissionWriteRepo
+func (controller *PutObject) GetPermission() permissions.Permission {
+	return permissions.WriteRepo
 }
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {

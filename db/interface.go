@@ -15,13 +15,18 @@ type KeyValue struct {
 
 const TupleSeparator = '\x00' // use null byte as part separator
 
+type FlatKey []byte
 type Namespace []byte
 
 type CompositeKey [][]byte
 
-func (c CompositeKey) AsKey() []byte {
+func (c CompositeKey) AsKey() FlatKey {
 	return bytes.Join(c, []byte{TupleSeparator})
 
+}
+
+func (key FlatKey) Children() FlatKey {
+	return append(key, TupleSeparator)
 }
 
 func (c CompositeKey) With(parts ...[]byte) CompositeKey {
@@ -72,6 +77,7 @@ type Query interface {
 	Set(data []byte, space Namespace, key CompositeKey) error
 	SetProto(msg proto.Message, space Namespace, key CompositeKey) error
 	ClearPrefix(space Namespace, key CompositeKey) error
+	ClearChildren(space Namespace, key CompositeKey) error
 	Delete(space Namespace, key CompositeKey) error
 }
 

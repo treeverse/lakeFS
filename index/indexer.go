@@ -2,7 +2,10 @@ package index
 
 import (
 	"math/rand"
+	"regexp"
 	"time"
+
+	"github.com/treeverse/lakefs/index/errors"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
@@ -31,8 +34,10 @@ type Index interface {
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
 	ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error)
-	ListBranches(repoId string, results int) ([]*model.Entry, error)
+	ListBranches(repoId string, results int) ([]*model.Branch, error)
 	ResetBranch(repoId, branch string) error
+	CreateBranch(repoId, branch, commitId string) error
+	GetBranch(repoId, branch string) (*model.Branch, error)
 	Commit(repoId, branch, message, committer string, metadata map[string]string) error
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
@@ -291,30 +296,18 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 	return err
 }
 
-func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Entry, error) {
+func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Branch, error) {
 	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		branches, err := tx.ListBranches()
-		if err != nil {
-			return nil, err
-		}
-		entries := make([]*model.Entry, len(branches))
-		for i, branch := range branches {
-			entries[i] = &model.Entry{
-				Name:    branch.GetName(),
-				Address: branch.GetName(),
-				Type:    model.Entry_TREE,
-			}
-		}
-		return entries, nil
+		return tx.ListBranches()
 	})
 	if err != nil {
 		return nil, err
 	}
-	return entries.([]*model.Entry), nil
+	return entries.([]*model.Branch), nil
 }
 
 func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
@@ -363,6 +356,37 @@ func (index *KVIndex) ResetBranch(repoId, branch string) error {
 		return nil, tx.WriteBranch(branch, branchData)
 	})
 	return err
+}
+
+func (index *KVIndex) CreateBranch(repoId, branch, commitId string) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		// ensure it doesn't exist yet
+		_, err := tx.ReadBranch(branch)
+		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
+			return nil, err
+		} else if err == nil {
+			return nil, errors.ErrBranchExists
+		}
+		// read commit at commitId
+		commit, err := tx.ReadCommit(commitId)
+		if err != nil {
+			return nil, xerrors.Errorf("could not read commit: %w", err)
+		}
+		return nil, tx.WriteBranch(branch, &model.Branch{
+			Name:          branch,
+			Commit:        commitId,
+			CommitRoot:    commit.GetTree(),
+			WorkspaceRoot: commit.GetTree(),
+		})
+	})
+	return err
+}
+
+func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
+	brn, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		return tx.ReadBranch(branch)
+	})
+	return brn.(*model.Branch), err
 }
 
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) error {
@@ -441,8 +465,15 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 	return err
 }
 
+func isValidRepoId(repoId string) bool {
+	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]{2,62}$`).MatchString(repoId)
+}
+
 func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
+	if !isValidRepoId(repoId) {
+		return errors.ErrInvalidBucketName
+	}
 	creationDate := time.Now().Unix()
 
 	repo := &model.Repo{
@@ -454,7 +485,16 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
 	// create repository, an empty commit and tree, and the default branch
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := tx.WriteRepo(repo)
+		// make sure this repo doesn't already exist
+		_, err := tx.ReadRepo()
+		if err == nil {
+			// couldn't verify this bucket doesn't yet exist
+			return nil, errors.ErrRepoExists
+		} else if !xerrors.Is(err, db.ErrNotFound) {
+			return nil, err // error reading the repo
+		}
+
+		err = tx.WriteRepo(repo)
 		if err != nil {
 			return nil, err
 		}

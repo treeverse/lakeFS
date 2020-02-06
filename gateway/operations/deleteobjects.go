@@ -6,8 +6,8 @@ import (
 
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
-	"github.com/treeverse/lakefs/gateway/permissions"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 type DeleteObjects struct{}
@@ -16,8 +16,8 @@ func (controller *DeleteObjects) GetArn() string {
 	return "arn:treeverse:repos:::{repo}"
 }
 
-func (controller *DeleteObjects) GetPermission() string {
-	return permissions.PermissionWriteRepo
+func (controller *DeleteObjects) GetPermission() permissions.Permission {
+	return permissions.ManageRepos
 }
 
 func (controller *DeleteObjects) Handle(o *RepoOperation) {
