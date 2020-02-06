@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
 
@@ -36,7 +38,7 @@ type AuthenticationResponse struct {
 
 type AuthorizationRequest struct {
 	UserID     string
-	Permission string
+	Permission permissions.Permission
 	SubjectARN string
 }
 
@@ -304,7 +306,7 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 			roles[rid] = role
 			for _, p := range role.GetPolicies() {
 				// get permissions....
-				if strings.EqualFold(p.GetPermission(), req.Permission) && ArnMatch(p.GetArn(), req.SubjectARN) {
+				if strings.EqualFold(p.GetPermission(), string(req.Permission)) && ArnMatch(p.GetArn(), req.SubjectARN) {
 					return &AuthorizationResponse{
 						Allowed: true,
 						Error:   nil,
@@ -340,7 +342,7 @@ func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 				roles[rid] = role
 				for _, p := range role.GetPolicies() {
 					// get permissions....
-					if strings.EqualFold(p.GetPermission(), req.Permission) && ArnMatch(p.GetArn(), req.SubjectARN) {
+					if strings.EqualFold(p.GetPermission(), string(req.Permission)) && ArnMatch(p.GetArn(), req.SubjectARN) {
 						return &AuthorizationResponse{
 							Allowed: true,
 							Error:   nil,
