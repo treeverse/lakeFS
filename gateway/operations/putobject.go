@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"bytes"
 	"crypto/md5"
 	"fmt"
 	"io"
@@ -102,7 +103,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Repo.GetRepoId(), o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -138,7 +139,7 @@ type Blob struct {
 	Size     int64
 }
 
-func ReadBlob(body io.Reader, adapter block.Adapter) (*Blob, error) {
+func ReadBlob(repoId string, body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
 	blocks := make([]*model.Block, 0)
 	cksummer := md5.New()
@@ -165,13 +166,7 @@ func ReadBlob(body io.Reader, adapter block.Adapter) (*Blob, error) {
 
 		// write a block
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
-		w, err := adapter.Put(blockAddr)
-		if err != nil {
-			return nil, err
-		}
-		cksummer.Write(buf[:n])
-		_, err = w.Write(buf[:n])
-		_ = w.Close()
+		err = adapter.Put(repoId, blockAddr, bytes.NewReader(buf[:n]))
 		if err != nil {
 			return nil, err
 		}
@@ -211,7 +206,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Repo.GetRepoId(), o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
