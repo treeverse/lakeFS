@@ -21,7 +21,7 @@ func NewLocalFSAdapter(path string) (Adapter, error) {
 	}
 
 	//if unix.Access(path, unix.W_OK) != nil {
-	if ! isDirectoryWritable(path) {
+	if !isDirectoryWritable(path) {
 		return nil, fmt.Errorf("path provided is not writable")
 	}
 	return &LocalFSAdapter{path: path}, nil
@@ -31,16 +31,17 @@ func (l *LocalFSAdapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *LocalFSAdapter) Put(identifier string) (io.WriteCloser, error) {
+func (l *LocalFSAdapter) Put(_ string, identifier string, reader io.ReadSeeker) error {
 	path := l.getPath(identifier)
 	f, err := os.Create(path)
+	_, err = io.Copy(f, reader)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return f, nil
+	return nil
 }
 
-func (l *LocalFSAdapter) Get(identifier string) (reader ReadAtCloser, err error) {
+func (l *LocalFSAdapter) Get(_ string, identifier string) (reader io.ReadCloser, err error) {
 	path := l.getPath(identifier)
 	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
@@ -49,6 +50,18 @@ func (l *LocalFSAdapter) Get(identifier string) (reader ReadAtCloser, err error)
 	return f, nil
 }
 
+func (l *LocalFSAdapter) GetRange(_ string, identifier string, start int64, end int64) (io.ReadCloser, error) {
+	path := l.getPath(identifier)
+	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
+	if err != nil {
+		return nil, err
+	}
+	_, err = f.Seek(start, 0)
+	if err != nil {
+		return nil, err
+	}
+	return f, nil
+}
 func isDirectoryWritable(path string) bool {
 	// test ability to write to directory.
 	// as there is no simple way to test this in windows, I prefer the "brute force" method
@@ -57,12 +70,12 @@ func isDirectoryWritable(path string) bool {
 
 	fileName := path + "dummy.tmp"
 	os.Remove(fileName)
-	file,err := os.Create(fileName)
+	file, err := os.Create(fileName)
 	if err == nil {
 		file.Close()
 		os.Remove(fileName)
 		return true
 	} else {
-		return false}
+		return false
+	}
 }
-
