@@ -16,8 +16,8 @@ func NewS3Adapter(s3 *s3.S3) (Adapter, error) {
 }
 
 func (s S3Adapter) Put(repo string, identifier string, reader io.ReadSeeker) error {
-
-	_, err := s.s3.PutObject(&s3.PutObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier), Body: reader})
+	putObject := s3.PutObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier), Body: reader}
+	_, err := s.s3.PutObject(&putObject)
 	if err != nil {
 		return err
 	}
@@ -25,8 +25,8 @@ func (s S3Adapter) Put(repo string, identifier string, reader io.ReadSeeker) err
 }
 
 func (s S3Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
-	//return NewS3File(s.s3, repo, identifier), nil
-	objectOutput, err := s.s3.GetObject(&s3.GetObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)})
+	getObjectInput := s3.GetObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
+	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
 		return nil, err
 	}
@@ -34,7 +34,8 @@ func (s S3Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
 }
 
 func (s S3Adapter) GetRange(repo string, identifier string, startPosition int64, endPosition int64) (io.ReadCloser, error) {
-	objectOutput, err := s.s3.GetObject(&s3.GetObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier), Range: aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition))})
+	getObjectInput := s3.GetObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier), Range: aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition))}
+	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
 		return nil, err
 	}
