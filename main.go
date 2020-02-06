@@ -2,6 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/treeverse/lakefs/block"
 	"os"
 	"os/user"
 	"path"
@@ -12,7 +17,6 @@ import (
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/block"
 	db2 "github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
@@ -27,6 +31,11 @@ import (
 const (
 	ModuleName           = "github.com/treeverse/lakefs"
 	ProjectDirectoryName = "lakefs"
+
+	EnvVarS3AccessKeyId = "AWS_ADAPTER_ACCESS_KEY_ID"
+	EnvVarS3SecretKey   = "AWS_ADAPTER_SECRET_ACCESS_KEY"
+	EnvVarS3Region      = "AWS_ADAPTER_REGION"
+	EnvVarS3Token       = "AWS_ADAPTER_TOKEN"
 )
 
 var (
@@ -64,6 +73,13 @@ func setupBadger() (*badger.DB, error) {
 	return badger.Open(opts)
 }
 
+func setUpS3Adapter() (block.Adapter, error) {
+	sess := session.Must(session.NewSession(&aws.Config{
+		Region:      aws.String(os.Getenv(EnvVarS3Region)),
+		Credentials: credentials.NewStaticCredentials(os.Getenv(EnvVarS3AccessKeyId), os.Getenv(EnvVarS3SecretKey), os.Getenv(EnvVarS3Token))}))
+	svc := s3.New(sess)
+	return block.NewS3Adapter(svc)
+}
 func home() string {
 	u, err := user.Current()
 	if err != nil {
@@ -141,6 +157,7 @@ func Run() {
 
 	// init block store
 	blockStore, err := block.NewLocalFSAdapter(DefaultBlockLocation)
+	//blockStore, err := setUpS3Adapter()
 	if err != nil {
 		panic(err)
 	}

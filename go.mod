@@ -3,6 +3,7 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
+	github.com/aws/aws-sdk-go v1.28.9
 	github.com/dgraph-io/badger v1.6.0
 	github.com/go-openapi/errors v0.19.2
 	github.com/go-openapi/loads v0.19.4
