@@ -4,14 +4,17 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	_ "github.com/aws/aws-sdk-go/service/s3/s3iface"
+
 	"io"
 )
 
 type S3Adapter struct {
-	s3 *s3.S3
+	s3 s3iface.S3API
 }
 
-func NewS3Adapter(s3 *s3.S3) (Adapter, error) {
+func NewS3Adapter(s3 s3iface.S3API) (Adapter, error) {
 	return &S3Adapter{s3: s3}, nil
 }
 
