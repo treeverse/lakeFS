@@ -65,8 +65,6 @@ type CreateBranchParams struct {
 
 	/*Branch*/
 	Branch *models.Refspec
-	/*BranchID*/
-	BranchID string
 	/*RepositoryID*/
 	RepositoryID string
 
@@ -119,17 +117,6 @@ func (o *CreateBranchParams) SetBranch(branch *models.Refspec) {
 	o.Branch = branch
 }
 
-// WithBranchID adds the branchID to the create branch params
-func (o *CreateBranchParams) WithBranchID(branchID string) *CreateBranchParams {
-	o.SetBranchID(branchID)
-	return o
-}
-
-// SetBranchID adds the branchId to the create branch params
-func (o *CreateBranchParams) SetBranchID(branchID string) {
-	o.BranchID = branchID
-}
-
 // WithRepositoryID adds the repositoryID to the create branch params
 func (o *CreateBranchParams) WithRepositoryID(repositoryID string) *CreateBranchParams {
 	o.SetRepositoryID(repositoryID)
@@ -153,11 +140,6 @@ func (o *CreateBranchParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 		if err := r.SetBodyParam(o.Branch); err != nil {
 			return err
 		}
-	}
-
-	// path param branchId
-	if err := r.SetPathParam("branchId", o.BranchID); err != nil {
-		return err
 	}
 
 	// path param repositoryId

@@ -13,6 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
+	"github.com/go-openapi/swag"
 
 	strfmt "github.com/go-openapi/strfmt"
 )
@@ -20,7 +21,7 @@ import (
 // NewListRepositoriesParams creates a new ListRepositoriesParams object
 // with the default values initialized.
 func NewListRepositoriesParams() *ListRepositoriesParams {
-
+	var ()
 	return &ListRepositoriesParams{
 
 		timeout: cr.DefaultTimeout,
@@ -30,7 +31,7 @@ func NewListRepositoriesParams() *ListRepositoriesParams {
 // NewListRepositoriesParamsWithTimeout creates a new ListRepositoriesParams object
 // with the default values initialized, and the ability to set a timeout on a request
 func NewListRepositoriesParamsWithTimeout(timeout time.Duration) *ListRepositoriesParams {
-
+	var ()
 	return &ListRepositoriesParams{
 
 		timeout: timeout,
@@ -40,7 +41,7 @@ func NewListRepositoriesParamsWithTimeout(timeout time.Duration) *ListRepositori
 // NewListRepositoriesParamsWithContext creates a new ListRepositoriesParams object
 // with the default values initialized, and the ability to set a context for a request
 func NewListRepositoriesParamsWithContext(ctx context.Context) *ListRepositoriesParams {
-
+	var ()
 	return &ListRepositoriesParams{
 
 		Context: ctx,
@@ -50,7 +51,7 @@ func NewListRepositoriesParamsWithContext(ctx context.Context) *ListRepositories
 // NewListRepositoriesParamsWithHTTPClient creates a new ListRepositoriesParams object
 // with the default values initialized, and the ability to set a custom HTTPClient for a request
 func NewListRepositoriesParamsWithHTTPClient(client *http.Client) *ListRepositoriesParams {
-
+	var ()
 	return &ListRepositoriesParams{
 		HTTPClient: client,
 	}
@@ -60,6 +61,12 @@ func NewListRepositoriesParamsWithHTTPClient(client *http.Client) *ListRepositor
 for the list repositories operation typically these are written to a http.Request
 */
 type ListRepositoriesParams struct {
+
+	/*After*/
+	After *string
+	/*Amount*/
+	Amount *int64
+
 	timeout    time.Duration
 	Context    context.Context
 	HTTPClient *http.Client
@@ -98,6 +105,28 @@ func (o *ListRepositoriesParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithAfter adds the after to the list repositories params
+func (o *ListRepositoriesParams) WithAfter(after *string) *ListRepositoriesParams {
+	o.SetAfter(after)
+	return o
+}
+
+// SetAfter adds the after to the list repositories params
+func (o *ListRepositoriesParams) SetAfter(after *string) {
+	o.After = after
+}
+
+// WithAmount adds the amount to the list repositories params
+func (o *ListRepositoriesParams) WithAmount(amount *int64) *ListRepositoriesParams {
+	o.SetAmount(amount)
+	return o
+}
+
+// SetAmount adds the amount to the list repositories params
+func (o *ListRepositoriesParams) SetAmount(amount *int64) {
+	o.Amount = amount
+}
+
 // WriteToRequest writes these params to a swagger request
 func (o *ListRepositoriesParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -105,6 +134,38 @@ func (o *ListRepositoriesParams) WriteToRequest(r runtime.ClientRequest, reg str
 		return err
 	}
 	var res []error
+
+	if o.After != nil {
+
+		// query param after
+		var qrAfter string
+		if o.After != nil {
+			qrAfter = *o.After
+		}
+		qAfter := qrAfter
+		if qAfter != "" {
+			if err := r.SetQueryParam("after", qAfter); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	if o.Amount != nil {
+
+		// query param amount
+		var qrAmount int64
+		if o.Amount != nil {
+			qrAmount = *o.Amount
+		}
+		qAmount := swag.FormatInt64(qrAmount)
+		if qAmount != "" {
+			if err := r.SetQueryParam("amount", qAmount); err != nil {
+				return err
+			}
+		}
+
+	}
 
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)

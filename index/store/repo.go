@@ -3,6 +3,8 @@ package store
 import (
 	"fmt"
 
+	"github.com/treeverse/lakefs/ident"
+
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
@@ -14,12 +16,12 @@ type RepoReadOnlyOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
-	ListBranches() ([]*model.Branch, error)
+	ListBranches(amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
-	ListTree(addr, from string, results int) ([]*model.Entry, bool, error)
-	ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error)
+	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
+	ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
 
 	// Multipart uploads
@@ -87,23 +89,39 @@ func (s *KVRepoReadOnlyOperations) ReadFromWorkspace(branch, path string) (*mode
 	return ent, s.query.GetAsProto(ent, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }
 
-func (s *KVRepoReadOnlyOperations) ListBranches() ([]*model.Branch, error) {
-	iter, itclose := s.query.RangePrefix(SubspaceBranches, db.CompositeStrings(s.repoId))
+func (s *KVRepoReadOnlyOperations) ListBranches(amount int, after string) ([]*model.Branch, bool, error) {
+	var iter db.Iterator
+	var itclose db.IteratorCloseFn
+	if len(after) == 0 {
+		iter, itclose = s.query.RangePrefix(SubspaceBranches, db.CompositeStrings(s.repoId))
+	} else {
+		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceBranches, db.CompositeStrings(s.repoId), db.CompositeStrings(s.repoId, after))
+	}
 	defer itclose()
 	branches := make([]*model.Branch, 0)
+	var curr int
+	var done, hasMore bool
 	for iter.Advance() {
+		if done {
+			hasMore = true
+			break
+		}
 		branch := &model.Branch{}
 		kv, err := iter.Get()
 		if err != nil {
-			return nil, errors.ErrIndexMalformed
+			return nil, false, errors.ErrIndexMalformed
 		}
 		err = proto.Unmarshal(kv.Value, branch)
 		if err != nil {
-			return nil, errors.ErrIndexMalformed
+			return nil, false, errors.ErrIndexMalformed
 		}
 		branches = append(branches, branch)
+		curr++
+		if curr == amount {
+			done = true
+		}
 	}
-	return branches, nil
+	return branches, hasMore, nil
 }
 
 func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, error) {
@@ -118,10 +136,11 @@ func (s *KVRepoReadOnlyOperations) ReadObject(addr string) (*model.Object, error
 
 func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error) {
 	commit := &model.Commit{}
-	if len(addr) == 64 {
+	if len(addr) == ident.HashHexLength {
 		return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
 	}
-	// otherwise, it could be a truncated commit
+	// otherwise, it could be a truncated commit hash - we support this as long as the results are not ambiguous
+	// i.e. a truncated commit returns 1 - and only 1 result.
 	iter, close := s.query.RangePrefix(SubspaceCommits, db.CompositeStrings(s.repoId, addr))
 	defer close()
 	var hasMatch bool
@@ -149,7 +168,7 @@ func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error
 	return commit, nil
 }
 
-func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string, results int) ([]*model.Entry, bool, error) {
+func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error) {
 	var iter db.Iterator
 	var itclose db.IteratorCloseFn
 	var hasMore bool
@@ -157,8 +176,8 @@ func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string,
 	if len(prefix) > 0 {
 		key = key.With([]byte(prefix))
 	}
-	if len(from) > 0 {
-		gtValue := db.CompositeStrings(s.repoId, addr, from)
+	if len(after) > 0 {
+		gtValue := db.CompositeStrings(s.repoId, addr, after)
 		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, gtValue)
 	} else {
 		iter, itclose = s.query.RangePrefix(SubspaceEntries, key)
@@ -186,8 +205,8 @@ func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, from string,
 	return entries, hasMore, nil
 }
 
-func (s *KVRepoReadOnlyOperations) ListTree(addr, from string, results int) ([]*model.Entry, bool, error) {
-	return s.ListTreeWithPrefix(addr, "", from, results)
+func (s *KVRepoReadOnlyOperations) ListTree(addr, after string, results int) ([]*model.Entry, bool, error) {
+	return s.ListTreeWithPrefix(addr, "", after, results)
 }
 
 func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {

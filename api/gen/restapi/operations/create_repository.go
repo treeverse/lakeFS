@@ -31,7 +31,7 @@ func NewCreateRepository(ctx *middleware.Context, handler CreateRepositoryHandle
 	return &CreateRepository{Context: ctx, Handler: handler}
 }
 
-/*CreateRepository swagger:route POST /repositories/{repositoryId} createRepository
+/*CreateRepository swagger:route POST /repositories createRepository
 
 create repository
 

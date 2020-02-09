@@ -355,12 +355,12 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories/{repositoryId}/branches/{branchId}"] = NewCreateBranch(o.context, o.CreateBranchHandler)
+	o.handlers["POST"]["/repositories/{repositoryId}/branches"] = NewCreateBranch(o.context, o.CreateBranchHandler)
 
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories/{repositoryId}"] = NewCreateRepository(o.context, o.CreateRepositoryHandler)
+	o.handlers["POST"]["/repositories"] = NewCreateRepository(o.context, o.CreateRepositoryHandler)
 
 	if o.handlers["DELETE"] == nil {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
