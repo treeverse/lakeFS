@@ -94,7 +94,7 @@ func (a *Client) CreateBranch(params *CreateBranchParams, authInfo runtime.Clien
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "createBranch",
 		Method:             "POST",
-		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}",
+		PathPattern:        "/repositories/{repositoryId}/branches",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
@@ -128,7 +128,7 @@ func (a *Client) CreateRepository(params *CreateRepositoryParams, authInfo runti
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "createRepository",
 		Method:             "POST",
-		PathPattern:        "/repositories/{repositoryId}",
+		PathPattern:        "/repositories",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},

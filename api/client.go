@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -43,14 +45,14 @@ PUT  /repositories/myrepo/branches/feature-new/merge/master // merge branch into
 */
 
 type Client interface {
-	ListRepositories(ctx context.Context) ([]*models.Repository, error)
+	ListRepositories(ctx context.Context, from string, amount int) ([]*models.Repository, *models.Pagination, error)
 	GetRepository(ctx context.Context, repoId string) (*models.Repository, error)
 	CreateRepository(ctx context.Context, repoId string, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repoId string) error
 
-	ListBranches(ctx context.Context, repoId string) ([]*models.Refspec, error)
+	ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Refspec, *models.Pagination, error)
 	GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error)
-	CreateBranch(ctx context.Context, repoId, branchId string, branch *models.Refspec) error
+	CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error
 	DeleteBranch(ctx context.Context, repoId, branchId string) error
 
 	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
@@ -62,14 +64,16 @@ type client struct {
 	auth   runtime.ClientAuthInfoWriter
 }
 
-func (c *client) ListRepositories(ctx context.Context) ([]*models.Repository, error) {
+func (c *client) ListRepositories(ctx context.Context, from string, amount int) ([]*models.Repository, *models.Pagination, error) {
 	resp, err := c.remote.Operations.ListRepositories(&operations.ListRepositoriesParams{
+		After:   swag.String(from),
+		Amount:  swag.Int64(int64(amount)),
 		Context: ctx,
 	}, c.auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return resp.GetPayload(), nil
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
 func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repository, error) {
@@ -83,22 +87,23 @@ func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repo
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListBranches(ctx context.Context, repoId string) ([]*models.Refspec, error) {
+func (c *client) ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Refspec, *models.Pagination, error) {
 	resp, err := c.remote.Operations.ListBranches(&operations.ListBranchesParams{
+		After:        swag.String(from),
+		Amount:       swag.Int64(int64(amount)),
 		RepositoryID: repoId,
-		Context:      context.Background(),
+		Context:      ctx,
 	}, c.auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return resp.GetPayload(), nil
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
 func (c *client) CreateRepository(ctx context.Context, repoId string, repository *models.RepositoryCreation) error {
 	_, err := c.remote.Operations.CreateRepository(&operations.CreateRepositoryParams{
-		Repository:   repository,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	return err
 }
@@ -123,10 +128,9 @@ func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*model
 	return resp.GetPayload(), nil
 }
 
-func (c *client) CreateBranch(ctx context.Context, repoId, branchId string, branch *models.Refspec) error {
+func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error {
 	_, err := c.remote.Operations.CreateBranch(&operations.CreateBranchParams{
 		Branch:       branch,
-		BranchID:     branchId,
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)

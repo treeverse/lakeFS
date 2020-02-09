@@ -41,11 +41,6 @@ type CreateBranchParams struct {
 	  Required: true
 	  In: path
 	*/
-	BranchID string
-	/*
-	  Required: true
-	  In: path
-	*/
 	RepositoryID string
 }
 
@@ -74,11 +69,6 @@ func (o *CreateBranchParams) BindRequest(r *http.Request, route *middleware.Matc
 			}
 		}
 	}
-	rBranchID, rhkBranchID, _ := route.Params.GetOK("branchId")
-	if err := o.bindBranchID(rBranchID, rhkBranchID, route.Formats); err != nil {
-		res = append(res, err)
-	}
-
 	rRepositoryID, rhkRepositoryID, _ := route.Params.GetOK("repositoryId")
 	if err := o.bindRepositoryID(rRepositoryID, rhkRepositoryID, route.Formats); err != nil {
 		res = append(res, err)
@@ -87,21 +77,6 @@ func (o *CreateBranchParams) BindRequest(r *http.Request, route *middleware.Matc
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
-	return nil
-}
-
-// bindBranchID binds and validates parameter BranchID from path.
-func (o *CreateBranchParams) bindBranchID(rawData []string, hasKey bool, formats strfmt.Registry) error {
-	var raw string
-	if len(rawData) > 0 {
-		raw = rawData[len(rawData)-1]
-	}
-
-	// Required: true
-	// Parameter is provided by construction from the route
-
-	o.BranchID = raw
-
 	return nil
 }
 

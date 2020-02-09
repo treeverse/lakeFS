@@ -10,11 +10,16 @@ import (
 	"net/url"
 	golangswaggerpaths "path"
 	"strings"
+
+	"github.com/go-openapi/swag"
 )
 
 // ListBranchesURL generates an URL for the list branches operation
 type ListBranchesURL struct {
 	RepositoryID string
+
+	After  *string
+	Amount *int64
 
 	_basePath string
 	// avoid unkeyed usage
@@ -51,6 +56,26 @@ func (o *ListBranchesURL) Build() (*url.URL, error) {
 
 	_basePath := o._basePath
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
+
+	qs := make(url.Values)
+
+	var afterQ string
+	if o.After != nil {
+		afterQ = *o.After
+	}
+	if afterQ != "" {
+		qs.Set("after", afterQ)
+	}
+
+	var amountQ string
+	if o.Amount != nil {
+		amountQ = swag.FormatInt64(*o.Amount)
+	}
+	if amountQ != "" {
+		qs.Set("amount", amountQ)
+	}
+
+	_result.RawQuery = qs.Encode()
 
 	return &_result, nil
 }

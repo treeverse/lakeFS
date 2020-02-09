@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/treeverse/lakefs/uri"
@@ -33,12 +35,16 @@ var branchListCmd = &cobra.Command{
 		IsRepoURI(0),
 	),
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+
 		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		response, err := client.ListBranches(context.Background(), u.Repository)
+		response, pagination, err := client.ListBranches(context.Background(), u.Repository, after, amount)
 		if err != nil {
 			return err
 		}
@@ -51,6 +57,10 @@ var branchListCmd = &cobra.Command{
 			t.AppendRow([]interface{}{*branch.ID, *branch.CommitID})
 		}
 		t.Render()
+
+		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+			fmt.Printf("for more results, run with `--amount %d --after \"%s\"\n", amount, pagination.NextOffset)
+		}
 
 		// done
 		return nil
@@ -85,9 +95,9 @@ var branchCreateCmd = &cobra.Command{
 		}
 		fmt.Printf("got source branch '%s', using commit '%s'\n",
 			suri.Refspec, *sourceBranch.CommitID)
-		err = client.CreateBranch(context.Background(), u.Repository, u.Refspec, &models.Refspec{
+		err = client.CreateBranch(context.Background(), u.Repository, &models.Refspec{
 			CommitID: sourceBranch.CommitID,
-			ID:       &u.Refspec,
+			ID:       swag.String(u.Refspec),
 		})
 		return err
 	},
@@ -146,6 +156,9 @@ func init() {
 	branchCmd.AddCommand(branchDeleteCmd)
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
+
+	branchListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")

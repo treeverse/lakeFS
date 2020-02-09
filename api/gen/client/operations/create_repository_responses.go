@@ -68,7 +68,7 @@ type CreateRepositoryCreated struct {
 }
 
 func (o *CreateRepositoryCreated) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}][%d] createRepositoryCreated  %+v", 201, o.Payload)
+	return fmt.Sprintf("[POST /repositories][%d] createRepositoryCreated  %+v", 201, o.Payload)
 }
 
 func (o *CreateRepositoryCreated) GetPayload() *models.Repository {
@@ -101,7 +101,7 @@ type CreateRepositoryBadRequest struct {
 }
 
 func (o *CreateRepositoryBadRequest) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}][%d] createRepositoryBadRequest  %+v", 400, o.Payload)
+	return fmt.Sprintf("[POST /repositories][%d] createRepositoryBadRequest  %+v", 400, o.Payload)
 }
 
 func (o *CreateRepositoryBadRequest) GetPayload() *models.Error {
@@ -134,7 +134,7 @@ type CreateRepositoryUnauthorized struct {
 }
 
 func (o *CreateRepositoryUnauthorized) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}][%d] createRepositoryUnauthorized  %+v", 401, o.Payload)
+	return fmt.Sprintf("[POST /repositories][%d] createRepositoryUnauthorized  %+v", 401, o.Payload)
 }
 
 func (o *CreateRepositoryUnauthorized) GetPayload() *models.Error {
@@ -176,7 +176,7 @@ func (o *CreateRepositoryDefault) Code() int {
 }
 
 func (o *CreateRepositoryDefault) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}][%d] createRepository default  %+v", o._statusCode, o.Payload)
+	return fmt.Sprintf("[POST /repositories][%d] createRepository default  %+v", o._statusCode, o.Payload)
 }
 
 func (o *CreateRepositoryDefault) GetPayload() *models.Error {

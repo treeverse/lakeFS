@@ -2,19 +2,22 @@ package api
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 
+	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/go-openapi/loads"
-	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
-	"github.com/treeverse/lakefs/api/handlers"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/index"
+)
+
+const (
+	RequestIdHeaderName = "X-Request-ID"
+	LoggerServiceName   = "rest_api"
 )
 
 type Server struct {
@@ -41,52 +44,10 @@ func NewServer(
 	}
 }
 
-func (s *Server) GetRegion() string {
-	return s.region
-}
-
-func (s *Server) GetIndex() index.Index {
-	return s.meta
-}
-
-func (s *Server) GetMultipartManager() index.MultipartManager {
-	return s.multipartManager
-}
-
-func (s *Server) GetBlockStore() block.Adapter {
-	return s.blockStore
-}
-
-func (s *Server) GetAuthService() auth.Service {
-	return s.authService
-}
-
-func (s *Server) bind(api *operations.LakefsAPI) {
-	// Register operations here
-	api.ListRepositoriesHandler = handlers.NewListRepositoriesHandler(s)
-	api.GetRepositoryHandler = handlers.NewGetRepositoryHandler(s)
-	api.CreateRepositoryHandler = handlers.NewCreateRepositoryHandler(s)
-	api.DeleteRepositoryHandler = handlers.NewDeleteRepositoryHandler(s)
-
-	api.ListBranchesHandler = handlers.NewListBranchesHandler(s)
-	api.GetBranchHandler = handlers.NewGetBranchHandler(s)
-	api.CreateBranchHandler = handlers.NewCreateBranchHandler(s)
-	api.DeleteBranchHandler = handlers.NewDeleteBranchHandler(s)
-
-	api.CommitHandler = handlers.NewCommitHandler(s)
-	api.GetCommitHandler = handlers.NewGetCommitHandler(s)
-
-}
-
-func (s *Server) Serve(host string, port int) error {
-	swaggerSpec, err := loads.Analyzed(restapi.SwaggerJSON, "")
-	if err != nil {
-		return err
-	}
-
-	api := operations.NewLakefsAPI(swaggerSpec)
-
-	api.BasicAuthAuth = func(accessKey, secretKey string) (user *models.User, err error) {
+// BasicAuth returns a function that hooks into Swagger's basic auth provider
+// it uses the auth.Service provided to ensure credentials are valid
+func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
+	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetAPICredentials(accessKey)
 		if err != nil {
 			return nil, err
@@ -100,33 +61,47 @@ func (s *Server) Serve(host string, port int) error {
 		}
 		return &models.User{ID: userData.GetId()}, nil
 	}
+}
+
+// SetupServer returns a Server that has been configured with basic authenticator and is registered
+// to all relevant API handlers
+func (s *Server) SetupServer() (*restapi.Server, error) {
+	swaggerSpec, err := loads.Analyzed(restapi.SwaggerJSON, "")
+	if err != nil {
+		return nil, err
+	}
+
+	api := operations.NewLakefsAPI(swaggerSpec)
+
+	api.BasicAuthAuth = s.BasicAuth()
 
 	// bind our handlers to the server
-	s.bind(api)
+	NewHandler(s.meta, s.authService).Configure(api)
 
-	// attach authentication
-
+	// setup host/port
 	srv := restapi.NewServer(api)
-	srv.Host = host
-	srv.Port = port
-
 	srv.ConfigureAPI()
 
+	return srv, nil
+}
+
+// Serve starts an HTTP server at the given host and port
+func (s *Server) Serve(host string, port int) error {
+	srv, err := s.SetupServer()
+	if err != nil {
+		return err
+	}
+
 	// add logging to every request
-	srv.SetHandler(&loggingHandler{
-		logger: httputil.LoggingMiddleWare("X-Request-Id", "rest_api", srv.GetHandler()),
-	})
+	next := srv.GetHandler()
+	srv.SetHandler(httputil.LoggingMiddleWare(RequestIdHeaderName, LoggerServiceName, next))
+
+	// setup listen address
+	srv.Host = host
+	srv.Port = port
 
 	if err := srv.Serve(); err != nil {
 		return err
 	}
 	return nil
-}
-
-type loggingHandler struct {
-	logger http.Handler
-}
-
-func (l *loggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	l.logger.ServeHTTP(w, r)
 }

@@ -31,7 +31,7 @@ func NewCreateBranch(ctx *middleware.Context, handler CreateBranchHandler) *Crea
 	return &CreateBranch{Context: ctx, Handler: handler}
 }
 
-/*CreateBranch swagger:route POST /repositories/{repositoryId}/branches/{branchId} createBranch
+/*CreateBranch swagger:route POST /repositories/{repositoryId}/branches createBranch
 
 create branch
 

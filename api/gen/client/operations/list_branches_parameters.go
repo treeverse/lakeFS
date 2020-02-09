@@ -13,6 +13,7 @@ import (
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
 	cr "github.com/go-openapi/runtime/client"
+	"github.com/go-openapi/swag"
 
 	strfmt "github.com/go-openapi/strfmt"
 )
@@ -61,6 +62,10 @@ for the list branches operation typically these are written to a http.Request
 */
 type ListBranchesParams struct {
 
+	/*After*/
+	After *string
+	/*Amount*/
+	Amount *int64
 	/*RepositoryID*/
 	RepositoryID string
 
@@ -102,6 +107,28 @@ func (o *ListBranchesParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
+// WithAfter adds the after to the list branches params
+func (o *ListBranchesParams) WithAfter(after *string) *ListBranchesParams {
+	o.SetAfter(after)
+	return o
+}
+
+// SetAfter adds the after to the list branches params
+func (o *ListBranchesParams) SetAfter(after *string) {
+	o.After = after
+}
+
+// WithAmount adds the amount to the list branches params
+func (o *ListBranchesParams) WithAmount(amount *int64) *ListBranchesParams {
+	o.SetAmount(amount)
+	return o
+}
+
+// SetAmount adds the amount to the list branches params
+func (o *ListBranchesParams) SetAmount(amount *int64) {
+	o.Amount = amount
+}
+
 // WithRepositoryID adds the repositoryID to the list branches params
 func (o *ListBranchesParams) WithRepositoryID(repositoryID string) *ListBranchesParams {
 	o.SetRepositoryID(repositoryID)
@@ -120,6 +147,38 @@ func (o *ListBranchesParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.
 		return err
 	}
 	var res []error
+
+	if o.After != nil {
+
+		// query param after
+		var qrAfter string
+		if o.After != nil {
+			qrAfter = *o.After
+		}
+		qAfter := qrAfter
+		if qAfter != "" {
+			if err := r.SetQueryParam("after", qAfter); err != nil {
+				return err
+			}
+		}
+
+	}
+
+	if o.Amount != nil {
+
+		// query param amount
+		var qrAmount int64
+		if o.Amount != nil {
+			qrAmount = *o.Amount
+		}
+		qAmount := swag.FormatInt64(qrAmount)
+		if qAmount != "" {
+			if err := r.SetQueryParam("amount", qAmount); err != nil {
+				return err
+			}
+		}
+
+	}
 
 	// path param repositoryId
 	if err := r.SetPathParam("repositoryId", o.RepositoryID); err != nil {
