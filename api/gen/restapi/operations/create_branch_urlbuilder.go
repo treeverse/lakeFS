@@ -14,7 +14,6 @@ import (
 
 // CreateBranchURL generates an URL for the create branch operation
 type CreateBranchURL struct {
-	BranchID     string
 	RepositoryID string
 
 	_basePath string
@@ -41,14 +40,7 @@ func (o *CreateBranchURL) SetBasePath(bp string) {
 func (o *CreateBranchURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/repositories/{repositoryId}/branches/{branchId}"
-
-	branchID := o.BranchID
-	if branchID != "" {
-		_path = strings.Replace(_path, "{branchId}", branchID, -1)
-	} else {
-		return nil, errors.New("branchId is required on CreateBranchURL")
-	}
+	var _path = "/repositories/{repositoryId}/branches"
 
 	repositoryID := o.RepositoryID
 	if repositoryID != "" {
