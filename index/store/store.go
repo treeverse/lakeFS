@@ -2,8 +2,6 @@ package store
 
 import (
 	"github.com/treeverse/lakefs/db"
-
-	"github.com/dgraph-io/badger"
 )
 
 var (
@@ -29,8 +27,8 @@ type KVStore struct {
 	kv db.Store
 }
 
-func NewKVStore(database *badger.DB) *KVStore {
-	kv := db.NewDBStore(database)
+func NewKVStore(database db.Store) *KVStore {
+	kv := database
 	return &KVStore{kv: kv}
 }
 
