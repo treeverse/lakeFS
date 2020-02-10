@@ -9,11 +9,18 @@ import (
 	"errors"
 	"net/url"
 	golangswaggerpaths "path"
+
+	"github.com/go-openapi/swag"
 )
 
 // ListRepositoriesURL generates an URL for the list repositories operation
 type ListRepositoriesURL struct {
+	After  *string
+	Amount *int64
+
 	_basePath string
+	// avoid unkeyed usage
+	_ struct{}
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
@@ -39,6 +46,26 @@ func (o *ListRepositoriesURL) Build() (*url.URL, error) {
 
 	_basePath := o._basePath
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
+
+	qs := make(url.Values)
+
+	var afterQ string
+	if o.After != nil {
+		afterQ = *o.After
+	}
+	if afterQ != "" {
+		qs.Set("after", afterQ)
+	}
+
+	var amountQ string
+	if o.Amount != nil {
+		amountQ = swag.FormatInt64(*o.Amount)
+	}
+	if amountQ != "" {
+		qs.Set("amount", amountQ)
+	}
+
+	_result.RawQuery = qs.Encode()
 
 	return &_result, nil
 }

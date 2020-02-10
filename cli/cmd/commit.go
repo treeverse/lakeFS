@@ -16,36 +16,76 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"strings"
+
+	"github.com/treeverse/lakefs/uri"
 
 	"github.com/spf13/cobra"
 )
 
 // commitCmd represents the commit command
+// lakectl commit lakefs://myrepo@master --message "commit message"
 var commitCmd = &cobra.Command{
-	Use:   "commit",
+	Use:   "commit [branch uri]",
 	Short: "commit changes on a given branch",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		// validate message
+		kvPairs, err := getKV(cmd, "meta")
+		if err != nil {
+			return err
+		}
+		message, err := cmd.Flags().GetString("message")
+		if err != nil {
+			return err
+		}
+		branchUri := uri.Must(uri.Parse(args[0]))
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("commit called")
+		// do commit
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+
+		commit, err := client.Commit(context.Background(), branchUri.Repository, branchUri.Refspec, message, kvPairs)
+		if err != nil {
+			return err
+		}
+
+		fmt.Printf("Commit for branch '%s' done:\nID: %s\ntimestamp: %d\nparents: %s\n",
+			branchUri.Refspec, commit.ID, commit.CreationDate, strings.Join(commit.Parents, ", "))
+
+		return nil
 	},
+}
+
+func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
+	kvList, err := cmd.Flags().GetStringSlice(name)
+	fmt.Printf("kv: %+v\n", kvList)
+	if err != nil {
+		return nil, err
+	}
+	kv := make(map[string]string)
+	for _, pair := range kvList {
+		parts := strings.SplitN(pair, "=", 2)
+		if len(parts) != 2 {
+			return nil, fmt.Errorf("invalid key/value pair - should be seperated by \"=\"")
+		}
+		kv[parts[0]] = parts[1]
+	}
+	return kv, nil
 }
 
 func init() {
 	rootCmd.AddCommand(commitCmd)
 
-	// Here you will define your flags and configuration settings.
+	commitCmd.Flags().StringP("message", "m", "", "commit message")
+	_ = commitCmd.MarkFlagRequired("message")
 
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// commitCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// commitCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	commitCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")
 }

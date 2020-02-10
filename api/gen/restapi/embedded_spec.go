@@ -38,47 +38,38 @@ func init() {
       "get": {
         "summary": "list repositories",
         "operationId": "listRepositories",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "repository list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/repository"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/repository"
+                  }
+                }
               }
             }
           },
           "401": {
             "$ref": "#/responses/Unauthorized"
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      }
-    },
-    "/repositories/{repositoryId}": {
-      "get": {
-        "summary": "get repository",
-        "operationId": "getRepository",
-        "responses": {
-          "200": {
-            "description": "repository",
-            "schema": {
-              "$ref": "#/definitions/repository"
-            }
-          },
-          "401": {
-            "$ref": "#/responses/Unauthorized"
-          },
-          "404": {
-            "description": "repository not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
           },
           "default": {
             "description": "generic error response",
@@ -115,6 +106,35 @@ func init() {
           },
           "401": {
             "$ref": "#/responses/Unauthorized"
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
+    },
+    "/repositories/{repositoryId}": {
+      "get": {
+        "summary": "get repository",
+        "operationId": "getRepository",
+        "responses": {
+          "200": {
+            "description": "repository",
+            "schema": {
+              "$ref": "#/definitions/repository"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "repository not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
           },
           "default": {
             "description": "generic error response",
@@ -161,14 +181,70 @@ func init() {
       "get": {
         "summary": "list branches",
         "operationId": "listBranches",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "branch list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/refspec"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/refspec"
+                  }
+                }
               }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "create branch",
+        "operationId": "createBranch",
+        "parameters": [
+          {
+            "name": "branch",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/refspec"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "branch",
+            "schema": {
+              "$ref": "#/definitions/refspec"
+            }
+          },
+          "400": {
+            "description": "validation error",
+            "schema": {
+              "$ref": "#/definitions/error"
             }
           },
           "401": {
@@ -219,42 +295,6 @@ func init() {
           }
         }
       },
-      "post": {
-        "summary": "create branch",
-        "operationId": "createBranch",
-        "parameters": [
-          {
-            "name": "branch",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/refspec"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "branch",
-            "schema": {
-              "$ref": "#/definitions/refspec"
-            }
-          },
-          "400": {
-            "description": "validation error",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "401": {
-            "$ref": "#/responses/Unauthorized"
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "delete": {
         "summary": "delete branch",
         "operationId": "deleteBranch",
@@ -293,9 +333,151 @@ func init() {
           "required": true
         }
       ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "post": {
+        "summary": "create commit",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/commit_creation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
     }
   },
   "definitions": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "committer": {
+          "type": "string"
+        },
+        "creation_date": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commit_creation": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "error": {
       "type": "object",
       "properties": {
@@ -317,6 +499,26 @@ func init() {
         },
         "type": {
           "type": "string"
+        }
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "required": [
+        "has_more"
+      ],
+      "properties": {
+        "has_more": {
+          "type": "boolean"
+        },
+        "max_per_page": {
+          "type": "integer"
+        },
+        "next_offset": {
+          "type": "string"
+        },
+        "results": {
+          "type": "integer"
         }
       }
     },
@@ -422,50 +624,38 @@ func init() {
       "get": {
         "summary": "list repositories",
         "operationId": "listRepositories",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "repository list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/repository"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/repository"
+                  }
+                }
               }
             }
           },
           "401": {
             "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      }
-    },
-    "/repositories/{repositoryId}": {
-      "get": {
-        "summary": "get repository",
-        "operationId": "getRepository",
-        "responses": {
-          "200": {
-            "description": "repository",
-            "schema": {
-              "$ref": "#/definitions/repository"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "404": {
-            "description": "repository not found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -505,6 +695,38 @@ func init() {
           },
           "401": {
             "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      }
+    },
+    "/repositories/{repositoryId}": {
+      "get": {
+        "summary": "get repository",
+        "operationId": "getRepository",
+        "responses": {
+          "200": {
+            "description": "repository",
+            "schema": {
+              "$ref": "#/definitions/repository"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "repository not found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -557,14 +779,73 @@ func init() {
       "get": {
         "summary": "list branches",
         "operationId": "listBranches",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "branch list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/refspec"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/refspec"
+                  }
+                }
               }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "create branch",
+        "operationId": "createBranch",
+        "parameters": [
+          {
+            "name": "branch",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/refspec"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "branch",
+            "schema": {
+              "$ref": "#/definitions/refspec"
+            }
+          },
+          "400": {
+            "description": "validation error",
+            "schema": {
+              "$ref": "#/definitions/error"
             }
           },
           "401": {
@@ -621,45 +902,6 @@ func init() {
           }
         }
       },
-      "post": {
-        "summary": "create branch",
-        "operationId": "createBranch",
-        "parameters": [
-          {
-            "name": "branch",
-            "in": "body",
-            "schema": {
-              "$ref": "#/definitions/refspec"
-            }
-          }
-        ],
-        "responses": {
-          "201": {
-            "description": "branch",
-            "schema": {
-              "$ref": "#/definitions/refspec"
-            }
-          },
-          "400": {
-            "description": "validation error",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "delete": {
         "summary": "delete branch",
         "operationId": "deleteBranch",
@@ -701,9 +943,157 @@ func init() {
           "required": true
         }
       ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "post": {
+        "summary": "create commit",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/commit_creation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
     }
   },
   "definitions": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "committer": {
+          "type": "string"
+        },
+        "creation_date": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commit_creation": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
     "error": {
       "type": "object",
       "properties": {
@@ -725,6 +1115,28 @@ func init() {
         },
         "type": {
           "type": "string"
+        }
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "required": [
+        "has_more"
+      ],
+      "properties": {
+        "has_more": {
+          "type": "boolean"
+        },
+        "max_per_page": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_offset": {
+          "type": "string"
+        },
+        "results": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

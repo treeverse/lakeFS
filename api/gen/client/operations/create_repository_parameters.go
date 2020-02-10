@@ -65,8 +65,6 @@ type CreateRepositoryParams struct {
 
 	/*Repository*/
 	Repository *models.RepositoryCreation
-	/*RepositoryID*/
-	RepositoryID string
 
 	timeout    time.Duration
 	Context    context.Context
@@ -117,17 +115,6 @@ func (o *CreateRepositoryParams) SetRepository(repository *models.RepositoryCrea
 	o.Repository = repository
 }
 
-// WithRepositoryID adds the repositoryID to the create repository params
-func (o *CreateRepositoryParams) WithRepositoryID(repositoryID string) *CreateRepositoryParams {
-	o.SetRepositoryID(repositoryID)
-	return o
-}
-
-// SetRepositoryID adds the repositoryId to the create repository params
-func (o *CreateRepositoryParams) SetRepositoryID(repositoryID string) {
-	o.RepositoryID = repositoryID
-}
-
 // WriteToRequest writes these params to a swagger request
 func (o *CreateRepositoryParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Registry) error {
 
@@ -140,11 +127,6 @@ func (o *CreateRepositoryParams) WriteToRequest(r runtime.ClientRequest, reg str
 		if err := r.SetBodyParam(o.Repository); err != nil {
 			return err
 		}
-	}
-
-	// path param repositoryId
-	if err := r.SetPathParam("repositoryId", o.RepositoryID); err != nil {
-		return err
 	}
 
 	if len(res) > 0 {
