@@ -7,8 +7,12 @@ package operations
 
 import (
 	"net/http"
+	"strconv"
 
+	errors "github.com/go-openapi/errors"
 	middleware "github.com/go-openapi/runtime/middleware"
+	strfmt "github.com/go-openapi/strfmt"
+	swag "github.com/go-openapi/swag"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 )
@@ -70,4 +74,94 @@ func (o *ListBranches) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	o.Context.Respond(rw, r, route.Produces, route, res)
 
+}
+
+// ListBranchesOKBody list branches o k body
+// swagger:model ListBranchesOKBody
+type ListBranchesOKBody struct {
+
+	// pagination
+	Pagination *models.Pagination `json:"pagination,omitempty"`
+
+	// results
+	Results []*models.Refspec `json:"results"`
+}
+
+// Validate validates this list branches o k body
+func (o *ListBranchesOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validatePagination(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateResults(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *ListBranchesOKBody) validatePagination(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Pagination) { // not required
+		return nil
+	}
+
+	if o.Pagination != nil {
+		if err := o.Pagination.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("listBranchesOK" + "." + "pagination")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *ListBranchesOKBody) validateResults(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Results) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Results); i++ {
+		if swag.IsZero(o.Results[i]) { // not required
+			continue
+		}
+
+		if o.Results[i] != nil {
+			if err := o.Results[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("listBranchesOK" + "." + "results" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *ListBranchesOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *ListBranchesOKBody) UnmarshalBinary(b []byte) error {
+	var res ListBranchesOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
+	return nil
 }
