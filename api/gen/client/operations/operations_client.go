@@ -25,6 +25,8 @@ type Client struct {
 
 // ClientService is the interface for Client methods
 type ClientService interface {
+	Commit(params *CommitParams, authInfo runtime.ClientAuthInfoWriter) (*CommitCreated, error)
+
 	CreateBranch(params *CreateBranchParams, authInfo runtime.ClientAuthInfoWriter) (*CreateBranchCreated, error)
 
 	CreateRepository(params *CreateRepositoryParams, authInfo runtime.ClientAuthInfoWriter) (*CreateRepositoryCreated, error)
@@ -35,6 +37,8 @@ type ClientService interface {
 
 	GetBranch(params *GetBranchParams, authInfo runtime.ClientAuthInfoWriter) (*GetBranchOK, error)
 
+	GetCommit(params *GetCommitParams, authInfo runtime.ClientAuthInfoWriter) (*GetCommitOK, error)
+
 	GetRepository(params *GetRepositoryParams, authInfo runtime.ClientAuthInfoWriter) (*GetRepositoryOK, error)
 
 	ListBranches(params *ListBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*ListBranchesOK, error)
@@ -42,6 +46,40 @@ type ClientService interface {
 	ListRepositories(params *ListRepositoriesParams, authInfo runtime.ClientAuthInfoWriter) (*ListRepositoriesOK, error)
 
 	SetTransport(transport runtime.ClientTransport)
+}
+
+/*
+  Commit creates commit
+*/
+func (a *Client) Commit(params *CommitParams, authInfo runtime.ClientAuthInfoWriter) (*CommitCreated, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewCommitParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "commit",
+		Method:             "POST",
+		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/commits",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &CommitReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*CommitCreated)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*CommitDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 
 /*
@@ -56,7 +94,7 @@ func (a *Client) CreateBranch(params *CreateBranchParams, authInfo runtime.Clien
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "createBranch",
 		Method:             "POST",
-		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}",
+		PathPattern:        "/repositories/{repositoryId}/branches",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
@@ -90,7 +128,7 @@ func (a *Client) CreateRepository(params *CreateRepositoryParams, authInfo runti
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "createRepository",
 		Method:             "POST",
-		PathPattern:        "/repositories/{repositoryId}",
+		PathPattern:        "/repositories",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
@@ -211,6 +249,40 @@ func (a *Client) GetBranch(params *GetBranchParams, authInfo runtime.ClientAuthI
 	}
 	// unexpected success response
 	unexpectedSuccess := result.(*GetBranchDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
+}
+
+/*
+  GetCommit gets commit
+*/
+func (a *Client) GetCommit(params *GetCommitParams, authInfo runtime.ClientAuthInfoWriter) (*GetCommitOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetCommitParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getCommit",
+		Method:             "GET",
+		PathPattern:        "/repositories/{repositoryId}/commits/{commitId}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetCommitReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*GetCommitOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*GetCommitDefault)
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 

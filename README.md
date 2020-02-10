@@ -48,12 +48,9 @@ The following methods should be implemented:
 
 1. Identity and authorization information extraction from any request (support SIGv2 and SIGv4)
 2. Support for S3 REST API semantics
-3. GET Service (list all buckets (repos))
-4. Bucket operations:
-   1. DELETE Bucket 
-   2. GET Bucket (list objects)
-   3. HEAD bucket (just 200 if exists and permissions allow access)
-5. Object operations:
+3. Bucket operations:
+   1. HEAD bucket (just 200 if exists and permissions allow access)
+4. Object operations:
    1. DELETE Object
    2. DELETE Multiple Objects
    3. GET Object

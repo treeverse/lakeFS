@@ -16,7 +16,14 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"time"
+
+	"github.com/go-openapi/swag"
+
+	"github.com/jedib0t/go-pretty/table"
 
 	"github.com/spf13/cobra"
 )
@@ -25,27 +32,44 @@ import (
 var repoCmd = &cobra.Command{
 	Use:   "repo",
 	Short: "manage and explore repos",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("repo called")
+var repoListCmd = &cobra.Command{
+	Use:   "list",
+	Short: "list repositories",
+	RunE: func(cmd *cobra.Command, args []string) error {
+
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+
+		clt, err := getClient()
+		if err != nil {
+			return err
+		}
+
+		repos, pagination, err := clt.ListRepositories(context.Background(), after, amount)
+		// generate table
+		t := table.NewWriter()
+		t.SetOutputMirror(os.Stdout)
+		t.AppendHeader(table.Row{"Repository", "Creation Date", "Default Branch Name", "Storage Namespace"})
+		for _, repo := range repos {
+			ts := time.Unix(repo.CreationDate, 0).Format(time.RFC1123Z)
+			t.AppendRow([]interface{}{repo.ID, ts, repo.DefaultBranch, repo.BucketName})
+		}
+		t.Render()
+
+		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+			fmt.Printf("for more results, run with `--amount %d --after \"%s\"\n", amount, pagination.NextOffset)
+		}
+
+		return nil
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(repoCmd)
+	repoCmd.AddCommand(repoListCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// repoCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// repoCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	repoListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }

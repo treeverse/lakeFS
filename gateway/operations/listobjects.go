@@ -106,7 +106,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	if len(prefix) == 0 {
 		// list branches then.
-		branches, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1)
+		branches, _, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1, "")
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -207,7 +207,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	var refspec string
 	if len(params.Get("prefix")) == 0 {
 		// list branches then.
-		branches, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1)
+		branches, _, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1, "")
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
