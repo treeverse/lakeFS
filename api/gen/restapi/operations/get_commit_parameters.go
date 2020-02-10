@@ -9,34 +9,32 @@ import (
 	"net/http"
 
 	"github.com/go-openapi/errors"
-	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 
 	strfmt "github.com/go-openapi/strfmt"
-
-	"github.com/treeverse/lakefs/api/gen/models"
 )
 
-// NewCreateBranchParams creates a new CreateBranchParams object
+// NewGetCommitParams creates a new GetCommitParams object
 // no default values defined in spec.
-func NewCreateBranchParams() CreateBranchParams {
+func NewGetCommitParams() GetCommitParams {
 
-	return CreateBranchParams{}
+	return GetCommitParams{}
 }
 
-// CreateBranchParams contains all the bound params for the create branch operation
+// GetCommitParams contains all the bound params for the get commit operation
 // typically these are obtained from a http.Request
 //
-// swagger:parameters createBranch
-type CreateBranchParams struct {
+// swagger:parameters getCommit
+type GetCommitParams struct {
 
 	// HTTP Request Object
 	HTTPRequest *http.Request `json:"-"`
 
 	/*
-	  In: body
+	  Required: true
+	  In: path
 	*/
-	Branch *models.Refspec
+	CommitID string
 	/*
 	  Required: true
 	  In: path
@@ -47,28 +45,17 @@ type CreateBranchParams struct {
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
 // for simple values it will use straight method calls.
 //
-// To ensure default values, the struct must have been initialized with NewCreateBranchParams() beforehand.
-func (o *CreateBranchParams) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {
+// To ensure default values, the struct must have been initialized with NewGetCommitParams() beforehand.
+func (o *GetCommitParams) BindRequest(r *http.Request, route *middleware.MatchedRoute) error {
 	var res []error
 
 	o.HTTPRequest = r
 
-	if runtime.HasBody(r) {
-		defer r.Body.Close()
-		var body models.Refspec
-		if err := route.Consumer.Consume(r.Body, &body); err != nil {
-			res = append(res, errors.NewParseError("branch", "body", "", err))
-		} else {
-			// validate body object
-			if err := body.Validate(route.Formats); err != nil {
-				res = append(res, err)
-			}
-
-			if len(res) == 0 {
-				o.Branch = &body
-			}
-		}
+	rCommitID, rhkCommitID, _ := route.Params.GetOK("commitId")
+	if err := o.bindCommitID(rCommitID, rhkCommitID, route.Formats); err != nil {
+		res = append(res, err)
 	}
+
 	rRepositoryID, rhkRepositoryID, _ := route.Params.GetOK("repositoryId")
 	if err := o.bindRepositoryID(rRepositoryID, rhkRepositoryID, route.Formats); err != nil {
 		res = append(res, err)
@@ -80,8 +67,23 @@ func (o *CreateBranchParams) BindRequest(r *http.Request, route *middleware.Matc
 	return nil
 }
 
+// bindCommitID binds and validates parameter CommitID from path.
+func (o *GetCommitParams) bindCommitID(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: true
+	// Parameter is provided by construction from the route
+
+	o.CommitID = raw
+
+	return nil
+}
+
 // bindRepositoryID binds and validates parameter RepositoryID from path.
-func (o *CreateBranchParams) bindRepositoryID(rawData []string, hasKey bool, formats strfmt.Registry) error {
+func (o *GetCommitParams) bindRepositoryID(rawData []string, hasKey bool, formats strfmt.Registry) error {
 	var raw string
 	if len(rawData) > 0 {
 		raw = rawData[len(rawData)-1]

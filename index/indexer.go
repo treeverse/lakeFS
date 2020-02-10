@@ -34,16 +34,17 @@ type Index interface {
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
 	ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error)
-	ListBranches(repoId string, results int) ([]*model.Branch, error)
+	ListBranches(repoId string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, commitId string) error
 	GetBranch(repoId, branch string) (*model.Branch, error)
-	Commit(repoId, branch, message, committer string, metadata map[string]string) error
+	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
+	GetCommit(repoId, commitId string) (*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
 	Merge(repoId, source, destination string) error
 	CreateRepo(repoId, defaultBranch string) error
-	ListRepos() ([]*model.Repo, error)
+	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
 }
@@ -296,18 +297,28 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 	return err
 }
 
-func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Branch, error) {
-	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) ListBranches(repoId string, amount int, after string) ([]*model.Branch, bool, error) {
+	type results struct {
+		branches []*model.Branch
+		hasMore  bool
+	}
+	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		// we're reading the repo to add it to this transaction's conflict range
+		// but also to ensure it exists
 		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		return tx.ListBranches()
+		branches, hasMore, err := tx.ListBranches(amount, after) // TODO: pagination
+		return &results{
+			branches: branches,
+			hasMore:  hasMore,
+		}, err
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return entries.([]*model.Branch), nil
+	return res.(*results).branches, res.(*results).hasMore, nil
 }
 
 func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
@@ -389,9 +400,9 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), err
 }
 
-func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) error {
+func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	ts := time.Now().Unix()
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
@@ -417,9 +428,22 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 		branchData.CommitRoot = commit.GetTree()
 		branchData.WorkspaceRoot = commit.GetTree()
 
-		return nil, tx.WriteBranch(branch, branchData)
+		return commit, tx.WriteBranch(branch, branchData)
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*model.Commit), nil
+}
+
+func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) {
+	commit, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		return tx.ReadCommit(commitId)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*model.Commit), nil
 }
 
 func (index *KVIndex) DeleteBranch(repoId, branch string) error {
@@ -520,14 +544,22 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 	return err
 }
 
-func (index *KVIndex) ListRepos() ([]*model.Repo, error) {
-	repos, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
-		return tx.ListRepos()
+func (index *KVIndex) ListRepos(amount int, after string) ([]*model.Repo, bool, error) {
+	type result struct {
+		repos   []*model.Repo
+		hasMore bool
+	}
+	res, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
+		repos, hasMore, err := tx.ListRepos(amount, after)
+		return &result{
+			repos:   repos,
+			hasMore: hasMore,
+		}, err
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return repos.([]*model.Repo), nil
+	return res.(*result).repos, res.(*result).hasMore, nil
 }
 
 func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {

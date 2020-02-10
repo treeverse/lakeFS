@@ -13,40 +13,40 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
-// CreateBranchHandlerFunc turns a function with the right signature into a create branch handler
-type CreateBranchHandlerFunc func(CreateBranchParams, *models.User) middleware.Responder
+// CommitHandlerFunc turns a function with the right signature into a commit handler
+type CommitHandlerFunc func(CommitParams, *models.User) middleware.Responder
 
 // Handle executing the request and returning a response
-func (fn CreateBranchHandlerFunc) Handle(params CreateBranchParams, principal *models.User) middleware.Responder {
+func (fn CommitHandlerFunc) Handle(params CommitParams, principal *models.User) middleware.Responder {
 	return fn(params, principal)
 }
 
-// CreateBranchHandler interface for that can handle valid create branch params
-type CreateBranchHandler interface {
-	Handle(CreateBranchParams, *models.User) middleware.Responder
+// CommitHandler interface for that can handle valid commit params
+type CommitHandler interface {
+	Handle(CommitParams, *models.User) middleware.Responder
 }
 
-// NewCreateBranch creates a new http.Handler for the create branch operation
-func NewCreateBranch(ctx *middleware.Context, handler CreateBranchHandler) *CreateBranch {
-	return &CreateBranch{Context: ctx, Handler: handler}
+// NewCommit creates a new http.Handler for the commit operation
+func NewCommit(ctx *middleware.Context, handler CommitHandler) *Commit {
+	return &Commit{Context: ctx, Handler: handler}
 }
 
-/*CreateBranch swagger:route POST /repositories/{repositoryId}/branches createBranch
+/*Commit swagger:route POST /repositories/{repositoryId}/branches/{branchId}/commits commit
 
-create branch
+create commit
 
 */
-type CreateBranch struct {
+type Commit struct {
 	Context *middleware.Context
-	Handler CreateBranchHandler
+	Handler CommitHandler
 }
 
-func (o *CreateBranch) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (o *Commit) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	route, rCtx, _ := o.Context.RouteInfo(r)
 	if rCtx != nil {
 		r = rCtx
 	}
-	var Params = NewCreateBranchParams()
+	var Params = NewCommitParams()
 
 	uprinc, aCtx, err := o.Context.Authorize(r, route)
 	if err != nil {

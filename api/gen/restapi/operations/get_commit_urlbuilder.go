@@ -10,16 +10,12 @@ import (
 	"net/url"
 	golangswaggerpaths "path"
 	"strings"
-
-	"github.com/go-openapi/swag"
 )
 
-// ListBranchesURL generates an URL for the list branches operation
-type ListBranchesURL struct {
+// GetCommitURL generates an URL for the get commit operation
+type GetCommitURL struct {
+	CommitID     string
 	RepositoryID string
-
-	After  *string
-	Amount *int64
 
 	_basePath string
 	// avoid unkeyed usage
@@ -29,7 +25,7 @@ type ListBranchesURL struct {
 // WithBasePath sets the base path for this url builder, only required when it's different from the
 // base path specified in the swagger spec.
 // When the value of the base path is an empty string
-func (o *ListBranchesURL) WithBasePath(bp string) *ListBranchesURL {
+func (o *GetCommitURL) WithBasePath(bp string) *GetCommitURL {
 	o.SetBasePath(bp)
 	return o
 }
@@ -37,51 +33,38 @@ func (o *ListBranchesURL) WithBasePath(bp string) *ListBranchesURL {
 // SetBasePath sets the base path for this url builder, only required when it's different from the
 // base path specified in the swagger spec.
 // When the value of the base path is an empty string
-func (o *ListBranchesURL) SetBasePath(bp string) {
+func (o *GetCommitURL) SetBasePath(bp string) {
 	o._basePath = bp
 }
 
 // Build a url path and query string
-func (o *ListBranchesURL) Build() (*url.URL, error) {
+func (o *GetCommitURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/repositories/{repositoryId}/branches"
+	var _path = "/repositories/{repositoryId}/commits/{commitId}"
+
+	commitID := o.CommitID
+	if commitID != "" {
+		_path = strings.Replace(_path, "{commitId}", commitID, -1)
+	} else {
+		return nil, errors.New("commitId is required on GetCommitURL")
+	}
 
 	repositoryID := o.RepositoryID
 	if repositoryID != "" {
 		_path = strings.Replace(_path, "{repositoryId}", repositoryID, -1)
 	} else {
-		return nil, errors.New("repositoryId is required on ListBranchesURL")
+		return nil, errors.New("repositoryId is required on GetCommitURL")
 	}
 
 	_basePath := o._basePath
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)
 
-	qs := make(url.Values)
-
-	var afterQ string
-	if o.After != nil {
-		afterQ = *o.After
-	}
-	if afterQ != "" {
-		qs.Set("after", afterQ)
-	}
-
-	var amountQ string
-	if o.Amount != nil {
-		amountQ = swag.FormatInt64(*o.Amount)
-	}
-	if amountQ != "" {
-		qs.Set("amount", amountQ)
-	}
-
-	_result.RawQuery = qs.Encode()
-
 	return &_result, nil
 }
 
 // Must is a helper function to panic when the url builder returns an error
-func (o *ListBranchesURL) Must(u *url.URL, err error) *url.URL {
+func (o *GetCommitURL) Must(u *url.URL, err error) *url.URL {
 	if err != nil {
 		panic(err)
 	}
@@ -92,17 +75,17 @@ func (o *ListBranchesURL) Must(u *url.URL, err error) *url.URL {
 }
 
 // String returns the string representation of the path with query string
-func (o *ListBranchesURL) String() string {
+func (o *GetCommitURL) String() string {
 	return o.Must(o.Build()).String()
 }
 
 // BuildFull builds a full url with scheme, host, path and query string
-func (o *ListBranchesURL) BuildFull(scheme, host string) (*url.URL, error) {
+func (o *GetCommitURL) BuildFull(scheme, host string) (*url.URL, error) {
 	if scheme == "" {
-		return nil, errors.New("scheme is required for a full url on ListBranchesURL")
+		return nil, errors.New("scheme is required for a full url on GetCommitURL")
 	}
 	if host == "" {
-		return nil, errors.New("host is required for a full url on ListBranchesURL")
+		return nil, errors.New("host is required for a full url on GetCommitURL")
 	}
 
 	base, err := o.Build()
@@ -116,6 +99,6 @@ func (o *ListBranchesURL) BuildFull(scheme, host string) (*url.URL, error) {
 }
 
 // StringFull returns the string representation of a complete url
-func (o *ListBranchesURL) StringFull(scheme, host string) string {
+func (o *GetCommitURL) StringFull(scheme, host string) string {
 	return o.Must(o.BuildFull(scheme, host)).String()
 }

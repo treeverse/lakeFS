@@ -9,16 +9,11 @@ import (
 	"errors"
 	"net/url"
 	golangswaggerpaths "path"
-	"strings"
 )
 
 // CreateRepositoryURL generates an URL for the create repository operation
 type CreateRepositoryURL struct {
-	RepositoryID string
-
 	_basePath string
-	// avoid unkeyed usage
-	_ struct{}
 }
 
 // WithBasePath sets the base path for this url builder, only required when it's different from the
@@ -40,14 +35,7 @@ func (o *CreateRepositoryURL) SetBasePath(bp string) {
 func (o *CreateRepositoryURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/repositories/{repositoryId}"
-
-	repositoryID := o.RepositoryID
-	if repositoryID != "" {
-		_path = strings.Replace(_path, "{repositoryId}", repositoryID, -1)
-	} else {
-		return nil, errors.New("repositoryId is required on CreateRepositoryURL")
-	}
+	var _path = "/repositories"
 
 	_basePath := o._basePath
 	_result.Path = golangswaggerpaths.Join(_basePath, _path)

@@ -8,8 +8,11 @@ package operations
 import (
 	"fmt"
 	"io"
+	"strconv"
 
+	"github.com/go-openapi/errors"
 	"github.com/go-openapi/runtime"
+	"github.com/go-openapi/swag"
 
 	strfmt "github.com/go-openapi/strfmt"
 
@@ -58,21 +61,23 @@ func NewListRepositoriesOK() *ListRepositoriesOK {
 repository list
 */
 type ListRepositoriesOK struct {
-	Payload []*models.Repository
+	Payload *ListRepositoriesOKBody
 }
 
 func (o *ListRepositoriesOK) Error() string {
 	return fmt.Sprintf("[GET /repositories][%d] listRepositoriesOK  %+v", 200, o.Payload)
 }
 
-func (o *ListRepositoriesOK) GetPayload() []*models.Repository {
+func (o *ListRepositoriesOK) GetPayload() *ListRepositoriesOKBody {
 	return o.Payload
 }
 
 func (o *ListRepositoriesOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
+	o.Payload = new(ListRepositoriesOKBody)
+
 	// response payload
-	if err := consumer.Consume(response.Body(), &o.Payload); err != nil && err != io.EOF {
+	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {
 		return err
 	}
 
@@ -151,5 +156,96 @@ func (o *ListRepositoriesDefault) readResponse(response runtime.ClientResponse, 
 		return err
 	}
 
+	return nil
+}
+
+/*ListRepositoriesOKBody list repositories o k body
+swagger:model ListRepositoriesOKBody
+*/
+type ListRepositoriesOKBody struct {
+
+	// pagination
+	Pagination *models.Pagination `json:"pagination,omitempty"`
+
+	// results
+	Results []*models.Repository `json:"results"`
+}
+
+// Validate validates this list repositories o k body
+func (o *ListRepositoriesOKBody) Validate(formats strfmt.Registry) error {
+	var res []error
+
+	if err := o.validatePagination(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if err := o.validateResults(formats); err != nil {
+		res = append(res, err)
+	}
+
+	if len(res) > 0 {
+		return errors.CompositeValidationError(res...)
+	}
+	return nil
+}
+
+func (o *ListRepositoriesOKBody) validatePagination(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Pagination) { // not required
+		return nil
+	}
+
+	if o.Pagination != nil {
+		if err := o.Pagination.Validate(formats); err != nil {
+			if ve, ok := err.(*errors.Validation); ok {
+				return ve.ValidateName("listRepositoriesOK" + "." + "pagination")
+			}
+			return err
+		}
+	}
+
+	return nil
+}
+
+func (o *ListRepositoriesOKBody) validateResults(formats strfmt.Registry) error {
+
+	if swag.IsZero(o.Results) { // not required
+		return nil
+	}
+
+	for i := 0; i < len(o.Results); i++ {
+		if swag.IsZero(o.Results[i]) { // not required
+			continue
+		}
+
+		if o.Results[i] != nil {
+			if err := o.Results[i].Validate(formats); err != nil {
+				if ve, ok := err.(*errors.Validation); ok {
+					return ve.ValidateName("listRepositoriesOK" + "." + "results" + "." + strconv.Itoa(i))
+				}
+				return err
+			}
+		}
+
+	}
+
+	return nil
+}
+
+// MarshalBinary interface implementation
+func (o *ListRepositoriesOKBody) MarshalBinary() ([]byte, error) {
+	if o == nil {
+		return nil, nil
+	}
+	return swag.WriteJSON(o)
+}
+
+// UnmarshalBinary interface implementation
+func (o *ListRepositoriesOKBody) UnmarshalBinary(b []byte) error {
+	var res ListRepositoriesOKBody
+	if err := swag.ReadJSON(b, &res); err != nil {
+		return err
+	}
+	*o = res
 	return nil
 }

@@ -40,6 +40,9 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		BearerAuthenticator: security.BearerAuth,
 		JSONConsumer:        runtime.JSONConsumer(),
 		JSONProducer:        runtime.JSONProducer(),
+		CommitHandler: CommitHandlerFunc(func(params CommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation operations.Commit has not yet been implemented")
+		}),
 		CreateBranchHandler: CreateBranchHandlerFunc(func(params CreateBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation operations.CreateBranch has not yet been implemented")
 		}),
@@ -54,6 +57,9 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		}),
 		GetBranchHandler: GetBranchHandlerFunc(func(params GetBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation operations.GetBranch has not yet been implemented")
+		}),
+		GetCommitHandler: GetCommitHandlerFunc(func(params GetCommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation operations.GetCommit has not yet been implemented")
 		}),
 		GetRepositoryHandler: GetRepositoryHandlerFunc(func(params GetRepositoryParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation operations.GetRepository has not yet been implemented")
@@ -108,6 +114,8 @@ type LakefsAPI struct {
 	// APIAuthorizer provides access control (ACL/RBAC/ABAC) by providing access to the request and authenticated principal
 	APIAuthorizer runtime.Authorizer
 
+	// CommitHandler sets the operation handler for the commit operation
+	CommitHandler CommitHandler
 	// CreateBranchHandler sets the operation handler for the create branch operation
 	CreateBranchHandler CreateBranchHandler
 	// CreateRepositoryHandler sets the operation handler for the create repository operation
@@ -118,6 +126,8 @@ type LakefsAPI struct {
 	DeleteRepositoryHandler DeleteRepositoryHandler
 	// GetBranchHandler sets the operation handler for the get branch operation
 	GetBranchHandler GetBranchHandler
+	// GetCommitHandler sets the operation handler for the get commit operation
+	GetCommitHandler GetCommitHandler
 	// GetRepositoryHandler sets the operation handler for the get repository operation
 	GetRepositoryHandler GetRepositoryHandler
 	// ListBranchesHandler sets the operation handler for the list branches operation
@@ -194,6 +204,10 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "BasicAuthAuth")
 	}
 
+	if o.CommitHandler == nil {
+		unregistered = append(unregistered, "Operations.CommitHandler")
+	}
+
 	if o.CreateBranchHandler == nil {
 		unregistered = append(unregistered, "Operations.CreateBranchHandler")
 	}
@@ -212,6 +226,10 @@ func (o *LakefsAPI) Validate() error {
 
 	if o.GetBranchHandler == nil {
 		unregistered = append(unregistered, "Operations.GetBranchHandler")
+	}
+
+	if o.GetCommitHandler == nil {
+		unregistered = append(unregistered, "Operations.GetCommitHandler")
 	}
 
 	if o.GetRepositoryHandler == nil {
@@ -332,12 +350,17 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories/{repositoryId}/branches/{branchId}"] = NewCreateBranch(o.context, o.CreateBranchHandler)
+	o.handlers["POST"]["/repositories/{repositoryId}/branches/{branchId}/commits"] = NewCommit(o.context, o.CommitHandler)
 
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories/{repositoryId}"] = NewCreateRepository(o.context, o.CreateRepositoryHandler)
+	o.handlers["POST"]["/repositories/{repositoryId}/branches"] = NewCreateBranch(o.context, o.CreateBranchHandler)
+
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
+	}
+	o.handlers["POST"]["/repositories"] = NewCreateRepository(o.context, o.CreateRepositoryHandler)
 
 	if o.handlers["DELETE"] == nil {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
@@ -353,6 +376,11 @@ func (o *LakefsAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}"] = NewGetBranch(o.context, o.GetBranchHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/repositories/{repositoryId}/commits/{commitId}"] = NewGetCommit(o.context, o.GetCommitHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
