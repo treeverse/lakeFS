@@ -25,7 +25,7 @@ type ListBranchesOK struct {
 	/*
 	  In: Body
 	*/
-	Payload []*models.Refspec `json:"body,omitempty"`
+	Payload *ListBranchesOKBody `json:"body,omitempty"`
 }
 
 // NewListBranchesOK creates ListBranchesOK with default headers values
@@ -35,13 +35,13 @@ func NewListBranchesOK() *ListBranchesOK {
 }
 
 // WithPayload adds the payload to the list branches o k response
-func (o *ListBranchesOK) WithPayload(payload []*models.Refspec) *ListBranchesOK {
+func (o *ListBranchesOK) WithPayload(payload *ListBranchesOKBody) *ListBranchesOK {
 	o.Payload = payload
 	return o
 }
 
 // SetPayload sets the payload to the list branches o k response
-func (o *ListBranchesOK) SetPayload(payload []*models.Refspec) {
+func (o *ListBranchesOK) SetPayload(payload *ListBranchesOKBody) {
 	o.Payload = payload
 }
 
@@ -49,14 +49,11 @@ func (o *ListBranchesOK) SetPayload(payload []*models.Refspec) {
 func (o *ListBranchesOK) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
 
 	rw.WriteHeader(200)
-	payload := o.Payload
-	if payload == nil {
-		// return empty array
-		payload = make([]*models.Refspec, 0, 50)
-	}
-
-	if err := producer.Produce(rw, payload); err != nil {
-		panic(err) // let the recovery middleware deal with this
+	if o.Payload != nil {
+		payload := o.Payload
+		if err := producer.Produce(rw, payload); err != nil {
+			panic(err) // let the recovery middleware deal with this
+		}
 	}
 }
 

@@ -68,7 +68,7 @@ type CreateBranchCreated struct {
 }
 
 func (o *CreateBranchCreated) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches/{branchId}][%d] createBranchCreated  %+v", 201, o.Payload)
+	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches][%d] createBranchCreated  %+v", 201, o.Payload)
 }
 
 func (o *CreateBranchCreated) GetPayload() *models.Refspec {
@@ -101,7 +101,7 @@ type CreateBranchBadRequest struct {
 }
 
 func (o *CreateBranchBadRequest) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches/{branchId}][%d] createBranchBadRequest  %+v", 400, o.Payload)
+	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches][%d] createBranchBadRequest  %+v", 400, o.Payload)
 }
 
 func (o *CreateBranchBadRequest) GetPayload() *models.Error {
@@ -134,7 +134,7 @@ type CreateBranchUnauthorized struct {
 }
 
 func (o *CreateBranchUnauthorized) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches/{branchId}][%d] createBranchUnauthorized  %+v", 401, o.Payload)
+	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches][%d] createBranchUnauthorized  %+v", 401, o.Payload)
 }
 
 func (o *CreateBranchUnauthorized) GetPayload() *models.Error {
@@ -176,7 +176,7 @@ func (o *CreateBranchDefault) Code() int {
 }
 
 func (o *CreateBranchDefault) Error() string {
-	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches/{branchId}][%d] createBranch default  %+v", o._statusCode, o.Payload)
+	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches][%d] createBranch default  %+v", o._statusCode, o.Payload)
 }
 
 func (o *CreateBranchDefault) GetPayload() *models.Error {

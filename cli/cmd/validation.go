@@ -3,30 +3,79 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/treeverse/lakefs/uri"
-
 	"github.com/spf13/cobra"
+
+	"github.com/treeverse/lakefs/uri"
 )
 
-func ValidURIAtArgs(argIndex ...int) func(cmd *cobra.Command, args []string) error {
+func uriAtPos(args []string, pos int) (*uri.URI, error) {
+	if pos > len(args)-1 {
+		return nil, fmt.Errorf("no uri supplied at argument %d", pos)
+	}
+	u, err := uri.Parse(args[pos])
+	if err != nil {
+		return nil, fmt.Errorf("argument at position: %d - %s", pos, err.Error())
+	}
+	return u, nil
+}
+
+func IsBranchURI(pos int) validationFunc {
+	return func(args []string) error {
+		u, err := uriAtPos(args, pos)
+		if err != nil {
+			return err
+		}
+		if !u.IsRefspec() {
+			return fmt.Errorf("argument at position: %d - not a branch URI", pos)
+		}
+		return nil
+	}
+}
+
+func IsRepoURI(pos int) validationFunc {
+	return func(args []string) error {
+		u, err := uriAtPos(args, pos)
+		if err != nil {
+			return err
+		}
+		if !u.IsRepository() {
+			return fmt.Errorf("argument at position: %d - not a repository URI", pos)
+		}
+		return nil
+	}
+}
+
+func IsPathURI(pos int) validationFunc {
+	return func(args []string) error {
+		u, err := uriAtPos(args, pos)
+		if err != nil {
+			return err
+		}
+		if !u.IsFullyQualified() {
+			return fmt.Errorf("argument at position: %d - not a path URI", pos)
+		}
+		return nil
+	}
+}
+
+func HasNArgs(n int) validationFunc {
+	return func(args []string) error {
+		if len(args) != n {
+			return fmt.Errorf("expected %d arguments", n)
+		}
+		return nil
+	}
+}
+
+type validationFunc func(args []string) error
+
+func ValidationChain(funcs ...validationFunc) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
-		maxIndex := 0
-		for _, a := range argIndex {
-			if a > maxIndex {
-				maxIndex = a
+		for _, f := range funcs {
+			if err := f(args); err != nil {
+				return err
 			}
 		}
-		if len(args)-1 > maxIndex {
-			return fmt.Errorf("not enough arguments passed")
-		}
-
-		for _, a := range argIndex {
-			currentArg := args[a]
-			if !uri.IsValid(currentArg) {
-				return fmt.Errorf("invalid uri: %s", args[a])
-			}
-		}
-
 		return nil
 	}
 }

@@ -1,4 +1,4 @@
-package handlers
+package api
 
 import (
 	"fmt"
@@ -13,8 +13,8 @@ func repoArn(repoId string) string {
 	return fmt.Sprintf("arn:treeverse:repos:::%s", repoId)
 }
 
-func authorize(s ServerContext, user *models.User, perm permissions.Permission, arn string) error {
-	authResp, err := s.GetAuthService().Authorize(&auth.AuthorizationRequest{
+func authorize(a auth.Service, user *models.User, perm permissions.Permission, arn string) error {
+	authResp, err := a.Authorize(&auth.AuthorizationRequest{
 		UserID: user.ID, Permission: perm, SubjectARN: arn})
 	if err != nil {
 		return fmt.Errorf("authorization error")
