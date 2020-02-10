@@ -2,22 +2,24 @@ package main
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/treeverse/lakefs/block"
 	"os"
 	"os/user"
 	"path"
 	"runtime"
 	"strings"
 
+	"github.com/treeverse/lakefs/db"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/treeverse/lakefs/block"
+
 	"github.com/treeverse/lakefs/api"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
-	db2 "github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
@@ -66,11 +68,15 @@ func setupLogger() {
 	log.SetLevel(log.TraceLevel) // for now
 }
 
-func setupBadger() (*badger.DB, error) {
+func setupLocalDB() (db.Store, error) {
 	opts := badger.DefaultOptions(DefaultMetadataLocation).
 		WithTruncate(true).
-		WithLogger(db2.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
-	return badger.Open(opts)
+		WithLogger(db.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
+	bdb, err := badger.Open(opts)
+	if err != nil {
+		return nil, err
+	}
+	return db.NewLocalDBStore(bdb), nil
 }
 
 func setUpS3Adapter() (block.Adapter, error) {
@@ -91,12 +97,12 @@ func home() string {
 func createCreds() {
 	// init db
 	setupLogger()
-	db, err := setupBadger()
+	kv, err := setupLocalDB()
 	if err != nil {
 		panic(err)
 	}
 	// init auth
-	authService := auth.NewKVAuthService(db)
+	authService := auth.NewKVAuthService(kv)
 	err = authService.CreateUser(&model.User{
 		Id:       "exampleuid",
 		Email:    "ozkatz100@gmail.com",
@@ -144,16 +150,16 @@ func createCreds() {
 func Run() {
 	setupLogger()
 
-	db, err := setupBadger()
+	kv, err := setupLocalDB()
 	if err != nil {
 		panic(err)
 	}
 
 	// init index
-	meta := index.NewKVIndex(store.NewKVStore(db))
+	meta := index.NewKVIndex(store.NewKVStore(kv))
 
 	// init mpu manager
-	mpu := index.NewKVMultipartManager(store.NewKVStore(db))
+	mpu := index.NewKVMultipartManager(store.NewKVStore(kv))
 
 	// init block store
 	blockStore, err := block.NewLocalFSAdapter(DefaultBlockLocation)
@@ -163,7 +169,7 @@ func Run() {
 	}
 
 	// init authentication
-	authService := auth.NewKVAuthService(db)
+	authService := auth.NewKVAuthService(kv)
 
 	region := "us-east-1"
 
@@ -179,30 +185,21 @@ func Run() {
 }
 
 func keys() {
-	// init db
-	// todo: add .WithTruncate(true), like in other places
 	setupLogger()
-	db, err := setupBadger()
+	kv, err := setupLocalDB()
 	if err != nil {
 		panic(err)
 	}
-	err = db.View(func(tx *badger.Txn) error {
-		opts := badger.DefaultIteratorOptions
-		opts.PrefetchValues = false
-		iter := tx.NewIterator(opts)
-		defer iter.Close()
-		for iter.Rewind(); iter.Valid(); iter.Next() {
-			item := iter.Item()
-			key := item.Key()
-			k := db2.KeyFromBytes(key)
-			fmt.Printf("%s\n", k)
+	_, err = kv.ReadTransact(func(q db.ReadQuery) (i interface{}, err error) {
+		iter, closer := q.RangeAll()
+		defer closer()
+		for iter.Advance() {
+			item, _ := iter.Get()
+			fmt.Printf("%s\n", item.Key)
 		}
-		return nil
+		return nil, nil
 	})
-	if err != nil {
-		panic(err)
-	}
-	err = db.Close()
+
 	if err != nil {
 		panic(err)
 	}
@@ -211,13 +208,13 @@ func keys() {
 func tree(repoId, branch string) {
 	// logger
 	setupLogger()
-	db, err := setupBadger()
+	kv, err := setupLocalDB()
 	if err != nil {
 		panic(err)
 	}
 
 	// init index
-	meta := index.NewKVIndex(store.NewKVStore(db))
+	meta := index.NewKVIndex(store.NewKVStore(kv))
 	err = meta.Tree(repoId, branch)
 	if err != nil {
 		panic(err)
