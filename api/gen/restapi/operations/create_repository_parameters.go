@@ -12,8 +12,6 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 
-	strfmt "github.com/go-openapi/strfmt"
-
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
@@ -37,11 +35,6 @@ type CreateRepositoryParams struct {
 	  In: body
 	*/
 	Repository *models.RepositoryCreation
-	/*
-	  Required: true
-	  In: path
-	*/
-	RepositoryID string
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -69,28 +62,8 @@ func (o *CreateRepositoryParams) BindRequest(r *http.Request, route *middleware.
 			}
 		}
 	}
-	rRepositoryID, rhkRepositoryID, _ := route.Params.GetOK("repositoryId")
-	if err := o.bindRepositoryID(rRepositoryID, rhkRepositoryID, route.Formats); err != nil {
-		res = append(res, err)
-	}
-
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
-	return nil
-}
-
-// bindRepositoryID binds and validates parameter RepositoryID from path.
-func (o *CreateRepositoryParams) bindRepositoryID(rawData []string, hasKey bool, formats strfmt.Registry) error {
-	var raw string
-	if len(rawData) > 0 {
-		raw = rawData[len(rawData)-1]
-	}
-
-	// Required: true
-	// Parameter is provided by construction from the route
-
-	o.RepositoryID = raw
-
 	return nil
 }

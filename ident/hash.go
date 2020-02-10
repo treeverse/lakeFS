@@ -6,6 +6,13 @@ import (
 	"fmt"
 )
 
+const (
+	HashName      = "sha256"
+	HashBytes     = 32
+	HashBits      = 256
+	HashHexLength = 64
+)
+
 type Identifiable interface {
 	Identity() []byte
 }

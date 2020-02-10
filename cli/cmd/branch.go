@@ -6,6 +6,8 @@ import (
 	"os"
 	"strings"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/treeverse/lakefs/uri"
@@ -28,26 +30,21 @@ var branchListCmd = &cobra.Command{
 	Use:     "list [repository uri]",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://myrepo",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRepository() {
-			return fmt.Errorf("expected a repository URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsRepoURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
+
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+
 		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
 		if err != nil {
 			return err
 		}
-		response, err := client.ListBranches(context.Background(), u.Repository)
+		response, pagination, err := client.ListBranches(context.Background(), u.Repository, after, amount)
 		if err != nil {
 			return err
 		}
@@ -61,6 +58,10 @@ var branchListCmd = &cobra.Command{
 		}
 		t.Render()
 
+		if pagination != nil && swag.BoolValue(pagination.HasMore) {
+			fmt.Printf("for more results, run with `--amount %d --after \"%s\"\n", amount, pagination.NextOffset)
+		}
+
 		// done
 		return nil
 	},
@@ -69,19 +70,10 @@ var branchListCmd = &cobra.Command{
 var branchCreateCmd = &cobra.Command{
 	Use:   "create [branch uri]",
 	Short: "create a new branch in a repository",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("expected a branch URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		u := uri.Must(uri.Parse(args[0]))
 		client, err := getClient()
@@ -103,9 +95,9 @@ var branchCreateCmd = &cobra.Command{
 		}
 		fmt.Printf("got source branch '%s', using commit '%s'\n",
 			suri.Refspec, *sourceBranch.CommitID)
-		err = client.CreateBranch(context.Background(), u.Repository, u.Refspec, &models.Refspec{
+		err = client.CreateBranch(context.Background(), u.Repository, &models.Refspec{
 			CommitID: sourceBranch.CommitID,
-			ID:       &u.Refspec,
+			ID:       swag.String(u.Refspec),
 		})
 		return err
 	},
@@ -114,19 +106,10 @@ var branchCreateCmd = &cobra.Command{
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete [branch uri]",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("expected a branch URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		sure, err := cmd.Flags().GetBool("sure")
 		if err != nil || !sure {
@@ -148,19 +131,10 @@ var branchDeleteCmd = &cobra.Command{
 var branchShowCmd = &cobra.Command{
 	Use:   "show [branch uri]",
 	Short: "show branch metadata",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != 1 {
-			return fmt.Errorf("expected 1 argument")
-		}
-		u, err := uri.Parse(args[0])
-		if err != nil {
-			return err
-		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("expected a branch URI")
-		}
-		return nil
-	},
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		client, err := getClient()
 		if err != nil {
@@ -182,6 +156,9 @@ func init() {
 	branchCmd.AddCommand(branchDeleteCmd)
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
+
+	branchListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
+	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	branchCreateCmd.Flags().StringP("source", "s", "", "source branch uri")
 	_ = branchCreateCmd.MarkFlagRequired("source")

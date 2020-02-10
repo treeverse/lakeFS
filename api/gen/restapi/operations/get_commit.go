@@ -13,40 +13,40 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
-// CreateBranchHandlerFunc turns a function with the right signature into a create branch handler
-type CreateBranchHandlerFunc func(CreateBranchParams, *models.User) middleware.Responder
+// GetCommitHandlerFunc turns a function with the right signature into a get commit handler
+type GetCommitHandlerFunc func(GetCommitParams, *models.User) middleware.Responder
 
 // Handle executing the request and returning a response
-func (fn CreateBranchHandlerFunc) Handle(params CreateBranchParams, principal *models.User) middleware.Responder {
+func (fn GetCommitHandlerFunc) Handle(params GetCommitParams, principal *models.User) middleware.Responder {
 	return fn(params, principal)
 }
 
-// CreateBranchHandler interface for that can handle valid create branch params
-type CreateBranchHandler interface {
-	Handle(CreateBranchParams, *models.User) middleware.Responder
+// GetCommitHandler interface for that can handle valid get commit params
+type GetCommitHandler interface {
+	Handle(GetCommitParams, *models.User) middleware.Responder
 }
 
-// NewCreateBranch creates a new http.Handler for the create branch operation
-func NewCreateBranch(ctx *middleware.Context, handler CreateBranchHandler) *CreateBranch {
-	return &CreateBranch{Context: ctx, Handler: handler}
+// NewGetCommit creates a new http.Handler for the get commit operation
+func NewGetCommit(ctx *middleware.Context, handler GetCommitHandler) *GetCommit {
+	return &GetCommit{Context: ctx, Handler: handler}
 }
 
-/*CreateBranch swagger:route POST /repositories/{repositoryId}/branches createBranch
+/*GetCommit swagger:route GET /repositories/{repositoryId}/commits/{commitId} getCommit
 
-create branch
+get commit
 
 */
-type CreateBranch struct {
+type GetCommit struct {
 	Context *middleware.Context
-	Handler CreateBranchHandler
+	Handler GetCommitHandler
 }
 
-func (o *CreateBranch) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
+func (o *GetCommit) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	route, rCtx, _ := o.Context.RouteInfo(r)
 	if rCtx != nil {
 		r = rCtx
 	}
-	var Params = NewCreateBranchParams()
+	var Params = NewGetCommitParams()
 
 	uprinc, aCtx, err := o.Context.Authorize(r, route)
 	if err != nil {

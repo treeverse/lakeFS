@@ -46,6 +46,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	//
 	// Example:
 	// api.APIAuthorizer = security.Authorized()
+	if api.CommitHandler == nil {
+		api.CommitHandler = operations.CommitHandlerFunc(func(params operations.CommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation operations.Commit has not yet been implemented")
+		})
+	}
 	if api.CreateBranchHandler == nil {
 		api.CreateBranchHandler = operations.CreateBranchHandlerFunc(func(params operations.CreateBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation operations.CreateBranch has not yet been implemented")
@@ -69,6 +74,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	if api.GetBranchHandler == nil {
 		api.GetBranchHandler = operations.GetBranchHandlerFunc(func(params operations.GetBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation operations.GetBranch has not yet been implemented")
+		})
+	}
+	if api.GetCommitHandler == nil {
+		api.GetCommitHandler = operations.GetCommitHandlerFunc(func(params operations.GetCommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation operations.GetCommit has not yet been implemented")
 		})
 	}
 	if api.GetRepositoryHandler == nil {

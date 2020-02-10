@@ -28,6 +28,22 @@ responses:
 
 definitions:
 
+  pagination:
+    type: object
+    required:
+      - has_more
+    properties:
+      has_more:
+        type: boolean
+      next_offset:
+        type: string
+      results:
+        type: integer
+        minimum: 0
+      max_per_page:
+        type: integer
+        minimum: 0
+
   user:
     type: object
     properties:
@@ -73,6 +89,39 @@ definitions:
       commit_id:
         type: string
 
+  commit:
+    type: object
+    properties:
+      id:
+        type: string
+      parents:
+        type: array
+        items:
+          type: string
+      committer:
+        type: string
+      message:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
+  commit_creation:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
   object:
     type: object
     required:
@@ -95,15 +144,50 @@ paths:
 
   /repositories:
     get:
+      parameters:
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
       operationId: listRepositories
       summary: list repositories
       responses:
         200:
           description: repository list
           schema:
-            type: array
-            items:
-              $ref: "#/definitions/repository"
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/repository"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      operationId: createRepository
+      summary: create repository
+      parameters:
+        - in: body
+          name: repository
+          schema:
+            $ref: "#/definitions/repository_creation"
+      responses:
+        201:
+          description: repository
+          schema:
+            $ref: "#/definitions/repository"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -135,29 +219,6 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
-    post:
-      operationId: createRepository
-      summary: create repository
-      parameters:
-        - in: body
-          name: repository
-          schema:
-            $ref: "#/definitions/repository_creation"
-      responses:
-        201:
-          description: repository
-          schema:
-            $ref: "#/definitions/repository"
-        400:
-          description: validation error
-          schema:
-            $ref: "#/definitions/error"
-        401:
-          $ref: "#/responses/Unauthorized"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
     delete:
       operationId: deleteRepository
       summary: delete repository
@@ -184,13 +245,48 @@ paths:
     get:
       operationId: listBranches
       summary: list branches
+      parameters:
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
       responses:
         200:
           description: branch list
           schema:
-            type: array
-            items:
-              $ref: "#/definitions/refspec"
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/refspec"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      operationId: createBranch
+      summary: create branch
+      parameters:
+        - in: body
+          name: branch
+          schema:
+            $ref: "#/definitions/refspec"
+      responses:
+        201:
+          description: branch
+          schema:
+            $ref: "#/definitions/refspec"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -198,6 +294,39 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repositoryId}/branches/{branchId}/commits:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+    post:
+      operationId: commit
+      summary: create commit
+      parameters:
+        - in: body
+          name: commit
+          schema:
+            $ref: "#/definitions/commit_creation"
+      responses:
+        201:
+          description: commit
+          schema:
+            $ref: "#/definitions/commit"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
 
   /repositories/{repositoryId}/branches/{branchId}:
     parameters:
@@ -227,29 +356,6 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
-    post:
-      operationId: createBranch
-      summary: create branch
-      parameters:
-        - in: body
-          name: branch
-          schema:
-            $ref: "#/definitions/refspec"
-      responses:
-        201:
-          description: branch
-          schema:
-            $ref: "#/definitions/refspec"
-        400:
-          description: validation error
-          schema:
-            $ref: "#/definitions/error"
-        401:
-          $ref: "#/responses/Unauthorized"
-        default:
-          description: generic error response
-          schema:
-            $ref: "#/definitions/error"
     delete:
       operationId: deleteBranch
       summary: delete branch
@@ -260,6 +366,35 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/commits/{commitId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: commitId
+        required: true
+        type: string
+    get:
+      operationId: getCommit
+      summary: get commit
+      responses:
+        200:
+          description: commit
+          schema:
+            $ref: "#/definitions/commit"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit not found
           schema:
             $ref: "#/definitions/error"
         default:

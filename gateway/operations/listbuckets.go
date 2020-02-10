@@ -20,7 +20,7 @@ func (controller *ListBuckets) GetPermission() permissions.Permission {
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
-	repos, err := o.Index.ListRepos()
+	repos, _, err := o.Index.ListRepos(-1, "")
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
