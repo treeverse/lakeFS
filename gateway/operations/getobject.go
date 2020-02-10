@@ -73,7 +73,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		ranger, err := NewObjectRanger(rangeSpec, o.Repo.RepoId, obj, o.BlockStore, o.Log())
+		ranger, err := NewObjectRanger(rangeSpec, o.Repo.GetBucketName(), obj, o.BlockStore, o.Log())
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidRange))
 			return
@@ -108,7 +108,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
 	blocks := obj.GetBlocks()
 	for _, block := range blocks {
-		data, err := o.BlockStore.Get(o.Repo.GetRepoId(), block.GetAddress())
+		data, err := o.BlockStore.Get(o.Repo.GetBucketName(), block.GetAddress())
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return

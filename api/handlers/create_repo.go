@@ -23,7 +23,7 @@ func (h *createRepoHandler) Handle(params operations.CreateRepositoryParams, use
 		return operations.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 	}
 
-	err = h.serverContext.GetIndex().CreateRepo(params.RepositoryID, params.Repository.DefaultBranch)
+	err = h.serverContext.GetIndex().CreateRepo(params.RepositoryID, *params.Repository.BucketName, params.Repository.DefaultBranch)
 	if err != nil {
 		return operations.NewGetRepositoryDefault(http.StatusInternalServerError).
 			WithPayload(responseError("error creating repository"))
@@ -36,7 +36,7 @@ func (h *createRepoHandler) Handle(params operations.CreateRepositoryParams, use
 	}
 
 	return operations.NewCreateRepositoryCreated().WithPayload(&models.Repository{
-		BucketName:    repo.GetRepoId(),
+		BucketName:    repo.GetBucketName(),
 		CreationDate:  repo.GetCreationDate(),
 		DefaultBranch: repo.GetDefaultBranch(),
 		ID:            repo.GetRepoId(),

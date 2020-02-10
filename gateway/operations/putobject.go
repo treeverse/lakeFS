@@ -103,7 +103,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Repo.GetRepoId(), o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -139,7 +139,7 @@ type Blob struct {
 	Size     int64
 }
 
-func ReadBlob(repoId string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
 	blocks := make([]*model.Block, 0)
 	cksummer := md5.New()
@@ -166,7 +166,7 @@ func ReadBlob(repoId string, body io.Reader, adapter block.Adapter) (*Blob, erro
 
 		// write a block
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
-		err = adapter.Put(repoId, blockAddr, bytes.NewReader(buf[:n]))
+		err = adapter.Put(bucketName, blockAddr, bytes.NewReader(buf[:n]))
 		if err != nil {
 			return nil, err
 		}
@@ -206,7 +206,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Repo.GetRepoId(), o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
