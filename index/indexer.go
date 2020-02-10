@@ -42,7 +42,7 @@ type Index interface {
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
 	Merge(repoId, source, destination string) error
-	CreateRepo(repoId, defaultBranch string) error
+	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos() ([]*model.Repo, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
@@ -469,7 +469,7 @@ func isValidRepoId(repoId string) bool {
 	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]{2,62}$`).MatchString(repoId)
 }
 
-func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
+func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
 
 	if !isValidRepoId(repoId) {
 		return errors.ErrInvalidBucketName
@@ -478,6 +478,7 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 
 	repo := &model.Repo{
 		RepoId:             repoId,
+		BucketName:         bucketName,
 		CreationDate:       creationDate,
 		DefaultBranch:      defaultBranch,
 		PartialCommitRatio: DefaultPartialCommitRatio,
