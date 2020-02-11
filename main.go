@@ -195,7 +195,7 @@ func keys() {
 		defer closer()
 		for iter.Advance() {
 			item, _ := iter.Get()
-			fmt.Printf("%s\n", item.Key)
+			fmt.Printf("%s\n", db.KeyFromBytes(item.Key))
 		}
 		return nil, nil
 	})

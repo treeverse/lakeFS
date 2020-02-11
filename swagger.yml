@@ -1,3 +1,5 @@
+swagger: "2.0"
+
 consumes:
 - application/json
 info:
@@ -8,8 +10,7 @@ produces:
 - application/json
 schemes:
 - http
-swagger: "2.0"
-
+basePath: /api/v1
 
 
 securityDefinitions:
@@ -144,6 +145,8 @@ paths:
 
   /repositories:
     get:
+      tags:
+        - repositories
       parameters:
         - in: query
           name: after
@@ -172,6 +175,8 @@ paths:
           schema:
             $ref: "#/definitions/error"
     post:
+      tags:
+        - repositories
       operationId: createRepository
       summary: create repository
       parameters:
@@ -202,6 +207,8 @@ paths:
         required: true
         type: string
     get:
+      tags:
+        - repositories
       operationId: getRepository
       summary: get repository
       responses:
@@ -220,6 +227,8 @@ paths:
           schema:
             $ref: "#/definitions/error"
     delete:
+      tags:
+        - repositories
       operationId: deleteRepository
       summary: delete repository
       responses:
@@ -243,6 +252,8 @@ paths:
         required: true
         type: string
     get:
+      tags:
+        - branches
       operationId: listBranches
       summary: list branches
       parameters:
@@ -271,6 +282,8 @@ paths:
           schema:
             $ref: "#/definitions/error"
     post:
+      tags:
+        - branches
       operationId: createBranch
       summary: create branch
       parameters:
@@ -305,6 +318,8 @@ paths:
         required: true
         type: string
     post:
+      tags:
+        - commits
       operationId: commit
       summary: create commit
       parameters:
@@ -339,6 +354,8 @@ paths:
         required: true
         type: string
     get:
+      tags:
+        - branches
       operationId: getBranch
       summary: get branch
       responses:
@@ -357,6 +374,8 @@ paths:
           schema:
             $ref: "#/definitions/error"
     delete:
+      tags:
+        - branches
       operationId: deleteBranch
       summary: delete branch
       responses:
@@ -384,6 +403,8 @@ paths:
         required: true
         type: string
     get:
+      tags:
+        - commits
       operationId: getCommit
       summary: get commit
       responses:

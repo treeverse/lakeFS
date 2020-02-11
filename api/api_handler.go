@@ -3,10 +3,15 @@ package api
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
+
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
@@ -36,29 +41,29 @@ func NewHandler(meta index.Index, auth auth.Service) *Handler {
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (a *Handler) Configure(api *operations.LakefsAPI) {
 	// Register operations here
-	api.ListRepositoriesHandler = a.ListRepositoriesHandler()
-	api.GetRepositoryHandler = a.GetRepoHandler()
-	api.CreateRepositoryHandler = a.CreateRepositoryHandler()
-	api.DeleteRepositoryHandler = a.DeleteRepositoryHandler()
+	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
+	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
+	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
+	api.RepositoriesDeleteRepositoryHandler = a.DeleteRepositoryHandler()
 
-	api.ListBranchesHandler = a.ListBranchesHandler()
-	api.GetBranchHandler = a.GetBranchHandler()
-	api.CreateBranchHandler = a.CreateBranchHandler()
-	api.DeleteBranchHandler = a.DeleteBranchHandler()
+	api.BranchesListBranchesHandler = a.ListBranchesHandler()
+	api.BranchesGetBranchHandler = a.GetBranchHandler()
+	api.BranchesCreateBranchHandler = a.CreateBranchHandler()
+	api.BranchesDeleteBranchHandler = a.DeleteBranchHandler()
 
-	api.CommitHandler = a.CommitHandler()
-	api.GetCommitHandler = a.GetCommitHandler()
+	api.CommitsCommitHandler = a.CommitHandler()
+	api.CommitsGetCommitHandler = a.GetCommitHandler()
 }
 
 func (a *Handler) authorize(user *models.User, perm permissions.Permission, arn string) error {
 	return authorize(a.auth, user, perm, arn)
 }
 
-func (a *Handler) ListRepositoriesHandler() operations.ListRepositoriesHandler {
-	return operations.ListRepositoriesHandlerFunc(func(params operations.ListRepositoriesParams, user *models.User) middleware.Responder {
+func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
+	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
 		if err != nil {
-			return operations.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
+			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		// amount
@@ -75,7 +80,7 @@ func (a *Handler) ListRepositoriesHandler() operations.ListRepositoriesHandler {
 
 		repos, hasMore, err := a.meta.ListRepos(int(amount), after)
 		if err != nil {
-			return operations.NewListRepositoriesDefault(http.StatusInternalServerError).
+			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list repositories"))
 		}
 
@@ -90,7 +95,7 @@ func (a *Handler) ListRepositoriesHandler() operations.ListRepositoriesHandler {
 			}
 			lastId = repo.GetRepoId()
 		}
-		returnValue := operations.NewListRepositoriesOK().WithPayload(&operations.ListRepositoriesOKBody{
+		returnValue := repositories.NewListRepositoriesOK().WithPayload(&repositories.ListRepositoriesOKBody{
 			Pagination: &models.Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(repoList))),
@@ -106,23 +111,23 @@ func (a *Handler) ListRepositoriesHandler() operations.ListRepositoriesHandler {
 	})
 }
 
-func (a *Handler) GetRepoHandler() operations.GetRepositoryHandler {
-	return operations.GetRepositoryHandlerFunc(func(params operations.GetRepositoryParams, user *models.User) middleware.Responder {
+func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
+	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
 		if err != nil {
-			return operations.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
+			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		repo, err := a.meta.GetRepo(params.RepositoryID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
-			return operations.NewGetRepositoryNotFound().
+			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
 		} else if err != nil {
-			return operations.NewGetRepositoryDefault(http.StatusInternalServerError).
+			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching repository"))
 		}
 
-		return operations.NewGetRepositoryOK().
+		return repositories.NewGetRepositoryOK().
 			WithPayload(&models.Repository{
 				BucketName:    repo.GetRepoId(), // TODO: replace with actual bucket name
 				CreationDate:  repo.GetCreationDate(),
@@ -132,21 +137,21 @@ func (a *Handler) GetRepoHandler() operations.GetRepositoryHandler {
 	})
 }
 
-func (a *Handler) GetCommitHandler() operations.GetCommitHandler {
-	return operations.GetCommitHandlerFunc(func(params operations.GetCommitParams, user *models.User) middleware.Responder {
+func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
+	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
 		if err != nil {
-			return operations.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
+			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		commit, err := a.meta.GetCommit(params.RepositoryID, params.CommitID)
 
 		if xerrors.Is(err, db.ErrNotFound) {
-			return operations.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
+			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
 		if err != nil {
-			return operations.NewGetCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return commits.NewGetCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		return operations.NewGetCommitOK().WithPayload(&models.Commit{
+		return commits.NewGetCommitOK().WithPayload(&models.Commit{
 			Committer:    commit.GetCommitter(),
 			CreationDate: commit.GetTimestamp(),
 			ID:           ident.Hash(commit),
@@ -157,17 +162,17 @@ func (a *Handler) GetCommitHandler() operations.GetCommitHandler {
 	})
 }
 
-func (a *Handler) CommitHandler() operations.CommitHandler {
-	return operations.CommitHandlerFunc(func(params operations.CommitParams, user *models.User) middleware.Responder {
+func (a *Handler) CommitHandler() commits.CommitHandler {
+	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
 		if err != nil {
-			return operations.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
+			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		commit, err := a.meta.Commit(params.RepositoryID, params.BranchID, *params.Commit.Message, user.ID, params.Commit.Metadata)
 		if err != nil {
-			return operations.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		return operations.NewCommitCreated().WithPayload(&models.Commit{
+		return commits.NewCommitCreated().WithPayload(&models.Commit{
 			Committer:    commit.GetCommitter(),
 			CreationDate: commit.GetTimestamp(),
 			ID:           ident.Hash(commit),
@@ -178,26 +183,26 @@ func (a *Handler) CommitHandler() operations.CommitHandler {
 	})
 }
 
-func (a *Handler) CreateRepositoryHandler() operations.CreateRepositoryHandler {
-	return operations.CreateRepositoryHandlerFunc(func(params operations.CreateRepositoryParams, user *models.User) middleware.Responder {
+func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
+	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
 		if err != nil {
-			return operations.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
+			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), params.Repository.DefaultBranch)
 		if err != nil {
-			return operations.NewGetRepositoryDefault(http.StatusInternalServerError).
+			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error creating repository"))
 		}
 
 		repo, err := a.meta.GetRepo(swag.StringValue(params.Repository.ID))
 		if err != nil {
-			return operations.NewGetRepositoryDefault(http.StatusInternalServerError).
+			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error creating repository"))
 		}
 
-		return operations.NewCreateRepositoryCreated().WithPayload(&models.Repository{
+		return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
 			BucketName:    repo.GetRepoId(),
 			CreationDate:  repo.GetCreationDate(),
 			DefaultBranch: repo.GetDefaultBranch(),
@@ -206,31 +211,31 @@ func (a *Handler) CreateRepositoryHandler() operations.CreateRepositoryHandler {
 	})
 }
 
-func (a *Handler) DeleteRepositoryHandler() operations.DeleteRepositoryHandler {
-	return operations.DeleteRepositoryHandlerFunc(func(params operations.DeleteRepositoryParams, user *models.User) middleware.Responder {
+func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
+	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
 		if err != nil {
-			return operations.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
+			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		err = a.meta.DeleteRepo(params.RepositoryID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
-			return operations.NewDeleteRepositoryNotFound().
+			return repositories.NewDeleteRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
 		} else if err != nil {
-			return operations.NewDeleteRepositoryDefault(http.StatusInternalServerError).
+			return repositories.NewDeleteRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error deleting repository"))
 		}
 
-		return operations.NewDeleteRepositoryNoContent()
+		return repositories.NewDeleteRepositoryNoContent()
 	})
 }
 
-func (a *Handler) ListBranchesHandler() operations.ListBranchesHandler {
-	return operations.ListBranchesHandlerFunc(func(params operations.ListBranchesParams, user *models.User) middleware.Responder {
+func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
+	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
 		if err != nil {
-			return operations.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		// amount
@@ -245,22 +250,22 @@ func (a *Handler) ListBranchesHandler() operations.ListBranchesHandler {
 			after = swag.StringValue(params.After)
 		}
 
-		branches, hasMore, err := a.meta.ListBranches(params.RepositoryID, int(amount), after)
+		res, hasMore, err := a.meta.ListBranches(params.RepositoryID, int(amount), after)
 		if err != nil {
-			return operations.NewListBranchesDefault(http.StatusInternalServerError).
+			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches"))
 		}
 
-		branchList := make([]*models.Refspec, len(branches))
+		branchList := make([]*models.Refspec, len(res))
 		var lastId string
-		for i, branch := range branches {
+		for i, branch := range res {
 			branchList[i] = &models.Refspec{
 				CommitID: &branch.Commit,
 				ID:       &branch.Name,
 			}
 			lastId = branch.Name
 		}
-		returnValue := operations.NewListBranchesOK().WithPayload(&operations.ListBranchesOKBody{
+		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
 			Pagination: &models.Pagination{
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(branchList))),
@@ -277,23 +282,23 @@ func (a *Handler) ListBranchesHandler() operations.ListBranchesHandler {
 	})
 }
 
-func (a *Handler) GetBranchHandler() operations.GetBranchHandler {
-	return operations.GetBranchHandlerFunc(func(params operations.GetBranchParams, user *models.User) middleware.Responder {
+func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
+	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
 		if err != nil {
-			return operations.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
+			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		branch, err := a.meta.GetBranch(params.RepositoryID, params.BranchID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
-			return operations.NewGetBranchNotFound().
+			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
 		} else if err != nil {
-			return operations.NewGetBranchDefault(http.StatusInternalServerError).
+			return branches.NewGetBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching branch"))
 		}
 
-		return operations.NewGetBranchOK().
+		return branches.NewGetBranchOK().
 			WithPayload(&models.Refspec{
 				CommitID: swag.String(branch.GetCommit()),
 				ID:       swag.String(branch.GetName()),
@@ -301,38 +306,38 @@ func (a *Handler) GetBranchHandler() operations.GetBranchHandler {
 	})
 }
 
-func (a *Handler) CreateBranchHandler() operations.CreateBranchHandler {
-	return operations.CreateBranchHandlerFunc(func(params operations.CreateBranchParams, user *models.User) middleware.Responder {
+func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
+	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
 		if err != nil {
-			return operations.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
+			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		err = a.meta.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.CommitID))
 		if err != nil {
-			return operations.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return operations.NewCreateBranchCreated().WithPayload(params.Branch)
+		return branches.NewCreateBranchCreated().WithPayload(params.Branch)
 	})
 }
 
-func (a *Handler) DeleteBranchHandler() operations.DeleteBranchHandler {
-	return operations.DeleteBranchHandlerFunc(func(params operations.DeleteBranchParams, user *models.User) middleware.Responder {
+func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
+	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
 		if err != nil {
-			return operations.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
+			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		err = a.meta.DeleteBranch(params.RepositoryID, params.BranchID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
-			return operations.NewDeleteBranchNotFound().
+			return branches.NewDeleteBranchNotFound().
 				WithPayload(responseError("branch not found"))
 		} else if err != nil {
-			return operations.NewDeleteBranchDefault(http.StatusInternalServerError).
+			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching branch"))
 		}
 
-		return operations.NewDeleteRepositoryNoContent()
+		return branches.NewDeleteBranchNoContent()
 	})
 }

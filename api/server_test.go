@@ -8,7 +8,7 @@ import (
 
 	httptransport "github.com/go-openapi/runtime/client"
 
-	"github.com/treeverse/lakefs/api/gen/client/operations"
+	"github.com/treeverse/lakefs/api/gen/client/repositories"
 
 	"github.com/go-openapi/runtime"
 	"github.com/treeverse/lakefs/api/gen/client"
@@ -142,18 +142,18 @@ func TestServer_BasicAuth(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("valid auth", func(t *testing.T) {
-		_, err := clt.Operations.ListRepositories(&operations.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 		if err != nil {
 			t.Fatalf("did not expect error when passing valid credentials")
 		}
 	})
 
 	t.Run("invalid auth secret", func(t *testing.T) {
-		_, err := clt.Operations.ListRepositories(&operations.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyId, "foobarbaz"))
+		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyId, "foobarbaz"))
 		if err == nil {
 			t.Fatalf("expect error when passing invalid credentials")
 		}
-		errMsg, ok := err.(*operations.ListRepositoriesDefault)
+		errMsg, ok := err.(*repositories.ListRepositoriesDefault)
 		if !ok {
 			t.Fatal("expected default error answer")
 		}
