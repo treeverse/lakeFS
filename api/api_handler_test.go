@@ -7,7 +7,9 @@ import (
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/client"
-	"github.com/treeverse/lakefs/api/gen/client/operations"
+	"github.com/treeverse/lakefs/api/gen/client/branches"
+	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
@@ -27,7 +29,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("list no repos", func(t *testing.T) {
-		resp, err := clt.Operations.ListRepositories(&operations.ListRepositoriesParams{},
+		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
 			httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
 		if err != nil {
@@ -48,7 +50,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 		testutil.Must(t, deps.meta.CreateRepo("foo2", "master"))
 		testutil.Must(t, deps.meta.CreateRepo("foo3", "master"))
 
-		resp, err := clt.Operations.ListRepositories(&operations.ListRepositoriesParams{},
+		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
 			httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
 		if err != nil {
@@ -65,7 +67,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 	t.Run("paginate repos", func(t *testing.T) {
 		// write some repos
-		resp, err := clt.Operations.ListRepositories(&operations.ListRepositoriesParams{
+		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
 			Amount: swag.Int64(2),
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
@@ -87,7 +89,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 	t.Run("paginate repos after", func(t *testing.T) {
 		// write some repos
-		resp, err := clt.Operations.ListRepositories(&operations.ListRepositoriesParams{
+		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
 			Amount: swag.Int64(2),
 			After:  swag.String("foo2"),
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
@@ -127,7 +129,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("get missing repo", func(t *testing.T) {
-		_, err := clt.Operations.GetRepository(&operations.GetRepositoryParams{
+		_, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
 			RepositoryID: "foo1",
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
@@ -135,14 +137,14 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 			t.Fatalf("expected err calling missing repo")
 		}
 
-		if _, ok := err.(*operations.GetRepositoryNotFound); !ok {
+		if _, ok := err.(*repositories.GetRepositoryNotFound); !ok {
 			t.Fatalf("expected not found error getting missing repo")
 		}
 	})
 
 	t.Run("get existing repo", func(t *testing.T) {
 		deps.meta.CreateRepo("foo1", "some_non_default_branch")
-		resp, err := clt.Operations.GetRepository(&operations.GetRepositoryParams{
+		resp, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
 			RepositoryID: "foo1",
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
@@ -172,7 +174,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("get missing commit", func(t *testing.T) {
-		_, err := clt.Operations.GetCommit(&operations.GetCommitParams{
+		_, err := clt.Commits.GetCommit(&commits.GetCommitParams{
 			CommitID:     "b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa",
 			RepositoryID: "foo1",
 		}, bauth)
@@ -180,7 +182,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 			t.Fatalf("expected err calling missing commit")
 		}
 
-		if _, ok := err.(*operations.GetCommitNotFound); !ok {
+		if _, ok := err.(*commits.GetCommitNotFound); !ok {
 			t.Fatalf("expected not found error getting missing commit")
 		}
 	})
@@ -192,7 +194,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := clt.Operations.GetCommit(&operations.GetCommitParams{
+		resp, err := clt.Commits.GetCommit(&commits.GetCommitParams{
 			CommitID:     b.Commit,
 			RepositoryID: "foo1",
 		}, bauth)
@@ -222,7 +224,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("commit non-existent commit", func(t *testing.T) {
-		_, err := clt.Operations.Commit(&operations.CommitParams{
+		_, err := clt.Commits.Commit(&commits.CommitParams{
 			BranchID: "master",
 			Commit: &models.CommitCreation{
 				Message:  swag.String("some message"),
@@ -235,14 +237,14 @@ func TestHandler_CommitHandler(t *testing.T) {
 			t.Fatalf("expected err calling missing repo for commit")
 		}
 
-		if _, ok := err.(*operations.CommitDefault); !ok {
+		if _, ok := err.(*commits.CommitDefault); !ok {
 			t.Fatalf("expected not found error when missing commit repo, got %v", err)
 		}
 	})
 
 	t.Run("commit success", func(t *testing.T) {
 		deps.meta.CreateRepo("foo1", "master")
-		_, err := clt.Operations.Commit(&operations.CommitParams{
+		_, err := clt.Commits.Commit(&commits.CommitParams{
 			BranchID: "master",
 			Commit: &models.CommitCreation{
 				Message:  swag.String("some message"),
@@ -270,7 +272,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("create repo success", func(t *testing.T) {
-		resp, err := clt.Operations.CreateRepository(&operations.CreateRepositoryParams{
+		resp, err := clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
 				BucketName:    swag.String("foo-bucket"),
 				ID:            swag.String("my-new-repo"),
@@ -292,7 +294,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = clt.Operations.CreateRepository(&operations.CreateRepositoryParams{
+		_, err = clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
 				BucketName:    swag.String("foo-bucket"),
 				ID:            swag.String("repo2"),
@@ -324,7 +326,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = clt.Operations.DeleteRepository(&operations.DeleteRepositoryParams{
+		_, err = clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			RepositoryID: "my-new-repo",
 		}, bauth)
 
@@ -339,7 +341,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
-		_, err := clt.Operations.DeleteRepository(&operations.DeleteRepositoryParams{
+		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			RepositoryID: "my-other-repo",
 		}, bauth)
 
@@ -363,7 +365,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 
 	t.Run("list branches only default", func(t *testing.T) {
 		testutil.Must(t, deps.meta.CreateRepo("repo1", "master"))
-		resp, err := clt.Operations.ListBranches(&operations.ListBranchesParams{
+		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(-1),
 			RepositoryID: "repo1",
 		}, bauth)
@@ -388,7 +390,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		testutil.Must(t, deps.meta.CreateBranch("repo1", "master6", branch.GetCommit()))
 		testutil.Must(t, deps.meta.CreateBranch("repo1", "master7", branch.GetCommit()))
 
-		resp, err := clt.Operations.ListBranches(&operations.ListBranchesParams{
+		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(2),
 			RepositoryID: "repo1",
 		}, bauth)
@@ -399,7 +401,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 			t.Fatalf("expected 2 branches to return, got %d", len(resp.GetPayload().Results))
 		}
 
-		resp, err = clt.Operations.ListBranches(&operations.ListBranchesParams{
+		resp, err = clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(2),
 			After:        swag.String(resp.GetPayload().Pagination.NextOffset),
 			RepositoryID: "repo1",
@@ -416,7 +418,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 	})
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {
-		_, err := clt.Operations.ListBranches(&operations.ListBranchesParams{
+		_, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(2),
 			RepositoryID: "repo2",
 		}, bauth)
@@ -440,7 +442,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 
 	t.Run("get default branch", func(t *testing.T) {
 		testutil.Must(t, deps.meta.CreateRepo("repo1", "master"))
-		resp, err := clt.Operations.GetBranch(&operations.GetBranchParams{
+		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			BranchID:     "master",
 			RepositoryID: "repo1",
 		}, bauth)
@@ -453,7 +455,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	})
 
 	t.Run("get missing branch", func(t *testing.T) {
-		_, err := clt.Operations.GetBranch(&operations.GetBranchParams{
+		_, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			BranchID:     "master333",
 			RepositoryID: "repo1",
 		}, bauth)
@@ -463,7 +465,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	})
 
 	t.Run("get branch for missing repo", func(t *testing.T) {
-		_, err := clt.Operations.GetBranch(&operations.GetBranchParams{
+		_, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			BranchID:     "master",
 			RepositoryID: "repo3",
 		}, bauth)
@@ -491,7 +493,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		resp, err := clt.Operations.CreateBranch(&operations.CreateBranchParams{
+		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.Refspec{
 				CommitID: swag.String(branch.GetCommit()),
 				ID:       swag.String("master2"),
@@ -507,7 +509,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	})
 
 	t.Run("create branch missing commit", func(t *testing.T) {
-		_, err := clt.Operations.CreateBranch(&operations.CreateBranchParams{
+		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.Refspec{
 				CommitID: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
 				ID:       swag.String("master3"),
@@ -524,7 +526,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = clt.Operations.CreateBranch(&operations.CreateBranchParams{
+		_, err = clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.Refspec{
 				CommitID: swag.String(branch.GetCommit()),
 				ID:       swag.String("master8"),
@@ -557,7 +559,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 		}
 		testutil.Must(t, deps.meta.CreateBranch("my-new-repo", "master2", branch.GetCommit()))
 
-		_, err = clt.Operations.DeleteBranch(&operations.DeleteBranchParams{
+		_, err = clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
 			BranchID:     "master2",
 			RepositoryID: "my-new-repo",
 		}, bauth)
@@ -573,7 +575,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 	})
 
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
-		_, err := clt.Operations.DeleteBranch(&operations.DeleteBranchParams{
+		_, err := clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
 			BranchID:     "master5",
 			RepositoryID: "my-new-repo",
 		}, bauth)
