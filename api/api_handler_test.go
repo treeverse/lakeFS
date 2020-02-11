@@ -321,12 +321,9 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("delete repo success", func(t *testing.T) {
-		err := deps.meta.CreateRepo("my-new-repo", "master")
-		if err != nil {
-			t.Fatal(err)
-		}
+		testutil.Must(t, deps.meta.CreateRepo("my-new-repo", "master"))
 
-		_, err = clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
+		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			RepositoryID: "my-new-repo",
 		}, bauth)
 
@@ -347,6 +344,33 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 
 		if err == nil {
 			t.Fatalf("expected error deleting repo that doesnt exist")
+		}
+	})
+
+	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
+		testutil.Must(t, deps.meta.CreateRepo("rr0", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr11", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr2", "master"))
+		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
+			RepositoryID: "rr1",
+		}, bauth)
+
+		if err != nil {
+			t.Fatalf("unexpected error deleting repo: %s", err)
+		}
+
+		_, err = deps.meta.GetRepo("rr0")
+		if err != nil {
+			t.Fatalf("unexpected error getting other repo: %s", err)
+		}
+		_, err = deps.meta.GetRepo("rr11")
+		if err != nil {
+			t.Fatalf("unexpected error getting other repo: %s", err)
+		}
+		_, err = deps.meta.GetRepo("rr2")
+		if err != nil {
+			t.Fatalf("unexpected error getting other repo: %s", err)
 		}
 	})
 }
