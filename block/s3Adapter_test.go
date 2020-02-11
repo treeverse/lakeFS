@@ -2,62 +2,95 @@ package block
 
 import (
 	"bytes"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"io"
 	"io/ioutil"
-	"os"
 	"strings"
 	"testing"
 )
 
 const (
-	EnvVarS3AccessKeyId = "AWS_ADAPTER_ACCESS_KEY_ID"
-	EnvVarS3SecretKey   = "AWS_ADAPTER_SECRET_ACCESS_KEY"
-	EnvVarS3Region      = "AWS_ADAPTER_REGION"
-	EnvVarS3Token       = "AWS_ADAPTER_TOKEN"
-	TestBucketName      = "guy-first"
+	TestBucketName = "test"
 )
 
-func setUpS3Adapter() (Adapter, error) {
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region:      aws.String(os.Getenv(EnvVarS3Region)),
-		Credentials: credentials.NewStaticCredentials(os.Getenv(EnvVarS3AccessKeyId), os.Getenv(EnvVarS3SecretKey), os.Getenv(EnvVarS3Token))}))
-	svc := s3.New(sess)
-	return NewS3Adapter(svc)
+type localS3 map[string]string
+type mockS3Client struct {
+	lastRangeReceived  string
+	lastKeyReceived    string
+	lastBucketReceived string
+	callCounter        int
+	lastBodyReceived   io.ReadSeeker
+	s3iface.S3API
+	localS3
 }
 
-func TestS3Adapter_Get(t *testing.T) {
-	sf, err := setUpS3Adapter()
+func newMock() *mockS3Client {
+	return &mockS3Client{
+		localS3: make(map[string]string),
+	}
+}
+
+func (m *mockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
+	m.callCounter++
+	m.lastBucketReceived = *input.Bucket
+	m.lastKeyReceived = *input.Key
+	m.lastBodyReceived = input.Body
+	return nil, nil
+}
+
+func (m *mockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
+	m.callCounter++
+	m.lastBucketReceived = *input.Bucket
+	m.lastKeyReceived = *input.Key
+	if input.Range != nil {
+		m.lastRangeReceived = *input.Range
+	}
+	return &s3.GetObjectOutput{Body: ioutil.NopCloser(bytes.NewReader([]byte("mock read data")))}, nil
+}
+
+func setUpMockS3Adapter() (*mockS3Client, Adapter, error) {
+	mock := newMock()
+	adapter, err := NewS3Adapter(mock)
+	return mock, adapter, err
+}
+
+func TestS3Adapter_Put(t *testing.T) {
+	mockObj, sf, err := setUpMockS3Adapter()
 	if err != nil {
 		t.Fatal(err)
 	}
 	fileName := "test_file"
-	a := "small test"
+	sendData := "small test"
 
-	err = sf.Put(TestBucketName, fileName, bytes.NewReader([]byte(a)))
+	err = sf.Put(TestBucketName, fileName, bytes.NewReader([]byte(sendData)))
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	reader, err := sf.Get(TestBucketName, fileName)
+	// Test repo
+	if strings.Compare(mockObj.lastBucketReceived, TestBucketName) != 0 {
+		t.Fatalf("bucket should be equal to repo. bucket=%s, repo=%s", mockObj.lastBucketReceived, TestBucketName)
+	}
+
+	// Test key
+	if strings.Compare(mockObj.lastKeyReceived, TestBucketName) != 0 {
+		t.Fatalf("received unexpected key. expected=%s, received=%s", fileName, mockObj.lastKeyReceived)
+	}
+
+	// Test sent data
+	receivedData, err := ioutil.ReadAll(mockObj.lastBodyReceived)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b, err := ioutil.ReadAll(reader); err == nil {
-		if strings.Compare(a, string(b)) != 0 {
-			t.Fatalf("wrote: %s and read: %s", a, string(b))
-		}
-	}
-	err = reader.Close()
-	if err != nil {
-		t.Fatal(err)
+	if strings.Compare(string(receivedData), sendData) != 0 {
+		t.Fatalf("received unexpected key. expected=%s, received=%s", fileName, mockObj.lastKeyReceived)
 	}
 }
 
 func TestS3Adapter_GetRange(t *testing.T) {
-	sf, err := setUpS3Adapter()
+	mockObj, sf, err := setUpMockS3Adapter()
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -76,19 +109,50 @@ func TestS3Adapter_GetRange(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
-	reader, err := sf.GetRange(TestBucketName, fileName, 1000, 2000)
+	rangeStart := int64(1000)
+	rangeEnd := int64(2000)
+	_, err = sf.GetRange(TestBucketName, fileName, rangeStart, rangeEnd)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if b, err := ioutil.ReadAll(reader); err == nil {
-		if strings.Compare(a[1000:2001], string(b)) != 0 {
-			t.Fatalf("wrote: %s and read: %s", a[1000:2001], string(b))
-		}
+
+	//test repo
+	if strings.Compare(mockObj.lastBucketReceived, TestBucketName) != 0 {
+		t.Fatalf("bucket should be equal to repo. bucket=%s, repo=%s", mockObj.lastBucketReceived, TestBucketName)
 	}
 
-	err = reader.Close()
+	//test key
+	if strings.Compare(mockObj.lastKeyReceived, fileName) != 0 {
+		t.Fatalf("received unexpected key. expected=%s, received=%s", fileName, mockObj.lastKeyReceived)
+	}
+
+	//test range
+	expectedRange := fmt.Sprintf("bytes=%d-%d", rangeStart, rangeEnd)
+	if strings.Compare(expectedRange, mockObj.lastRangeReceived) != 0 {
+		t.Fatalf("recieved unexpected range. expected:'%s' , received:'%s' ", expectedRange, mockObj.lastRangeReceived)
+	}
+}
+
+func TestMultipleReads(t *testing.T) {
+	mockData, sf, err := setUpMockS3Adapter()
 	if err != nil {
 		t.Fatal(err)
 	}
+	mockData.callCounter = 0
+	fileName := "test_file"
+	reader, err := sf.Get(TestBucketName, fileName)
+	if err != nil {
+		t.Fatal(err)
+	}
+	buffSize := 2
+	buff := make([]byte, buffSize)
+	for i := 1; i < 4; i++ {
+		_, err = reader.Read(buff)
+
+	}
+
+	if mockData.callCounter != 1 {
+		t.Fatalf("expected get to be called only once (regardless the numnber of reads)")
+	}
+
 }

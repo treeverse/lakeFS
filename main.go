@@ -74,9 +74,12 @@ func setupBadger() (*badger.DB, error) {
 }
 
 func setUpS3Adapter() (block.Adapter, error) {
+	id := os.Getenv(EnvVarS3AccessKeyId)
+	secret := os.Getenv(EnvVarS3SecretKey)
+	token := os.Getenv(EnvVarS3Token)
 	sess := session.Must(session.NewSession(&aws.Config{
 		Region:      aws.String(os.Getenv(EnvVarS3Region)),
-		Credentials: credentials.NewStaticCredentials(os.Getenv(EnvVarS3AccessKeyId), os.Getenv(EnvVarS3SecretKey), os.Getenv(EnvVarS3Token))}))
+		Credentials: credentials.NewStaticCredentials(id, secret, token)}))
 	svc := s3.New(sess)
 	return block.NewS3Adapter(svc)
 }
