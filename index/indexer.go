@@ -397,7 +397,10 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	brn, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		return tx.ReadBranch(branch)
 	})
-	return brn.(*model.Branch), err
+	if err != nil {
+		return nil, err
+	}
+	return brn.(*model.Branch), nil
 }
 
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
