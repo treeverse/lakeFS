@@ -167,7 +167,7 @@ const (
 	// S3 extended errors.
 	ErrContentSHA256Mismatch
 
-	// ￿Lakefs errors
+	// Lakefs errors
 	ERRLakeFSNotSupported
 )
 

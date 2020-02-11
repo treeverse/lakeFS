@@ -30,6 +30,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	DefaultBranch = "master"
+)
+
 // repoCmd represents the repo command
 var repoCmd = &cobra.Command{
 	Use:   "repo",
@@ -69,10 +73,10 @@ var repoListCmd = &cobra.Command{
 }
 
 // repoCreateCmd represents the create repo command
-// lakectl create lakefs://myrepo s3://mybucket
-// not verifying bucket url in order not to bind to s3
+// lakectl create lakefs://myrepo mybucket
+// not verifying bucket name in order not to bind to s3
 var repoCreateCmd = &cobra.Command{
-	Use:   "create  [repository uri] [bucket uri]",
+	Use:   "create  [repository uri] [bucket name]",
 	Short: "create a new repository ",
 	Args: ValidationChain(
 		HasNArgs(2),
@@ -124,6 +128,11 @@ var repoDeleteCmd = &cobra.Command{
 			return err
 		}
 		u := uri.Must(uri.Parse(args[0]))
+		confirmation, err := confirm(fmt.Sprintf("Are you sure you want to delete repository: %s", u.Repository))
+		if err != nil || !confirmation {
+			fmt.Printf("Delete Repository '%s' aborted:\n", u.Repository)
+			return nil
+		}
 		err = clt.DeleteRepository(context.Background(), u.Repository)
 		if err != nil {
 			return err
@@ -142,6 +151,6 @@ func init() {
 	repoListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
-	repoCreateCmd.Flags().StringP("default-branch", "d", "master", "the default branch of this repository")
+	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
 
 }
