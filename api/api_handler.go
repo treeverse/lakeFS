@@ -83,7 +83,7 @@ func (a *Handler) ListRepositoriesHandler() operations.ListRepositoriesHandler {
 		var lastId string
 		for i, repo := range repos {
 			repoList[i] = &models.Repository{
-				BucketName:    repo.GetRepoId(), // TODO: replace this with actual stored field that doesn't exist yet
+				BucketName:    repo.GetBucketName(),
 				CreationDate:  repo.GetCreationDate(),
 				DefaultBranch: repo.GetDefaultBranch(),
 				ID:            repo.GetRepoId(),
@@ -124,7 +124,7 @@ func (a *Handler) GetRepoHandler() operations.GetRepositoryHandler {
 
 		return operations.NewGetRepositoryOK().
 			WithPayload(&models.Repository{
-				BucketName:    repo.GetRepoId(), // TODO: replace with actual bucket name
+				BucketName:    repo.GetBucketName(),
 				CreationDate:  repo.GetCreationDate(),
 				DefaultBranch: repo.GetDefaultBranch(),
 				ID:            repo.GetRepoId(),
@@ -185,7 +185,7 @@ func (a *Handler) CreateRepositoryHandler() operations.CreateRepositoryHandler {
 			return operations.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), params.Repository.DefaultBranch)
+		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
 		if err != nil {
 			return operations.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error creating repository"))
@@ -198,7 +198,7 @@ func (a *Handler) CreateRepositoryHandler() operations.CreateRepositoryHandler {
 		}
 
 		return operations.NewCreateRepositoryCreated().WithPayload(&models.Repository{
-			BucketName:    repo.GetRepoId(),
+			BucketName:    repo.GetBucketName(),
 			CreationDate:  repo.GetCreationDate(),
 			DefaultBranch: repo.GetDefaultBranch(),
 			ID:            repo.GetRepoId(),
