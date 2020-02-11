@@ -20,6 +20,9 @@ import (
 	"github.com/go-openapi/swag"
 
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
 // NewLakefsAPI creates a new Lakefs instance
@@ -40,35 +43,35 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		BearerAuthenticator: security.BearerAuth,
 		JSONConsumer:        runtime.JSONConsumer(),
 		JSONProducer:        runtime.JSONProducer(),
-		CommitHandler: CommitHandlerFunc(func(params CommitParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.Commit has not yet been implemented")
+		CommitsCommitHandler: commits.CommitHandlerFunc(func(params commits.CommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation commits.Commit has not yet been implemented")
 		}),
-		CreateBranchHandler: CreateBranchHandlerFunc(func(params CreateBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.CreateBranch has not yet been implemented")
+		BranchesCreateBranchHandler: branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.CreateBranch has not yet been implemented")
 		}),
-		CreateRepositoryHandler: CreateRepositoryHandlerFunc(func(params CreateRepositoryParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.CreateRepository has not yet been implemented")
+		RepositoriesCreateRepositoryHandler: repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.CreateRepository has not yet been implemented")
 		}),
-		DeleteBranchHandler: DeleteBranchHandlerFunc(func(params DeleteBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.DeleteBranch has not yet been implemented")
+		BranchesDeleteBranchHandler: branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.DeleteBranch has not yet been implemented")
 		}),
-		DeleteRepositoryHandler: DeleteRepositoryHandlerFunc(func(params DeleteRepositoryParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.DeleteRepository has not yet been implemented")
+		RepositoriesDeleteRepositoryHandler: repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.DeleteRepository has not yet been implemented")
 		}),
-		GetBranchHandler: GetBranchHandlerFunc(func(params GetBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetBranch has not yet been implemented")
+		BranchesGetBranchHandler: branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.GetBranch has not yet been implemented")
 		}),
-		GetCommitHandler: GetCommitHandlerFunc(func(params GetCommitParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetCommit has not yet been implemented")
+		CommitsGetCommitHandler: commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation commits.GetCommit has not yet been implemented")
 		}),
-		GetRepositoryHandler: GetRepositoryHandlerFunc(func(params GetRepositoryParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetRepository has not yet been implemented")
+		RepositoriesGetRepositoryHandler: repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.GetRepository has not yet been implemented")
 		}),
-		ListBranchesHandler: ListBranchesHandlerFunc(func(params ListBranchesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.ListBranches has not yet been implemented")
+		BranchesListBranchesHandler: branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.ListBranches has not yet been implemented")
 		}),
-		ListRepositoriesHandler: ListRepositoriesHandlerFunc(func(params ListRepositoriesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.ListRepositories has not yet been implemented")
+		RepositoriesListRepositoriesHandler: repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
 		}), // Applies when the Authorization header is set with the Basic scheme
 		BasicAuthAuth: func(user string, pass string) (*models.User, error) {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
@@ -114,26 +117,26 @@ type LakefsAPI struct {
 	// APIAuthorizer provides access control (ACL/RBAC/ABAC) by providing access to the request and authenticated principal
 	APIAuthorizer runtime.Authorizer
 
-	// CommitHandler sets the operation handler for the commit operation
-	CommitHandler CommitHandler
-	// CreateBranchHandler sets the operation handler for the create branch operation
-	CreateBranchHandler CreateBranchHandler
-	// CreateRepositoryHandler sets the operation handler for the create repository operation
-	CreateRepositoryHandler CreateRepositoryHandler
-	// DeleteBranchHandler sets the operation handler for the delete branch operation
-	DeleteBranchHandler DeleteBranchHandler
-	// DeleteRepositoryHandler sets the operation handler for the delete repository operation
-	DeleteRepositoryHandler DeleteRepositoryHandler
-	// GetBranchHandler sets the operation handler for the get branch operation
-	GetBranchHandler GetBranchHandler
-	// GetCommitHandler sets the operation handler for the get commit operation
-	GetCommitHandler GetCommitHandler
-	// GetRepositoryHandler sets the operation handler for the get repository operation
-	GetRepositoryHandler GetRepositoryHandler
-	// ListBranchesHandler sets the operation handler for the list branches operation
-	ListBranchesHandler ListBranchesHandler
-	// ListRepositoriesHandler sets the operation handler for the list repositories operation
-	ListRepositoriesHandler ListRepositoriesHandler
+	// CommitsCommitHandler sets the operation handler for the commit operation
+	CommitsCommitHandler commits.CommitHandler
+	// BranchesCreateBranchHandler sets the operation handler for the create branch operation
+	BranchesCreateBranchHandler branches.CreateBranchHandler
+	// RepositoriesCreateRepositoryHandler sets the operation handler for the create repository operation
+	RepositoriesCreateRepositoryHandler repositories.CreateRepositoryHandler
+	// BranchesDeleteBranchHandler sets the operation handler for the delete branch operation
+	BranchesDeleteBranchHandler branches.DeleteBranchHandler
+	// RepositoriesDeleteRepositoryHandler sets the operation handler for the delete repository operation
+	RepositoriesDeleteRepositoryHandler repositories.DeleteRepositoryHandler
+	// BranchesGetBranchHandler sets the operation handler for the get branch operation
+	BranchesGetBranchHandler branches.GetBranchHandler
+	// CommitsGetCommitHandler sets the operation handler for the get commit operation
+	CommitsGetCommitHandler commits.GetCommitHandler
+	// RepositoriesGetRepositoryHandler sets the operation handler for the get repository operation
+	RepositoriesGetRepositoryHandler repositories.GetRepositoryHandler
+	// BranchesListBranchesHandler sets the operation handler for the list branches operation
+	BranchesListBranchesHandler branches.ListBranchesHandler
+	// RepositoriesListRepositoriesHandler sets the operation handler for the list repositories operation
+	RepositoriesListRepositoriesHandler repositories.ListRepositoriesHandler
 	// ServeError is called when an error is received, there is a default handler
 	// but you can set your own with this
 	ServeError func(http.ResponseWriter, *http.Request, error)
@@ -204,44 +207,44 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "BasicAuthAuth")
 	}
 
-	if o.CommitHandler == nil {
-		unregistered = append(unregistered, "Operations.CommitHandler")
+	if o.CommitsCommitHandler == nil {
+		unregistered = append(unregistered, "Commits.CommitHandler")
 	}
 
-	if o.CreateBranchHandler == nil {
-		unregistered = append(unregistered, "Operations.CreateBranchHandler")
+	if o.BranchesCreateBranchHandler == nil {
+		unregistered = append(unregistered, "Branches.CreateBranchHandler")
 	}
 
-	if o.CreateRepositoryHandler == nil {
-		unregistered = append(unregistered, "Operations.CreateRepositoryHandler")
+	if o.RepositoriesCreateRepositoryHandler == nil {
+		unregistered = append(unregistered, "Repositories.CreateRepositoryHandler")
 	}
 
-	if o.DeleteBranchHandler == nil {
-		unregistered = append(unregistered, "Operations.DeleteBranchHandler")
+	if o.BranchesDeleteBranchHandler == nil {
+		unregistered = append(unregistered, "Branches.DeleteBranchHandler")
 	}
 
-	if o.DeleteRepositoryHandler == nil {
-		unregistered = append(unregistered, "Operations.DeleteRepositoryHandler")
+	if o.RepositoriesDeleteRepositoryHandler == nil {
+		unregistered = append(unregistered, "Repositories.DeleteRepositoryHandler")
 	}
 
-	if o.GetBranchHandler == nil {
-		unregistered = append(unregistered, "Operations.GetBranchHandler")
+	if o.BranchesGetBranchHandler == nil {
+		unregistered = append(unregistered, "Branches.GetBranchHandler")
 	}
 
-	if o.GetCommitHandler == nil {
-		unregistered = append(unregistered, "Operations.GetCommitHandler")
+	if o.CommitsGetCommitHandler == nil {
+		unregistered = append(unregistered, "Commits.GetCommitHandler")
 	}
 
-	if o.GetRepositoryHandler == nil {
-		unregistered = append(unregistered, "Operations.GetRepositoryHandler")
+	if o.RepositoriesGetRepositoryHandler == nil {
+		unregistered = append(unregistered, "Repositories.GetRepositoryHandler")
 	}
 
-	if o.ListBranchesHandler == nil {
-		unregistered = append(unregistered, "Operations.ListBranchesHandler")
+	if o.BranchesListBranchesHandler == nil {
+		unregistered = append(unregistered, "Branches.ListBranchesHandler")
 	}
 
-	if o.ListRepositoriesHandler == nil {
-		unregistered = append(unregistered, "Operations.ListRepositoriesHandler")
+	if o.RepositoriesListRepositoriesHandler == nil {
+		unregistered = append(unregistered, "Repositories.ListRepositoriesHandler")
 	}
 
 	if len(unregistered) > 0 {
@@ -350,52 +353,52 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories/{repositoryId}/branches/{branchId}/commits"] = NewCommit(o.context, o.CommitHandler)
+	o.handlers["POST"]["/repositories/{repositoryId}/branches/{branchId}/commits"] = commits.NewCommit(o.context, o.CommitsCommitHandler)
 
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories/{repositoryId}/branches"] = NewCreateBranch(o.context, o.CreateBranchHandler)
+	o.handlers["POST"]["/repositories/{repositoryId}/branches"] = branches.NewCreateBranch(o.context, o.BranchesCreateBranchHandler)
 
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
 	}
-	o.handlers["POST"]["/repositories"] = NewCreateRepository(o.context, o.CreateRepositoryHandler)
+	o.handlers["POST"]["/repositories"] = repositories.NewCreateRepository(o.context, o.RepositoriesCreateRepositoryHandler)
 
 	if o.handlers["DELETE"] == nil {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
 	}
-	o.handlers["DELETE"]["/repositories/{repositoryId}/branches/{branchId}"] = NewDeleteBranch(o.context, o.DeleteBranchHandler)
+	o.handlers["DELETE"]["/repositories/{repositoryId}/branches/{branchId}"] = branches.NewDeleteBranch(o.context, o.BranchesDeleteBranchHandler)
 
 	if o.handlers["DELETE"] == nil {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
 	}
-	o.handlers["DELETE"]["/repositories/{repositoryId}"] = NewDeleteRepository(o.context, o.DeleteRepositoryHandler)
+	o.handlers["DELETE"]["/repositories/{repositoryId}"] = repositories.NewDeleteRepository(o.context, o.RepositoriesDeleteRepositoryHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}"] = NewGetBranch(o.context, o.GetBranchHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}"] = branches.NewGetBranch(o.context, o.BranchesGetBranchHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/commits/{commitId}"] = NewGetCommit(o.context, o.GetCommitHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/commits/{commitId}"] = commits.NewGetCommit(o.context, o.CommitsGetCommitHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}"] = NewGetRepository(o.context, o.GetRepositoryHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}"] = repositories.NewGetRepository(o.context, o.RepositoriesGetRepositoryHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/branches"] = NewListBranches(o.context, o.ListBranchesHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/branches"] = branches.NewListBranches(o.context, o.BranchesListBranchesHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories"] = NewListRepositories(o.context, o.ListRepositoriesHandler)
+	o.handlers["GET"]["/repositories"] = repositories.NewListRepositories(o.context, o.RepositoriesListRepositoriesHandler)
 
 }
 

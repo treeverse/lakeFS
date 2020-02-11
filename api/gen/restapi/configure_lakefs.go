@@ -12,6 +12,9 @@ import (
 
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
 //go:generate swagger generate server --target ../../gen --name Lakefs --spec ../../../swagger.yml --principal models.User --exclude-main
@@ -46,54 +49,54 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	//
 	// Example:
 	// api.APIAuthorizer = security.Authorized()
-	if api.CommitHandler == nil {
-		api.CommitHandler = operations.CommitHandlerFunc(func(params operations.CommitParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.Commit has not yet been implemented")
+	if api.CommitsCommitHandler == nil {
+		api.CommitsCommitHandler = commits.CommitHandlerFunc(func(params commits.CommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation commits.Commit has not yet been implemented")
 		})
 	}
-	if api.CreateBranchHandler == nil {
-		api.CreateBranchHandler = operations.CreateBranchHandlerFunc(func(params operations.CreateBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.CreateBranch has not yet been implemented")
+	if api.BranchesCreateBranchHandler == nil {
+		api.BranchesCreateBranchHandler = branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.CreateBranch has not yet been implemented")
 		})
 	}
-	if api.CreateRepositoryHandler == nil {
-		api.CreateRepositoryHandler = operations.CreateRepositoryHandlerFunc(func(params operations.CreateRepositoryParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.CreateRepository has not yet been implemented")
+	if api.RepositoriesCreateRepositoryHandler == nil {
+		api.RepositoriesCreateRepositoryHandler = repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.CreateRepository has not yet been implemented")
 		})
 	}
-	if api.DeleteBranchHandler == nil {
-		api.DeleteBranchHandler = operations.DeleteBranchHandlerFunc(func(params operations.DeleteBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.DeleteBranch has not yet been implemented")
+	if api.BranchesDeleteBranchHandler == nil {
+		api.BranchesDeleteBranchHandler = branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.DeleteBranch has not yet been implemented")
 		})
 	}
-	if api.DeleteRepositoryHandler == nil {
-		api.DeleteRepositoryHandler = operations.DeleteRepositoryHandlerFunc(func(params operations.DeleteRepositoryParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.DeleteRepository has not yet been implemented")
+	if api.RepositoriesDeleteRepositoryHandler == nil {
+		api.RepositoriesDeleteRepositoryHandler = repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.DeleteRepository has not yet been implemented")
 		})
 	}
-	if api.GetBranchHandler == nil {
-		api.GetBranchHandler = operations.GetBranchHandlerFunc(func(params operations.GetBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetBranch has not yet been implemented")
+	if api.BranchesGetBranchHandler == nil {
+		api.BranchesGetBranchHandler = branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.GetBranch has not yet been implemented")
 		})
 	}
-	if api.GetCommitHandler == nil {
-		api.GetCommitHandler = operations.GetCommitHandlerFunc(func(params operations.GetCommitParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetCommit has not yet been implemented")
+	if api.CommitsGetCommitHandler == nil {
+		api.CommitsGetCommitHandler = commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation commits.GetCommit has not yet been implemented")
 		})
 	}
-	if api.GetRepositoryHandler == nil {
-		api.GetRepositoryHandler = operations.GetRepositoryHandlerFunc(func(params operations.GetRepositoryParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.GetRepository has not yet been implemented")
+	if api.RepositoriesGetRepositoryHandler == nil {
+		api.RepositoriesGetRepositoryHandler = repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.GetRepository has not yet been implemented")
 		})
 	}
-	if api.ListBranchesHandler == nil {
-		api.ListBranchesHandler = operations.ListBranchesHandlerFunc(func(params operations.ListBranchesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.ListBranches has not yet been implemented")
+	if api.BranchesListBranchesHandler == nil {
+		api.BranchesListBranchesHandler = branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.ListBranches has not yet been implemented")
 		})
 	}
-	if api.ListRepositoriesHandler == nil {
-		api.ListRepositoriesHandler = operations.ListRepositoriesHandlerFunc(func(params operations.ListRepositoriesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation operations.ListRepositories has not yet been implemented")
+	if api.RepositoriesListRepositoriesHandler == nil {
+		api.RepositoriesListRepositoriesHandler = repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
 		})
 	}
 
