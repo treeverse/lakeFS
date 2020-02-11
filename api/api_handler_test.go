@@ -46,9 +46,9 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 	t.Run("list some repos", func(t *testing.T) {
 		// write some repos
-		testutil.Must(t, deps.meta.CreateRepo("foo1", "master"))
-		testutil.Must(t, deps.meta.CreateRepo("foo2", "master"))
-		testutil.Must(t, deps.meta.CreateRepo("foo3", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("foo1", "s3://foo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("foo2", "s3://foo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("foo3", "s3://foo1", "master"))
 
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
 			httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
@@ -143,7 +143,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 	})
 
 	t.Run("get existing repo", func(t *testing.T) {
-		deps.meta.CreateRepo("foo1", "some_non_default_branch")
+		deps.meta.CreateRepo("foo1", "s3://foo1", "some_non_default_branch")
 		resp, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
 			RepositoryID: "foo1",
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
@@ -188,7 +188,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 	})
 
 	t.Run("get existing commit", func(t *testing.T) {
-		deps.meta.CreateRepo("foo1", "master")
+		deps.meta.CreateRepo("foo1", "s3://foo1", "master")
 		deps.meta.Commit("foo1", "master", "some message", DefaultUserId, nil)
 		b, err := deps.meta.GetBranch("foo1", "master")
 		if err != nil {
@@ -243,7 +243,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 	})
 
 	t.Run("commit success", func(t *testing.T) {
-		deps.meta.CreateRepo("foo1", "master")
+		deps.meta.CreateRepo("foo1", "s3://foo1", "master")
 		_, err := clt.Commits.Commit(&commits.CommitParams{
 			BranchID: "master",
 			Commit: &models.CommitCreation{
@@ -290,7 +290,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("create repo duplicate", func(t *testing.T) {
-		err := deps.meta.CreateRepo("repo2", "master")
+		err := deps.meta.CreateRepo("repo2", "s3://foo1", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -321,7 +321,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("delete repo success", func(t *testing.T) {
-		testutil.Must(t, deps.meta.CreateRepo("my-new-repo", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("my-new-repo", "s3://foo1", "master"))
 
 		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			RepositoryID: "my-new-repo",
@@ -348,10 +348,10 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	})
 
 	t.Run("delete repo doesnt delete other repos", func(t *testing.T) {
-		testutil.Must(t, deps.meta.CreateRepo("rr0", "master"))
-		testutil.Must(t, deps.meta.CreateRepo("rr1", "master"))
-		testutil.Must(t, deps.meta.CreateRepo("rr11", "master"))
-		testutil.Must(t, deps.meta.CreateRepo("rr2", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr0", "s3://foo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr1", "s3://foo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr11", "s3://foo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("rr2", "s3://foo1", "master"))
 		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			RepositoryID: "rr1",
 		}, bauth)
@@ -388,7 +388,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("list branches only default", func(t *testing.T) {
-		testutil.Must(t, deps.meta.CreateRepo("repo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("repo1", "s3://foo1", "master"))
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(-1),
 			RepositoryID: "repo1",
@@ -465,7 +465,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("get default branch", func(t *testing.T) {
-		testutil.Must(t, deps.meta.CreateRepo("repo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("repo1", "s3://foo1", "master"))
 		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			BranchID:     "master",
 			RepositoryID: "repo1",
@@ -512,7 +512,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("create branch success", func(t *testing.T) {
-		testutil.Must(t, deps.meta.CreateRepo("repo1", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("repo1", "s3://foo1", "master"))
 		branch, err := deps.meta.GetBranch("repo1", "master")
 		if err != nil {
 			t.Fatal(err)
@@ -576,7 +576,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("delete branch success", func(t *testing.T) {
-		testutil.Must(t, deps.meta.CreateRepo("my-new-repo", "master"))
+		testutil.Must(t, deps.meta.CreateRepo("my-new-repo", "s3://foo1", "master"))
 		branch, err := deps.meta.GetBranch("my-new-repo", "master")
 		if err != nil {
 			t.Fatal(err)
