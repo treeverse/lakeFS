@@ -498,7 +498,6 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 	if !isValidRepoId(repoId) {
 		return errors.ErrInvalidBucketName
 	}
-	//TODO:check that bucket exists and we have the ability to access it
 
 	creationDate := time.Now().Unix()
 
@@ -576,12 +575,15 @@ func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
 }
 
 func (index *KVIndex) DeleteRepo(repoId string) error {
-	_, err := index.GetRepo(repoId)
-	if err != nil {
-		return err
-	}
-	_, err = index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
-		tx.DeleteRepo(repoId)
+	_, err := index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
+		_, err := tx.ReadRepo(repoId)
+		if err != nil {
+			return nil, err
+		}
+		err = tx.DeleteRepo(repoId)
+		if err != nil {
+			return nil, err
+		}
 		return nil, nil
 	})
 	return err

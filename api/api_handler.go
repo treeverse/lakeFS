@@ -1,6 +1,8 @@
 package api
 
 import (
+	"bytes"
+	"github.com/treeverse/lakefs/block"
 	"net/http"
 
 	"github.com/go-openapi/runtime/middleware"
@@ -21,14 +23,16 @@ const (
 )
 
 type Handler struct {
-	meta index.Index
-	auth auth.Service
+	meta         index.Index
+	auth         auth.Service
+	blockAdapter block.Adapter
 }
 
-func NewHandler(meta index.Index, auth auth.Service) *Handler {
+func NewHandler(meta index.Index, auth auth.Service, blockAdapter block.Adapter) *Handler {
 	return &Handler{
-		meta: meta,
-		auth: auth,
+		meta:         meta,
+		auth:         auth,
+		blockAdapter: blockAdapter,
 	}
 }
 
@@ -178,6 +182,25 @@ func (a *Handler) CommitHandler() operations.CommitHandler {
 	})
 }
 
+func testBucket(adapter block.Adapter, bucketName string) error {
+	const (
+		dummyKey  = "dummy"
+		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
+	)
+
+	err := adapter.Put(bucketName, dummyKey, bytes.NewReader([]byte(dummyData)))
+	if err != nil {
+		return err
+	}
+
+	_, err = adapter.Get(bucketName, dummyKey)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (a *Handler) CreateRepositoryHandler() operations.CreateRepositoryHandler {
 	return operations.CreateRepositoryHandlerFunc(func(params operations.CreateRepositoryParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
@@ -185,6 +208,11 @@ func (a *Handler) CreateRepositoryHandler() operations.CreateRepositoryHandler {
 			return operations.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
+		err = testBucket(a.blockAdapter, swag.StringValue(params.Repository.BucketName))
+		if err != nil {
+			return operations.NewCreateRepositoryBadRequest().
+				WithPayload(responseError("error creating repository: could not access bucket"))
+		}
 		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
 		if err != nil {
 			return operations.NewGetRepositoryDefault(http.StatusInternalServerError).
