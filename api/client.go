@@ -9,7 +9,9 @@ import (
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
-	"github.com/treeverse/lakefs/api/gen/client/operations"
+	"github.com/treeverse/lakefs/api/gen/client/branches"
+	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/repositories"
 
 	genclient "github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -65,7 +67,7 @@ type client struct {
 }
 
 func (c *client) ListRepositories(ctx context.Context, from string, amount int) ([]*models.Repository, *models.Pagination, error) {
-	resp, err := c.remote.Operations.ListRepositories(&operations.ListRepositoriesParams{
+	resp, err := c.remote.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
 		After:   swag.String(from),
 		Amount:  swag.Int64(int64(amount)),
 		Context: ctx,
@@ -77,7 +79,7 @@ func (c *client) ListRepositories(ctx context.Context, from string, amount int) 
 }
 
 func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repository, error) {
-	resp, err := c.remote.Operations.GetRepository(&operations.GetRepositoryParams{
+	resp, err := c.remote.Repositories.GetRepository(&repositories.GetRepositoryParams{
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
@@ -88,7 +90,7 @@ func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repo
 }
 
 func (c *client) ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Refspec, *models.Pagination, error) {
-	resp, err := c.remote.Operations.ListBranches(&operations.ListBranchesParams{
+	resp, err := c.remote.Branches.ListBranches(&branches.ListBranchesParams{
 		After:        swag.String(from),
 		Amount:       swag.Int64(int64(amount)),
 		RepositoryID: repoId,
@@ -101,7 +103,7 @@ func (c *client) ListBranches(ctx context.Context, repoId string, from string, a
 }
 
 func (c *client) CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error {
-	_, err := c.remote.Operations.CreateRepository(&operations.CreateRepositoryParams{
+	_, err := c.remote.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)
@@ -109,7 +111,7 @@ func (c *client) CreateRepository(ctx context.Context, repository *models.Reposi
 }
 
 func (c *client) DeleteRepository(ctx context.Context, repoId string) error {
-	_, err := c.remote.Operations.DeleteRepository(&operations.DeleteRepositoryParams{
+	_, err := c.remote.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
@@ -117,7 +119,7 @@ func (c *client) DeleteRepository(ctx context.Context, repoId string) error {
 }
 
 func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error) {
-	resp, err := c.remote.Operations.GetBranch(&operations.GetBranchParams{
+	resp, err := c.remote.Branches.GetBranch(&branches.GetBranchParams{
 		BranchID:     branchId,
 		RepositoryID: repoId,
 		Context:      ctx,
@@ -129,7 +131,7 @@ func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*model
 }
 
 func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error {
-	_, err := c.remote.Operations.CreateBranch(&operations.CreateBranchParams{
+	_, err := c.remote.Branches.CreateBranch(&branches.CreateBranchParams{
 		Branch:       branch,
 		RepositoryID: repoId,
 		Context:      ctx,
@@ -138,7 +140,7 @@ func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models
 }
 
 func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) error {
-	_, err := c.remote.Operations.DeleteBranch(&operations.DeleteBranchParams{
+	_, err := c.remote.Branches.DeleteBranch(&branches.DeleteBranchParams{
 		BranchID:     branchId,
 		RepositoryID: repoId,
 		Context:      ctx,
@@ -147,7 +149,7 @@ func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) erro
 }
 
 func (c *client) Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error) {
-	commit, err := c.remote.Operations.Commit(&operations.CommitParams{
+	commit, err := c.remote.Commits.Commit(&commits.CommitParams{
 		BranchID: branchId,
 		Commit: &models.CommitCreation{
 			Message:  &message,
@@ -163,7 +165,7 @@ func (c *client) Commit(ctx context.Context, repoId, branchId, message string, m
 }
 
 func (c *client) GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error) {
-	commit, err := c.remote.Operations.GetCommit(&operations.GetCommitParams{
+	commit, err := c.remote.Commits.GetCommit(&commits.GetCommitParams{
 		CommitID:     commitId,
 		RepositoryID: repoId,
 		Context:      ctx,
