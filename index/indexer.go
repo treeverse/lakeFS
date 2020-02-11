@@ -397,7 +397,10 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	brn, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		return tx.ReadBranch(branch)
 	})
-	return brn.(*model.Branch), err
+	if err != nil {
+		return nil, err
+	}
+	return brn.(*model.Branch), nil
 }
 
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
@@ -490,7 +493,7 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 }
 
 func isValidRepoId(repoId string) bool {
-	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]{2,62}$`).MatchString(repoId)
+	return regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`).MatchString(repoId)
 }
 
 func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {

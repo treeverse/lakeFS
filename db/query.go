@@ -84,6 +84,19 @@ func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key Composi
 	return nil
 }
 
+func (q *DBReadQuery) RangeAll() (Iterator, IteratorCloseFn) {
+	opts := badger.DefaultIteratorOptions
+	opts.Prefix = []byte("")
+	it := q.tx.NewIterator(opts)
+	it.Seek(opts.Prefix)
+	return &dbPrefixIterator{
+			iter:   it,
+			prefix: []byte(""),
+		}, func() {
+			it.Close()
+		}
+}
+
 func (q *DBReadQuery) Range(space Namespace) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)

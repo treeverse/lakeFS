@@ -33,9 +33,13 @@ func init() {
     "title": "lakeFS API",
     "version": "0.1.0"
   },
+  "basePath": "/api/v1",
   "paths": {
     "/repositories": {
       "get": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "list repositories",
         "operationId": "listRepositories",
         "parameters": [
@@ -80,6 +84,9 @@ func init() {
         }
       },
       "post": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "create repository",
         "operationId": "createRepository",
         "parameters": [
@@ -118,6 +125,9 @@ func init() {
     },
     "/repositories/{repositoryId}": {
       "get": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "get repository",
         "operationId": "getRepository",
         "responses": {
@@ -145,6 +155,9 @@ func init() {
         }
       },
       "delete": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "delete repository",
         "operationId": "deleteRepository",
         "responses": {
@@ -179,6 +192,9 @@ func init() {
     },
     "/repositories/{repositoryId}/branches": {
       "get": {
+        "tags": [
+          "branches"
+        ],
         "summary": "list branches",
         "operationId": "listBranches",
         "parameters": [
@@ -223,6 +239,9 @@ func init() {
         }
       },
       "post": {
+        "tags": [
+          "branches"
+        ],
         "summary": "create branch",
         "operationId": "createBranch",
         "parameters": [
@@ -269,6 +288,9 @@ func init() {
     },
     "/repositories/{repositoryId}/branches/{branchId}": {
       "get": {
+        "tags": [
+          "branches"
+        ],
         "summary": "get branch",
         "operationId": "getBranch",
         "responses": {
@@ -296,6 +318,9 @@ func init() {
         }
       },
       "delete": {
+        "tags": [
+          "branches"
+        ],
         "summary": "delete branch",
         "operationId": "deleteBranch",
         "responses": {
@@ -336,6 +361,9 @@ func init() {
     },
     "/repositories/{repositoryId}/branches/{branchId}/commits": {
       "post": {
+        "tags": [
+          "commits"
+        ],
         "summary": "create commit",
         "operationId": "commit",
         "parameters": [
@@ -388,6 +416,9 @@ func init() {
     },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
+        "tags": [
+          "commits"
+        ],
         "summary": "get commit",
         "operationId": "getCommit",
         "responses": {
@@ -619,9 +650,13 @@ func init() {
     "title": "lakeFS API",
     "version": "0.1.0"
   },
+  "basePath": "/api/v1",
   "paths": {
     "/repositories": {
       "get": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "list repositories",
         "operationId": "listRepositories",
         "parameters": [
@@ -669,6 +704,9 @@ func init() {
         }
       },
       "post": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "create repository",
         "operationId": "createRepository",
         "parameters": [
@@ -710,6 +748,9 @@ func init() {
     },
     "/repositories/{repositoryId}": {
       "get": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "get repository",
         "operationId": "getRepository",
         "responses": {
@@ -740,6 +781,9 @@ func init() {
         }
       },
       "delete": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "delete repository",
         "operationId": "deleteRepository",
         "responses": {
@@ -777,6 +821,9 @@ func init() {
     },
     "/repositories/{repositoryId}/branches": {
       "get": {
+        "tags": [
+          "branches"
+        ],
         "summary": "list branches",
         "operationId": "listBranches",
         "parameters": [
@@ -824,6 +871,9 @@ func init() {
         }
       },
       "post": {
+        "tags": [
+          "branches"
+        ],
         "summary": "create branch",
         "operationId": "createBranch",
         "parameters": [
@@ -873,6 +923,9 @@ func init() {
     },
     "/repositories/{repositoryId}/branches/{branchId}": {
       "get": {
+        "tags": [
+          "branches"
+        ],
         "summary": "get branch",
         "operationId": "getBranch",
         "responses": {
@@ -903,6 +956,9 @@ func init() {
         }
       },
       "delete": {
+        "tags": [
+          "branches"
+        ],
         "summary": "delete branch",
         "operationId": "deleteBranch",
         "responses": {
@@ -946,6 +1002,9 @@ func init() {
     },
     "/repositories/{repositoryId}/branches/{branchId}/commits": {
       "post": {
+        "tags": [
+          "commits"
+        ],
         "summary": "create commit",
         "operationId": "commit",
         "parameters": [
@@ -1001,6 +1060,9 @@ func init() {
     },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
+        "tags": [
+          "commits"
+        ],
         "summary": "get commit",
         "operationId": "getCommit",
         "responses": {
