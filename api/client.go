@@ -47,7 +47,7 @@ PUT  /repositories/myrepo/branches/feature-new/merge/master // merge branch into
 type Client interface {
 	ListRepositories(ctx context.Context, from string, amount int) ([]*models.Repository, *models.Pagination, error)
 	GetRepository(ctx context.Context, repoId string) (*models.Repository, error)
-	CreateRepository(ctx context.Context, repoId string, repository *models.RepositoryCreation) error
+	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repoId string) error
 
 	ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Refspec, *models.Pagination, error)
@@ -100,7 +100,7 @@ func (c *client) ListBranches(ctx context.Context, repoId string, from string, a
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) CreateRepository(ctx context.Context, repoId string, repository *models.RepositoryCreation) error {
+func (c *client) CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error {
 	_, err := c.remote.Operations.CreateRepository(&operations.CreateRepositoryParams{
 		Repository: repository,
 		Context:    ctx,
