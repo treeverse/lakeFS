@@ -493,7 +493,7 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 }
 
 func isValidRepoId(repoId string) bool {
-	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]{2,62}$`).MatchString(repoId)
+	return regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`).MatchString(repoId)
 }
 
 func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {

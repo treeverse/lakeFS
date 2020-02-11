@@ -125,7 +125,7 @@ type handlerTransport struct {
 }
 
 func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, error) {
-	clt := httptransport.NewWithClient("", "/", []string{"http"}, &http.Client{
+	clt := httptransport.NewWithClient("", "/api/v1", []string{"http"}, &http.Client{
 		Transport: &roundTripper{r.Handler},
 	})
 	return clt.Submit(op)
