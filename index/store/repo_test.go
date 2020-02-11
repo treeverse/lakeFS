@@ -83,7 +83,7 @@ func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
 	})
 
 	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
-		branches, _, err := ops.ListBranches(-1, "")
+		branches, err := ops.ListBranches()
 		if err != nil {
 			t.Fatal(err)
 		}
