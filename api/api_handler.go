@@ -313,10 +313,7 @@ func (a *Handler) CreateBranchHandler() operations.CreateBranchHandler {
 			return operations.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return operations.NewCreateBranchCreated().WithPayload(&models.Refspec{
-			CommitID: params.Branch.CommitID,
-			ID:       &params.RepositoryID,
-		})
+		return operations.NewCreateBranchCreated().WithPayload(params.Branch)
 	})
 }
 
