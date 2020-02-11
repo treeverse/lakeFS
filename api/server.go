@@ -76,7 +76,7 @@ func (s *Server) SetupServer() (*restapi.Server, error) {
 	api.BasicAuthAuth = s.BasicAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.meta, s.authService).Configure(api)
+	NewHandler(s.meta, s.authService, s.blockStore).Configure(api)
 
 	// setup host/port
 	srv := restapi.NewServer(api)
