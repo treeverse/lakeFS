@@ -105,7 +105,7 @@ func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
 	}
 
 	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
-		repos, _, err := ops.ListRepos(-1, "")
+		repos, err := ops.ListRepos()
 		if err != nil {
 			t.Fatal(err)
 		}
