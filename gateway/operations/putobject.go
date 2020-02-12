@@ -166,6 +166,7 @@ func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, 
 
 		// write a block
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
+		cksummer.Write(buf[:n])
 		err = adapter.Put(bucketName, blockAddr, bytes.NewReader(buf[:n]))
 		if err != nil {
 			return nil, err
