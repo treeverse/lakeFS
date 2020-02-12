@@ -3,18 +3,11 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/user"
-	"path"
-	"runtime"
-	"strings"
+
+	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/config"
 
 	"github.com/treeverse/lakefs/db"
-
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/api"
 
@@ -24,215 +17,187 @@ import (
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/dgraph-io/badger"
 )
 
-const (
-	ModuleName           = "github.com/treeverse/lakefs"
-	ProjectDirectoryName = "lakefs"
-
-	EnvVarS3AccessKeyId = "AWS_ADAPTER_ACCESS_KEY_ID"
-	EnvVarS3SecretKey   = "AWS_ADAPTER_SECRET_ACCESS_KEY"
-	EnvVarS3Region      = "AWS_ADAPTER_REGION"
-	EnvVarS3Token       = "AWS_ADAPTER_TOKEN"
-)
-
-var (
-	DefaultBlockLocation    = path.Join(home(), "tv_state", "blocks")
-	DefaultMetadataLocation = path.Join(home(), "tv_state", "kv")
-)
-
-func setupLogger() {
-	// logger
-	log.SetReportCaller(true)
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors:   true,
-		FullTimestamp: true,
-		CallerPrettyfier: func(frame *runtime.Frame) (function string, file string) {
-			// file relative to "lakefs"
-			indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
-			if indexOfModule != -1 {
-				file = frame.File[indexOfModule+len(ProjectDirectoryName):]
-			} else {
-				file = frame.File
-			}
-			file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
-			function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
-			return
-		},
-	})
-	log.SetOutput(os.Stdout)
-	log.SetLevel(log.TraceLevel) // for now
+func setupConf(cmd *cobra.Command) *config.Config {
+	confFile, err := cmd.Flags().GetString("config")
+	if err != nil {
+		panic(err)
+	}
+	if len(confFile) > 0 {
+		return config.NewFromFile(confFile)
+	}
+	return config.New()
 }
 
-func setupLocalDB() (db.Store, error) {
-	opts := badger.DefaultOptions(DefaultMetadataLocation).
-		WithTruncate(true).
-		WithLogger(db.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
-	bdb, err := badger.Open(opts)
-	if err != nil {
-		return nil, err
-	}
-	return db.NewLocalDBStore(bdb), nil
-}
+var initCmd = &cobra.Command{
+	Use:   "init",
+	Short: "initialize a LakeFS instance, and setup an admin credential",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf := setupConf(cmd)
+		kv := conf.BuildStore()
 
-func setUpS3Adapter() (block.Adapter, error) {
-	id := os.Getenv(EnvVarS3AccessKeyId)
-	secret := os.Getenv(EnvVarS3SecretKey)
-	token := os.Getenv(EnvVarS3Token)
-	sess := session.Must(session.NewSession(&aws.Config{
-		Region:      aws.String(os.Getenv(EnvVarS3Region)),
-		Credentials: credentials.NewStaticCredentials(id, secret, token)}))
-	svc := s3.New(sess)
-	return block.NewS3Adapter(svc)
-}
-func home() string {
-	u, err := user.Current()
-	if err != nil {
-		panic(err)
-	}
-	return u.HomeDir
-}
+		userId, _ := cmd.Flags().GetString("user-id")
+		userEmail, _ := cmd.Flags().GetString("user-email")
+		userFullName, _ := cmd.Flags().GetString("user-name")
 
-func createCreds() {
-	// init db
-	setupLogger()
-	kv, err := setupLocalDB()
-	if err != nil {
-		panic(err)
-	}
-	// init auth
-	authService := auth.NewKVAuthService(kv)
-	err = authService.CreateUser(&model.User{
-		Id:       "exampleuid",
-		Email:    "ozkatz100@gmail.com",
-		FullName: "Oz Katz",
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	err = authService.CreateRole(&model.Role{
-		Id:   "examplerid",
-		Name: "AdminRole",
-		Policies: []*model.Policy{
-			{
-				Permission: string(permissions.ManageRepos),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.ReadRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.WriteRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-		},
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	err = authService.AssignRoleToUser("examplerid", "exampleuid")
-	if err != nil {
-		panic(err)
-	}
-
-	creds, err := authService.CreateUserCredentials(&model.User{Id: "exampleuid"})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Printf("creds:\naccess: %s\nsecret: %s\n", creds.GetAccessKeyId(), creds.GetAccessSecretKey())
-}
-
-func Run() {
-	setupLogger()
-
-	kv, err := setupLocalDB()
-	if err != nil {
-		panic(err)
-	}
-
-	// init index
-	meta := index.NewKVIndex(store.NewKVStore(kv))
-
-	// init mpu manager
-	mpu := index.NewKVMultipartManager(store.NewKVStore(kv))
-
-	// init block store
-	blockStore, err := block.NewLocalFSAdapter(DefaultBlockLocation)
-	//blockStore, err := setUpS3Adapter()
-	if err != nil {
-		panic(err)
-	}
-
-	// init authentication
-	authService := auth.NewKVAuthService(kv)
-
-	region := "us-east-1"
-
-	// start API server
-	apiServer := api.NewServer(region, meta, mpu, blockStore, authService)
-	go func() {
-		panic(apiServer.Serve("0.0.0.0", 8001))
-	}()
-
-	// init gateway server
-	gatewayServer := gateway.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
-	panic(gatewayServer.Listen())
-}
-
-func keys() {
-	setupLogger()
-	kv, err := setupLocalDB()
-	if err != nil {
-		panic(err)
-	}
-	_, err = kv.ReadTransact(func(q db.ReadQuery) (i interface{}, err error) {
-		iter, closer := q.RangeAll()
-		defer closer()
-		for iter.Advance() {
-			item, _ := iter.Get()
-			fmt.Printf("%s\n", db.KeyFromBytes(item.Key))
+		authService := auth.NewKVAuthService(kv)
+		err := authService.CreateUser(&model.User{
+			Id:       userId,
+			Email:    userEmail,
+			FullName: userFullName,
+		})
+		if err != nil {
+			panic(err)
 		}
-		return nil, nil
-	})
 
-	if err != nil {
-		panic(err)
-	}
+		err = authService.CreateRole(&model.Role{
+			Id:   "admin",
+			Name: "Admin",
+			Policies: []*model.Policy{
+				{
+					Permission: string(permissions.ManageRepos),
+					Arn:        "arn:treeverse:repos:::*",
+				},
+				{
+					Permission: string(permissions.ReadRepo),
+					Arn:        "arn:treeverse:repos:::*",
+				},
+				{
+					Permission: string(permissions.WriteRepo),
+					Arn:        "arn:treeverse:repos:::*",
+				},
+			},
+		})
+		if err != nil {
+			panic(err)
+		}
+
+		err = authService.AssignRoleToUser("admin", userId)
+		if err != nil {
+			panic(err)
+		}
+
+		creds, err := authService.CreateUserCredentials(&model.User{Id: userId})
+		if err != nil {
+			panic(err)
+		}
+
+		fmt.Printf("credentials:\naccess key id: %s\naccess secret key: %s\n", creds.GetAccessKeyId(), creds.GetAccessSecretKey())
+		return nil
+	},
 }
 
-func tree(repoId, branch string) {
-	// logger
-	setupLogger()
-	kv, err := setupLocalDB()
-	if err != nil {
-		panic(err)
-	}
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "run a LakeFS instance",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf := setupConf(cmd)
 
-	// init index
-	meta := index.NewKVIndex(store.NewKVStore(kv))
-	err = meta.Tree(repoId, branch)
-	if err != nil {
-		panic(err)
-	}
+		kv := conf.BuildStore()
+
+		// init index
+		meta := index.NewKVIndex(store.NewKVStore(kv))
+
+		// init mpu manager
+		mpu := index.NewKVMultipartManager(store.NewKVStore(kv))
+
+		// init block store
+		blockStore := conf.BuildBlockAdapter()
+
+		// init authentication
+		authService := auth.NewKVAuthService(kv)
+
+		// start API server
+		apiServer := api.NewServer(meta, mpu, blockStore, authService)
+		go func() {
+			panic(apiServer.Serve(conf.GetAPIListenHost(), conf.GetAPIListenPort()))
+		}()
+
+		// init gateway server
+		gatewayServer := gateway.NewServer(
+			conf.GetS3GatewayRegion(),
+			meta,
+			blockStore,
+			authService,
+			mpu,
+			conf.GetS3GatewayListenAddress(),
+			conf.GetS3GatewayDomainName(),
+		)
+		panic(gatewayServer.Listen())
+
+		return nil
+	},
+}
+
+var keysCmd = &cobra.Command{
+	Use:   "keys",
+	Short: "dump all metadata keys to stdout",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf := setupConf(cmd)
+
+		kv := conf.BuildStore()
+
+		_, err := kv.ReadTransact(func(q db.ReadQuery) (i interface{}, err error) {
+			iter, closer := q.RangeAll()
+			defer closer()
+			for iter.Advance() {
+				item, _ := iter.Get()
+				fmt.Printf("%s\n", db.KeyFromBytes(item.Key))
+			}
+			return nil, nil
+		})
+
+		return err
+	},
+}
+
+var treeCmd = &cobra.Command{
+	Use:   "tree",
+	Short: "dump the entire filesystem tree for the given repository and branch to stdout",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf := setupConf(cmd)
+		repo, _ := cmd.Flags().GetString("repo")
+		branch, _ := cmd.Flags().GetString("branch")
+		meta := index.NewKVIndex(store.NewKVStore(conf.BuildStore()))
+
+		err := meta.Tree(repo, branch)
+		if err != nil {
+			panic(err)
+		}
+		return nil
+	},
+}
+
+var rootCmd = &cobra.Command{
+	Use:   "lakefs [sub-command]",
+	Short: "lakefs is a data lake management platform",
+}
+
+func init() {
+	rootCmd.PersistentFlags().StringP("config", "c", "", "configuration file path")
+
+	treeCmd.Flags().StringP("repo", "r", "", "repository to list")
+	treeCmd.Flags().StringP("branch", "b", "", "branch to list")
+	_ = treeCmd.MarkFlagRequired("repo")
+	_ = treeCmd.MarkFlagRequired("branch")
+
+	initCmd.Flags().String("user-id", "", "ID of the user to be generated")
+	initCmd.Flags().String("user-email", "", "E-mail of the user to generate")
+	initCmd.Flags().String("user-name", "", "Full name of the user to generate")
+	_ = initCmd.MarkFlagRequired("user-id")
+	_ = initCmd.MarkFlagRequired("user-email")
+	_ = initCmd.MarkFlagRequired("user-name")
+
+	rootCmd.AddCommand(treeCmd)
+	rootCmd.AddCommand(keysCmd)
+	rootCmd.AddCommand(runCmd)
+	rootCmd.AddCommand(initCmd)
 }
 
 func main() {
-	switch os.Args[1] {
-	case "run":
-		Run()
-	case "creds":
-		createCreds()
-	case "keys":
-		keys()
-	case "tree":
-		tree(os.Args[2], os.Args[3])
+	if err := rootCmd.Execute(); err != nil {
+		fmt.Println(err)
+		os.Exit(1)
 	}
 }

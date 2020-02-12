@@ -31,7 +31,6 @@ import (
 )
 
 const (
-	TestRegion    = "us-east-1"
 	DefaultUserId = "example_user"
 )
 
@@ -84,7 +83,6 @@ func getHandler(t *testing.T) (http.Handler, *dependencies, func()) {
 	authService := auth.NewKVAuthService(db)
 
 	server := api.NewServer(
-		TestRegion,
 		meta,
 		mpu,
 		blockAdapter,
