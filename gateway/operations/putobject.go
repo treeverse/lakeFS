@@ -103,7 +103,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore, ObjectBlockSize)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -139,14 +139,14 @@ type Blob struct {
 	Size     int64
 }
 
-func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter, objectBlockSize int) (*Blob, error) {
 	// handle the upload itself
 	blocks := make([]*model.Block, 0)
 	cksummer := md5.New()
 	var totalSize int64
 	var done bool
 	for !done {
-		buf := make([]byte, ObjectBlockSize)
+		buf := make([]byte, objectBlockSize)
 		n, err := body.Read(buf)
 
 		// unexpected error
@@ -166,6 +166,7 @@ func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, 
 
 		// write a block
 		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
+		cksummer.Write(buf[:n])
 		err = adapter.Put(bucketName, blockAddr, bytes.NewReader(buf[:n]))
 		if err != nil {
 			return nil, err
@@ -206,7 +207,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
+	blob, err := ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore, ObjectBlockSize)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
