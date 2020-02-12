@@ -1,10 +1,11 @@
-package block
+package block_test
 
 import (
 	"bytes"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/block"
 	"io"
 	"io/ioutil"
 	"strings"
@@ -50,9 +51,9 @@ func (m *mockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput,
 	return &s3.GetObjectOutput{Body: ioutil.NopCloser(bytes.NewReader([]byte("mock read data")))}, nil
 }
 
-func setUpMockS3Adapter() (*mockS3Client, Adapter, error) {
+func setUpMockS3Adapter() (*mockS3Client, block.Adapter, error) {
 	mock := newMock()
-	adapter, err := NewS3Adapter(mock)
+	adapter, err := block.NewS3Adapter(mock)
 	return mock, adapter, err
 }
 
@@ -75,7 +76,7 @@ func TestS3Adapter_Put(t *testing.T) {
 	}
 
 	// Test key
-	if strings.Compare(mockObj.lastKeyReceived, TestBucketName) != 0 {
+	if strings.Compare(mockObj.lastKeyReceived, fileName) != 0 {
 		t.Fatalf("received unexpected key. expected=%s, received=%s", fileName, mockObj.lastKeyReceived)
 	}
 
