@@ -55,6 +55,14 @@ const (
 	DefaultAPIListenAddr = "0.0.0.0:8001"
 )
 
+type LogrusAWSAdapter struct {
+	logger *log.Entry
+}
+
+func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
+	l.logger.Debug(vars...)
+}
+
 type Config struct {
 }
 
@@ -95,6 +103,7 @@ func New() *Config {
 }
 
 func (c *Config) Setup(confReader io.Reader) {
+	viper.SetConfigType("yaml")
 	viper.SetEnvPrefix("LAKEFS")
 	viper.AutomaticEnv()
 
@@ -206,15 +215,12 @@ func (c *Config) BuildStore() db.Store {
 	if err != nil {
 		panic(fmt.Errorf("could not open badgerDB database: %s\n", err))
 	}
+	log.WithFields(log.Fields{
+		"type":     "badger",
+		"location": location,
+		"truncate": viper.GetBool("metadata.db.badger.truncate"),
+	}).Info("initialize metadata store")
 	return db.NewLocalDBStore(bdb)
-}
-
-type LogrusAWSAdapter struct {
-	logger *log.Entry
-}
-
-func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
-	l.logger.Debug(vars...)
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {
@@ -240,6 +246,9 @@ func (c *Config) buildS3Adapter() block.Adapter {
 	if err != nil {
 		panic(fmt.Errorf("got error opening an S3 block adapter: %s", err))
 	}
+	log.WithFields(log.Fields{
+		"type": "s3",
+	}).Info("initialized blockstore adapter")
 	return adapter
 }
 
@@ -254,6 +263,10 @@ func (c *Config) buildLocalAdapter() block.Adapter {
 	if err != nil {
 		panic(fmt.Errorf("got error opening a local block adapter with path %s: %s", location, err))
 	}
+	log.WithFields(log.Fields{
+		"type": "local",
+		"path": location,
+	}).Info("initialized blockstore adapter")
 	return adapter
 }
 

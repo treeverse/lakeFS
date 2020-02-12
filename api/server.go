@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"strings"
 
+	log "github.com/sirupsen/logrus"
+
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/httputil"
 
@@ -69,6 +71,9 @@ func (s *Server) SetupServer() (*restapi.Server, error) {
 	}
 
 	api := operations.NewLakefsAPI(swaggerSpec)
+	api.Logger = func(msg string, ctx ...interface{}) {
+		log.WithField("logger", "swagger").Debugf(msg, ctx)
+	}
 
 	api.BasicAuthAuth = s.BasicAuth()
 
