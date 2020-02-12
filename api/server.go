@@ -21,7 +21,6 @@ const (
 )
 
 type Server struct {
-	region           string
 	meta             index.Index
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
@@ -29,14 +28,12 @@ type Server struct {
 }
 
 func NewServer(
-	region string,
 	meta index.Index,
 	multipartManager index.MultipartManager,
 	blockStore block.Adapter,
 	authService auth.Service,
 ) *Server {
 	return &Server{
-		region:           region,
 		meta:             meta,
 		multipartManager: multipartManager,
 		blockStore:       blockStore,
