@@ -9,12 +9,12 @@
     db:
       type: badger
       badger:
-        path: "~/lakefs/metadata"
+        path: "/tmp"
 
   blockstore:
     type: local
     local:
-      path: ~/lakefs/data
+      path: /tmp
 
   gateways:
     s3:
