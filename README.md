@@ -308,3 +308,77 @@ Provide the following functionality:
 * Deleting branch
   * Gateway: Resolve branch
   * Index: Delete(branch) & journal
+
+
+## Running a lakefs server
+
+#### Configuration
+
+when running the lakefs binary, you can pass a yaml configuration file:
+
+```shell script
+$ lakefs --config /path/to/configuration.yaml
+``` 
+
+Here's an example configuration file:
+
+```yaml
+---
+logging:
+  format: text # or json
+  level: DEBUG # or INFO, WARN, ERROR, NONE
+  output: "-" # for stdout, or a path to a log file
+
+metadata:
+  db:
+    type: badger # currently the only supported DB is an embedded badger using a local directory
+    badger:
+      path: "~/lakefs/metadata" 
+
+blockstore:
+  type: s3 # or "local"
+  s3:
+    region: us-east-1 
+    profile: default # optional, implies using a credentials file
+    credentials_file: /path/to/.aws/credentials # optional, will use the default AWS path if not specified
+    credentials: # optional, will use these hard coded credentials if supplied
+      access_key_id: "AKIA..."
+      access_secret_key: "..."
+      session_token: "..."
+  
+  # if instead of S3 you'd like to write the data itself locally
+  local:
+    path: ~/lakefs/data
+
+gateways:
+  s3:
+    listen_address: "0.0.0.0:8000"
+    domain_name: s3.example.com
+    region: us-east-1
+
+api:
+  listen_address: "0.0.0.0:8001"
+
+```
+
+Here's a list of all possible values used in the configuration:
+
+| Key                                           | Type                                                | Default Value         | Description                                                                                                                               |
+|-----------------------------------------------|-----------------------------------------------------|-----------------------|-------------------------------------------------------------------------------------------------------------------------------------------|
+| `logging.format`                              | one of `["json", "text"]`                           | `"text"`              | how to format the logfile                                                                                                                 |
+| `logging.level`                               | one of `["DEBUG", "INFO", "WARN", "ERROR", "NONE"]` | `"DEBUG"`             | minimal log level to output                                                                                                               |
+| `logging.output`                              | string                                              | `"-"`                 | where to write the log to (`"-"` meaning stdout. Otherwise will be treated as file name                                                   |
+| `metadata.db.type`                            | string                                              | `"badger"`            | metadata DB type. Currently only `"badger"` is supported, implying [badgerDB](https://github.com/dgraph-io/badger)                        |
+| `metadata.badger.path`                        | string                                              | `"~/lakefs/metadata"` | Where to store badgerDB's data files                                                                                                      |
+| `blockstore.type`                             | one of `["local", "s3"]`                            | `"local"`             | Where to store the actual data files written to the system                                                                                |
+| `blockstore.local.path`                       | string                                              | `" ~/lakefs/data"`    | Directory to store data written to the system when using the local blockstore type                                                        |
+| `blockstore.s3.region`                        | string                                              | `"us-east-1"`         | Region used when writing to Amazon S3                                                                                                     | 
+| `blockstore.s3.profile`                       | string                                              | N/A                   | If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html) |
+| `blockstore.s3.credentials_file`              | string                                              | N/A                   | If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)             | 
+| `blockstore.s3.credentials.access_key_id`     | string                                              | N/A                   | If specified, will be used as a static set of credential                                                                                  | 
+| `blockstore.s3.credentials.access_secret_key` | string                                              | N/A                   | If specified, will be used as a static set of credential                                                                                  | 
+| `blockstore.s3.credentials.session_token`     | string                                              | N/A                   | If specified, will be used as a static session token                                                                                      |
+| `gateways.s3.listen_address`                  | string                                              | `"0.0.0.0:8000"`      | a `<host>:<port>` structured string representing the address to listen on                                                                 | 
+| `gateways.s3.domain_name`                     | string                                              | `"s3.local"`          | a FQDN representing the S3 endpoint used by S3 clients to call this server                                                                | 
+| `gateways.s3.region`                          | string                                              | `"us-east-1"`         | AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients                                          |
+| `api.listen_address`                          | string                                              | `"0.0.0.0:8001"`      |  a `<host>:<port>` structured string representing the address to listen on                                                                |
