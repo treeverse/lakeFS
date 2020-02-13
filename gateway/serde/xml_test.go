@@ -21,10 +21,11 @@ func TestMarshal(t *testing.T) {
 	response := serde.ListAllMyBucketsResult{
 		Buckets: serde.Buckets{
 			Bucket: []serde.Bucket{
-				serde.Bucket{
+				{
 					CreationDate: "2001-09-11T08:46:00.000Z",
 					Name:         "bucket 1",
-				}, serde.Bucket{
+				},
+				{
 					CreationDate: "2001-09-11T08:46:00.000Z",
 					Name:         "bucket 1",
 				},

@@ -18,5 +18,5 @@ package main
 import "github.com/treeverse/lakefs/cli/cmd"
 
 func main() {
-  cmd.Execute()
+	cmd.Execute()
 }
