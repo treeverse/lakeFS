@@ -9,7 +9,7 @@
     db:
       type: badger
       badger:
-        path: "/tmp"
+        path: /tmp
 
   blockstore:
     type: local
