@@ -8,7 +8,7 @@ metadata:
   db:
     type: badger
     badger:
-      path: /tmp
+      path: /does/not/exist
 
 blockstore:
   type: local
