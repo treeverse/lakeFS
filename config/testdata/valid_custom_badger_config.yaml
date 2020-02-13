@@ -8,12 +8,12 @@ metadata:
   db:
     type: badger
     badger:
-      path: "/some/path/that/doesnt/exist"
+      path: /does/not/exist
 
 blockstore:
   type: local
   local:
-    path: ~/lakefs/data
+    path: /tmp
 
 gateways:
   s3:

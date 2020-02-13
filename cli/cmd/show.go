@@ -86,7 +86,7 @@ func printCommit(commit *models.Commit) {
 		t.AppendHeader(table.Row{"Metadata Key", "Metadata Value"})
 		keys := make([]string, len(commit.Metadata))
 		var i int
-		for k, _ := range commit.Metadata {
+		for k := range commit.Metadata {
 			keys[i] = k
 			i++
 		}

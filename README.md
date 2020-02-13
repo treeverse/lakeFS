@@ -1,5 +1,7 @@
 # lakeFS
 
+![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg)
+
 This is a draft for a design document describing the capabilities and 
 implementation of lakeFS 0.1
 
