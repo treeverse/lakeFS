@@ -8,12 +8,12 @@ metadata:
   db:
     type: badger
     badger:
-      path: /tmp
+      path: /var/tmp
 
 blockstore:
   type: local
   local:
-    path: /tmp
+    path: /var/tmp
 
 gateways:
   s3:
