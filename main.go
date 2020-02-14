@@ -158,12 +158,13 @@ func Run() {
 
 	// init gateway server
 	gatewayServer := gateway.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
+	//httputil.DoTestRun(gatewayServer.Server.Handler)
 	panic(gatewayServer.Listen())
 }
 
 func keys() {
 	// init db
-	// todo: add .WithTruncate(true), like in other places
+	// todo: add .WithTruncate(true), like in other plac
 	setupLogger()
 	db, err := setupBadger()
 	if err != nil {
