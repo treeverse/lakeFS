@@ -24,10 +24,8 @@ require (
 	github.com/sirupsen/logrus v1.4.2
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
-	golang.org/x/crypto v0.0.0-20190617133340-57b3e21c3d56 // indirect
 	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
-	golang.org/x/tools v0.0.0-20190617190820-da514acc4774 // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect

@@ -36,7 +36,7 @@ type ServerContext struct {
 
 type Server struct {
 	ctx        *ServerContext
-	server     *http.Server
+	Server     *http.Server
 	bareDomain string
 }
 
@@ -68,15 +68,17 @@ func NewServer(
 		attachRoutes(bareDomainWithoutPort, router, ctx)
 	}
 
+	httputil.RegisterRecorder(router)
+
 	router.Use(func(next http.Handler) http.Handler {
 		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)
 	})
 
-	// assemble server
+	// assemble Server
 	return &Server{
 		ctx:        ctx,
 		bareDomain: bareDomain,
-		server: &http.Server{
+		Server: &http.Server{
 			Handler: router,
 			Addr:    listenAddr,
 		},
@@ -84,7 +86,7 @@ func NewServer(
 }
 
 func (s *Server) Listen() error {
-	return s.server.ListenAndServe()
+	return s.Server.ListenAndServe()
 }
 
 func attachDebug(router *mux.Router) {
