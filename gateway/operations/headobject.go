@@ -2,6 +2,9 @@ package operations
 
 import (
 	"fmt"
+	"net/http"
+
+	"github.com/treeverse/lakefs/gateway/utils"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -14,12 +17,8 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *HeadObject) GetPermission() permissions.Permission {
-	return permissions.ReadRepo
+func (controller *HeadObject) Action(req *http.Request) permissions.Action {
+	return permissions.GetObject(utils.GetRepo(req))
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
