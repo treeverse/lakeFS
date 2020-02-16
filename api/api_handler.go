@@ -60,13 +60,13 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
 }
 
-func (a *Handler) authorize(user *models.User, perm permissions.Permission, arn string) error {
-	return authorize(a.auth, user, perm, arn)
+func (a *Handler) authorize(user *models.User, action permissions.Action) error {
+	return authorize(a.auth, user, action)
 }
 
 func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
 	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.ListRepos())
 		if err != nil {
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -118,7 +118,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 
 func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.GetRepo(params.RepositoryID))
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -144,7 +144,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 
 func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.GetCommit(params.RepositoryID))
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -169,7 +169,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 
 func (a *Handler) CommitHandler() commits.CommitHandler {
 	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.Commit(params.RepositoryID))
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -209,7 +209,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 
 func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
 	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.CreateRepo())
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -242,7 +242,7 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 
 func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
 	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.DeleteRepo(params.RepositoryID))
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -262,7 +262,7 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 
 func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.ListBranches(params.RepositoryID))
 		if err != nil {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -313,7 +313,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 
 func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -337,7 +337,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 
 func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.CreateBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -353,7 +353,7 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 
 func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.DeleteBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}

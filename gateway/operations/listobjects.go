@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/db"
@@ -25,12 +27,8 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *ListObjects) GetPermission() permissions.Permission {
-	return permissions.ReadRepo
+func (controller *ListObjects) Action(req *http.Request) permissions.Action {
+	return permissions.ListObjects(utils.GetRepo(req))
 }
 
 func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {

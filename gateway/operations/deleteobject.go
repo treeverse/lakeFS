@@ -3,6 +3,8 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -10,12 +12,8 @@ import (
 
 type DeleteObject struct{}
 
-func (controller *DeleteObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *DeleteObject) GetPermission() permissions.Permission {
-	return permissions.ManageRepos
+func (controller *DeleteObject) Action(req *http.Request) permissions.Action {
+	return permissions.DeleteObject(utils.GetRepo(req))
 }
 
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
