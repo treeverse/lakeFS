@@ -61,11 +61,11 @@ The following methods should be implemented:
         2. Support for range requests
         3. *No* support for SSE
         4. *No* support for Select operations
-    5. [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)
-    6. [PutObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)
-        1. No support for storage classes
-        2. Support multi-part uploads
-        3. No object level tagging
+    4. [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)
+    5. [PutObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)
+        1. Support multi-part uploads (see below)
+        2. *No* support for storage classes
+        3. *No* object level tagging
 4. Object Listing:
     1. [ListObjects](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html)
     2. [ListObjectsV2](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html)
