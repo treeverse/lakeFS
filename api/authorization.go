@@ -9,13 +9,9 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 )
 
-func repoArn(repoId string) string {
-	return fmt.Sprintf("arn:treeverse:repos:::%s", repoId)
-}
-
-func authorize(a auth.Service, user *models.User, perm permissions.Permission, arn string) error {
+func authorize(a auth.Service, user *models.User, action permissions.Action) error {
 	authResp, err := a.Authorize(&auth.AuthorizationRequest{
-		UserID: user.ID, Permission: perm, SubjectARN: arn})
+		UserID: user.ID, Permission: action.Permission, SubjectARN: action.Arn})
 	if err != nil {
 		return fmt.Errorf("authorization error")
 	}

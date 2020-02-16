@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -22,12 +24,8 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *GetObject) GetPermission() permissions.Permission {
-	return permissions.ManageRepos
+func (controller *GetObject) Action(req *http.Request) permissions.Action {
+	return permissions.GetObject(utils.GetRepo(req))
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {
