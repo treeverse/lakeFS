@@ -33,8 +33,8 @@ type Index interface {
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error)
-	ListBranches(repoId string, amount int, after string) ([]*model.Branch, bool, error)
+	ListObjectsByPrefix(repoId, branch, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
+	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, commitId string) error
 	GetBranch(repoId, branch string) (*model.Branch, error)
@@ -297,32 +297,32 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 	return err
 }
 
-func (index *KVIndex) ListBranches(repoId string, amount int, after string) ([]*model.Branch, bool, error) {
-	type results struct {
-		branches []*model.Branch
-		hasMore  bool
+func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error) {
+	type result struct {
+		hasMore bool
+		results []*model.Branch
 	}
-	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+
+	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// we're reading the repo to add it to this transaction's conflict range
 		// but also to ensure it exists
 		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		branches, hasMore, err := tx.ListBranches(amount, after) // TODO: pagination
-		return &results{
-			branches: branches,
-			hasMore:  hasMore,
+		branches, hasMore, err := tx.ListBranches(prefix, amount, after)
+		return &result{
+			results: branches,
+			hasMore: hasMore,
 		}, err
 	})
 	if err != nil {
 		return nil, false, err
 	}
-	return res.(*results).branches, res.(*results).hasMore, nil
+	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
 func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
-	// this is gonna be a shit show now.
 	type result struct {
 		hasMore bool
 		results []*model.Entry
