@@ -279,7 +279,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 			after = swag.StringValue(params.After)
 		}
 
-		res, hasMore, err := a.meta.ListBranches(params.RepositoryID, int(amount), after)
+		res, hasMore, err := a.meta.ListBranchesByPrefix(params.RepositoryID, "", int(amount), after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches"))
