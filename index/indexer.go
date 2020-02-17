@@ -42,7 +42,7 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
-	Diff(repoId, branch, otherBranch, atPath string) (merkle.Differences, error)
+	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
 	Merge(repoId, source, destination string) error
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
@@ -472,7 +472,7 @@ func findCommonCommit(tx store.RepoReadOnlyOperations, leftCommitId, rightCommit
 	return nil, nil
 }
 
-func (index *KVIndex) Diff(repoId, branch, otherBranch, atPath string) (merkle.Differences, error) {
+func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differences, error) {
 	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 
 		leftBranch, err := tx.ReadBranch(branch)
