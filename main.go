@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/httputil"
 	"os"
 	"os/user"
 	"path"
@@ -158,8 +159,11 @@ func Run() {
 
 	// init gateway server
 	gatewayServer := gateway.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
-	//httputil.DoTestRun(gatewayServer.Server.Handler)
-	panic(gatewayServer.Listen())
+	if httputil.IsPlayback() {
+		httputil.DoTestRun(gatewayServer.Server.Handler)
+	} else {
+		panic(gatewayServer.Listen())
+	}
 }
 
 func keys() {

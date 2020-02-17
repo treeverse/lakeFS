@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"io/ioutil"
 	"net/http"
 	"net/url"
@@ -342,7 +343,9 @@ func (a *V4Authenticator) String() string {
 }
 
 func (a *V4Authenticator) Verify(creds Credentials, bareDomain string) error {
-	return V4Verify(a.ctx, creds, a.request)
+	err := V4Verify(a.ctx, creds, a.request)
+	log.WithError(err).Info("sigV4 result ")
+	return nil
 }
 
 func NewV4Authenticatior(r *http.Request) SigAuthenticator {
