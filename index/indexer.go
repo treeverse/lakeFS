@@ -42,6 +42,7 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
+	Diff(repoId, branch, otherBranch, atPath string) (merkle.Differences, error)
 	Merge(repoId, source, destination string) error
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
@@ -461,6 +462,44 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 		return nil, nil
 	})
 	return err
+}
+
+func findCommonCommit(tx store.RepoReadOnlyOperations, leftCommitId, rightCommitId string) (*model.Commit, error) {
+	// TODO: https://git-scm.com/docs/git-merge-base
+	// TODO: https://www.sciencedirect.com/science/article/abs/pii/S0020019010000487?via%3Dihub
+	// TODO: https://stackoverflow.com/questions/14865081/algorithm-to-find-lowest-common-ancestor-in-directed-acyclic-graph/51614371
+	// TODO: find a reasonable implementation for now, optimize later
+	return nil, nil
+}
+
+func (index *KVIndex) Diff(repoId, branch, otherBranch, atPath string) (merkle.Differences, error) {
+	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+
+		leftBranch, err := tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+
+		rightBranch, err := tx.ReadBranch(otherBranch)
+		if err != nil {
+			return nil, err
+		}
+
+		commonCommit, err := findCommonCommit(tx, leftBranch.GetCommit(), rightBranch.GetCommit())
+		if err != nil {
+			return nil, err
+		}
+
+		diff, err := merkle.Diff(tx,
+			merkle.New(leftBranch.GetCommitRoot()),
+			merkle.New(rightBranch.GetCommitRoot()),
+			merkle.New(commonCommit.GetTree()))
+		return diff, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.(merkle.Differences), nil
 }
 
 func (index *KVIndex) Checkout(repoId, branch, commit string) error {
