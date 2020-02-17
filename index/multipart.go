@@ -1,10 +1,12 @@
 package index
 
 import (
-	"crypto/rand"
+	"fmt"
 	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/merkle"
@@ -34,22 +36,26 @@ func NewKVMultipartManager(kv store.Store) *KVMultipartManager {
 	return &KVMultipartManager{kv}
 }
 
-func (m *KVMultipartManager) generateId() (string, error) {
-	b := make([]byte, 1024*256) // generate a random 256k slice of bytes
-	_, err := rand.Read(b)
-	if err != nil {
-		return "", err
-	}
-	return ident.Bytes(b), nil
+func (m *KVMultipartManager) generateId() string {
+	id := fmt.Sprintf("%x", []byte(uuidAsSlice()+uuidAsSlice()))
+	return id
+}
+
+func uuidAsSlice() string {
+	id := [16]byte(uuid.New())
+	return string(id[:])
 }
 
 func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (string, error) {
 	uploadId, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 
 		// generate 256KB of random bytes
-		uploadId, err := m.generateId()
-		if err != nil {
-			return uploadId, err
+		var uploadId string
+		var err error
+		if httputil.IsPlayback() {
+			uploadId = httputil.GetUploadId()
+		} else {
+			uploadId = m.generateId()
 		}
 
 		// save it for this repo and path
