@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/permissions"
 	"golang.org/x/xerrors"
@@ -62,6 +61,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.CommitsCommitHandler = a.CommitHandler()
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
+	api.CommitsGetBranchCommitLogHandler = a.CommitsGetBranchCommitLogHandler()
 
 	api.BranchesDiffBranchesHandler = a.BranchesDiffBranchesHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
@@ -166,7 +166,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		return commits.NewGetCommitOK().WithPayload(&models.Commit{
 			Committer:    commit.GetCommitter(),
 			CreationDate: commit.GetTimestamp(),
-			ID:           ident.Hash(commit),
+			ID:           commit.GetAddress(),
 			Message:      commit.GetMessage(),
 			Metadata:     commit.GetMetadata(),
 			Parents:      commit.GetParents(),
@@ -187,11 +187,52 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		return commits.NewCommitCreated().WithPayload(&models.Commit{
 			Committer:    commit.GetCommitter(),
 			CreationDate: commit.GetTimestamp(),
-			ID:           ident.Hash(commit),
+			ID:           commit.GetAddress(),
 			Message:      commit.GetMessage(),
 			Metadata:     commit.GetMetadata(),
 			Parents:      commit.GetParents(),
 		})
+	})
+}
+
+func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
+	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetCommit(params.RepositoryID))
+		if err != nil {
+			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// read branch
+		branch, err := a.meta.GetBranch(params.RepositoryID, params.BranchID)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
+			}
+			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// get commit log
+		commitLog, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit())
+		if err != nil {
+			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		serializedCommits := make([]*models.Commit, len(commitLog))
+		for i, commit := range commitLog {
+			serializedCommits[i] = &models.Commit{
+				Committer:    commit.GetCommitter(),
+				CreationDate: commit.GetTimestamp(),
+				ID:           commit.GetAddress(),
+				Message:      commit.GetMessage(),
+				Metadata:     commit.GetMetadata(),
+				Parents:      commit.GetParents(),
+			}
+		}
+
+		return commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
+			Results: serializedCommits,
+		})
+
 	})
 }
 
