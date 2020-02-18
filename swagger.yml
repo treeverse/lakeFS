@@ -329,6 +329,33 @@ paths:
         name: branchId
         required: true
         type: string
+    get:
+      tags:
+        - commits
+      operationId: getBranchCommitLog
+      summary: get commit log for branch
+      responses:
+        200:
+          description: commit log
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/commit"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - commits
