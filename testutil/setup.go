@@ -52,6 +52,7 @@ func GetIndexStoreWithRepo(t *testing.T) (store.Store, *model.Repo, func()) {
 			Metadata:  make(map[string]string),
 		}
 		commitId := ident.Hash(commit)
+		commit.Address = commitId
 		err = ops.WriteCommit(commitId, commit)
 		if err != nil {
 			return nil, err
