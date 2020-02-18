@@ -95,7 +95,7 @@ func TestDiff(t *testing.T) {
 			}),
 
 			Expected: []string{
-				"<+O /file1",
+				"<+O file1",
 			},
 		},
 
@@ -166,7 +166,7 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"<-O /file1",
+				"<-O file1",
 			},
 		},
 
@@ -234,7 +234,7 @@ func TestDiff(t *testing.T) {
 				"common": {},
 			}),
 			Expected: []string{
-				"<+D /events/",
+				"<+D events/",
 			},
 		},
 
@@ -256,7 +256,7 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"*~O /events/file_one",
+				"*~O events/file_one",
 			},
 		},
 
@@ -278,7 +278,7 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"*-O /events/file_one",
+				"*-O events/file_one",
 			},
 		},
 
@@ -297,7 +297,7 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"<-D /events/",
+				"<-D events/",
 			},
 		},
 
@@ -319,7 +319,7 @@ func TestDiff(t *testing.T) {
 				"common": {},
 			}),
 			Expected: []string{
-				"<+O /events/file_one",
+				"<+O events/file_one",
 			},
 		},
 
@@ -342,8 +342,8 @@ func TestDiff(t *testing.T) {
 				"common": {},
 			}),
 			Expected: []string{
-				"<+O /events/file_one",
-				"<+O /file_three",
+				"<+O events/file_one",
+				"<+O file_three",
 			},
 		},
 
@@ -368,8 +368,8 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"<+O /events/file_one",
-				"<-O /file_three",
+				"<+O events/file_one",
+				"<-O file_three",
 			},
 		},
 
@@ -395,8 +395,8 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"<+O /events/file_one",
-				"<~O /file_three",
+				"<+O events/file_one",
+				"<~O file_three",
 			},
 		},
 
@@ -422,8 +422,8 @@ func TestDiff(t *testing.T) {
 				},
 			}),
 			Expected: []string{
-				"<+O /events/file_one",
-				"*~O /file_three",
+				"<+O events/file_one",
+				"*~O file_three",
 			},
 		},
 	}
