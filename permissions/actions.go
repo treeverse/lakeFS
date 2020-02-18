@@ -68,6 +68,13 @@ func ListBranches(repoId string) Action {
 	}
 }
 
+func DiffBranches(repoId string) Action {
+	return Action{
+		Permission: ReadRepo,
+		Arn:        repoArn(repoId),
+	}
+}
+
 func GetBranch(repoId string) Action {
 	return Action{
 		Permission: ReadRepo,
