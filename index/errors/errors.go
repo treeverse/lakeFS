@@ -10,6 +10,7 @@ var (
 	ErrMultipartInvalidPartETag   = xerrors.New("invalid ETag for multipart upload")
 	ErrRepoExists                 = xerrors.New("repository already exists")
 	ErrBranchExists               = xerrors.New("branch already exists")
+	ErrNoMergeBase                = xerrors.New("no common merge base found")
 
 	//validation errors
 	ErrInvalid           = xerrors.New("validation error")
