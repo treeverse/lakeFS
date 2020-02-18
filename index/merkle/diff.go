@@ -81,7 +81,11 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 	var sentinel = struct{}{}
 	visitedNames := make(map[string]struct{})
 	for _, leftEntry := range leftEntries {
-		entryPath := path.Join([]string{pth, leftEntry.GetName()})
+		entryPath := leftEntry.GetName()
+		if len(pth) > 0 {
+			entryPath = path.Join([]string{pth, leftEntry.GetName()})
+		}
+
 		// see if this tree exists on right
 		// if it does, see if checksum is the same - if it is, next
 		// if it's different, check common
@@ -184,7 +188,10 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 		}
 		// this node doesn't exist on the left, it was either deleted left or created right
 		// let's use common to test
-		entryPath := path.Join([]string{pth, rightEntry.GetName()})
+		entryPath := rightEntry.GetName()
+		if len(pth) > 0 {
+			entryPath = path.Join([]string{pth, rightEntry.GetName()})
+		}
 		commonEntry, err := common.GetEntry(tx, entryPath, rightEntry.GetType())
 		if xerrors.Is(err, db.ErrNotFound) {
 			// doesn't exist left, doesn't exist common - right created
