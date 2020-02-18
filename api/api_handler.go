@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/treeverse/lakefs/index/model"
+
+	"github.com/treeverse/lakefs/index/merkle"
+
 	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
@@ -58,6 +62,9 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.CommitsCommitHandler = a.CommitHandler()
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
+
+	api.BranchesDiffBranchesHandler = a.BranchesDiffBranchesHandler()
+	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
@@ -369,4 +376,83 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 
 		return branches.NewDeleteBranchNoContent()
 	})
+}
+
+func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
+	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
+		if err != nil {
+			return branches.NewDiffBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		diff, err := a.meta.DiffWorkspace(params.RepositoryID, params.BranchID)
+		if err != nil {
+			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
+				WithPayload(responseError("could not diff branches"))
+		}
+
+		results := make([]*models.Diff, len(diff))
+		for i, d := range diff {
+			results[i] = serializeDiff(d)
+		}
+
+		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{Results: results})
+	})
+}
+
+func (a *Handler) BranchesDiffBranchesHandler() branches.DiffBranchesHandler {
+	return branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
+		if err != nil {
+			return branches.NewDiffBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		diff, err := a.meta.Diff(params.RepositoryID, params.BranchID, params.OtherBranchID)
+		if err != nil {
+			return branches.NewDiffBranchesDefault(http.StatusInternalServerError).
+				WithPayload(responseError("could not diff branches"))
+		}
+
+		results := make([]*models.Diff, len(diff))
+		for i, d := range diff {
+			results[i] = serializeDiff(d)
+		}
+
+		return branches.NewDiffBranchesOK().WithPayload(&branches.DiffBranchesOKBody{Results: results})
+	})
+}
+
+func serializeDiff(d merkle.Difference) *models.Diff {
+	var direction, pathType, diffType string
+	switch d.Direction {
+	case merkle.DifferenceDirectionLeft:
+		direction = "LEFT"
+	case merkle.DifferenceDirectionConflict:
+		direction = "CONFLICT"
+	case merkle.DifferenceDirectionRight:
+		direction = "RIGHT"
+	}
+
+	switch d.PathType {
+	case model.Entry_TREE:
+		pathType = "TREE"
+	case model.Entry_OBJECT:
+		pathType = "OBJECT"
+	}
+
+	switch d.Type {
+	case merkle.DifferenceTypeChanged:
+		diffType = "CHANGED"
+	case merkle.DifferenceTypeAdded:
+		diffType = "ADDED"
+	case merkle.DifferenceTypeRemoved:
+		diffType = "REMOVED"
+	}
+
+	return &models.Diff{
+		Direction: direction,
+		Path:      d.Path,
+		PathType:  pathType,
+		Type:      diffType,
+	}
 }
