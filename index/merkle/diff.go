@@ -226,7 +226,7 @@ func diffWalk(tx TreeReader, pth string, left, right, common *Merkle, collector 
 	}
 	for _, current := range results {
 		// if we get a "conflicting" directory, drill down into it
-		if current.PathType == model.Entry_TREE && current.Direction == DifferenceDirectionConflict {
+		if current.PathType == model.Entry_TREE && (current.Direction == DifferenceDirectionConflict || current.Type == DifferenceTypeChanged) {
 			err = diffWalk(tx, current.Path, left, right, common, collector)
 			if err != nil {
 				return err
