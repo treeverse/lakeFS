@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/treeverse/lakefs/index/dag"
+
 	"github.com/treeverse/lakefs/index/errors"
 
 	"github.com/treeverse/lakefs/db"
@@ -42,6 +44,8 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
+	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
+	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
 	Merge(repoId, source, destination string) error
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
@@ -423,6 +427,7 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 			Metadata:  metadata,
 		}
 		commitAddr := ident.Hash(commit)
+		commit.Address = commitAddr
 		err = tx.WriteCommit(commitAddr, commit)
 		if err != nil {
 			return nil, err
@@ -461,6 +466,62 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 		return nil, nil
 	})
 	return err
+}
+
+func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
+	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
+		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
+		if err != nil {
+			return nil, err
+		}
+		branch, err := tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+
+		diff, err := merkle.Diff(tx,
+			merkle.New(branch.GetWorkspaceRoot()),
+			merkle.New(branch.GetCommitRoot()),
+			merkle.New(branch.GetCommitRoot()))
+		return diff, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.(merkle.Differences), nil
+}
+
+func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differences, error) {
+	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+
+		leftBranch, err := tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+
+		rightBranch, err := tx.ReadBranch(otherBranch)
+		if err != nil {
+			return nil, err
+		}
+
+		commonCommits, err := dag.FindLowestCommonAncestor(tx, leftBranch.GetCommit(), rightBranch.GetCommit())
+		if err != nil {
+			return nil, err
+		}
+		if len(commonCommits) == 0 {
+			return nil, errors.ErrNoMergeBase
+		}
+
+		diff, err := merkle.Diff(tx,
+			merkle.New(leftBranch.GetCommitRoot()),
+			merkle.New(rightBranch.GetCommitRoot()),
+			merkle.New(commonCommits[0].GetTree()))
+		return diff, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.(merkle.Differences), nil
 }
 
 func (index *KVIndex) Checkout(repoId, branch, commit string) error {
@@ -534,6 +595,7 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 			Metadata:  make(map[string]string),
 		}
 		commitId := ident.Hash(commit)
+		commit.Address = commitId
 		err = tx.WriteCommit(commitId, commit)
 		if err != nil {
 			return nil, err

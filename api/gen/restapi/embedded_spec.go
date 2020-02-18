@@ -414,6 +414,126 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/diff": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branch",
+        "operationId": "diffBranch",
+        "responses": {
+          "200": {
+            "description": "diff of branch uncommitted changes",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branches",
+        "operationId": "diffBranches",
+        "responses": {
+          "200": {
+            "description": "diff between branches",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "otherBranchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
         "tags": [
@@ -506,6 +626,23 @@ func init() {
           "additionalProperties": {
             "type": "string"
           }
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "path_type": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
         }
       }
     },
@@ -1058,6 +1195,132 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/diff": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branch",
+        "operationId": "diffBranch",
+        "responses": {
+          "200": {
+            "description": "diff of branch uncommitted changes",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branches",
+        "operationId": "diffBranches",
+        "responses": {
+          "200": {
+            "description": "diff between branches",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "otherBranchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
         "tags": [
@@ -1153,6 +1416,23 @@ func init() {
           "additionalProperties": {
             "type": "string"
           }
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "path_type": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string"
         }
       }
     },

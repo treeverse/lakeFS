@@ -25,7 +25,12 @@ func New(root string) *Merkle {
 	return &Merkle{root: root}
 }
 
-func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, typ model.Entry_Type) (*model.Entry, error) {
+type TreeReader interface {
+	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
+	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
+}
+
+func (m *Merkle) GetEntry(tx TreeReader, pth string, typ model.Entry_Type) (*model.Entry, error) {
 	currentAddress := m.root
 	if len(pth) == 0 {
 		return &model.Entry{Address: currentAddress}, nil
@@ -47,7 +52,7 @@ func (m *Merkle) GetEntry(tx store.RepoReadOnlyOperations, pth string, typ model
 	return entry, nil
 }
 
-func (m *Merkle) GetEntries(tx store.RepoReadOnlyOperations, pth string) ([]*model.Entry, error) {
+func (m *Merkle) GetEntries(tx TreeReader, pth string) ([]*model.Entry, error) {
 	entry, err := m.GetEntry(tx, pth, model.Entry_TREE)
 	if xerrors.Is(err, db.ErrNotFound) {
 		empty := make([]*model.Entry, 0)
