@@ -17,14 +17,17 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"time"
-
-	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/uri"
 )
+
+var fsStatTemplate = `Path: {{.Path | yellow }}
+Modified Time: {{.Mtime|date}}
+Size: {{ .SizeBytes }} bytes
+Human Size: {{ .SizeBytes|human_bytes }}
+Checksum: {{.Checksum}}
+`
 
 var fsStatCmd = &cobra.Command{
 	Use:   "stat [path uri]",
@@ -33,40 +36,16 @@ var fsStatCmd = &cobra.Command{
 		HasNArgs(1),
 		IsPathURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
-
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
-
+		client := getClient()
 		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 
-		printStat(stat)
-
-		return nil
+		Write(fsStatTemplate, stat)
 	},
-}
-
-func printStat(stats *models.ObjectStats) {
-	fmt.Printf("path: %s\nsize: %d bytes\nsize_human: %s\nmodified: %s\nchecksum: %s\n", stats.Path, stats.SizeBytes, byteCountDecimal(stats.SizeBytes), time.Unix(stats.Mtime, 0), stats.Checksum)
-}
-
-func byteCountDecimal(b int64) string {
-	const unit = 1000
-	if b < unit {
-		return fmt.Sprintf("%d B", b)
-	}
-	div, exp := int64(unit), 0
-	for n := b / unit; n >= unit; n /= unit {
-		div *= unit
-		exp++
-	}
-	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
 }
 
 // fsCmd represents the fs command

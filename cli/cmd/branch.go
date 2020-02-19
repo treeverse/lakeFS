@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -11,10 +9,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/treeverse/lakefs/uri"
-
-	"golang.org/x/xerrors"
-
-	"github.com/jedib0t/go-pretty/table"
 
 	"github.com/spf13/cobra"
 )
@@ -26,6 +20,10 @@ var branchCmd = &cobra.Command{
 	Long:  `Create delete and list branches within a lakeFS repository`,
 }
 
+var branchListTemplate = `{{.BranchTable | table -}}
+{{.Pagination | paginate }}
+`
+
 var branchListCmd = &cobra.Command{
 	Use:     "list [repository uri]",
 	Short:   "list branches in a repository",
@@ -34,36 +32,40 @@ var branchListCmd = &cobra.Command{
 		HasNArgs(1),
 		IsRepoURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
-
+	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 
 		u := uri.Must(uri.Parse(args[0]))
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
+		client := getClient()
 		response, pagination, err := client.ListBranches(context.Background(), u.Repository, after, amount)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 
-		// generate table
-		t := table.NewWriter()
-		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{"Branch Name", "Commit ID"})
-		for _, branch := range response {
-			t.AppendRow([]interface{}{*branch.ID, *branch.CommitID})
+		rows := make([][]interface{}, len(response))
+		for i, row := range response {
+			rows[i] = []interface{}{*row.ID, *row.CommitID}
 		}
-		t.Render()
 
+		ctx := struct {
+			BranchTable *Table
+			Pagination  *Pagination
+		}{
+			BranchTable: &Table{
+				Headers: []interface{}{"Branch Name", "Commit ID"},
+				Rows:    rows,
+			},
+		}
 		if pagination != nil && swag.BoolValue(pagination.HasMore) {
-			fmt.Printf("for more results, run with `--amount %d --after \"%s\"\n", amount, pagination.NextOffset)
+			ctx.Pagination = &Pagination{
+				Amount:  amount,
+				HasNext: true,
+				After:   pagination.NextOffset,
+			}
 		}
 
-		// done
-		return nil
+		Write(branchListTemplate, ctx)
 	},
 }
 
@@ -74,32 +76,31 @@ var branchCreateCmd = &cobra.Command{
 		HasNArgs(1),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
+		client := getClient()
 		sourceRawUri, _ := cmd.Flags().GetString("source")
-		suri, err := uri.Parse(sourceRawUri)
+		sourceURI, err := uri.Parse(sourceRawUri)
 		if err != nil {
-			return fmt.Errorf("failed to parse source URI: %s", err)
+			DieFmt("failed to parse source URI: %s", err)
 		}
-		if !strings.EqualFold(suri.Repository, u.Repository) {
-			return fmt.Errorf("source branch must be in the same repository")
+		if !strings.EqualFold(sourceURI.Repository, u.Repository) {
+			DieFmt("source branch must be in the same repository")
 		}
 
-		sourceBranch, err := client.GetBranch(context.Background(), u.Repository, suri.Refspec)
+		sourceBranch, err := client.GetBranch(context.Background(), u.Repository, sourceURI.Refspec)
 		if err != nil {
-			return xerrors.Errorf("could not get source branch: %w", err)
+			DieFmt("could not get source branch: %s", err)
 		}
-		fmt.Printf("got source branch '%s', using commit '%s'\n",
-			suri.Refspec, *sourceBranch.CommitID)
+		Fmt("got source branch '%s', using commit '%s'\n",
+			sourceURI.Refspec, *sourceBranch.CommitID)
 		err = client.CreateBranch(context.Background(), u.Repository, &models.Refspec{
 			CommitID: sourceBranch.CommitID,
 			ID:       swag.String(u.Refspec),
 		})
-		return err
+		if err != nil {
+			DieErr(err)
+		}
 	},
 }
 
@@ -110,21 +111,20 @@ var branchDeleteCmd = &cobra.Command{
 		HasNArgs(1),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		sure, err := cmd.Flags().GetBool("sure")
 		if err != nil || !sure {
 			confirmation, err := confirm("Are you sure you want to delete branch")
 			if err != nil || !confirmation {
-				return fmt.Errorf("please confirm by passing the --sure | -y flag")
+				DieFmt("please confirm by passing the --sure | -y flag")
 			}
 		}
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
+		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 		err = client.DeleteBranch(context.Background(), u.Repository, u.Refspec)
-		return err
+		if err != nil {
+			DieErr(err)
+		}
 	},
 }
 
@@ -135,18 +135,14 @@ var branchShowCmd = &cobra.Command{
 		HasNArgs(1),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 		resp, err := client.GetBranch(context.Background(), u.Repository, u.Refspec)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
-		fmt.Printf("%s\t%s\n", *resp.ID, *resp.CommitID)
-		return nil
+		Fmt("%s\t%s\n", *resp.ID, *resp.CommitID)
 	},
 }
 
