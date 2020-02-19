@@ -3,6 +3,11 @@ package api_test
 import (
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/treeverse/lakefs/index/model"
+
+	"github.com/treeverse/lakefs/api/gen/client/objects"
 
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
@@ -660,6 +665,52 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 
 		if err == nil {
 			t.Fatalf("expected error deleting branch that doesnt exist")
+		}
+	})
+}
+
+func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
+	handler, deps, close := getHandler(t)
+	defer close()
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	t.Run("get object stats", func(t *testing.T) {
+		err := deps.meta.CreateRepo("repo1", "ns1", "master")
+		if err != nil {
+			t.Fatal(err)
+		}
+		err = deps.meta.WriteEntry("repo1", "master", "foo/bar", &model.Entry{
+			Name:      "bar",
+			Address:   "this_is_bars_address",
+			Type:      model.Entry_OBJECT,
+			Timestamp: time.Now().Unix(),
+			Size:      666,
+			Checksum:  "this_is_a_checksum",
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
+			BranchID:     "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+
+		if err != nil {
+			t.Fatalf("did not expect error for stat, got %s", err)
+		}
+		if resp.Payload.Path != "foo/bar" {
+			t.Fatalf("expected to get back our path, got %s", resp.Payload.Path)
+		}
+		if resp.Payload.SizeBytes != 666 {
+			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
 		}
 	})
 }

@@ -16,36 +16,66 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
+	"time"
+
+	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/uri"
 )
+
+var fsStatCmd = &cobra.Command{
+	Use:   "stat [path uri]",
+	Short: "view object metadata",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
+	),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		pathURI := uri.Must(uri.Parse(args[0]))
+
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+
+		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path)
+		if err != nil {
+			return err
+		}
+
+		printStat(stat)
+
+		return nil
+	},
+}
+
+func printStat(stats *models.ObjectStats) {
+	fmt.Printf("path: %s\nsize: %d bytes\nsize_human: %s\nmodified: %s\nchecksum: %s\n", stats.Path, stats.SizeBytes, byteCountDecimal(stats.SizeBytes), time.Unix(stats.Mtime, 0), stats.Checksum)
+}
+
+func byteCountDecimal(b int64) string {
+	const unit = 1000
+	if b < unit {
+		return fmt.Sprintf("%d B", b)
+	}
+	div, exp := int64(unit), 0
+	for n := b / unit; n >= unit; n /= unit {
+		div *= unit
+		exp++
+	}
+	return fmt.Sprintf("%.1f %cB", float64(b)/float64(div), "kMGTPE"[exp])
+}
 
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
 	Use:   "fs",
-	Short: "explore and modify objects within a repo",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("fs called")
-	},
+	Short: "view and manipulate objects",
 }
 
 func init() {
 	rootCmd.AddCommand(fsCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// fsCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// fsCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	fsCmd.AddCommand(fsStatCmd)
 }
