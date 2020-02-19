@@ -16,23 +16,35 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/uri"
 )
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:   "log",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
+	Use:   "log [branch uri]",
+	Short: "show log of commits for the given branch",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		client, err := getClient()
+		if err != nil {
+			return err
+		}
+		branchURI := uri.Must(uri.Parse(args[0]))
+		commits, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Refspec)
+		if err != nil {
+			return err
+		}
 
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("log called")
+		for _, commit := range commits {
+			printCommit(commit)
+		}
+		return nil
 	},
 }
 

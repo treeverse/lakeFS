@@ -160,6 +160,60 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 
 }
 
+func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
+
+	handler, deps, close := getHandler(t)
+	defer close()
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	t.Run("get missing branch", func(t *testing.T) {
+		err := deps.meta.CreateRepo("repo1", "ns1", "master")
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = clt.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
+			BranchID:     "otherbranch",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error getting a branch that doesn't exist")
+		}
+	})
+
+	t.Run("get branch log", func(t *testing.T) {
+		err := deps.meta.CreateRepo("repo2", "ns1", "master")
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = deps.meta.Commit("repo2", "master", "commit1", "some_user", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		_, err = deps.meta.Commit("repo2", "master", "commit2", "some_user", nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := clt.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
+			BranchID:     "master",
+			RepositoryID: "repo2",
+		}, bauth)
+		if err != nil {
+			t.Fatalf("unexpected error getting log of commits: %s", err)
+		}
+		if len(resp.GetPayload().Results) != 3 {
+			t.Fatalf("expected a log of 3 commits, got %d instead", len(resp.GetPayload().Results))
+		}
+	})
+}
+
 func TestHandler_GetCommitHandler(t *testing.T) {
 
 	handler, deps, close := getHandler(t)
