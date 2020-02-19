@@ -83,10 +83,10 @@ func FmtDiff(diff *models.Diff, withDirection bool) {
 	var action string
 
 	switch diff.Type {
-	case "ADDED":
+	case models.DiffTypeADDED:
 		color = text.FgGreen
 		action = "+ added"
-	case "REMOVED":
+	case models.DiffTypeREMOVED:
 		color = text.FgRed
 		action = "- removed"
 	default:
@@ -96,9 +96,9 @@ func FmtDiff(diff *models.Diff, withDirection bool) {
 
 	var direction string
 	switch diff.Direction {
-	case "LEFT":
+	case models.DiffDirectionLEFT:
 		direction = "<"
-	case "RIGHT":
+	case models.DiffDirectionRIGHT:
 		direction = ">"
 	default:
 		direction = "*"

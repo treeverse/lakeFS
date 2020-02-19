@@ -674,16 +674,30 @@ func init() {
       "type": "object",
       "properties": {
         "direction": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "LEFT",
+            "RIGHT",
+            "CONFLICT"
+          ]
         },
         "path": {
           "type": "string"
         },
         "path_type": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
         },
         "type": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "ADDED",
+            "REMOVED",
+            "CHANGED"
+          ]
         }
       }
     },
@@ -1508,16 +1522,30 @@ func init() {
       "type": "object",
       "properties": {
         "direction": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "LEFT",
+            "RIGHT",
+            "CONFLICT"
+          ]
         },
         "path": {
           "type": "string"
         },
         "path_type": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
         },
         "type": {
-          "type": "string"
+          "type": "string",
+          "enum": [
+            "ADDED",
+            "REMOVED",
+            "CHANGED"
+          ]
         }
       }
     },
