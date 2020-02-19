@@ -59,6 +59,7 @@ type Client interface {
 
 	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
+	GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error)
 
 	DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error)
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
@@ -177,6 +178,18 @@ func (c *client) GetCommit(ctx context.Context, repoId, commitId string) (*model
 		return nil, err
 	}
 	return commit.GetPayload(), nil
+}
+
+func (c *client) GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error) {
+	log, err := c.remote.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
+		BranchID:     branchId,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return log.GetPayload().Results, nil
 }
 
 func (c *client) DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error) {
