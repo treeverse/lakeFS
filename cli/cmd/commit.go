@@ -20,13 +20,21 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/treeverse/lakefs/api/gen/models"
+
 	"github.com/treeverse/lakefs/uri"
 
 	"github.com/spf13/cobra"
 )
 
-// commitCmd represents the commit command
-// lakectl commit lakefs://myrepo@master --message "commit message"
+var commitCreateTemplate = `Commit for branch "{{.Branch.Refspec}}" done.
+
+ID: {{.Commit.ID|yellow}}
+Timestamp: {{.Commit.CreationDate|date}}
+Parents: {{.Commit.Parents|join ", "}}
+
+`
+
 var commitCmd = &cobra.Command{
 	Use:   "commit [branch uri]",
 	Short: "commit changes on a given branch",
@@ -34,39 +42,34 @@ var commitCmd = &cobra.Command{
 		HasNArgs(1),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
 		kvPairs, err := getKV(cmd, "meta")
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		message, err := cmd.Flags().GetString("message")
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		branchUri := uri.Must(uri.Parse(args[0]))
 
 		// do commit
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
-
+		client := getClient()
 		commit, err := client.Commit(context.Background(), branchUri.Repository, branchUri.Refspec, message, kvPairs)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 
-		fmt.Printf("Commit for branch '%s' done:\nID: %s\ntimestamp: %d\nparents: %s\n",
-			branchUri.Refspec, commit.ID, commit.CreationDate, strings.Join(commit.Parents, ", "))
-
-		return nil
+		Write(commitCreateTemplate, struct {
+			Branch *uri.URI
+			Commit *models.Commit
+		}{branchUri, commit})
 	},
 }
 
 func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	kvList, err := cmd.Flags().GetStringSlice(name)
-	fmt.Printf("kv: %+v\n", kvList)
 	if err != nil {
 		return nil, err
 	}

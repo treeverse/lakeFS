@@ -17,7 +17,6 @@ package cmd
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"strings"
 
@@ -29,7 +28,6 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
-// diffCmd represents the diff command
 var diffCmd = &cobra.Command{
 	Use:   "diff [branch uri] <other branch uri>",
 	Short: "see the list of paths added/changed/removed in a branch or between two branches",
@@ -37,28 +35,25 @@ var diffCmd = &cobra.Command{
 		HasRangeArgs(1, 2),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
 
 		var diff []*models.Diff
-
+		var err error
 		if len(args) == 2 {
 			if err := IsBranchURI(1)(args); err != nil {
-				return err
+				DieErr(err)
 			}
 			leftBranchURI := uri.Must(uri.Parse(args[0]))
 			rightBranchURI := uri.Must(uri.Parse(args[1]))
 
 			if leftBranchURI.Repository != rightBranchURI.Repository {
-				return fmt.Errorf("both branches must belong to the same repository")
+				DieFmt("both branches must belong to the same repository")
 			}
 
 			diff, err = client.DiffBranches(context.Background(), leftBranchURI.Repository, leftBranchURI.Refspec, rightBranchURI.Refspec)
 			if err != nil {
-				return err
+				DieErr(err)
 			}
 			for _, line := range diff {
 				FmtDiff(line, true)
@@ -67,14 +62,12 @@ var diffCmd = &cobra.Command{
 			branchURI := uri.Must(uri.Parse(args[0]))
 			diff, err = client.DiffBranch(context.Background(), branchURI.Repository, branchURI.Refspec)
 			if err != nil {
-				return err
+				DieErr(err)
 			}
 			for _, line := range diff {
 				FmtDiff(line, false)
 			}
 		}
-
-		return nil
 	},
 }
 
