@@ -14,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
@@ -112,6 +113,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	if api.RepositoriesListRepositoriesHandler == nil {
 		api.RepositoriesListRepositoriesHandler = repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
+		})
+	}
+	if api.ObjectsStatObjectHandler == nil {
+		api.ObjectsStatObjectHandler = objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.StatObject has not yet been implemented")
 		})
 	}
 

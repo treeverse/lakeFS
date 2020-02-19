@@ -4,6 +4,8 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
+
 	"github.com/treeverse/lakefs/index/model"
 
 	"github.com/treeverse/lakefs/index/merkle"
@@ -65,6 +67,8 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.BranchesDiffBranchesHandler = a.BranchesDiffBranchesHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
+
+	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
@@ -460,6 +464,33 @@ func (a *Handler) BranchesDiffBranchesHandler() branches.DiffBranchesHandler {
 		}
 
 		return branches.NewDiffBranchesOK().WithPayload(&branches.DiffBranchesOKBody{Results: results})
+	})
+}
+
+func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
+	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// read metadata
+		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewStatObjectNotFound().WithPayload(responseErrorFrom(err))
+			}
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// serialize entry
+		return objects.NewStatObjectOK().WithPayload(&models.ObjectStats{
+			Checksum:  entry.GetChecksum(),
+			Mtime:     entry.GetTimestamp(),
+			Path:      params.Path,
+			PathType:  models.ObjectStatsPathTypeOBJECT,
+			SizeBytes: entry.GetSize(),
+		})
 	})
 }
 
