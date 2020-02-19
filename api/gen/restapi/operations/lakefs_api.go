@@ -72,6 +72,9 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		}),
 		RepositoriesListRepositoriesHandler: repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
+		}),
+		BranchesRevertBranchHandler: branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.RevertBranch has not yet been implemented")
 		}), // Applies when the Authorization header is set with the Basic scheme
 		BasicAuthAuth: func(user string, pass string) (*models.User, error) {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
@@ -137,6 +140,8 @@ type LakefsAPI struct {
 	BranchesListBranchesHandler branches.ListBranchesHandler
 	// RepositoriesListRepositoriesHandler sets the operation handler for the list repositories operation
 	RepositoriesListRepositoriesHandler repositories.ListRepositoriesHandler
+	// BranchesRevertBranchHandler sets the operation handler for the revert branch operation
+	BranchesRevertBranchHandler branches.RevertBranchHandler
 	// ServeError is called when an error is received, there is a default handler
 	// but you can set your own with this
 	ServeError func(http.ResponseWriter, *http.Request, error)
@@ -245,6 +250,10 @@ func (o *LakefsAPI) Validate() error {
 
 	if o.RepositoriesListRepositoriesHandler == nil {
 		unregistered = append(unregistered, "Repositories.ListRepositoriesHandler")
+	}
+
+	if o.BranchesRevertBranchHandler == nil {
+		unregistered = append(unregistered, "Branches.RevertBranchHandler")
 	}
 
 	if len(unregistered) > 0 {
@@ -399,6 +408,11 @@ func (o *LakefsAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"]["/repositories"] = repositories.NewListRepositories(o.context, o.RepositoriesListRepositoriesHandler)
+
+	if o.handlers["PUT"] == nil {
+		o.handlers["PUT"] = make(map[string]http.Handler)
+	}
+	o.handlers["PUT"]["/repositories/{repositoryId}/branches/{branchId}"] = branches.NewRevertBranch(o.context, o.BranchesRevertBranchHandler)
 
 }
 

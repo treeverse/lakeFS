@@ -55,6 +55,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.BranchesGetBranchHandler = a.GetBranchHandler()
 	api.BranchesCreateBranchHandler = a.CreateBranchHandler()
 	api.BranchesDeleteBranchHandler = a.DeleteBranchHandler()
+	api.BranchesRevertBranchHandler = a.RevertBranchHandler()
 
 	api.CommitsCommitHandler = a.CommitHandler()
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
@@ -368,5 +369,38 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 
 		return branches.NewDeleteBranchNoContent()
+	})
+}
+
+func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
+	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		if err != nil {
+			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		switch params.Revert.Type {
+		case models.RevertTypeCOMMIT:
+			err = a.meta.RevertCommit(params.RepositoryID, params.BranchID, params.Revert.Commit)
+			if err != nil {
+				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		case models.RevertTypePATH:
+			err = a.meta.RevertPath(params.RepositoryID, params.BranchID, params.Revert.Path)
+			if err != nil {
+				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		case models.RevertTypeRESET:
+			err = a.meta.ResetBranch(params.RepositoryID, params.BranchID)
+			if err != nil {
+				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		case models.RevertTypeOBJECT:
+			err = a.meta.RevertObject(params.RepositoryID, params.BranchID, params.Revert.Path)
+			if err != nil {
+				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		return branches.NewRevertBranchNoContent()
 	})
 }

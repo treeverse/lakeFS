@@ -27,6 +27,7 @@ DELETE /repositories/myrepo // delete repo
 GET    /repositories/myrepo/branches // list branches
 GET    /repositories/myrepo/branches/feature-new // get branch
 POST   /repositories/myrepo/branches/feature-new // create branch
+PUT 	/repositories/myrepo/branches/feature-new?[commit=<commit_id>] [path=<path>] // revert branch to previous commit or revert path to last commit
 DELETE /repositories/myrepo/branches/feature-new // delete branch
 
 GET    /repositories/myrepo/branches/feature-new/stat/collections/file.csv // get file metadata
@@ -56,6 +57,7 @@ type Client interface {
 	GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error)
 	CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error
 	DeleteBranch(ctx context.Context, repoId, branchId string) error
+	RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.Revert) error
 
 	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
@@ -142,6 +144,15 @@ func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models
 func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) error {
 	_, err := c.remote.Branches.DeleteBranch(&branches.DeleteBranchParams{
 		BranchID:     branchId,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	return err
+}
+func (c *client) RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.Revert) error {
+	_, err := c.remote.Branches.RevertBranch(&branches.RevertBranchParams{
+		BranchID:     branchId,
+		Revert:       revertProps,
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
