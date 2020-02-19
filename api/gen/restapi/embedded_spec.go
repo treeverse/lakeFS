@@ -317,6 +317,43 @@ func init() {
           }
         }
       },
+      "put": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "operationId": "revertBranch",
+        "parameters": [
+          {
+            "description": "revert parameters",
+            "name": "revert",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/revert"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "reverted"
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "commit/branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "branches"
@@ -603,6 +640,26 @@ func init() {
         },
         "id": {
           "type": "string"
+        }
+      }
+    },
+    "revert": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "OBJECT",
+            "PATH",
+            "COMMIT",
+            "RESET"
+          ]
         }
       }
     },
@@ -955,6 +1012,46 @@ func init() {
           }
         }
       },
+      "put": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "operationId": "revertBranch",
+        "parameters": [
+          {
+            "description": "revert parameters",
+            "name": "revert",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/revert"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "reverted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "commit/branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "branches"
@@ -1252,6 +1349,26 @@ func init() {
         },
         "id": {
           "type": "string"
+        }
+      }
+    },
+    "revert": {
+      "type": "object",
+      "properties": {
+        "commit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "OBJECT",
+            "PATH",
+            "COMMIT",
+            "RESET"
+          ]
         }
       }
     },

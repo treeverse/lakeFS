@@ -128,6 +128,77 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
+// lakectl branch revert lakefs://myrepo@master --commit commitId --path path --object path-to-object
+var branchRevertCmd = &cobra.Command{
+	Use:   "revert [branch uri] [flags]",
+	Short: "revert changes to specified commit, or revert uncommitted changes all or by path ",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
+	RunE: func(cmd *cobra.Command, args []string) error {
+		clt, err := getClient()
+		if err != nil {
+			return err
+		}
+		u := uri.Must(uri.Parse(args[0]))
+
+		commitId, err := cmd.Flags().GetString("commit")
+		if err != nil {
+			return err
+		}
+		path, err := cmd.Flags().GetString("path")
+		if err != nil {
+			return err
+		}
+		object, err := cmd.Flags().GetString("object")
+		if err != nil {
+			return err
+		}
+		isCommit := len(commitId) > 0
+		isObject := len(object) > 0
+
+		isPath := len(path) > 0 || isObject
+
+		if (isCommit && isPath) || (isObject && len(path) > 0) {
+			return xerrors.Errorf("can't revert by path and commit, please choose only one!")
+		}
+
+		var revert models.Revert
+		var confirmationMsg string
+		if isCommit {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s ?", commitId)
+			revert = models.Revert{
+				Commit: commitId,
+				Type:   models.RevertTypeCOMMIT,
+			}
+		} else if isPath {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from entity: %s to last commit?", path)
+			modelType := models.RevertTypePATH
+			if isObject {
+				modelType = models.RevertTypeOBJECT
+			}
+			revert = models.Revert{
+				Path: path,
+				Type: modelType,
+			}
+		} else {
+			confirmationMsg = "are you sure you want all uncommitted changes?"
+			revert = models.Revert{
+				Type: models.RevertTypeRESET,
+			}
+		}
+
+		confirmation, err := confirm(confirmationMsg)
+		if err != nil || !confirmation {
+			fmt.Printf("Revert to commit: '%s' Aborted:\n", commitId)
+			return nil
+		}
+		err = clt.RevertBranch(context.Background(), u.Repository, u.Refspec, &revert)
+		return err
+	},
+}
+
 var branchShowCmd = &cobra.Command{
 	Use:   "show [branch uri]",
 	Short: "show branch metadata",
@@ -156,6 +227,7 @@ func init() {
 	branchCmd.AddCommand(branchDeleteCmd)
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
+	branchCmd.AddCommand(branchRevertCmd)
 
 	branchListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
@@ -164,4 +236,8 @@ func init() {
 	_ = branchCreateCmd.MarkFlagRequired("source")
 
 	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
+
+	branchRevertCmd.Flags().StringP("commit", "c", "", "commit ID to revert branch to ")
+	branchRevertCmd.Flags().StringP("path", "p", "", "path to revert it's changes")
+	branchRevertCmd.Flags().StringP("object", "o", "", "path to revert it's changes")
 }

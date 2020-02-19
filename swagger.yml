@@ -90,6 +90,17 @@ definitions:
       commit_id:
         type: string
 
+  revert:
+    type: object
+    properties:
+      type:
+        type: string
+        enum: [OBJECT, PATH, COMMIT, RESET]
+      commit:
+        type: string
+      path:
+        type: string
+
   commit:
     type: object
     properties:
@@ -385,6 +396,30 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags:
+        - branches
+      operationId: revertBranch
+      summary: "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes"
+      parameters:
+        - in: body
+          name: revert
+          description: "revert parameters"
+          schema:
+            $ref: "#/definitions/revert"
+      responses:
+        204:
+          description: reverted
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit/branch not found
           schema:
             $ref: "#/definitions/error"
         default:
