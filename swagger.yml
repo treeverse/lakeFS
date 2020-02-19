@@ -95,12 +95,15 @@ definitions:
     properties:
       type:
         type: string
+        enum: [ADDED, REMOVED, CHANGED]
       direction:
         type: string
+        enum: [LEFT, RIGHT, CONFLICT]
       path:
         type: string
       path_type:
         type: string
+        enum: [TREE, OBJECT]
 
   commit:
     type: object
