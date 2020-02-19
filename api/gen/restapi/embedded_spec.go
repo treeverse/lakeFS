@@ -575,6 +575,58 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object metadata",
+        "operationId": "statObject",
+        "responses": {
+          "200": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
         "tags": [
@@ -710,18 +762,29 @@ func init() {
         }
       }
     },
-    "object": {
+    "object_stats": {
       "type": "object",
-      "required": [
-        "path",
-        "type"
-      ],
       "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "mtime": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },
-        "type": {
-          "type": "string"
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -1420,6 +1483,61 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object metadata",
+        "operationId": "statObject",
+        "responses": {
+          "200": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
         "tags": [
@@ -1558,18 +1676,29 @@ func init() {
         }
       }
     },
-    "object": {
+    "object_stats": {
       "type": "object",
-      "required": [
-        "path",
-        "type"
-      ],
       "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "mtime": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },
-        "type": {
-          "type": "string"
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },

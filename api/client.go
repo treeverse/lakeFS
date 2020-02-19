@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/treeverse/lakefs/api/gen/client/objects"
+
 	"github.com/go-openapi/swag"
 
 	"github.com/go-openapi/runtime"
@@ -60,6 +62,8 @@ type Client interface {
 	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
 	GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error)
+
+	StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error)
 
 	DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error)
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
@@ -215,6 +219,19 @@ func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*mode
 		return nil, err
 	}
 	return diff.GetPayload().Results, nil
+}
+
+func (c *client) StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error) {
+	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
+		BranchID:     branchId,
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
 }
 
 func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
