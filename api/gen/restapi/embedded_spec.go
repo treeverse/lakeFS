@@ -360,6 +360,47 @@ func init() {
       ]
     },
     "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit log for branch",
+        "operationId": "getBranchCommitLog",
+        "responses": {
+          "200": {
+            "description": "commit log",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/commit"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "commits"
@@ -1138,6 +1179,50 @@ func init() {
       ]
     },
     "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit log for branch",
+        "operationId": "getBranchCommitLog",
+        "responses": {
+          "200": {
+            "description": "commit log",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/commit"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
       "post": {
         "tags": [
           "commits"

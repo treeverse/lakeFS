@@ -42,6 +42,7 @@ type Index interface {
 	GetBranch(repoId, branch string) (*model.Branch, error)
 	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
 	GetCommit(repoId, commitId string) (*model.Commit, error)
+	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
 	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
@@ -454,16 +455,29 @@ func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) 
 	return commit.(*model.Commit), nil
 }
 
+func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error) {
+	commits, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		return dag.BfsScan(tx, fromCommitId)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return commits.([]*model.Commit), nil
+}
+
 func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
 		}
-		tx.ClearWorkspace(branch)
+		err = tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		gc(tx, branchData.GetWorkspaceRoot()) // changes are destroyed here
-		tx.DeleteBranch(branch)
-		return nil, nil
+		err = tx.DeleteBranch(branch)
+		return nil, err
 	})
 	return err
 }
