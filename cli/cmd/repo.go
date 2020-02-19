@@ -18,14 +18,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/uri"
-	"os"
 	"time"
 
 	"github.com/go-openapi/swag"
-
-	"github.com/jedib0t/go-pretty/table"
+	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/uri"
 
 	"github.com/spf13/cobra"
 )
@@ -40,35 +37,49 @@ var repoCmd = &cobra.Command{
 	Short: "manage and explore repos",
 }
 
+var repoListTemplate = `{{.RepoTable | table -}}
+{{.Pagination | paginate }}
+`
+
 var repoListCmd = &cobra.Command{
 	Use:   "list",
 	Short: "list repositories",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
 
-		clt, err := getClient()
-		if err != nil {
-			return err
-		}
+		clt := getClient()
 
 		repos, pagination, err := clt.ListRepositories(context.Background(), after, amount)
-		// generate table
-		t := table.NewWriter()
-		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{"Repository", "Creation Date", "Default Branch Name", "Storage Namespace"})
-		for _, repo := range repos {
-			ts := time.Unix(repo.CreationDate, 0).Format(time.RFC1123Z)
-			t.AppendRow([]interface{}{repo.ID, ts, repo.DefaultBranch, repo.BucketName})
+		if err != nil {
+			DieErr(err)
 		}
-		t.Render()
 
+		rows := make([][]interface{}, len(repos))
+		for i, repo := range repos {
+			ts := time.Unix(repo.CreationDate, 0).String()
+			rows[i] = []interface{}{repo.ID, ts, repo.DefaultBranch, repo.BucketName}
+		}
+
+		ctx := struct {
+			RepoTable  *Table
+			Pagination *Pagination
+		}{
+			RepoTable: &Table{
+				Headers: []interface{}{"Repository", "Creation Date", "Default Branch Name", "Storage Namespace"},
+				Rows:    rows,
+			},
+		}
 		if pagination != nil && swag.BoolValue(pagination.HasMore) {
-			fmt.Printf("for more results, run with `--amount %d --after \"%s\"\n", amount, pagination.NextOffset)
+			ctx.Pagination = &Pagination{
+				Amount:  amount,
+				HasNext: true,
+				After:   pagination.NextOffset,
+			}
 		}
 
-		return nil
+		Write(repoListTemplate, ctx)
 	},
 }
 
@@ -83,16 +94,12 @@ var repoCreateCmd = &cobra.Command{
 		IsRepoURI(0),
 	),
 
-	RunE: func(cmd *cobra.Command, args []string) error {
-
-		clt, err := getClient()
-		if err != nil {
-			return err
-		}
+	Run: func(cmd *cobra.Command, args []string) {
+		clt := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 		defaultBranch, err := cmd.Flags().GetString("default-branch")
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		err = clt.CreateRepository(context.Background(), &models.RepositoryCreation{
 			BucketName:    &args[1],
@@ -100,16 +107,15 @@ var repoCreateCmd = &cobra.Command{
 			ID:            &u.Repository,
 		})
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 
 		repo, err := clt.GetRepository(context.Background(), u.Repository)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		fmt.Printf("Repository '%s' created:\nbucket name: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.ID, repo.BucketName, repo.DefaultBranch, repo.CreationDate)
-		return nil
 	},
 }
 
@@ -122,23 +128,18 @@ var repoDeleteCmd = &cobra.Command{
 		HasNArgs(1),
 		IsRepoURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		clt, err := getClient()
-		if err != nil {
-			return err
-		}
+	Run: func(cmd *cobra.Command, args []string) {
+		clt := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 		confirmation, err := confirm(fmt.Sprintf("Are you sure you want to delete repository: %s", u.Repository))
 		if err != nil || !confirmation {
-			fmt.Printf("Delete Repository '%s' aborted:\n", u.Repository)
-			return nil
+			DieFmt("Delete Repository '%s' aborted:\n", u.Repository)
 		}
 		err = clt.DeleteRepository(context.Background(), u.Repository)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		fmt.Printf("Repository '%s' deleted:\n", u.Repository)
-		return nil
 	},
 }
 
