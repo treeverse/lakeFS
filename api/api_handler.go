@@ -467,27 +467,27 @@ func serializeDiff(d merkle.Difference) *models.Diff {
 	var direction, pathType, diffType string
 	switch d.Direction {
 	case merkle.DifferenceDirectionLeft:
-		direction = "LEFT"
+		direction = models.DiffDirectionLEFT
 	case merkle.DifferenceDirectionConflict:
-		direction = "CONFLICT"
+		direction = models.DiffDirectionCONFLICT
 	case merkle.DifferenceDirectionRight:
-		direction = "RIGHT"
+		direction = models.DiffDirectionRIGHT
 	}
 
 	switch d.PathType {
 	case model.Entry_TREE:
-		pathType = "TREE"
+		pathType = models.DiffPathTypeTREE
 	case model.Entry_OBJECT:
-		pathType = "OBJECT"
+		pathType = models.DiffPathTypeOBJECT
 	}
 
 	switch d.Type {
 	case merkle.DifferenceTypeChanged:
-		diffType = "CHANGED"
+		diffType = models.DiffTypeCHANGED
 	case merkle.DifferenceTypeAdded:
-		diffType = "ADDED"
+		diffType = models.DiffTypeADDED
 	case merkle.DifferenceTypeRemoved:
-		diffType = "REMOVED"
+		diffType = models.DiffTypeREMOVED
 	}
 
 	return &models.Diff{
