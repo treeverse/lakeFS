@@ -990,5 +990,15 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
+
+		// get it
+		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
+			BranchID:     "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected file to be gone now")
+		}
 	})
 }
