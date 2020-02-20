@@ -48,6 +48,33 @@ var fsStatCmd = &cobra.Command{
 	},
 }
 
+var fsLsTemplate = `{{ range $val := . -}}
+{{ if eq $val.PathType "OBJECT" }}{{ $val.PathType|ljust 6 }}    {{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}    {{ $val.Path|yellow }}{{ else -}}
+{{ $val.PathType|ljust 6 }}    {{ "-"|ljust 29 }}    {{ "-"|ljust 12 }}    {{ $val.Path|yellow }}{{ end }}
+{{ end -}}
+`
+
+var fsListCmd = &cobra.Command{
+	Use:   "ls [path uri]",
+	Short: "list entries under a given tree",
+	Args: ValidationChain(
+		HasNArgs(1),
+		Or(
+			IsPathURI(0),
+			IsBranchURI(0),
+		),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		pathURI := uri.Must(uri.Parse(args[0]))
+		results, _, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path, "", -1)
+		if err != nil {
+			DieErr(err)
+		}
+		Write(fsLsTemplate, results)
+	},
+}
+
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
 	Use:   "fs",
@@ -57,4 +84,5 @@ var fsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(fsCmd)
 	fsCmd.AddCommand(fsStatCmd)
+	fsCmd.AddCommand(fsListCmd)
 }

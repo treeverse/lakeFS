@@ -586,3 +586,51 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/objects/ls:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: tree
+        required: false
+        type: string
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
+    get:
+      tags:
+        - objects
+      operationId: listObjects
+      summary: list objects under a given tree
+      responses:
+        200:
+          description: entry list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/object_stats"
+        404:
+          description: tree or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
