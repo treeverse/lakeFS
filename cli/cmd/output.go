@@ -68,6 +68,9 @@ func WriteTo(tpl string, ctx interface{}, w io.Writer) {
 		"date": func(ts int64) string {
 			return time.Unix(ts, 0).String()
 		},
+		"ljust": func(length int, s string) string {
+			return text.AlignLeft.Apply(s, length)
+		},
 		"paginate": func(pag *Pagination) string {
 			if pag != nil && pag.HasNext && isTerminal {
 				params := text.FgHiYellow.Sprintf("--amount %d --after \"%s\"", pag.Amount, pag.After)

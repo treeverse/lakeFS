@@ -110,6 +110,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation branches.ListBranches has not yet been implemented")
 		})
 	}
+	if api.ObjectsListObjectsHandler == nil {
+		api.ObjectsListObjectsHandler = objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.ListObjects has not yet been implemented")
+		})
+	}
 	if api.RepositoriesListRepositoriesHandler == nil {
 		api.RepositoriesListRepositoriesHandler = repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")

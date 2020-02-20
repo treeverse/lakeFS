@@ -80,6 +80,9 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		BranchesListBranchesHandler: branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.ListBranches has not yet been implemented")
 		}),
+		ObjectsListObjectsHandler: objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.ListObjects has not yet been implemented")
+		}),
 		RepositoriesListRepositoriesHandler: repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
 		}),
@@ -154,6 +157,8 @@ type LakefsAPI struct {
 	RepositoriesGetRepositoryHandler repositories.GetRepositoryHandler
 	// BranchesListBranchesHandler sets the operation handler for the list branches operation
 	BranchesListBranchesHandler branches.ListBranchesHandler
+	// ObjectsListObjectsHandler sets the operation handler for the list objects operation
+	ObjectsListObjectsHandler objects.ListObjectsHandler
 	// RepositoriesListRepositoriesHandler sets the operation handler for the list repositories operation
 	RepositoriesListRepositoriesHandler repositories.ListRepositoriesHandler
 	// ObjectsStatObjectHandler sets the operation handler for the stat object operation
@@ -274,6 +279,10 @@ func (o *LakefsAPI) Validate() error {
 
 	if o.BranchesListBranchesHandler == nil {
 		unregistered = append(unregistered, "Branches.ListBranchesHandler")
+	}
+
+	if o.ObjectsListObjectsHandler == nil {
+		unregistered = append(unregistered, "Objects.ListObjectsHandler")
 	}
 
 	if o.RepositoriesListRepositoriesHandler == nil {
@@ -446,6 +455,11 @@ func (o *LakefsAPI) initHandlerCache() {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
 	o.handlers["GET"]["/repositories/{repositoryId}/branches"] = branches.NewListBranches(o.context, o.BranchesListBranchesHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects/ls"] = objects.NewListObjects(o.context, o.ObjectsListObjectsHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)

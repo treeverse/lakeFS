@@ -69,6 +69,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
+	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
@@ -478,7 +479,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewStatObjectNotFound().WithPayload(responseErrorFrom(err))
+				return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 			}
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -491,6 +492,64 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			PathType:  models.ObjectStatsPathTypeOBJECT,
 			SizeBytes: entry.GetSize(),
 		})
+	})
+}
+
+func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
+	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// amount
+		after := ""
+		amount := MaxResultsPerPage
+		if params.Amount != nil {
+			amount = swag.Int64Value(params.Amount)
+		}
+
+		// paginate after
+		if params.After != nil {
+			after = swag.StringValue(params.After)
+		}
+
+		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.BranchID, swag.StringValue(params.Tree), after, int(amount), false)
+		if err != nil {
+			return objects.NewListObjectsDefault(http.StatusInternalServerError).
+				WithPayload(responseError("received error while listing objects"))
+		}
+
+		objList := make([]*models.ObjectStats, len(res))
+		var lastId string
+		for i, entry := range res {
+			typ := models.ObjectStatsPathTypeTREE
+			if entry.GetType() == model.Entry_OBJECT {
+				typ = models.ObjectStatsPathTypeOBJECT
+			}
+
+			objList[i] = &models.ObjectStats{
+				Checksum:  entry.GetChecksum(),
+				Mtime:     entry.GetTimestamp(),
+				Path:      entry.GetName(),
+				PathType:  typ,
+				SizeBytes: entry.GetSize(),
+			}
+			lastId = entry.GetName()
+		}
+		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
+			Pagination: &models.Pagination{
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(objList))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
+			Results: objList,
+		})
+
+		if hasMore {
+			returnValue.Payload.Pagination.NextOffset = lastId
+		}
+		return returnValue
 	})
 }
 
