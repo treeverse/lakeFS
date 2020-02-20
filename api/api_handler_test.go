@@ -714,3 +714,93 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		}
 	})
 }
+
+func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
+	handler, deps, close := getHandler(t)
+	defer close()
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+	err := deps.meta.CreateRepo("repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+	err = deps.meta.WriteEntry("repo1", "master", "foo/bar", &model.Entry{
+		Name:      "bar",
+		Address:   "this_is_bars_address",
+		Type:      model.Entry_OBJECT,
+		Timestamp: time.Now().Unix(),
+		Size:      666,
+		Checksum:  "this_is_a_checksum",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = deps.meta.WriteEntry("repo1", "master", "foo/baz", &model.Entry{
+		Name:      "baz",
+		Address:   "this_is_bazs_address",
+		Type:      model.Entry_OBJECT,
+		Timestamp: time.Now().Unix(),
+		Size:      666,
+		Checksum:  "baz_checksum",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	err = deps.meta.WriteEntry("repo1", "master", "foo/a_dir/baz", &model.Entry{
+		Name:      "baz",
+		Address:   "this_is_bazs_address",
+		Type:      model.Entry_OBJECT,
+		Timestamp: time.Now().Unix(),
+		Size:      666,
+		Checksum:  "baz_checksum",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("get object list", func(t *testing.T) {
+		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
+			BranchID:     "master",
+			RepositoryID: "repo1",
+			Tree:         swag.String("foo/"),
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(resp.Payload.Results) != 3 {
+			t.Fatalf("expected 3 entries, got back %d", len(resp.Payload.Results))
+		}
+	})
+
+	t.Run("get object list paginated", func(t *testing.T) {
+		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
+			Amount:       swag.Int64(2),
+			BranchID:     "master",
+			RepositoryID: "repo1",
+			Tree:         swag.String("foo/"),
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if len(resp.Payload.Results) != 2 {
+			t.Fatalf("expected 3 entries, got back %d", len(resp.Payload.Results))
+		}
+		if !swag.BoolValue(resp.Payload.Pagination.HasMore) {
+			t.Fatalf("expected paginator.HasMore to be true")
+		}
+
+		if resp.Payload.Pagination.NextOffset != "foo/bar" {
+			t.Fatalf("expected next offset to be foo/bar, got %s", resp.Payload.Pagination.NextOffset)
+		}
+	})
+}

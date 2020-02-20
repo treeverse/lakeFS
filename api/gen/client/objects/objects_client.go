@@ -25,9 +25,45 @@ type Client struct {
 
 // ClientService is the interface for Client methods
 type ClientService interface {
+	ListObjects(params *ListObjectsParams, authInfo runtime.ClientAuthInfoWriter) (*ListObjectsOK, error)
+
 	StatObject(params *StatObjectParams, authInfo runtime.ClientAuthInfoWriter) (*StatObjectOK, error)
 
 	SetTransport(transport runtime.ClientTransport)
+}
+
+/*
+  ListObjects lists objects under a given tree
+*/
+func (a *Client) ListObjects(params *ListObjectsParams, authInfo runtime.ClientAuthInfoWriter) (*ListObjectsOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewListObjectsParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "listObjects",
+		Method:             "GET",
+		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/objects/ls",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &ListObjectsReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*ListObjectsOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*ListObjectsDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 
 /*

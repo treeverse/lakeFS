@@ -575,6 +575,78 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "list objects under a given tree",
+        "operationId": "listObjects",
+        "responses": {
+          "200": {
+            "description": "entry list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/object_stats"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "tree or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "tree",
+          "in": "query"
+        },
+        {
+          "type": "string",
+          "name": "after",
+          "in": "query"
+        },
+        {
+          "type": "integer",
+          "name": "amount",
+          "in": "query"
+        }
+      ]
+    },
     "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
       "get": {
         "tags": [
@@ -1480,6 +1552,81 @@ func init() {
           "name": "otherBranchId",
           "in": "path",
           "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "list objects under a given tree",
+        "operationId": "listObjects",
+        "responses": {
+          "200": {
+            "description": "entry list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/object_stats"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "tree or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "tree",
+          "in": "query"
+        },
+        {
+          "type": "string",
+          "name": "after",
+          "in": "query"
+        },
+        {
+          "type": "integer",
+          "name": "amount",
+          "in": "query"
         }
       ]
     },

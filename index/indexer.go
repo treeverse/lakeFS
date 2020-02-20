@@ -68,17 +68,10 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 	return nil
 }
 
-func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch string) (string, error) {
+func resolveReadRoot(tx store.RepoReadOnlyOperations, branch string) (string, error) {
 	var empty string
 	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, db.ErrNotFound) {
-		// fallback to default branch
-		branchData, err = tx.ReadBranch(repo.DefaultBranch)
-		if err != nil {
-			return empty, err
-		}
-		return branchData.GetCommitRoot(), nil // when falling back we don't want the dirty writes
-	} else if err != nil {
+	if err != nil {
 		return empty, err // unexpected error
 	}
 	return branchData.GetWorkspaceRoot(), nil
@@ -151,11 +144,11 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 		we, err := tx.ReadFromWorkspace(branch, path)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
-			repo, err := tx.ReadRepo()
+			_, err := tx.ReadRepo()
 			if err != nil {
 				return nil, err
 			}
-			root, err := resolveReadRoot(tx, repo, branch)
+			root, err := resolveReadRoot(tx, branch)
 			if err != nil {
 				return nil, err
 			}
@@ -188,11 +181,11 @@ func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, erro
 		we, err := tx.ReadFromWorkspace(branch, path)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
-			repo, err := tx.ReadRepo()
+			_, err := tx.ReadRepo()
 			if err != nil {
 				return nil, err
 			}
-			root, err := resolveReadRoot(tx, repo, branch)
+			root, err := resolveReadRoot(tx, branch)
 			if err != nil {
 				return nil, err
 			}
@@ -338,11 +331,11 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 		if err != nil {
 			return nil, err
 		}
-		repo, err := tx.ReadRepo()
+		_, err = tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		root, err := resolveReadRoot(tx, repo, branch)
+		root, err := resolveReadRoot(tx, branch)
 		if err != nil {
 			return nil, err
 		}
