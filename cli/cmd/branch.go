@@ -151,16 +151,15 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		object, err := cmd.Flags().GetString("object")
+		isObject, err := cmd.Flags().GetBool("object")
 		if err != nil {
 			return err
 		}
 		isCommit := len(commitId) > 0
-		isObject := len(object) > 0
 
-		isPath := len(path) > 0 || isObject
+		isPath := len(path) > 0
 
-		if (isCommit && isPath) || (isObject && len(path) > 0) {
+		if isCommit && isPath {
 			return xerrors.Errorf("can't revert by path and commit, please choose only one!")
 		}
 
@@ -173,10 +172,13 @@ var branchRevertCmd = &cobra.Command{
 				Type:   models.RevertTypeCOMMIT,
 			}
 		} else if isPath {
-			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from entity: %s to last commit?", path)
-			modelType := models.RevertTypePATH
+			var modelType string
 			if isObject {
 				modelType = models.RevertTypeOBJECT
+				confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit?", path)
+			} else {
+				confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit?", path)
+				modelType = models.RevertTypePATH
 			}
 			revert = models.Revert{
 				Path: path,
@@ -191,7 +193,7 @@ var branchRevertCmd = &cobra.Command{
 
 		confirmation, err := confirm(confirmationMsg)
 		if err != nil || !confirmation {
-			fmt.Printf("Revert to commit: '%s' Aborted:\n", commitId)
+			fmt.Println("Revert Aborted")
 			return nil
 		}
 		err = clt.RevertBranch(context.Background(), u.Repository, u.Refspec, &revert)
@@ -239,5 +241,5 @@ func init() {
 
 	branchRevertCmd.Flags().StringP("commit", "c", "", "commit ID to revert branch to ")
 	branchRevertCmd.Flags().StringP("path", "p", "", "path to revert it's changes")
-	branchRevertCmd.Flags().StringP("object", "o", "", "path to revert it's changes")
+	branchRevertCmd.Flags().BoolP("object", "o", false, "path to revert it's changes")
 }
