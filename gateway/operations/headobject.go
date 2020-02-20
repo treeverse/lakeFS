@@ -5,10 +5,10 @@ import (
 	"net/http"
 
 	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
 
@@ -44,7 +44,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		return
 	}
 	o.SetHeader("Accept-Ranges", "bytes")
-	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
-	o.SetHeader("ETag", serde.ETag(entry.GetChecksum()))
+	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.GetTimestamp()))
+	o.SetHeader("ETag", httputil.ETag(entry.GetChecksum()))
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.GetSize()))
 }

@@ -35,7 +35,9 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	// api.Logger = log.Printf
 
 	api.JSONConsumer = runtime.JSONConsumer()
+	api.MultipartformConsumer = runtime.DiscardConsumer
 
+	api.BinProducer = runtime.ByteStreamProducer()
 	api.JSONProducer = runtime.JSONProducer()
 
 	// Applies when the Authorization header is set with the Basic scheme
@@ -70,6 +72,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation branches.DeleteBranch has not yet been implemented")
 		})
 	}
+	if api.ObjectsDeleteObjectHandler == nil {
+		api.ObjectsDeleteObjectHandler = objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.DeleteObject has not yet been implemented")
+		})
+	}
 	if api.RepositoriesDeleteRepositoryHandler == nil {
 		api.RepositoriesDeleteRepositoryHandler = repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.DeleteRepository has not yet been implemented")
@@ -100,6 +107,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation commits.GetCommit has not yet been implemented")
 		})
 	}
+	if api.ObjectsGetObjectHandler == nil {
+		api.ObjectsGetObjectHandler = objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.GetObject has not yet been implemented")
+		})
+	}
 	if api.RepositoriesGetRepositoryHandler == nil {
 		api.RepositoriesGetRepositoryHandler = repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.GetRepository has not yet been implemented")
@@ -123,6 +135,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	if api.ObjectsStatObjectHandler == nil {
 		api.ObjectsStatObjectHandler = objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation objects.StatObject has not yet been implemented")
+		})
+	}
+	if api.ObjectsUploadObjectHandler == nil {
+		api.ObjectsUploadObjectHandler = objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.UploadObject has not yet been implemented")
 		})
 	}
 
