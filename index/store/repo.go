@@ -16,7 +16,7 @@ type RepoReadOnlyOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
-	ListBranches(amount int, after string) ([]*model.Branch, bool, error)
+	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
@@ -89,13 +89,14 @@ func (s *KVRepoReadOnlyOperations) ReadFromWorkspace(branch, path string) (*mode
 	return ent, s.query.GetAsProto(ent, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }
 
-func (s *KVRepoReadOnlyOperations) ListBranches(amount int, after string) ([]*model.Branch, bool, error) {
+func (s *KVRepoReadOnlyOperations) ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error) {
 	var iter db.Iterator
 	var itclose db.IteratorCloseFn
+	prefixKey := db.CompositeStrings(s.repoId, prefix)
 	if len(after) == 0 {
-		iter, itclose = s.query.RangePrefix(SubspaceBranches, db.CompositeStrings(s.repoId))
+		iter, itclose = s.query.RangePrefix(SubspaceBranches, prefixKey)
 	} else {
-		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceBranches, db.CompositeStrings(s.repoId), db.CompositeStrings(s.repoId, after))
+		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceBranches, prefixKey, db.CompositeStrings(s.repoId, after))
 	}
 	defer itclose()
 	branches := make([]*model.Branch, 0)

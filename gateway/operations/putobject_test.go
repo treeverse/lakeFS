@@ -5,10 +5,11 @@ import (
 	"crypto/md5"
 	"crypto/rand"
 	"fmt"
-	"github.com/treeverse/lakefs/gateway/operations"
 	"io"
 	"io/ioutil"
 	"testing"
+
+	"github.com/treeverse/lakefs/gateway/operations"
 )
 
 const (

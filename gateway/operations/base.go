@@ -7,9 +7,9 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/treeverse/lakefs/permissions"
+
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/auth"
 	authmodel "github.com/treeverse/lakefs/auth/model"
@@ -157,8 +157,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 }
 
 type BaseOperationHandler interface {
-	GetArn() string
-	GetPermission() permissions.Permission
+	Action(req *http.Request) permissions.Action
 }
 
 type OperationHandler interface {

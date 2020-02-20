@@ -74,9 +74,24 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation repositories.DeleteRepository has not yet been implemented")
 		})
 	}
+	if api.BranchesDiffBranchHandler == nil {
+		api.BranchesDiffBranchHandler = branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.DiffBranch has not yet been implemented")
+		})
+	}
+	if api.BranchesDiffBranchesHandler == nil {
+		api.BranchesDiffBranchesHandler = branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.DiffBranches has not yet been implemented")
+		})
+	}
 	if api.BranchesGetBranchHandler == nil {
 		api.BranchesGetBranchHandler = branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.GetBranch has not yet been implemented")
+		})
+	}
+	if api.CommitsGetBranchCommitLogHandler == nil {
+		api.CommitsGetBranchCommitLogHandler = commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation commits.GetBranchCommitLog has not yet been implemented")
 		})
 	}
 	if api.CommitsGetCommitHandler == nil {

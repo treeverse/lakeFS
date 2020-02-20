@@ -90,6 +90,21 @@ definitions:
       commit_id:
         type: string
 
+  diff:
+    type: object
+    properties:
+      type:
+        type: string
+        enum: [ADDED, REMOVED, CHANGED]
+      direction:
+        type: string
+        enum: [LEFT, RIGHT, CONFLICT]
+      path:
+        type: string
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
+
   revert:
     type: object
     properties:
@@ -328,6 +343,33 @@ paths:
         name: branchId
         required: true
         type: string
+    get:
+      tags:
+        - commits
+      operationId: getBranchCommitLog
+      summary: get commit log for branch
+      responses:
+        200:
+          description: commit log
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/commit"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     post:
       tags:
         - commits
@@ -420,6 +462,88 @@ paths:
           $ref: "#/responses/Unauthorized"
         404:
           description: commit/branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /repositories/{repositoryId}/branches/{branchId}/diff:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+    get:
+      tags:
+        - branches
+      operationId: diffBranch
+      summary: diff branch
+      responses:
+        200:
+          description: diff of branch uncommitted changes
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/diff"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: path
+        name: otherBranchId
+        required: true
+        type: string
+    get:
+      tags:
+        - branches
+      operationId: diffBranches
+      summary: diff branches
+      responses:
+        200:
+          description: diff between branches
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/diff"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
           schema:
             $ref: "#/definitions/error"
         default:

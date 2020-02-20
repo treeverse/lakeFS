@@ -11,6 +11,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
@@ -36,12 +38,8 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *PutObject) GetPermission() permissions.Permission {
-	return permissions.WriteRepo
+func (controller *PutObject) Action(req *http.Request) permissions.Action {
+	return permissions.WriteObject(utils.GetRepo(req))
 }
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
