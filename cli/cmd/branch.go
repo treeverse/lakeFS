@@ -185,7 +185,7 @@ var branchRevertCmd = &cobra.Command{
 				Type: modelType,
 			}
 		} else {
-			confirmationMsg = "are you sure you want all uncommitted changes?"
+			confirmationMsg = "are you sure you want to revert all uncommitted changes?"
 			revert = models.Revert{
 				Type: models.RevertTypeRESET,
 			}
