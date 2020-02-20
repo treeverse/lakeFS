@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/httputil"
+
 	"github.com/treeverse/lakefs/gateway/utils"
 
 	"github.com/treeverse/lakefs/block"
@@ -56,8 +58,8 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		return
 	}
 
-	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
-	o.SetHeader("ETag", serde.ETag(entry.GetChecksum()))
+	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.GetTimestamp()))
+	o.SetHeader("ETag", httputil.ETag(entry.GetChecksum()))
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 

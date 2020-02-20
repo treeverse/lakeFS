@@ -29,6 +29,12 @@ responses:
 
 definitions:
 
+  user:
+    type: object
+    properties:
+      id:
+        type: string
+
   pagination:
     type: object
     required:
@@ -44,12 +50,6 @@ definitions:
       max_per_page:
         type: integer
         minimum: 0
-
-  user:
-    type: object
-    properties:
-      id:
-        type: string
 
   repository:
     type: object
@@ -78,6 +78,23 @@ definitions:
       default_branch:
         example: "master"
         type: string
+
+  object_stats:
+    type: object
+    properties:
+      path:
+        type: string
+      checksum:
+        type: string
+      mtime:
+        type: integer
+        format: int64
+      size_bytes:
+        type: integer
+        format: int64
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
 
   refspec:
     type: object
@@ -137,17 +154,6 @@ definitions:
         type: object
         additionalProperties:
           type: string
-
-  object:
-    type: object
-    required:
-      - path
-      - type
-    properties:
-      path:
-        type: string
-      type:
-        type: string
 
   error:
     type: object
@@ -541,6 +547,179 @@ paths:
           description: commit not found
           schema:
             $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/objects:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
+    get:
+      tags:
+        - objects
+      operationId: getObject
+      summary: get object content
+      produces:
+        - application/octet-stream
+      responses:
+        200:
+          description: object content
+          schema:
+            type: file
+          headers:
+            Content-Length:
+              type: integer
+              format: int64
+            Last-Modified:
+              type: string
+            ETag:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - objects
+      operationId: uploadObject
+      summary: upload object content
+      parameters:
+        - in: formData
+          name: content
+          type: file
+          description: Object content to upload
+      consumes:
+        - multipart/form-data
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - objects
+      operationId: deleteObject
+      summary: delete object
+      responses:
+        204:
+          description: object deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/objects/stat:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
+    get:
+      tags:
+        - objects
+      operationId: statObject
+      summary: get object metadata
+      responses:
+        200:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/objects/ls:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: tree
+        required: false
+        type: string
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
+    get:
+      tags:
+        - objects
+      operationId: listObjects
+      summary: list objects under a given tree
+      responses:
+        200:
+          description: entry list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/object_stats"
+        404:
+          description: tree or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
         default:
           description: generic error response
           schema:

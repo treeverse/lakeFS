@@ -2,7 +2,10 @@ package api
 
 import (
 	"context"
+	"io"
 	"net/url"
+
+	"github.com/treeverse/lakefs/api/gen/client/objects"
 
 	"github.com/go-openapi/swag"
 
@@ -17,37 +20,8 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
-/*
-
-GET    /repositories // list repos
-GET    /repositories/myrepo // get repo
-POST   /repositories/myrepo // create repo
-DELETE /repositories/myrepo // delete repo
-
-GET    /repositories/myrepo/branches // list branches
-GET    /repositories/myrepo/branches/feature-new // get branch
-POST   /repositories/myrepo/branches/feature-new // create branch
-DELETE /repositories/myrepo/branches/feature-new // delete branch
-
-GET    /repositories/myrepo/branches/feature-new/stat/collections/file.csv // get file metadata
-GET    /repositories/myrepo/branches/feature-new/ls/prefix?from="<from_path>" // list files
-GET    /repositories/myrepo/branches/feature-new/objects/collections/file.csv // get file content
-PUT    /repositories/myrepo/branches/feature-new/objects/collections/file.csv // upload file content
-DELETE /repositories/myrepo/branches/feature-new/objects/collections/file.csv // delete file
-
-POST /repositories/myrepo/branches/feature-new/commits // create a commit as head of branch
-GET  /repositories/myrepo/branches/feature-new/commits // list commits for branch
-GET  /repositories/myrepo/commits/commit_id // get commit info
-
-GET  /repositories/myrepo/branches/feature-new/diff/master // get diff between branches
-PUT  /repositories/myrepo/branches/feature-new/checkout/collections/file.csv // checkout a given file (i.e. restore it to last committed version)
-PUT  /repositories/myrepo/branches/feature-new/reset // reset (i.e. restore tree to last committed version)
-PUT  /repositories/myrepo/branches/feature-new/merge/master // merge branch into destination
-
-*/
-
 type Client interface {
-	ListRepositories(ctx context.Context, from string, amount int) ([]*models.Repository, *models.Pagination, error)
+	ListRepositories(ctx context.Context, after string, amount int) ([]*models.Repository, *models.Pagination, error)
 	GetRepository(ctx context.Context, repoId string) (*models.Repository, error)
 	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repoId string) error
@@ -61,6 +35,12 @@ type Client interface {
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
 	GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error)
 
+	StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error)
+	ListObjects(ctx context.Context, repoId, branchId, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
+	GetObject(ctx context.Context, repoId, branchId, path string, w io.Writer) (*objects.GetObjectOK, error)
+	UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error)
+	DeleteObject(ctx context.Context, repoId, branchId, path string) error
+
 	DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error)
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -70,9 +50,9 @@ type client struct {
 	auth   runtime.ClientAuthInfoWriter
 }
 
-func (c *client) ListRepositories(ctx context.Context, from string, amount int) ([]*models.Repository, *models.Pagination, error) {
+func (c *client) ListRepositories(ctx context.Context, after string, amount int) ([]*models.Repository, *models.Pagination, error) {
 	resp, err := c.remote.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
-		After:   swag.String(from),
+		After:   swag.String(after),
 		Amount:  swag.Int64(int64(amount)),
 		Context: ctx,
 	}, c.auth)
@@ -93,9 +73,9 @@ func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repo
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Refspec, *models.Pagination, error) {
+func (c *client) ListBranches(ctx context.Context, repoId string, after string, amount int) ([]*models.Refspec, *models.Pagination, error) {
 	resp, err := c.remote.Branches.ListBranches(&branches.ListBranchesParams{
-		After:        swag.String(from),
+		After:        swag.String(after),
 		Amount:       swag.Int64(int64(amount)),
 		RepositoryID: repoId,
 		Context:      ctx,
@@ -215,6 +195,72 @@ func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*mode
 		return nil, err
 	}
 	return diff.GetPayload().Results, nil
+}
+
+func (c *client) StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error) {
+	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
+		BranchID:     branchId,
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
+}
+
+func (c *client) ListObjects(ctx context.Context, repoId, branchId, tree, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
+	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
+		After:        swag.String(after),
+		Amount:       swag.Int64(int64(amount)),
+		BranchID:     branchId,
+		RepositoryID: repoId,
+		Tree:         swag.String(tree),
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
+}
+
+func (c *client) GetObject(ctx context.Context, repoId, branchId, path string, writer io.Writer) (*objects.GetObjectOK, error) {
+	params := &objects.GetObjectParams{
+		BranchID:     branchId,
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}
+	resp, err := c.remote.Objects.GetObject(params, c.auth, writer)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *client) UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error) {
+	resp, err := c.remote.Objects.UploadObject(&objects.UploadObjectParams{
+		BranchID:     branchId,
+		Content:      runtime.NamedReader("content", r),
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
+}
+
+func (c *client) DeleteObject(ctx context.Context, repoId, branchId, path string) error {
+	_, err := c.remote.Objects.DeleteObject(&objects.DeleteObjectParams{
+		BranchID:     branchId,
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	return err
 }
 
 func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {

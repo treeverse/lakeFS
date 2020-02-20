@@ -575,6 +575,265 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/objects": {
+      "get": {
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "upload object content",
+        "operationId": "uploadObject",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Object content to upload",
+            "name": "content",
+            "in": "formData"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "repository or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "delete object",
+        "operationId": "deleteObject",
+        "responses": {
+          "204": {
+            "description": "object deleted successfully"
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "list objects under a given tree",
+        "operationId": "listObjects",
+        "responses": {
+          "200": {
+            "description": "entry list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/object_stats"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "tree or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "tree",
+          "in": "query"
+        },
+        {
+          "type": "string",
+          "name": "after",
+          "in": "query"
+        },
+        {
+          "type": "integer",
+          "name": "amount",
+          "in": "query"
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object metadata",
+        "operationId": "statObject",
+        "responses": {
+          "200": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
         "tags": [
@@ -710,18 +969,29 @@ func init() {
         }
       }
     },
-    "object": {
+    "object_stats": {
       "type": "object",
-      "required": [
-        "path",
-        "type"
-      ],
       "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "mtime": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },
-        "type": {
-          "type": "string"
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
@@ -1420,6 +1690,280 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/objects": {
+      "get": {
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "upload object content",
+        "operationId": "uploadObject",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Object content to upload",
+            "name": "content",
+            "in": "formData"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "repository or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "delete object",
+        "operationId": "deleteObject",
+        "responses": {
+          "204": {
+            "description": "object deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "list objects under a given tree",
+        "operationId": "listObjects",
+        "responses": {
+          "200": {
+            "description": "entry list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/object_stats"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "tree or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "tree",
+          "in": "query"
+        },
+        {
+          "type": "string",
+          "name": "after",
+          "in": "query"
+        },
+        {
+          "type": "integer",
+          "name": "amount",
+          "in": "query"
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object metadata",
+        "operationId": "statObject",
+        "responses": {
+          "200": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/commits/{commitId}": {
       "get": {
         "tags": [
@@ -1558,18 +2102,29 @@ func init() {
         }
       }
     },
-    "object": {
+    "object_stats": {
       "type": "object",
-      "required": [
-        "path",
-        "type"
-      ],
       "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "mtime": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },
-        "type": {
-          "type": "string"
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "format": "int64"
         }
       }
     },
