@@ -13,8 +13,8 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-SWAGGER=${DOCKER} run --rm -it -e GOPATH=${HOME}/go:/go -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger
-PROTOC=${DOCKER} run --rm -it -v $(CURDIR):/defs namely/protoc-all
+SWAGGER=${DOCKER} run --rm -i -e GOPATH=${HOME}/go:/go -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger
+PROTOC=${DOCKER} run --rm -i -v $(CURDIR):/defs namely/protoc-all
 
 BINARY_NAME=lakefs
 CLI_BINARY_NAME=lakectl
