@@ -575,6 +575,141 @@ func init() {
         }
       ]
     },
+    "/repositories/{repositoryId}/branches/{branchId}/objects": {
+      "get": {
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "upload object content",
+        "operationId": "uploadObject",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Object content to upload",
+            "name": "content",
+            "in": "formData"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "repository or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "delete object",
+        "operationId": "deleteObject",
+        "responses": {
+          "204": {
+            "description": "object deleted successfully"
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
     "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
       "get": {
         "tags": [
@@ -1551,6 +1686,150 @@ func init() {
           "type": "string",
           "name": "otherBranchId",
           "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects": {
+      "get": {
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "upload object content",
+        "operationId": "uploadObject",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Object content to upload",
+            "name": "content",
+            "in": "formData"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "repository or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "delete object",
+        "operationId": "deleteObject",
+        "responses": {
+          "204": {
+            "description": "object deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
           "required": true
         }
       ]

@@ -1,9 +1,18 @@
 package api_test
 
 import (
+	"bytes"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/treeverse/lakefs/httputil"
+
+	"github.com/go-openapi/runtime"
+
+	"github.com/treeverse/lakefs/ident"
+
+	"github.com/treeverse/lakefs/upload"
 
 	"github.com/treeverse/lakefs/index/model"
 
@@ -801,6 +810,185 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 		if resp.Payload.Pagination.NextOffset != "foo/bar" {
 			t.Fatalf("expected next offset to be foo/bar, got %s", resp.Payload.Pagination.NextOffset)
+		}
+	})
+}
+
+func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
+	handler, deps, close := getHandler(t)
+	defer close()
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+	err := deps.meta.CreateRepo("repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	buf := new(bytes.Buffer)
+	buf.WriteString("this is file content made up of bytes")
+	blob, err := upload.ReadBlob("ns1", buf, deps.blocks, 1024)
+	if err != nil {
+		t.Fatal(err)
+	}
+	obj := &model.Object{
+		Blocks:   blob.Blocks,
+		Checksum: blob.Checksum,
+		Size:     blob.Size,
+	}
+	entry := &model.Entry{
+		Name:      "bar",
+		Address:   ident.Hash(obj),
+		Type:      model.Entry_OBJECT,
+		Timestamp: time.Now().Unix(),
+		Size:      blob.Size,
+		Checksum:  blob.Checksum,
+	}
+	err = deps.meta.WriteFile("repo1", "master", "foo/bar", entry, obj)
+
+	t.Run("get object", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		resp, err := clt.Objects.GetObject(&objects.GetObjectParams{
+			BranchID:     "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth, buf)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if resp.ContentLength != 37 {
+			t.Fatalf("expected 37 bytes in content length, got back %d", resp.ContentLength)
+		}
+		if resp.ETag != `"3c4838fe975c762ee97cf39fbbe566f1"` {
+			t.Fatalf("got unexpected etag: %s", resp.ETag)
+		}
+
+		body := buf.String()
+		if !strings.EqualFold(body, "this is file content made up of bytes") {
+			t.Fatalf("got unexpected body: '%s'", body)
+		}
+
+	})
+}
+
+func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
+	handler, deps, close := getHandler(t)
+	defer close()
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+	err := deps.meta.CreateRepo("repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("upload object", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world this is my awesome content")
+		resp, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			BranchID:     "master",
+			Content:      runtime.NamedReader("content", buf),
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if resp.Payload.SizeBytes != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
+		}
+
+		// download it
+		rbuf := new(bytes.Buffer)
+		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
+			BranchID:     "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth, rbuf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := rbuf.String()
+		if len(result) != 38 {
+			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+		}
+		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
+			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		}
+	})
+}
+
+func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
+	handler, deps, close := getHandler(t)
+	defer close()
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+	err := deps.meta.CreateRepo("repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	t.Run("delete object", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world this is my awesome content")
+		resp, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			BranchID:     "master",
+			Content:      runtime.NamedReader("content", buf),
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		if resp.Payload.SizeBytes != 38 {
+			t.Fatalf("expected 38 bytes to be written, got back %d", resp.Payload.SizeBytes)
+		}
+
+		// download it
+		rbuf := new(bytes.Buffer)
+		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
+			BranchID:     "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth, rbuf)
+		if err != nil {
+			t.Fatal(err)
+		}
+		result := rbuf.String()
+		if len(result) != 38 {
+			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
+		}
+		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
+			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		}
+
+		// delete it
+		_, err = clt.Objects.DeleteObject(&objects.DeleteObjectParams{
+			BranchID:     "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
 		}
 	})
 }
