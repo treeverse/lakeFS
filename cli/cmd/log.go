@@ -22,6 +22,24 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
+var commitsTemplate = `{{ range $val := . }}
+{{ if gt  ($val.Parents|len) 0 -}}
+commit {{ $val.ID|yellow }}
+Author: {{ $val.Committer }}
+Date: {{ $val.CreationDate|date }}
+{{ if gt ($val.Parents|len) 1 -}}
+Merge: {{ $val.Parents|join ", "|bold }}
+{{ end }}
+
+    {{ $val.Message }}
+
+    {{ range $key, $value := $val.Metadata }}
+    {{ $key }} = {{ $value }}
+	{{ end -}}
+{{ end -}}
+{{ end }}
+`
+
 // logCmd represents the log command
 var logCmd = &cobra.Command{
 	Use:   "log [branch uri]",
@@ -30,34 +48,17 @@ var logCmd = &cobra.Command{
 		HasNArgs(1),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		client, err := getClient()
-		if err != nil {
-			return err
-		}
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
 		commits, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Refspec)
 		if err != nil {
-			return err
+			DieErr(err)
 		}
-
-		for _, commit := range commits {
-			printCommit(commit)
-		}
-		return nil
+		Write(commitsTemplate, commits)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(logCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// logCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// logCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

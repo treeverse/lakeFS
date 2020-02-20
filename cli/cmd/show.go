@@ -17,15 +17,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
-	"os"
-	"sort"
 	"strings"
-	"time"
-
-	"github.com/jedib0t/go-pretty/text"
-
-	"github.com/jedib0t/go-pretty/table"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 
@@ -42,7 +34,7 @@ var showCmd = &cobra.Command{
 		HasNArgs(1),
 		IsRepoURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
 		oneOf := []string{"commit"}
 		var found bool
@@ -54,7 +46,7 @@ var showCmd = &cobra.Command{
 			}
 			if len(value) > 0 {
 				if found {
-					return fmt.Errorf("please specify one of \"%s\"", strings.Join(oneOf, ", "))
+					DieFmt("please specify one of \"%s\"", strings.Join(oneOf, ", "))
 				}
 				found = true
 				showType = flagName
@@ -64,61 +56,14 @@ var showCmd = &cobra.Command{
 
 		switch showType {
 		case "commit":
-			return showCommit(u.Repository, identifier)
+			client := getClient()
+			commit, err := client.GetCommit(context.Background(), u.Repository, identifier)
+			if err != nil {
+				DieErr(err)
+			}
+			Write(commitsTemplate, []*models.Commit{commit})
 		}
-		return nil
 	},
-}
-
-func printCommit(commit *models.Commit) {
-	if len(commit.Parents) == 0 {
-		return // don't print epoch commit
-	}
-
-	os.Stdout.WriteString(text.FgYellow.Sprintf("commit %s\n", commit.ID))
-
-	if len(commit.Parents) > 1 {
-		fmt.Printf("Author: %s\nDate: %s\nparents: ",
-			commit.Committer,
-			time.Unix(commit.CreationDate, 0).Format(time.RFC1123Z))
-		os.Stdout.WriteString(text.FgYellow.Sprintf("%s\n", strings.Join(commit.Parents, ", ")))
-	} else {
-		fmt.Printf("Author: %s\nDate: %s\n",
-			commit.Committer,
-			time.Unix(commit.CreationDate, 0).Format(time.RFC1123Z))
-	}
-
-	if len(commit.Metadata) > 0 {
-		t := table.NewWriter()
-		t.SetOutputMirror(os.Stdout)
-		t.AppendHeader(table.Row{"Metadata Key", "Metadata Value"})
-		keys := make([]string, len(commit.Metadata))
-		var i int
-		for k := range commit.Metadata {
-			keys[i] = k
-			i++
-		}
-		sort.Strings(keys)
-		for _, key := range keys {
-			t.AppendRow([]interface{}{key, commit.Metadata[key]})
-		}
-		t.Render()
-	}
-
-	fmt.Printf("\n    %s\n\n", commit.Message)
-}
-
-func showCommit(repoId, identifier string) error {
-	client, err := getClient()
-	if err != nil {
-		return err
-	}
-	commit, err := client.GetCommit(context.Background(), repoId, identifier)
-	if err != nil {
-		return err
-	}
-	printCommit(commit)
-	return nil
 }
 
 func init() {

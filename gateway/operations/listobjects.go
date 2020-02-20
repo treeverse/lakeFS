@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/permissions"
 
@@ -56,7 +57,7 @@ func (controller *ListObjects) serializeEntries(refspec string, entries []*model
 			files = append(files, serde.Contents{
 				Key:          path.WithRefspec(entry.GetName(), refspec),
 				LastModified: serde.Timestamp(entry.GetTimestamp()),
-				ETag:         serde.ETag(entry.GetChecksum()),
+				ETag:         httputil.ETag(entry.GetChecksum()),
 				Size:         entry.GetSize(),
 				StorageClass: "STANDARD",
 			})
