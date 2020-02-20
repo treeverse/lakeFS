@@ -114,7 +114,7 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Repository '%s' created:\nbucket name: %s\ndefault branch: %s\ntimestamp: %d\n",
+		Fmt("Repository '%s' created:\nbucket name: %s\ndefault branch: %s\ntimestamp: %d\n",
 			repo.ID, repo.BucketName, repo.DefaultBranch, repo.CreationDate)
 	},
 }
@@ -139,7 +139,7 @@ var repoDeleteCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		fmt.Printf("Repository '%s' deleted:\n", u.Repository)
+		Fmt("Repository '%s' deleted:\n", u.Repository)
 	},
 }
 

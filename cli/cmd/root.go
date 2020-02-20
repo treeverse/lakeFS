@@ -13,37 +13,9 @@ import (
 	"github.com/spf13/viper"
 )
 
-/*
-commands:
-lakectl config init [--path]
-
-lakectl repo list
-lakectl repo create lakefs://myrepo
-lakectl repo delete lakefs://myrepo (confirm)
-lakectl repo show lakefs://myrepo
-
-lakectl branch list lakefs://myrepo
-lakectl branch create lakefs://myrepo@feature-new --source lakefs://myrepo@master
-lakectl branch show lakefs://myrepo@feature-new
-lakectl branch delete lakefs://myrepo@feature-new
-
-lakectl fs ls lakefs://myrepo@master/collections/ [--from "collections/file.csv"]
-lakectl fs stat lakefs://myrepo@master/collections/file.csv
-lakectl fs cat lakefs://myrepo@master/collections/file.csv
-lakectl fs upload /path/to/local/file lakefs://myrepo@master/collections/file.csv
-lakectl fs rm lakefs://myrepo@master/collections/file.csv [--recursive]
-
-lakectl commit lakefs://myrepo@master --message "commit message"
-lakectl diff lakefs://myrepo@master other-branch [--path /]
-lakectl checkout lakefs://myrepo@master/collections/file.csv
-lakectl reset lakefs://myrepo@master
-lakectl merge lakefs://myrepo@my-branch lakefs://myrepo@master
-*/
-
 const (
 	DefaultConfigFileDirectory = "~/.lakefs"
 	DefaultConfigFileBareName  = "config"
-	DefaultConfigFileName      = "config.yaml"
 	DefaultConfigFilePath      = "~/.lakefs/config.yaml"
 
 	ConfigAccessKeyId       = "credentials.access_key_id"
