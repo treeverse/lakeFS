@@ -2,13 +2,20 @@ package api
 
 import (
 	"bytes"
+	"io"
 	"net/http"
+	"time"
+
+	"github.com/treeverse/lakefs/ident"
+	pth "github.com/treeverse/lakefs/index/path"
+
+	"github.com/treeverse/lakefs/upload"
+
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 
 	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/treeverse/lakefs/index/merkle"
 
 	"github.com/treeverse/lakefs/block"
 
@@ -70,6 +77,9 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
 	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
+	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
+	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
+	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
@@ -495,6 +505,61 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	})
 }
 
+func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
+	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// read repo
+		repo, err := a.meta.GetRepo(params.RepositoryID)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		// read the FS entry
+		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+		// setup response
+		res := objects.NewGetObjectOK()
+		res.ETag = httputil.ETag(entry.GetChecksum())
+		res.LastModified = httputil.HeaderTimestamp(entry.GetTimestamp())
+
+		// get object for its blocks
+		obj, err := a.meta.ReadObject(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// build a response as a multi-reader
+		res.ContentLength = obj.GetSize()
+		blocks := obj.GetBlocks()
+		readers := make([]io.ReadCloser, len(blocks))
+		for i, block := range blocks {
+			reader, err := a.blockAdapter.Get(repo.GetBucketName(), block.GetAddress())
+			if err != nil {
+				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+			readers[i] = reader
+		}
+
+		// done
+		res.Payload = NewMultiReadCloser(readers)
+		return res
+	})
+}
+
 func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
@@ -553,37 +618,76 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	})
 }
 
-func serializeDiff(d merkle.Difference) *models.Diff {
-	var direction, pathType, diffType string
-	switch d.Direction {
-	case merkle.DifferenceDirectionLeft:
-		direction = models.DiffDirectionLEFT
-	case merkle.DifferenceDirectionConflict:
-		direction = models.DiffDirectionCONFLICT
-	case merkle.DifferenceDirectionRight:
-		direction = models.DiffDirectionRIGHT
-	}
+func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
+	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.WriteObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
 
-	switch d.PathType {
-	case model.Entry_TREE:
-		pathType = models.DiffPathTypeTREE
-	case model.Entry_OBJECT:
-		pathType = models.DiffPathTypeOBJECT
-	}
+		repo, err := a.meta.GetRepo(params.RepositoryID)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
 
-	switch d.Type {
-	case merkle.DifferenceTypeChanged:
-		diffType = models.DiffTypeCHANGED
-	case merkle.DifferenceTypeAdded:
-		diffType = models.DiffTypeADDED
-	case merkle.DifferenceTypeRemoved:
-		diffType = models.DiffTypeREMOVED
-	}
+		// read the content
+		blob, err := upload.ReadBlob(repo.GetBucketName(), params.Content, a.blockAdapter, upload.ObjectBlockSize)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
 
-	return &models.Diff{
-		Direction: direction,
-		Path:      d.Path,
-		PathType:  pathType,
-		Type:      diffType,
-	}
+		// write metadata
+		writeTime := time.Now()
+		obj := &model.Object{
+			Blocks:   blob.Blocks,
+			Checksum: blob.Checksum,
+			Size:     blob.Size,
+		}
+
+		p := pth.New(params.Path)
+
+		entry := &model.Entry{
+			Name:      p.BaseName(),
+			Address:   ident.Hash(obj),
+			Type:      model.Entry_OBJECT,
+			Timestamp: writeTime.Unix(),
+			Size:      blob.Size,
+			Checksum:  blob.Checksum,
+		}
+		err = a.meta.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+			Checksum:  blob.Checksum,
+			Mtime:     writeTime.Unix(),
+			Path:      params.Path,
+			PathType:  models.ObjectStatsPathTypeOBJECT,
+			SizeBytes: blob.Size,
+		})
+	})
+}
+
+func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
+	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DeleteObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.meta.DeleteObject(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewDeleteObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		return objects.NewDeleteObjectNoContent()
+	})
 }

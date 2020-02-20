@@ -17,6 +17,9 @@ package cmd
 
 import (
 	"context"
+	"io"
+	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/uri"
@@ -75,6 +78,75 @@ var fsListCmd = &cobra.Command{
 	},
 }
 
+var fsCatCmd = &cobra.Command{
+	Use:   "cat [path uri]",
+	Short: "dump content of object to stdout",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		pathURI := uri.Must(uri.Parse(args[0]))
+		_, err := client.GetObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path, os.Stdout)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
+var fsUploadCmd = &cobra.Command{
+	Use:   "upload [path uri]",
+	Short: "upload a local file to the specified URI",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		client := getClient()
+		pathURI := uri.Must(uri.Parse(args[0]))
+		source, _ := cmd.Flags().GetString("source")
+		var fp io.Reader
+		if strings.EqualFold(source, "-") {
+			// upload from stdin
+			fp = os.Stdin
+		} else {
+			file, err := os.Open(source)
+			if err != nil {
+				DieErr(err)
+			}
+			defer func() {
+				_ = file.Close()
+			}()
+			fp = file
+		}
+
+		// read
+		stat, err := client.UploadObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path, fp)
+		if err != nil {
+			DieErr(err)
+		}
+		Write(fsStatTemplate, stat)
+	},
+}
+
+var fsRmCmd = &cobra.Command{
+	Use:   "rm [path uri]",
+	Short: "delete object",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		pathURI := uri.Must(uri.Parse(args[0]))
+		client := getClient()
+		err := client.DeleteObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
 // fsCmd represents the fs command
 var fsCmd = &cobra.Command{
 	Use:   "fs",
@@ -85,4 +157,10 @@ func init() {
 	rootCmd.AddCommand(fsCmd)
 	fsCmd.AddCommand(fsStatCmd)
 	fsCmd.AddCommand(fsListCmd)
+	fsCmd.AddCommand(fsCatCmd)
+	fsCmd.AddCommand(fsUploadCmd)
+	fsCmd.AddCommand(fsRmCmd)
+
+	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
+	_ = fsUploadCmd.MarkFlagRequired("source")
 }

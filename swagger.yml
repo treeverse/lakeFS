@@ -552,6 +552,96 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repositoryId}/branches/{branchId}/objects:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
+    get:
+      tags:
+        - objects
+      operationId: getObject
+      summary: get object content
+      produces:
+        - application/octet-stream
+      responses:
+        200:
+          description: object content
+          schema:
+            type: file
+          headers:
+            Content-Length:
+              type: integer
+              format: int64
+            Last-Modified:
+              type: string
+            ETag:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - objects
+      operationId: uploadObject
+      summary: upload object content
+      parameters:
+        - in: formData
+          name: content
+          type: file
+          description: Object content to upload
+      consumes:
+        - multipart/form-data
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - objects
+      operationId: deleteObject
+      summary: delete object
+      responses:
+        204:
+          description: object deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories/{repositoryId}/branches/{branchId}/objects/stat:
     parameters:
       - in: path

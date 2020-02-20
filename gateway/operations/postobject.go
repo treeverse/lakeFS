@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
@@ -78,7 +79,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Branch, o.Path),
 		Bucket:   o.Repo.GetRepoId(),
 		Key:      o.Path,
-		ETag:     serde.ETag(obj.GetChecksum()),
+		ETag:     httputil.ETag(obj.GetChecksum()),
 	}, http.StatusOK)
 }
 

@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"io"
 	"net/url"
 
 	"github.com/treeverse/lakefs/api/gen/client/objects"
@@ -36,6 +37,9 @@ type Client interface {
 
 	StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error)
 	ListObjects(ctx context.Context, repoId, branchId, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
+	GetObject(ctx context.Context, repoId, branchId, path string, w io.Writer) (*objects.GetObjectOK, error)
+	UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error)
+	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error)
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
@@ -219,6 +223,44 @@ func (c *client) ListObjects(ctx context.Context, repoId, branchId, tree, after 
 		return nil, nil, err
 	}
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
+}
+
+func (c *client) GetObject(ctx context.Context, repoId, branchId, path string, writer io.Writer) (*objects.GetObjectOK, error) {
+	params := &objects.GetObjectParams{
+		BranchID:     branchId,
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}
+	resp, err := c.remote.Objects.GetObject(params, c.auth, writer)
+	if err != nil {
+		return nil, err
+	}
+	return resp, nil
+}
+
+func (c *client) UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error) {
+	resp, err := c.remote.Objects.UploadObject(&objects.UploadObjectParams{
+		BranchID:     branchId,
+		Content:      runtime.NamedReader("content", r),
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
+}
+
+func (c *client) DeleteObject(ctx context.Context, repoId, branchId, path string) error {
+	_, err := c.remote.Objects.DeleteObject(&objects.DeleteObjectParams{
+		BranchID:     branchId,
+		Path:         path,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	return err
 }
 
 func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
