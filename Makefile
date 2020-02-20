@@ -13,8 +13,8 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-SWAGGER=${DOCKER} run --rm -it -e GOPATH=${HOME}/go:/go -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger
-PROTOC=${DOCKER} run --rm -it -v $(CURDIR):/defs namely/protoc-all
+SWAGGER=${DOCKER} run --rm -i -e GOPATH=${HOME}/go:/go -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger
+PROTOC=${DOCKER} run --rm -i -v $(CURDIR):/defs namely/protoc-all
 
 BINARY_NAME=lakefs
 CLI_BINARY_NAME=lakectl
@@ -34,6 +34,9 @@ gen-api:  ## Run the go-swagger code generator (Docker required)
 	mkdir -p api/gen/
 	$(SWAGGER) generate client -A lakefs -f ./swagger.yml -P models.User -t api/gen
 	$(SWAGGER) generate server -A lakefs -f ./swagger.yml -P models.User -t api/gen --exclude-main
+
+validate-swagger:  ## Validate swagger.yaml
+	$(SWAGGER) validate  ./swagger.yml
 
 build: ## Download dependecies and Build the default binary
 		$(GOBUILD) -o $(BINARY_NAME) -v main.go
@@ -63,7 +66,7 @@ fmt-validator: ## Validate go format
 		echo Your code formating is according gofmt standards; \
 	fi
 
-checks-validator: fmt-validator ## Run all validation/linting steps
+checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps
 
 help: ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

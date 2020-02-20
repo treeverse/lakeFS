@@ -9,7 +9,7 @@ import (
 	"io/ioutil"
 	"testing"
 
-	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/upload"
 )
 
 const (
@@ -71,7 +71,7 @@ func TestReadBlob(t *testing.T) {
 			}
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
-			blob, err := operations.ReadBlob(bucketName, reader, adapter, ObjectBlockSize)
+			blob, err := upload.ReadBlob(bucketName, reader, adapter, ObjectBlockSize)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -88,3 +88,14 @@ func ValidationChain(funcs ...validationFunc) func(cmd *cobra.Command, args []st
 		return nil
 	}
 }
+
+func Or(funcs ...validationFunc) validationFunc {
+	return func(args []string) error {
+		for _, f := range funcs {
+			if err := f(args); err == nil {
+				return nil
+			}
+		}
+		return fmt.Errorf("no validation function passed OR condition")
+	}
+}

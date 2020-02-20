@@ -2,11 +2,20 @@ package api
 
 import (
 	"bytes"
+	"io"
 	"net/http"
+	"time"
+
+	"github.com/treeverse/lakefs/ident"
+	pth "github.com/treeverse/lakefs/index/path"
+
+	"github.com/treeverse/lakefs/upload"
+
+	"github.com/treeverse/lakefs/httputil"
+
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 
 	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/treeverse/lakefs/index/merkle"
 
 	"github.com/treeverse/lakefs/block"
 
@@ -65,6 +74,12 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.BranchesDiffBranchesHandler = a.BranchesDiffBranchesHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
+
+	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
+	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
+	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
+	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
+	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
@@ -463,37 +478,216 @@ func (a *Handler) BranchesDiffBranchesHandler() branches.DiffBranchesHandler {
 	})
 }
 
-func serializeDiff(d merkle.Difference) *models.Diff {
-	var direction, pathType, diffType string
-	switch d.Direction {
-	case merkle.DifferenceDirectionLeft:
-		direction = models.DiffDirectionLEFT
-	case merkle.DifferenceDirectionConflict:
-		direction = models.DiffDirectionCONFLICT
-	case merkle.DifferenceDirectionRight:
-		direction = models.DiffDirectionRIGHT
-	}
+func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
+	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
 
-	switch d.PathType {
-	case model.Entry_TREE:
-		pathType = models.DiffPathTypeTREE
-	case model.Entry_OBJECT:
-		pathType = models.DiffPathTypeOBJECT
-	}
+		// read metadata
+		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
+			}
+			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
 
-	switch d.Type {
-	case merkle.DifferenceTypeChanged:
-		diffType = models.DiffTypeCHANGED
-	case merkle.DifferenceTypeAdded:
-		diffType = models.DiffTypeADDED
-	case merkle.DifferenceTypeRemoved:
-		diffType = models.DiffTypeREMOVED
-	}
+		// serialize entry
+		return objects.NewStatObjectOK().WithPayload(&models.ObjectStats{
+			Checksum:  entry.GetChecksum(),
+			Mtime:     entry.GetTimestamp(),
+			Path:      params.Path,
+			PathType:  models.ObjectStatsPathTypeOBJECT,
+			SizeBytes: entry.GetSize(),
+		})
+	})
+}
 
-	return &models.Diff{
-		Direction: direction,
-		Path:      d.Path,
-		PathType:  pathType,
-		Type:      diffType,
-	}
+func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
+	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// read repo
+		repo, err := a.meta.GetRepo(params.RepositoryID)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		// read the FS entry
+		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+		// setup response
+		res := objects.NewGetObjectOK()
+		res.ETag = httputil.ETag(entry.GetChecksum())
+		res.LastModified = httputil.HeaderTimestamp(entry.GetTimestamp())
+
+		// get object for its blocks
+		obj, err := a.meta.ReadObject(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// build a response as a multi-reader
+		res.ContentLength = obj.GetSize()
+		blocks := obj.GetBlocks()
+		readers := make([]io.ReadCloser, len(blocks))
+		for i, block := range blocks {
+			reader, err := a.blockAdapter.Get(repo.GetBucketName(), block.GetAddress())
+			if err != nil {
+				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+			readers[i] = reader
+		}
+
+		// done
+		res.Payload = NewMultiReadCloser(readers)
+		return res
+	})
+}
+
+func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
+	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// amount
+		after := ""
+		amount := MaxResultsPerPage
+		if params.Amount != nil {
+			amount = swag.Int64Value(params.Amount)
+		}
+
+		// paginate after
+		if params.After != nil {
+			after = swag.StringValue(params.After)
+		}
+
+		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.BranchID, swag.StringValue(params.Tree), after, int(amount), false)
+		if err != nil {
+			return objects.NewListObjectsDefault(http.StatusInternalServerError).
+				WithPayload(responseError("received error while listing objects"))
+		}
+
+		objList := make([]*models.ObjectStats, len(res))
+		var lastId string
+		for i, entry := range res {
+			typ := models.ObjectStatsPathTypeTREE
+			if entry.GetType() == model.Entry_OBJECT {
+				typ = models.ObjectStatsPathTypeOBJECT
+			}
+
+			objList[i] = &models.ObjectStats{
+				Checksum:  entry.GetChecksum(),
+				Mtime:     entry.GetTimestamp(),
+				Path:      entry.GetName(),
+				PathType:  typ,
+				SizeBytes: entry.GetSize(),
+			}
+			lastId = entry.GetName()
+		}
+		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
+			Pagination: &models.Pagination{
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(objList))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
+			Results: objList,
+		})
+
+		if hasMore {
+			returnValue.Payload.Pagination.NextOffset = lastId
+		}
+		return returnValue
+	})
+}
+
+func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
+	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.WriteObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		repo, err := a.meta.GetRepo(params.RepositoryID)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		// read the content
+		blob, err := upload.ReadBlob(repo.GetBucketName(), params.Content, a.blockAdapter, upload.ObjectBlockSize)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// write metadata
+		writeTime := time.Now()
+		obj := &model.Object{
+			Blocks:   blob.Blocks,
+			Checksum: blob.Checksum,
+			Size:     blob.Size,
+		}
+
+		p := pth.New(params.Path)
+
+		entry := &model.Entry{
+			Name:      p.BaseName(),
+			Address:   ident.Hash(obj),
+			Type:      model.Entry_OBJECT,
+			Timestamp: writeTime.Unix(),
+			Size:      blob.Size,
+			Checksum:  blob.Checksum,
+		}
+		err = a.meta.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+			Checksum:  blob.Checksum,
+			Mtime:     writeTime.Unix(),
+			Path:      params.Path,
+			PathType:  models.ObjectStatsPathTypeOBJECT,
+			SizeBytes: blob.Size,
+		})
+	})
+}
+
+func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
+	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DeleteObject(params.RepositoryID))
+		if err != nil {
+			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.meta.DeleteObject(params.RepositoryID, params.BranchID, params.Path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
+			} else {
+				return objects.NewDeleteObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		return objects.NewDeleteObjectNoContent()
+	})
 }
