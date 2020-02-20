@@ -39,6 +39,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	commit, err := kvIndex.Commit(repo.RepoId, repo.DefaultBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -99,7 +100,6 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 		}
 	}
 
-	//test no commit
 }
 
 func TestKVIndex_RevertPath(t *testing.T) {
@@ -202,11 +202,13 @@ func TestKVIndex_RevertPath(t *testing.T) {
 					if err != nil {
 						t.Fatal(err)
 					}
+				default:
+					t.Fatal(xerrors.Errorf("unknown command"))
 				}
-				t.Fatal(xerrors.Errorf("unknown command"))
+
 			}
-			for _, path := range tc.ExpectExisting {
-				_, err := kvIndex.ReadEntry(repo.RepoId, repo.DefaultBranch, path)
+			for _, entryPath := range tc.ExpectExisting {
+				_, err := kvIndex.ReadEntry(repo.RepoId, repo.DefaultBranch, entryPath)
 				if err != nil {
 					if xerrors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
@@ -215,18 +217,12 @@ func TestKVIndex_RevertPath(t *testing.T) {
 					}
 				}
 			}
-			for _, path := range tc.ExpectMissing {
-				_, err := kvIndex.ReadEntry(repo.RepoId, repo.DefaultBranch, path)
+			for _, entryPath := range tc.ExpectMissing {
+				_, err := kvIndex.ReadEntry(repo.RepoId, repo.DefaultBranch, entryPath)
 				if !xerrors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
 			}
 		})
 	}
-
-	// test non existing path
-
-	// test no branch
-
-	//
 }
