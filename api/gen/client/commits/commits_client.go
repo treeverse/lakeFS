@@ -27,6 +27,8 @@ type Client struct {
 type ClientService interface {
 	Commit(params *CommitParams, authInfo runtime.ClientAuthInfoWriter) (*CommitCreated, error)
 
+	GetBranchCommitLog(params *GetBranchCommitLogParams, authInfo runtime.ClientAuthInfoWriter) (*GetBranchCommitLogOK, error)
+
 	GetCommit(params *GetCommitParams, authInfo runtime.ClientAuthInfoWriter) (*GetCommitOK, error)
 
 	SetTransport(transport runtime.ClientTransport)
@@ -63,6 +65,40 @@ func (a *Client) Commit(params *CommitParams, authInfo runtime.ClientAuthInfoWri
 	}
 	// unexpected success response
 	unexpectedSuccess := result.(*CommitDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
+}
+
+/*
+  GetBranchCommitLog gets commit log for branch
+*/
+func (a *Client) GetBranchCommitLog(params *GetBranchCommitLogParams, authInfo runtime.ClientAuthInfoWriter) (*GetBranchCommitLogOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewGetBranchCommitLogParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "getBranchCommitLog",
+		Method:             "GET",
+		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/commits",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &GetBranchCommitLogReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*GetBranchCommitLogOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*GetBranchCommitLogDefault)
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 

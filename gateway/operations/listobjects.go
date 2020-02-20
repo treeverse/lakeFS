@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/db"
@@ -25,12 +27,8 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *ListObjects) GetPermission() permissions.Permission {
-	return permissions.ReadRepo
+func (controller *ListObjects) Action(req *http.Request) permissions.Action {
+	return permissions.ListObjects(utils.GetRepo(req))
 }
 
 func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
@@ -67,9 +65,18 @@ func (controller *ListObjects) serializeEntries(refspec string, entries []*model
 	return dirs, files, lastKey
 }
 
+func (controller *ListObjects) serializeBranches(branches []*model.Branch) ([]serde.CommonPrefixes, string) {
+	dirs := make([]serde.CommonPrefixes, 0)
+	var lastKey string
+	for _, branch := range branches {
+		lastKey = branch.GetName()
+		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRefspec("", branch.GetName())})
+	}
+	return dirs, lastKey
+}
+
 func (controller *ListObjects) ListV2(o *RepoOperation) {
 	params := o.Request.URL.Query()
-	prefix := params.Get("prefix")
 	delimiter := params.Get("delimiter")
 	startAfter := params.Get("start-after")
 	continuationToken := params.Get("continuation-token")
@@ -104,29 +111,52 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	var refspec string
 
-	if len(prefix) == 0 {
+	// should we list branches?
+	prefix, err := path.ResolvePath(params.Get("prefix"))
+	if err != nil {
+		o.Log().
+			WithError(err).
+			WithField("path", params.Get("prefix")).
+			Error("could not resolve path for prefix")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		return
+	}
+
+	if !prefix.WithPath {
 		// list branches then.
-		branches, _, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1, "")
+		branchPrefix := prefix.Refspec // TODO: same prefix logic also in V1!!!!!
+		o.Log().WithField("prefix", branchPrefix).Debug("listing branches with prefix")
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
-		results = make([]*model.Entry, len(branches))
-		for i, branch := range branches {
-			results[i] = &model.Entry{
-				Name:    branch.GetName(),
-				Address: branch.GetName(),
-				Type:    model.Entry_TREE,
-			}
+		// return branch response
+		dirs, lastKey := controller.serializeBranches(branches)
+		resp := serde.ListObjectsV2Output{
+			Name:           o.Repo.GetRepoId(),
+			Prefix:         params.Get("prefix"),
+			Delimiter:      delimiter,
+			KeyCount:       len(dirs),
+			MaxKeys:        maxKeys,
+			CommonPrefixes: dirs,
+			Contents:       make([]serde.Contents, 0),
 		}
+
+		if len(continuationToken) > 0 && strings.EqualFold(continuationToken, fromStr) {
+			resp.ContinuationToken = continuationToken
+		}
+
+		if hasMore {
+			resp.IsTruncated = true
+			resp.NextContinuationToken = lastKey
+		}
+
+		o.EncodeResponse(resp, http.StatusOK)
+		return
+
 	} else {
-		prefix, err := path.ResolvePath(params.Get("prefix"))
-		if err != nil {
-			o.Log().WithError(err).Error("could not list branches")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
-			return
-		}
 		refspec = prefix.Refspec
 		if len(fromStr) > 0 {
 			from, err = path.ResolvePath(fromStr)
@@ -164,7 +194,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	resp := serde.ListObjectsV2Output{
 		Name:           o.Repo.GetRepoId(),
-		Prefix:         prefix,
+		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		KeyCount:       len(results),
 		MaxKeys:        maxKeys,
@@ -205,23 +235,49 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	hasMore := false
 
 	var refspec string
-	if len(params.Get("prefix")) == 0 {
+	// should we list branches?
+	prefix, err := path.ResolvePath(params.Get("prefix"))
+	if err != nil {
+		o.Log().
+			WithError(err).
+			WithField("path", params.Get("prefix")).
+			Error("could not resolve path for prefix")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		return
+	}
+
+	if !prefix.WithPath {
 		// list branches then.
-		branches, _, err := o.Index.ListBranches(o.Repo.GetRepoId(), -1, "")
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), prefix.Refspec, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
-		results = make([]*model.Entry, len(branches))
-		for i, branch := range branches {
-			results[i] = &model.Entry{
-				Name:    branch.GetName(),
-				Address: branch.GetName(),
-				Type:    model.Entry_TREE,
+		// return branch response
+		dirs, lastKey := controller.serializeBranches(branches)
+		resp := serde.ListBucketResult{
+			Name:           o.Repo.GetRepoId(),
+			Prefix:         params.Get("prefix"),
+			Delimiter:      delimiter,
+			Marker:         params.Get("marker"),
+			KeyCount:       len(results),
+			MaxKeys:        maxKeys,
+			CommonPrefixes: dirs,
+			Contents:       make([]serde.Contents, 0),
+		}
+
+		if hasMore {
+			resp.IsTruncated = true
+			if !descend {
+				// NextMarker is only set if a delimiter exists
+				resp.NextMarker = lastKey
 			}
 		}
+
+		o.EncodeResponse(resp, http.StatusOK)
+		return
 	} else {
 		prefix, err := path.ResolvePath(params.Get("prefix"))
 		if err != nil {

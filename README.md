@@ -48,29 +48,36 @@ The gateway service is meant to emulate the [API exposed by S3](https://docs.aws
 
 The following methods should be implemented:
 
-1. Identity and authorization information extraction from any request (support SIGv2 and SIGv4)
-2. Support for S3 REST API semantics
-3. Bucket operations:
-   1. HEAD bucket (just 200 if exists and permissions allow access)
-4. Object operations:
-   1. DELETE Object
-   2. DELETE Multiple Objects
-   3. GET Object
-      1. Support for caching headers, etag
-      2. Support for range requests
-      3. No support for SSE
-      4. No support for Select operations
-   4. HEAD Object
-   5. PUT Object
-      1. No support for storage classes
-      2. Support multi-part uploads
-      3. No object level tagging
-   6. Abort Multipart Upload
-   7. Complete Multipart Upload
-   8. Initiate Multipart Upload
-   9. List Parts
-   10. Upload Part
-   11. Upload Part - Copy
+1. Identity and authorization
+    1. [SIGv2](https://docs.aws.amazon.com/general/latest/gr/signature-version-2.html)
+    2. [SIGv4](https://docs.aws.amazon.com/general/latest/gr/signature-version-4.html)
+2. Bucket operations:
+    1. [HEAD bucket](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadBucket.html) (just 200 if exists and permissions allow access)
+3. Object operations:
+    1. [DeleteObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObject.html)
+    2. [DeleteObjects](https://docs.aws.amazon.com/AmazonS3/latest/API/API_DeleteObjects.html)
+    3. [GetObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_GetObject.html)
+        1. Support for caching headers, ETag
+        2. Support for range requests
+        3. *No* support for SSE
+        4. *No* support for Select operations
+    4. [HeadObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_HeadObject.html)
+    5. [PutObject](https://docs.aws.amazon.com/AmazonS3/latest/API/API_PutObject.html)
+        1. Support multi-part uploads (see below)
+        2. *No* support for storage classes
+        3. *No* object level tagging
+4. Object Listing:
+    1. [ListObjects](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjects.html)
+    2. [ListObjectsV2](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html)
+    3. [Delimiter support](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListObjectsV2.html#API_ListObjectsV2_RequestSyntax) (for `"/"` only)
+5. Multipart Uploads:
+    1. [AbortMultipartUpload](https://docs.aws.amazon.com/AmazonS3/latest/API/API_AbortMultipartUpload.html)
+    2. [CompleteMultipartUpload](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CompleteMultipartUpload.html)
+    3. [CreateMultipartUpload](https://docs.aws.amazon.com/AmazonS3/latest/API/API_CreateMultipartUpload.html)
+    4. [ListParts](https://docs.aws.amazon.com/AmazonS3/latest/API/API_ListParts.html)
+    5. [Upload Part](https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPart.html)
+    6. [UploadPartCopy](https://docs.aws.amazon.com/AmazonS3/latest/API/API_UploadPartCopy.html)
+ 
 
 
 ## Block Adapter (S3)
@@ -82,15 +89,10 @@ package block
 
 import "io"
 
-type ReadAtCloser interface {
-    io.Reader
-	io.ReaderAt
-	io.Closer
-}
-
 type Adapter interface {
-	Put(identifier string) (io.WriteCloser, error)
-	Get(identifier string) (ReadAtCloser, error)
+	Put(repo string, identifier string, reader io.ReadSeeker) error
+	Get(repo string, identifier string) (io.ReadCloser, error)
+	GetRange(repo string, identifier string, startPosition int64, endPosition int64) (io.ReadCloser, error)
 }
 ```
 

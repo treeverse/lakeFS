@@ -4,6 +4,10 @@ import (
 	"bytes"
 	"net/http"
 
+	"github.com/treeverse/lakefs/index/model"
+
+	"github.com/treeverse/lakefs/index/merkle"
+
 	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
@@ -17,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/permissions"
 	"golang.org/x/xerrors"
@@ -59,15 +62,19 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.CommitsCommitHandler = a.CommitHandler()
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
+	api.CommitsGetBranchCommitLogHandler = a.CommitsGetBranchCommitLogHandler()
+
+	api.BranchesDiffBranchesHandler = a.BranchesDiffBranchesHandler()
+	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
 }
 
-func (a *Handler) authorize(user *models.User, perm permissions.Permission, arn string) error {
-	return authorize(a.auth, user, perm, arn)
+func (a *Handler) authorize(user *models.User, action permissions.Action) error {
+	return authorize(a.auth, user, action)
 }
 
 func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
 	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.ListRepos())
 		if err != nil {
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -119,7 +126,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 
 func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.GetRepo(params.RepositoryID))
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -145,7 +152,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 
 func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.GetCommit(params.RepositoryID))
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -160,7 +167,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		return commits.NewGetCommitOK().WithPayload(&models.Commit{
 			Committer:    commit.GetCommitter(),
 			CreationDate: commit.GetTimestamp(),
-			ID:           ident.Hash(commit),
+			ID:           commit.GetAddress(),
 			Message:      commit.GetMessage(),
 			Metadata:     commit.GetMetadata(),
 			Parents:      commit.GetParents(),
@@ -170,7 +177,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 
 func (a *Handler) CommitHandler() commits.CommitHandler {
 	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.Commit(params.RepositoryID))
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -181,11 +188,52 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		return commits.NewCommitCreated().WithPayload(&models.Commit{
 			Committer:    commit.GetCommitter(),
 			CreationDate: commit.GetTimestamp(),
-			ID:           ident.Hash(commit),
+			ID:           commit.GetAddress(),
 			Message:      commit.GetMessage(),
 			Metadata:     commit.GetMetadata(),
 			Parents:      commit.GetParents(),
 		})
+	})
+}
+
+func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
+	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetCommit(params.RepositoryID))
+		if err != nil {
+			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		// read branch
+		branch, err := a.meta.GetBranch(params.RepositoryID, params.BranchID)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
+			}
+			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// get commit log
+		commitLog, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit())
+		if err != nil {
+			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		serializedCommits := make([]*models.Commit, len(commitLog))
+		for i, commit := range commitLog {
+			serializedCommits[i] = &models.Commit{
+				Committer:    commit.GetCommitter(),
+				CreationDate: commit.GetTimestamp(),
+				ID:           commit.GetAddress(),
+				Message:      commit.GetMessage(),
+				Metadata:     commit.GetMetadata(),
+				Parents:      commit.GetParents(),
+			}
+		}
+
+		return commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
+			Results: serializedCommits,
+		})
+
 	})
 }
 
@@ -210,7 +258,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 
 func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
 	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.CreateRepo())
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -243,7 +291,7 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 
 func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
 	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn("*"))
+		err := a.authorize(user, permissions.DeleteRepo(params.RepositoryID))
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -263,7 +311,7 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 
 func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.ListBranches(params.RepositoryID))
 		if err != nil {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -280,7 +328,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 			after = swag.StringValue(params.After)
 		}
 
-		res, hasMore, err := a.meta.ListBranches(params.RepositoryID, int(amount), after)
+		res, hasMore, err := a.meta.ListBranchesByPrefix(params.RepositoryID, "", int(amount), after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches"))
@@ -314,7 +362,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 
 func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -338,7 +386,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 
 func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.CreateBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -354,7 +402,7 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 
 func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.DeleteBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -372,6 +420,84 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	})
 }
 
+func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
+	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
+		if err != nil {
+			return branches.NewDiffBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		diff, err := a.meta.DiffWorkspace(params.RepositoryID, params.BranchID)
+		if err != nil {
+			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
+				WithPayload(responseError("could not diff branches"))
+		}
+
+		results := make([]*models.Diff, len(diff))
+		for i, d := range diff {
+			results[i] = serializeDiff(d)
+		}
+
+		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{Results: results})
+	})
+}
+
+func (a *Handler) BranchesDiffBranchesHandler() branches.DiffBranchesHandler {
+	return branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
+		if err != nil {
+			return branches.NewDiffBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		diff, err := a.meta.Diff(params.RepositoryID, params.BranchID, params.OtherBranchID)
+		if err != nil {
+			return branches.NewDiffBranchesDefault(http.StatusInternalServerError).
+				WithPayload(responseError("could not diff branches"))
+		}
+
+		results := make([]*models.Diff, len(diff))
+		for i, d := range diff {
+			results[i] = serializeDiff(d)
+		}
+
+		return branches.NewDiffBranchesOK().WithPayload(&branches.DiffBranchesOKBody{Results: results})
+	})
+}
+
+func serializeDiff(d merkle.Difference) *models.Diff {
+	var direction, pathType, diffType string
+	switch d.Direction {
+	case merkle.DifferenceDirectionLeft:
+		direction = models.DiffDirectionLEFT
+	case merkle.DifferenceDirectionConflict:
+		direction = models.DiffDirectionCONFLICT
+	case merkle.DifferenceDirectionRight:
+		direction = models.DiffDirectionRIGHT
+	}
+
+	switch d.PathType {
+	case model.Entry_TREE:
+		pathType = models.DiffPathTypeTREE
+	case model.Entry_OBJECT:
+		pathType = models.DiffPathTypeOBJECT
+	}
+
+	switch d.Type {
+	case merkle.DifferenceTypeChanged:
+		diffType = models.DiffTypeCHANGED
+	case merkle.DifferenceTypeAdded:
+		diffType = models.DiffTypeADDED
+	case merkle.DifferenceTypeRemoved:
+		diffType = models.DiffTypeREMOVED
+	}
+
+	return &models.Diff{
+		Direction: direction,
+		Path:      d.Path,
+		PathType:  pathType,
+		Type:      diffType,
+	}
+}
 func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
@@ -404,3 +530,4 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		return branches.NewRevertBranchNoContent()
 	})
 }
+

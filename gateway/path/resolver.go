@@ -25,15 +25,17 @@ const (
 )
 
 var (
-	EncodedPathRe    = regexp.MustCompile(fmt.Sprintf("/?%s/%s", RefspecReMatch, PathReMatch))
-	EncodedAbsPathRe = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefspecReMatch, PathReMatch))
+	EncodedPathRe        = regexp.MustCompile(fmt.Sprintf("/?%s/%s", RefspecReMatch, PathReMatch))
+	EncodedPathRefspecRe = regexp.MustCompile(fmt.Sprintf("/?%s", RefspecReMatch))
+	EncodedAbsPathRe     = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefspecReMatch, PathReMatch))
 
 	ErrPathMalformed = xerrors.New("encoded path is malformed")
 )
 
 type ResolvedPath struct {
-	Path    string
-	Refspec string
+	Path     string
+	Refspec  string
+	WithPath bool
 }
 
 type ResolvedAbsolutePath struct {
@@ -61,12 +63,27 @@ func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 }
 
 func ResolvePath(encodedPath string) (ResolvedPath, error) {
+	result := make(map[string]string)
 	r := ResolvedPath{}
+	if len(encodedPath) == 0 {
+		return r, nil // empty path.
+	}
 	match := EncodedPathRe.FindStringSubmatch(encodedPath)
 	if len(match) == 0 {
+		// attempt to see if this is a refspec only
+		match = EncodedPathRefspecRe.FindStringSubmatch(encodedPath)
+		if len(match) > 0 {
+			for i, name := range EncodedPathRefspecRe.SubexpNames() {
+				if i != 0 && name != "" {
+					result[name] = match[i]
+				}
+			}
+			r.Refspec = result["refspec"]
+			return r, nil
+		}
+		r.WithPath = false
 		return r, ErrPathMalformed
 	}
-	result := make(map[string]string)
 	for i, name := range EncodedPathRe.SubexpNames() {
 		if i != 0 && name != "" {
 			result[name] = match[i]
@@ -74,6 +91,7 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 	}
 	r.Path = result["path"]
 	r.Refspec = result["refspec"]
+	r.WithPath = true
 	return r, nil
 }
 
