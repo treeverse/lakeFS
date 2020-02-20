@@ -150,7 +150,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(unsupportedOperationHandler())
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission permissions.Permission, arn string) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -205,12 +205,12 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	// interpolate arn string
-	arn = auth.ResolveARN(arn, mux.Vars(request))
+	arn := action.Arn
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserID:     op.SubjectId,
-		Permission: permission,
+		Permission: action.Permission,
 		SubjectARN: arn,
 	})
 	if err != nil {
@@ -232,7 +232,8 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		action := handler.Action(request)
+		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -244,7 +245,8 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		action := handler.Action(request)
+		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -270,7 +272,8 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		action := handler.Action(request)
+		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}

@@ -67,6 +67,15 @@ func HasNArgs(n int) validationFunc {
 	}
 }
 
+func HasRangeArgs(n1, n2 int) validationFunc {
+	return func(args []string) error {
+		if len(args) < n1 || len(args) > n2 {
+			return fmt.Errorf("expected %d-%d arguments", n1, n2)
+		}
+		return nil
+	}
+}
+
 type validationFunc func(args []string) error
 
 func ValidationChain(funcs ...validationFunc) func(cmd *cobra.Command, args []string) error {

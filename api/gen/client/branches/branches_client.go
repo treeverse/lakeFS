@@ -29,6 +29,10 @@ type ClientService interface {
 
 	DeleteBranch(params *DeleteBranchParams, authInfo runtime.ClientAuthInfoWriter) (*DeleteBranchNoContent, error)
 
+	DiffBranch(params *DiffBranchParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchOK, error)
+
+	DiffBranches(params *DiffBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchesOK, error)
+
 	GetBranch(params *GetBranchParams, authInfo runtime.ClientAuthInfoWriter) (*GetBranchOK, error)
 
 	ListBranches(params *ListBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*ListBranchesOK, error)
@@ -103,6 +107,74 @@ func (a *Client) DeleteBranch(params *DeleteBranchParams, authInfo runtime.Clien
 	}
 	// unexpected success response
 	unexpectedSuccess := result.(*DeleteBranchDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
+}
+
+/*
+  DiffBranch diffs branch
+*/
+func (a *Client) DiffBranch(params *DiffBranchParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDiffBranchParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "diffBranch",
+		Method:             "GET",
+		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/diff",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &DiffBranchReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*DiffBranchOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*DiffBranchDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
+}
+
+/*
+  DiffBranches diffs branches
+*/
+func (a *Client) DiffBranches(params *DiffBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchesOK, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewDiffBranchesParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "diffBranches",
+		Method:             "GET",
+		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &DiffBranchesReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*DiffBranchesOK)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*DiffBranchesDefault)
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 

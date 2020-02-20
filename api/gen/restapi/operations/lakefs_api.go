@@ -58,8 +58,17 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		RepositoriesDeleteRepositoryHandler: repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.DeleteRepository has not yet been implemented")
 		}),
+		BranchesDiffBranchHandler: branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.DiffBranch has not yet been implemented")
+		}),
+		BranchesDiffBranchesHandler: branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.DiffBranches has not yet been implemented")
+		}),
 		BranchesGetBranchHandler: branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.GetBranch has not yet been implemented")
+		}),
+		CommitsGetBranchCommitLogHandler: commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation commits.GetBranchCommitLog has not yet been implemented")
 		}),
 		CommitsGetCommitHandler: commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation commits.GetCommit has not yet been implemented")
@@ -130,8 +139,14 @@ type LakefsAPI struct {
 	BranchesDeleteBranchHandler branches.DeleteBranchHandler
 	// RepositoriesDeleteRepositoryHandler sets the operation handler for the delete repository operation
 	RepositoriesDeleteRepositoryHandler repositories.DeleteRepositoryHandler
+	// BranchesDiffBranchHandler sets the operation handler for the diff branch operation
+	BranchesDiffBranchHandler branches.DiffBranchHandler
+	// BranchesDiffBranchesHandler sets the operation handler for the diff branches operation
+	BranchesDiffBranchesHandler branches.DiffBranchesHandler
 	// BranchesGetBranchHandler sets the operation handler for the get branch operation
 	BranchesGetBranchHandler branches.GetBranchHandler
+	// CommitsGetBranchCommitLogHandler sets the operation handler for the get branch commit log operation
+	CommitsGetBranchCommitLogHandler commits.GetBranchCommitLogHandler
 	// CommitsGetCommitHandler sets the operation handler for the get commit operation
 	CommitsGetCommitHandler commits.GetCommitHandler
 	// RepositoriesGetRepositoryHandler sets the operation handler for the get repository operation
@@ -232,8 +247,20 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "Repositories.DeleteRepositoryHandler")
 	}
 
+	if o.BranchesDiffBranchHandler == nil {
+		unregistered = append(unregistered, "Branches.DiffBranchHandler")
+	}
+
+	if o.BranchesDiffBranchesHandler == nil {
+		unregistered = append(unregistered, "Branches.DiffBranchesHandler")
+	}
+
 	if o.BranchesGetBranchHandler == nil {
 		unregistered = append(unregistered, "Branches.GetBranchHandler")
+	}
+
+	if o.CommitsGetBranchCommitLogHandler == nil {
+		unregistered = append(unregistered, "Commits.GetBranchCommitLogHandler")
 	}
 
 	if o.CommitsGetCommitHandler == nil {
@@ -387,7 +414,22 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/diff"] = branches.NewDiffBranch(o.context, o.BranchesDiffBranchHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}"] = branches.NewDiffBranches(o.context, o.BranchesDiffBranchesHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
 	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}"] = branches.NewGetBranch(o.context, o.BranchesGetBranchHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/commits"] = commits.NewGetBranchCommitLog(o.context, o.CommitsGetBranchCommitLogHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)

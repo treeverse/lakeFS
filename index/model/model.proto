@@ -41,12 +41,13 @@ message WorkspaceEntry {
 }
 
 message Commit {
-    string tree = 1;
-    repeated string parents = 2;
-    string committer = 3;
-    string message = 4;
-    int64 timestamp = 5;
-    map<string, string> metadata = 6;
+    string address = 1;
+    string tree = 2;
+    repeated string parents = 3;
+    string committer = 4;
+    string message = 5;
+    int64 timestamp = 6;
+    map<string, string> metadata = 7;
 }
 
 message Branch {

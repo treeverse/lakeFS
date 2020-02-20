@@ -71,14 +71,22 @@ var showCmd = &cobra.Command{
 }
 
 func printCommit(commit *models.Commit) {
+	if len(commit.Parents) == 0 {
+		return // don't print epoch commit
+	}
 
 	os.Stdout.WriteString(text.FgYellow.Sprintf("commit %s\n", commit.ID))
 
-	fmt.Printf("Author: %s\nDate: %s\nparents: ",
-		commit.Committer,
-		time.Unix(commit.CreationDate, 0).Format(time.RFC1123Z))
-
-	os.Stdout.WriteString(text.FgYellow.Sprintf("%s\n", strings.Join(commit.Parents, ", ")))
+	if len(commit.Parents) > 1 {
+		fmt.Printf("Author: %s\nDate: %s\nparents: ",
+			commit.Committer,
+			time.Unix(commit.CreationDate, 0).Format(time.RFC1123Z))
+		os.Stdout.WriteString(text.FgYellow.Sprintf("%s\n", strings.Join(commit.Parents, ", ")))
+	} else {
+		fmt.Printf("Author: %s\nDate: %s\n",
+			commit.Committer,
+			time.Unix(commit.CreationDate, 0).Format(time.RFC1123Z))
+	}
 
 	if len(commit.Metadata) > 0 {
 		t := table.NewWriter()
@@ -97,7 +105,7 @@ func printCommit(commit *models.Commit) {
 		t.Render()
 	}
 
-	fmt.Printf("\n\n\t%s\n\n", commit.Message)
+	fmt.Printf("\n    %s\n\n", commit.Message)
 }
 
 func showCommit(repoId, identifier string) error {
