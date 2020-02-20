@@ -500,7 +500,7 @@ func serializeDiff(d merkle.Difference) *models.Diff {
 }
 func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageRepos, repoArn(params.RepositoryID))
+		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
 		if err != nil {
 			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -530,4 +530,3 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		return branches.NewRevertBranchNoContent()
 	})
 }
-

@@ -44,7 +44,6 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
-	Checkout(repoId, branch, commit string) error
 	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
 	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
 	RevertCommit(repoId, branch, commit string) error
