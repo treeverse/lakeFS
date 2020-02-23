@@ -343,7 +343,6 @@ func (a *V4Authenticator) String() string {
 
 func (a *V4Authenticator) Verify(creds Credentials, bareDomain string) error {
 	err := V4Verify(a.ctx, creds, a.request)
-	//log.WithError(err).Info("sigV4 result ")
 	return err
 }
 
