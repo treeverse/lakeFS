@@ -23,7 +23,7 @@ type Command int
 const (
 	write Command = iota
 	commit
-	revertPath
+	revertTree
 	revertObj
 )
 
@@ -34,6 +34,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	kvIndex := index.NewKVIndex(kv)
 	firstEntry := &model.Entry{
 		Name: "bar",
+		Type: model.Entry_OBJECT,
 	}
 	err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "", firstEntry)
 	if err != nil {
@@ -51,6 +52,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	}
 	secondEntry := &model.Entry{
 		Name: "foo",
+		Type: model.Entry_OBJECT,
 	}
 	// commit second entry to default branch
 	err = kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "", secondEntry)
@@ -113,6 +115,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 		Actions        []Action
 		ExpectExisting []string
 		ExpectMissing  []string
+		ExpectedError  error
 	}{
 		{
 			"commit and revert",
@@ -120,11 +123,12 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				{write, "a/foo"},
 				{commit, ""},
 				{write, "a/bar"},
-				{revertPath, "a/"},
+				{revertTree, "a/"},
 			},
 
 			[]string{"a/foo"},
 			[]string{"a/bar"},
+			nil,
 		},
 		{
 			"reset - commit and revert on root",
@@ -132,10 +136,11 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				{write, "foo"},
 				{commit, ""},
 				{write, "bar"},
-				{revertPath, ""},
+				{revertTree, ""},
 			},
 			[]string{"foo"},
 			[]string{"bar"},
+			nil,
 		},
 		{
 			"only revert",
@@ -143,20 +148,22 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				{write, "foo"},
 				{write, "a/foo"},
 				{write, "a/bar"},
-				{revertPath, "a/"},
+				{revertTree, "a/"},
 			},
 			[]string{"foo"},
 			[]string{"a/bar", "a/foo"},
+			nil,
 		},
 		{
 			"only revert different path",
 			[]Action{
 				{write, "a/foo"},
 				{write, "b/bar"},
-				{revertPath, "a/"},
+				{revertTree, "a/"},
 			},
 			[]string{"b/bar"},
 			[]string{"a/bar", "a/foo"},
+			nil,
 		},
 		{
 			"revert on Object",
@@ -167,6 +174,27 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			},
 			[]string{"a/bar"},
 			[]string{"a/foo"},
+			nil,
+		},
+		{
+			"revert non existing object",
+			[]Action{
+				{write, "a/foo"},
+				{revertObj, "a/bar"},
+			},
+			nil,
+			nil,
+			db.ErrNotFound,
+		},
+		{
+			"revert non existing tree",
+			[]Action{
+				{write, "a/foo"},
+				{revertTree, "b/"},
+			},
+			nil,
+			nil,
+			db.ErrNotFound,
 		},
 	}
 
@@ -176,36 +204,36 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			defer closer()
 
 			kvIndex := index.NewKVIndex(kv)
+			var err error
 			for _, action := range tc.Actions {
 				switch action.command {
 				case write:
-					err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, action.path, &model.Entry{
+					err = kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, action.path, &model.Entry{
 						Name: path.New(action.path).Basename(),
 						Type: model.Entry_OBJECT,
 					})
-					if err != nil {
-						t.Fatal(err)
-					}
-				case commit:
-					_, err := kvIndex.Commit(repo.RepoId, repo.DefaultBranch, "test msg", "committer", nil)
-					if err != nil {
-						t.Fatal(err)
-					}
 
-				case revertPath:
-					err := kvIndex.RevertPath(repo.RepoId, repo.DefaultBranch, action.path)
-					if err != nil {
-						t.Fatal(err)
-					}
+				case commit:
+					_, err = kvIndex.Commit(repo.RepoId, repo.DefaultBranch, "test msg", "committer", nil)
+
+				case revertTree:
+					err = kvIndex.RevertPath(repo.RepoId, repo.DefaultBranch, action.path)
+
 				case revertObj:
-					err := kvIndex.RevertObject(repo.RepoId, repo.DefaultBranch, action.path)
-					if err != nil {
-						t.Fatal(err)
-					}
+					err = kvIndex.RevertObject(repo.RepoId, repo.DefaultBranch, action.path)
+
 				default:
 					t.Fatal(xerrors.Errorf("unknown command"))
 				}
-
+			}
+			if err != nil {
+				if xerrors.Is(err, tc.ExpectedError) {
+					return
+				}
+				t.Fatal(err)
+			}
+			if tc.ExpectedError != nil {
+				t.Fatalf("expected to get error but did not get any")
 			}
 			for _, entryPath := range tc.ExpectExisting {
 				_, err := kvIndex.ReadEntry(repo.RepoId, repo.DefaultBranch, entryPath)
