@@ -1,0 +1,17 @@
+name: Node
+on: [push]
+jobs:
+  test:
+    name: Test React App
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: install UI dependencies
+        run: npm install
+        working-directory: ./webui
+      - name: run UI tests
+        run: npm test
+        working-directory: ./webui
