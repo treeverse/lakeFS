@@ -104,7 +104,6 @@ func (d dummyAuthenticator) Parse() (SigContext, error) {
 	return d.ctx, nil
 }
 
-
 func (d dummyAuthenticator) Verify(c Credentials, s string) error {
 	return nil
 }
@@ -135,9 +134,8 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 	return nil, ErrMissingAuthData
 }
 
-
 func (c *chainedAuthenticator) Verify(creds Credentials, domain string) error {
-	return c.chosen.Verify(creds , domain)
+	return c.chosen.Verify(creds, domain)
 
 }
 

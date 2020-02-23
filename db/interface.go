@@ -67,6 +67,7 @@ type IteratorCloseFn func()
 type ReadQuery interface {
 	Get(space Namespace, key CompositeKey) (KeyValue, error)
 	GetAsProto(msg proto.Message, space Namespace, key CompositeKey) error
+	RangeAll() (Iterator, IteratorCloseFn)
 	Range(space Namespace) (Iterator, IteratorCloseFn)
 	RangePrefix(space Namespace, prefix CompositeKey) (Iterator, IteratorCloseFn)
 	RangePrefixGreaterThan(space Namespace, prefix, greaterThan CompositeKey) (Iterator, IteratorCloseFn)

@@ -27,15 +27,15 @@ func NewBadgerLoggingAdapter(logger *logrus.Entry) badger.Logger {
 	return &badgerLogger{logger: logger}
 }
 
-type DBStore struct {
+type LocalDBStore struct {
 	db *badger.DB
 }
 
-func NewDBStore(db *badger.DB) *DBStore {
-	return &DBStore{db: db}
+func NewLocalDBStore(db *badger.DB) *LocalDBStore {
+	return &LocalDBStore{db: db}
 }
 
-func (s *DBStore) ReadTransact(fn func(q ReadQuery) (interface{}, error)) (interface{}, error) {
+func (s *LocalDBStore) ReadTransact(fn func(q ReadQuery) (interface{}, error)) (interface{}, error) {
 	var val interface{}
 	err := s.db.View(func(tx *badger.Txn) error {
 		q := &DBReadQuery{tx: tx}
@@ -50,7 +50,7 @@ func (s *DBStore) ReadTransact(fn func(q ReadQuery) (interface{}, error)) (inter
 	return val, nil
 }
 
-func (s *DBStore) Transact(fn func(q Query) (interface{}, error)) (interface{}, error) {
+func (s *LocalDBStore) Transact(fn func(q Query) (interface{}, error)) (interface{}, error) {
 	var val interface{}
 	err := s.db.Update(func(tx *badger.Txn) error {
 		q := &DBQuery{

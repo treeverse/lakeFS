@@ -108,7 +108,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 	// non-bucket-specific endpoints
 	serviceEndpoint := router.Host(bareDomain).Subrouter()
 	//create bucket
-	serviceEndpoint.HandleFunc(fmt.Sprintf("/%s", path.CreateRepoMatch), OperationHandler(ctx, &operations.CreateBucket{})).Methods(http.MethodPut)
+	serviceEndpoint.HandleFunc(fmt.Sprintf("/%s", path.CreateRepoMatch), unsupportedOperationHandler()).Methods(http.MethodPut)
 
 	// repo-specific actions that relate to a key
 	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
@@ -123,7 +123,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 		Methods(http.MethodGet).
 		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
 		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
-	pathBasedRepo.Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
+	pathBasedRepo.Methods(http.MethodDelete).HandlerFunc(unsupportedOperationHandler())
 	pathBasedRepo.Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
 	pathBasedRepo.Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
 	// global level
@@ -146,13 +146,13 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 		Methods(http.MethodGet).
 		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
 		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
-	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteBucket{}))
+	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(unsupportedOperationHandler())
 	subDomainBasedRepo.Path("/").Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
 	subDomainBasedRepo.Path("/").Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
-	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(OperationHandler(ctx, &operations.CreateBucket{}))
+	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(unsupportedOperationHandler())
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, permission permissions.Permission, arn string) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -207,12 +207,12 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	// interpolate arn string
-	arn = auth.ResolveARN(arn, mux.Vars(request))
+	arn := action.Arn
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserID:     op.SubjectId,
-		Permission: permission,
+		Permission: action.Permission,
 		SubjectARN: arn,
 	})
 	if err != nil {
@@ -234,7 +234,8 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		action := handler.Action(request)
+		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -246,7 +247,8 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		action := handler.Action(request)
+		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -272,7 +274,8 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		authOp := authenticateOperation(ctx, writer, request, handler.GetPermission(), handler.GetArn())
+		action := handler.Action(request)
+		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -298,5 +301,16 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 			},
 			Path: utils.GetKey(request),
 		})
+	}
+}
+
+func unsupportedOperationHandler() http.HandlerFunc {
+	return func(writer http.ResponseWriter, request *http.Request) {
+		o := &operations.Operation{
+			Request:        request,
+			ResponseWriter: writer,
+		}
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ERRLakeFSNotSupported))
+		return
 	}
 }

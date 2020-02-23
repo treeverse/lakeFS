@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
@@ -12,12 +14,8 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *DeleteObjects) GetPermission() permissions.Permission {
-	return permissions.ManageRepos
+func (controller *DeleteObjects) Action(req *http.Request) permissions.Action {
+	return permissions.DeleteObject(utils.GetRepo(req))
 }
 
 func (controller *DeleteObjects) Handle(o *RepoOperation) {

@@ -1,0 +1,27 @@
+---
+logging:
+  format: text
+  level: NONE
+  output: "-"
+
+metadata:
+  db:
+    type: badger
+    badger:
+      path: /tmp
+
+blockstore:
+  type: s3
+  s3:
+    region: us-west-2
+    profile: other
+    credentials_file: /path/to/aws/credentials
+
+gateways:
+  s3:
+    listen_address: "0.0.0.0:8000"
+    domain_name: s3.example.com
+    region: us-east-1
+
+api:
+  listen_address: "0.0.0.0:8005"

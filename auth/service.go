@@ -10,8 +10,6 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
 
-	"github.com/dgraph-io/badger"
-
 	"golang.org/x/xerrors"
 )
 
@@ -70,8 +68,8 @@ type KVAuthService struct {
 	kv db.Store
 }
 
-func NewKVAuthService(database *badger.DB) *KVAuthService {
-	return &KVAuthService{kv: db.NewDBStore(database)}
+func NewKVAuthService(store db.Store) *KVAuthService {
+	return &KVAuthService{kv: store}
 }
 
 func genAccessKeyId() string {
