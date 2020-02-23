@@ -30,3 +30,7 @@
 # Our binaries
 lakefs
 lakectl
+
+
+# client excludes
+webui/node_modules

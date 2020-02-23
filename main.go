@@ -93,7 +93,6 @@ var runCmd = &cobra.Command{
 	Short: "run a LakeFS instance",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-
 		kv := conf.BuildStore()
 
 		// init index
@@ -111,7 +110,7 @@ var runCmd = &cobra.Command{
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService)
 		go func() {
-			panic(apiServer.Serve(conf.GetAPIListenHost(), conf.GetAPIListenPort()))
+			panic(apiServer.Serve(conf.GetAPIListenAddress()))
 		}()
 
 		// init gateway server
