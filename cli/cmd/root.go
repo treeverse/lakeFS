@@ -26,7 +26,7 @@ lakectl branch list lakefs://myrepo
 lakectl branch create lakefs://myrepo@feature-new --source lakefs://myrepo@master
 lakectl branch show lakefs://myrepo@feature-new
 lakectl branch delete lakefs://myrepo@feature-new
-lakectl branch revert lakefs://myrepo@feature-new  [--commit 123456] [--path /]
+lakectl branch revert lakefs://myrepo@feature-new  [--commit 123456] [--path /] [--object /foo]
 
 lakectl fs ls lakefs://myrepo@master/collections/ [--from "collections/file.csv"]
 lakectl fs stat lakefs://myrepo@master/collections/file.csv
