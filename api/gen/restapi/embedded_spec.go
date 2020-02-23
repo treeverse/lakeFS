@@ -329,7 +329,7 @@ func init() {
             "name": "revert",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/revert"
+              "$ref": "#/definitions/revert_creation"
             }
           }
         ],
@@ -835,8 +835,11 @@ func init() {
         }
       }
     },
-    "revert": {
+    "revert_creation": {
       "type": "object",
+      "required": [
+        "type"
+      ],
       "properties": {
         "commit": {
           "type": "string"
@@ -848,7 +851,7 @@ func init() {
           "type": "string",
           "enum": [
             "OBJECT",
-            "PATH",
+            "TREE",
             "COMMIT",
             "RESET"
           ]
@@ -1216,7 +1219,7 @@ func init() {
             "name": "revert",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/revert"
+              "$ref": "#/definitions/revert_creation"
             }
           }
         ],
@@ -1745,8 +1748,11 @@ func init() {
         }
       }
     },
-    "revert": {
+    "revert_creation": {
       "type": "object",
+      "required": [
+        "type"
+      ],
       "properties": {
         "commit": {
           "type": "string"
@@ -1758,7 +1764,7 @@ func init() {
           "type": "string",
           "enum": [
             "OBJECT",
-            "PATH",
+            "TREE",
             "COMMIT",
             "RESET"
           ]

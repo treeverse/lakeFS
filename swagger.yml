@@ -105,12 +105,14 @@ definitions:
         type: string
         enum: [TREE, OBJECT]
 
-  revert:
+  revert_creation:
     type: object
+    required:
+      - type
     properties:
       type:
         type: string
-        enum: [OBJECT, PATH, COMMIT, RESET]
+        enum: [OBJECT, TREE, COMMIT, RESET]
       commit:
         type: string
       path:
@@ -454,7 +456,7 @@ paths:
           name: revert
           description: "revert parameters"
           schema:
-            $ref: "#/definitions/revert"
+            $ref: "#/definitions/revert_creation"
       responses:
         204:
           description: reverted

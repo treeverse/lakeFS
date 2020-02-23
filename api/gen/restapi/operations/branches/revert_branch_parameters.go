@@ -46,7 +46,7 @@ type RevertBranchParams struct {
 	/*revert parameters
 	  In: body
 	*/
-	Revert *models.Revert
+	Revert *models.RevertCreation
 }
 
 // BindRequest both binds and validates a request, it assumes that complex things implement a Validatable(strfmt.Registry) error interface
@@ -70,7 +70,7 @@ func (o *RevertBranchParams) BindRequest(r *http.Request, route *middleware.Matc
 
 	if runtime.HasBody(r) {
 		defer r.Body.Close()
-		var body models.Revert
+		var body models.RevertCreation
 		if err := route.Consumer.Consume(r.Body, &body); err != nil {
 			res = append(res, errors.NewParseError("revert", "body", "", err))
 		} else {

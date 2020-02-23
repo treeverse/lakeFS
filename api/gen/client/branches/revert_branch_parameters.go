@@ -71,7 +71,7 @@ type RevertBranchParams struct {
 	  revert parameters
 
 	*/
-	Revert *models.Revert
+	Revert *models.RevertCreation
 
 	timeout    time.Duration
 	Context    context.Context
@@ -134,13 +134,13 @@ func (o *RevertBranchParams) SetRepositoryID(repositoryID string) {
 }
 
 // WithRevert adds the revert to the revert branch params
-func (o *RevertBranchParams) WithRevert(revert *models.Revert) *RevertBranchParams {
+func (o *RevertBranchParams) WithRevert(revert *models.RevertCreation) *RevertBranchParams {
 	o.SetRevert(revert)
 	return o
 }
 
 // SetRevert adds the revert to the revert branch params
-func (o *RevertBranchParams) SetRevert(revert *models.Revert) {
+func (o *RevertBranchParams) SetRevert(revert *models.RevertCreation) {
 	o.Revert = revert
 }
 

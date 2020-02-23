@@ -111,23 +111,3 @@ func TestJoin(t *testing.T) {
 		}
 	}
 }
-
-func TestPath_Dir(t *testing.T) {
-	testData := []struct {
-		Path     string
-		expected string
-	}{
-		{"foo/bar", "foo/"},
-		{"foo/bar/", "foo/"},
-		{"foo/", ""},
-		{"foo", ""},
-		{"", ""},
-	}
-	for i, test := range testData {
-		pth := path.New(test.Path)
-		got := pth.Dir().String()
-		if !strings.EqualFold(got, test.expected) {
-			t.Fatalf("expected (%d): '%s', got '%s' for %v", i, test.expected, got, test.Path)
-		}
-	}
-}

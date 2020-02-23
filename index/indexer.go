@@ -588,7 +588,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 					return nil, err
 				}
 				workspaceEntry = &model.WorkspaceEntry{
-					Path:      p.Dir().String(),
+					Path:      path,
 					Entry:     pathEntry,
 					Tombstone: true,
 				}
@@ -597,7 +597,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 			}
 		} else {
 			workspaceEntry = &model.WorkspaceEntry{
-				Path:  p.Dir().String(),
+				Path:  path,
 				Entry: commitEntry,
 			}
 		}

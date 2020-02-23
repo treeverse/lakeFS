@@ -104,19 +104,7 @@ func (p *Path) DirName() string {
 	return dirName
 }
 
-func (p *Path) Dir() *Path {
-	parts := p.SplitParts()
-	var parent string
-	if len(parts) > 1 {
-		back := 1
-		if len(parts[len(parts)-1]) == 0 {
-			back++
-		}
-		parent = Join(parts[:len(parts)-back])
-	}
-	return New(parent)
-}
-
 func (p *Path) IsRoot() bool {
-	return p.Equals(p.Dir())
+	root := New("")
+	return p.Equals(root)
 }
