@@ -15,20 +15,25 @@ import (
 	"os"
 	"regexp"
 	"strconv"
-	str "strings"
+	"strings"
 	"time"
 )
 
 var (
 	isRecording, isPlayback bool
 	recordingDir            string
-	lastUploadId            []byte
+	currentUploadId         []byte // used at playback to set the upload id in
 	uploadIdRegexp          *regexp.Regexp
 )
 
 const (
 	startUploadTag = "<UploadId>"
 	endUploadTag   = "</UploadId>"
+	startStatusTag = "<statusCode>"
+	endStatusTag   = "</statusCode>"
+	timedPlayback  = false //schedule events by their recording time, or just one after the other
+	playbackSpeed  = 5.0   // if timed playback - how fast the clock runs ? 5 implies that 1 minute time difference
+	// between original events will translate to 12 seconds. a number less than 1 will make slower clock
 )
 
 func init() {
@@ -42,7 +47,7 @@ func init() {
 		default:
 			panic("second command line illegal: " + os.Args[2])
 		}
-		recordingDir = os.Args[3]
+		recordingDir = "testdata/recordings/" + os.Args[3]
 	}
 }
 
@@ -50,65 +55,122 @@ func IsPlayback() bool {
 	return isPlayback
 }
 
-// lastUploadId can be read only once
-func GetUploadId() string {
-	if lastUploadId == nil {
-		panic("GetUploadId was called twice\n")
-	}
-	temp := string(lastUploadId)
-	lastUploadId = nil
-	return temp
+// RECORDING - helper decorator types
+
+type responseWriter struct {
+	uploadId         []byte
+	originalWriter   http.ResponseWriter
+	lookForUploadId  bool
+	responseFileName string
+	responseLog      *os.File
+	statusCode       int
 }
 
-// decorator on response writer to capture upload id
-
-type inspectingWriter struct {
-	uploadId []byte
-	Writer   http.ResponseWriter
+func (w *responseWriter) Header() http.Header {
+	return w.originalWriter.Header()
 }
 
-func (w *inspectingWriter) Header() http.Header {
-	return w.Writer.Header()
-}
-
-func (w *inspectingWriter) Write(data []byte) (int, error) {
-	written, err := w.Writer.Write(data)
-	if err == nil && len(w.uploadId) == 0 {
-		w.uploadId = uploadIdRegexp.Find(data)
+func (w *responseWriter) Write(data []byte) (int, error) {
+	written, err := w.originalWriter.Write(data)
+	if err == nil {
+		if w.lookForUploadId && len(w.uploadId) == 0 {
+			w.uploadId = uploadIdRegexp.Find(data)
+		}
+		if w.responseLog == nil && written > 0 {
+			f, err := os.OpenFile(w.responseFileName, os.O_CREATE, 0664)
+			if err != nil {
+				panic("can not create response file ")
+			}
+			w.responseLog = f
+		}
+		writtenSlice := data[:written]
+		_, err1 := w.responseLog.Write(writtenSlice)
+		if err1 != nil {
+			panic("could nor write response file\n")
+		}
 	}
 	return written, err
 }
 
-func (w *inspectingWriter) WriteHeader(statusCode int) {
-	w.Writer.WriteHeader(statusCode)
+func (w *responseWriter) WriteHeader(statusCode int) {
+	w.statusCode = statusCode
+	w.originalWriter.WriteHeader(statusCode)
+}
+
+type recordingBodyReader struct {
+	recorderName string
+	recorder     *os.File
+	originalBody io.ReadCloser
+}
+
+func (r *recordingBodyReader) Read(b []byte) (int, error) {
+	size, err := r.originalBody.Read(b)
+	if size > 0 {
+		var err1 error
+		if r.recorder == nil {
+			r.recorder, err1 = os.OpenFile(r.recorderName, os.O_CREATE, 0664)
+			if err1 != nil {
+				panic("can not create recorder file ")
+			}
+		}
+		readSlice := b[:size]
+		_, err1 = r.recorder.Write(readSlice)
+		if err1 != nil {
+			panic(" can not write to recorder file")
+		}
+	}
+	return size, err
+}
+
+func (r *recordingBodyReader) Close() error {
+	err := r.originalBody.Close()
+	r.recorder.Close()
+	r.recorder = nil
+	return err
 }
 
 // RECORDING
 
 func RegisterRecorder(router *mux.Router) {
 	if isRecording {
-		router.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					if r.URL.RawQuery == "uploads=" {
-						writer := &inspectingWriter{Writer: w}
-						next.ServeHTTP(writer, r)
-						logRequest(r, writer.uploadId)
-					} else {
-						next.ServeHTTP(w, r)
-						logRequest(r, nil)
-					}
-				})
-		})
-		err := os.MkdirAll("testdata\\recordings\\"+recordingDir, 0664)
+		err := os.MkdirAll(recordingDir, 0664) // if needed - create recording directory
 		if err != nil {
 			panic("FAILED creat directory for recordings \n")
 		}
+
+		router.Use(func(next http.Handler) http.Handler {
+			return http.HandlerFunc(
+				func(w http.ResponseWriter, r *http.Request) {
+					nameBase := time.Now().Format("01-02-15-04-05.000") + "-" + fmt.Sprintf("%05d", rand.Intn(99999))
+					responseWriter := &responseWriter{originalWriter: w}
+					responseWriter.responseFileName = recordingDir + "/" + "R" + nameBase + ".resp"
+					if r.URL.RawQuery == "uploads=" {
+						responseWriter.lookForUploadId = true
+					}
+					newBody := new(recordingBodyReader)
+					newBody.recorderName = recordingDir + "/" + "B" + nameBase + ".body"
+					newBody.originalBody = r.Body
+					r.Body = newBody
+					// initial post for s3 multipart upload
+
+					defer func() {
+						if responseWriter.responseLog != nil {
+							responseWriter.responseLog.Close()
+						}
+						if newBody.recorder != nil {
+							newBody.recorder.Close()
+						}
+
+					}()
+					next.ServeHTTP(responseWriter, r)
+					logRequest(r, responseWriter.uploadId, nameBase, responseWriter.statusCode)
+				})
+		})
 	}
 
 }
 
-func logRequest(r *http.Request, uploadId []byte) {
+func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int) {
 	dumpReq, err := httputil.DumpRequest(r, false)
 	if err != nil || len(dumpReq) == 0 {
 		log.WithError(err).
@@ -121,9 +183,9 @@ func logRequest(r *http.Request, uploadId []byte) {
 	if uploadId != nil {
 		dumpReq = append(uploadId, dumpReq...)
 	}
-
-	currentTime := time.Now()
-	fName := "testdata\\recordings\\" + recordingDir + "\\L" + currentTime.Format("01-02-15-04-05.000") + "-" + fmt.Sprintf("%05d", rand.Intn(99999)) + ".log"
+	s := startStatusTag + strconv.Itoa(statusCode) + endStatusTag
+	dumpReq = append([]byte(s), dumpReq...)
+	fName := recordingDir + "/L" + nameBase + ".log"
 	err = ioutil.WriteFile(fName, dumpReq, 0664)
 	if err != nil {
 		log.WithError(err).
@@ -137,168 +199,168 @@ func logRequest(r *http.Request, uploadId []byte) {
 //PLAYBACK
 
 type simulationEvent struct {
-	eventTime time.Time
-	url       []byte
-	uploadId  []byte
+	eventTime    time.Time
+	url          []byte
+	uploadId     []byte
+	statusCode   int
+	baseName     string
+	bodyReader   *os.File
+	originalBody io.ReadCloser
 }
 
+func GetUploadId() string {
+	if currentUploadId != nil {
+		t := string(currentUploadId)
+		currentUploadId = nil
+		return t
+	} else {
+		panic("Reading uploadId when there is none\n")
+	}
+}
+
+var runResultsDir string
+var statusMisatchLog *os.File
+
 func DoTestRun(handler http.Handler) {
-	simulationEvents := buildEventList("testdata\\recordings\\" + recordingDir)
+	runResultsDir = recordingDir + "/" + time.Now().Format("01-02-15-04-05")
+	err := os.MkdirAll(runResultsDir, 0664)
+	if err != nil {
+		panic("\n could not create directory: " + runResultsDir + "\n")
+	}
+
+	defer func() {
+		if statusMisatchLog != nil {
+			statusMisatchLog.Close()
+		}
+	}()
+	simulationEvents := buildEventList(recordingDir)
 	runEvents(simulationEvents, handler)
 }
+
+const startPlayDelay = 1 //second delay between building the events to starting to play them
 
 func buildEventList(directory string) []simulationEvent {
 	var simulationEvents []simulationEvent
 	logPattern := regexp.MustCompile("^L\\d\\d-\\d\\d-\\d\\d-\\d\\d-\\d\\d\\.\\d\\d\\d-\\d\\d\\d\\d\\d\\.log$")
-	fileList, err := ioutil.ReadDir(directory) //ReadDir returns files sorted by name
+	dirList, err := ioutil.ReadDir(directory) //ReadDir returns files sorted by name
 	if err != nil {
 		panic("log directory read failed")
 	}
-	var firstEventTime time.Time
-	startTime := time.Now().Add(30 * time.Second) // playing events will start 30 second after load
-	firstEventFlag := true
-	for _, file := range fileList {
-		if logPattern.MatchString(file.Name()) {
-			//fmt.Print("did it")
-			tm := file.Name()[1:19]
-			recordingTime, _ := time.Parse("01-02-15-04-05.000", tm)
-			if firstEventFlag {
-				firstEventTime = recordingTime
-				firstEventFlag = false
-			}
-			var evt simulationEvent
-			evt.eventTime = startTime.Add(recordingTime.Sub(firstEventTime))
-			fName := directory + "\\" + file.Name()
-			url, err := ioutil.ReadFile(fName)
-			if err != nil {
-				log.Panic("Recording file not found\n")
-			}
-			if 0 == bytes.Compare(url[0:len(startUploadTag)], []byte(startUploadTag)) {
-				url = url[len(startUploadTag):]
-				endPos := bytes.Index(url, []byte(endUploadTag))
-				if endPos < 0 {
-					panic("</UploadId> not found in start multipart post url\n")
-				}
-				evt.uploadId = url[:endPos]
-				url = url[endPos+len(endUploadTag):]
-			}
-			evt.url = url
-			simulationEvents = append(simulationEvents, evt)
+	// filter only request (.log) files
+	var fileList []string
+	for _, f := range dirList {
+		if logPattern.MatchString(f.Name()) {
+			fileList = append(fileList, f.Name())
 		}
 	}
+	var firstEventTime time.Time
+	simulationStartTime := time.Now().Add(startPlayDelay * time.Second) // playing events will start startPlayDelay seconds after load
+	firstEventFlag := true
+	for _, file := range fileList {
+		var evt simulationEvent
+		evt.baseName = file[1:strings.Index(file, ".log")]
+		eventTimeStr := file[1:19]                                         // time part of file name
+		recordingTime, _ := time.Parse("01-02-15-04-05.000", eventTimeStr) // add to function
+		if firstEventFlag {
+			firstEventTime = recordingTime
+			firstEventFlag = false
+		}
+		evt.eventTime = simulationStartTime.Add(recordingTime.Sub(firstEventTime)) // refactor start time
+		fName := directory + "\\" + file
+		url, err := ioutil.ReadFile(fName)
+		if err != nil {
+			log.Panic("Recording file not found\n")
+		}
+		buildEventFromURL(url, &evt)
+		simulationEvents = append(simulationEvents, evt)
+
+	}
 	return simulationEvents
+}
+
+func buildEventFromURL(url []byte, evt *simulationEvent) {
+	// get statusCode and remove from url
+	url = url[len(startStatusTag):]
+	endPos := bytes.Index(url, []byte(endStatusTag))
+	if endPos < 0 {
+		panic("</statusCode> not found in recording\n")
+	}
+	evt.statusCode, _ = strconv.Atoi(string(url[:endPos]))
+	url = url[endPos+len(endStatusTag):]
+	// get uploadId if exists and remove from url
+	if 0 == bytes.Compare(url[0:len(startUploadTag)], []byte(startUploadTag)) {
+		url = url[len(startUploadTag):]
+		endPos := bytes.Index(url, []byte(endUploadTag))
+		if endPos < 0 {
+			panic("</UploadId> not found in start multipart post url\n")
+		}
+		evt.uploadId = url[:endPos]
+		url = url[endPos+len(endUploadTag):]
+	}
+	evt.url = url
 }
 
 func runEvents(eventsList []simulationEvent, handler http.Handler) {
 	for _, event := range eventsList {
 		bReader := bufio.NewReader(bytes.NewReader(event.url))
+
 		request, err := http.ReadRequest(bReader)
 		if err != nil {
 			log.Panic("could not create Request from URL")
 		}
 		if len(event.uploadId) > 0 {
-			lastUploadId = event.uploadId
+			currentUploadId = event.uploadId
 		}
-		request.Body = NewReader(request.ContentLength)
-		//todo: activate as go routine
-		asyncServeHTTP(request, handler)
+
+		secondDiff := event.eventTime.Sub(time.Now()) / playbackSpeed
+		if secondDiff > 0 && timedPlayback {
+			fmt.Print("\n\nwait: ", secondDiff)
+			time.Sleep(secondDiff)
+		}
+		asyncServeHTTP(request, handler, &event)
 	}
+	//time.Sleep(5.0*time.Second)
 }
-func asyncServeHTTP(r *http.Request, handler http.Handler) {
+
+func asyncServeHTTP(r *http.Request, handler http.Handler, event *simulationEvent) {
+	event.originalBody = r.Body
+	r.Body = event
 	w := httptest.NewRecorder()
-	handler.ServeHTTP(w, r)
-	z := w.Result()
-	fmt.Print(z)
-}
-
-// CREATING SIMULATED CONTENT
-
-type contentCreator struct {
-	pos       int64
-	maxLength int64
-}
-
-func NewReader(max int64) *contentCreator {
-	var r *contentCreator
-	r = new(contentCreator)
-	r.maxLength = max
-	return r
-}
-
-const stepSize = 20
-
-func (c *contentCreator) Read(b []byte) (int, error) {
-	if c.pos < 0 {
-		log.Panic("attempt to read from a closed content creator")
-	}
-	if c.pos == c.maxLength {
-		return 0, io.EOF
-	}
-	retSize := minInt(int64(len(b)), int64(c.maxLength-c.pos))
-	var nextCopyPos int64
-	currentBlockNo := c.pos/stepSize + 1 // first block in number 1
-	//create the first block, which may be the continuation of a previous block
-	remaining := (c.pos % stepSize)
-	if remaining != 0 || retSize < stepSize {
-		// the previous read did not end on integral stepSize boundry, or the retSize
-		// is less than a block
-		copiedSize := int64(copy(b, makeBlock(currentBlockNo)[remaining:minInt(stepSize, remaining+retSize)]))
-		nextCopyPos = copiedSize
-		currentBlockNo++
-	}
-	// create the blocks between first and last. Those are always full
-	fullBlocksNo := (retSize - nextCopyPos) / stepSize
-	for i := int64(0); i < fullBlocksNo; i++ {
-		copy(b[nextCopyPos:nextCopyPos+stepSize], makeBlock(currentBlockNo))
-		currentBlockNo++
-		nextCopyPos += stepSize
-	}
-	// create the trailing block (if needed)
-	remainingBytes := (c.pos + retSize) % stepSize
-	if remainingBytes != 0 && (c.pos%stepSize+retSize) > stepSize {
-		// destination will be smaller than the returned block, copy size is the minimum size of dest and source
-		copy(b[nextCopyPos:nextCopyPos+remainingBytes], makeBlock(currentBlockNo)) // destination will be smaller than step size
-	}
-	c.pos += retSize
-	if c.pos == c.maxLength {
-		return int(retSize), io.EOF
-	} else {
-		if c.pos < c.maxLength {
-			return int(retSize), nil
-		} else {
-			log.Panic("reader programming error - got past maxLength")
-			return int(retSize), nil
+	respWrite := new(responseWriter)
+	respWrite.originalWriter = w
+	respWrite.responseFileName = runResultsDir + "/" + "R" + event.baseName + ".resp"
+	handler.ServeHTTP(respWrite, r)
+	if respWrite.statusCode != event.statusCode {
+		if statusMisatchLog == nil {
+			var err error
+			statusMisatchLog, err = os.OpenFile(runResultsDir+"/"+"status_mismatch.log", os.O_CREATE, 0664)
+			if err != nil {
+				panic("\n could not create status mismatch log file\n")
+			}
 		}
+		fmt.Fprintf(statusMisatchLog, "different status event %s recorded \t %d current \t %d",
+			event.baseName, event.statusCode, respWrite.statusCode)
 	}
 
 }
 
-func makeBlock(n int64) string {
-	f := strconv.Itoa(int(n * stepSize))
-	block := str.Repeat("*", stepSize-len(f)) + f
-	return block
+func (r *simulationEvent) Read(b []byte) (int, error) {
+	if r.bodyReader == nil {
+		fName := recordingDir + "/B" + r.baseName + ".body"
+		f, err := os.Open(fName)
+		if err != nil { // couldn find recording file
+			log.WithError(err).Warn("Could not open " + fName)
+			return 0, io.EOF
+		}
+		r.bodyReader = f
+	}
+	return r.bodyReader.Read(b)
 }
 
-func (c *contentCreator) Close() error {
-	c.pos = -1
-	return nil
-}
-
-func minInt(i1, i2 int64) int64 {
-	if i1 < i2 {
-		return i1
+func (r *simulationEvent) Close() error {
+	if r.bodyReader != nil {
+		return r.bodyReader.Close()
 	} else {
-		return i2
+		return nil
 	}
-}
-
-func (c *contentCreator) Seek(seekPoint int64) error {
-	if c.pos < 0 {
-		log.Panic("attempt to read from a closed content creator")
-	}
-	if seekPoint >= c.maxLength {
-		return io.EOF
-	}
-	c.pos = seekPoint
-	return nil
 }
