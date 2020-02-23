@@ -16,36 +16,49 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"context"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/uri"
 )
+
+var commitsTemplate = `{{ range $val := . }}
+{{ if gt  ($val.Parents|len) 0 -}}
+commit {{ $val.ID|yellow }}
+Author: {{ $val.Committer }}
+Date: {{ $val.CreationDate|date }}
+{{ if gt ($val.Parents|len) 1 -}}
+Merge: {{ $val.Parents|join ", "|bold }}
+{{ end }}
+
+    {{ $val.Message }}
+
+    {{ range $key, $value := $val.Metadata }}
+    {{ $key }} = {{ $value }}
+	{{ end -}}
+{{ end -}}
+{{ end }}
+`
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:   "log",
-	Short: "A brief description of your command",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "log [branch uri]",
+	Short: "show log of commits for the given branch",
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("log called")
+		client := getClient()
+		branchURI := uri.Must(uri.Parse(args[0]))
+		commits, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Refspec)
+		if err != nil {
+			DieErr(err)
+		}
+		Write(commitsTemplate, commits)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(logCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// logCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// logCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

@@ -8,7 +8,7 @@ import (
 )
 
 type ClientReadOnlyOperations interface {
-	ListRepos() ([]*model.Repo, error)
+	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	ReadRepo(repoId string) (*model.Repo, error)
 }
 
@@ -33,23 +33,41 @@ func (c *KVClientReadOnlyOperations) ReadRepo(repoId string) (*model.Repo, error
 	return repo, c.query.GetAsProto(repo, SubspaceRepos, db.CompositeStrings(repoId))
 }
 
-func (c *KVClientReadOnlyOperations) ListRepos() ([]*model.Repo, error) {
+func (c *KVClientReadOnlyOperations) ListRepos(amount int, after string) ([]*model.Repo, bool, error) {
 	repos := make([]*model.Repo, 0)
-	iter, itclose := c.query.Range(SubspaceRepos)
-	defer itclose()
+
+	var iter db.Iterator
+	var iterClose db.IteratorCloseFn
+	if len(after) > 0 {
+		iter, iterClose = c.query.RangePrefixGreaterThan(SubspaceRepos, db.CompositeKey{}, db.CompositeStrings(after))
+	} else {
+		iter, iterClose = c.query.Range(SubspaceRepos)
+	}
+	defer iterClose()
+
+	var curr int
+	var done, hasMore bool
 	for iter.Advance() {
+		if done {
+			hasMore = true
+			break
+		}
 		kv, err := iter.Get()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		repo := &model.Repo{}
 		err = proto.Unmarshal(kv.Value, repo)
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		repos = append(repos, repo)
+		curr++
+		if curr == amount {
+			done = true
+		}
 	}
-	return repos, nil
+	return repos, hasMore, nil
 }
 
 func (c *KVClientOperations) DeleteRepo(repoId string) error {

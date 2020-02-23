@@ -84,6 +84,19 @@ func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key Composi
 	return nil
 }
 
+func (q *DBReadQuery) RangeAll() (Iterator, IteratorCloseFn) {
+	opts := badger.DefaultIteratorOptions
+	opts.Prefix = []byte("")
+	it := q.tx.NewIterator(opts)
+	it.Seek(opts.Prefix)
+	return &dbPrefixIterator{
+			iter:   it,
+			prefix: []byte(""),
+		}, func() {
+			it.Close()
+		}
+}
+
 func (q *DBReadQuery) Range(space Namespace) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	it := q.tx.NewIterator(opts)
@@ -110,12 +123,17 @@ func (q *DBReadQuery) RangePrefix(space Namespace, prefix CompositeKey) (Iterato
 		}
 }
 
-func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, greaterThan CompositeKey) (Iterator, IteratorCloseFn) {
+func greaterThan(key CompositeKey) CompositeKey {
+	return KeyFromBytes(key.AsKey().Children())
+}
+
+func (q *DBReadQuery) RangePrefixGreaterThan(space Namespace, prefix CompositeKey, gt CompositeKey) (Iterator, IteratorCloseFn) {
 	opts := badger.DefaultIteratorOptions
 	pref := q.pack(space, prefix)
 	opts.Prefix = pref
 	it := q.tx.NewIterator(opts)
-	offset := q.pack(space, greaterThan)
+	next := greaterThan(gt)
+	offset := q.pack(space, next)
 	it.Seek(offset) // go to the correct offset
 	return &dbPrefixIterator{
 			prefix: pref,

@@ -2,7 +2,8 @@ syntax = "proto3";
 
 // Data model
 message Repo {
-    string repo_id = 2;
+    string repo_id = 1;
+    string bucket_name = 2;
     int64 creation_date = 3;
     string default_branch = 4;
     float partial_commit_ratio = 5;
@@ -17,7 +18,7 @@ message Object {
     repeated Block blocks = 1;
     string checksum = 2; // used as ETag in S3
     map<string, string> metadata = 3;
-    int64 size = 5;
+    int64 size = 4;
 }
 
 message Entry {
@@ -40,12 +41,13 @@ message WorkspaceEntry {
 }
 
 message Commit {
-    string tree = 1;
-    repeated string parents = 2;
-    string committer = 3;
-    string message = 4;
-    int64 timestamp = 5;
-    map<string, string> metadata = 6;
+    string address = 1;
+    string tree = 2;
+    repeated string parents = 3;
+    string committer = 4;
+    string message = 5;
+    int64 timestamp = 6;
+    map<string, string> metadata = 7;
 }
 
 message Branch {
@@ -56,8 +58,8 @@ message Branch {
 }
 
 message MultipartUpload {
-    string path = 1;
-    string id = 2;
+    string id = 1;
+    string path = 2;
     int64 timestamp = 3;
 }
 

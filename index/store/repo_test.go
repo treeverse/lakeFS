@@ -4,57 +4,17 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/testutil"
+
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/ident"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/store"
 
 	"golang.org/x/xerrors"
 )
 
-const TimeFormat = "Jan 2 15:04:05 2006 -0700"
-
-func GetIndexStoreWithRepo(t *testing.T) (store.Store, *model.Repo, func()) {
-	kv, closer := GetIndexStore(t)
-	repoCreateDate, _ := time.Parse(TimeFormat, "Apr 7 15:13:13 2005 -0700")
-	repo, err := kv.RepoTransact("myrepo", func(ops store.RepoOperations) (i interface{}, e error) {
-		repo := &model.Repo{
-			RepoId:        "myrepo",
-			CreationDate:  repoCreateDate.Unix(),
-			DefaultBranch: index.DefaultBranch,
-		}
-		err := ops.WriteRepo(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
-		commit := &model.Commit{
-			Tree:      ident.Empty(),
-			Parents:   []string{},
-			Timestamp: repoCreateDate.Unix(),
-			Metadata:  make(map[string]string),
-		}
-		commitId := ident.Hash(commit)
-		err = ops.WriteCommit(commitId, commit)
-		if err != nil {
-			return nil, err
-		}
-		err = ops.WriteBranch(repo.GetDefaultBranch(), &model.Branch{
-			Name:          repo.GetDefaultBranch(),
-			Commit:        commitId,
-			CommitRoot:    commit.GetTree(),
-			WorkspaceRoot: commit.GetTree(),
-		})
-		return repo, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	return kv, repo.(*model.Repo), closer
-}
-
 func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
-	kv, repo, closer := GetIndexStoreWithRepo(t)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t)
 	defer closer()
 
 	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
@@ -83,7 +43,7 @@ func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
 	})
 
 	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
-		branches, err := ops.ListBranches()
+		branches, _, err := ops.ListBranches("", -1, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -95,7 +55,7 @@ func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
 }
 
 func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
-	kv, repo, closer := GetIndexStoreWithRepo(t)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t)
 	defer closer()
 
 	n := time.Now().Unix()
@@ -193,7 +153,7 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 }
 
 func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
-	kv, repo, closer := GetIndexStoreWithRepo(t)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t)
 	defer closer()
 
 	n := time.Now().Unix()

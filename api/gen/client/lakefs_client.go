@@ -7,10 +7,14 @@ package client
 
 import (
 	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/treeverse/lakefs/api/gen/client/operations"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
+
+	"github.com/treeverse/lakefs/api/gen/client/branches"
+	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/objects"
+	"github.com/treeverse/lakefs/api/gen/client/repositories"
 )
 
 // Default lakefs HTTP client.
@@ -22,7 +26,7 @@ const (
 	DefaultHost string = "localhost"
 	// DefaultBasePath is the default BasePath
 	// found in Meta (info) section of spec file
-	DefaultBasePath string = "/"
+	DefaultBasePath string = "/api/v1"
 )
 
 // DefaultSchemes are the default schemes found in Meta (info) section of spec file
@@ -55,7 +59,10 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Lakefs {
 
 	cli := new(Lakefs)
 	cli.Transport = transport
-	cli.Operations = operations.New(transport, formats)
+	cli.Branches = branches.New(transport, formats)
+	cli.Commits = commits.New(transport, formats)
+	cli.Objects = objects.New(transport, formats)
+	cli.Repositories = repositories.New(transport, formats)
 	return cli
 }
 
@@ -100,7 +107,13 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // Lakefs is a client for lakefs
 type Lakefs struct {
-	Operations operations.ClientService
+	Branches branches.ClientService
+
+	Commits commits.ClientService
+
+	Objects objects.ClientService
+
+	Repositories repositories.ClientService
 
 	Transport runtime.ClientTransport
 }
@@ -108,5 +121,8 @@ type Lakefs struct {
 // SetTransport changes the transport on the client and all its subresources
 func (c *Lakefs) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
-	c.Operations.SetTransport(transport)
+	c.Branches.SetTransport(transport)
+	c.Commits.SetTransport(transport)
+	c.Objects.SetTransport(transport)
+	c.Repositories.SetTransport(transport)
 }

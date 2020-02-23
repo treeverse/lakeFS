@@ -8,8 +8,9 @@ var (
 	ErrMultipartPathMismatch      = xerrors.New("invalid path for multipart upload")
 	ErrMultipartInvalidPartNumber = xerrors.New("invalid part number for multipart upload")
 	ErrMultipartInvalidPartETag   = xerrors.New("invalid ETag for multipart upload")
-    ErrRepoExists                 = xerrors.New("repository already exists")
-    ErrBranchExists               = xerrors.New("branch already exists")
+	ErrRepoExists                 = xerrors.New("repository already exists")
+	ErrBranchExists               = xerrors.New("branch already exists")
+	ErrNoMergeBase                = xerrors.New("no common merge base found")
 
 	//validation errors
 	ErrInvalid           = xerrors.New("validation error")

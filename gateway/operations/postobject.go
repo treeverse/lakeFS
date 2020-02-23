@@ -5,6 +5,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
+
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
@@ -18,12 +21,8 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *PostObject) GetPermission() permissions.Permission {
-	return permissions.WriteRepo
+func (controller *PostObject) Action(req *http.Request) permissions.Action {
+	return permissions.WriteObject(utils.GetRepo(req))
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
@@ -80,7 +79,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Branch, o.Path),
 		Bucket:   o.Repo.GetRepoId(),
 		Key:      o.Path,
-		ETag:     serde.ETag(obj.GetChecksum()),
+		ETag:     httputil.ETag(obj.GetChecksum()),
 	}, http.StatusOK)
 }
 

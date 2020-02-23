@@ -166,6 +166,9 @@ const (
 
 	// S3 extended errors.
 	ErrContentSHA256Mismatch
+
+	// Lakefs errors
+	ERRLakeFSNotSupported
 )
 
 type errorCodeMap map[APIErrorCode]APIError
@@ -727,5 +730,12 @@ var Codes = errorCodeMap{
 		Code:           "ErrInvalidAPIVersion",
 		Description:    "Invalid version found in the request",
 		HTTPStatusCode: http.StatusNotFound,
+	},
+
+	// LakeFS errors
+	ERRLakeFSNotSupported: {
+		Code:           "ERRLakeFSNotSupported",
+		Description:    "This operation is not supported in LakeFS",
+		HTTPStatusCode: http.StatusMethodNotAllowed,
 	},
 }

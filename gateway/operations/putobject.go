@@ -1,16 +1,18 @@
 package operations
 
 import (
-	"crypto/md5"
 	"fmt"
-	"io"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/upload"
+
+	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
+
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
@@ -23,24 +25,15 @@ import (
 )
 
 const (
-	// size of physical object to store in the underlying block adapter
-	// TODO: should probably be a configuration parameter
-	ObjectBlockSize = 128 * 1024 * 1024
-
-	CopySourceHeader = "x-amz-copy-source"
-
+	CopySourceHeader     = "x-amz-copy-source"
 	QueryParamUploadId   = "uploadId"
 	QueryParamPartNumber = "partNumber"
 )
 
 type PutObject struct{}
 
-func (controller *PutObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *PutObject) GetPermission() permissions.Permission {
-	return permissions.WriteRepo
+func (controller *PutObject) Action(req *http.Request) permissions.Action {
+	return permissions.WriteObject(utils.GetRepo(req))
 }
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
@@ -102,7 +95,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Request.Body, o.BlockStore)
+	blob, err := upload.ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore, upload.ObjectBlockSize)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -129,67 +122,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	o.Log().WithFields(log.Fields{
 		"upload_id":   uploadId,
 		"part_number": partNumber,
-	}).Info("MULTI PART PART DONE!")
-}
-
-type Blob struct {
-	Blocks   []*model.Block
-	Checksum string
-	Size     int64
-}
-
-func ReadBlob(body io.Reader, adapter block.Adapter) (*Blob, error) {
-	// handle the upload itself
-	blocks := make([]*model.Block, 0)
-	cksummer := md5.New()
-	var totalSize int64
-	var done bool
-	for !done {
-		buf := make([]byte, ObjectBlockSize)
-		n, err := body.Read(buf)
-
-		// unexpected error
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-
-		// body is completely drained and we read nothing
-		if err == io.EOF && n == 0 {
-			break // nothing left to do, we read the whole thing
-		}
-
-		// body is completely drained and we read the remainder
-		if err == io.EOF {
-			done = true
-		}
-
-		// write a block
-		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
-		w, err := adapter.Put(blockAddr)
-		if err != nil {
-			return nil, err
-		}
-		cksummer.Write(buf[:n])
-		_, err = w.Write(buf[:n])
-		_ = w.Close()
-		if err != nil {
-			return nil, err
-		}
-		blocks = append(blocks, &model.Block{
-			Address: blockAddr,
-			Size:    int64(n),
-		})
-		totalSize += int64(n)
-
-		if done {
-			break
-		}
-	}
-	return &Blob{
-		Blocks:   blocks,
-		Checksum: fmt.Sprintf("%x", cksummer.Sum(nil)),
-		Size:     totalSize,
-	}, nil
+	}).Info("multipart upload part done")
 }
 
 func (controller *PutObject) Handle(o *PathOperation) {
@@ -211,7 +144,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := ReadBlob(o.Request.Body, o.BlockStore)
+	blob, err := upload.ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore, upload.ObjectBlockSize)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -251,6 +184,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		"branch": o.Branch,
 		"path":   o.Path,
 	}).Trace("metadata update complete")
-	o.SetHeader("ETag", serde.ETag(obj.GetChecksum()))
+	o.SetHeader("ETag", httputil.ETag(obj.GetChecksum()))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }
