@@ -2,7 +2,10 @@ package api
 
 import (
 	"fmt"
+	"net/http"
 	"strings"
+
+	"github.com/rakyll/statik/fs"
 
 	log "github.com/sirupsen/logrus"
 
@@ -15,6 +18,8 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/index"
+
+	_ "github.com/treeverse/lakefs/statik"
 )
 
 const (
@@ -88,22 +93,26 @@ func (s *Server) SetupServer() (*restapi.Server, error) {
 }
 
 // Serve starts an HTTP server at the given host and port
-func (s *Server) Serve(host string, port int) error {
+func (s *Server) Serve(listenAddr string) error {
 	srv, err := s.SetupServer()
 	if err != nil {
 		return err
 	}
 
-	// add logging to every request
-	next := srv.GetHandler()
-	srv.SetHandler(httputil.LoggingMiddleWare(RequestIdHeaderName, LoggerServiceName, next))
-
-	// setup listen address
-	srv.Host = host
-	srv.Port = port
-
-	if err := srv.Serve(); err != nil {
+	// serve embedded frontend filesystem
+	statikFS, err := fs.New()
+	if err != nil {
 		return err
 	}
-	return nil
+
+	httpServer := http.Server{
+		Addr: listenAddr,
+		Handler: httputil.LoggingMiddleWare(RequestIdHeaderName, LoggerServiceName,
+			HandlerWithUI(
+				srv.GetHandler(),          // api
+				http.FileServer(statikFS), // ui
+			)),
+	}
+
+	return httpServer.ListenAndServe()
 }
