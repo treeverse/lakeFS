@@ -504,25 +504,27 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		if err != nil {
 			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		switch params.Revert.Type {
-		case models.RevertTypeCOMMIT:
+		switch swag.StringValue(params.Revert.Type) {
+		case models.RevertCreationTypeCOMMIT:
 			err = a.meta.RevertCommit(params.RepositoryID, params.BranchID, params.Revert.Commit)
-			if err != nil {
-				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
-		case models.RevertTypePATH:
+
+		case models.RevertCreationTypeTREE:
 			err = a.meta.RevertPath(params.RepositoryID, params.BranchID, params.Revert.Path)
-			if err != nil {
-				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
-		case models.RevertTypeRESET:
+
+		case models.RevertCreationTypeRESET:
 			err = a.meta.ResetBranch(params.RepositoryID, params.BranchID)
-			if err != nil {
-				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
-		case models.RevertTypeOBJECT:
+
+		case models.RevertCreationTypeOBJECT:
 			err = a.meta.RevertObject(params.RepositoryID, params.BranchID, params.Revert.Path)
-			if err != nil {
+		default:
+			return branches.NewRevertBranchNotFound().
+				WithPayload(responseError("revert type not found"))
+		}
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return branches.NewRevertBranchNotFound().
+					WithPayload(responseError("branch not found"))
+			} else {
 				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 			}
 		}

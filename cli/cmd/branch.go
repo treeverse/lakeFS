@@ -128,10 +128,25 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
-// lakectl branch revert lakefs://myrepo@master --commit commitId --path path --object path-to-object
+func moreThanOne(args ...bool) bool {
+	count := 0
+	for _, args := range args {
+		if args {
+			count++
+		}
+	}
+	return count > 1
+}
+
+// lakectl branch revert lakefs://myrepo@master --commit commitId --tree path --object path
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert [branch uri] [flags]",
-	Short: "revert changes to specified commit, or revert uncommitted changes all or by path ",
+	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path ",
+	Long: `revert changes: there are four different ways to revert changes:
+				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
+				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
+				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
+				4. revert uncommited changes for specific object  - revert lakefs://myrepo@master  --object path `,
 	Args: ValidationChain(
 		HasNArgs(1),
 		IsBranchURI(0),
@@ -147,47 +162,46 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		path, err := cmd.Flags().GetString("path")
+		tree, err := cmd.Flags().GetString("tree")
 		if err != nil {
 			return err
 		}
-		isObject, err := cmd.Flags().GetBool("object")
+		object, err := cmd.Flags().GetString("object")
 		if err != nil {
 			return err
 		}
 		isCommit := len(commitId) > 0
+		isTree := len(tree) > 0
+		isObject := len(object) > 0
 
-		isPath := len(path) > 0
-
-		if isCommit && isPath {
-			return xerrors.Errorf("can't revert by path and commit, please choose only one!")
+		if moreThanOne(isCommit, isTree, isObject) {
+			return xerrors.Errorf("can't revert by multiple commands, please choose only one [commit, tree, object]!")
 		}
 
-		var revert models.Revert
+		var revert models.RevertCreation
 		var confirmationMsg string
 		if isCommit {
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s ?", commitId)
-			revert = models.Revert{
+			revert = models.RevertCreation{
 				Commit: commitId,
-				Type:   models.RevertTypeCOMMIT,
+				Type:   swag.String(models.RevertCreationTypeCOMMIT),
 			}
-		} else if isPath {
-			var modelType string
-			if isObject {
-				modelType = models.RevertTypeOBJECT
-				confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit?", path)
-			} else {
-				confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit?", path)
-				modelType = models.RevertTypePATH
+		} else if isTree {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit?", tree)
+			revert = models.RevertCreation{
+				Path: tree,
+				Type: swag.String(models.RevertCreationTypeTREE),
 			}
-			revert = models.Revert{
-				Path: path,
-				Type: modelType,
+		} else if isObject {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit?", object)
+			revert = models.RevertCreation{
+				Path: object,
+				Type: swag.String(models.RevertCreationTypeOBJECT),
 			}
 		} else {
 			confirmationMsg = "are you sure you want to revert all uncommitted changes?"
-			revert = models.Revert{
-				Type: models.RevertTypeRESET,
+			revert = models.RevertCreation{
+				Type: swag.String(models.RevertCreationTypeRESET),
 			}
 		}
 
@@ -240,6 +254,6 @@ func init() {
 	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
 
 	branchRevertCmd.Flags().StringP("commit", "c", "", "commit ID to revert branch to ")
-	branchRevertCmd.Flags().StringP("path", "p", "", "path to revert it's changes")
-	branchRevertCmd.Flags().BoolP("object", "o", false, "path to revert it's changes")
+	branchRevertCmd.Flags().StringP("tree", "p", "", "path to tree to be reverted")
+	branchRevertCmd.Flags().StringP("object", "o", "", "path to object to be reverted")
 }

@@ -57,7 +57,7 @@ type Client interface {
 	GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error)
 	CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error
 	DeleteBranch(ctx context.Context, repoId, branchId string) error
-	RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.Revert) error
+	RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error
 
 	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
@@ -153,7 +153,7 @@ func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) erro
 	}, c.auth)
 	return err
 }
-func (c *client) RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.Revert) error {
+func (c *client) RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error {
 	_, err := c.remote.Branches.RevertBranch(&branches.RevertBranchParams{
 		BranchID:     branchId,
 		Revert:       revertProps,
