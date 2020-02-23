@@ -11,16 +11,12 @@ import (
 
 type ListBuckets struct{}
 
-func (controller *ListBuckets) GetArn() string {
-	return "arn:treeverse:repos:::*"
-}
-
-func (controller *ListBuckets) GetPermission() permissions.Permission {
-	return permissions.ReadRepo
+func (controller *ListBuckets) Action(req *http.Request) permissions.Action {
+	return permissions.ListRepos()
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
-	repos, err := o.Index.ListRepos()
+	repos, _, err := o.Index.ListRepos(-1, "")
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

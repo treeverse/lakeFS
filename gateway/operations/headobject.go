@@ -2,10 +2,13 @@ package operations
 
 import (
 	"fmt"
+	"net/http"
+
+	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
 
@@ -14,12 +17,8 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) GetArn() string {
-	return "arn:treeverse:repos:::{repo}"
-}
-
-func (controller *HeadObject) GetPermission() permissions.Permission {
-	return permissions.ReadRepo
+func (controller *HeadObject) Action(req *http.Request) permissions.Action {
+	return permissions.GetObject(utils.GetRepo(req))
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
@@ -45,7 +44,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		return
 	}
 	o.SetHeader("Accept-Ranges", "bytes")
-	o.SetHeader("Last-Modified", serde.HeaderTimestamp(entry.GetTimestamp()))
-	o.SetHeader("ETag", serde.ETag(entry.GetChecksum()))
+	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.GetTimestamp()))
+	o.SetHeader("ETag", httputil.ETag(entry.GetChecksum()))
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.GetSize()))
 }

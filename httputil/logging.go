@@ -1,7 +1,6 @@
 package httputil
 
 import (
-	"bytes"
 	"context"
 	"net/http"
 	"time"
@@ -18,7 +17,6 @@ const (
 
 type ResponseRecordingWriter struct {
 	StatusCode   int
-	Body         bytes.Buffer
 	ResponseSize int64
 	Writer       http.ResponseWriter
 }
@@ -31,7 +29,6 @@ func (w *ResponseRecordingWriter) Write(data []byte) (int, error) {
 	written, err := w.Writer.Write(data)
 	if err == nil {
 		w.ResponseSize += int64(written)
-		w.Body.Write(data)
 	}
 	return written, err
 }

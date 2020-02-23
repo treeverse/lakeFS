@@ -5,6 +5,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/testutil"
+
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
@@ -14,7 +16,8 @@ import (
 )
 
 func TestReadRepo(t *testing.T) {
-	kv, close := GetIndexStore(t)
+	bdb, close := testutil.GetDB(t)
+	kv := store.NewKVStore(bdb)
 	defer close()
 
 	n := time.Now()
@@ -54,7 +57,8 @@ func TestReadRepo(t *testing.T) {
 }
 
 func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
-	kv, close := GetIndexStore(t)
+	bdb, close := testutil.GetDB(t)
+	kv := store.NewKVStore(bdb)
 	defer close()
 
 	now := time.Now().Unix()
@@ -105,7 +109,7 @@ func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
 	}
 
 	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
-		repos, err := ops.ListRepos()
+		repos, _, err := ops.ListRepos(-1, "")
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -119,7 +123,8 @@ func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
 	}
 }
 func TestKVClientOperations_DeleteRepo(t *testing.T) {
-	kv, close := GetIndexStore(t)
+	bdb, close := testutil.GetDB(t)
+	kv := store.NewKVStore(bdb)
 	defer close()
 
 	now := time.Now().Unix()
@@ -182,7 +187,8 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 }
 
 func TestKVClientOperations_WriteRepo(t *testing.T) {
-	kv, close := GetIndexStore(t)
+	bdb, close := testutil.GetDB(t)
+	kv := store.NewKVStore(bdb)
 	defer close()
 
 	now := time.Now().Unix()
@@ -199,24 +205,6 @@ func TestKVClientOperations_WriteRepo(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		return nil, err
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	// expect error on creating existing bucket
-	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
-		var err error
-		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo1",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
-		})
-		if err == nil {
-			t.Errorf("expected to get error when creating existing bucket")
-		}
 		return nil, err
 	})
 	if err != nil {

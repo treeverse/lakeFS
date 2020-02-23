@@ -26,3 +26,7 @@
 .idea/
 
 # End of https://www.gitignore.io/api/go
+
+# Our binaries
+lakefs
+lakectl

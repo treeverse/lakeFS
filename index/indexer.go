@@ -5,6 +5,8 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/treeverse/lakefs/index/dag"
+
 	"github.com/treeverse/lakefs/index/errors"
 
 	"github.com/treeverse/lakefs/db"
@@ -33,17 +35,21 @@ type Index interface {
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error)
-	ListBranches(repoId string, results int) ([]*model.Branch, error)
+	ListObjectsByPrefix(repoId, branch, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
+	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, commitId string) error
 	GetBranch(repoId, branch string) (*model.Branch, error)
-	Commit(repoId, branch, message, committer string, metadata map[string]string) error
+	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
+	GetCommit(repoId, commitId string) (*model.Commit, error)
+	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Checkout(repoId, branch, commit string) error
+	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
+	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
 	Merge(repoId, source, destination string) error
-	CreateRepo(repoId, defaultBranch string) error
-	ListRepos() ([]*model.Repo, error)
+	CreateRepo(repoId, bucketName, defaultBranch string) error
+	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
 }
@@ -62,17 +68,10 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 	return nil
 }
 
-func resolveReadRoot(tx store.RepoReadOnlyOperations, repo *model.Repo, branch string) (string, error) {
+func resolveReadRoot(tx store.RepoReadOnlyOperations, branch string) (string, error) {
 	var empty string
 	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, db.ErrNotFound) {
-		// fallback to default branch
-		branchData, err = tx.ReadBranch(repo.DefaultBranch)
-		if err != nil {
-			return empty, err
-		}
-		return branchData.GetCommitRoot(), nil // when falling back we don't want the dirty writes
-	} else if err != nil {
+	if err != nil {
 		return empty, err // unexpected error
 	}
 	return branchData.GetWorkspaceRoot(), nil
@@ -145,11 +144,11 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 		we, err := tx.ReadFromWorkspace(branch, path)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
-			repo, err := tx.ReadRepo()
+			_, err := tx.ReadRepo()
 			if err != nil {
 				return nil, err
 			}
-			root, err := resolveReadRoot(tx, repo, branch)
+			root, err := resolveReadRoot(tx, branch)
 			if err != nil {
 				return nil, err
 			}
@@ -182,11 +181,11 @@ func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, erro
 		we, err := tx.ReadFromWorkspace(branch, path)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// not in workspace, let's try reading it from branch tree
-			repo, err := tx.ReadRepo()
+			_, err := tx.ReadRepo()
 			if err != nil {
 				return nil, err
 			}
-			root, err := resolveReadRoot(tx, repo, branch)
+			root, err := resolveReadRoot(tx, branch)
 			if err != nil {
 				return nil, err
 			}
@@ -283,6 +282,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		if err != nil {
 			return nil, err
 		}
+
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
@@ -296,22 +296,32 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 	return err
 }
 
-func (index *KVIndex) ListBranches(repoId string, results int) ([]*model.Branch, error) {
+func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error) {
+	type result struct {
+		hasMore bool
+		results []*model.Branch
+	}
+
 	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		// we're reading the repo to add it to this transaction's conflict range
+		// but also to ensure it exists
 		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		return tx.ListBranches()
+		branches, hasMore, err := tx.ListBranches(prefix, amount, after)
+		return &result{
+			results: branches,
+			hasMore: hasMore,
+		}, err
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return entries.([]*model.Branch), nil
+	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
 func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
-	// this is gonna be a shit show now.
 	type result struct {
 		hasMore bool
 		results []*model.Entry
@@ -322,11 +332,11 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 		if err != nil {
 			return nil, err
 		}
-		repo, err := tx.ReadRepo()
+		_, err = tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		root, err := resolveReadRoot(tx, repo, branch)
+		root, err := resolveReadRoot(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -386,12 +396,15 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	brn, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		return tx.ReadBranch(branch)
 	})
-	return brn.(*model.Branch), err
+	if err != nil {
+		return nil, err
+	}
+	return brn.(*model.Branch), nil
 }
 
-func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) error {
+func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	ts := time.Now().Unix()
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
@@ -409,6 +422,7 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 			Metadata:  metadata,
 		}
 		commitAddr := ident.Hash(commit)
+		commit.Address = commitAddr
 		err = tx.WriteCommit(commitAddr, commit)
 		if err != nil {
 			return nil, err
@@ -417,9 +431,32 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 		branchData.CommitRoot = commit.GetTree()
 		branchData.WorkspaceRoot = commit.GetTree()
 
-		return nil, tx.WriteBranch(branch, branchData)
+		return commit, tx.WriteBranch(branch, branchData)
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*model.Commit), nil
+}
+
+func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) {
+	commit, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		return tx.ReadCommit(commitId)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return commit.(*model.Commit), nil
+}
+
+func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error) {
+	commits, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		return dag.BfsScan(tx, fromCommitId)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return commits.([]*model.Commit), nil
 }
 
 func (index *KVIndex) DeleteBranch(repoId, branch string) error {
@@ -428,12 +465,71 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 		if err != nil {
 			return nil, err
 		}
-		tx.ClearWorkspace(branch)
+		err = tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		gc(tx, branchData.GetWorkspaceRoot()) // changes are destroyed here
-		tx.DeleteBranch(branch)
-		return nil, nil
+		err = tx.DeleteBranch(branch)
+		return nil, err
 	})
 	return err
+}
+
+func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
+	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
+		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
+		if err != nil {
+			return nil, err
+		}
+		branch, err := tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+
+		diff, err := merkle.Diff(tx,
+			merkle.New(branch.GetWorkspaceRoot()),
+			merkle.New(branch.GetCommitRoot()),
+			merkle.New(branch.GetCommitRoot()))
+		return diff, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.(merkle.Differences), nil
+}
+
+func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differences, error) {
+	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+
+		leftBranch, err := tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+
+		rightBranch, err := tx.ReadBranch(otherBranch)
+		if err != nil {
+			return nil, err
+		}
+
+		commonCommits, err := dag.FindLowestCommonAncestor(tx, leftBranch.GetCommit(), rightBranch.GetCommit())
+		if err != nil {
+			return nil, err
+		}
+		if len(commonCommits) == 0 {
+			return nil, errors.ErrNoMergeBase
+		}
+
+		diff, err := merkle.Diff(tx,
+			merkle.New(leftBranch.GetCommitRoot()),
+			merkle.New(rightBranch.GetCommitRoot()),
+			merkle.New(commonCommits[0].GetTree()))
+		return diff, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return res.(merkle.Differences), nil
 }
 
 func (index *KVIndex) Checkout(repoId, branch, commit string) error {
@@ -466,18 +562,20 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 }
 
 func isValidRepoId(repoId string) bool {
-	return regexp.MustCompile(`^[a-z1-9][a-z1-9-]{2,62}$`).MatchString(repoId)
+	return regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`).MatchString(repoId)
 }
 
-func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
+func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
 
 	if !isValidRepoId(repoId) {
 		return errors.ErrInvalidBucketName
 	}
+
 	creationDate := time.Now().Unix()
 
 	repo := &model.Repo{
 		RepoId:             repoId,
+		BucketName:         bucketName,
 		CreationDate:       creationDate,
 		DefaultBranch:      defaultBranch,
 		PartialCommitRatio: DefaultPartialCommitRatio,
@@ -505,6 +603,7 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 			Metadata:  make(map[string]string),
 		}
 		commitId := ident.Hash(commit)
+		commit.Address = commitId
 		err = tx.WriteCommit(commitId, commit)
 		if err != nil {
 			return nil, err
@@ -520,14 +619,22 @@ func (index *KVIndex) CreateRepo(repoId, defaultBranch string) error {
 	return err
 }
 
-func (index *KVIndex) ListRepos() ([]*model.Repo, error) {
-	repos, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
-		return tx.ListRepos()
+func (index *KVIndex) ListRepos(amount int, after string) ([]*model.Repo, bool, error) {
+	type result struct {
+		repos   []*model.Repo
+		hasMore bool
+	}
+	res, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
+		repos, hasMore, err := tx.ListRepos(amount, after)
+		return &result{
+			repos:   repos,
+			hasMore: hasMore,
+		}, err
 	})
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return repos.([]*model.Repo), nil
+	return res.(*result).repos, res.(*result).hasMore, nil
 }
 
 func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
@@ -542,7 +649,14 @@ func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
 
 func (index *KVIndex) DeleteRepo(repoId string) error {
 	_, err := index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
-		tx.DeleteRepo(repoId)
+		_, err := tx.ReadRepo(repoId)
+		if err != nil {
+			return nil, err
+		}
+		err = tx.DeleteRepo(repoId)
+		if err != nil {
+			return nil, err
+		}
 		return nil, nil
 	})
 	return err

@@ -33,18 +33,42 @@ func init() {
     "title": "lakeFS API",
     "version": "0.1.0"
   },
+  "basePath": "/api/v1",
   "paths": {
     "/repositories": {
       "get": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "list repositories",
         "operationId": "listRepositories",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "repository list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/repository"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/repository"
+                  }
+                }
               }
             }
           },
@@ -58,37 +82,11 @@ func init() {
             }
           }
         }
-      }
-    },
-    "/repositories/{repositoryId}": {
-      "get": {
-        "summary": "get repository",
-        "operationId": "getRepository",
-        "responses": {
-          "200": {
-            "description": "repository",
-            "schema": {
-              "$ref": "#/definitions/repository"
-            }
-          },
-          "401": {
-            "$ref": "#/responses/Unauthorized"
-          },
-          "404": {
-            "description": "repository not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
       },
       "post": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "create repository",
         "operationId": "createRepository",
         "parameters": [
@@ -123,8 +121,43 @@ func init() {
             }
           }
         }
+      }
+    },
+    "/repositories/{repositoryId}": {
+      "get": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "get repository",
+        "operationId": "getRepository",
+        "responses": {
+          "200": {
+            "description": "repository",
+            "schema": {
+              "$ref": "#/definitions/repository"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "repository not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
       },
       "delete": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "delete repository",
         "operationId": "deleteRepository",
         "responses": {
@@ -159,15 +192,38 @@ func init() {
     },
     "/repositories/{repositoryId}/branches": {
       "get": {
+        "tags": [
+          "branches"
+        ],
         "summary": "list branches",
         "operationId": "listBranches",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "branch list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/refspec"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/refspec"
+                  }
+                }
               }
             }
           },
@@ -182,44 +238,10 @@ func init() {
           }
         }
       },
-      "parameters": [
-        {
-          "type": "string",
-          "name": "repositoryId",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
-    "/repositories/{repositoryId}/branches/{branchId}": {
-      "get": {
-        "summary": "get branch",
-        "operationId": "getBranch",
-        "responses": {
-          "200": {
-            "description": "branch",
-            "schema": {
-              "$ref": "#/definitions/refspec"
-            }
-          },
-          "401": {
-            "$ref": "#/responses/Unauthorized"
-          },
-          "404": {
-            "description": "branch not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "post": {
+        "tags": [
+          "branches"
+        ],
         "summary": "create branch",
         "operationId": "createBranch",
         "parameters": [
@@ -255,7 +277,50 @@ func init() {
           }
         }
       },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "get branch",
+        "operationId": "getBranch",
+        "responses": {
+          "200": {
+            "description": "branch",
+            "schema": {
+              "$ref": "#/definitions/refspec"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
       "delete": {
+        "tags": [
+          "branches"
+        ],
         "summary": "delete branch",
         "operationId": "deleteBranch",
         "responses": {
@@ -293,9 +358,608 @@ func init() {
           "required": true
         }
       ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit log for branch",
+        "operationId": "getBranchCommitLog",
+        "responses": {
+          "200": {
+            "description": "commit log",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/commit"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "create commit",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/commit_creation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/diff": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branch",
+        "operationId": "diffBranch",
+        "responses": {
+          "200": {
+            "description": "diff of branch uncommitted changes",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branches",
+        "operationId": "diffBranches",
+        "responses": {
+          "200": {
+            "description": "diff between branches",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "otherBranchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects": {
+      "get": {
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "upload object content",
+        "operationId": "uploadObject",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Object content to upload",
+            "name": "content",
+            "in": "formData"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "repository or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "delete object",
+        "operationId": "deleteObject",
+        "responses": {
+          "204": {
+            "description": "object deleted successfully"
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "list objects under a given tree",
+        "operationId": "listObjects",
+        "responses": {
+          "200": {
+            "description": "entry list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/object_stats"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "tree or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "tree",
+          "in": "query"
+        },
+        {
+          "type": "string",
+          "name": "after",
+          "in": "query"
+        },
+        {
+          "type": "integer",
+          "name": "amount",
+          "in": "query"
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object metadata",
+        "operationId": "statObject",
+        "responses": {
+          "200": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
     }
   },
   "definitions": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "committer": {
+          "type": "string"
+        },
+        "creation_date": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commit_creation": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "LEFT",
+            "RIGHT",
+            "CONFLICT"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "ADDED",
+            "REMOVED",
+            "CHANGED"
+          ]
+        }
+      }
+    },
     "error": {
       "type": "object",
       "properties": {
@@ -305,18 +969,49 @@ func init() {
         }
       }
     },
-    "object": {
+    "object_stats": {
       "type": "object",
-      "required": [
-        "path",
-        "type"
-      ],
       "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "mtime": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },
-        "type": {
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "required": [
+        "has_more"
+      ],
+      "properties": {
+        "has_more": {
+          "type": "boolean"
+        },
+        "max_per_page": {
+          "type": "integer"
+        },
+        "next_offset": {
           "type": "string"
+        },
+        "results": {
+          "type": "integer"
         }
       }
     },
@@ -417,18 +1112,42 @@ func init() {
     "title": "lakeFS API",
     "version": "0.1.0"
   },
+  "basePath": "/api/v1",
   "paths": {
     "/repositories": {
       "get": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "list repositories",
         "operationId": "listRepositories",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "repository list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/repository"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/repository"
+                  }
+                }
               }
             }
           },
@@ -445,40 +1164,11 @@ func init() {
             }
           }
         }
-      }
-    },
-    "/repositories/{repositoryId}": {
-      "get": {
-        "summary": "get repository",
-        "operationId": "getRepository",
-        "responses": {
-          "200": {
-            "description": "repository",
-            "schema": {
-              "$ref": "#/definitions/repository"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "404": {
-            "description": "repository not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
       },
       "post": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "create repository",
         "operationId": "createRepository",
         "parameters": [
@@ -516,8 +1206,46 @@ func init() {
             }
           }
         }
+      }
+    },
+    "/repositories/{repositoryId}": {
+      "get": {
+        "tags": [
+          "repositories"
+        ],
+        "summary": "get repository",
+        "operationId": "getRepository",
+        "responses": {
+          "200": {
+            "description": "repository",
+            "schema": {
+              "$ref": "#/definitions/repository"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "repository not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
       },
       "delete": {
+        "tags": [
+          "repositories"
+        ],
         "summary": "delete repository",
         "operationId": "deleteRepository",
         "responses": {
@@ -555,15 +1283,38 @@ func init() {
     },
     "/repositories/{repositoryId}/branches": {
       "get": {
+        "tags": [
+          "branches"
+        ],
         "summary": "list branches",
         "operationId": "listBranches",
+        "parameters": [
+          {
+            "type": "string",
+            "name": "after",
+            "in": "query"
+          },
+          {
+            "type": "integer",
+            "name": "amount",
+            "in": "query"
+          }
+        ],
         "responses": {
           "200": {
             "description": "branch list",
             "schema": {
-              "type": "array",
-              "items": {
-                "$ref": "#/definitions/refspec"
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/refspec"
+                  }
+                }
               }
             }
           },
@@ -581,47 +1332,10 @@ func init() {
           }
         }
       },
-      "parameters": [
-        {
-          "type": "string",
-          "name": "repositoryId",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
-    "/repositories/{repositoryId}/branches/{branchId}": {
-      "get": {
-        "summary": "get branch",
-        "operationId": "getBranch",
-        "responses": {
-          "200": {
-            "description": "branch",
-            "schema": {
-              "$ref": "#/definitions/refspec"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "404": {
-            "description": "branch not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "post": {
+        "tags": [
+          "branches"
+        ],
         "summary": "create branch",
         "operationId": "createBranch",
         "parameters": [
@@ -660,7 +1374,53 @@ func init() {
           }
         }
       },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "get branch",
+        "operationId": "getBranch",
+        "responses": {
+          "200": {
+            "description": "branch",
+            "schema": {
+              "$ref": "#/definitions/refspec"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
       "delete": {
+        "tags": [
+          "branches"
+        ],
         "summary": "delete branch",
         "operationId": "deleteBranch",
         "responses": {
@@ -701,9 +1461,638 @@ func init() {
           "required": true
         }
       ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/commits": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit log for branch",
+        "operationId": "getBranchCommitLog",
+        "responses": {
+          "200": {
+            "description": "commit log",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/commit"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "create commit",
+        "operationId": "commit",
+        "parameters": [
+          {
+            "name": "commit",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/commit_creation"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/diff": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branch",
+        "operationId": "diffBranch",
+        "responses": {
+          "200": {
+            "description": "diff of branch uncommitted changes",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}": {
+      "get": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "diff branches",
+        "operationId": "diffBranches",
+        "responses": {
+          "200": {
+            "description": "diff between branches",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "otherBranchId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects": {
+      "get": {
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "post": {
+        "consumes": [
+          "multipart/form-data"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "upload object content",
+        "operationId": "uploadObject",
+        "parameters": [
+          {
+            "type": "file",
+            "description": "Object content to upload",
+            "name": "content",
+            "in": "formData"
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "repository or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "delete object",
+        "operationId": "deleteObject",
+        "responses": {
+          "204": {
+            "description": "object deleted successfully"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "list objects under a given tree",
+        "operationId": "listObjects",
+        "responses": {
+          "200": {
+            "description": "entry list",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "pagination": {
+                  "$ref": "#/definitions/pagination"
+                },
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/object_stats"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "tree or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "tree",
+          "in": "query"
+        },
+        {
+          "type": "string",
+          "name": "after",
+          "in": "query"
+        },
+        {
+          "type": "integer",
+          "name": "amount",
+          "in": "query"
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+      "get": {
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object metadata",
+        "operationId": "statObject",
+        "responses": {
+          "200": {
+            "description": "object metadata",
+            "schema": {
+              "$ref": "#/definitions/object_stats"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "branchId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
     }
   },
   "definitions": {
+    "commit": {
+      "type": "object",
+      "properties": {
+        "committer": {
+          "type": "string"
+        },
+        "creation_date": {
+          "type": "integer",
+          "format": "int64"
+        },
+        "id": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "parents": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "commit_creation": {
+      "type": "object",
+      "required": [
+        "message"
+      ],
+      "properties": {
+        "message": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "diff": {
+      "type": "object",
+      "properties": {
+        "direction": {
+          "type": "string",
+          "enum": [
+            "LEFT",
+            "RIGHT",
+            "CONFLICT"
+          ]
+        },
+        "path": {
+          "type": "string"
+        },
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "ADDED",
+            "REMOVED",
+            "CHANGED"
+          ]
+        }
+      }
+    },
     "error": {
       "type": "object",
       "properties": {
@@ -713,18 +2102,51 @@ func init() {
         }
       }
     },
-    "object": {
+    "object_stats": {
       "type": "object",
-      "required": [
-        "path",
-        "type"
-      ],
       "properties": {
+        "checksum": {
+          "type": "string"
+        },
+        "mtime": {
+          "type": "integer",
+          "format": "int64"
+        },
         "path": {
           "type": "string"
         },
-        "type": {
+        "path_type": {
+          "type": "string",
+          "enum": [
+            "TREE",
+            "OBJECT"
+          ]
+        },
+        "size_bytes": {
+          "type": "integer",
+          "format": "int64"
+        }
+      }
+    },
+    "pagination": {
+      "type": "object",
+      "required": [
+        "has_more"
+      ],
+      "properties": {
+        "has_more": {
+          "type": "boolean"
+        },
+        "max_per_page": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "next_offset": {
           "type": "string"
+        },
+        "results": {
+          "type": "integer",
+          "minimum": 0
         }
       }
     },

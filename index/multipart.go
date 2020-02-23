@@ -211,6 +211,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 				Type:      model.Entry_OBJECT,
 				Timestamp: completionTime.Unix(),
 				Size:      obj.GetSize(),
+				Checksum:  obj.GetChecksum(),
 			},
 		})
 		if err != nil {

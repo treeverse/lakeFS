@@ -16,36 +16,101 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"os"
+	"strings"
+
+	"github.com/jedib0t/go-pretty/text"
+
+	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/uri"
 )
 
-// diffCmd represents the diff command
 var diffCmd = &cobra.Command{
-	Use:   "diff",
-	Short: "see the list of files added/changed/removed between two branches",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Use:   "diff [branch uri] <other branch uri>",
+	Short: "see the list of paths added/changed/removed in a branch or between two branches",
+	Args: ValidationChain(
+		HasRangeArgs(1, 2),
+		IsBranchURI(0),
+	),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("diff called")
+		client := getClient()
+
+		var diff []*models.Diff
+		var err error
+		if len(args) == 2 {
+			if err := IsBranchURI(1)(args); err != nil {
+				DieErr(err)
+			}
+			leftBranchURI := uri.Must(uri.Parse(args[0]))
+			rightBranchURI := uri.Must(uri.Parse(args[1]))
+
+			if leftBranchURI.Repository != rightBranchURI.Repository {
+				DieFmt("both branches must belong to the same repository")
+			}
+
+			diff, err = client.DiffBranches(context.Background(), leftBranchURI.Repository, leftBranchURI.Refspec, rightBranchURI.Refspec)
+			if err != nil {
+				DieErr(err)
+			}
+			for _, line := range diff {
+				FmtDiff(line, true)
+			}
+		} else {
+			branchURI := uri.Must(uri.Parse(args[0]))
+			diff, err = client.DiffBranch(context.Background(), branchURI.Repository, branchURI.Refspec)
+			if err != nil {
+				DieErr(err)
+			}
+			for _, line := range diff {
+				FmtDiff(line, false)
+			}
+		}
 	},
+}
+
+func FmtDiff(diff *models.Diff, withDirection bool) {
+	var color text.Color
+	var action string
+
+	switch diff.Type {
+	case models.DiffTypeADDED:
+		color = text.FgGreen
+		action = "+ added"
+	case models.DiffTypeREMOVED:
+		color = text.FgRed
+		action = "- removed"
+	default:
+		color = text.FgYellow
+		action = "~ modified"
+	}
+
+	var direction string
+	switch diff.Direction {
+	case models.DiffDirectionLEFT:
+		direction = "<"
+	case models.DiffDirectionRIGHT:
+		direction = ">"
+	default:
+		direction = "*"
+	}
+
+	if !withDirection {
+		_, _ = os.Stdout.WriteString(
+			color.Sprintf("%s %s %s\n",
+				action, strings.ToLower(diff.PathType), diff.Path),
+		)
+		return
+	}
+
+	_, _ = os.Stdout.WriteString(
+		color.Sprintf("%s %s %s %s\n",
+			direction, action, strings.ToLower(diff.PathType), diff.Path),
+	)
 }
 
 func init() {
 	rootCmd.AddCommand(diffCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// diffCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// diffCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 }

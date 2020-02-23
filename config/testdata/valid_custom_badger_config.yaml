@@ -1,0 +1,25 @@
+---
+logging:
+  format: text
+  level: NONE
+  output: "-"
+
+metadata:
+  db:
+    type: badger
+    badger:
+      path: /does/not/exist
+
+blockstore:
+  type: local
+  local:
+    path: /tmp
+
+gateways:
+  s3:
+    listen_address: "0.0.0.0:8000"
+    domain_name: s3.example.com
+    region: us-east-1
+
+api:
+  listen_address: "0.0.0.0:8005"
