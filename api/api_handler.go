@@ -71,6 +71,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.BranchesGetBranchHandler = a.GetBranchHandler()
 	api.BranchesCreateBranchHandler = a.CreateBranchHandler()
 	api.BranchesDeleteBranchHandler = a.DeleteBranchHandler()
+	api.BranchesRevertBranchHandler = a.RevertBranchHandler()
 
 	api.CommitsCommitHandler = a.CommitHandler()
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
@@ -699,5 +700,39 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		}
 
 		return objects.NewDeleteObjectNoContent()
+	})
+}
+func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
+	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
+		if err != nil {
+			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		switch swag.StringValue(params.Revert.Type) {
+		case models.RevertCreationTypeCOMMIT:
+			err = a.meta.RevertCommit(params.RepositoryID, params.BranchID, params.Revert.Commit)
+
+		case models.RevertCreationTypeTREE:
+			err = a.meta.RevertPath(params.RepositoryID, params.BranchID, params.Revert.Path)
+
+		case models.RevertCreationTypeRESET:
+			err = a.meta.ResetBranch(params.RepositoryID, params.BranchID)
+
+		case models.RevertCreationTypeOBJECT:
+			err = a.meta.RevertObject(params.RepositoryID, params.BranchID, params.Revert.Path)
+		default:
+			return branches.NewRevertBranchNotFound().
+				WithPayload(responseError("revert type not found"))
+		}
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return branches.NewRevertBranchNotFound().
+					WithPayload(responseError("branch not found"))
+			} else {
+				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		return branches.NewRevertBranchNoContent()
 	})
 }
