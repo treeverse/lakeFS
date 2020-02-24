@@ -151,12 +151,12 @@ func TestServer_BasicAuth(t *testing.T) {
 		if err == nil {
 			t.Fatalf("expect error when passing invalid credentials")
 		}
-		errMsg, ok := err.(*repositories.ListRepositoriesDefault)
+		errMsg, ok := err.(*repositories.ListRepositoriesUnauthorized)
 		if !ok {
 			t.Fatal("expected default error answer")
 		}
 
-		if !strings.EqualFold(errMsg.GetPayload().Message, "authentication error") {
+		if !strings.EqualFold(errMsg.GetPayload().Message, "error authenticating request") {
 			t.Fatalf("expected authentication error, got error: %s", errMsg.GetPayload().Message)
 		}
 	})

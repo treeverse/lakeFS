@@ -19,8 +19,8 @@ PROTOC=${DOCKER} run --rm -i -v $(CURDIR):/defs namely/protoc-all
 BINARY_NAME=lakefs
 CLI_BINARY_NAME=lakectl
 
-UI_DIR="$(PWD)/webui"
-UI_BUILD_DIR="$(UI_DIR)/build"
+UI_DIR=$(PWD)/webui
+UI_BUILD_DIR=$(UI_DIR)/build
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
