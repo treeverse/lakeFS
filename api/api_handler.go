@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -295,13 +296,13 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error creating repository"))
+				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
 		repo, err := a.meta.GetRepo(swag.StringValue(params.Repository.ID))
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error creating repository"))
+				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
 		return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
