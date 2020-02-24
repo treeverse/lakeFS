@@ -5,3 +5,23 @@
 .part-title {
     margin-bottom: 40px;
 }
+
+/* fix bootstrap icon's svg placement in buttons */
+.danger-text {
+    color: red;
+}
+
+button > svg {
+    margin-top: -4px;
+    font-size: 1.5em;
+}
+
+small.description {
+    color: #999999;
+    float: right;
+    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+
+small.description .action {
+    cursor: pointer;
+}
