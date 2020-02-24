@@ -3,7 +3,6 @@ package api_test
 import (
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 
 	httptransport "github.com/go-openapi/runtime/client"
@@ -151,13 +150,8 @@ func TestServer_BasicAuth(t *testing.T) {
 		if err == nil {
 			t.Fatalf("expect error when passing invalid credentials")
 		}
-		errMsg, ok := err.(*repositories.ListRepositoriesDefault)
-		if !ok {
+		if err != api.ErrAuthenticationFailed {
 			t.Fatal("expected default error answer")
-		}
-
-		if !strings.EqualFold(errMsg.GetPayload().Message, "authentication error") {
-			t.Fatalf("expected authentication error, got error: %s", errMsg.GetPayload().Message)
 		}
 	})
 }
