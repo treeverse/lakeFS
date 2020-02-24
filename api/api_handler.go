@@ -6,6 +6,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
+
 	"github.com/treeverse/lakefs/ident"
 	pth "github.com/treeverse/lakefs/index/path"
 
@@ -58,6 +60,8 @@ func NewHandler(meta index.Index, auth auth.Service, blockAdapter block.Adapter)
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (a *Handler) Configure(api *operations.LakefsAPI) {
 	// Register operations here
+	api.AuthenticationGetAuthenticationHandler = a.AuthenticationGetAuthenticationHandler()
+
 	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
 	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
@@ -84,6 +88,12 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
 	return authorize(a.auth, user, action)
+}
+
+func (a *Handler) AuthenticationGetAuthenticationHandler() authentication.GetAuthenticationHandler {
+	return authentication.GetAuthenticationHandlerFunc(func(params authentication.GetAuthenticationParams, user *models.User) middleware.Responder {
+		return authentication.NewGetAuthenticationOK().WithPayload(&authentication.GetAuthenticationOKBody{User: user})
+	})
 }
 
 func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {

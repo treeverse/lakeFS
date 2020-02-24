@@ -1,9 +1,10 @@
 package api
 
 import (
-	"fmt"
 	"net/http"
 	"strings"
+
+	"github.com/go-openapi/errors"
 
 	"github.com/rakyll/statik/fs"
 
@@ -25,6 +26,10 @@ import (
 const (
 	RequestIdHeaderName = "X-Request-ID"
 	LoggerServiceName   = "rest_api"
+)
+
+var (
+	ErrAuthenticationFailed = errors.New(http.StatusUnauthorized, "error authenticating request")
 )
 
 type Server struct {
@@ -54,15 +59,19 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetAPICredentials(accessKey)
 		if err != nil {
-			return nil, err
+			log.WithField("access_key", accessKey).Warn("could not get access key for login")
+			return nil, ErrAuthenticationFailed
 		}
 		if !strings.EqualFold(secretKey, credentials.GetAccessSecretKey()) {
-			return nil, fmt.Errorf("authentication error")
+			log.WithField("access_key", accessKey).Warn("access key secret does not match")
+			return nil, ErrAuthenticationFailed
 		}
 		userData, err := s.authService.GetUser(credentials.GetEntityId())
 		if err != nil {
-			return nil, err
+			log.WithField("access_key", accessKey).Error("could not find user for key pair")
+			return nil, ErrAuthenticationFailed
 		}
+		log.WithField("access_key", accessKey).Info("successful login for key")
 		return &models.User{ID: userData.GetId()}, nil
 	}
 }

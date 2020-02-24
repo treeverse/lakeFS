@@ -12,6 +12,7 @@ import (
 
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -52,6 +53,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	//
 	// Example:
 	// api.APIAuthorizer = security.Authorized()
+	if api.AuthenticationGetAuthenticationHandler == nil {
+		api.AuthenticationGetAuthenticationHandler = authentication.GetAuthenticationHandlerFunc(func(params authentication.GetAuthenticationParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation authentication.GetAuthentication has not yet been implemented")
+		})
+	}
 	if api.CommitsCommitHandler == nil {
 		api.CommitsCommitHandler = commits.CommitHandlerFunc(func(params commits.CommitParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation commits.Commit has not yet been implemented")
