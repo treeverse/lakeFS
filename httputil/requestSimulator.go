@@ -37,18 +37,25 @@ const (
 )
 
 func init() {
-	if len(os.Args) >= 4 {
-		switch os.Args[2] {
-		case "record":
-			isRecording = true
-			uploadIdRegexp = regexp.MustCompile(startUploadTag + "[\\da-f]+" + endUploadTag)
-		case "playback":
-			isPlayback = true
-		default:
-			panic("second command line illegal: " + os.Args[2])
-		}
-		recordingDir = "testdata/recordings/" + os.Args[3]
+	state, exist := os.LookupEnv("UNIT_TEST")
+	if !exist {
+		return
 	}
+	switch state {
+	case "record":
+		isRecording = true
+		uploadIdRegexp = regexp.MustCompile(startUploadTag + "[\\da-f]+" + endUploadTag)
+	case "playback":
+		isPlayback = true
+	default:
+		panic("UNIT_TEST environment variable has unknown value: " + state + "\\n")
+	}
+	testDir, exist := os.LookupEnv("TEST_DIR")
+	if !exist {
+		panic("test directory not defined")
+	}
+	recordingDir = "testdata/recordings/" + testDir
+
 }
 
 func IsPlayback() bool {
@@ -349,7 +356,6 @@ func (r *simulationEvent) Read(b []byte) (int, error) {
 		fName := recordingDir + "/B" + r.baseName + ".body"
 		f, err := os.Open(fName)
 		if err != nil { // couldn find recording file
-			log.WithError(err).Warn("Could not open " + fName)
 			return 0, io.EOF
 		}
 		r.bodyReader = f

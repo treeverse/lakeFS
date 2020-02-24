@@ -2,21 +2,18 @@ package main
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/httputil"
-	"os"
-	"os/user"
-	"path"
-	"runtime"
-	"strings"
-
+	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
-
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
+	"os"
 )
 
 func setupConf(cmd *cobra.Command) *config.Config {
@@ -124,11 +121,13 @@ var runCmd = &cobra.Command{
 			conf.GetS3GatewayListenAddress(),
 			conf.GetS3GatewayDomainName(),
 		)
-		panic(gatewayServer.Listen())
-
+		if httputil.IsPlayback() {
+			httputil.DoTestRun(gatewayServer.Server.Handler)
+		} else {
+			panic(gatewayServer.Listen())
+		}
 		return nil
-	},
-}
+	}}
 
 var keysCmd = &cobra.Command{
 	Use:   "keys",
@@ -150,13 +149,6 @@ var keysCmd = &cobra.Command{
 
 		return err
 	},
-	// init gateway server
-	gatewayServer := gateway.NewServer(region, meta, blockStore, authService, mpu, "0.0.0.0:8000", "s3.local:8000")
-	if httputil.IsPlayback() {
-		httputil.DoTestRun(gatewayServer.Server.Handler)
-	} else {
-		panic(gatewayServer.Listen())
-	}
 }
 
 var treeCmd = &cobra.Command{
