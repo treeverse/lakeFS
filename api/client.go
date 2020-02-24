@@ -20,36 +20,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
-/*
-
-GET    /repositories // list repos
-GET    /repositories/myrepo // get repo
-POST   /repositories/myrepo // create repo
-DELETE /repositories/myrepo // delete repo
-
-GET    /repositories/myrepo/branches // list branches
-GET    /repositories/myrepo/branches/feature-new // get branch
-POST   /repositories/myrepo/branches/feature-new // create branch
-PUT 	/repositories/myrepo/branches/feature-new?[commit=<commit_id>] [path=<path>] // revert branch to previous commit or revert path to last commit
-DELETE /repositories/myrepo/branches/feature-new // delete branch
-
-GET    /repositories/myrepo/branches/feature-new/stat/collections/file.csv // get file metadata
-GET    /repositories/myrepo/branches/feature-new/ls/prefix?from="<from_path>" // list files
-GET    /repositories/myrepo/branches/feature-new/objects/collections/file.csv // get file content
-PUT    /repositories/myrepo/branches/feature-new/objects/collections/file.csv // upload file content
-DELETE /repositories/myrepo/branches/feature-new/objects/collections/file.csv // delete file
-
-POST /repositories/myrepo/branches/feature-new/commits // create a commit as head of branch
-GET  /repositories/myrepo/branches/feature-new/commits // list commits for branch
-GET  /repositories/myrepo/commits/commit_id // get commit info
-
-GET  /repositories/myrepo/branches/feature-new/diff/master // get diff between branches
-PUT  /repositories/myrepo/branches/feature-new/checkout/collections/file.csv // checkout a given file (i.e. restore it to last committed version)
-PUT  /repositories/myrepo/branches/feature-new/reset // reset (i.e. restore tree to last committed version)
-PUT  /repositories/myrepo/branches/feature-new/merge/master // merge branch into destination
-
-*/
-
 type Client interface {
 	ListRepositories(ctx context.Context, after string, amount int) ([]*models.Repository, *models.Pagination, error)
 	GetRepository(ctx context.Context, repoId string) (*models.Repository, error)
