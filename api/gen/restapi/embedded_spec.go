@@ -35,6 +35,26 @@ func init() {
   },
   "basePath": "/api/v1",
   "paths": {
+    "/authentication": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "authentication successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "$ref": "#/definitions/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/repositories": {
       "get": {
         "tags": [
@@ -1114,6 +1134,26 @@ func init() {
   },
   "basePath": "/api/v1",
   "paths": {
+    "/authentication": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "authentication successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "$ref": "#/definitions/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/repositories": {
       "get": {
         "tags": [

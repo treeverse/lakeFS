@@ -20,6 +20,7 @@ import (
 	"github.com/go-openapi/swag"
 
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -46,6 +47,9 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		MultipartformConsumer: runtime.DiscardConsumer,
 		BinProducer:           runtime.ByteStreamProducer(),
 		JSONProducer:          runtime.JSONProducer(),
+		AuthenticationGetAuthenticationHandler: authentication.GetAuthenticationHandlerFunc(func(params authentication.GetAuthenticationParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation authentication.GetAuthentication has not yet been implemented")
+		}),
 		CommitsCommitHandler: commits.CommitHandlerFunc(func(params commits.CommitParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation commits.Commit has not yet been implemented")
 		}),
@@ -150,6 +154,8 @@ type LakefsAPI struct {
 	// APIAuthorizer provides access control (ACL/RBAC/ABAC) by providing access to the request and authenticated principal
 	APIAuthorizer runtime.Authorizer
 
+	// AuthenticationGetAuthenticationHandler sets the operation handler for the get authentication operation
+	AuthenticationGetAuthenticationHandler authentication.GetAuthenticationHandler
 	// CommitsCommitHandler sets the operation handler for the commit operation
 	CommitsCommitHandler commits.CommitHandler
 	// BranchesCreateBranchHandler sets the operation handler for the create branch operation
@@ -262,6 +268,10 @@ func (o *LakefsAPI) Validate() error {
 
 	if o.BasicAuthAuth == nil {
 		unregistered = append(unregistered, "BasicAuthAuth")
+	}
+
+	if o.AuthenticationGetAuthenticationHandler == nil {
+		unregistered = append(unregistered, "Authentication.GetAuthenticationHandler")
 	}
 
 	if o.CommitsCommitHandler == nil {
@@ -442,6 +452,11 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers == nil {
 		o.handlers = make(map[string]map[string]http.Handler)
 	}
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
+	o.handlers["GET"]["/authentication"] = authentication.NewGetAuthentication(o.context, o.AuthenticationGetAuthenticationHandler)
 
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)
