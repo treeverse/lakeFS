@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
+
+	"golang.org/x/xerrors"
 
 	"github.com/go-openapi/swag"
 
@@ -128,6 +131,92 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
+func moreThanOne(args ...bool) bool {
+	count := 0
+	for _, args := range args {
+		if args {
+			count++
+		}
+	}
+	return count > 1
+}
+
+// lakectl branch revert lakefs://myrepo@master --commit commitId --tree path --object path
+var branchRevertCmd = &cobra.Command{
+	Use:   "revert [branch uri] [flags]",
+	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path ",
+	Long: `revert changes: there are four different ways to revert changes:
+				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
+				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
+				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
+				4. revert uncommited changes for specific object  - revert lakefs://myrepo@master  --object path `,
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsBranchURI(0),
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		clt := getClient()
+		u := uri.Must(uri.Parse(args[0]))
+
+		commitId, err := cmd.Flags().GetString("commit")
+		if err != nil {
+			DieErr(err)
+		}
+		tree, err := cmd.Flags().GetString("tree")
+		if err != nil {
+			DieErr(err)
+		}
+		object, err := cmd.Flags().GetString("object")
+		if err != nil {
+			DieErr(err)
+		}
+		isCommit := len(commitId) > 0
+		isTree := len(tree) > 0
+		isObject := len(object) > 0
+
+		if moreThanOne(isCommit, isTree, isObject) {
+			DieErr(xerrors.Errorf("can't revert by multiple commands, please choose only one [commit, tree, object]!"))
+		}
+
+		var revert models.RevertCreation
+		var confirmationMsg string
+		if isCommit {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s ?", commitId)
+			revert = models.RevertCreation{
+				Commit: commitId,
+				Type:   swag.String(models.RevertCreationTypeCOMMIT),
+			}
+		} else if isTree {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit?", tree)
+			revert = models.RevertCreation{
+				Path: tree,
+				Type: swag.String(models.RevertCreationTypeTREE),
+			}
+		} else if isObject {
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit?", object)
+			revert = models.RevertCreation{
+				Path: object,
+				Type: swag.String(models.RevertCreationTypeOBJECT),
+			}
+		} else {
+			confirmationMsg = "are you sure you want to revert all uncommitted changes?"
+			revert = models.RevertCreation{
+				Type: swag.String(models.RevertCreationTypeRESET),
+			}
+		}
+
+		confirmation, err := confirm(confirmationMsg)
+		if err != nil || !confirmation {
+			fmt.Println("Revert Aborted")
+			return
+		}
+		err = clt.RevertBranch(context.Background(), u.Repository, u.Refspec, &revert)
+		if err != nil {
+			DieErr(err)
+		}
+	},
+}
+
 var branchShowCmd = &cobra.Command{
 	Use:   "show [branch uri]",
 	Short: "show branch metadata",
@@ -152,6 +241,7 @@ func init() {
 	branchCmd.AddCommand(branchDeleteCmd)
 	branchCmd.AddCommand(branchListCmd)
 	branchCmd.AddCommand(branchShowCmd)
+	branchCmd.AddCommand(branchRevertCmd)
 
 	branchListCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
 	branchListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
@@ -160,4 +250,8 @@ func init() {
 	_ = branchCreateCmd.MarkFlagRequired("source")
 
 	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
+
+	branchRevertCmd.Flags().StringP("commit", "c", "", "commit ID to revert branch to ")
+	branchRevertCmd.Flags().StringP("tree", "p", "", "path to tree to be reverted")
+	branchRevertCmd.Flags().StringP("object", "o", "", "path to object to be reverted")
 }
