@@ -2,7 +2,10 @@ package cmd
 
 import (
 	"context"
+	"fmt"
 	"strings"
+
+	"golang.org/x/xerrors"
 
 	"github.com/go-openapi/swag"
 
@@ -151,31 +154,28 @@ var branchRevertCmd = &cobra.Command{
 		HasNArgs(1),
 		IsBranchURI(0),
 	),
-	RunE: func(cmd *cobra.Command, args []string) error {
-		clt, err := getClient()
-		if err != nil {
-			return err
-		}
+	Run: func(cmd *cobra.Command, args []string) {
+		clt := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 
 		commitId, err := cmd.Flags().GetString("commit")
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		tree, err := cmd.Flags().GetString("tree")
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		object, err := cmd.Flags().GetString("object")
 		if err != nil {
-			return err
+			DieErr(err)
 		}
 		isCommit := len(commitId) > 0
 		isTree := len(tree) > 0
 		isObject := len(object) > 0
 
 		if moreThanOne(isCommit, isTree, isObject) {
-			return xerrors.Errorf("can't revert by multiple commands, please choose only one [commit, tree, object]!")
+			DieErr(xerrors.Errorf("can't revert by multiple commands, please choose only one [commit, tree, object]!"))
 		}
 
 		var revert models.RevertCreation
@@ -208,10 +208,12 @@ var branchRevertCmd = &cobra.Command{
 		confirmation, err := confirm(confirmationMsg)
 		if err != nil || !confirmation {
 			fmt.Println("Revert Aborted")
-			return nil
+			return
 		}
 		err = clt.RevertBranch(context.Background(), u.Repository, u.Refspec, &revert)
-		return err
+		if err != nil {
+			DieErr(err)
+		}
 	},
 }
 
