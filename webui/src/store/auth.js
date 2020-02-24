@@ -9,7 +9,6 @@ const hydrateUser = () => {
 }
 
 const initialState = {
-    isLoggedIn: false,
     user: hydrateUser(),
     loginError: null,
 };
@@ -30,11 +29,6 @@ export default (state = initialState, action) => {
                 ...state,
                 user: action.user,
                 loginError: null,
-            };
-        case 'LOGIN':
-            return {
-                ...state,
-                loginError: "could not login",
             };
         case 'LOGOUT':
             window.localStorage.removeItem('user');
