@@ -2,14 +2,13 @@ package gateway
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/pprof"
-	"strings"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
+	"net/http"
+	"net/http/pprof"
+	"strings"
 
 	"github.com/treeverse/lakefs/permissions"
 
