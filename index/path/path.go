@@ -103,3 +103,8 @@ func (p *Path) DirName() string {
 	}
 	return dirName
 }
+
+func (p *Path) IsRoot() bool {
+	root := New("")
+	return p.Equals(root)
+}
