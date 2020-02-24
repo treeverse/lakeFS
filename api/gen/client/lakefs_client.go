@@ -13,6 +13,7 @@ import (
 
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 )
 
@@ -60,6 +61,7 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Lakefs {
 	cli.Transport = transport
 	cli.Branches = branches.New(transport, formats)
 	cli.Commits = commits.New(transport, formats)
+	cli.Objects = objects.New(transport, formats)
 	cli.Repositories = repositories.New(transport, formats)
 	return cli
 }
@@ -109,6 +111,8 @@ type Lakefs struct {
 
 	Commits commits.ClientService
 
+	Objects objects.ClientService
+
 	Repositories repositories.ClientService
 
 	Transport runtime.ClientTransport
@@ -119,5 +123,6 @@ func (c *Lakefs) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
 	c.Branches.SetTransport(transport)
 	c.Commits.SetTransport(transport)
+	c.Objects.SetTransport(transport)
 	c.Repositories.SetTransport(transport)
 }

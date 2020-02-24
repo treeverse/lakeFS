@@ -4,11 +4,9 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net"
 	"os"
 	"os/signal"
 	"runtime"
-	"strconv"
 	"strings"
 	"syscall"
 
@@ -296,26 +294,4 @@ func (c *Config) GetS3GatewayDomainName() string {
 
 func (c *Config) GetAPIListenAddress() string {
 	return viper.GetString("api.listen_address")
-}
-
-func (c *Config) GetAPIListenHost() string {
-	hostport := viper.GetString("api.listen_address")
-	host, _, err := net.SplitHostPort(hostport)
-	if err != nil {
-		panic(fmt.Errorf("could not parse host for API listen address %s: %s", hostport, err))
-	}
-	return host
-}
-
-func (c *Config) GetAPIListenPort() int {
-	hostport := viper.GetString("api.listen_address")
-	_, port, err := net.SplitHostPort(hostport)
-	if err != nil {
-		panic(fmt.Errorf("could not parse host for API listen address %s: %s", hostport, err))
-	}
-	portNum, err := strconv.ParseInt(port, 10, 16)
-	if err != nil {
-		panic(fmt.Errorf("could not parse port for API listen address %s: %s", hostport, err))
-	}
-	return int(portNum)
 }

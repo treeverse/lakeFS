@@ -22,27 +22,30 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
 // NewLakefsAPI creates a new Lakefs instance
 func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 	return &LakefsAPI{
-		handlers:            make(map[string]map[string]http.Handler),
-		formats:             strfmt.Default,
-		defaultConsumes:     "application/json",
-		defaultProduces:     "application/json",
-		customConsumers:     make(map[string]runtime.Consumer),
-		customProducers:     make(map[string]runtime.Producer),
-		PreServerShutdown:   func() {},
-		ServerShutdown:      func() {},
-		spec:                spec,
-		ServeError:          errors.ServeError,
-		BasicAuthenticator:  security.BasicAuth,
-		APIKeyAuthenticator: security.APIKeyAuth,
-		BearerAuthenticator: security.BearerAuth,
-		JSONConsumer:        runtime.JSONConsumer(),
-		JSONProducer:        runtime.JSONProducer(),
+		handlers:              make(map[string]map[string]http.Handler),
+		formats:               strfmt.Default,
+		defaultConsumes:       "application/json",
+		defaultProduces:       "application/json",
+		customConsumers:       make(map[string]runtime.Consumer),
+		customProducers:       make(map[string]runtime.Producer),
+		PreServerShutdown:     func() {},
+		ServerShutdown:        func() {},
+		spec:                  spec,
+		ServeError:            errors.ServeError,
+		BasicAuthenticator:    security.BasicAuth,
+		APIKeyAuthenticator:   security.APIKeyAuth,
+		BearerAuthenticator:   security.BearerAuth,
+		JSONConsumer:          runtime.JSONConsumer(),
+		MultipartformConsumer: runtime.DiscardConsumer,
+		BinProducer:           runtime.ByteStreamProducer(),
+		JSONProducer:          runtime.JSONProducer(),
 		CommitsCommitHandler: commits.CommitHandlerFunc(func(params commits.CommitParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation commits.Commit has not yet been implemented")
 		}),
@@ -54,6 +57,9 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		}),
 		BranchesDeleteBranchHandler: branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.DeleteBranch has not yet been implemented")
+		}),
+		ObjectsDeleteObjectHandler: objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.DeleteObject has not yet been implemented")
 		}),
 		RepositoriesDeleteRepositoryHandler: repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.DeleteRepository has not yet been implemented")
@@ -73,17 +79,26 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		CommitsGetCommitHandler: commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation commits.GetCommit has not yet been implemented")
 		}),
+		ObjectsGetObjectHandler: objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.GetObject has not yet been implemented")
+		}),
 		RepositoriesGetRepositoryHandler: repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.GetRepository has not yet been implemented")
 		}),
 		BranchesListBranchesHandler: branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.ListBranches has not yet been implemented")
 		}),
+		ObjectsListObjectsHandler: objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.ListObjects has not yet been implemented")
+		}),
 		RepositoriesListRepositoriesHandler: repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
 		}),
-		BranchesRevertBranchHandler: branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation branches.RevertBranch has not yet been implemented")
+		ObjectsStatObjectHandler: objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.StatObject has not yet been implemented")
+		}),
+		ObjectsUploadObjectHandler: objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation objects.UploadObject has not yet been implemented")
 		}), // Applies when the Authorization header is set with the Basic scheme
 		BasicAuthAuth: func(user string, pass string) (*models.User, error) {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
@@ -118,6 +133,12 @@ type LakefsAPI struct {
 	// JSONConsumer registers a consumer for the following mime types:
 	//   - application/json
 	JSONConsumer runtime.Consumer
+	// MultipartformConsumer registers a consumer for the following mime types:
+	//   - multipart/form-data
+	MultipartformConsumer runtime.Consumer
+	// BinProducer registers a producer for the following mime types:
+	//   - application/octet-stream
+	BinProducer runtime.Producer
 	// JSONProducer registers a producer for the following mime types:
 	//   - application/json
 	JSONProducer runtime.Producer
@@ -137,6 +158,8 @@ type LakefsAPI struct {
 	RepositoriesCreateRepositoryHandler repositories.CreateRepositoryHandler
 	// BranchesDeleteBranchHandler sets the operation handler for the delete branch operation
 	BranchesDeleteBranchHandler branches.DeleteBranchHandler
+	// ObjectsDeleteObjectHandler sets the operation handler for the delete object operation
+	ObjectsDeleteObjectHandler objects.DeleteObjectHandler
 	// RepositoriesDeleteRepositoryHandler sets the operation handler for the delete repository operation
 	RepositoriesDeleteRepositoryHandler repositories.DeleteRepositoryHandler
 	// BranchesDiffBranchHandler sets the operation handler for the diff branch operation
@@ -149,14 +172,20 @@ type LakefsAPI struct {
 	CommitsGetBranchCommitLogHandler commits.GetBranchCommitLogHandler
 	// CommitsGetCommitHandler sets the operation handler for the get commit operation
 	CommitsGetCommitHandler commits.GetCommitHandler
+	// ObjectsGetObjectHandler sets the operation handler for the get object operation
+	ObjectsGetObjectHandler objects.GetObjectHandler
 	// RepositoriesGetRepositoryHandler sets the operation handler for the get repository operation
 	RepositoriesGetRepositoryHandler repositories.GetRepositoryHandler
 	// BranchesListBranchesHandler sets the operation handler for the list branches operation
 	BranchesListBranchesHandler branches.ListBranchesHandler
+	// ObjectsListObjectsHandler sets the operation handler for the list objects operation
+	ObjectsListObjectsHandler objects.ListObjectsHandler
 	// RepositoriesListRepositoriesHandler sets the operation handler for the list repositories operation
 	RepositoriesListRepositoriesHandler repositories.ListRepositoriesHandler
-	// BranchesRevertBranchHandler sets the operation handler for the revert branch operation
-	BranchesRevertBranchHandler branches.RevertBranchHandler
+	// ObjectsStatObjectHandler sets the operation handler for the stat object operation
+	ObjectsStatObjectHandler objects.StatObjectHandler
+	// ObjectsUploadObjectHandler sets the operation handler for the upload object operation
+	ObjectsUploadObjectHandler objects.UploadObjectHandler
 	// ServeError is called when an error is received, there is a default handler
 	// but you can set your own with this
 	ServeError func(http.ResponseWriter, *http.Request, error)
@@ -219,6 +248,14 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "JSONConsumer")
 	}
 
+	if o.MultipartformConsumer == nil {
+		unregistered = append(unregistered, "MultipartformConsumer")
+	}
+
+	if o.BinProducer == nil {
+		unregistered = append(unregistered, "BinProducer")
+	}
+
 	if o.JSONProducer == nil {
 		unregistered = append(unregistered, "JSONProducer")
 	}
@@ -241,6 +278,10 @@ func (o *LakefsAPI) Validate() error {
 
 	if o.BranchesDeleteBranchHandler == nil {
 		unregistered = append(unregistered, "Branches.DeleteBranchHandler")
+	}
+
+	if o.ObjectsDeleteObjectHandler == nil {
+		unregistered = append(unregistered, "Objects.DeleteObjectHandler")
 	}
 
 	if o.RepositoriesDeleteRepositoryHandler == nil {
@@ -267,6 +308,10 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "Commits.GetCommitHandler")
 	}
 
+	if o.ObjectsGetObjectHandler == nil {
+		unregistered = append(unregistered, "Objects.GetObjectHandler")
+	}
+
 	if o.RepositoriesGetRepositoryHandler == nil {
 		unregistered = append(unregistered, "Repositories.GetRepositoryHandler")
 	}
@@ -275,12 +320,20 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "Branches.ListBranchesHandler")
 	}
 
+	if o.ObjectsListObjectsHandler == nil {
+		unregistered = append(unregistered, "Objects.ListObjectsHandler")
+	}
+
 	if o.RepositoriesListRepositoriesHandler == nil {
 		unregistered = append(unregistered, "Repositories.ListRepositoriesHandler")
 	}
 
-	if o.BranchesRevertBranchHandler == nil {
-		unregistered = append(unregistered, "Branches.RevertBranchHandler")
+	if o.ObjectsStatObjectHandler == nil {
+		unregistered = append(unregistered, "Objects.StatObjectHandler")
+	}
+
+	if o.ObjectsUploadObjectHandler == nil {
+		unregistered = append(unregistered, "Objects.UploadObjectHandler")
 	}
 
 	if len(unregistered) > 0 {
@@ -328,6 +381,8 @@ func (o *LakefsAPI) ConsumersFor(mediaTypes []string) map[string]runtime.Consume
 		switch mt {
 		case "application/json":
 			result["application/json"] = o.JSONConsumer
+		case "multipart/form-data":
+			result["multipart/form-data"] = o.MultipartformConsumer
 		}
 
 		if c, ok := o.customConsumers[mt]; ok {
@@ -343,6 +398,8 @@ func (o *LakefsAPI) ProducersFor(mediaTypes []string) map[string]runtime.Produce
 	result := make(map[string]runtime.Producer, len(mediaTypes))
 	for _, mt := range mediaTypes {
 		switch mt {
+		case "application/octet-stream":
+			result["application/octet-stream"] = o.BinProducer
 		case "application/json":
 			result["application/json"] = o.JSONProducer
 		}
@@ -409,6 +466,11 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["DELETE"] == nil {
 		o.handlers["DELETE"] = make(map[string]http.Handler)
 	}
+	o.handlers["DELETE"]["/repositories/{repositoryId}/branches/{branchId}/objects"] = objects.NewDeleteObject(o.context, o.ObjectsDeleteObjectHandler)
+
+	if o.handlers["DELETE"] == nil {
+		o.handlers["DELETE"] = make(map[string]http.Handler)
+	}
 	o.handlers["DELETE"]["/repositories/{repositoryId}"] = repositories.NewDeleteRepository(o.context, o.RepositoriesDeleteRepositoryHandler)
 
 	if o.handlers["GET"] == nil {
@@ -439,6 +501,11 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects"] = objects.NewGetObject(o.context, o.ObjectsGetObjectHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
 	o.handlers["GET"]["/repositories/{repositoryId}"] = repositories.NewGetRepository(o.context, o.RepositoriesGetRepositoryHandler)
 
 	if o.handlers["GET"] == nil {
@@ -449,12 +516,22 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects/ls"] = objects.NewListObjects(o.context, o.ObjectsListObjectsHandler)
+
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
+	}
 	o.handlers["GET"]["/repositories"] = repositories.NewListRepositories(o.context, o.RepositoriesListRepositoriesHandler)
 
-	if o.handlers["PUT"] == nil {
-		o.handlers["PUT"] = make(map[string]http.Handler)
+	if o.handlers["GET"] == nil {
+		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["PUT"]["/repositories/{repositoryId}/branches/{branchId}"] = branches.NewRevertBranch(o.context, o.BranchesRevertBranchHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects/stat"] = objects.NewStatObject(o.context, o.ObjectsStatObjectHandler)
+
+	if o.handlers["POST"] == nil {
+		o.handlers["POST"] = make(map[string]http.Handler)
+	}
+	o.handlers["POST"]["/repositories/{repositoryId}/branches/{branchId}/objects"] = objects.NewUploadObject(o.context, o.ObjectsUploadObjectHandler)
 
 }
 
