@@ -132,6 +132,11 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation repositories.ListRepositories has not yet been implemented")
 		})
 	}
+	if api.BranchesRevertBranchHandler == nil {
+		api.BranchesRevertBranchHandler = branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation branches.RevertBranch has not yet been implemented")
+		})
+	}
 	if api.ObjectsStatObjectHandler == nil {
 		api.ObjectsStatObjectHandler = objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation objects.StatObject has not yet been implemented")
@@ -140,11 +145,6 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	if api.ObjectsUploadObjectHandler == nil {
 		api.ObjectsUploadObjectHandler = objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation objects.UploadObject has not yet been implemented")
-		})
-	}
-	if api.BranchesRevertBranchHandler == nil {
-		api.BranchesRevertBranchHandler = branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation branches.RevertBranch has not yet been implemented")
 		})
 	}
 
