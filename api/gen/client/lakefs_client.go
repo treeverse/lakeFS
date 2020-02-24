@@ -11,6 +11,7 @@ import (
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 
+	"github.com/treeverse/lakefs/api/gen/client/authentication"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
@@ -59,6 +60,7 @@ func New(transport runtime.ClientTransport, formats strfmt.Registry) *Lakefs {
 
 	cli := new(Lakefs)
 	cli.Transport = transport
+	cli.Authentication = authentication.New(transport, formats)
 	cli.Branches = branches.New(transport, formats)
 	cli.Commits = commits.New(transport, formats)
 	cli.Objects = objects.New(transport, formats)
@@ -107,6 +109,8 @@ func (cfg *TransportConfig) WithSchemes(schemes []string) *TransportConfig {
 
 // Lakefs is a client for lakefs
 type Lakefs struct {
+	Authentication authentication.ClientService
+
 	Branches branches.ClientService
 
 	Commits commits.ClientService
@@ -121,6 +125,7 @@ type Lakefs struct {
 // SetTransport changes the transport on the client and all its subresources
 func (c *Lakefs) SetTransport(transport runtime.ClientTransport) {
 	c.Transport = transport
+	c.Authentication.SetTransport(transport)
 	c.Branches.SetTransport(transport)
 	c.Commits.SetTransport(transport)
 	c.Objects.SetTransport(transport)
