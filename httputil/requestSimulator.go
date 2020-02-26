@@ -24,6 +24,9 @@ var (
 	recordingDir            string
 	currentUploadId         []byte // used at playback to set the upload id in
 	uploadIdRegexp          *regexp.Regexp
+	timedPlayback           = false //schedule events by their recording time, or just one after the other
+	playbackSpeed           = 5.0   // if timed playback - how fast the clock runs ? 5 implies that 1 minute time difference
+	// will run in 12 seconds
 )
 
 const (
@@ -31,8 +34,6 @@ const (
 	endUploadTag   = "</UploadId>"
 	startStatusTag = "<statusCode>"
 	endStatusTag   = "</statusCode>"
-	timedPlayback  = false //schedule events by their recording time, or just one after the other
-	playbackSpeed  = 5.0   // if timed playback - how fast the clock runs ? 5 implies that 1 minute time difference
 	// between original events will translate to 12 seconds. a number less than 1 will make slower clock
 )
 
@@ -46,6 +47,15 @@ func init() {
 		isRecording = true
 		uploadIdRegexp = regexp.MustCompile(startUploadTag + "[\\da-f]+" + endUploadTag)
 	case "playback":
+		t, exist := os.LookupEnv("TIMED")
+		if exist {
+			timedPlayback = true
+			z, err := strconv.ParseFloat(t, 32)
+			if err == nil {
+				playbackSpeed = z
+			}
+		}
+
 		isPlayback = true
 	default:
 		panic("UNIT_TEST environment variable has unknown value: " + state + "\\n")
@@ -84,7 +94,7 @@ func (w *responseWriter) Write(data []byte) (int, error) {
 			w.uploadId = uploadIdRegexp.Find(data)
 		}
 		if w.responseLog == nil && written > 0 {
-			f, err := os.OpenFile(w.responseFileName, os.O_CREATE, 0664)
+			f, err := os.OpenFile(w.responseFileName, os.O_CREATE|os.O_WRONLY, 0777)
 			if err != nil {
 				panic("can not create response file ")
 			}
@@ -115,7 +125,7 @@ func (r *recordingBodyReader) Read(b []byte) (int, error) {
 	if size > 0 {
 		var err1 error
 		if r.recorder == nil {
-			r.recorder, err1 = os.OpenFile(r.recorderName, os.O_CREATE, 0664)
+			r.recorder, err1 = os.OpenFile(r.recorderName, os.O_CREATE|os.O_WRONLY, 0777)
 			if err1 != nil {
 				panic("can not create recorder file ")
 			}
@@ -140,7 +150,7 @@ func (r *recordingBodyReader) Close() error {
 
 func RegisterRecorder(router *mux.Router) {
 	if isRecording {
-		err := os.MkdirAll(recordingDir, 0664) // if needed - create recording directory
+		err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
 		if err != nil {
 			panic("FAILED creat directory for recordings \n")
 		}
@@ -193,7 +203,7 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 	s := startStatusTag + strconv.Itoa(statusCode) + endStatusTag
 	dumpReq = append([]byte(s), dumpReq...)
 	fName := recordingDir + "/L" + nameBase + ".log"
-	err = ioutil.WriteFile(fName, dumpReq, 0664)
+	err = ioutil.WriteFile(fName, dumpReq, 0777)
 	if err != nil {
 		log.WithError(err).
 			WithFields(log.Fields{
@@ -230,7 +240,7 @@ var statusMisatchLog *os.File
 
 func DoTestRun(handler http.Handler) {
 	runResultsDir = recordingDir + "/" + time.Now().Format("01-02-15-04-05")
-	err := os.MkdirAll(runResultsDir, 0664)
+	err := os.MkdirAll(runResultsDir, 0777)
 	if err != nil {
 		panic("\n could not create directory: " + runResultsDir + "\n")
 	}
@@ -273,7 +283,7 @@ func buildEventList(directory string) []simulationEvent {
 			firstEventFlag = false
 		}
 		evt.eventTime = simulationStartTime.Add(recordingTime.Sub(firstEventTime)) // refactor start time
-		fName := directory + "\\" + file
+		fName := directory + "/" + file
 		url, err := ioutil.ReadFile(fName)
 		if err != nil {
 			log.Panic("Recording file not found\n")
@@ -319,7 +329,7 @@ func runEvents(eventsList []simulationEvent, handler http.Handler) {
 			currentUploadId = event.uploadId
 		}
 
-		secondDiff := event.eventTime.Sub(time.Now()) / playbackSpeed
+		secondDiff := time.Duration(float64(event.eventTime.Sub(time.Now())) / playbackSpeed)
 		if secondDiff > 0 && timedPlayback {
 			fmt.Print("\n\nwait: ", secondDiff)
 			time.Sleep(secondDiff)
@@ -340,7 +350,7 @@ func asyncServeHTTP(r *http.Request, handler http.Handler, event *simulationEven
 	if respWrite.statusCode != event.statusCode {
 		if statusMisatchLog == nil {
 			var err error
-			statusMisatchLog, err = os.OpenFile(runResultsDir+"/"+"status_mismatch.log", os.O_CREATE, 0664)
+			statusMisatchLog, err = os.OpenFile(runResultsDir+"/"+"status_mismatch.log", os.O_CREATE|os.O_WRONLY, 0777)
 			if err != nil {
 				panic("\n could not create status mismatch log file\n")
 			}
