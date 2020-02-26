@@ -193,6 +193,7 @@ func signCanonicalString(msg string, signature []byte) (digest []byte) {
 }
 
 func buildPath(host, bareDomain, path string) string {
+
 	if host == bareDomain {
 		return path
 	} else {
