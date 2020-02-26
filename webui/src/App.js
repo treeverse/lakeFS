@@ -12,7 +12,6 @@ import {ApiExplorer} from "./components/ApiExplorer";
 
 // css imports
 import 'bootstrap/dist/css/bootstrap.min.css';
-// import "bootswatch/dist/lux/bootstrap.min.css";
 import './App.css';
 
 
