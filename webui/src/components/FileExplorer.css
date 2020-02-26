@@ -1,0 +1,11 @@
+.btn.btn-file-explorer-link {
+    box-shadow: none;
+    color: #2196F3;
+    padding: 0 5px;
+    font-size: 1.1em;
+    text-transform: none;
+}
+
+table.file-explorer > tbody > tr > td {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
