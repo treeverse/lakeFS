@@ -16,10 +16,11 @@ import Col from "react-bootstrap/Col";
 import ConfirmationModal from "./ConfirmationModal";
 import {listBranches} from '../actions/branches'
 import {deleteRepository} from "../actions/repositories";
+import Alert from "react-bootstrap/Alert";
 
 
 
-const BranchList = ({ branches, listBranches, deleteRepository }) => {
+const BranchList = ({ branches, listBranches, deleteRepository, error }) => {
 
     let history = useHistory();
 
@@ -107,6 +108,10 @@ const BranchList = ({ branches, listBranches, deleteRepository }) => {
 
                 </ButtonToolbar>
                 <div className="mt-3">
+                    { (!!error) ? <p>
+                        <Alert variant="danger">Error deleting repository: {error}</Alert>
+                    </p> : <span/>}
+
                     {content}
                 </div>
             </Card.Body>
@@ -136,6 +141,6 @@ const BranchList = ({ branches, listBranches, deleteRepository }) => {
 
 
 export default connect(
-    ({ branches }) => ({ branches }),
+    ({ branches, repositories }) => ({ branches, error: repositories.deleteError }),
     {listBranches, deleteRepository}
 )(BranchList);

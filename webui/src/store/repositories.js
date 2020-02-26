@@ -3,7 +3,9 @@ import {
     REPOSITORY_CREATE_ERROR,
     REPOSITORIES_LIST_START,
     REPOSITORIES_LIST_ERROR,
-    REPOSITORIES_LIST_SUCCESS
+    REPOSITORIES_LIST_SUCCESS,
+    REPOSITORY_DELETE_ERROR,
+    REPOSITORY_DELETE_SUCCESS
 } from '../actions/repositories';
 
 
@@ -12,7 +14,7 @@ const initialState = {
     list: [],
     error: null,
     createError: null,
-
+    deleteError: null,
 };
 
 export default  (state = initialState, action) => {
@@ -40,6 +42,16 @@ export default  (state = initialState, action) => {
             return {
                 ...state,
                 createError: null,
+            };
+        case REPOSITORY_DELETE_ERROR:
+            return {
+                ...state,
+                deleteError: action.error,
+            };
+        case REPOSITORY_DELETE_SUCCESS:
+            return {
+                ...state,
+                deleteError: null,
             };
         default:
             return state;
