@@ -26,21 +26,21 @@ const LoginForm = ({ loginError, login }) => {
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
                         <Form onSubmit={(e) => {
-                            login(e.target.accessKeyId.value, e.target.secretAccessKey.value, () => {
+                            login(e.target.username.value, e.target.password.value, () => {
                                 history.replace(from);
                             });
 
                             e.preventDefault();
                         }}>
 
-                            <Form.Group controlId="accessKeyId">
+                            <Form.Group controlId="username">
                                 <Form.Control type="text" placeholder="Access Key ID" autoFocus/>
                                 <Form.Text className="text-muted">
                                     <em>Running lakeFS for the first time? setup initial credentials by running <code>lakefs init</code></em>
                                 </Form.Text>
                             </Form.Group>
 
-                            <Form.Group controlId="secretAccessKey">
+                            <Form.Group controlId="password">
                                 <Form.Control type="password" placeholder="Secret Access Key"/>
                             </Form.Group>
 

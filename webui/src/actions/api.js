@@ -18,6 +18,11 @@ export const json =(data) => {
     return JSON.stringify(data, null, "");
 };
 
+export const qs = (queryParts) => {
+    const parts = Object.keys(queryParts).map(key => [key, queryParts[key]]);
+    return new URLSearchParams(parts).toString();
+};
+
 export async function extractError(response) {
     let body;
     if (response.headers.get('Content-Type') === 'application/json') {
