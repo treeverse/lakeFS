@@ -1,22 +1,19 @@
 import React from 'react';
-import './App.css';
-import 'bootstrap/dist/css/bootstrap.min.css';
 
 import {connect} from 'react-redux';
-
 import Navbar from 'react-bootstrap/Navbar';
 import Container from "react-bootstrap/Container";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
+import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom";
 
 import LoginForm from "./components/Login";
-import RepoList from "./components/RepositoryList";
 import NavDropdown from "react-bootstrap/NavDropdown";
-
-import { logout } from './actions';
-
-import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom";
+import { logout } from './actions/auth';
 import {ApiExplorer} from "./components/ApiExplorer";
+
+// css imports
+import 'bootstrap/dist/css/bootstrap.min.css';
+import "bootswatch/dist/materia/bootstrap.min.css";
+import './App.css';
 
 
 let NavUserInfo = ({ user, logout }) => {
@@ -60,18 +57,25 @@ const App = ({ user }) => {
     return (
         <div className="App">
             <Navbar bg="light" expand="lg">
-                <Navbar.Brand href="#home">lakeFS Console</Navbar.Brand>
+                <Navbar.Brand href="/">lakeFS</Navbar.Brand>
                 <NavUserInfo/>
             </Navbar>
             <Container className={"main-app"}>
                 <Router>
                     <Switch>
+
+                        <PrivateRoute path="/repositories" user={user}>
+                            <ApiExplorer/>
+                        </PrivateRoute>
+
                         <Route path="/login">
                             <LoginForm/>
                         </Route>
+
                         <PrivateRoute path="/" user={user}>
-                            <ApiExplorer/>
+                            <Redirect to="/repositories"/>
                         </PrivateRoute>
+
                     </Switch>
                 </Router>
             </Container>
