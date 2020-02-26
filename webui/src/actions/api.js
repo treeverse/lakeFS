@@ -18,6 +18,16 @@ export const json =(data) => {
     return JSON.stringify(data, null, "");
 };
 
+export async function extractError(response) {
+    let body;
+    if (response.headers.get('Content-Type') === 'application/json') {
+        body = await response.json().message;
+    } else {
+        body = await response.text();
+    }
+    return body;
+}
+
 export default async function(uri, requestData = {}, additionalHeaders = {}, credentials = null) {
     const auth = (credentials === null) ?
         cachedBasicAuth() : basicAuth(credentials.accessKeyId, credentials.secretAccessKey);
