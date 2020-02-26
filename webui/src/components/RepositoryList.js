@@ -65,7 +65,7 @@ const RepoList = ({ repositories, listRepositories }) => {
     return (
         <Card>
             <Card.Header>
-                Repositories
+                <Link to={`/repositories`}>Repositories</Link>
             </Card.Header>
             <Card.Body>
                 <ButtonToolbar className="justify-content-end mb-2" aria-label="Toolbar with Button groups">

@@ -12,7 +12,7 @@ import {ApiExplorer} from "./components/ApiExplorer";
 
 // css imports
 import 'bootstrap/dist/css/bootstrap.min.css';
-import "bootswatch/dist/materia/bootstrap.min.css";
+// import "bootswatch/dist/lux/bootstrap.min.css";
 import './App.css';
 
 
@@ -56,7 +56,7 @@ const PrivateRoute = ({ children, user, ...rest }) => {
 const App = ({ user }) => {
     return (
         <div className="App">
-            <Navbar bg="light" expand="lg">
+            <Navbar variant="dark" bg="dark" expand="md">
                 <Navbar.Brand href="/">lakeFS</Navbar.Brand>
                 <NavUserInfo/>
             </Navbar>

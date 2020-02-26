@@ -70,7 +70,7 @@ const BranchList = ({ branches, listBranches, deleteRepository, error }) => {
     return (
         <Card>
             <Card.Header>
-                <Link to={`/repositories`}>Repositories</Link> / {repoId} / <Link to={`/repositories/${repoId}/branch/create`}>branches</Link>
+                <Link to={`/repositories`}>Repositories</Link> / <Link to={`/repositories/${repoId}`}>{repoId}</Link>
             </Card.Header>
             <Card.Body>
 
