@@ -60,6 +60,8 @@ func NewServer(
 	// setup routes
 	router := mux.NewRouter()
 	attachDebug(router)
+	router.NotFoundHandler = http.HandlerFunc(notFound)
+	router.MethodNotAllowedHandler = http.HandlerFunc(notAllowed)
 	attachRoutes(bareDomain, router, ctx)
 	// also attach routes to a host string minus the port, if the host contains them
 	if strings.Contains(bareDomain, ":") {
@@ -312,4 +314,12 @@ func unsupportedOperationHandler() http.HandlerFunc {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ERRLakeFSNotSupported))
 		return
 	}
+}
+
+func notFound(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("*****URL NOT FOUND\n", r.Method, r.Host)
+}
+func notAllowed(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Print("*****METHOD NOT ALLOWED\n", r.Method, r.Host)
 }
