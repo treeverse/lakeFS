@@ -1,4 +1,4 @@
-import apiRequest, {json} from './api';
+import apiRequest, {json, extractError} from './api';
 
 
 
@@ -6,6 +6,7 @@ export const REPOSITORIES_LIST_SUCCESS = 'REPOSITORIES_LIST_SUCCESS';
 export const REPOSITORIES_LIST_ERROR = 'REPOSITORIES_LIST_ERROR';
 export const REPOSITORIES_LIST_START = 'REPOSITORIES_LIST_START';
 export const REPOSITORY_DELETE_SUCCESS = 'REPOSITORY_DELETE_SUCCESS';
+export const REPOSITORY_DELETE_ERROR = 'REPOSITORY_DELETE_ERROR';
 export const REPOSITORY_CREATE_SUCCESS = 'REPOSITORY_CREATE_SUCCESS';
 export const REPOSITORY_CREATE_ERROR = 'REPOSITORY_CREATE_ERROR';
 
@@ -49,13 +50,26 @@ export const listRepositories = () => {
 
 export const deleteRepository = (repoId, successFn) => {
     return async function(dispatch) {
-        const response = await apiRequest(`/repositories/${repoId}`, {method: 'DELETE'});
-        if (response.status === 204) {
-            dispatch(deleteRepositorySuccess(repoId));
-            successFn();
+        try {
+            const response = await apiRequest(`/repositories/${repoId}`, {method: 'DELETE'});
+            if (response.status === 204) {
+                dispatch(deleteRepositorySuccess(repoId));
+                successFn();
+            }else {
+                const error = await extractError(response);
+                dispatch(deleteRepositoryError(repoId, `error deleting repository: ${error}`));
+            }
+        } catch (error) {
+            dispatch(deleteRepositoryError(repoId, `error deleting repository: ${error.toString()}`));
         }
     }
 };
+
+const deleteRepositoryError = (repoId, error) => ({
+    type: REPOSITORY_DELETE_ERROR,
+    id: repoId,
+    error,
+});
 
 const deleteRepositorySuccess = (repoId) => ({
     type: REPOSITORY_DELETE_SUCCESS,
