@@ -613,7 +613,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "remove tree - [depends on the address of a/]",
+			name: "remove tree ",
 
 			initialWS: []*model.WorkspaceEntry{
 				{
@@ -640,7 +640,7 @@ func TestMerkle_Update(t *testing.T) {
 			editEntries: []*model.WorkspaceEntry{
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "a/", Address: "9e7b0f83f9148a861053677a980a5ef8559ccfc291a69b124f7663d8f338eda3", Type: model.Entry_TREE},
+					Entry:     &model.Entry{Name: "a/", Type: model.Entry_TREE},
 					Tombstone: true,
 				},
 			},
