@@ -1,6 +1,8 @@
 package merkle
 
 import (
+	"sort"
+
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/path"
 )
@@ -46,6 +48,11 @@ func (c *changeTree) Add(depth int, path string, chg *model.WorkspaceEntry) {
 		c.data[depth][path] = make([]*model.WorkspaceEntry, 0)
 	}
 	c.data[depth][path] = append(c.data[depth][path], chg)
+	//TODO: consider change to smart insert
+	sort.Slice(c.data[depth][path], func(i, j int) bool {
+		return CompareEntries(c.data[depth][path][i].Entry, c.data[depth][path][j].Entry) <= 0
+	})
+
 }
 
 func (c *changeTree) AtDepth(depth int) map[string][]*model.WorkspaceEntry {

@@ -110,7 +110,10 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	}
 
 	// clear workspace entries
-	tx.ClearWorkspace(branch)
+	err = tx.ClearWorkspace(branch)
+	if err != nil {
+		return err
+	}
 
 	// update branch pointer to point at new workspace
 	err = tx.WriteBranch(branch, &model.Branch{
@@ -285,6 +288,10 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 
+		_, err = index.ReadEntry(repoId, branch, path)
+		if err != nil {
+			return nil, err
+		}
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
@@ -358,7 +365,10 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 func (index *KVIndex) ResetBranch(repoId, branch string) error {
 	// clear workspace, set branch workspace root back to commit root
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		tx.ClearWorkspace(branch)
+		err := tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
@@ -536,7 +546,10 @@ func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differenc
 
 func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		tx.ClearWorkspace(branch)
+		err := tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		commitData, err := tx.ReadCommit(commit)
 		if err != nil {
 			return nil, err
