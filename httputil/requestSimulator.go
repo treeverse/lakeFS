@@ -3,6 +3,7 @@ package httputil
 import (
 	"bufio"
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
@@ -13,6 +14,7 @@ import (
 	"net/http/httptest"
 	"net/http/httputil"
 	"os"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -37,6 +39,49 @@ const (
 	// between original events will translate to 12 seconds. a number less than 1 will make slower clock
 )
 
+type lazyOutFile struct {
+	Name   string
+	Prot   os.FileMode
+	F      *os.File
+	IsOpen bool
+}
+
+func newLazyOutFile(name string, prot os.FileMode) *lazyOutFile {
+	r := new(lazyOutFile)
+	r.Name = name
+	r.Prot = prot
+	return r
+}
+
+func (l *lazyOutFile) Write(d []byte) (int, error) {
+	if !l.IsOpen {
+		l.IsOpen = true
+		var err error
+		l.F, err = os.OpenFile(l.Name, os.O_CREATE|os.O_WRONLY, l.Prot)
+		if err != nil {
+			log.WithError(err).Fatal("file " + l.Name + " failed opened")
+		}
+	}
+	written, err := l.F.Write(d)
+	if err != nil {
+		log.WithError(err).Fatal("file " + l.Name + " failed write")
+	}
+	return written, err
+}
+
+func (l *lazyOutFile) Close() error {
+	if !l.IsOpen {
+		return nil
+	}
+	return l.F.Close()
+}
+
+type storedEvent struct {
+	Status   int    `json:"status"`
+	UploadID []byte `json:"uploadId"`
+	Request  []byte `json:"request"`
+}
+
 func init() {
 	state, exist := os.LookupEnv("UNIT_TEST")
 	if !exist {
@@ -45,7 +90,7 @@ func init() {
 	switch state {
 	case "record":
 		isRecording = true
-		uploadIdRegexp = regexp.MustCompile(startUploadTag + "[\\da-f]+" + endUploadTag)
+		uploadIdRegexp = regexp.MustCompile(startUploadTag + "([\\da-f]+)" + endUploadTag)
 	case "playback":
 		t, exist := os.LookupEnv("TIMED")
 		if exist {
@@ -58,7 +103,7 @@ func init() {
 
 		isPlayback = true
 	default:
-		panic("UNIT_TEST environment variable has unknown value: " + state + "\\n")
+		panic("UNIT_TEST environment variable has unknown value: " + state + "\n")
 	}
 	testDir, exist := os.LookupEnv("TEST_DIR")
 	if !exist {
@@ -91,7 +136,7 @@ func (w *responseWriter) Write(data []byte) (int, error) {
 	written, err := w.originalWriter.Write(data)
 	if err == nil {
 		if w.lookForUploadId && len(w.uploadId) == 0 {
-			w.uploadId = uploadIdRegexp.Find(data)
+			w.uploadId = uploadIdRegexp.FindSubmatch(data)[1]
 		}
 		if w.responseLog == nil && written > 0 {
 			f, err := os.OpenFile(w.responseFileName, os.O_CREATE|os.O_WRONLY, 0777)
@@ -149,67 +194,71 @@ func (r *recordingBodyReader) Close() error {
 // RECORDING
 
 func RegisterRecorder(router *mux.Router) {
-	if isRecording {
-		err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
-		if err != nil {
-			panic("FAILED creat directory for recordings \n")
-		}
-
-		router.Use(func(next http.Handler) http.Handler {
-			return http.HandlerFunc(
-				func(w http.ResponseWriter, r *http.Request) {
-					nameBase := time.Now().Format("01-02-15-04-05.000") + "-" + fmt.Sprintf("%05d", rand.Intn(99999))
-					responseWriter := &responseWriter{originalWriter: w}
-					responseWriter.responseFileName = recordingDir + "/" + "R" + nameBase + ".resp"
-					if r.URL.RawQuery == "uploads=" {
-						responseWriter.lookForUploadId = true
-					}
-					newBody := new(recordingBodyReader)
-					newBody.recorderName = recordingDir + "/" + "B" + nameBase + ".body"
-					newBody.originalBody = r.Body
-					r.Body = newBody
-					// initial post for s3 multipart upload
-
-					defer func() {
-						if responseWriter.responseLog != nil {
-							responseWriter.responseLog.Close()
-						}
-						if newBody.recorder != nil {
-							newBody.recorder.Close()
-						}
-
-					}()
-					next.ServeHTTP(responseWriter, r)
-					logRequest(r, responseWriter.uploadId, nameBase, responseWriter.statusCode)
-				})
-		})
+	if !isRecording {
+		return
 	}
+	err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
+	if err != nil {
+		panic("FAILED creat directory for recordings \n")
+	}
+
+	router.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(
+			func(w http.ResponseWriter, r *http.Request) {
+				nameBase := time.Now().Format("01-02-15-04-05.000") + "-" + fmt.Sprintf("%05d", rand.Intn(99999))
+				responseWriter := &responseWriter{originalWriter: w}
+				responseWriter.responseFileName = recordingDir + "/" + "R" + nameBase + ".resp"
+				if r.URL.RawQuery == "uploads=" {
+					responseWriter.lookForUploadId = true
+				}
+				newBody := new(recordingBodyReader)
+				newBody.recorderName = recordingDir + "/" + "B" + nameBase + ".body"
+				newBody.originalBody = r.Body
+				r.Body = newBody
+				// initial post for s3 multipart upload
+
+				defer func() {
+					if responseWriter.responseLog != nil {
+						responseWriter.responseLog.Close()
+					}
+					if newBody.recorder != nil {
+						newBody.recorder.Close()
+					}
+
+				}()
+				next.ServeHTTP(responseWriter, r)
+				logRequest(r, responseWriter.uploadId, nameBase, responseWriter.statusCode)
+			})
+	})
 
 }
 
 func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int) {
-	dumpReq, err := httputil.DumpRequest(r, false)
-	if err != nil || len(dumpReq) == 0 {
+	var event storedEvent
+	var err error
+	event.Request, err = httputil.DumpRequest(r, false)
+	if err != nil || len(event.Request) == 0 {
 		log.WithError(err).
 			WithFields(log.Fields{
-				"request": string(dumpReq),
-			}).Warn("request dumping failed")
-		return
+				"request": string(event.Request),
+			}).Fatal("request dumping failed")
 	}
 	// it was the initial POST of a miltipart upload
-	if uploadId != nil {
-		dumpReq = append(uploadId, dumpReq...)
-	}
-	s := startStatusTag + strconv.Itoa(statusCode) + endStatusTag
-	dumpReq = append([]byte(s), dumpReq...)
+	event.UploadID = uploadId
+	//if uploadId != nil {
+	//	dumpReq = append(uploadId, dumpReq...)
+	//}
+
+	event.Status = statusCode
+	jsonEvent, err := json.Marshal(event)
 	fName := recordingDir + "/L" + nameBase + ".log"
-	err = ioutil.WriteFile(fName, dumpReq, 0777)
+	err = ioutil.WriteFile(fName, jsonEvent, 0777)
 	if err != nil {
 		log.WithError(err).
 			WithFields(log.Fields{
 				"fileName": fName,
-				"request":  string(dumpReq),
-			}).Warn("writing request file failed")
+				"request":  string(jsonEvent),
+			}).Fatal("writing request file failed")
 	}
 }
 
@@ -256,12 +305,10 @@ func DoTestRun(handler http.Handler) {
 
 const startPlayDelay = 1 //second delay between building the events to starting to play them
 
-func buildEventList(directory string) []simulationEvent {
-	var simulationEvents []simulationEvent
-	logPattern := regexp.MustCompile("^L\\d\\d-\\d\\d-\\d\\d-\\d\\d-\\d\\d\\.\\d\\d\\d-\\d\\d\\d\\d\\d\\.log$")
-	dirList, err := ioutil.ReadDir(directory) //ReadDir returns files sorted by name
+func regexpGlob(directory string, logPattern *regexp.Regexp) []string {
+	dirList, err := ioutil.ReadDir(directory) //ReadDir returns files sorted by name. in the events time order
 	if err != nil {
-		panic("log directory read failed")
+		panic("Directory read failed")
 	}
 	// filter only request (.log) files
 	var fileList []string
@@ -270,20 +317,27 @@ func buildEventList(directory string) []simulationEvent {
 			fileList = append(fileList, f.Name())
 		}
 	}
-	var firstEventTime time.Time
-	simulationStartTime := time.Now().Add(startPlayDelay * time.Second) // playing events will start startPlayDelay seconds after load
-	firstEventFlag := true
+	return fileList
+}
+
+func buildEventList(directory string) []simulationEvent {
+	var simulationEvents []simulationEvent
+	logPattern := regexp.MustCompile("^L\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}\\.\\d{3}-\\d{5}.log$")
+	fileList := regexpGlob(directory, logPattern)
+	//var firstEventTime time.Time
+	//simulationStartTime := time.Now().Add(startPlayDelay * time.Second) // playing events will start startPlayDelay seconds after load
+	//firstEventFlag := true
 	for _, file := range fileList {
 		var evt simulationEvent
 		evt.baseName = file[1:strings.Index(file, ".log")]
-		eventTimeStr := file[1:19]                                         // time part of file name
-		recordingTime, _ := time.Parse("01-02-15-04-05.000", eventTimeStr) // add to function
-		if firstEventFlag {
-			firstEventTime = recordingTime
-			firstEventFlag = false
-		}
-		evt.eventTime = simulationStartTime.Add(recordingTime.Sub(firstEventTime)) // refactor start time
-		fName := directory + "/" + file
+		eventTimeStr := file[1:19]                                        // time part of file name
+		evt.eventTime, _ = time.Parse("01-02-15-04-05.000", eventTimeStr) // add to function
+		//if firstEventFlag {
+		//	firstEventTime = recordingTime
+		//	firstEventFlag = false
+		//}
+		//evt.eventTime = simulationStartTime.Add(recordingTime.Sub(firstEventTime)) // refactor start time
+		fName := filepath.Join(directory, file)
 		url, err := ioutil.ReadFile(fName)
 		if err != nil {
 			log.Panic("Recording file not found\n")
@@ -358,7 +412,6 @@ func asyncServeHTTP(r *http.Request, handler http.Handler, event *simulationEven
 		fmt.Fprintf(statusMisatchLog, "different status event %s recorded \t %d current \t %d",
 			event.baseName, event.statusCode, respWrite.statusCode)
 	}
-
 }
 
 func (r *simulationEvent) Read(b []byte) (int, error) {

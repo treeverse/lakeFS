@@ -317,9 +317,9 @@ func unsupportedOperationHandler() http.HandlerFunc {
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("*****URL NOT FOUND\n", r.Method, r.Host)
+	fmt.Print("URL NOT FOUND\n", r.Method, r.Host)
 }
 func notAllowed(w http.ResponseWriter, r *http.Request) {
 
-	fmt.Print("*****METHOD NOT ALLOWED\n", r.Method, r.Host)
+	fmt.Print("METHOD NOT ALLOWED\n", r.Method, r.Host)
 }
