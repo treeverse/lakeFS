@@ -5,9 +5,12 @@ import auth from './auth';
 import repositories from './repositories';
 import branches from './branches';
 import objects from './objects';
+import loader from './loader';
 
-const reducer = combineReducers({ auth, repositories, branches, objects });
+const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
-const store = createStore(reducer, compose(applyMiddleware(thunkMiddleware)));
+const reducer = combineReducers({ auth, repositories, branches, objects, loader });
+
+const store = createStore(reducer, composeEnhancers(applyMiddleware(thunkMiddleware)));
 
 export default store;
