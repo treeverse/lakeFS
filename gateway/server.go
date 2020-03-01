@@ -69,7 +69,7 @@ func NewServer(
 		attachRoutes(bareDomainWithoutPort, router, ctx)
 	}
 
-	httputil.RegisterRecorder(router)
+	utils.RegisterRecorder(router)
 
 	router.Use(func(next http.Handler) http.Handler {
 		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)

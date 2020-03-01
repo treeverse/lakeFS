@@ -2,11 +2,11 @@ package index
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/gateway/utils"
 	"strings"
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/merkle"
@@ -52,8 +52,8 @@ func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (
 		// generate 256KB of random bytes
 		var uploadId string
 		var err error
-		if httputil.IsPlayback() {
-			uploadId = httputil.GetUploadId()
+		if utils.IsPlayback() {
+			//uploadId = httputil.GetUploadId()
 		} else {
 			uploadId = m.generateId()
 		}
