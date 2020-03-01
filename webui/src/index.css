@@ -1,35 +1,77 @@
-.main-app {
-    margin-top: 20px;
+.action-bar {
+    padding-bottom: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    overflow: hidden;
 }
 
-.part-title {
-    margin-bottom: 40px;
+.action-bar .float-left .btn {
+    margin-right: 10px;
 }
 
-.nav-item > a {
-    color: #EEE;
+.action-bar .float-right .btn {
+    margin-left: 10px;
 }
 
-.nav-item > a:hover {
-    color: #FFF;
+.navbar a.dropdown-toggle {
+    color: #DDDDDD;
+}
+.navbar a.dropdown-toggle:hover {
+    color: #FFFFFF;
 }
 
-/* fix bootstrap icon's svg placement in buttons */
-.danger-text {
-    color: red;
+.tree-error {
+    margin: 20px;
 }
 
-button > svg {
-    margin-top: -4px;
-    font-size: 1.5em;
+.tree-container {
+    margin-bottom: 150px;
+    font-size: .9rem;
 }
 
-small.description {
-    color: #999999;
-    float: right;
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+.tree-container .card .card-body {
+padding: 0;
 }
 
-small.description .action {
-    cursor: pointer;
+.tree-container .card .card-body > .table {
+    margin-bottom: 0;
+}
+
+.tree-container .card .card-body > .table tr {
+    border-bottom: 1px solid rgba(0,0,0,0.125);
+}
+
+.tree-container .card .card-body > .table tr td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.tree-container .card .card-body > .table tr td .octicon {
+    margin-top: -3px;
+}
+
+.tree-container .card .card-body > .table tr td:first-child {
+    padding-left: 20px;
+}
+
+.tree-container .card .card-body > .table tr td:last-child {
+    padding-right: 20px;
+    text-align: right;
+}
+
+.tree-path .octicon {
+    color: #007bff;
+    margin-right: 5px;
+    font-size: .9rem;
+}
+
+.btn.btn-link {
+    vertical-align: top;
+    line-height: inherit;
+    padding: 0;
+    display: inline;
+}
+
+.tree-container .btn.btn-link {
+    font-size: .9rem;
 }

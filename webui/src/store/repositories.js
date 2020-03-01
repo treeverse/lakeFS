@@ -1,57 +1,34 @@
 import {
-    REPOSITORY_CREATE_SUCCESS,
-    REPOSITORY_CREATE_ERROR,
-    REPOSITORIES_LIST_START,
-    REPOSITORIES_LIST_ERROR,
-    REPOSITORIES_LIST_SUCCESS,
-    REPOSITORY_DELETE_ERROR,
-    REPOSITORY_DELETE_SUCCESS
+    REPOSITORY_CREATE,
+    REPOSITORY_LOAD_LIST,
+    REPOSITORY_GET,
 } from '../actions/repositories';
 
+import * as async from "./async";
 
 const initialState = {
-    loading: true,
-    list: [],
-    error: null,
-    createError: null,
-    deleteError: null,
+    selected: null,
+    createIndex: 0,
+    list: async.initialState,
+    create: async.initialState,
+    repo: async.initialState,
 };
 
 export default  (state = initialState, action) => {
+    // register async reducers
+    state = {
+        ...state,
+        list: async.reduce(REPOSITORY_LOAD_LIST, state.list, action),
+        create: async.reduce(REPOSITORY_CREATE, state.create, action),
+        repo: async.reduce(REPOSITORY_GET, state.repo, action),
+    };
+
+    // handle other reducers
     switch (action.type) {
-        case REPOSITORIES_LIST_START:
-            return initialState;
-        case REPOSITORIES_LIST_SUCCESS:
+        case REPOSITORY_CREATE.success:
             return {
                 ...state,
-                list: action.list,
-                loading: false,
-                error: null,
-            };
-        case REPOSITORIES_LIST_ERROR:
-            return {
-                ...initialState,
-                error: action.error,
-            };
-        case REPOSITORY_CREATE_ERROR:
-            return {
-                ...state,
-                createError: action.error,
-            };
-        case REPOSITORY_CREATE_SUCCESS:
-            return {
-                ...state,
-                createError: null,
-            };
-        case REPOSITORY_DELETE_ERROR:
-            return {
-                ...state,
-                deleteError: action.error,
-            };
-        case REPOSITORY_DELETE_SUCCESS:
-            return {
-                ...state,
-                deleteError: null,
+                createIndex: state.createIndex + 1,
             };
         default:
             return state;

@@ -1,47 +1,19 @@
-import apiRequest, {qs, extractError} from './api';
+import * as api from './api';
+import {AsyncActionType} from "./request";
 
-export const OBJECTS_NAVIGATE_SET_BRANCH = 'OBJECTS_NAVIGATE_SET_BRANCH';
-export const OBJECTS_NAVIGATE = 'OBJECTS_NAVIGATE';
-export const OBJECTS_NAVIGATE_SUCCESS = 'OBJECTS_NAVIGATE_SUCCESS';
-export const OBJECTS_NAVIGATE_ERROR = 'OBJECTS_NAVIGATE_ERROR';
-
-const objectsNavigateStart = (path) => ({
-    type: OBJECTS_NAVIGATE,
-    path,
-});
-
-const objectsNavigateSuccess = (entries) => ({
-    type: OBJECTS_NAVIGATE_SUCCESS,
-    entries,
-});
-
-const objectsNavigateError = (error) => ({
-    type: OBJECTS_NAVIGATE_ERROR,
-    error
-});
-
-export const objectsSetBranch = (repoId, branchId) => ({
-    type: OBJECTS_NAVIGATE_SET_BRANCH,
-    repoId,
-    branchId,
-});
+export const
+    OBJECTS_LIST_TREE = new AsyncActionType('OBJECTS_GET_TREE'),
+    OBJECTS_LIST_BRANCHES = new AsyncActionType('OBJECTS_LIST_BRANCHES');
 
 
-export const navigate = (repoId, branchId, tree) => {
-    return async function(dispatch) {
-        dispatch(objectsNavigateStart(tree));
-        const query = qs({ tree});
-        try {
-            const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects/ls?${query}`);
-            if (response.status === 200) {
-                const content = await response.json();
-                dispatch(objectsNavigateSuccess(content.results));
-            } else {
-                const error = await extractError(response);
-                dispatch(objectsNavigateError(error));
-            }
-        } catch (error) {
-            dispatch(objectsNavigateError(error.toString()));
-        }
-    }
+export const listTree = (repoId, branchId, tree, after = "", amount = 1000) => {
+    return OBJECTS_LIST_TREE.execute(async () => {
+        return await api.objects.list(repoId, branchId, tree, after, amount);
+    });
+};
+
+export const listBranches = (repoId, from = "", amount = 100) => {
+    return OBJECTS_LIST_BRANCHES.execute(async () => {
+        return await api.branches.filter(repoId, from, amount);
+    })
 };

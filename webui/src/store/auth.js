@@ -1,8 +1,8 @@
 
 import {
-    LOGIN_ERROR,
-    LOGIN_SUCCESS,
-    LOGOUT
+    AUTH_LOGIN,
+    AUTH_LOGOUT,
+    AUTH_REDIRECTED,
 } from '../actions/auth';
 
 const hydrateUser = () => {
@@ -16,29 +16,36 @@ const hydrateUser = () => {
 const initialState = {
     user: hydrateUser(),
     loginError: null,
+    redirectTo: null,
 };
 
 export default (state = initialState, action) => {
     switch (action.type) {
-        case LOGIN_ERROR:
+        case AUTH_LOGIN.error:
             return {
                 ...state,
                 user: null,
                 loginError: action.error,
             };
-        case LOGIN_SUCCESS:
+        case AUTH_LOGIN.success:
             // also save to localstorage
-            window.localStorage['user'] = JSON.stringify(action.user, null, "");
+            window.localStorage['user'] = JSON.stringify(action.payload.user, null, "");
             return {
                 ...state,
-                user: action.user,
+                user: action.payload.user,
+                redirectTo: action.payload.redirectTo,
                 loginError: null,
             };
-        case LOGOUT:
+        case AUTH_LOGOUT:
             window.localStorage.removeItem('user');
             return {
                 ...initialState,
                 user: null,
+            };
+        case AUTH_REDIRECTED:
+            return {
+                ...state,
+                redirectTo: null,
             };
         default:
             return state;
