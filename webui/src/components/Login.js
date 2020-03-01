@@ -7,17 +7,23 @@ import {connect} from "react-redux";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
 import Card from "react-bootstrap/Card";
-import {useHistory, useLocation} from "react-router-dom";
+import {useLocation, useHistory} from "react-router-dom";
 
 import {login} from "../actions/auth";
 
 
-const LoginForm = ({ loginError, login }) => {
+const LoginForm = ({ loginError, login, redirectTo, onRedirect }) => {
 
     // change url
-    let history = useHistory();
     let location = useLocation();
     let { from } = location.state || { from: { pathname: "/" } };
+    const redirectedUrl = from;
+
+    const history = useHistory();
+    if (!!redirectTo) {
+        history.push(redirectTo);
+        onRedirect();
+    }
 
     return (
         <Row>
@@ -26,9 +32,7 @@ const LoginForm = ({ loginError, login }) => {
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
                         <Form onSubmit={(e) => {
-                            login(e.target.username.value, e.target.password.value, () => {
-                                history.replace(from);
-                            });
+                            login(e.target.username.value, e.target.password.value, redirectedUrl);
 
                             e.preventDefault();
                         }}>
