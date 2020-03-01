@@ -30,7 +30,7 @@ const (
 type Index interface {
 	Tree(repoId, branch string) error
 	ReadObject(repoId, branch, path string) (*model.Object, error)
-	ReadEntry(repoId, branch, path string) (*model.Entry, error)
+	ReadEntryObject(repoId, branch, path string) (*model.Entry, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
@@ -62,7 +62,7 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 		return err
 	}
 	if shouldPartiallyCommit(repo) {
-		err = partialCommit(tx, branch)
+		err = partialCommit(tx, branch, entry.GetEntry().GetTimestamp())
 		if err != nil {
 			return err
 		}
@@ -84,7 +84,7 @@ func shouldPartiallyCommit(repo *model.Repo) bool {
 	return chosen < repo.GetPartialCommitRatio()
 }
 
-func partialCommit(tx store.RepoOperations, branch string) error {
+func partialCommit(tx store.RepoOperations, branch string, ts int64) error {
 	// see if we have any changes that weren't applied
 	wsEntries, err := tx.ListWorkspace(branch)
 	if err != nil {
@@ -104,7 +104,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 
 	// update the immutable Merkle tree, getting back a new tree
 	tree := merkle.New(branchData.GetWorkspaceRoot())
-	tree, err = tree.Update(tx, wsEntries)
+	tree, err = tree.Update(tx, wsEntries, ts)
 	if err != nil {
 		return err
 	}
@@ -179,8 +179,7 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	}
 	return obj.(*model.Object), nil
 }
-
-func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
+func (index *KVIndex) ReadEntry(repoId, branch, path string, typ model.Entry_Type) (*model.Entry, error) {
 	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
 		var entry *model.Entry
 		we, err := tx.ReadFromWorkspace(branch, path)
@@ -195,7 +194,7 @@ func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, erro
 				return nil, err
 			}
 			m := merkle.New(root)
-			entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
+			entry, err = m.GetEntry(tx, path, typ)
 			if err != nil {
 				return nil, err
 			}
@@ -216,6 +215,14 @@ func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, erro
 		return nil, err
 	}
 	return entry.(*model.Entry), nil
+}
+
+func (index *KVIndex) ReadEntryTree(repoId, branch, path string) (*model.Entry, error) {
+	return index.ReadEntry(repoId, branch, path, model.Entry_TREE)
+}
+
+func (index *KVIndex) ReadEntryObject(repoId, branch, path string) (*model.Entry, error) {
+	return index.ReadEntry(repoId, branch, path, model.Entry_OBJECT)
 }
 
 func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
@@ -288,7 +295,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 
-		_, err = index.ReadEntry(repoId, branch, path)
+		_, err = index.ReadEntryObject(repoId, branch, path)
 		if err != nil {
 			return nil, err
 		}
@@ -335,9 +342,9 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 		hasMore bool
 		results []*model.Entry
 	}
-
+	ts := time.Now().Unix()
 	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
+		err := partialCommit(tx, branch, ts) // block on this since we traverse the tree immediately after
 		if err != nil {
 			return nil, err
 		}
@@ -417,7 +424,7 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	ts := time.Now().Unix()
 	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
+		err := partialCommit(tx, branch, ts)
 		if err != nil {
 			return nil, err
 		}
@@ -489,8 +496,9 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 }
 
 func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
+	ts := time.Now().Unix()
 	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
+		err = partialCommit(tx, branch, ts) // ensure all changes are reflected in the tree
 		if err != nil {
 			return nil, err
 		}
@@ -569,13 +577,14 @@ func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 }
 
 func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Type) error {
+	ts := time.Now().Unix()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		p := pth.New(path)
 		if p.IsRoot() {
 			return nil, index.ResetBranch(repoId, branch)
 		}
 
-		err := partialCommit(tx, branch)
+		err := partialCommit(tx, branch, ts)
 		if err != nil {
 			return nil, err
 		}
@@ -609,7 +618,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 			}
 		}
 		commitEntries := []*model.WorkspaceEntry{workspaceEntry}
-		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries)
+		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries, ts)
 		if err != nil {
 			return nil, err
 		}
@@ -745,8 +754,9 @@ func (index *KVIndex) DeleteRepo(repoId string) error {
 }
 
 func (index *KVIndex) Tree(repoId, branch string) error {
+	ts := time.Now().Unix()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
+		err := partialCommit(tx, branch, ts)
 		if err != nil {
 			return nil, err
 		}

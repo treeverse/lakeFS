@@ -75,14 +75,16 @@ func (m *Merkle) GetObject(tx store.RepoReadOnlyOperations, pth string) (*model.
 	return tx.ReadObject(entry.GetAddress())
 }
 
-func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, error) {
+func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, int64, error) {
 	entryHashes := make([]string, len(entries))
+	var size int64
 	for i, entry := range entries {
 		entryHashes[i] = ident.Hash(entry)
+		size += entry.Size
 	}
 	id := ident.MultiHash(entryHashes...)
 	err := tx.WriteTree(id, entries)
-	return id, err
+	return id, size, err
 }
 
 type col struct {
@@ -225,7 +227,7 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	return c.data, collectedHasMore, nil
 }
 
-func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*Merkle, error) {
+func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry, ts int64) (*Merkle, error) {
 	// get the max depth
 	changeTree := newChangeTree(entries)
 	rootAddr := m.root
@@ -244,7 +246,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 
 			if len(parts) == 1 {
 				// this is the root node, write it no matter what and return
-				addr, err := m.writeTree(tx, mergedEntries)
+				addr, _, err := m.writeTree(tx, mergedEntries) //TODO: add size and timestamp to root
 				if err != nil {
 					return nil, err
 				}
@@ -271,7 +273,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 				})
 			} else {
 				// write tree
-				addr, err := m.writeTree(tx, mergedEntries)
+				addr, size, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
 					return nil, err
 				}
@@ -279,9 +281,11 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Name:    pth.DirName(),
-						Address: addr,
-						Type:    model.Entry_TREE,
+						Name:      pth.DirName(),
+						Address:   addr,
+						Type:      model.Entry_TREE,
+						Size:      size,
+						Timestamp: ts,
 					},
 					Tombstone: false,
 				})
