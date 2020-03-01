@@ -37,6 +37,8 @@ type ClientService interface {
 
 	ListBranches(params *ListBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*ListBranchesOK, error)
 
+	RevertBranch(params *RevertBranchParams, authInfo runtime.ClientAuthInfoWriter) (*RevertBranchNoContent, error)
+
 	SetTransport(transport runtime.ClientTransport)
 }
 
@@ -241,6 +243,40 @@ func (a *Client) ListBranches(params *ListBranchesParams, authInfo runtime.Clien
 	}
 	// unexpected success response
 	unexpectedSuccess := result.(*ListBranchesDefault)
+	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
+}
+
+/*
+  RevertBranch reverts branch to specified commit or revert specific path changes to last commit pipe if nothing passed reverts all non committed changes
+*/
+func (a *Client) RevertBranch(params *RevertBranchParams, authInfo runtime.ClientAuthInfoWriter) (*RevertBranchNoContent, error) {
+	// TODO: Validate the params before sending
+	if params == nil {
+		params = NewRevertBranchParams()
+	}
+
+	result, err := a.transport.Submit(&runtime.ClientOperation{
+		ID:                 "revertBranch",
+		Method:             "PUT",
+		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}",
+		ProducesMediaTypes: []string{"application/json"},
+		ConsumesMediaTypes: []string{"application/json"},
+		Schemes:            []string{"http"},
+		Params:             params,
+		Reader:             &RevertBranchReader{formats: a.formats},
+		AuthInfo:           authInfo,
+		Context:            params.Context,
+		Client:             params.HTTPClient,
+	})
+	if err != nil {
+		return nil, err
+	}
+	success, ok := result.(*RevertBranchNoContent)
+	if ok {
+		return success, nil
+	}
+	// unexpected success response
+	unexpectedSuccess := result.(*RevertBranchDefault)
 	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
 }
 

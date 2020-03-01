@@ -1,9 +1,9 @@
-# Basic ops
-
-# .PHONY: gen-proto gen-api
 
 GOCMD=$(shell which go)
 DOCKER=$(shell which docker)
+GOBINPATH=$(shell $(GOCMD) env GOPATH)
+NPM=$(shell which npm)
+STATIK=$(GOBINPATH)/bin/statik
 
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
@@ -19,11 +19,13 @@ PROTOC=${DOCKER} run --rm -i -v $(CURDIR):/defs namely/protoc-all
 BINARY_NAME=lakefs
 CLI_BINARY_NAME=lakectl
 
+UI_DIR=$(PWD)/webui
+UI_BUILD_DIR=$(UI_DIR)/build
+
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
 
 all: build
-
 
 gen-proto: ## Build the protobuf definitions into go code (Docker required)
 	$(PROTOC) -f index/model/model.proto -l go -o .
@@ -68,6 +70,17 @@ fmt-validator: ## Validate go format
 
 checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps
 
+# UI operations
+
+ui-build:  ## Build UI app
+	cd $(UI_DIR) && $(NPM) run build && cd -
+
+ui-bundle:  ## Bundle static built UI app
+	$(STATIK) -src=$(UI_BUILD_DIR)
+
+ui: ui-build ui-bundle
+
 help: ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
+
 
