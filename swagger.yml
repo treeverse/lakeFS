@@ -122,6 +122,19 @@ definitions:
         type: string
         enum: [TREE, OBJECT]
 
+  revert_creation:
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum: [OBJECT, TREE, COMMIT, RESET]
+      commit:
+        type: string
+      path:
+        type: string
+
   commit:
     type: object
     properties:
@@ -163,6 +176,19 @@ definitions:
         type: string
 
 paths:
+
+  /authentication:
+    get:
+      tags:
+        - authentication
+      responses:
+        200:
+          description: authentication successful
+          schema:
+            type: object
+            properties:
+              user:
+                $ref: "#/definitions/user"
 
   /repositories:
     get:
@@ -439,6 +465,31 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+    put:
+      tags:
+        - branches
+      operationId: revertBranch
+      summary: "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes"
+      parameters:
+        - in: body
+          name: revert
+          description: "revert parameters"
+          schema:
+            $ref: "#/definitions/revert_creation"
+      responses:
+        204:
+          description: reverted
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit/branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
 
   /repositories/{repositoryId}/branches/{branchId}/diff:
     parameters:

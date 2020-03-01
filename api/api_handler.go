@@ -2,9 +2,12 @@ package api
 
 import (
 	"bytes"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
+
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
 
 	"github.com/treeverse/lakefs/ident"
 	pth "github.com/treeverse/lakefs/index/path"
@@ -58,6 +61,8 @@ func NewHandler(meta index.Index, auth auth.Service, blockAdapter block.Adapter)
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (a *Handler) Configure(api *operations.LakefsAPI) {
 	// Register operations here
+	api.AuthenticationGetAuthenticationHandler = a.AuthenticationGetAuthenticationHandler()
+
 	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
 	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
@@ -67,6 +72,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.BranchesGetBranchHandler = a.GetBranchHandler()
 	api.BranchesCreateBranchHandler = a.CreateBranchHandler()
 	api.BranchesDeleteBranchHandler = a.DeleteBranchHandler()
+	api.BranchesRevertBranchHandler = a.RevertBranchHandler()
 
 	api.CommitsCommitHandler = a.CommitHandler()
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
@@ -84,6 +90,12 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
 	return authorize(a.auth, user, action)
+}
+
+func (a *Handler) AuthenticationGetAuthenticationHandler() authentication.GetAuthenticationHandler {
+	return authentication.GetAuthenticationHandlerFunc(func(params authentication.GetAuthenticationParams, user *models.User) middleware.Responder {
+		return authentication.NewGetAuthenticationOK().WithPayload(&authentication.GetAuthenticationOKBody{User: user})
+	})
 }
 
 func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
@@ -285,13 +297,13 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error creating repository"))
+				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
 		repo, err := a.meta.GetRepo(swag.StringValue(params.Repository.ID))
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error creating repository"))
+				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
 		return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
@@ -689,5 +701,39 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		}
 
 		return objects.NewDeleteObjectNoContent()
+	})
+}
+func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
+	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
+		if err != nil {
+			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		switch swag.StringValue(params.Revert.Type) {
+		case models.RevertCreationTypeCOMMIT:
+			err = a.meta.RevertCommit(params.RepositoryID, params.BranchID, params.Revert.Commit)
+
+		case models.RevertCreationTypeTREE:
+			err = a.meta.RevertPath(params.RepositoryID, params.BranchID, params.Revert.Path)
+
+		case models.RevertCreationTypeRESET:
+			err = a.meta.ResetBranch(params.RepositoryID, params.BranchID)
+
+		case models.RevertCreationTypeOBJECT:
+			err = a.meta.RevertObject(params.RepositoryID, params.BranchID, params.Revert.Path)
+		default:
+			return branches.NewRevertBranchNotFound().
+				WithPayload(responseError("revert type not found"))
+		}
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return branches.NewRevertBranchNotFound().
+					WithPayload(responseError("branch not found"))
+			} else {
+				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			}
+		}
+
+		return branches.NewRevertBranchNoContent()
 	})
 }

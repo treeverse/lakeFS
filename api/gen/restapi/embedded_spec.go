@@ -35,6 +35,26 @@ func init() {
   },
   "basePath": "/api/v1",
   "paths": {
+    "/authentication": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "authentication successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "$ref": "#/definitions/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/repositories": {
       "get": {
         "tags": [
@@ -305,6 +325,43 @@ func init() {
           },
           "404": {
             "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "operationId": "revertBranch",
+        "parameters": [
+          {
+            "description": "revert parameters",
+            "name": "revert",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/revert_creation"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "reverted"
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "commit/branch not found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -1065,6 +1122,29 @@ func init() {
         },
         "id": {
           "type": "string"
+        }
+      }
+    },
+    "revert_creation": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "OBJECT",
+            "TREE",
+            "COMMIT",
+            "RESET"
+          ]
         }
       }
     },
@@ -1114,6 +1194,26 @@ func init() {
   },
   "basePath": "/api/v1",
   "paths": {
+    "/authentication": {
+      "get": {
+        "tags": [
+          "authentication"
+        ],
+        "responses": {
+          "200": {
+            "description": "authentication successful",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "user": {
+                  "$ref": "#/definitions/user"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/repositories": {
       "get": {
         "tags": [
@@ -1405,6 +1505,46 @@ func init() {
           },
           "404": {
             "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "branches"
+        ],
+        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "operationId": "revertBranch",
+        "parameters": [
+          {
+            "description": "revert parameters",
+            "name": "revert",
+            "in": "body",
+            "schema": {
+              "$ref": "#/definitions/revert_creation"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "reverted"
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "commit/branch not found",
             "schema": {
               "$ref": "#/definitions/error"
             }
@@ -2200,6 +2340,29 @@ func init() {
         },
         "id": {
           "type": "string"
+        }
+      }
+    },
+    "revert_creation": {
+      "type": "object",
+      "required": [
+        "type"
+      ],
+      "properties": {
+        "commit": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "OBJECT",
+            "TREE",
+            "COMMIT",
+            "RESET"
+          ]
         }
       }
     },
