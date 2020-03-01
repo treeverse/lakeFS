@@ -44,9 +44,11 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
-	Checkout(repoId, branch, commit string) error
 	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
 	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
+	RevertCommit(repoId, branch, commit string) error
+	RevertPath(repoId, branch, path string) error
+	RevertObject(repoId, branch, path string) error
 	Merge(repoId, source, destination string) error
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
@@ -532,7 +534,7 @@ func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differenc
 	return res.(merkle.Differences), nil
 }
 
-func (index *KVIndex) Checkout(repoId, branch, commit string) error {
+func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		tx.ClearWorkspace(branch)
 		commitData, err := tx.ReadCommit(commit)
@@ -551,6 +553,73 @@ func (index *KVIndex) Checkout(repoId, branch, commit string) error {
 		return nil, err
 	})
 	return err
+}
+
+func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Type) error {
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		p := pth.New(path)
+		if p.IsRoot() {
+			return nil, index.ResetBranch(repoId, branch)
+		}
+
+		err := partialCommit(tx, branch)
+		if err != nil {
+			return nil, err
+		}
+		branchData, err := tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+		workspaceMerkle := merkle.New(branchData.GetWorkspaceRoot())
+		commitMerkle := merkle.New(branchData.GetCommitRoot())
+		var workspaceEntry *model.WorkspaceEntry
+		commitEntry, err := commitMerkle.GetEntry(tx, path, typ)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				// remove all changes under path
+				pathEntry, err := workspaceMerkle.GetEntry(tx, path, typ)
+				if err != nil {
+					return nil, err
+				}
+				workspaceEntry = &model.WorkspaceEntry{
+					Path:      path,
+					Entry:     pathEntry,
+					Tombstone: true,
+				}
+			} else {
+				return nil, err
+			}
+		} else {
+			workspaceEntry = &model.WorkspaceEntry{
+				Path:  path,
+				Entry: commitEntry,
+			}
+		}
+		commitEntries := []*model.WorkspaceEntry{workspaceEntry}
+		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries)
+		if err != nil {
+			return nil, err
+		}
+
+		// update branch workspace pointer to point at new workspace
+		err = tx.WriteBranch(branch, &model.Branch{
+			Name:          branch,
+			Commit:        branchData.GetCommit(),
+			CommitRoot:    branchData.GetCommitRoot(),
+			WorkspaceRoot: workspaceMerkle.Root(),
+		})
+
+		return nil, err
+	})
+	return err
+}
+
+func (index *KVIndex) RevertPath(repoId, branch, path string) error {
+	return index.revertPath(repoId, branch, path, model.Entry_TREE)
+}
+
+func (index *KVIndex) RevertObject(repoId, branch, path string) error {
+	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
 
 func (index *KVIndex) Merge(repoId, source, destination string) error {
