@@ -23,10 +23,6 @@ type lazyOutput struct {
 	IsOpen bool
 }
 
-func IsPlayback() bool {
-	return false
-}
-
 func newLazyOutput(name string) *lazyOutput {
 	r := new(lazyOutput)
 	r.Name = name
