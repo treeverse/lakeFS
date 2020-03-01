@@ -347,24 +347,24 @@ func TestMerkle_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "add objects to root and objects to tree",
+			name: "add objects with size",
 
 			initialWS: []*model.WorkspaceEntry{
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
 					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT, Size: 1000},
 					Tombstone: false,
 				},
 			},
@@ -372,17 +372,17 @@ func TestMerkle_Update(t *testing.T) {
 			wantedWS: []*model.WorkspaceEntry{
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 				{
 					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT, Size: 1000},
 					Tombstone: false,
 				},
 			},
@@ -686,16 +686,17 @@ func TestMerkle_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			ts := time.Now().Unix()
 			tree := testutil.ConstructTree(map[string][]*model.Entry{
 				"master": {},
 			})
 			m := merkle.New("master")
-			initialMerkle, err := m.Update(tree, tt.initialWS)
+			initialMerkle, err := m.Update(tree, tt.initialWS, ts)
 			if err != nil {
 				t.Fatal(err)
 				return
 			}
-			got, err := initialMerkle.Update(tree, tt.editEntries)
+			got, err := initialMerkle.Update(tree, tt.editEntries, ts)
 			if err != nil {
 				t.Fatal(err)
 				return
@@ -704,7 +705,7 @@ func TestMerkle_Update(t *testing.T) {
 				"master": {},
 			})
 			m2 := merkle.New("master")
-			want, err := m2.Update(wantTree, tt.wantedWS)
+			want, err := m2.Update(wantTree, tt.wantedWS, ts)
 			if err != nil {
 				t.Fatal(err)
 				return
