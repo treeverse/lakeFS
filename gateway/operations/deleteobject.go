@@ -1,9 +1,8 @@
 package operations
 
 import (
-	"net/http"
-
 	"github.com/treeverse/lakefs/gateway/utils"
+	"net/http"
 
 	"github.com/treeverse/lakefs/permissions"
 
