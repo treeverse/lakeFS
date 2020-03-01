@@ -497,7 +497,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		}
 
 		// read metadata
-		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
+		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.BranchID, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
@@ -534,7 +534,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := a.meta.ReadEntry(params.RepositoryID, params.BranchID, params.Path)
+		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.BranchID, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
