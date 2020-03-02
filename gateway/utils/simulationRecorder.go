@@ -12,7 +12,6 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
-	"runtime"
 	"sync/atomic"
 	"time"
 )
@@ -132,7 +131,6 @@ func RegisterRecorder(router *mux.Router) {
 	if !exist {
 		return
 	}
-	runtime.GOMAXPROCS(1)
 	recordingDir := "testdata/recordings/" + testDir
 	err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
 	if err != nil {
