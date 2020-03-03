@@ -1,4 +1,6 @@
 import base64 from 'base-64';
+import {generateDownloadToken} from '../downloadToken';
+
 
 const API_ENDPOINT = '/api/v1';
 
@@ -8,9 +10,23 @@ const basicAuth = (accessKeyId, secretAccessKey) => {
     };
 };
 
-const cachedBasicAuth = () => {
+
+export const linkToPath = async (repoId, branchId, path) => {
+    const userData = getUser();
+    const query = qs({
+        path: path,
+        token: await generateDownloadToken(userData.accessKeyId, userData.secretAccessKey, path),
+    });
+    return `${API_ENDPOINT}/repositories/${repoId}/branches/${branchId}/objects?${query}`
+};
+
+const getUser = () => {
     let userData = window.localStorage.getItem("user");
-    userData = JSON.parse(userData);
+    return JSON.parse(userData);
+}
+
+const cachedBasicAuth = () => {
+    const userData = getUser();
     return basicAuth(userData.accessKeyId, userData.secretAccessKey);
 };
 
@@ -222,6 +238,18 @@ class Objects {
     }
 }
 
+class Commits {
+    async log(repoId, branchId) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`);
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        const data = await response.json();
+        return data.results.filter(commit => (!!commit.parents));
+    }
+}
+
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const objects = new Objects();
+export const commits = new Commits();

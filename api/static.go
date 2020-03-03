@@ -2,6 +2,8 @@ package api
 
 import (
 	"net/http"
+	"os"
+	"path"
 	"strings"
 )
 
@@ -45,4 +47,19 @@ func HandlerWithUI(api http.Handler, ui http.Handler) http.Handler {
 		ui.ServeHTTP(w, r)
 	}))
 	return mux
+}
+
+func HandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath string) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		upath := r.URL.Path
+		if !strings.HasPrefix(upath, "/") {
+			upath = "/" + upath
+			r.URL.Path = upath
+		}
+		_, err := root.Open(path.Clean(upath))
+		if err != nil && os.IsNotExist(err) {
+			r.URL.Path = defaultPath
+		}
+		handler.ServeHTTP(w, r)
+	})
 }

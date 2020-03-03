@@ -47,6 +47,12 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
 		}
 	}
+	// Applies when the "token" query is set
+	if api.DownloadTokenAuth == nil {
+		api.DownloadTokenAuth = func(token string) (*models.User, error) {
+			return nil, errors.NotImplemented("api key auth (download_token) token from query param [token] has not yet been implemented")
+		}
+	}
 
 	// Set your custom authorizer if needed. Default one is security.Authorized()
 	// Expected interface runtime.Authorizer

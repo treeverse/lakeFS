@@ -1,19 +1,15 @@
-
-import * as async from './async';
-
-import {
-    BRANCHES_LIST
-} from '../actions/branches';
+import * as async from "./async";
+import {COMMITS_LIST} from "../actions/commits";
 
 
 const initialState = {
-    list: async.initialState,
+    log: async.initialState,
 };
 
 export default  (state = initialState, action) => {
     state = {
         ...state,
-        list: async.reduce(BRANCHES_LIST, state.list, action),
+        log: async.reduce(COMMITS_LIST, state.log, action),
     };
 
     switch (action.type) {

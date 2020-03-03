@@ -69,6 +69,8 @@ func NewGetObjectOK(writer io.Writer) *GetObjectOK {
 object content
 */
 type GetObjectOK struct {
+	ContentDisposition string
+
 	ContentLength int64
 
 	ETag string
@@ -87,6 +89,9 @@ func (o *GetObjectOK) GetPayload() io.Writer {
 }
 
 func (o *GetObjectOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response header Content-Disposition
+	o.ContentDisposition = response.GetHeader("Content-Disposition")
 
 	// response header Content-Length
 	contentLength, err := swag.ConvertInt64(response.GetHeader("Content-Length"))
