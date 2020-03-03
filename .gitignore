@@ -34,3 +34,4 @@ lakectl
 
 # client excludes
 webui/node_modules
+/httputil/requestSimulator.go_save
