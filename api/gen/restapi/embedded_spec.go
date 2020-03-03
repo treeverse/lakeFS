@@ -634,6 +634,14 @@ func init() {
     },
     "/repositories/{repositoryId}/branches/{branchId}/objects": {
       "get": {
+        "security": [
+          {
+            "basic_auth": []
+          },
+          {
+            "download_token": []
+          }
+        ],
         "produces": [
           "application/octet-stream"
         ],
@@ -649,6 +657,9 @@ func init() {
               "type": "file"
             },
             "headers": {
+              "Content-Disposition": {
+                "type": "string"
+              },
               "Content-Length": {
                 "type": "integer",
                 "format": "int64"
@@ -1168,6 +1179,11 @@ func init() {
   "securityDefinitions": {
     "basic_auth": {
       "type": "basic"
+    },
+    "download_token": {
+      "type": "apiKey",
+      "name": "token",
+      "in": "query"
     }
   },
   "security": [
@@ -1832,6 +1848,14 @@ func init() {
     },
     "/repositories/{repositoryId}/branches/{branchId}/objects": {
       "get": {
+        "security": [
+          {
+            "basic_auth": []
+          },
+          {
+            "download_token": []
+          }
+        ],
         "produces": [
           "application/octet-stream"
         ],
@@ -1847,6 +1871,9 @@ func init() {
               "type": "file"
             },
             "headers": {
+              "Content-Disposition": {
+                "type": "string"
+              },
               "Content-Length": {
                 "type": "integer",
                 "format": "int64"
@@ -2386,6 +2413,11 @@ func init() {
   "securityDefinitions": {
     "basic_auth": {
       "type": "basic"
+    },
+    "download_token": {
+      "type": "apiKey",
+      "name": "token",
+      "in": "query"
     }
   },
   "security": [

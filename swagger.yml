@@ -16,6 +16,11 @@ basePath: /api/v1
 securityDefinitions:
   basic_auth:
     type: basic
+  download_token:
+    type: apiKey
+    in: query
+    name: token
+
 
 security:
   - basic_auth: []
@@ -622,6 +627,9 @@ paths:
         - objects
       operationId: getObject
       summary: get object content
+      security:
+        - basic_auth: []
+        - download_token: []
       produces:
         - application/octet-stream
       responses:
@@ -636,6 +644,8 @@ paths:
             Last-Modified:
               type: string
             ETag:
+              type: string
+            Content-Disposition:
               type: string
         401:
           $ref: "#/responses/Unauthorized"
