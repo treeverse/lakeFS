@@ -151,7 +151,7 @@ func runEvents(eventsList []simulationEvent, handler http.Handler) {
 			time.Sleep(secondDiff)
 		}
 		ServeRecordedHTTP(request, handler, &event, simulationMisses)
-		time.Sleep(100 * time.Millisecond)
+		//time.Sleep(100 * time.Millisecond)
 
 	}
 
