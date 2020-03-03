@@ -595,7 +595,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.BranchID, swag.StringValue(params.Tree), after, int(amount), false)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewListObjectsNotFound().WithPayload(responseError("could not found requested path"))
+				return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
 			}
 			return objects.NewListObjectsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("received error while listing objects"))
