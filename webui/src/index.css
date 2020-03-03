@@ -1,5 +1,6 @@
 .action-bar {
     padding-bottom: 10px;
+    padding-top: 10px;
     margin-bottom: 10px;
     border-bottom: 1px solid rgba(0,0,0,.125);
     overflow: hidden;
@@ -20,13 +21,51 @@
     color: #FFFFFF;
 }
 
-.tree-error {
+
+.commit-actions .btn {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: .8rem;
+    vertical-align: center;
+}
+
+.ref-selector {
+    padding: 15px 10px;
+}
+
+.lakefs-uri .octicon {
+    color: #0c5460;
+    margin-right: 5px;
+}
+
+.lakefs-uri a {
+    color: #0f6674;
+    text-decoration: underline;
+}
+.lakefs-uri {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: .9rem;
+    color: #303030;
+}
+
+.lakefs-uri strong {
+    margin: 0 5px;
+}
+
+.ref-selector form {
+    margin-bottom: 10px;
+}
+
+.tree-container .alert {
     margin: 20px;
 }
 
 .tree-container {
     margin-bottom: 150px;
     font-size: .9rem;
+}
+
+.tree-container .card .card-header {
+    padding: 10px;
 }
 
 .tree-container .card .card-body {

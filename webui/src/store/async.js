@@ -1,7 +1,7 @@
 
 
 export const initialState = {
-    loading: false,
+    loading: true,
     payload: null,
     error: null,
 };

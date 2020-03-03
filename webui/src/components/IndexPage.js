@@ -4,7 +4,7 @@ import {Switch, Route, useHistory} from "react-router-dom";
 import Tabs from "react-bootstrap/Tabs";
 import Tab from "react-bootstrap/Tab";
 
-import {RepositoryExplorerPage} from './RepositoryExplorerPage';
+import RepositoryExplorerPage from './RepositoryExplorerPage';
 import {RepositoryListPage} from './RepositoryListPage';
 
 

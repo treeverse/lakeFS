@@ -3,6 +3,7 @@ package api
 import (
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-openapi/errors"
 
@@ -53,6 +54,12 @@ func NewServer(
 	}
 }
 
+func (s *Server) DownloadToken() func(string) (*models.User, error) {
+	return func(token string) (*models.User, error) {
+		return ValidateToken(s.authService, token, time.Now())
+	}
+}
+
 // BasicAuth returns a function that hooks into Swagger's basic auth provider
 // it uses the auth.Service provided to ensure credentials are valid
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
@@ -90,6 +97,7 @@ func (s *Server) SetupServer() (*restapi.Server, error) {
 	}
 
 	api.BasicAuthAuth = s.BasicAuth()
+	api.DownloadTokenAuth = s.DownloadToken()
 
 	// bind our handlers to the server
 	NewHandler(s.meta, s.authService, s.blockStore).Configure(api)
@@ -118,8 +126,8 @@ func (s *Server) Serve(listenAddr string) error {
 		Addr: listenAddr,
 		Handler: httputil.LoggingMiddleWare(RequestIdHeaderName, LoggerServiceName,
 			HandlerWithUI(
-				srv.GetHandler(),          // api
-				http.FileServer(statikFS), // ui
+				srv.GetHandler(), // api
+				HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"), // ui
 			)),
 	}
 

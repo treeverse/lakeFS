@@ -111,6 +111,11 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
 		},
 
+		// Applies when the "token" query is set
+		DownloadTokenAuth: func(token string) (*models.User, error) {
+			return nil, errors.NotImplemented("api key auth (download_token) token from query param [token] has not yet been implemented")
+		},
+
 		// default authorizer is authorized meaning no requests are blocked
 		APIAuthorizer: security.Authorized(),
 	}
@@ -153,6 +158,10 @@ type LakefsAPI struct {
 	// BasicAuthAuth registers a function that takes username and password and returns a principal
 	// it performs authentication with basic auth
 	BasicAuthAuth func(string, string) (*models.User, error)
+
+	// DownloadTokenAuth registers a function that takes a token and returns a principal
+	// it performs authentication based on an api key token provided in the query
+	DownloadTokenAuth func(string) (*models.User, error)
 
 	// APIAuthorizer provides access control (ACL/RBAC/ABAC) by providing access to the request and authenticated principal
 	APIAuthorizer runtime.Authorizer
@@ -275,6 +284,10 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "BasicAuthAuth")
 	}
 
+	if o.DownloadTokenAuth == nil {
+		unregistered = append(unregistered, "TokenAuth")
+	}
+
 	if o.AuthenticationGetAuthenticationHandler == nil {
 		unregistered = append(unregistered, "Authentication.GetAuthenticationHandler")
 	}
@@ -377,6 +390,13 @@ func (o *LakefsAPI) AuthenticatorsFor(schemes map[string]spec.SecurityScheme) ma
 		case "basic_auth":
 			result[name] = o.BasicAuthenticator(func(username, password string) (interface{}, error) {
 				return o.BasicAuthAuth(username, password)
+			})
+
+		case "download_token":
+
+			scheme := schemes[name]
+			result[name] = o.APIKeyAuthenticator(scheme.Name, scheme.In, func(token string) (interface{}, error) {
+				return o.DownloadTokenAuth(token)
 			})
 
 		}
