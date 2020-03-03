@@ -1,5 +1,5 @@
 import React, {useEffect} from "react";
-import {useLocation, useHistory} from "react-router-dom";
+import {useLocation, useHistory, Link} from "react-router-dom";
 
 import BranchDropdown from "./BranchDropdown";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
@@ -12,10 +12,11 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import Octicon, {Code, Clippy} from "@primer/octicons-react";
+import Octicon, {Code} from "@primer/octicons-react";
+import ClipboardButton from "./ClipboardButton";
 
 
-const CommitWidget = ({commit}) => {
+const CommitWidget = ({repoId, commit}) => {
     return (
         <ListGroupItem>
             <div className="clearfix">
@@ -29,13 +30,11 @@ const CommitWidget = ({commit}) => {
                 </div>
                 <div className="float-right">
                     <ButtonGroup className="commit-actions">
-                        <Button variant="light">
-                            <Octicon icon={Clippy}/>
-                        </Button>
+                        <ClipboardButton variant="light" text={commit.id}/>
                         <Button variant="light">
                             <Octicon icon={Code}/>
                         </Button>
-                        <Button variant="light">
+                        <Button variant="light" as={Link} to={`/repositories/${repoId}/commits/${commit.id}`}>
                             {(commit.id.length > 16) ? commit.id.substr(0, 8) : commit.id}
                         </Button>
                     </ButtonGroup>
@@ -64,7 +63,7 @@ const CommitsPage = ({repoId, branchId, logCommits, log }) => {
         body = (
             <ListGroup>
                 {log.payload.map(commit => (
-                    <CommitWidget key={commit.id} commit={commit}/>
+                    <CommitWidget key={commit.id} commit={commit} repoId={repoId}/>
                 ))}
             </ListGroup>
         );
