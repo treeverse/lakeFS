@@ -31,6 +31,7 @@ type Index interface {
 	Tree(repoId, branch string) error
 	ReadObject(repoId, branch, path string) (*model.Object, error)
 	ReadEntryObject(repoId, branch, path string) (*model.Entry, error)
+	ReadRootObject(repoId, branch string) (*model.Root, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
@@ -216,7 +217,23 @@ func (index *KVIndex) ReadEntry(repoId, branch, path string, typ model.Entry_Typ
 	}
 	return entry.(*model.Entry), nil
 }
-
+func (index *KVIndex) ReadRootObject(repoId, branch string) (*model.Root, error) {
+	root, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		_, err = tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		root, err := resolveReadRoot(tx, branch)
+		if err != nil {
+			return nil, err
+		}
+		return tx.ReadRoot(root)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return root.(*model.Root), nil
+}
 func (index *KVIndex) ReadEntryTree(repoId, branch, path string) (*model.Entry, error) {
 	return index.ReadEntry(repoId, branch, path, model.Entry_TREE)
 }

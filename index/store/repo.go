@@ -18,6 +18,7 @@ type RepoReadOnlyOperations interface {
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
+	ReadRoot(addr string) (*model.Root, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
@@ -36,6 +37,7 @@ type RepoOperations interface {
 	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
+	WriteRoot(address string, root *model.Root) error
 	WriteObject(addr string, object *model.Object) error
 	WriteCommit(addr string, commit *model.Commit) error
 	WriteBranch(name string, branch *model.Branch) error
@@ -128,6 +130,11 @@ func (s *KVRepoReadOnlyOperations) ListBranches(prefix string, amount int, after
 func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, error) {
 	b := &model.Branch{}
 	return b, s.query.GetAsProto(b, SubspaceBranches, db.CompositeStrings(s.repoId, branch))
+}
+
+func (s *KVRepoReadOnlyOperations) ReadRoot(address string) (*model.Root, error) {
+	r := &model.Root{}
+	return r, s.query.GetAsProto(r, SubspaceRoots, db.CompositeStrings(s.repoId, address))
 }
 
 func (s *KVRepoReadOnlyOperations) ReadObject(addr string) (*model.Object, error) {
@@ -282,6 +289,9 @@ func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) err
 	return nil
 }
 
+func (s *KVRepoOperations) WriteRoot(address string, root *model.Root) error {
+	return s.query.SetProto(root, SubspaceRoots, db.CompositeStrings(s.repoId, address))
+}
 func (s *KVRepoOperations) WriteObject(addr string, object *model.Object) error {
 	return s.query.SetProto(object, SubspaceObjects, db.CompositeStrings(s.repoId, addr))
 }
