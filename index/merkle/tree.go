@@ -33,6 +33,7 @@ type TreeReader interface {
 type TreeReaderWriter interface {
 	TreeReader
 	WriteTree(address string, entries []*model.Entry) error
+	WriteRoot(address string, root *model.Root) error
 }
 
 func (m *Merkle) GetEntry(tx TreeReader, pth string, typ model.Entry_Type) (*model.Entry, error) {
@@ -246,7 +247,14 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry, ts
 
 			if len(parts) == 1 {
 				// this is the root node, write it no matter what and return
-				addr, _, err := m.writeTree(tx, mergedEntries) //TODO: add size and timestamp to root
+				addr, size, err := m.writeTree(tx, mergedEntries)
+				if err != nil {
+					return nil, err
+				}
+				err = tx.WriteRoot(addr, &model.Root{
+					Timestamp: ts,
+					Size:      size,
+				})
 				if err != nil {
 					return nil, err
 				}

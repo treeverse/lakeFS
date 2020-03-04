@@ -385,9 +385,10 @@ func TestSizeConsistency(t *testing.T) {
 		wantedSize int64
 	}
 	testData := []struct {
-		name        string
-		objectList  []Object
-		wantedTrees []Tree
+		name           string
+		objectList     []Object
+		wantedTrees    []Tree
+		wantedRootSize int64
 	}{
 		{
 			name: "simple case",
@@ -401,6 +402,7 @@ func TestSizeConsistency(t *testing.T) {
 			wantedTrees: []Tree{
 				{"a/", 500},
 			},
+			wantedRootSize: 500,
 		},
 		{
 			name: "two separate trees",
@@ -415,6 +417,7 @@ func TestSizeConsistency(t *testing.T) {
 				{"a/", 200},
 				{"b/", 300},
 			},
+			wantedRootSize: 500,
 		},
 		{
 			name: "two sub trees",
@@ -430,6 +433,7 @@ func TestSizeConsistency(t *testing.T) {
 				{"parent/b/", 300},
 				{"parent/", 500},
 			},
+			wantedRootSize: 500,
 		},
 		{
 			name: "deep sub trees",
@@ -447,6 +451,7 @@ func TestSizeConsistency(t *testing.T) {
 				{"a/b/c/d/", 200},
 				{"a/b/c/d/e/", 100},
 			},
+			wantedRootSize: 500,
 		},
 	}
 
@@ -477,8 +482,16 @@ func TestSizeConsistency(t *testing.T) {
 
 				// test entry size
 				if entry.GetSize() != tree.wantedSize {
-					t.Fatalf("did not get the expected size for directory %s want: %d, got: %d", tree.name, tree.wantedSize, entry.GetSize())
+					t.Errorf("did not get the expected size for directory %s want: %d, got: %d", tree.name, tree.wantedSize, entry.GetSize())
 				}
+			}
+
+			rootObject, err := kvIndex.ReadRootObject(repo.GetRepoId(), repo.DefaultBranch)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rootObject.GetSize() != tc.wantedRootSize {
+				t.Errorf("did not get the expected size for root want: %d, got: %d", tc.wantedRootSize, rootObject.GetSize())
 			}
 		})
 	}
@@ -486,8 +499,8 @@ func TestSizeConsistency(t *testing.T) {
 
 func TestTimeStampConsistency(t *testing.T) {
 	type timedObject struct {
-		name    string
 		path    string
+		name    string
 		seconds time.Duration
 	}
 	type expectedTree struct {
@@ -495,14 +508,20 @@ func TestTimeStampConsistency(t *testing.T) {
 		seconds time.Duration
 	}
 	testData := []struct {
-		name          string
-		timedObjects  []timedObject
-		expectedTrees []expectedTree
+		name           string
+		timedObjects   []timedObject
+		expectedTrees  []expectedTree
+		expectedRootTS time.Duration
 	}{
 		{
-
-			timedObjects:  []timedObject{{"a/", "foo", 10}, {"a/", "bar", 20}},
-			expectedTrees: []expectedTree{{"a/", 20}},
+			timedObjects:   []timedObject{{"a/", "foo", 10}, {"a/", "bar", 20}},
+			expectedTrees:  []expectedTree{{"a/", 20}},
+			expectedRootTS: 20,
+		},
+		{
+			timedObjects:   []timedObject{{"a/", "wow", 5}, {"a/c/", "bar", 10}, {"a/b/", "bar", 20}},
+			expectedTrees:  []expectedTree{{"a/", 20}, {"a/c/", 10}, {"a/b/", 20}},
+			expectedRootTS: 20,
 		},
 	}
 
@@ -513,10 +532,12 @@ func TestTimeStampConsistency(t *testing.T) {
 			now := time.Now()
 			kvIndex := index.NewKVIndex(kv)
 			for _, obj := range tc.timedObjects {
+				ts := now.Add(obj.seconds * time.Second).Unix()
 				err := kvIndex.WriteEntry(repo.GetRepoId(), repo.GetDefaultBranch(), obj.path, &model.Entry{
 					Name:      obj.name,
+					Address:   "12345678",
 					Type:      model.Entry_OBJECT,
-					Timestamp: now.Add(obj.seconds * time.Second).Unix(),
+					Timestamp: ts,
 				})
 				if err != nil {
 					t.Fatal(err)
@@ -531,6 +552,15 @@ func TestTimeStampConsistency(t *testing.T) {
 				if entry.GetTimestamp() != expectedTS {
 					t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, entry.GetTimestamp())
 				}
+			}
+
+			rootObject, err := kvIndex.ReadRootObject(repo.GetRepoId(), repo.DefaultBranch)
+			if err != nil {
+				t.Fatal(err)
+			}
+			expectedTS := now.Add(tc.expectedRootTS * time.Second).Unix()
+			if rootObject.GetTimestamp() != expectedTS {
+				t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, rootObject.GetTimestamp())
 			}
 
 		})
