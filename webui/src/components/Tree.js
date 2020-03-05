@@ -107,7 +107,7 @@ const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
         rowClass += 'diff-changed';
     } else if (entry.diff_type === 'ADDED') {
         rowClass += 'diff-added';
-    } else if (entry.diff_type === 'removed') {
+    } else if (entry.diff_type === 'REMOVED') {
         rowClass += 'diff-removed';
     }
 
