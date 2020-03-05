@@ -3,6 +3,8 @@ package merkle
 import (
 	"strings"
 
+	"github.com/treeverse/lakefs/db"
+
 	log "github.com/sirupsen/logrus"
 
 	"github.com/treeverse/lakefs/index/model"
@@ -24,7 +26,7 @@ func CompareEntries(a, b *model.Entry) (eqs int) {
 	return
 }
 
-func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*model.Entry {
+func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, error) {
 	merged := make([]*model.Entry, 0)
 	nextCurrent := 0
 	nextChange := 0
@@ -52,7 +54,8 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*mo
 				nextChange++
 				// changed entry comes first
 				if currChange.Tombstone {
-					log.Error("trying to remove an entry that dose not exist")
+					log.Error("trying to remove an entry that does not exist")
+					return nil, db.ErrNotFound
 				} else {
 					merged = append(merged, currChange.GetEntry())
 				}
@@ -61,9 +64,8 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*mo
 			// only changes left
 			currChange := changes[nextChange]
 			if currChange.GetTombstone() {
-				// this is an override or deletion
-				nextChange++
-				continue // remove.
+				log.Error("trying to remove an entry that does not exist")
+				return nil, db.ErrNotFound
 			}
 			merged = append(merged, currChange.GetEntry())
 			nextChange++
@@ -77,5 +79,5 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*mo
 			break
 		}
 	}
-	return merged
+	return merged, nil
 }
