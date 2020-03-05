@@ -70,7 +70,7 @@ func sortEntries(entries []*model.Entry) []*model.Entry {
 }
 
 func (r *MockTree) WriteTree(address string, entries []*model.Entry) error {
-	r.kv[address] = sortEntries(entries)
+	r.kv[address] = entries
 	sortEntries(r.kv[address])
 	return nil
 }
