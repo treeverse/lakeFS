@@ -37,7 +37,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			})
 			continue
 		}
-		err = o.Index.DeleteObject(o.Repo.GetRepoId(), resolvedPath.Refspec, resolvedPath.Path)
+		err = o.Index.DeleteObject(o.Repo.GetRepoId(), resolvedPath.Ref, resolvedPath.Path)
 		if err != nil {
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",

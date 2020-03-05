@@ -586,7 +586,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.Refspec{
+			Branch: &models.Ref{
 				CommitID: swag.String(branch.GetCommit()),
 				ID:       swag.String("master2"),
 			},
@@ -602,7 +602,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch missing commit", func(t *testing.T) {
 		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.Refspec{
+			Branch: &models.Ref{
 				CommitID: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
 				ID:       swag.String("master3"),
 			},
@@ -619,7 +619,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, err = clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.Refspec{
+			Branch: &models.Ref{
 				CommitID: swag.String(branch.GetCommit()),
 				ID:       swag.String("master8"),
 			},

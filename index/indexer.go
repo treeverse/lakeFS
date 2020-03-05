@@ -1,9 +1,12 @@
 package index
 
 import (
+	"fmt"
 	"math/rand"
 	"regexp"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/treeverse/lakefs/index/dag"
 
@@ -29,13 +32,13 @@ const (
 
 type Index interface {
 	Tree(repoId, branch string) error
-	ReadObject(repoId, branch, path string) (*model.Object, error)
-	ReadEntry(repoId, branch, path string) (*model.Entry, error)
+	ReadObject(repoId, ref, path string) (*model.Object, error)
+	ReadEntry(repoId, ref, path string) (*model.Entry, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjectsByPrefix(repoId, branch, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
+	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
 	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, commitId string) error
@@ -44,7 +47,7 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
-	Diff(repoId, branch, otherBranch string) (merkle.Differences, error)
+	Diff(repoId, leftRef, rightRef string) (merkle.Differences, error)
 	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
@@ -68,15 +71,6 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 		}
 	}
 	return nil
-}
-
-func resolveReadRoot(tx store.RepoReadOnlyOperations, branch string) (string, error) {
-	var empty string
-	branchData, err := tx.ReadBranch(branch)
-	if err != nil {
-		return empty, err // unexpected error
-	}
-	return branchData.GetWorkspaceRoot(), nil
 }
 
 func shouldPartiallyCommit(repo *model.Repo) bool {
@@ -139,37 +133,97 @@ func NewKVIndex(kv store.Store) *KVIndex {
 	return &KVIndex{kv: kv}
 }
 
-// Business logic
-func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, error) {
-	obj, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
-		var obj *model.Object
-		we, err := tx.ReadFromWorkspace(branch, path)
-		if xerrors.Is(err, db.ErrNotFound) {
-			// not in workspace, let's try reading it from branch tree
-			_, err := tx.ReadRepo()
-			if err != nil {
-				return nil, err
-			}
-			root, err := resolveReadRoot(tx, branch)
-			if err != nil {
-				return nil, err
-			}
-			m := merkle.New(root)
-			obj, err = m.GetObject(tx, path)
-			if err != nil {
-				return nil, err
-			}
-			return obj, nil
+type reference struct {
+	commit   *model.Commit
+	branch   *model.Branch
+	isBranch bool
+}
+
+func (r *reference) String() string {
+	if r.isBranch {
+		return fmt.Sprintf("[branch='%s' -> commit='%s' -> root='%s']",
+			r.branch.GetName(),
+			r.commit.GetAddress(),
+			r.commit.GetTree())
+	}
+	return fmt.Sprintf("[commit='%s' -> root='%s']",
+		r.commit.GetAddress(),
+		r.commit.GetTree())
+}
+
+func (index *KVIndex) resolveRef(tx store.RepoReadOnlyOperations, ref string) (*reference, error) {
+	// if this is not
+	if ident.IsHash(ref) {
+		// this looks like a straight up commit, let's see if it exists
+		commit, err := tx.ReadCommit(ref)
+		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
+			// got an error, we can't continue
+			return nil, err
+		} else if err == nil {
+			// great, it's a commit, return it
+			return &reference{
+				commit: commit,
+			}, nil
 		}
+	}
+	// treat this as a branch name
+	branch, err := tx.ReadBranch(ref)
+	if err != nil {
+		return nil, err
+	}
+	commit, err := tx.ReadCommit(branch.GetCommit())
+	if err != nil {
+		return nil, err
+	}
+
+	return &reference{
+		commit:   commit,
+		branch:   branch,
+		isBranch: true,
+	}, nil
+}
+
+// Business logic
+func (index *KVIndex) ReadObject(repoId, ref, path string) (*model.Object, error) {
+	obj, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
+		_, err := tx.ReadRepo()
 		if err != nil {
-			// an actual error has occurred, return it.
 			return nil, err
 		}
-		if we.GetTombstone() {
-			// object was deleted deleted
-			return nil, db.ErrNotFound
+
+		reference, err := index.resolveRef(tx, ref)
+		if err != nil {
+			return nil, err
 		}
-		return tx.ReadObject(we.GetEntry().GetAddress())
+		var obj *model.Object
+
+		if reference.isBranch {
+			we, err := tx.ReadFromWorkspace(reference.branch.GetName(), path)
+			if xerrors.Is(err, db.ErrNotFound) {
+				// not in workspace, let's try reading it from branch tree
+				m := merkle.New(reference.branch.GetWorkspaceRoot())
+				obj, err = m.GetObject(tx, path)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
+			} else if err != nil {
+				// an actual error has occurred, return it.
+				return nil, err
+			}
+			if we.GetTombstone() {
+				// object was deleted deleted
+				return nil, db.ErrNotFound
+			}
+			return tx.ReadObject(we.GetEntry().GetAddress())
+		}
+		// otherwise, read from commit
+		m := merkle.New(reference.commit.GetTree())
+		obj, err = m.GetObject(tx, path)
+		if err != nil {
+			return nil, err
+		}
+		return obj, nil
 	})
 	if err != nil {
 		return nil, err
@@ -177,37 +231,48 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	return obj.(*model.Object), nil
 }
 
-func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
+func (index *KVIndex) ReadEntry(repoId, ref, path string) (*model.Entry, error) {
 	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
-		var entry *model.Entry
-		we, err := tx.ReadFromWorkspace(branch, path)
-		if xerrors.Is(err, db.ErrNotFound) {
-			// not in workspace, let's try reading it from branch tree
-			_, err := tx.ReadRepo()
-			if err != nil {
-				return nil, err
-			}
-			root, err := resolveReadRoot(tx, branch)
-			if err != nil {
-				return nil, err
-			}
-			m := merkle.New(root)
-			entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
-			if err != nil {
-				return nil, err
-			}
-			return entry, nil
-		}
+
+		reference, err := index.resolveRef(tx, ref)
 		if err != nil {
-			// an actual error has occurred, return it.
 			return nil, err
 		}
-		if we.GetTombstone() {
-			// object was deleted deleted
-			return nil, db.ErrNotFound
+		var entry *model.Entry
+
+		if reference.isBranch {
+			we, err := tx.ReadFromWorkspace(reference.branch.GetName(), path)
+			if xerrors.Is(err, db.ErrNotFound) {
+				// not in workspace, let's try reading it from branch tree
+				_, err := tx.ReadRepo()
+				if err != nil {
+					return nil, err
+				}
+				m := merkle.New(reference.branch.GetWorkspaceRoot())
+				entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
+				if err != nil {
+					return nil, err
+				}
+				return entry, nil
+			}
+			if err != nil {
+				// an actual error has occurred, return it.
+				return nil, err
+			}
+			if we.GetTombstone() {
+				// object was deleted deleted
+				return nil, db.ErrNotFound
+			}
+			// exists in workspace
+			return we.GetEntry(), nil
 		}
-		// exists in workspace
-		return we.GetEntry(), nil
+		// otherwise, read from commit
+		m := merkle.New(reference.commit.GetTree())
+		entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
+		if err != nil {
+			return nil, err
+		}
+		return entry, nil
 	})
 	if err != nil {
 		return nil, err
@@ -221,6 +286,11 @@ func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		if err != nil {
 			return nil, err
 		}
+		lg := log.WithFields(log.Fields{
+			"repo":   repoId,
+			"branch": branch,
+			"path":   path,
+		})
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
 			return nil, err
@@ -229,6 +299,7 @@ func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 			Path:  path,
 			Entry: entry,
 		})
+		lg.Warn("wrote a thing")
 		return nil, err
 	})
 	return err
@@ -323,25 +394,34 @@ func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount 
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
-func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
+func (index *KVIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
 	type result struct {
 		hasMore bool
 		results []*model.Entry
 	}
 
 	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
+		_, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.ReadRepo()
+
+		reference, err := index.resolveRef(tx, ref)
 		if err != nil {
 			return nil, err
 		}
-		root, err := resolveReadRoot(tx, branch)
-		if err != nil {
-			return nil, err
+
+		var root string
+		if reference.isBranch {
+			err := partialCommit(tx, reference.branch.GetName()) // block on this since we traverse the tree immediately after
+			if err != nil {
+				return nil, err
+			}
+			root = reference.branch.GetWorkspaceRoot()
+		} else {
+			root = reference.commit.GetTree()
 		}
+
 		tree := merkle.New(root)
 		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
 		if err != nil {
@@ -501,31 +581,38 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differences, error) {
+func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
 	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 
-		leftBranch, err := tx.ReadBranch(branch)
+		lRef, err := index.resolveRef(tx, leftRef)
 		if err != nil {
+			log.WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
 			return nil, err
 		}
 
-		rightBranch, err := tx.ReadBranch(otherBranch)
+		rRef, err := index.resolveRef(tx, rightRef)
 		if err != nil {
+			log.WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
 			return nil, err
 		}
 
-		commonCommits, err := dag.FindLowestCommonAncestor(tx, leftBranch.GetCommit(), rightBranch.GetCommit())
+		commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
 		if err != nil {
+			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
 			return nil, err
 		}
 		if len(commonCommits) == 0 {
+			log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
 			return nil, errors.ErrNoMergeBase
 		}
 
 		diff, err := merkle.Diff(tx,
-			merkle.New(leftBranch.GetCommitRoot()),
-			merkle.New(rightBranch.GetCommitRoot()),
+			merkle.New(lRef.commit.GetTree()),
+			merkle.New(rRef.commit.GetTree()),
 			merkle.New(commonCommits[0].GetTree()))
+		if err != nil {
+			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
+		}
 		return diff, err
 	})
 	if err != nil {

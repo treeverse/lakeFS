@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
@@ -99,9 +100,9 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation branches.DiffBranch has not yet been implemented")
 		})
 	}
-	if api.BranchesDiffBranchesHandler == nil {
-		api.BranchesDiffBranchesHandler = branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation branches.DiffBranches has not yet been implemented")
+	if api.RefsDiffRefsHandler == nil {
+		api.RefsDiffRefsHandler = refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation refs.DiffRefs has not yet been implemented")
 		})
 	}
 	if api.BranchesGetBranchHandler == nil {

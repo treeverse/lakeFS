@@ -46,7 +46,7 @@ const RepositoryTabs = () => {
     return (
         <Nav variant="tabs" defaultActiveKey="/home">
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/tree" passInQuery={['branch']}><Octicon icon={Database}/>  Objects</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/tree" passInQuery={['branch', 'commit']}><Octicon icon={Database}/>  Objects</RoutedTab>
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/commits" passInQuery={['branch']}><Octicon icon={GitCommit}/>  Commits</RoutedTab>
@@ -91,6 +91,29 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
     const branchId = query.get('branch');
     const branch = (!!branchId) ? branchId : ((!!repo.payload) ? repo.payload.default_branch : null);
 
+    // pass in Ref
+    let refId = {type: 'branch', id: branch};
+    if (query.has('commit')) {
+        refId = {
+            type: 'commit',
+            id: query.get('commit'),
+        };
+    }
+
+    // comparisons where applicable
+    let compareRef = null;
+    if (query.has('compareBranch')) {
+        compareRef = {
+            type: 'branch',
+            id: query.get('compareBranch'),
+        };
+    } else if (query.has('compareCommit')) {
+        compareRef = {
+            type: 'commit',
+            id: query.get('compareCommit'),
+        };
+    }
+
     return (
         <div className="mt-5">
             <Breadcrumb>
@@ -103,10 +126,10 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
             <Switch>
                 <Redirect exact from="/repositories/:repoId" to="/repositories/:repoId/tree"/>
                 <Route path="/repositories/:repoId/tree">
-                    <TreePage repoId={repoId} branchId={branch} path={query.get('path') || ""}/>
+                    <TreePage repoId={repoId} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/commits">
-                    <CommitsPage repoId={repoId} branchId={branch}/>
+                    <CommitsPage repoId={repoId} refId={refId}/>
                 </Route>
             </Switch>
         </div>

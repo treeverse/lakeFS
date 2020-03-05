@@ -192,7 +192,7 @@ func (o *GetObjectUnauthorized) WriteResponse(rw http.ResponseWriter, producer r
 // GetObjectNotFoundCode is the HTTP code returned for type GetObjectNotFound
 const GetObjectNotFoundCode int = 404
 
-/*GetObjectNotFound path or branch not found
+/*GetObjectNotFound path or ref not found
 
 swagger:response getObjectNotFound
 */

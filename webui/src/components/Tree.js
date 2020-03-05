@@ -2,11 +2,13 @@ import React, {useEffect, useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
-import Octicon, {File, FileDirectory} from "@primer/octicons-react";
+import Octicon, {File, FileDirectory, Plus, Trashcan, Pencil} from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import * as moment from "moment";
 import Card from "react-bootstrap/Card";
 import {Link} from "react-router-dom";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
 
 const humanSize = (bytes) => {
@@ -14,6 +16,7 @@ const humanSize = (bytes) => {
     const e = Math.floor(Math.log(bytes) / Math.log(1024));
     return (bytes/Math.pow(1024, e)).toFixed(1)+' '+' KMGTP'.charAt(e)+'B';
 };
+
 
 function pathParts(path, rootName = "root") {
     let parts = path.split(/\//);
@@ -41,18 +44,37 @@ function pathParts(path, rootName = "root") {
     return resolved;
 }
 
-const URINavigator = ({ repoId, branchId, path }) => {
+const isChildOf = (path, child) => {
+    if (child.indexOf(path) !== 0) return false;
+    return child
+        .substr(path.length)
+        .split(/\//)
+        .filter(part => part.length > 0).length === 1;
+};
+
+const isDescendantOf = (path, child) => {
+    if (child.indexOf(path) !== 0) return false;
+    return child
+        .substr(path.length)
+        .split(/\//)
+        .filter(part => part.length > 0).length >= 1;
+};
+
+
+const URINavigator = ({ repoId, refId, path, onNavigate }) => {
     const parts = pathParts(path);
+    // decide if commit or not?
+
     return (
         <span className="lakefs-uri">
             <strong>{'lakefs://'}</strong>
             <Link to={`/repositories/${repoId}/tree`}>{repoId}</Link>
             <strong>{'@'}</strong>
-            <Link to={`/repositories/${repoId}/tree?branch=${branchId}`}>{branchId}</Link>
+            <Button variant="link" onClick={() => { onNavigate("") }}>{refId.id}</Button>
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
-                    <Link to={`/repositories/${repoId}/tree?branch=${branchId}&path=${part.path}`}>{part.name}</Link>
+                    <Button variant="link" onClick={() => onNavigate(part.path) }>{part.name}</Button>
                     <strong>{'/'}</strong>
                 </span>
             ))}
@@ -60,17 +82,17 @@ const URINavigator = ({ repoId, branchId, path }) => {
     );
 };
 
-const PathLink = ({ repoId, branchId, path, name }) => {
+const PathLink = ({ repoId, refId, path, name }) => {
     const [link, setLink] = useState("#");
 
     useEffect( () => {
         let mounted = true;
-        linkToPath(repoId, branchId, path).then(link => {
+        linkToPath(repoId, refId.id, path).then(link => {
             if (mounted)
                 setLink(link);
         });
         return () => { mounted = false };
-    }, [repoId, branchId, path, name]);
+    }, [repoId, refId.id, path, name]);
     return (
         <a href={link}>{name}</a>
     );
@@ -78,44 +100,147 @@ const PathLink = ({ repoId, branchId, path, name }) => {
 
 const Na = () => (<span>&mdash;</span>);
 
+const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
 
-export default ({ path, list, repoId, branchId, onNavigate }) => {
+    let rowClass = 'tree-row ';
+    if (entry.diff_type === 'CHANGED') {
+        rowClass += 'diff-changed';
+    } else if (entry.diff_type === 'ADDED') {
+        rowClass += 'diff-added';
+    } else if (entry.diff_type === 'removed') {
+        rowClass += 'diff-removed';
+    }
+
+    const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
+
+    let button;
+    if (entry.diff_type === 'REMOVED') {
+        button = (<span>{buttonText}</span>);
+    } else if (entry.path_type === 'TREE') {
+        button = (<Button variant="link" onClick={() => {
+            onNavigate(entry.path)
+        }}>{buttonText}</Button>)
+    } else {
+        button = (<PathLink path={entry.path} refId={refId} repoId={repoId} name={buttonText}/>);
+    }
+
+    let size;
+    if (entry.diff_type === 'REMOVED') {
+        size = (<Na/>);
+    } else {
+        size = (<span>{humanSize(entry.size_bytes)}</span>);
+    }
+
+    let modified;
+    if (entry.diff_type === 'REMOVED') {
+        modified = (<Na/>);
+    } else {
+        modified = (<span>{moment.unix(entry.mtime).fromNow()}</span>);
+    }
+
+    let diffIndicator;
+    if (entry.diff_type === 'REMOVED') {
+        diffIndicator = (
+            <OverlayTrigger placement="bottom" overlay={(props) => (<Tooltip {...props}>removed in diff</Tooltip>)}>
+                <span>
+                    <Octicon icon={Trashcan}/>
+                </span>
+            </OverlayTrigger>
+        );
+    } else if (entry.diff_type === 'ADDED') {
+        diffIndicator = (
+            <OverlayTrigger placement="bottom" overlay={(props) => (<Tooltip {...props}>added in diff</Tooltip>)}>
+                <span>
+                    <Octicon icon={Plus}/>
+                </span>
+            </OverlayTrigger>
+        );
+    } else if (entry.diff_type === 'CHANGED') {
+        diffIndicator = (
+            <OverlayTrigger placement="bottom" overlay={(props) => (<Tooltip {...props}>changed in diff</Tooltip>)}>
+                <span>
+                    <Octicon icon={Pencil}/>
+                </span>
+            </OverlayTrigger>
+        );
+    } else {
+        diffIndicator = (<span/>);
+    }
+
+
+    return (
+        <tr className={rowClass}>
+            <td className="diff-indicator">
+                {diffIndicator}
+            </td>
+            <td className="tree-path">
+                <Octicon icon={entry.path_type === 'TREE' ? FileDirectory : File}/> {' '}
+                {button}
+            </td>
+            <td className="tree-size">
+                {size}
+            </td>
+            <td className="tree-modified">
+                {modified}
+            </td>
+        </tr>
+    );
+};
+
+
+const merge = (path, entriesAtPath, diffResults) => {
+    diffResults = (!!diffResults && !!diffResults.payload) ? diffResults.payload.results : [];
+    entriesAtPath = entriesAtPath || [];
+
+
+    const entries = [...entriesAtPath];
+    diffResults.forEach(diff => {
+       if (isChildOf(path, diff.path) && diff.type === 'REMOVED') {
+           entries.push({
+               path: diff.path,
+               path_type: diff.path_type,
+               diff_type: 'REMOVED'
+           });
+       }
+    });
+
+    return entries.map(entry => {
+        if (!!entry.diff_type) return entry;
+
+        for (let i=0; i < diffResults.length; i++) {
+            const diff = diffResults[i];
+            if (entry.path === diff.path) {
+                // if there's an exact 'CHANGE' or 'ADD' diff for it, color it that way.
+                return {...entry,  diff_type: diff.type};
+
+            }
+            if (diff.path_type === 'TREE' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
+                // for any entry descendant from a TREE event that was ADD, color it as ADD
+                return {...entry, diff_type: 'ADDED'};
+            }
+
+            if (entry.path_type === 'TREE' && isDescendantOf(entry.path, diff.path)) {
+                // for any TREE that has CHANGE/ADD/REMOVE descendants, color it a CHANGE
+                return {...entry, diff_type: 'CHANGED'};
+            }
+        }
+        return {...entry, diff_type: 'NONE'};
+    });
+};
+
+export default ({ path, list, repoId, refId, diffResults, onNavigate }) => {
     let body;
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
     } else if (!!list.error) {
         body = <Alert variant="danger" className="tree-error">{list.error}</Alert>
     } else {
+        const results = merge(path, list.payload.results, diffResults);
         body = (
-            <Table borderless hover size="sm">
+            <Table borderless size="sm">
                 <tbody>
-                {list.payload.results.map(entry => (
-                    <tr key={entry.path}>
-                        <td className="tree-path">
-                            <Octicon icon={entry.path_type === 'TREE' ? FileDirectory : File}/> {' '}
-                            {entry.path_type === 'TREE' ?
-                                <Button variant="link" onClick={() => {
-                                    onNavigate(entry.path)
-                                }}>
-                                    {(path.length > 0) ? entry.path.substr(path.length) : entry.path}
-                                </Button> :
-                                <PathLink path={entry.path} branchId={branchId} repoId={repoId} name={(path.length > 0) ? entry.path.substr(path.length) : entry.path}/>
-                            }
-                        </td>
-                        <td className="tree-size">
-                            {(entry.path_type === 'OBJECT') ?
-                                <span>{humanSize(entry.size_bytes)}</span> :
-                                <Na/>
-                            }
-                        </td>
-                        <td className="tree-modified">
-                            {(entry.path_type === 'OBJECT') ?
-                                <span>{moment.unix(entry.mtime).fromNow()}</span> :
-                                <Na/>
-                            }
-                        </td>
-
-                    </tr>
+                {results.map(entry => (
+                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repoId={repoId} refId={refId}/>
                 ))}
                 </tbody>
             </Table>
@@ -126,7 +251,7 @@ export default ({ path, list, repoId, branchId, onNavigate }) => {
         <div className="tree-container">
             <Card>
                 <Card.Header>
-                    <URINavigator path={path} repoId={repoId} branchId={branchId} onNavigate={onNavigate}/>
+                    <URINavigator path={path} repoId={repoId} refId={refId} onNavigate={onNavigate}/>
                 </Card.Header>
                 <Card.Body>
                     {body}

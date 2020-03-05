@@ -5,6 +5,8 @@ import (
 	"io"
 	"net/url"
 
+	"github.com/treeverse/lakefs/api/gen/client/refs"
+
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 
 	"github.com/go-openapi/swag"
@@ -26,9 +28,9 @@ type Client interface {
 	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
 	DeleteRepository(ctx context.Context, repoId string) error
 
-	ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Refspec, *models.Pagination, error)
-	GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error)
-	CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error
+	ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
+	GetBranch(ctx context.Context, repoId, branchId string) (*models.Ref, error)
+	CreateBranch(ctx context.Context, repoId string, branch *models.Ref) error
 	DeleteBranch(ctx context.Context, repoId, branchId string) error
 	RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error
 
@@ -36,13 +38,14 @@ type Client interface {
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
 	GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error)
 
-	StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error)
-	ListObjects(ctx context.Context, repoId, branchId, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
-	GetObject(ctx context.Context, repoId, branchId, path string, w io.Writer) (*objects.GetObjectOK, error)
+	StatObject(ctx context.Context, repoId, ref, path string) (*models.ObjectStats, error)
+	ListObjects(ctx context.Context, repoId, ref, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
+	GetObject(ctx context.Context, repoId, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
 	UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error)
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
-	DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error)
+	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
+
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
 
@@ -74,7 +77,7 @@ func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repo
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListBranches(ctx context.Context, repoId string, after string, amount int) ([]*models.Refspec, *models.Pagination, error) {
+func (c *client) ListBranches(ctx context.Context, repoId string, after string, amount int) ([]*models.Ref, *models.Pagination, error) {
 	resp, err := c.remote.Branches.ListBranches(&branches.ListBranchesParams{
 		After:        swag.String(after),
 		Amount:       swag.Int64(int64(amount)),
@@ -103,7 +106,7 @@ func (c *client) DeleteRepository(ctx context.Context, repoId string) error {
 	return err
 }
 
-func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*models.Refspec, error) {
+func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*models.Ref, error) {
 	resp, err := c.remote.Branches.GetBranch(&branches.GetBranchParams{
 		BranchID:     branchId,
 		RepositoryID: repoId,
@@ -115,7 +118,7 @@ func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*model
 	return resp.GetPayload(), nil
 }
 
-func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.Refspec) error {
+func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.Ref) error {
 	_, err := c.remote.Branches.CreateBranch(&branches.CreateBranchParams{
 		Branch:       branch,
 		RepositoryID: repoId,
@@ -182,12 +185,12 @@ func (c *client) GetCommitLog(ctx context.Context, repoId, branchId string) ([]*
 	return log.GetPayload().Results, nil
 }
 
-func (c *client) DiffBranches(ctx context.Context, repoId, branch, otherBranch string) ([]*models.Diff, error) {
-	diff, err := c.remote.Branches.DiffBranches(&branches.DiffBranchesParams{
-		BranchID:      branch,
-		OtherBranchID: otherBranch,
-		RepositoryID:  repoId,
-		Context:       ctx,
+func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error) {
+	diff, err := c.remote.Refs.DiffRefs(&refs.DiffRefsParams{
+		LeftRef:      leftRef,
+		RightRef:     rightRef,
+		RepositoryID: repoId,
+		Context:      ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -207,9 +210,9 @@ func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*mode
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) StatObject(ctx context.Context, repoId, branchId, path string) (*models.ObjectStats, error) {
+func (c *client) StatObject(ctx context.Context, repoId, ref, path string) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
-		BranchID:     branchId,
+		Ref:          ref,
 		Path:         path,
 		RepositoryID: repoId,
 		Context:      ctx,
@@ -220,11 +223,11 @@ func (c *client) StatObject(ctx context.Context, repoId, branchId, path string) 
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListObjects(ctx context.Context, repoId, branchId, tree, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
+func (c *client) ListObjects(ctx context.Context, repoId, ref, tree, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
 	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
 		After:        swag.String(after),
 		Amount:       swag.Int64(int64(amount)),
-		BranchID:     branchId,
+		Ref:          ref,
 		RepositoryID: repoId,
 		Tree:         swag.String(tree),
 		Context:      ctx,
@@ -235,9 +238,9 @@ func (c *client) ListObjects(ctx context.Context, repoId, branchId, tree, after 
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) GetObject(ctx context.Context, repoId, branchId, path string, writer io.Writer) (*objects.GetObjectOK, error) {
+func (c *client) GetObject(ctx context.Context, repoId, ref, path string, writer io.Writer) (*objects.GetObjectOK, error) {
 	params := &objects.GetObjectParams{
-		BranchID:     branchId,
+		Ref:          ref,
 		Path:         path,
 		RepositoryID: repoId,
 		Context:      ctx,

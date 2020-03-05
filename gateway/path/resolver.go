@@ -20,28 +20,28 @@ const (
 	PathMatch   = "{path:.*}"
 	PathReMatch = "(?P<path>.*)"
 
-	RefspecMatch   = "{refspec:[a-z0-9\\-]+}"
-	RefspecReMatch = "(?P<refspec>[a-z0-9\\-]+)"
+	RefMatch   = "{ref:[a-z0-9\\-]+}"
+	RefReMatch = "(?P<ref>[a-z0-9\\-]+)"
 )
 
 var (
-	EncodedPathRe        = regexp.MustCompile(fmt.Sprintf("/?%s/%s", RefspecReMatch, PathReMatch))
-	EncodedPathRefspecRe = regexp.MustCompile(fmt.Sprintf("/?%s", RefspecReMatch))
-	EncodedAbsPathRe     = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefspecReMatch, PathReMatch))
+	EncodedPathRe    = regexp.MustCompile(fmt.Sprintf("/?%s/%s", RefReMatch, PathReMatch))
+	EncodedPathRefRe = regexp.MustCompile(fmt.Sprintf("/?%s", RefReMatch))
+	EncodedAbsPathRe = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefReMatch, PathReMatch))
 
 	ErrPathMalformed = xerrors.New("encoded path is malformed")
 )
 
 type ResolvedPath struct {
 	Path     string
-	Refspec  string
+	Ref      string
 	WithPath bool
 }
 
 type ResolvedAbsolutePath struct {
-	Repo    string
-	Path    string
-	Refspec string
+	Repo string
+	Path string
+	Ref  string
 }
 
 func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
@@ -58,7 +58,7 @@ func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 	}
 	r.Repo = result["repo"]
 	r.Path = result["path"]
-	r.Refspec = result["refspec"]
+	r.Ref = result["ref"]
 	return r, nil
 }
 
@@ -70,15 +70,15 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 	}
 	match := EncodedPathRe.FindStringSubmatch(encodedPath)
 	if len(match) == 0 {
-		// attempt to see if this is a refspec only
-		match = EncodedPathRefspecRe.FindStringSubmatch(encodedPath)
+		// attempt to see if this is a ref only
+		match = EncodedPathRefRe.FindStringSubmatch(encodedPath)
 		if len(match) > 0 {
-			for i, name := range EncodedPathRefspecRe.SubexpNames() {
+			for i, name := range EncodedPathRefRe.SubexpNames() {
 				if i != 0 && name != "" {
 					result[name] = match[i]
 				}
 			}
-			r.Refspec = result["refspec"]
+			r.Ref = result["ref"]
 			return r, nil
 		}
 		r.WithPath = false
@@ -90,11 +90,11 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 		}
 	}
 	r.Path = result["path"]
-	r.Refspec = result["refspec"]
+	r.Ref = result["ref"]
 	r.WithPath = true
 	return r, nil
 }
 
-func WithRefspec(path, refspec string) string {
-	return pth.Join([]string{refspec, path})
+func WithRef(path, ref string) string {
+	return pth.Join([]string{ref, path})
 }

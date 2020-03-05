@@ -110,7 +110,7 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 
 	// repo-specific actions that relate to a key
 	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
-	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
+	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefMatch, path.PathMatch)).Subrouter()
 	pathBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodPost).HandlerFunc(PathOperationHandler(ctx, &operations.PostObject{}))
 	pathBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
@@ -129,11 +129,11 @@ func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
 
 	// sub-domain based routing
 	subDomainBasedRepo := router.Host(strings.Join([]string{path.RepoMatch, bareDomain}, ".")).Subrouter()
-	subDomainBasedRepo.Path(fmt.Sprintf("/%s", path.RefspecMatch)).Methods(http.MethodHead).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	subDomainBasedRepo.Path(fmt.Sprintf("/%s", path.RefMatch)).Methods(http.MethodHead).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusNotFound)
 	})
 	// repo-specific actions that relate to a key
-	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefspecMatch, path.PathMatch)).Subrouter()
+	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefMatch, path.PathMatch)).Subrouter()
 	subDomainBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodPost).HandlerFunc(PathOperationHandler(ctx, &operations.PostObject{}))
 	subDomainBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
@@ -290,12 +290,12 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 
 		// run callback
 		handler.Handle(&operations.PathOperation{
-			BranchOperation: &operations.BranchOperation{
+			RefOperation: &operations.RefOperation{
 				RepoOperation: &operations.RepoOperation{
 					AuthenticatedOperation: authOp,
 					Repo:                   repo,
 				},
-				Branch: utils.GetBranch(request),
+				Ref: utils.GetRef(request),
 			},
 			Path: utils.GetKey(request),
 		})

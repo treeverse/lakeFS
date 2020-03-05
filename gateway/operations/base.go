@@ -133,13 +133,13 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 	}, err.HTTPStatusCode)
 }
 
-type BranchOperation struct {
+type RefOperation struct {
 	*RepoOperation
-	Branch string
+	Ref string
 }
 
 type PathOperation struct {
-	*BranchOperation
+	*RefOperation
 	Path string
 }
 
@@ -149,7 +149,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		Message:    err.Description,
 		BucketName: o.Repo.GetRepoId(),
 		Key:        o.Path,
-		Resource:   fmt.Sprintf("%s@%s", o.Branch, o.Repo.GetRepoId()),
+		Resource:   fmt.Sprintf("%s@%s", o.Ref, o.Repo.GetRepoId()),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
@@ -177,7 +177,7 @@ type RepoOperationHandler interface {
 
 type BranchOperationHandler interface {
 	BaseOperationHandler
-	Handle(op *BranchOperation)
+	Handle(op *RefOperation)
 }
 type PathOperationHandler interface {
 	BaseOperationHandler

@@ -39,12 +39,12 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Index.ReadEntry(o.Repo.GetRepoId(), o.Branch, o.Path)
+	entry, err := o.Index.ReadEntry(o.Repo.GetRepoId(), o.Ref, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
 		WithField("path", o.Path).
-		WithField("branch", o.Branch).
+		WithField("branch", o.Ref).
 		WithError(err).
 		Info("metadata operation to retrieve object done")
 
@@ -64,7 +64,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// now we might need the object itself
-	obj, err := o.Index.ReadObject(o.Repo.GetRepoId(), o.Branch, o.Path)
+	obj, err := o.Index.ReadObject(o.Repo.GetRepoId(), o.Ref, o.Path)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
@@ -93,7 +93,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		l := o.Log().WithFields(log.Fields{
 			"range":   ranger.Range,
 			"path":    o.Path,
-			"branch":  o.Branch,
+			"branch":  o.Ref,
 			"written": n,
 		})
 		if n != expected {

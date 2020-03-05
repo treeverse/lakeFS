@@ -57,11 +57,11 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntry(o.Repo.GetRepoId(), p.Refspec, p.Path)
+	src, err := o.Index.ReadEntry(o.Repo.GetRepoId(), p.Ref, p.Path)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"repo":   o.Repo,
-			"branch": p.Refspec,
+			"branch": p.Ref,
 			"path":   p.Path,
 		}).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
@@ -69,7 +69,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 	// write this object to workspace
 	src.Timestamp = time.Now().Unix() // TODO: move this logic into the Index impl.
-	err = o.Index.WriteEntry(o.Repo.GetRepoId(), o.Branch, o.Path, src)
+	err = o.Index.WriteEntry(o.Repo.GetRepoId(), o.Ref, o.Path, src)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -170,7 +170,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		Size:      blob.Size,
 		Checksum:  blob.Checksum,
 	}
-	err = o.Index.WriteFile(o.Repo.GetRepoId(), o.Branch, o.Path, entry, obj)
+	err = o.Index.WriteFile(o.Repo.GetRepoId(), o.Ref, o.Path, entry, obj)
 	tookMeta := time.Since(writeTime)
 
 	if err != nil {
@@ -180,10 +180,10 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 	o.Log().WithFields(log.Fields{
 		"took":   tookMeta,
-		"repo":   o.Repo,
-		"branch": o.Branch,
+		"repo":   o.Repo.GetRepoId(),
+		"branch": o.Ref,
 		"path":   o.Path,
-	}).Trace("metadata update complete")
+	}).Debug("metadata update complete")
 	o.SetHeader("ETag", httputil.ETag(obj.GetChecksum()))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

@@ -64,20 +64,20 @@ func NewCreateBranchCreated() *CreateBranchCreated {
 branch
 */
 type CreateBranchCreated struct {
-	Payload *models.Refspec
+	Payload *models.Ref
 }
 
 func (o *CreateBranchCreated) Error() string {
 	return fmt.Sprintf("[POST /repositories/{repositoryId}/branches][%d] createBranchCreated  %+v", 201, o.Payload)
 }
 
-func (o *CreateBranchCreated) GetPayload() *models.Refspec {
+func (o *CreateBranchCreated) GetPayload() *models.Ref {
 	return o.Payload
 }
 
 func (o *CreateBranchCreated) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.Refspec)
+	o.Payload = new(models.Ref)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

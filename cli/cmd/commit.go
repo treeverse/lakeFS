@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var commitCreateTemplate = `Commit for branch "{{.Branch.Refspec}}" done.
+var commitCreateTemplate = `Commit for branch "{{.Ref.Ref}}" done.
 
 ID: {{.Commit.ID|yellow}}
 Timestamp: {{.Commit.CreationDate|date}}
@@ -40,7 +40,7 @@ var commitCmd = &cobra.Command{
 	Short: "commit changes on a given branch",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
@@ -56,7 +56,7 @@ var commitCmd = &cobra.Command{
 
 		// do commit
 		client := getClient()
-		commit, err := client.Commit(context.Background(), branchUri.Repository, branchUri.Refspec, message, kvPairs)
+		commit, err := client.Commit(context.Background(), branchUri.Repository, branchUri.Ref, message, kvPairs)
 		if err != nil {
 			DieErr(err)
 		}

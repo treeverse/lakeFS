@@ -5,8 +5,9 @@ package model
 
 import (
 	fmt "fmt"
-	proto "github.com/golang/protobuf/proto"
 	math "math"
+
+	proto "github.com/golang/protobuf/proto"
 )
 
 // Reference imports to suppress errors if they are not otherwise used.
@@ -686,7 +687,7 @@ func init() {
 	proto.RegisterType((*WorkspaceEntry)(nil), "WorkspaceEntry")
 	proto.RegisterType((*Commit)(nil), "Commit")
 	proto.RegisterMapType((map[string]string)(nil), "Commit.MetadataEntry")
-	proto.RegisterType((*Branch)(nil), "Branch")
+	proto.RegisterType((*Branch)(nil), "Ref")
 	proto.RegisterType((*MultipartUpload)(nil), "MultipartUpload")
 	proto.RegisterType((*MultipartUploadPart)(nil), "MultipartUploadPart")
 	proto.RegisterType((*MultipartUploadPartRequest)(nil), "MultipartUploadPartRequest")
