@@ -179,38 +179,40 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	}
 	return obj.(*model.Object), nil
 }
-
-func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
-	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
-		var entry *model.Entry
-		we, err := tx.ReadFromWorkspace(branch, path)
-		if xerrors.Is(err, db.ErrNotFound) {
-			// not in workspace, let's try reading it from branch tree
-			_, err := tx.ReadRepo()
-			if err != nil {
-				return nil, err
-			}
-			root, err := resolveReadRoot(tx, branch)
-			if err != nil {
-				return nil, err
-			}
-			m := merkle.New(root)
-			entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
-			if err != nil {
-				return nil, err
-			}
-			return entry, nil
-		}
+func (index *KVIndex) readEntry(tx store.RepoReadOnlyOperations, repoId, branch, path string) (*model.Entry, error) {
+	var entry *model.Entry
+	we, err := tx.ReadFromWorkspace(branch, path)
+	if xerrors.Is(err, db.ErrNotFound) {
+		// not in workspace, let's try reading it from branch tree
+		_, err := tx.ReadRepo()
 		if err != nil {
-			// an actual error has occurred, return it.
 			return nil, err
 		}
-		if we.GetTombstone() {
-			// object was deleted deleted
-			return nil, db.ErrNotFound
+		root, err := resolveReadRoot(tx, branch)
+		if err != nil {
+			return nil, err
 		}
-		// exists in workspace
-		return we.GetEntry(), nil
+		m := merkle.New(root)
+		entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
+		if err != nil {
+			return nil, err
+		}
+		return entry, nil
+	}
+	if err != nil {
+		// an actual error has occurred, return it.
+		return nil, err
+	}
+	if we.GetTombstone() {
+		// object was deleted deleted
+		return nil, db.ErrNotFound
+	}
+	// exists in workspace
+	return we.GetEntry(), nil
+}
+func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
+	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
+		return index.readEntry(tx, repoId, branch, path)
 	})
 	if err != nil {
 		return nil, err
@@ -288,7 +290,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 
-		_, err = index.ReadEntry(repoId, branch, path)
+		_, err = index.readEntry(tx, repoId, branch, path)
 		if err != nil {
 			return nil, err
 		}
