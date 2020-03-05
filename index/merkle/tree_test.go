@@ -116,7 +116,7 @@ func TestMerkle_GetEntry(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "read tree from root ",
+			name: "read tree from root",
 			fields: fields{
 				root: "root",
 			},
@@ -314,6 +314,7 @@ func TestMerkle_Update(t *testing.T) {
 		initialWS   []*model.WorkspaceEntry
 		editEntries []*model.WorkspaceEntry
 		wantedWS    []*model.WorkspaceEntry
+		wantErr     bool
 	}{
 		{
 			name: "add one objects to root",
@@ -494,7 +495,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "remove one objects from root",
+			name: "remove one object from root",
 
 			initialWS: []*model.WorkspaceEntry{
 				{
@@ -611,9 +612,10 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone: false,
 				},
 			},
+			wantErr: true,
 		},
 		{
-			name: "remove tree ",
+			name: "remove tree",
 
 			initialWS: []*model.WorkspaceEntry{
 				{
@@ -682,6 +684,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone: false,
 				},
 			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
@@ -697,7 +700,9 @@ func TestMerkle_Update(t *testing.T) {
 			}
 			got, err := initialMerkle.Update(tree, tt.editEntries)
 			if err != nil {
-				t.Fatal(err)
+				if !tt.wantErr {
+					t.Fatal(err)
+				}
 				return
 			}
 			wantTree := testutil.ConstructTree(map[string][]*model.Entry{
@@ -707,6 +712,10 @@ func TestMerkle_Update(t *testing.T) {
 			want, err := m2.Update(wantTree, tt.wantedWS)
 			if err != nil {
 				t.Fatal(err)
+				return
+			}
+			if tt.wantErr {
+				t.Errorf("Update() expected an error but didn't get one")
 				return
 			}
 			if !reflect.DeepEqual(got, want) {
