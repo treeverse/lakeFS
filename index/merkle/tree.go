@@ -228,7 +228,7 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	return c.data, collectedHasMore, nil
 }
 
-func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry, ts int64) (*Merkle, error) {
+func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*Merkle, error) {
 	// get the max depth
 	changeTree := newChangeTree(entries)
 	rootAddr := m.root
@@ -240,7 +240,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry, ts
 			if err != nil {
 				return nil, err
 			}
-			mergedEntries, err := mergeChanges(currentEntries, changes)
+			mergedEntries, ts, err := mergeChanges(currentEntries, changes)
 			if err != nil {
 				return nil, err
 			}
@@ -276,8 +276,9 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry, ts
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Name: pth.DirName(),
-						Type: model.Entry_TREE,
+						Name:      pth.DirName(),
+						Type:      model.Entry_TREE,
+						Timestamp: ts,
 					},
 					Tombstone: true,
 				})

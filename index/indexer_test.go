@@ -510,6 +510,7 @@ func TestTimeStampConsistency(t *testing.T) {
 	testData := []struct {
 		name           string
 		timedObjects   []timedObject
+		deleteObjects  []timedObject
 		expectedTrees  []expectedTree
 		expectedRootTS time.Duration
 	}{
@@ -522,6 +523,13 @@ func TestTimeStampConsistency(t *testing.T) {
 			timedObjects:   []timedObject{{"a/", "wow", 5}, {"a/c/", "bar", 10}, {"a/b/", "bar", 20}},
 			expectedTrees:  []expectedTree{{"a/", 20}, {"a/c/", 10}, {"a/b/", 20}},
 			expectedRootTS: 20,
+		},
+		{
+			name:           "delete file",
+			timedObjects:   []timedObject{{"a/", "wow", 5}, {"a/c/", "bar", 10}, {"a/c/", "foo", 15}, {"a/b/", "bar", 20}},
+			deleteObjects:  []timedObject{{"a/c/", "foo", 25}},
+			expectedTrees:  []expectedTree{{"a/", 25}, {"a/c/", 25}, {"a/b/", 20}},
+			expectedRootTS: 25,
 		},
 	}
 
@@ -539,6 +547,13 @@ func TestTimeStampConsistency(t *testing.T) {
 					Type:      model.Entry_OBJECT,
 					Timestamp: ts,
 				})
+				if err != nil {
+					t.Fatal(err)
+				}
+			}
+			for _, obj := range tc.deleteObjects {
+				ts := now.Add(obj.seconds * time.Second).Unix()
+				err := kvIndex.DeleteObjectWithTS(repo.GetRepoId(), repo.DefaultBranch, obj.path+obj.name, ts)
 				if err != nil {
 					t.Fatal(err)
 				}
