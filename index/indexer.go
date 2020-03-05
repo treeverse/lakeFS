@@ -110,7 +110,10 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	}
 
 	// clear workspace entries
-	tx.ClearWorkspace(branch)
+	err = tx.ClearWorkspace(branch)
+	if err != nil {
+		return err
+	}
 
 	// update branch pointer to point at new workspace
 	err = tx.WriteBranch(branch, &model.Branch{
@@ -176,38 +179,40 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	}
 	return obj.(*model.Object), nil
 }
-
-func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
-	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
-		var entry *model.Entry
-		we, err := tx.ReadFromWorkspace(branch, path)
-		if xerrors.Is(err, db.ErrNotFound) {
-			// not in workspace, let's try reading it from branch tree
-			_, err := tx.ReadRepo()
-			if err != nil {
-				return nil, err
-			}
-			root, err := resolveReadRoot(tx, branch)
-			if err != nil {
-				return nil, err
-			}
-			m := merkle.New(root)
-			entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
-			if err != nil {
-				return nil, err
-			}
-			return entry, nil
-		}
+func readEntry(tx store.RepoReadOnlyOperations, branch, path string) (*model.Entry, error) {
+	var entry *model.Entry
+	we, err := tx.ReadFromWorkspace(branch, path)
+	if xerrors.Is(err, db.ErrNotFound) {
+		// not in workspace, let's try reading it from branch tree
+		_, err := tx.ReadRepo()
 		if err != nil {
-			// an actual error has occurred, return it.
 			return nil, err
 		}
-		if we.GetTombstone() {
-			// object was deleted deleted
-			return nil, db.ErrNotFound
+		root, err := resolveReadRoot(tx, branch)
+		if err != nil {
+			return nil, err
 		}
-		// exists in workspace
-		return we.GetEntry(), nil
+		m := merkle.New(root)
+		entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
+		if err != nil {
+			return nil, err
+		}
+		return entry, nil
+	}
+	if err != nil {
+		// an actual error has occurred, return it.
+		return nil, err
+	}
+	if we.GetTombstone() {
+		// object was deleted deleted
+		return nil, db.ErrNotFound
+	}
+	// exists in workspace
+	return we.GetEntry(), nil
+}
+func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
+	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
+		return readEntry(tx, branch, path)
 	})
 	if err != nil {
 		return nil, err
@@ -285,6 +290,10 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 
+		_, err = readEntry(tx, branch, path)
+		if err != nil {
+			return nil, err
+		}
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
@@ -358,7 +367,10 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 func (index *KVIndex) ResetBranch(repoId, branch string) error {
 	// clear workspace, set branch workspace root back to commit root
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		tx.ClearWorkspace(branch)
+		err := tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
@@ -536,7 +548,10 @@ func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differenc
 
 func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		tx.ClearWorkspace(branch)
+		err := tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		commitData, err := tx.ReadCommit(commit)
 		if err != nil {
 			return nil, err
