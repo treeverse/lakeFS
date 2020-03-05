@@ -3,10 +3,14 @@ package merkle
 import (
 	"strings"
 
+	"github.com/treeverse/lakefs/db"
+
+	log "github.com/sirupsen/logrus"
+
 	"github.com/treeverse/lakefs/index/model"
 )
 
-func compareEntries(a, b *model.Entry) (eqs int) {
+func CompareEntries(a, b *model.Entry) (eqs int) {
 	// names first
 	eqs = strings.Compare(a.GetName(), b.GetName())
 	// directories second
@@ -22,7 +26,7 @@ func compareEntries(a, b *model.Entry) (eqs int) {
 	return
 }
 
-func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*model.Entry {
+func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, error) {
 	merged := make([]*model.Entry, 0)
 	nextCurrent := 0
 	nextChange := 0
@@ -31,7 +35,7 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*mo
 		if nextChange < len(changes) && nextCurrent < len(current) {
 			currEntry := current[nextCurrent]
 			currChange := changes[nextChange]
-			comparison := compareEntries(currEntry, currChange.GetEntry())
+			comparison := CompareEntries(currEntry, currChange.GetEntry())
 			if comparison == 0 {
 				// this is an override or deletion - do nothing
 
@@ -49,15 +53,19 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*mo
 			} else {
 				nextChange++
 				// changed entry comes first
-				merged = append(merged, currChange.GetEntry())
+				if currChange.Tombstone {
+					log.Error("trying to remove an entry that does not exist")
+					return nil, db.ErrNotFound
+				} else {
+					merged = append(merged, currChange.GetEntry())
+				}
 			}
 		} else if nextChange < len(changes) {
 			// only changes left
 			currChange := changes[nextChange]
 			if currChange.GetTombstone() {
-				// this is an override or deletion
-				nextChange++
-				continue // remove.
+				log.Error("trying to remove an entry that does not exist")
+				return nil, db.ErrNotFound
 			}
 			merged = append(merged, currChange.GetEntry())
 			nextChange++
@@ -71,5 +79,5 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) []*mo
 			break
 		}
 	}
-	return merged
+	return merged, nil
 }
