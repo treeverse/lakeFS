@@ -64,7 +64,7 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 		return err
 	}
 	if shouldPartiallyCommit(repo) {
-		err = partialCommit(tx, branch, entry.GetEntry().GetTimestamp())
+		err = partialCommit(tx, branch)
 		if err != nil {
 			return err
 		}
@@ -86,7 +86,7 @@ func shouldPartiallyCommit(repo *model.Repo) bool {
 	return chosen < repo.GetPartialCommitRatio()
 }
 
-func partialCommit(tx store.RepoOperations, branch string, ts int64) error {
+func partialCommit(tx store.RepoOperations, branch string) error {
 	// see if we have any changes that weren't applied
 	wsEntries, err := tx.ListWorkspace(branch)
 	if err != nil {
@@ -106,7 +106,7 @@ func partialCommit(tx store.RepoOperations, branch string, ts int64) error {
 
 	// update the immutable Merkle tree, getting back a new tree
 	tree := merkle.New(branchData.GetWorkspaceRoot())
-	tree, err = tree.Update(tx, wsEntries, ts)
+	tree, err = tree.Update(tx, wsEntries)
 	if err != nil {
 		return err
 	}
@@ -309,7 +309,8 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 	return err
 }
 
-func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
+// delete object with timestamp - for testing timestamps
+func (index *KVIndex) DeleteObjectWithTS(repoId, branch, path string, ts int64) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		repo, err := tx.ReadRepo()
 		if err != nil {
@@ -323,14 +324,19 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
-				Name: pth.New(path).Basename(),
-				Type: model.Entry_OBJECT,
+				Name:      pth.New(path).Basename(),
+				Timestamp: ts,
+				Type:      model.Entry_OBJECT,
 			},
 			Tombstone: true,
 		})
 		return nil, err
 	})
 	return err
+}
+func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
+	ts := time.Now().Unix()
+	return index.DeleteObjectWithTS(repoId, branch, path, ts)
 }
 
 func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error) {
@@ -363,9 +369,8 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 		hasMore bool
 		results []*model.Entry
 	}
-	ts := time.Now().Unix()
 	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch, ts) // block on this since we traverse the tree immediately after
+		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
 		if err != nil {
 			return nil, err
 		}
@@ -445,7 +450,7 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	ts := time.Now().Unix()
 	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch, ts)
+		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -517,9 +522,8 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 }
 
 func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
-	ts := time.Now().Unix()
 	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		err = partialCommit(tx, branch, ts) // ensure all changes are reflected in the tree
+		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
 		if err != nil {
 			return nil, err
 		}
@@ -598,14 +602,13 @@ func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 }
 
 func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Type) error {
-	ts := time.Now().Unix()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		p := pth.New(path)
 		if p.IsRoot() {
 			return nil, index.ResetBranch(repoId, branch)
 		}
 
-		err := partialCommit(tx, branch, ts)
+		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -639,7 +642,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 			}
 		}
 		commitEntries := []*model.WorkspaceEntry{workspaceEntry}
-		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries, ts)
+		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries)
 		if err != nil {
 			return nil, err
 		}
@@ -775,9 +778,8 @@ func (index *KVIndex) DeleteRepo(repoId string) error {
 }
 
 func (index *KVIndex) Tree(repoId, branch string) error {
-	ts := time.Now().Unix()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch, ts)
+		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
