@@ -4,10 +4,12 @@ import Alert from "react-bootstrap/Alert";
 import React from "react";
 
 import {connect} from "react-redux";
-import {login} from "../actions";
 import Col from "react-bootstrap/Col";
 import Row from "react-bootstrap/Row";
+import Card from "react-bootstrap/Card";
 import {useHistory, useLocation} from "react-router-dom";
+
+import {login} from "../actions/auth";
 
 
 const LoginForm = ({ loginError, login }) => {
@@ -19,30 +21,35 @@ const LoginForm = ({ loginError, login }) => {
 
     return (
         <Row>
-            <Col md={6}>
-                <Form onSubmit={(e) => {
-                    login(e.target.accessKeyId.value, e.target.secretAccessKey.value, () => {
-                        history.replace(from);
-                    });
+            <Col md={{offset: 2, span: 8}}>
+                <Card>
+                    <Card.Header>Login</Card.Header>
+                    <Card.Body>
+                        <Form onSubmit={(e) => {
+                            login(e.target.accessKeyId.value, e.target.secretAccessKey.value, () => {
+                                history.replace(from);
+                            });
 
-                    e.preventDefault();
-                }}>
-                    <h3>Login</h3>
-                    <Form.Group controlId="accessKeyId">
-                        <Form.Control type="text" placeholder="Access Key ID"/>
-                        <Form.Text className="text-muted">
-                            Don't yet have a key pair? Run <code>lakefs init</code> to setup initial credentials
-                        </Form.Text>
-                    </Form.Group>
+                            e.preventDefault();
+                        }}>
 
-                    <Form.Group controlId="secretAccessKey">
-                        <Form.Control type="password" placeholder="Secret Access Key"/>
-                    </Form.Group>
+                            <Form.Group controlId="accessKeyId">
+                                <Form.Control type="text" placeholder="Access Key ID" autoFocus/>
+                                <Form.Text className="text-muted">
+                                    <em>Running lakeFS for the first time? setup initial credentials by running <code>lakefs init</code></em>
+                                </Form.Text>
+                            </Form.Group>
 
-                    {!!loginError ? <Alert variant={"danger"}>{loginError}</Alert> : <span/>}
+                            <Form.Group controlId="secretAccessKey">
+                                <Form.Control type="password" placeholder="Secret Access Key"/>
+                            </Form.Group>
 
-                    <Button variant="primary" type="submit">Login</Button>
-                </Form>
+                            {!!loginError ? <Alert variant={"danger"}>{loginError}</Alert> : <span/>}
+
+                            <Button variant="primary" type="submit">Login</Button>
+                        </Form>
+                    </Card.Body>
+                </Card>
             </Col>
         </Row>
     );
