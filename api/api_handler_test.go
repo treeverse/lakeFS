@@ -707,7 +707,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth)
@@ -777,7 +777,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 	t.Run("get object list", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
-			BranchID:     "master",
+			Ref:          "master",
 			RepositoryID: "repo1",
 			Tree:         swag.String("foo/"),
 		}, bauth)
@@ -793,7 +793,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	t.Run("get object list paginated", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Amount:       swag.Int64(2),
-			BranchID:     "master",
+			Ref:          "master",
 			RepositoryID: "repo1",
 			Tree:         swag.String("foo/"),
 		}, bauth)
@@ -854,7 +854,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		resp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth, buf)
@@ -913,7 +913,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		// download it
 		rbuf := new(bytes.Buffer)
 		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth, rbuf)
@@ -966,7 +966,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		// download it
 		rbuf := new(bytes.Buffer)
 		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth, rbuf)
@@ -993,7 +993,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// get it
 		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth)
