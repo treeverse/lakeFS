@@ -689,17 +689,16 @@ func TestMerkle_Update(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ts := time.Now().Unix()
 			tree := testutil.ConstructTree(map[string][]*model.Entry{
 				"master": {},
 			})
 			m := merkle.New("master")
-			initialMerkle, err := m.Update(tree, tt.initialWS, ts)
+			initialMerkle, err := m.Update(tree, tt.initialWS)
 			if err != nil {
 				t.Fatal(err)
 				return
 			}
-			got, err := initialMerkle.Update(tree, tt.editEntries, ts)
+			got, err := initialMerkle.Update(tree, tt.editEntries)
 			if err != nil {
 				if !tt.wantErr {
 					// wanted errors should only be on editEntries
@@ -711,7 +710,7 @@ func TestMerkle_Update(t *testing.T) {
 				"master": {},
 			})
 			m2 := merkle.New("master")
-			want, err := m2.Update(wantTree, tt.wantedWS, ts)
+			want, err := m2.Update(wantTree, tt.wantedWS)
 			if err != nil {
 				t.Fatal(err)
 				return
