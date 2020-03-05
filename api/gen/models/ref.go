@@ -12,9 +12,9 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Refspec refspec
-// swagger:model refspec
-type Refspec struct {
+// Ref ref
+// swagger:model ref
+type Ref struct {
 
 	// commit id
 	// Required: true
@@ -25,8 +25,8 @@ type Refspec struct {
 	ID *string `json:"id"`
 }
 
-// Validate validates this refspec
-func (m *Refspec) Validate(formats strfmt.Registry) error {
+// Validate validates this ref
+func (m *Ref) Validate(formats strfmt.Registry) error {
 	var res []error
 
 	if err := m.validateCommitID(formats); err != nil {
@@ -43,7 +43,7 @@ func (m *Refspec) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Refspec) validateCommitID(formats strfmt.Registry) error {
+func (m *Ref) validateCommitID(formats strfmt.Registry) error {
 
 	if err := validate.Required("commit_id", "body", m.CommitID); err != nil {
 		return err
@@ -52,7 +52,7 @@ func (m *Refspec) validateCommitID(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Refspec) validateID(formats strfmt.Registry) error {
+func (m *Ref) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -62,7 +62,7 @@ func (m *Refspec) validateID(formats strfmt.Registry) error {
 }
 
 // MarshalBinary interface implementation
-func (m *Refspec) MarshalBinary() ([]byte, error) {
+func (m *Ref) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -70,8 +70,8 @@ func (m *Refspec) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Refspec) UnmarshalBinary(b []byte) error {
-	var res Refspec
+func (m *Ref) UnmarshalBinary(b []byte) error {
+	var res Ref
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

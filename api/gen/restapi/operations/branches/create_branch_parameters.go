@@ -36,7 +36,7 @@ type CreateBranchParams struct {
 	/*
 	  In: body
 	*/
-	Branch *models.Refspec
+	Branch *models.Ref
 	/*
 	  Required: true
 	  In: path
@@ -55,7 +55,7 @@ func (o *CreateBranchParams) BindRequest(r *http.Request, route *middleware.Matc
 
 	if runtime.HasBody(r) {
 		defer r.Body.Close()
-		var body models.Refspec
+		var body models.Ref
 		if err := route.Consumer.Consume(r.Body, &body); err != nil {
 			res = append(res, errors.NewParseError("branch", "body", "", err))
 		} else {

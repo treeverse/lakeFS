@@ -35,7 +35,7 @@ func NewListObjects(ctx *middleware.Context, handler ListObjectsHandler) *ListOb
 	return &ListObjects{Context: ctx, Handler: handler}
 }
 
-/*ListObjects swagger:route GET /repositories/{repositoryId}/branches/{branchId}/objects/ls objects listObjects
+/*ListObjects swagger:route GET /repositories/{repositoryId}/refs/{ref}/objects/ls objects listObjects
 
 list objects under a given tree
 

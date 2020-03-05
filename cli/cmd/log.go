@@ -46,12 +46,12 @@ var logCmd = &cobra.Command{
 	Short: "show log of commits for the given branch",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		branchURI := uri.Must(uri.Parse(args[0]))
-		commits, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Refspec)
+		commits, err := client.GetCommitLog(context.Background(), branchURI.Repository, branchURI.Ref)
 		if err != nil {
 			DieErr(err)
 		}

@@ -42,7 +42,7 @@ var fsStatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path)
+		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
@@ -64,13 +64,13 @@ var fsListCmd = &cobra.Command{
 		HasNArgs(1),
 		Or(
 			IsPathURI(0),
-			IsBranchURI(0),
+			IsRefURI(0),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		results, _, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path, "", -1)
+		results, _, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, "", -1)
 		if err != nil {
 			DieErr(err)
 		}
@@ -88,7 +88,7 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		_, err := client.GetObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path, os.Stdout)
+		_, err := client.GetObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, os.Stdout)
 		if err != nil {
 			DieErr(err)
 		}
@@ -122,7 +122,7 @@ var fsUploadCmd = &cobra.Command{
 		}
 
 		// read
-		stat, err := client.UploadObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path, fp)
+		stat, err := client.UploadObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, fp)
 		if err != nil {
 			DieErr(err)
 		}
@@ -140,7 +140,7 @@ var fsRmCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		err := client.DeleteObject(context.Background(), pathURI.Repository, pathURI.Refspec, pathURI.Path)
+		err := client.DeleteObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}

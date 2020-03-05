@@ -61,10 +61,13 @@ for the get object operation typically these are written to a http.Request
 */
 type GetObjectParams struct {
 
-	/*BranchID*/
-	BranchID string
 	/*Path*/
 	Path string
+	/*Ref
+	  a reference (could be either a branch ID or a commit ID)
+
+	*/
+	Ref string
 	/*RepositoryID*/
 	RepositoryID string
 
@@ -106,17 +109,6 @@ func (o *GetObjectParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
-// WithBranchID adds the branchID to the get object params
-func (o *GetObjectParams) WithBranchID(branchID string) *GetObjectParams {
-	o.SetBranchID(branchID)
-	return o
-}
-
-// SetBranchID adds the branchId to the get object params
-func (o *GetObjectParams) SetBranchID(branchID string) {
-	o.BranchID = branchID
-}
-
 // WithPath adds the path to the get object params
 func (o *GetObjectParams) WithPath(path string) *GetObjectParams {
 	o.SetPath(path)
@@ -126,6 +118,17 @@ func (o *GetObjectParams) WithPath(path string) *GetObjectParams {
 // SetPath adds the path to the get object params
 func (o *GetObjectParams) SetPath(path string) {
 	o.Path = path
+}
+
+// WithRef adds the ref to the get object params
+func (o *GetObjectParams) WithRef(ref string) *GetObjectParams {
+	o.SetRef(ref)
+	return o
+}
+
+// SetRef adds the ref to the get object params
+func (o *GetObjectParams) SetRef(ref string) {
+	o.Ref = ref
 }
 
 // WithRepositoryID adds the repositoryID to the get object params
@@ -147,11 +150,6 @@ func (o *GetObjectParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Reg
 	}
 	var res []error
 
-	// path param branchId
-	if err := r.SetPathParam("branchId", o.BranchID); err != nil {
-		return err
-	}
-
 	// query param path
 	qrPath := o.Path
 	qPath := qrPath
@@ -159,6 +157,11 @@ func (o *GetObjectParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Reg
 		if err := r.SetQueryParam("path", qPath); err != nil {
 			return err
 		}
+	}
+
+	// path param ref
+	if err := r.SetPathParam("ref", o.Ref); err != nil {
+		return err
 	}
 
 	// path param repositoryId

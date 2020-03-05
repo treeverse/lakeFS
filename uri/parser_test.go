@@ -18,25 +18,25 @@ func TestParse(t *testing.T) {
 		{"lakefs://foo@bar/baz", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
-			Refspec:    "bar",
+			Ref:        "bar",
 			Path:       "baz",
 		}},
 		{"lakefs://foo@bar/baz/path", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
-			Refspec:    "bar",
+			Ref:        "bar",
 			Path:       "baz/path",
 		}},
 		{"lakefs://foo@bar/baz/path@withappendix.foo", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
-			Refspec:    "bar",
+			Ref:        "bar",
 			Path:       "baz/path@withappendix.foo",
 		}},
 		{"lakefs://fo/o@bar/baz/path@withappendix.foo", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "fo/o",
-			Refspec:    "bar",
+			Ref:        "bar",
 			Path:       "baz/path@withappendix.foo",
 		}},
 		{"lakefs://foo", nil, &uri.URI{
@@ -46,7 +46,7 @@ func TestParse(t *testing.T) {
 		{"lakefs://foo@bar", nil, &uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
-			Refspec:    "bar",
+			Ref:        "bar",
 		}},
 		{"lakefssss://foo@bar/baz", uri.ErrMalformedURI, nil},
 		{"lakefs:/foo@bar/baz", uri.ErrMalformedURI, nil},
@@ -76,13 +76,13 @@ func TestURI_String(t *testing.T) {
 		{&uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
-			Refspec:    "bar",
+			Ref:        "bar",
 			Path:       "baz/file.csv",
 		}, "lakefs://foo@bar/baz/file.csv"},
 		{&uri.URI{
 			Protocol:   "lakefs",
 			Repository: "foo",
-			Refspec:    "bar",
+			Ref:        "bar",
 		}, "lakefs://foo@bar"},
 		{&uri.URI{
 			Protocol:   "lakefs",
@@ -119,7 +119,7 @@ func TestMust(t *testing.T) {
 	if !uri.Equals(u, &uri.URI{
 		Protocol:   "lakefs",
 		Repository: "foo",
-		Refspec:    "bar",
+		Ref:        "bar",
 		Path:       "baz",
 	}) {
 		t.Fatalf("expected a parsed URI according to input, instead got %s", u.String())

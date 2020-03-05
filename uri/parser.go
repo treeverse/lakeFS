@@ -10,11 +10,11 @@ const (
 	ProtocolSeparator = "://"
 	LakeFSProtocol    = "lakefs"
 
-	RefspecSeparator = '@'
-	PathSeparator    = '/'
+	RefSeparator  = '@'
+	PathSeparator = '/'
 
 	stateInRepo = iota
-	stateInRefspec
+	stateInRef
 	stateInPath
 )
 
@@ -25,20 +25,20 @@ var (
 type URI struct {
 	Protocol   string
 	Repository string
-	Refspec    string
+	Ref        string
 	Path       string
 }
 
 func (u *URI) IsRepository() bool {
-	return len(u.Repository) > 0 && len(u.Refspec) == 0 && len(u.Path) == 0
+	return len(u.Repository) > 0 && len(u.Ref) == 0 && len(u.Path) == 0
 }
 
-func (u *URI) IsRefspec() bool {
-	return len(u.Repository) > 0 && len(u.Refspec) > 0 && len(u.Path) == 0
+func (u *URI) IsRef() bool {
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && len(u.Path) == 0
 }
 
 func (u *URI) IsFullyQualified() bool {
-	return len(u.Repository) > 0 && len(u.Refspec) > 0 && len(u.Path) > 0
+	return len(u.Repository) > 0 && len(u.Ref) > 0 && len(u.Path) > 0
 }
 
 func (u *URI) String() string {
@@ -47,11 +47,11 @@ func (u *URI) String() string {
 	buf.WriteString(ProtocolSeparator)
 	buf.WriteString(u.Repository)
 
-	if len(u.Refspec) == 0 {
+	if len(u.Ref) == 0 {
 		return buf.String()
 	}
-	buf.WriteRune(RefspecSeparator)
-	buf.WriteString(u.Refspec)
+	buf.WriteRune(RefSeparator)
+	buf.WriteString(u.Ref)
 
 	if len(u.Path) == 0 {
 		return buf.String()
@@ -78,12 +78,12 @@ func Parse(str string) (*URI, error) {
 	var state = stateInRepo
 	var buf strings.Builder
 	for _, ch := range protoParts[1] {
-		if ch == RefspecSeparator && state == stateInRepo {
+		if ch == RefSeparator && state == stateInRepo {
 			uri.Repository = buf.String()
-			state = stateInRefspec
+			state = stateInRef
 			buf.Reset()
-		} else if ch == PathSeparator && state == stateInRefspec {
-			uri.Refspec = buf.String()
+		} else if ch == PathSeparator && state == stateInRef {
+			uri.Ref = buf.String()
 			state = stateInPath
 			buf.Reset()
 		} else {
@@ -92,8 +92,8 @@ func Parse(str string) (*URI, error) {
 	}
 	if buf.Len() > 0 && state == stateInRepo {
 		uri.Repository = buf.String()
-	} else if buf.Len() > 0 && state == stateInRefspec {
-		uri.Refspec = buf.String()
+	} else if buf.Len() > 0 && state == stateInRef {
+		uri.Ref = buf.String()
 	} else if buf.Len() > 0 && state == stateInPath {
 		uri.Path = buf.String()
 	}
@@ -103,7 +103,7 @@ func Parse(str string) (*URI, error) {
 func Equals(a, b *URI) bool {
 	return strings.EqualFold(a.Protocol, b.Protocol) &&
 		strings.EqualFold(a.Repository, b.Repository) &&
-		strings.EqualFold(a.Refspec, b.Refspec) &&
+		strings.EqualFold(a.Ref, b.Ref) &&
 		strings.EqualFold(a.Path, b.Path)
 }
 

@@ -13,7 +13,7 @@ import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 
 
-const BranchSelector = ({ repoId, selectedBranch, branches,  listBranches, selectRef }) => {
+const BranchSelector = ({ repoId, selected, branches,  listBranches, selectRef }) => {
 
     useEffect(()=> {
         listBranches(repoId, "", 5);
@@ -44,10 +44,10 @@ const BranchSelector = ({ repoId, selectedBranch, branches,  listBranches, selec
                 <ul className={"list-group"}>
                     {branches.payload.results.map(branch => (
                         <li className="list-group-item" key={branch.id}>
-                            {(branch.id === selectedBranch) ?
+                            {(selected.type === 'branch' && branch.id === selected.id) ?
                                 <strong>{branch.id}</strong> :
                                 <Button variant="link" onClick={(e) => {
-                                    selectRef({id: branch.id, type: 'BRANCH'});
+                                    selectRef({id: branch.id, type: 'branch'});
                                 }}>{branch.id}</Button>
                             }
                         </li>
@@ -66,7 +66,8 @@ const CommitSelector = ({ repoId, selectedBranch, branches,  listBranches, selec
     );
 };
 
-
+// (RefSelector encapsulates BranchSelector and CommitSelector and is not currently used)
+// eslint-disable-next-line
 const RefSelector = ({ repoId, selectedBranch, branches,  listBranches, selectRef, withCommits }) => {
     const [key, setKey] = useState('branches');
 
@@ -89,20 +90,21 @@ const RefSelector = ({ repoId, selectedBranch, branches,  listBranches, selectRe
 };
 
 
-
-const BranchDropdown = ({ repoId, selectedBranch, branches,  listBranches, selectRef, withCommits = true }) => {
+const BranchDropdown = ({ repoId, selected, branches,  listBranches, selectRef, withCommits = true }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
+
+    const title = (selected.type === 'branch') ? 'Branch: ' : 'Commit: ';
 
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                Branch: <strong>{selectedBranch}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
+                {title} <strong>{selected.id}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
             </Button>
             <Overlay target={target.current} show={show} placement="bottom">
                 <Popover>
                     <Popover.Content>
-                        <RefSelector repoId={repoId} selectedBranch={selectedBranch} branches={branches} withCommits={withCommits} listBranches={listBranches} selectRef={(ref) => {
+                        <BranchSelector repoId={repoId} selected={selected} branches={branches} withCommits={withCommits} listBranches={listBranches} selectRef={(ref) => {
                             selectRef(ref);
                             setShow(false);
                         }}/>

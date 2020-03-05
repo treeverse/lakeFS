@@ -66,8 +66,11 @@ type ListObjectsParams struct {
 	After *string
 	/*Amount*/
 	Amount *int64
-	/*BranchID*/
-	BranchID string
+	/*Ref
+	  a reference (could be either a branch ID or a commit ID)
+
+	*/
+	Ref string
 	/*RepositoryID*/
 	RepositoryID string
 	/*Tree*/
@@ -133,15 +136,15 @@ func (o *ListObjectsParams) SetAmount(amount *int64) {
 	o.Amount = amount
 }
 
-// WithBranchID adds the branchID to the list objects params
-func (o *ListObjectsParams) WithBranchID(branchID string) *ListObjectsParams {
-	o.SetBranchID(branchID)
+// WithRef adds the ref to the list objects params
+func (o *ListObjectsParams) WithRef(ref string) *ListObjectsParams {
+	o.SetRef(ref)
 	return o
 }
 
-// SetBranchID adds the branchId to the list objects params
-func (o *ListObjectsParams) SetBranchID(branchID string) {
-	o.BranchID = branchID
+// SetRef adds the ref to the list objects params
+func (o *ListObjectsParams) SetRef(ref string) {
+	o.Ref = ref
 }
 
 // WithRepositoryID adds the repositoryID to the list objects params
@@ -206,8 +209,8 @@ func (o *ListObjectsParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.R
 
 	}
 
-	// path param branchId
-	if err := r.SetPathParam("branchId", o.BranchID); err != nil {
+	// path param ref
+	if err := r.SetPathParam("ref", o.Ref); err != nil {
 		return err
 	}
 

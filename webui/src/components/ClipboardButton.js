@@ -1,6 +1,8 @@
-import React from "react";
+import React, {useEffect, useRef, useState} from "react";
 import Button from "react-bootstrap/Button";
 import Octicon, {Clippy} from "@primer/octicons-react";
+import Tooltip from "react-bootstrap/Tooltip";
+import Overlay from "react-bootstrap/Overlay";
 
 
 
@@ -68,12 +70,59 @@ const copyTextToClipboard = (text, onSuccess, onError) => {
     document.body.removeChild(textArea);
 };
 
-export default ({ text, variant, onSuccess, onError }) => {
+function useHover() {
+    const [value, setValue] = useState(false);
+
+    const ref = useRef(null);
+
+    const handleMouseOver = () => setValue(true);
+    const handleMouseOut = () => setValue(false);
+
+    useEffect(
+        () => {
+            const node = ref.current;
+            if (node) {
+                node.addEventListener('mouseover', handleMouseOver);
+                node.addEventListener('mouseout', handleMouseOut);
+
+                return () => {
+                    node.removeEventListener('mouseover', handleMouseOver);
+                    node.removeEventListener('mouseout', handleMouseOut);
+                };
+            }
+        },
+        [ref] // Recall only if ref changes
+    );
+
+    return [ref, value];
+}
+
+export default ({ text, variant, onSuccess, onError, icon = Clippy,  tooltip = "Copy to clipboard"}) => {
+
+    const [show, setShow] = useState(false);
+    const [tooltipText, setTooltipText] = useState(tooltip);
+
+    const [target, isHovered] = useHover();
+
+    let updater = null;
+
     return (
-        <Button variant={variant} onClick={(e) => {
-            copyTextToClipboard(text, onSuccess, onError);
-        }}>
-            <Octicon icon={Clippy}/>
-        </Button>
+        <>
+            <Overlay placement="bottom" show={show || isHovered} target={target.current} onExited={() => { if (target.current != null) setTooltipText(tooltip) }}>
+                {props => {updater = props.scheduleUpdate; props.show = undefined; return (<Tooltip {...props}>{tooltipText}</Tooltip>); }}
+            </Overlay>
+            <Button variant={variant} ref={target} onClick={(e) => {
+                setShow(false);
+                setTooltipText('Copied!');
+                if (updater != null) updater();
+                setShow(true);
+                setTimeout(() => {
+                    if (target.current != null) setShow(false);
+                }, 2500);
+                copyTextToClipboard(text, onSuccess, onError);
+            }}>
+                <Octicon icon={icon}/>
+            </Button>
+        </>
     );
 };
