@@ -1,9 +1,10 @@
 package utils
 
 import (
-	"github.com/gorilla/mux"
 	"net/http"
 	"strings"
+
+	"github.com/gorilla/mux"
 )
 
 func GetRepo(req *http.Request) string {
@@ -16,7 +17,7 @@ func GetKey(req *http.Request) string {
 	return vars["path"]
 }
 
-func GetBranch(req *http.Request) string {
+func GetRef(req *http.Request) string {
 	vars := mux.Vars(req)
-	return vars["refspec"]
+	return vars["ref"]
 }

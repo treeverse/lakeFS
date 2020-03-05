@@ -17,7 +17,7 @@ export const linkToPath = async (repoId, branchId, path) => {
         path: path,
         token: await generateDownloadToken(userData.accessKeyId, userData.secretAccessKey, path),
     });
-    return `${API_ENDPOINT}/repositories/${repoId}/branches/${branchId}/objects?${query}`
+    return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`
 };
 
 const getUser = () => {
@@ -228,9 +228,9 @@ class Branches {
 
 class Objects {
 
-    async list(repoId, branchId, tree, after= "", amount = 1000) {
+    async list(repoId, ref, tree, after= "", amount = 1000) {
         const query = qs({tree, amount, after});
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects/ls?${query}`);
+        const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
@@ -245,7 +245,22 @@ class Commits {
             throw new Error(await extractError(response));
         }
         const data = await response.json();
-        return data.results.filter(commit => (!!commit.parents));
+        return data.results;
+    }
+}
+
+class Refs {
+    async diff(repoId, leftRef, rightRef) {
+        let response;
+        if (leftRef === rightRef) {
+            response = await apiRequest(`/repositories/${repoId}/branches/${leftRef}/diff`);
+        } else {
+            response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}`);
+        }
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
     }
 }
 
@@ -253,3 +268,4 @@ export const repositories = new Repositories();
 export const branches = new Branches();
 export const objects = new Objects();
 export const commits = new Commits();
+export const refs = new Refs();

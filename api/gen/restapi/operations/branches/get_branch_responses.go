@@ -25,7 +25,7 @@ type GetBranchOK struct {
 	/*
 	  In: Body
 	*/
-	Payload *models.Refspec `json:"body,omitempty"`
+	Payload *models.Ref `json:"body,omitempty"`
 }
 
 // NewGetBranchOK creates GetBranchOK with default headers values
@@ -35,13 +35,13 @@ func NewGetBranchOK() *GetBranchOK {
 }
 
 // WithPayload adds the payload to the get branch o k response
-func (o *GetBranchOK) WithPayload(payload *models.Refspec) *GetBranchOK {
+func (o *GetBranchOK) WithPayload(payload *models.Ref) *GetBranchOK {
 	o.Payload = payload
 	return o
 }
 
 // SetPayload sets the payload to the get branch o k response
-func (o *GetBranchOK) SetPayload(payload *models.Refspec) {
+func (o *GetBranchOK) SetPayload(payload *models.Ref) {
 	o.Payload = payload
 }
 

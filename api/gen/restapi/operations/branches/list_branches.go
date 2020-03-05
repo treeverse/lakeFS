@@ -84,7 +84,7 @@ type ListBranchesOKBody struct {
 	Pagination *models.Pagination `json:"pagination,omitempty"`
 
 	// results
-	Results []*models.Refspec `json:"results"`
+	Results []*models.Ref `json:"results"`
 }
 
 // Validate validates this list branches o k body

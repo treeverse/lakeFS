@@ -12,11 +12,17 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import Octicon, {Code} from "@primer/octicons-react";
+import Octicon, {Code, Link as LinkIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 
 
-const CommitWidget = ({repoId, commit}) => {
+const CommitWidget = ({repoId, commit, previous}) => {
+
+    let prevQuery = '';
+    if (!!previous) {
+        prevQuery = `&compareCommit=${previous.id.slice(0, 16)}`;
+    }
+
     return (
         <ListGroupItem>
             <div className="clearfix">
@@ -30,11 +36,12 @@ const CommitWidget = ({repoId, commit}) => {
                 </div>
                 <div className="float-right">
                     <ButtonGroup className="commit-actions">
-                        <ClipboardButton variant="light" text={commit.id}/>
-                        <Button variant="light">
+                        <ClipboardButton variant="light" text={`lakefs://${repoId}@${commit.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
+                        <ClipboardButton variant="light" text={commit.id} tooltip="copy ID to clipboard"/>
+                        <Button variant="light" as={Link} to={`/repositories/${repoId}/tree?commit=${commit.id.slice(0, 16)}${prevQuery}`}>
                             <Octicon icon={Code}/>
                         </Button>
-                        <Button variant="light" as={Link} to={`/repositories/${repoId}/commits/${commit.id}`}>
+                        <Button variant="light" as={Link} to={`/repositories/${repoId}/tree?commit=${commit.id.slice(0, 16)}${prevQuery}`}>
                             {(commit.id.length > 16) ? commit.id.substr(0, 8) : commit.id}
                         </Button>
                     </ButtonGroup>
@@ -45,14 +52,14 @@ const CommitWidget = ({repoId, commit}) => {
 };
 
 
-const CommitsPage = ({repoId, branchId, logCommits, log }) => {
+const CommitsPage = ({repoId, refId, logCommits, log }) => {
 
     const history = useHistory();
     const location = useLocation();
 
     useEffect(() => {
-        logCommits(repoId, branchId);
-    },[logCommits, repoId, branchId]);
+        logCommits(repoId, refId.id);
+    },[logCommits, repoId, refId.id]);
 
     let body;
     if (log.loading) {
@@ -62,8 +69,8 @@ const CommitsPage = ({repoId, branchId, logCommits, log }) => {
     } else {
         body = (
             <ListGroup>
-                {log.payload.map(commit => (
-                    <CommitWidget key={commit.id} commit={commit} repoId={repoId}/>
+                {log.payload.filter(commit => !!commit.parents).map((commit, i) => (
+                    <CommitWidget key={commit.id} commit={commit} repoId={repoId} previous={(i < log.payload.length-1) ? log.payload[i+1] : null}/>
                 ))}
             </ListGroup>
         );
@@ -73,9 +80,10 @@ const CommitsPage = ({repoId, branchId, logCommits, log }) => {
         <div className="mt-3 mb-5">
             <div className="action-bar">
                 <ButtonToolbar className="float-left mb-2">
-                    <BranchDropdown repoId={repoId} selectedBranch={branchId} withCommits={false} selectRef={(ref) => {
+                    <BranchDropdown repoId={repoId} selected={refId} withCommits={false} selectRef={(ref) => {
                         const params = new URLSearchParams(location.search);
                         params.set('branch', ref.id);
+                        params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
                         history.push({...location, search: params.toString()})
                     }}/>
                 </ButtonToolbar>

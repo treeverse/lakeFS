@@ -55,6 +55,41 @@
     margin-bottom: 10px;
 }
 
+.tree-path .octicon {
+    color: #007bff;
+    margin-right: 5px;
+    font-size: .9rem;
+}
+
+.diff-removed .tree-path, .diff-removed .tree-path .octicon, .diff-removed .diff-indicator .octicon {
+    color: #808080;
+}
+
+
+.diff-changed {
+    background-color: #ffeeba;
+}
+
+.diff-added {
+    background-color: #cdffd8;
+}
+
+.diff-removed {
+    background-color: #ffdce0;
+}
+
+.table .tree-row {
+border: 0;
+}
+
+.diff-indicator {
+    width: 50px;
+}
+
+.diff-indicator span {
+    padding: 0 10px;
+}
+
 .tree-container .alert {
     margin: 20px;
 }
@@ -76,32 +111,26 @@ padding: 0;
     margin-bottom: 0;
 }
 
-.tree-container .card .card-body > .table tr {
+.table .tree-row {
     border-bottom: 1px solid rgba(0,0,0,0.125);
 }
 
-.tree-container .card .card-body > .table tr td {
+.table .tree-row td {
     padding-top: 10px;
     padding-bottom: 10px;
 }
 
-.tree-container .card .card-body > .table tr td .octicon {
+.table .tree-row td .octicon {
     margin-top: -3px;
 }
 
-.tree-container .card .card-body > .table tr td:first-child {
+.table .tree-row td:first-child {
     padding-left: 20px;
 }
 
-.tree-container .card .card-body > .table tr td:last-child {
+.table .tree-row td:last-child {
     padding-right: 20px;
     text-align: right;
-}
-
-.tree-path .octicon {
-    color: #007bff;
-    margin-right: 5px;
-    font-size: .9rem;
 }
 
 .btn.btn-link {
