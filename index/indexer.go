@@ -312,7 +312,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 
-		_, err = index.ReadEntryObject(repoId, branch, path)
+		_, err = readEntry(tx, branch, path)
 		if err != nil {
 			return nil, err
 		}
