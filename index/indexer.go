@@ -31,6 +31,7 @@ type Index interface {
 	Tree(repoId, branch string) error
 	ReadObject(repoId, branch, path string) (*model.Object, error)
 	ReadEntryObject(repoId, branch, path string) (*model.Entry, error)
+	ReadEntryTree(repoId, branch, path string) (*model.Entry, error)
 	ReadRootObject(repoId, branch string) (*model.Root, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
