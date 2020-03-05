@@ -179,7 +179,7 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	}
 	return obj.(*model.Object), nil
 }
-func (index *KVIndex) readEntry(tx store.RepoReadOnlyOperations, repoId, branch, path string) (*model.Entry, error) {
+func readEntry(tx store.RepoReadOnlyOperations, branch, path string) (*model.Entry, error) {
 	var entry *model.Entry
 	we, err := tx.ReadFromWorkspace(branch, path)
 	if xerrors.Is(err, db.ErrNotFound) {
@@ -212,7 +212,7 @@ func (index *KVIndex) readEntry(tx store.RepoReadOnlyOperations, repoId, branch,
 }
 func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
 	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
-		return index.readEntry(tx, repoId, branch, path)
+		return readEntry(tx, branch, path)
 	})
 	if err != nil {
 		return nil, err
@@ -290,7 +290,7 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 
-		_, err = index.readEntry(tx, repoId, branch, path)
+		_, err = readEntry(tx, branch, path)
 		if err != nil {
 			return nil, err
 		}

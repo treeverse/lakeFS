@@ -237,8 +237,10 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 			if err != nil {
 				return nil, err
 			}
-			mergedEntries := mergeChanges(currentEntries, changes)
-
+			mergedEntries, err := mergeChanges(currentEntries, changes)
+			if err != nil {
+				return nil, err
+			}
 			pth := path.New(treePath)
 			parts := pth.SplitParts()
 
