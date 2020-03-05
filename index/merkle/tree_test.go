@@ -701,6 +701,7 @@ func TestMerkle_Update(t *testing.T) {
 			got, err := initialMerkle.Update(tree, tt.editEntries)
 			if err != nil {
 				if !tt.wantErr {
+					// wanted errors should only be on editEntries
 					t.Fatal(err)
 				}
 				return
@@ -714,6 +715,7 @@ func TestMerkle_Update(t *testing.T) {
 				t.Fatal(err)
 				return
 			}
+
 			if tt.wantErr {
 				t.Errorf("Update() expected an error but didn't get one")
 				return
