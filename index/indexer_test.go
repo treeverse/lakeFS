@@ -538,7 +538,11 @@ func TestTimeStampConsistency(t *testing.T) {
 			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
 			defer closer()
 			now := time.Now()
-			kvIndex := index.NewKVIndex(kv)
+			currentTime := now
+			mockTime := func() int64 {
+				return currentTime.Unix()
+			}
+			kvIndex := index.NewKVIndex(kv, index.WithTimeGenerator(mockTime))
 			for _, obj := range tc.timedObjects {
 				ts := now.Add(obj.seconds * time.Second).Unix()
 				err := kvIndex.WriteEntry(repo.GetRepoId(), repo.GetDefaultBranch(), obj.path, &model.Entry{
@@ -552,8 +556,8 @@ func TestTimeStampConsistency(t *testing.T) {
 				}
 			}
 			for _, obj := range tc.deleteObjects {
-				ts := now.Add(obj.seconds * time.Second).Unix()
-				err := kvIndex.DeleteObjectWithTS(repo.GetRepoId(), repo.DefaultBranch, obj.path+obj.name, ts)
+				currentTime = now.Add(obj.seconds * time.Second)
+				err := kvIndex.DeleteObject(repo.GetRepoId(), repo.DefaultBranch, obj.path+obj.name)
 				if err != nil {
 					t.Fatal(err)
 				}
