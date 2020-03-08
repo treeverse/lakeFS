@@ -21,6 +21,10 @@ message Object {
     int64 size = 4;
 }
 
+message Root {
+    int64 timestamp = 1;
+    int64 size = 2;
+}
 message Entry {
     string name = 1;
     string address = 2; // hash of either Object or Entry prefix if tree
