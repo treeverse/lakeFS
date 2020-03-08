@@ -201,7 +201,7 @@ class Branches {
         if (!from) {
             return await this.list(repoId, from, amount);
         }
-        const response = await this.list(repoId, from, 1000);
+        const response = await this.list(repoId, from, amount);
         let self;
         try {
             self = await this.get(repoId, from);
@@ -211,7 +211,7 @@ class Branches {
             }
         }
         let results = response.results.filter(branch => branch.id.indexOf(from) === 0);
-        let hasMore = (results.length === 1000 && response.pagination.has_more);
+        let hasMore = (results.length === amount && response.pagination.has_more);
         if (!!self) results = [self, ...results];
 
         let returnVal = {
@@ -219,7 +219,7 @@ class Branches {
             pagination: {
                 has_more: hasMore,
                 max_per_page: 1000,
-                results: results.length + 1,
+                results: results.length + (!!self) ? 1 : 0,
             },
         };
         return returnVal;
