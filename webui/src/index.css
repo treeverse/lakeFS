@@ -28,10 +28,6 @@
     vertical-align: center;
 }
 
-.ref-selector {
-    padding: 15px 10px;
-}
-
 .lakefs-uri .octicon {
     color: #0c5460;
     margin-right: 5px;
@@ -49,10 +45,6 @@
 
 .lakefs-uri strong {
     margin: 0 5px;
-}
-
-.ref-selector form {
-    margin-bottom: 10px;
 }
 
 .tree-path .octicon {
@@ -81,6 +73,53 @@
 .table .tree-row {
 border: 0;
 }
+
+.ref-popover .popover-body {
+    padding:0;
+}
+
+.ref-popover {
+    max-width: 350px;
+}
+
+.ref-scroller {
+    max-height: 250px;
+    overflow: auto;
+}
+
+.ref-list {
+
+}
+
+.ref-list .list-group-item:first-child {
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+}
+.ref-list .list-group-item {
+    padding: 5px 10px;
+    border: 0;
+    border-bottom: 1px solid #DDD;
+    border-radius: 0;
+    clear: both;
+}
+.ref-list .list-group-item .badge {
+    float: right;
+    margin-top: 5px;
+}
+
+.ref-filter-form {
+    padding: 10px;
+    border-bottom: 1px solid #DDD;
+    background-color: #FBFBFB;
+}
+.ref-filter-form form {
+    margin-bottom: 0;
+}
+.ref-paginator {
+    text-align: center;
+    padding: 10px 0;
+}
+
 
 .diff-indicator {
     width: 50px;

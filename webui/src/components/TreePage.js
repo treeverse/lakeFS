@@ -8,14 +8,36 @@ import Button from "react-bootstrap/Button";
 import Octicon, {GitCommit} from "@primer/octicons-react";
 
 import {listTree} from "../actions/objects";
-import {getRepository} from "../actions/repositories";
 import {diff} from "../actions/refs";
-import BranchDropdown from "./BranchDropdown";
+import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 
 
-const TreePage = ({repoId, refId, compareRef, path, list, listTree, diff, diffResults}) => {
+const CompareToolbar = ({repo, refId, compare}) => {
+    const history = useHistory();
+    const location = useLocation();
 
+    return  (
+        <ButtonToolbar className="float-left mb-2">
+            <RefDropdown repo={repo} selected={refId} selectRef={(ref) => {
+                const params = new URLSearchParams(location.search);
+                params.set('branch', ref.id);
+                params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
+                history.push({...location, search: params.toString()})
+            }}/>
+            {(!!compare && !!compare.id) ?
+                (
+                    <Button variant="link" disabled>
+                        Compared to: <strong>{compare.id}</strong> {(!!compare.description) ? (<small>({compare.description})</small>) : (<span/>)}
+                    </Button>
+                ): (<span/>)
+            }
+        </ButtonToolbar>
+    );
+};
+
+
+const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, diffResults}) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -31,33 +53,19 @@ const TreePage = ({repoId, refId, compareRef, path, list, listTree, diff, diffRe
     const compareId = (!!compare) ? compare.id : "";
 
     useEffect(() => {
-        listTree(repoId, refId.id, path);
-    }, [repoId, refId.id, path, listTree]);
+        listTree(repo.id, refId.id, path);
+    }, [repo.id, refId.id, path, listTree]);
 
     useEffect(() => {
-        if (!!compare) diff(repoId, refId.id, compare.id);
+        if (!!compare) diff(repo.id, refId.id, compare.id);
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
-    },[repoId, refId.id, listTree, diff, compareId]);
+    },[repo.id, refId.id, listTree, diff, compareId]);
 
     return (
         <div className="mt-3">
             <div className="action-bar">
-                <ButtonToolbar className="float-left mb-2">
-                    <BranchDropdown repoId={repoId} selected={refId} selectRef={(ref) => {
-                        const params = new URLSearchParams(location.search);
-                        params.set('branch', ref.id);
-                        params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
-                        history.push({...location, search: params.toString()})
-                    }}/>
-                    {(!!compare && !!compare.id) ?
-                        (
-                            <Button variant="link" disabled>
-                            Compared to: <strong>{compare.id}</strong> {(!!compare.description) ? (<small>({compare.description})</small>) : (<span/>)}
-                            </Button>
-                        ): (<span/>)
-                    }
-                </ButtonToolbar>
+                <CompareToolbar refId={refId} repo={repo} compare={compare}/>
                 <ButtonToolbar className="float-right mb-2">
                     <Button variant="light">
                         Upload File
@@ -69,7 +77,7 @@ const TreePage = ({repoId, refId, compareRef, path, list, listTree, diff, diffRe
             </div>
 
             <Tree
-                repoId={repoId}
+                repo={repo}
                 refId={refId}
                 onNavigate={(path) => {
                     const params = new URLSearchParams(location.search);
@@ -84,6 +92,6 @@ const TreePage = ({repoId, refId, compareRef, path, list, listTree, diff, diffRe
 };
 
 export default connect(
-    ({ objects, repositories, refs }) => ({ list: objects.list, repo: repositories.repo, diffResults: refs.diff }),
-    ({ listTree, getRepository, diff })
+    ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff }),
+    ({ listTree, diff })
 )(TreePage);

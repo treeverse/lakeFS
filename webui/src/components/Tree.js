@@ -61,14 +61,14 @@ const isDescendantOf = (path, child) => {
 };
 
 
-const URINavigator = ({ repoId, refId, path, onNavigate }) => {
+const URINavigator = ({ repo, refId, path, onNavigate }) => {
     const parts = pathParts(path);
     // decide if commit or not?
 
     return (
         <span className="lakefs-uri">
             <strong>{'lakefs://'}</strong>
-            <Link to={`/repositories/${repoId}/tree`}>{repoId}</Link>
+            <Link to={`/repositories/${repo.id}/tree`}>{repo.id}</Link>
             <strong>{'@'}</strong>
             <Button variant="link" onClick={() => { onNavigate("") }}>{refId.id}</Button>
             <strong>{'/'}</strong>
@@ -100,7 +100,7 @@ const PathLink = ({ repoId, refId, path, name }) => {
 
 const Na = () => (<span>&mdash;</span>);
 
-const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
+const EntryRow = ({ repo, refId, path, entry, onNavigate }) => {
 
     let rowClass = 'tree-row ';
     if (entry.diff_type === 'CHANGED') {
@@ -121,7 +121,7 @@ const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
             onNavigate(entry.path)
         }}>{buttonText}</Button>)
     } else {
-        button = (<PathLink path={entry.path} refId={refId} repoId={repoId} name={buttonText}/>);
+        button = (<PathLink path={entry.path} refId={refId} repoId={repo.id} name={buttonText}/>);
     }
 
     let size;
@@ -141,7 +141,7 @@ const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
     let diffIndicator;
     if (entry.diff_type === 'REMOVED') {
         diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(props) => (<Tooltip {...props}>removed in diff</Tooltip>)}>
+            <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
                 <span>
                     <Octicon icon={Trashcan}/>
                 </span>
@@ -149,7 +149,7 @@ const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
         );
     } else if (entry.diff_type === 'ADDED') {
         diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(props) => (<Tooltip {...props}>added in diff</Tooltip>)}>
+            <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
                 <span>
                     <Octicon icon={Plus}/>
                 </span>
@@ -157,7 +157,7 @@ const EntryRow = ({ repoId, refId, path, entry, onNavigate }) => {
         );
     } else if (entry.diff_type === 'CHANGED') {
         diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(props) => (<Tooltip {...props}>changed in diff</Tooltip>)}>
+            <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
                 <span>
                     <Octicon icon={Pencil}/>
                 </span>
@@ -228,7 +228,7 @@ const merge = (path, entriesAtPath, diffResults) => {
     });
 };
 
-export default ({ path, list, repoId, refId, diffResults, onNavigate }) => {
+export default ({ path, list, repo, refId, diffResults, onNavigate }) => {
     let body;
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
@@ -240,7 +240,7 @@ export default ({ path, list, repoId, refId, diffResults, onNavigate }) => {
             <Table borderless size="sm">
                 <tbody>
                 {results.map(entry => (
-                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repoId={repoId} refId={refId}/>
+                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repo={repo} refId={refId}/>
                 ))}
                 </tbody>
             </Table>
@@ -251,7 +251,7 @@ export default ({ path, list, repoId, refId, diffResults, onNavigate }) => {
         <div className="tree-container">
             <Card>
                 <Card.Header>
-                    <URINavigator path={path} repoId={repoId} refId={refId} onNavigate={onNavigate}/>
+                    <URINavigator path={path} repo={repo} refId={refId} onNavigate={onNavigate}/>
                 </Card.Header>
                 <Card.Body>
                     {body}
