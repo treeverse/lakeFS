@@ -14,7 +14,7 @@ import (
 )
 
 func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
 	defer closer()
 
 	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
@@ -55,7 +55,7 @@ func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
 }
 
 func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
 	defer closer()
 
 	n := time.Now().Unix()
@@ -153,7 +153,7 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 }
 
 func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
 	defer closer()
 
 	n := time.Now().Unix()

@@ -76,6 +76,7 @@ func (c *KVClientOperations) DeleteRepo(repoId string) error {
 		SubspaceWorkspace,
 		SubspaceBranches,
 		SubspaceCommits,
+		SubspaceRoots,
 		SubspaceEntries,
 		SubspaceObjects,
 		SubspaceRefCounts,
