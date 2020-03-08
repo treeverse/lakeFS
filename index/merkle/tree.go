@@ -240,7 +240,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 			if err != nil {
 				return nil, err
 			}
-			mergedEntries, ts, err := mergeChanges(currentEntries, changes)
+			mergedEntries, timestamp, err := mergeChanges(currentEntries, changes)
 			if err != nil {
 				return nil, err
 			}
@@ -254,7 +254,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					return nil, err
 				}
 				err = tx.WriteRoot(addr, &model.Root{
-					Timestamp: ts,
+					Timestamp: timestamp,
 					Size:      size,
 				})
 				if err != nil {
@@ -278,7 +278,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					Entry: &model.Entry{
 						Name:      pth.DirName(),
 						Type:      model.Entry_TREE,
-						Timestamp: ts,
+						Timestamp: timestamp,
 					},
 					Tombstone: true,
 				})
@@ -296,7 +296,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 						Address:   addr,
 						Type:      model.Entry_TREE,
 						Size:      size,
-						Timestamp: ts,
+						Timestamp: timestamp,
 					},
 					Tombstone: false,
 				})
