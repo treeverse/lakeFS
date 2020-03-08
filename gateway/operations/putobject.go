@@ -60,9 +60,9 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	src, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), p.Ref, p.Path)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
-			"repo":   o.Repo,
-			"ref": p.Ref,
-			"path":   p.Path,
+			"repo": o.Repo,
+			"ref":  p.Ref,
+			"path": p.Path,
 		}).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
