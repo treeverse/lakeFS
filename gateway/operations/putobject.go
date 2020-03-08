@@ -57,7 +57,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntry(o.Repo.GetRepoId(), p.Refspec, p.Path)
+	src, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), p.Refspec, p.Path)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"repo":   o.Repo,

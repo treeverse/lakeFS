@@ -348,24 +348,24 @@ func TestMerkle_Update(t *testing.T) {
 			},
 		},
 		{
-			name: "add objects to root and objects to tree",
+			name: "add objects with size",
 
 			initialWS: []*model.WorkspaceEntry{
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
 					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT, Size: 1000},
 					Tombstone: false,
 				},
 			},
@@ -373,17 +373,17 @@ func TestMerkle_Update(t *testing.T) {
 			wantedWS: []*model.WorkspaceEntry{
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 				{
 					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
 					Tombstone: false,
 				},
 				{
 					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
+					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT, Size: 1000},
 					Tombstone: false,
 				},
 			},
