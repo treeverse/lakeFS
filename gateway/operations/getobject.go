@@ -39,7 +39,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-    entry, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), o.Ref, o.Path)
+	entry, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), o.Ref, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).

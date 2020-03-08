@@ -341,11 +341,6 @@ func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		if err != nil {
 			return nil, err
 		}
-		lg := log.WithFields(log.Fields{
-			"repo":   repoId,
-			"branch": branch,
-			"path":   path,
-		})
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
 			return nil, err
@@ -354,7 +349,6 @@ func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 			Path:  path,
 			Entry: entry,
 		})
-		lg.Warn("wrote a thing")
 		return nil, err
 	})
 	return err
