@@ -11,6 +11,7 @@ import (
 
 type MockTree struct {
 	kv      map[string][]*model.Entry
+	roots   map[string]*model.Root
 	readErr error
 }
 
@@ -74,6 +75,19 @@ func (r *MockTree) WriteTree(address string, entries []*model.Entry) error {
 	return nil
 }
 
+func (r *MockTree) WriteRoot(address string, root *model.Root) error {
+	r.roots[address] = root
+	return nil
+}
+
+func (r *MockTree) ReadRoot(address string) (*model.Root, error) {
+	if val, ok := r.roots[address]; ok {
+		return val, nil
+	}
+	return nil, db.ErrNotFound
+}
+
 func ConstructTree(kv map[string][]*model.Entry) *MockTree {
-	return &MockTree{kv: kv}
+	roots := make(map[string]*model.Root)
+	return &MockTree{kv: kv, roots: roots}
 }
