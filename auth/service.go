@@ -64,12 +64,6 @@ type Service interface {
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
-// a limited service interface for the gateway, used by simulation playback
-type GatewayService interface {
-	GetAPICredentials(accessKey string) (*model.APICredentials, error)
-	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
-}
-
 type KVAuthService struct {
 	kv db.Store
 }
