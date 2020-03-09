@@ -30,7 +30,7 @@ type ServerContext struct {
 	meta             index.Index
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
-	authService      auth.Service
+	authService      auth.GatewayService
 }
 
 type Server struct {
@@ -43,7 +43,7 @@ func NewServer(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
-	authService auth.Service,
+	authService auth.GatewayService,
 	multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
 ) *Server {

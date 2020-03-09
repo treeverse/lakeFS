@@ -53,7 +53,7 @@ func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (
 		var uploadId string
 		var err error
 		if utils.IsPlayback() {
-			//uploadId = httputil.GetUploadId()
+			uploadId = utils.GetUploadId()
 		} else {
 			uploadId = m.generateId()
 		}

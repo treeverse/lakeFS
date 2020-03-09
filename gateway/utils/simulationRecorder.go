@@ -16,75 +16,39 @@ import (
 	"time"
 )
 
-type lazyOutput struct {
-	Name   string
-	F      *os.File
-	IsOpen bool
-}
-
-func newLazyOutput(name string) *lazyOutput {
-	r := new(lazyOutput)
-	r.Name = name
-	return r
-}
-
-func (l *lazyOutput) Write(d []byte) (int, error) {
-	if !l.IsOpen {
-		l.IsOpen = true
-		var err error
-		l.F, err = os.OpenFile(l.Name, os.O_CREATE|os.O_WRONLY, 0777)
-		if err != nil {
-			log.WithError(err).Fatal("file " + l.Name + " failed opened")
-		}
-	}
-	written, err := l.F.Write(d)
-	if err != nil {
-		log.WithError(err).Fatal("file " + l.Name + " failed write")
-	}
-	return written, err
-}
-
-func (l *lazyOutput) Close() error {
-	if !l.IsOpen {
-		return nil
-	}
-	err := l.F.Close()
-	if err != nil {
-		log.WithError(err).Fatal("Failed closing " + l.Name)
-	}
-	l.F = nil
-	return err
-}
-
-type storedEvent struct {
+type StoredEvent struct {
 	Status   int    `json:"status"`
-	UploadID []byte `json:"uploadId"`
+	UploadID string `json:"uploadId"`
 	Request  string `json:"request"`
 }
 
 // RECORDING - helper decorator types
 
-type responseWriter struct {
+type ResponseWriter struct {
 	uploadId        []byte
-	originalWriter  http.ResponseWriter
+	OriginalWriter  http.ResponseWriter
 	lookForUploadId bool
-	responseLog     *lazyOutput
-	statusCode      int
+	ResponseLog     *LazyOutput
+	StatusCode      int
 	Regexp          *regexp.Regexp
 }
 
-func (w *responseWriter) Header() http.Header {
-	return w.originalWriter.Header()
+func (w *ResponseWriter) Header() http.Header {
+	h := w.OriginalWriter.Header()
+	return h
 }
 
-func (w *responseWriter) Write(data []byte) (int, error) {
-	written, err := w.originalWriter.Write(data)
+func (w *ResponseWriter) Write(data []byte) (int, error) {
+	written, err := w.OriginalWriter.Write(data)
 	if err == nil {
 		if w.lookForUploadId && len(w.uploadId) == 0 {
-			w.uploadId = w.Regexp.FindSubmatch(data)[1]
+			rx := w.Regexp.FindSubmatch(data)
+			if len(rx) > 1 {
+				w.uploadId = rx[1]
+			}
 		}
 		writtenSlice := data[:written]
-		_, err1 := w.responseLog.Write(writtenSlice)
+		_, err1 := w.ResponseLog.Write(writtenSlice)
 		if err1 != nil {
 			panic("could nor write response file\n")
 		}
@@ -92,13 +56,13 @@ func (w *responseWriter) Write(data []byte) (int, error) {
 	return written, err
 }
 
-func (w *responseWriter) WriteHeader(statusCode int) {
-	w.statusCode = statusCode
-	w.originalWriter.WriteHeader(statusCode)
+func (w *ResponseWriter) WriteHeader(statusCode int) {
+	w.StatusCode = statusCode
+	w.OriginalWriter.WriteHeader(statusCode)
 }
 
 type recordingBodyReader struct {
-	recorder     *lazyOutput
+	recorder     *LazyOutput
 	originalBody io.ReadCloser
 }
 
@@ -131,7 +95,7 @@ func RegisterRecorder(router *mux.Router) {
 	if !exist {
 		return
 	}
-	recordingDir := "testdata/recordings/" + testDir
+	recordingDir := filepath.Join("gateway/testdata/recordings", testDir)
 	err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
 	if err != nil {
 		log.WithError(err).Fatal("FAILED creat directory for recordings \n")
@@ -141,33 +105,35 @@ func RegisterRecorder(router *mux.Router) {
 	router.Use(func(next http.Handler) http.Handler {
 		return http.HandlerFunc(
 			func(w http.ResponseWriter, r *http.Request) {
-				id := atomic.AddInt32(&uniquenessCounter, 1)
-				nameBase := time.Now().Format("01-02-15-04-05.000") + "-" + fmt.Sprintf("%05d", id)
-				respWriter := new(responseWriter)
-				respWriter.originalWriter = w
-				respWriter.responseLog = newLazyOutput(filepath.Join(recordingDir, "R"+nameBase+".resp"))
+				uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
+				timeStr := time.Now().Format("01-02-15-04-05")
+				nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
+				log.WithField("sequence", uniqueCount).Warn("***************")
+				respWriter := new(ResponseWriter)
+				respWriter.OriginalWriter = w
+				respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, "R"+nameBase+".resp"))
 				respWriter.Regexp = uploadIdRegexp
-				respWriter.statusCode = -99999    // an indication status was not set
-				if r.URL.RawQuery == "uploads=" { // initial post for s3 multipart upload
+				t := r.URL.RawQuery
+				if (t == "uploads=") || (t == "uploads") { // initial post for s3 multipart upload
 					respWriter.lookForUploadId = true
 				}
 				newBody := new(recordingBodyReader)
-				newBody.recorder = newLazyOutput(recordingDir + "/" + "B" + nameBase + ".body")
+				newBody.recorder = NewLazyOutput(recordingDir + "/" + "B" + nameBase + ".body")
 				newBody.originalBody = r.Body
 				r.Body = newBody
 				defer func() {
-					_ = respWriter.responseLog.Close()
+					_ = respWriter.ResponseLog.Close()
 					_ = newBody.recorder.Close()
 				}()
 				next.ServeHTTP(respWriter, r)
-				logRequest(r, respWriter.uploadId, nameBase, respWriter.statusCode, recordingDir)
+				logRequest(r, respWriter.uploadId, nameBase, respWriter.StatusCode, recordingDir)
 			})
 	})
 
 }
 
 func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int, recordingDir string) {
-	var event storedEvent
+	var event StoredEvent
 	var err error
 	t, err := httputil.DumpRequest(r, false)
 	if err != nil || len(t) == 0 {
@@ -177,7 +143,7 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 			}).Fatal("request dumping failed")
 	}
 	event.Request = string(t)
-	event.UploadID = uploadId
+	event.UploadID = string(uploadId)
 	event.Status = statusCode
 	jsonEvent, err := json.Marshal(event)
 	fName := filepath.Join(recordingDir, "L"+nameBase+".log")
