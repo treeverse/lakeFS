@@ -143,7 +143,6 @@ class Repositories {
                 results: results.length + 1,
             },
         };
-        console.log('returning: ', returnVal);
         return returnVal;
     }
 

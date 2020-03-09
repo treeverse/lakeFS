@@ -3,15 +3,14 @@ import {connect} from "react-redux";
 
 import Popover from "react-bootstrap/Popover";
 import Overlay from "react-bootstrap/Overlay";
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
 import Button from "react-bootstrap/Button";
-import Octicon, {ChevronDown, ChevronUp} from "@primer/octicons-react";
+import Octicon, {ChevronDown, ChevronUp, ChevronRight, X} from "@primer/octicons-react";
 
 import {filterBranches, listBranches} from "../actions/branches";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
+import * as api from "../actions/api";
 
 
 const arrayMove = (arr, oldIndex, newIndex) => {
@@ -44,9 +43,14 @@ const hoistDefaultBranch = (branches, repo) => {
     return branchesWithDefault;
 };
 
-const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, amount = 1000 }) => {
+const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 1000 }) => {
 
+    // used for branch pagination
     const [from, setFrom] = useState("");
+
+    // used for commit listing
+    const initialCommitList = {branch: selected, commits: null, loading: false};
+    const [commitList, setCommitList] = useState(initialCommitList);
 
     useEffect(()=> {
         listBranches(repo.id, from, amount);
@@ -80,6 +84,20 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
         );
     }
 
+    if (commitList.commits !== null) {
+        return (
+            <CommitList
+                withWorkspace={withWorkspace}
+                commits={commitList.commits}
+                branch={commitList.branch}
+                selectRef={selectRef}
+                reset={() => {
+                    setCommitList(initialCommitList);
+                }}/>
+        );
+    }
+
+
     const results = hoistDefaultBranch(branches.payload.results, repo);
 
     return (
@@ -88,20 +106,83 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
                     {results.map(branch => (
-                        <li className="list-group-item" key={branch.id}>
-                            {(selected.type === 'branch' && branch.id === selected.id) ?
-                                <strong>{branch.id}</strong> :
-                                <Button variant="link" onClick={() => {
-                                    selectRef({id: branch.id, type: 'branch'});
-                                }}>{branch.id}</Button>
-                            }
-                            {(branch.default) ? (<Badge variant="light">Default</Badge>) : <span/>}
-                        </li>
+                        <BranchEntry key={branch.id} branch={branch} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
+                            const data = await api.commits.log(repo.id, branch.id);
+                            setCommitList({...commitList, branch: branch, commits: data});
+                        }}/>
                     ))}
                 </ul>
                 <Paginator results={branches.payload.results} pagination={branches.payload.pagination} from={from} onPaginate={setFrom}/>
             </div>
         </div>
+    );
+};
+
+const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
+    const getMessage = commit => {
+        if (!commit.message) {
+            return 'repository epoch';
+        }
+
+        if (commit.message.length > 60) {
+            return commit.message.substr(0, 57) + '...';
+        }
+
+        return commit.message;
+    };
+
+    // add current workspace into the commit list
+
+
+    return (
+        <div className="ref-selector">
+            <h5>{branch.id}</h5>
+            <div className="ref-scroller">
+                <ul className="list-group ref-list">
+                    {(withWorkspace) ? (
+                        <li className="list-group-item" key={branch.id}>
+                            <Button variant="link" onClick={() => {
+                                selectRef({id: branch.id, type: 'branch'});
+                            }}><em>{branch.id}'s Workspace (uncommitted changes)</em></Button>
+                        </li>
+                    ) : (<span/>)}
+                    {commits.map(commit => (
+                        <li className="list-group-item" key={commit.id}>
+                                <Button variant="link" onClick={() => {
+                                    selectRef({id: commit.id, type: 'commit'});
+                                }}>{getMessage(commit)} </Button>
+                            <div className="actions">
+                                <Badge variant="light">{commit.id.substr(0, 16)}</Badge>
+                            </div>
+                        </li>
+                    ))}
+                </ul>
+                <p className="ref-paginator">
+                    <Button variant="link" size="sm" onClick={reset}>Back</Button>
+                </p>
+            </div>
+        </div>
+    );
+};
+
+const BranchEntry = ({branch, selectRef, selected, logCommits, withCommits}) => {
+    return (
+        <li className="list-group-item" key={branch.id}>
+            {(!!selected && selected.type === 'branch' && branch.id === selected.id) ?
+                <strong>{branch.id}</strong> :
+                <Button variant="link" onClick={() => {
+                    selectRef({id: branch.id, type: 'branch'});
+                }}>{branch.id}</Button>
+            }
+            <div className="actions">
+                {(branch.default) ? (<Badge variant="light">Default</Badge>) : <span/>}
+                {(withCommits) ? (
+                    <Button onClick={logCommits} size="sm" variant="link">
+                        <Octicon icon={ChevronRight}/>
+                    </Button>
+                ) : (<span/>)}
+            </div>
+        </li>
     );
 };
 
@@ -125,62 +206,63 @@ const Paginator = ({ pagination, onPaginate, results, from }) => {
     );
 };
 
-const CommitSelector = ({ repo, selectedBranch, branches, selectRef }) => {
-    return (
-        <div className="ref-selector">
-            commits for {selectedBranch}
-        </div>
-    );
-};
 
-// (RefSelector encapsulates BranchSelector and CommitSelector and is not currently used)
-// eslint-disable-next-line
-const RefSelector = ({ repo, selectedBranch, branches,  filterBranches, selectRef, withCommits }) => {
-    const [key, setKey] = useState('branches');
-
-    if (!withCommits) {
-        return (
-            <BranchSelector repo={repo} selectedBranch={selectedBranch} branches={branches} filterBranches={filterBranches} selectRef={selectRef}/>
-        );
-    }
-
-    return (
-        <Tabs activeKey={key} onSelect={k => setKey(k)}>
-            <Tab eventKey="branches" title="Branches">
-                <BranchSelector repo={repo} selectedBranch={selectedBranch} branches={branches} filterBranches={filterBranches} selectRef={selectRef}/>
-            </Tab>
-            <Tab eventKey="commits" title="Commits">
-                <CommitSelector repo={repo} selectedBranch={selectedBranch} branches={branches}  selectRef={selectRef}/>
-            </Tab>
-        </Tabs>
-    );
-};
-
-
-const RefDropdown = ({ repo, selected, branches,  filterBranches, listBranches, selectRef, withCommits = true }) => {
+const RefDropdown = ({ repo, selected, branches,  filterBranches, listBranches, selectRef, onCancel, prefix = '', emptyText = '', withCommits = true, withWorkspace = true }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
 
-    const title = (selected.type === 'branch') ? 'Branch: ' : 'Commit: ';
+
+    const popover = (
+        <Overlay target={target.current} show={show} placement="bottom">
+            <Popover className="ref-popover">
+                <Popover.Content>
+                    <BranchSelector
+                        repo={repo}
+                        branches={branches}
+                        withCommits={withCommits}
+                        listBranches={listBranches}
+                        filterBranches={filterBranches}
+                        withWorkspace={withWorkspace}
+                        selectRef={(ref) => {
+                            selectRef(ref);
+                            setShow(false);
+                        }}/>
+                </Popover.Content>
+            </Popover>
+        </Overlay>
+    );
+    
+    const cancelButton = (!!onCancel && !!selected) ? (<Button onClick={() => {
+        setShow(false);
+        onCancel();
+    }} variant="light"><Octicon icon={X}/></Button>) : (<span/>);
+
+    if (!selected) {
+        return (
+            <>
+                <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
+                    {emptyText} <Octicon icon={show ? ChevronUp : ChevronDown}/>
+                </Button>
+                {cancelButton}
+                {popover}
+            </>
+        );
+    }
+
+    const title = prefix + ((selected.type === 'branch') ? 'Branch: ' : 'Commit: ');
+    const selectedId = (selected.type === 'branch') ? selected.id : selected.id.slice(0, 16);
 
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                {title} <strong>{selected.id}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
+                {title} <strong>{selectedId}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
             </Button>
-            <Overlay target={target.current} show={show} placement="bottom">
-                <Popover className="ref-popover">
-                    <Popover.Content>
-                        <BranchSelector repo={repo} selected={selected} branches={branches} withCommits={withCommits} listBranches={listBranches} filterBranches={filterBranches} selectRef={(ref) => {
-                            selectRef(ref);
-                            setShow(false);
-                        }}/>
-                    </Popover.Content>
-                </Popover>
-            </Overlay>
+            {cancelButton}
+            {popover}
         </>
     );
-}
+};
+
 export default connect(
     ({ branches }) => ({ branches: branches.list }),
     ({ filterBranches, listBranches })
