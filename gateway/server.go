@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"fmt"
+	//"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/httputil"
