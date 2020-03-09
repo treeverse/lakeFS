@@ -18,11 +18,6 @@ import ClipboardButton from "./ClipboardButton";
 
 const CommitWidget = ({repo, commit, previous}) => {
 
-    let prevQuery = '';
-    if (!!previous) {
-        prevQuery = `&compareCommit=${previous.id.slice(0, 16)}`;
-    }
-
     return (
         <ListGroupItem>
             <div className="clearfix">
@@ -38,11 +33,11 @@ const CommitWidget = ({repo, commit, previous}) => {
                     <ButtonGroup className="commit-actions">
                         <ClipboardButton variant="light" text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
                         <ClipboardButton variant="light" text={commit.id} tooltip="copy ID to clipboard"/>
-                        <Button variant="light" as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id.slice(0, 16)}${prevQuery}`}>
+                        <Button variant="light" as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
                             <Octicon icon={Code}/>
                         </Button>
-                        <Button variant="light" as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id.slice(0, 16)}${prevQuery}`}>
-                            {(commit.id.length > 16) ? commit.id.substr(0, 8) : commit.id}
+                        <Button variant="light" as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
+                            {(commit.id.length > 16) ? commit.id.substr(0, 16) : commit.id}
                         </Button>
                     </ButtonGroup>
                 </div>
@@ -82,8 +77,13 @@ const CommitsPage = ({repo, refId, logCommits, log }) => {
                 <ButtonToolbar className="float-left mb-2">
                     <RefDropdown repo={repo} selected={refId} withCommits={false} selectRef={(ref) => {
                         const params = new URLSearchParams(location.search);
-                        params.set('branch', ref.id);
-                        params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
+                        if (ref.type === 'branch') {
+                            params.set('branch', ref.id);
+                            params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
+                        } else {
+                            params.set('commit', ref.id);
+                            params.delete('branch'); // if we explicitly selected a commit, remove an existing branch if any
+                        }
                         history.push({...location, search: params.toString()})
                     }}/>
                 </ButtonToolbar>

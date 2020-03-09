@@ -8,7 +8,7 @@ import Button from "react-bootstrap/Button";
 import Octicon, {GitCommit} from "@primer/octicons-react";
 
 import {listTree} from "../actions/objects";
-import {diff} from "../actions/refs";
+import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 
@@ -19,35 +19,61 @@ const CompareToolbar = ({repo, refId, compare}) => {
 
     return  (
         <ButtonToolbar className="float-left mb-2">
-            <RefDropdown repo={repo} selected={refId} selectRef={(ref) => {
+
+            <RefDropdown
+                repo={repo}
+                selected={refId}
+                selectRef={(ref) => {
                 const params = new URLSearchParams(location.search);
-                params.set('branch', ref.id);
-                params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
+                if (ref.type === 'branch') {
+                    params.set('branch', ref.id);
+                    params.delete('commit'); // if we explicitly selected a branch, remove an existing commit if any
+                } else {
+                    params.set('commit', ref.id);
+                    params.delete('branch'); // if we explicitly selected a commit, remove an existing branch if any
+                }
+
+                params.delete('compareCommit');
+                params.delete('compareBranch');
                 history.push({...location, search: params.toString()})
             }}/>
-            {(!!compare && !!compare.id) ?
-                (
-                    <Button variant="link" disabled>
-                        Compared to: <strong>{compare.id}</strong> {(!!compare.description) ? (<small>({compare.description})</small>) : (<span/>)}
-                    </Button>
-                ): (<span/>)
-            }
+
+            <RefDropdown
+                repo={repo} 
+                selected={compare}
+                prefix={'Compared to '}
+                emptyText={'Compare with...'}
+                withWorkspace={false}
+                onCancel={() => {
+                    const params = new URLSearchParams(location.search);
+                    params.delete('compareBranch');
+                    params.delete('compareCommit');
+                    history.push({...location, search: params.toString()})
+                }}
+                selectRef={(ref) => {
+                    const params = new URLSearchParams(location.search);
+                    if (ref.type === 'branch') {
+                        params.set('compareBranch', ref.id);
+                        params.delete('compareCommit'); // if we explicitly selected a branch, remove an existing commit if any
+                    } else {
+                        params.set('compareCommit', ref.id);
+                        params.delete('compareBranch'); // if we explicitly selected a commit, remove an existing branch if any
+                    }
+                    history.push({...location, search: params.toString()})
+                }}/>
+
         </ButtonToolbar>
     );
 };
 
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, diffResults}) => {
+const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults}) => {
     const history = useHistory();
     const location = useLocation();
 
     let compare;
     if (!!compareRef) {
         compare = compareRef;
-    } else if (refId.type === 'branch') {
-        compare = {...refId, description: 'committed changes'};
-    } else {
-        // no comparison to be made
     }
 
     const compareId = (!!compare) ? compare.id : "";
@@ -57,7 +83,11 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, diffResu
     }, [repo.id, refId.id, path, listTree]);
 
     useEffect(() => {
-        if (!!compare) diff(repo.id, refId.id, compare.id);
+        if (!!compare) {
+            diff(repo.id, refId.id, compare.id);
+        } else {
+            resetDiff();
+        }
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
     },[repo.id, refId.id, listTree, diff, compareId]);
@@ -93,5 +123,5 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, diffResu
 
 export default connect(
     ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff }),
-    ({ listTree, diff })
+    ({ listTree, diff, resetDiff })
 )(TreePage);

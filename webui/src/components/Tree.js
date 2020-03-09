@@ -65,12 +65,14 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
     const parts = pathParts(path);
     // decide if commit or not?
 
+    const refIdDisplay = (refId.type === 'commit') ? refId.id.substr(0, 16) : refId.id;
+
     return (
         <span className="lakefs-uri">
             <strong>{'lakefs://'}</strong>
             <Link to={`/repositories/${repo.id}/tree`}>{repo.id}</Link>
             <strong>{'@'}</strong>
-            <Button variant="link" onClick={() => { onNavigate("") }}>{refId.id}</Button>
+            <Button variant="link" onClick={() => { onNavigate("") }}>{refIdDisplay}</Button>
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
