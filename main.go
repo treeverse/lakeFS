@@ -9,7 +9,6 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
@@ -120,11 +119,9 @@ var runCmd = &cobra.Command{
 			conf.GetS3GatewayListenAddress(),
 			conf.GetS3GatewayDomainName(),
 		)
-		if utils.IsPlayback() {
-			utils.DoTestRun(gatewayServer.Server.Handler)
-		} else {
-			panic(gatewayServer.Listen())
-		}
+
+		panic(gatewayServer.Listen())
+
 		return nil
 	}}
 

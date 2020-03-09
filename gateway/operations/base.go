@@ -30,7 +30,7 @@ type Operation struct {
 	Index            index.Index
 	MultipartManager index.MultipartManager
 	BlockStore       block.Adapter
-	Auth             auth.Service
+	Auth             auth.GatewayService
 }
 
 func (o *Operation) RequestId() string {
