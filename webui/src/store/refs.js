@@ -1,6 +1,6 @@
 
 import * as async from "./async";
-import {DIFF_REFS} from "../actions/refs";
+import {DIFF_REFS, RESET_DIFF} from "../actions/refs";
 
 const initialState = {
     diff: async.initialState,
@@ -13,6 +13,8 @@ export default (state = initialState, action) => {
     };
 
     switch (action.type) {
+        case RESET_DIFF:
+            return initialState;
         default:
             return state;
     }
