@@ -2,7 +2,6 @@ package gateway
 
 import (
 	"fmt"
-	//"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/httputil"
@@ -31,7 +30,7 @@ type ServerContext struct {
 	meta             index.Index
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
-	authService      auth.GatewayService
+	authService      utils.GatewayService
 }
 
 type Server struct {
@@ -44,7 +43,7 @@ func NewServer(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
-	authService auth.GatewayService,
+	authService utils.GatewayService,
 	multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
 ) *Server {
