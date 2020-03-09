@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/testutil"
@@ -34,7 +35,7 @@ type playBackMockConf struct {
 
 type dependencies struct {
 	blocks block.Adapter
-	auth   auth.GatewayService
+	auth   utils.GatewayService
 	meta   index.Index
 	mpu    index.MultipartManager
 }
