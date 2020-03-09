@@ -47,4 +47,5 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
+
 }

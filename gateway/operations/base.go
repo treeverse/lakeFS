@@ -15,6 +15,7 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 
@@ -30,7 +31,7 @@ type Operation struct {
 	Index            index.Index
 	MultipartManager index.MultipartManager
 	BlockStore       block.Adapter
-	Auth             auth.GatewayService
+	Auth             utils.GatewayService
 }
 
 func (o *Operation) RequestId() string {

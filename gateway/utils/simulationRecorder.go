@@ -109,7 +109,7 @@ func (r *recordingBodyReader) Close() error {
 
 // RECORDING
 
-var uniquenessCounter int32
+var uniquenessCounter int32 // persistent request counter during run. used only below,
 
 func RegisterRecorder(router *mux.Router) {
 	testDir, exist := os.LookupEnv("RECORD")
@@ -129,7 +129,7 @@ func RegisterRecorder(router *mux.Router) {
 				uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
 				timeStr := time.Now().Format("01-02-15-04-05")
 				nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
-				log.WithField("sequence", uniqueCount).Warn("***************")
+				log.WithField("sequence", uniqueCount).Warn("Disregard warning - only to hilite display")
 				respWriter := new(ResponseWriter)
 				respWriter.OriginalWriter = w
 				respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, "R"+nameBase+".resp"))
