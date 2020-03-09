@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import {useParams, useLocation, Switch, Route, useRouteMatch, Link, generatePath, Redirect} from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import Octicon, {GitCommit, GitBranch, Gear, Database}  from "@primer/octicons-react";
+import Octicon, {GitCommit, Gear, Database}  from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import CommitsPage from './CommitsPage';
@@ -50,9 +50,6 @@ const RepositoryTabs = () => {
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/commits" passInQuery={['branch']}><Octicon icon={GitCommit}/>  Commits</RoutedTab>
-            </Nav.Item>
-            <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/branches"><Octicon icon={GitBranch}/> Branches</RoutedTab>
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/settings"><Octicon icon={Gear}/> Settings</RoutedTab>
