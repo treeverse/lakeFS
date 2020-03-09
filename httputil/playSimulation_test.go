@@ -10,7 +10,7 @@ func TestDoTestRun(t *testing.T) {
 	DoTestRun(*router)
 }
 
-//func TestRead( t*testing.T){
+//func TestRead( t*testing.T)
 //	var base [1000]byte
 //	cc := NewReader(129)
 //	b := base[0:15]
