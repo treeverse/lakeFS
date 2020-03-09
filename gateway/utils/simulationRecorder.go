@@ -45,17 +45,10 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 	if len(w.Headers) == 0 {
 		return
 	}
-	f, err := os.OpenFile(fName, os.O_CREATE|os.O_WRONLY, 0777)
+	s, _ := json.Marshal(w.Headers)
+	err := ioutil.WriteFile(fName, s, 0777)
 	if err != nil {
 		log.WithError(err).Fatal("failed crete file " + fName)
-	}
-	defer f.Close()
-	for key, val := range w.Headers {
-		fmt.Fprint(f, key, "=")
-		for _, v := range val {
-			fmt.Fprint(f, v, " ")
-		}
-		fmt.Fprint(f, "\n")
 	}
 }
 
