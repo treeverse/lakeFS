@@ -1,4 +1,4 @@
-import React, {useEffect} from "react";
+import React, {useEffect, useState, useRef} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 
@@ -7,10 +7,11 @@ import Button from "react-bootstrap/Button";
 
 import Octicon, {GitCommit} from "@primer/octicons-react";
 
-import {listTree} from "../actions/objects";
+import {listTree, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
+import Modal from "react-bootstrap/Modal";
 
 
 const CompareToolbar = ({repo, refId, compare}) => {
@@ -66,8 +67,65 @@ const CompareToolbar = ({repo, refId, compare}) => {
     );
 };
 
+const UploadButton = connect(
+    ({ objects }) => ({ uploadState: objects.upload }),
+    ({ upload, uploadDone })
+)(({ repo, refId, path, uploadState, upload, uploadDone }) => {
+    const [show, setShow] = useState(false);
+    const textRef = useRef(null);
+    const fileRef = useRef(null);
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults}) => {
+    if (!refId || refId.type !== 'branch') {
+        return <span/>;
+    }
+
+    const disabled = uploadState.inProgress;
+
+    useEffect(() => {
+        if (uploadState.done) {
+            setShow(false);
+            uploadDone()
+        }
+    }, [uploadDone, uploadState.done]);
+
+    return (
+        <>
+            <Modal show={show} onHide={() => { if (disabled) return; setShow(false)}}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Upload Object</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <input type="text" name="text" ref={textRef}/>
+                    <input type="file" name="content" ref={fileRef} onChange={(e) => {
+                        textRef.current.value = path + e.currentTarget.files[0].name;
+                    }}/>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary"  disabled={disabled} onClick={() => {
+                        if (disabled) return;
+                        setShow(false)
+                    }}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" disabled={disabled} onClick={() => {
+                        if (disabled) return;
+                        upload(repo.id, refId.id, textRef.current.value, fileRef.current.files[0]);
+                    }}>
+                        {(uploadState.inProgress)? 'Uploading...' : 'Upload'}
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="light" onClick={() => {
+                setShow(true)
+            }}>
+                <Octicon icon={GitCommit}/> Upload Object
+            </Button>
+        </>
+    );
+});
+
+
+const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults, uploadState}) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -80,7 +138,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
 
     useEffect(() => {
         listTree(repo.id, refId.id, path);
-    }, [repo.id, refId.id, path, listTree]);
+    }, [repo.id, refId.id, path, listTree, uploadState.done]);
 
     useEffect(() => {
         if (!!compare) {
@@ -90,16 +148,14 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
         }
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
-    },[repo.id, refId.id, listTree, diff, compareId]);
+    },[repo.id, refId.id, listTree, diff, compareId, uploadState]);
 
     return (
         <div className="mt-3">
             <div className="action-bar">
                 <CompareToolbar refId={refId} repo={repo} compare={compare}/>
                 <ButtonToolbar className="float-right mb-2">
-                    <Button variant="light">
-                        Upload File
-                    </Button>
+                    <UploadButton refId={refId} repo={repo} path={path}/>
                     <Button variant="success">
                         <Octicon icon={GitCommit}/> Commit Changes
                     </Button>
@@ -122,6 +178,6 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
 };
 
 export default connect(
-    ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff }),
+    ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff, uploadState: objects.upload }),
     ({ listTree, diff, resetDiff })
 )(TreePage);

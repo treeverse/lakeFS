@@ -50,14 +50,14 @@ export const extractError = async (response) => {
     return body;
 };
 
-const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, credentials = null) => {
+const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, credentials = null, defaultHeaders ={"Accept": "application/json",
+    "Content-Type": "application/json",}) => {
     const auth = (credentials === null) ?
         cachedBasicAuth() : basicAuth(credentials.accessKeyId, credentials.secretAccessKey);
     return await fetch(`${API_ENDPOINT}${uri}`, {
         headers: new Headers({
             ...auth,
-            "Accept": "application/json",
-            "Content-Type": "application/json",
+            ...defaultHeaders,
             ...additionalHeaders,
         }),
         ...requestData,
@@ -231,6 +231,20 @@ class Objects {
         const query = qs({tree, amount, after});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async upload(repoId, branchId, path, fileObject) {
+        const data = new FormData();
+        data.append('content', fileObject);
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
+            method: 'POST',
+            body: data,
+        }, {}, null, {});
+        if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
         return await response.json();

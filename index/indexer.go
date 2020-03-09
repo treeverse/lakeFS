@@ -664,9 +664,15 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 			return nil, errors.ErrNoMergeBase
 		}
 
+		leftTree := lRef.commit.GetTree()
+		if lRef.isBranch {
+			leftTree = lRef.branch.GetWorkspaceRoot()
+		}
+		rightTree := rRef.commit.GetTree()
+
 		diff, err := merkle.Diff(tx,
-			merkle.New(lRef.commit.GetTree()),
-			merkle.New(rRef.commit.GetTree()),
+			merkle.New(leftTree),
+			merkle.New(rightTree),
 			merkle.New(commonCommits[0].GetTree()))
 		if err != nil {
 			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
