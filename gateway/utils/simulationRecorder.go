@@ -30,12 +30,33 @@ type ResponseWriter struct {
 	lookForUploadId bool
 	ResponseLog     *LazyOutput
 	StatusCode      int
+	Headers         http.Header
 	Regexp          *regexp.Regexp
 }
 
 func (w *ResponseWriter) Header() http.Header {
 	h := w.OriginalWriter.Header()
+	for k, v := range h {
+		w.Headers[k] = v
+	}
 	return h
+}
+func (w *ResponseWriter) SaveHeaders(fName string) {
+	if len(w.Headers) == 0 {
+		return
+	}
+	f, err := os.OpenFile(fName, os.O_CREATE|os.O_WRONLY, 0777)
+	if err != nil {
+		log.WithError(err).Fatal("failed crete file " + fName)
+	}
+	defer f.Close()
+	for key, val := range w.Headers {
+		fmt.Fprint(f, key, "=")
+		for _, v := range val {
+			fmt.Fprint(f, v, " ")
+		}
+		fmt.Fprint(f, "\n")
+	}
 }
 
 func (w *ResponseWriter) Write(data []byte) (int, error) {
@@ -113,6 +134,7 @@ func RegisterRecorder(router *mux.Router) {
 				respWriter.OriginalWriter = w
 				respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, "R"+nameBase+".resp"))
 				respWriter.Regexp = uploadIdRegexp
+				respWriter.Headers = make(http.Header)
 				t := r.URL.RawQuery
 				if (t == "uploads=") || (t == "uploads") { // initial post for s3 multipart upload
 					respWriter.lookForUploadId = true
@@ -123,6 +145,7 @@ func RegisterRecorder(router *mux.Router) {
 				r.Body = newBody
 				defer func() {
 					_ = respWriter.ResponseLog.Close()
+					respWriter.SaveHeaders(recordingDir + "/" + "H" + nameBase + ".hdr")
 					_ = newBody.recorder.Close()
 				}()
 				next.ServeHTTP(respWriter, r)
