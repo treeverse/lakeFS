@@ -52,8 +52,7 @@ var fsStatCmd = &cobra.Command{
 }
 
 var fsLsTemplate = `{{ range $val := . -}}
-{{ if eq $val.PathType "OBJECT" }}{{ $val.PathType|ljust 6 }}    {{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}    {{ $val.Path|yellow }}{{ else -}}
-{{ $val.PathType|ljust 6 }}    {{ "-"|ljust 29 }}    {{ "-"|ljust 12 }}    {{ $val.Path|yellow }}{{ end }}
+{{ $val.PathType|ljust 6 }}    {{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}    {{ $val.Path|yellow }}
 {{ end -}}
 `
 
