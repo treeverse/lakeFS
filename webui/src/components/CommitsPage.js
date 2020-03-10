@@ -12,7 +12,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import Octicon, {Code, Link as LinkIcon, Diff} from "@primer/octicons-react";
+import Octicon, {Link as LinkIcon, Diff} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
