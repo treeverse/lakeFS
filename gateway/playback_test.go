@@ -1,7 +1,6 @@
 package gateway_test
 
 import (
-	"bytes"
 	"encoding/json"
 	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/auth"
@@ -12,10 +11,8 @@ import (
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/testutil"
-	"io"
 	"io/ioutil"
 	"net/http"
-	"os"
 	"path/filepath"
 	"testing"
 )
@@ -37,59 +34,6 @@ type dependencies struct {
 	auth   utils.GatewayService
 	meta   index.Index
 	mpu    index.MultipartManager
-}
-
-func compareFiles(t *testing.T, fName string) bool {
-	var buf1, buf2 [1024]byte
-	b1 := buf1[:]
-	b2 := buf2[:]
-
-	f1, err1 := os.Open(fName)
-	defer f1.Close()
-	fNameParts := filepath.SplitList(fName)
-	recordingDir := filepath.Join("gateway", "recordings", fNameParts[len(fNameParts)-2])
-
-	f2, err2 := os.Open(recordingDir)
-	defer f2.Close()
-	if err1 != nil || err2 != nil {
-		t.Fatal("file " + fName + " did not open\n")
-	}
-	for true {
-		n1, err1 := f1.Read(b1)
-		n2, err2 := f2.Read(b2)
-		if n1 != n2 || err1 != err2 {
-			return false
-		} else if bytes.Compare(b1[:n1], b2[:n2]) != 0 {
-			return false
-		}
-		if err1 == io.EOF {
-			return true
-		}
-	}
-	return false // need it for the compiler
-}
-
-func TestCompareAllRuns(t *testing.T) {
-
-}
-
-func SingleDirCompare(t *testing.T, playbackDir string) {
-	var notSame, areSame int
-	globPattern := filepath.Join(playbackDir, "*.resp")
-	names, err := filepath.Glob(globPattern)
-	if err != nil {
-		t.Fatal("failed Globe on " + globPattern + "\n")
-	}
-	for _, fName := range names {
-		res := compareFiles(t, fName)
-		if !res {
-			notSame++
-		} else {
-			areSame++
-			_ = os.Remove(fName)
-		}
-	}
-	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
 }
 
 func TestGatewayRecording(t *testing.T) {

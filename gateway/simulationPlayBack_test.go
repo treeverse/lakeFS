@@ -32,17 +32,19 @@ type simulationEvent struct {
 func setGlobalPlaybackParams(testDir string) {
 	utils.PlaybackParams.IsPlayback = true
 	utils.PlaybackParams.RecordingDir = filepath.Join("testdata", "recordings", testDir)
-	utils.PlaybackParams.RunResultsDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05"))
+	utils.PlaybackParams.PlaybackDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05"))
 }
 
 func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
-	err := os.MkdirAll(utils.PlaybackParams.RunResultsDir, 0777)
+	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0777)
 	if err != nil {
-		panic("\n could not create directory: " + utils.PlaybackParams.RunResultsDir + "\n")
+		t.Fatal("\n could not create directory: " + utils.PlaybackParams.PlaybackDir + "\n")
 	}
-	simulationEvents := buildEventList()
+	simulationEvents := buildEventList(t)
 	if len(simulationEvents) > 0 {
 		runEvents(simulationEvents, handler, timed, speed, t)
+		playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
+
 	} else {
 		t.Fatal("no events found \n")
 	}
@@ -64,7 +66,7 @@ func regexpGlob(directory string, logPattern *regexp.Regexp) []string {
 	return fileList
 }
 
-func buildEventList() []simulationEvent {
+func buildEventList(t *testing.T) []simulationEvent {
 	var simulationEvents []simulationEvent
 	var se utils.StoredEvent
 	logPattern := regexp.MustCompile("^L\\d{2}-\\d{2}-\\d{2}-\\d{2}-\\d{2}\\-\\d{5}.log$")
@@ -77,7 +79,7 @@ func buildEventList() []simulationEvent {
 		fName := filepath.Join(utils.PlaybackParams.RecordingDir, file)
 		event, err := ioutil.ReadFile(fName)
 		if err != nil {
-			log.Panic("Recording file not found\n")
+			t.Fatal("Recording file not found\n")
 		}
 		err = json.Unmarshal(event, &se)
 		if err != nil {
@@ -93,7 +95,7 @@ func buildEventList() []simulationEvent {
 }
 
 func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback bool, playbackSpeed float64, t *testing.T) {
-	simulationMisses := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.RunResultsDir, "status_mismatch.log"))
+	simulationMisses := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.PlaybackDir, "status_mismatch.log"))
 	defer func() {
 		_ = simulationMisses.Close()
 	}()
@@ -125,7 +127,7 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	w := httptest.NewRecorder()
 	respWrite := new(utils.ResponseWriter)
 	respWrite.OriginalWriter = w
-	l := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.RunResultsDir, "R"+event.baseName+".resp"))
+	l := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.PlaybackDir, "R"+event.baseName+".resp"))
 	defer func() {
 		_ = l.Close()
 		_ = event.Close()
@@ -157,4 +159,55 @@ func (r *simulationEvent) Close() error {
 		_ = r.bodyReader.Close()
 	}
 	return err
+}
+
+func playbackDirCompare(t *testing.T, playbackDir string) {
+	var notSame, areSame int
+	globPattern := filepath.Join(playbackDir, "*.resp")
+	names, err := filepath.Glob(globPattern)
+	if err != nil {
+		t.Fatal("failed Globe on " + globPattern + "\n")
+	}
+	for _, fName := range names {
+		res := compareFiles(t, fName)
+		if !res {
+			notSame++
+		} else {
+			areSame++
+			_ = os.Remove(fName)
+		}
+	}
+	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
+}
+
+func compareFiles(t *testing.T, playbackFileName string) bool {
+	var buf1, buf2 [1024]byte
+	f1, err1 := os.Open(playbackFileName)
+	defer f1.Close()
+	_, fileName := filepath.Split(playbackFileName)
+	recordingFile := filepath.Join(utils.PlaybackParams.RecordingDir, fileName)
+	f2, err2 := os.Open(recordingFile)
+	defer f2.Close()
+	if err1 != nil || err2 != nil {
+		t.Fatal("file " + playbackFileName + " did not open\n")
+	}
+	for true {
+		b1 := buf1[:]
+		b2 := buf2[:]
+		n1, err1 := f1.Read(b1)
+		n2, err2 := f2.Read(b2)
+		if n1 != n2 || err1 != err2 {
+			return false
+		} else {
+			b1 := buf1[:n1]
+			b2 := buf2[:n1]
+			if bytes.Compare(b1, b2) != 0 {
+				return false
+			}
+		}
+		if err1 == io.EOF {
+			return true
+		}
+	}
+	return false // need it for the compiler
 }
