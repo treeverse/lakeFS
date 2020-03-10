@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult><Name>example</Name><IsTruncated>true</IsTruncated><Prefix>master/imdb/titles_by_year/_temporary/0/task_20200310141426_0001_m_000000/</Prefix><Delimiter>/</Delimiter><KeyCount>1</KeyCount><MaxKeys>1</MaxKeys><CommonPrefixes><Prefix>master/imdb/titles_by_year/_temporary/0/task_20200310141426_0001_m_000000/startYear=2012/</Prefix></CommonPrefixes><Marker></Marker><NextMarker>master/imdb/titles_by_year/_temporary/0/task_20200310141426_0001_m_000000/startYear=2012/</NextMarker></ListBucketResult>
