@@ -10,6 +10,7 @@ import {connect} from "react-redux";
 import {getRepository} from "../actions/repositories";
 import Nav from "react-bootstrap/Nav";
 import Alert from "react-bootstrap/Alert";
+import BranchesPage from "./BranchesPage";
 
 
 function useQuery() {
@@ -132,7 +133,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                     <CommitsPage repo={repo.payload} refId={refId}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/branches">
-                    <CommitsPage repo={repo.payload} refId={refId}/> {/* TODO: branches page */}
+                    <BranchesPage repo={repo.payload}/>
                 </Route>
             </Switch>
         </div>
