@@ -5,7 +5,7 @@ import {connect} from "react-redux";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 
-import Octicon, {GitCommit} from "@primer/octicons-react";
+import Octicon, {GitCommit, Plus} from "@primer/octicons-react";
 
 import {listTree, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
@@ -13,6 +13,9 @@ import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
+import Row from "react-bootstrap/Row";
+import Col from "react-bootstrap/Col";
+import {doCommit, resetCommit} from "../actions/commits";
 
 
 const CompareToolbar = ({repo, refId, compare}) => {
@@ -139,6 +142,106 @@ const UploadButton = connect(
     );
 });
 
+const CommitButton = connect(
+    ({ commits }) => ({ commitState: commits.commit }),
+    ({ doCommit, resetCommit })
+)(({ repo, refId, commitState, doCommit, resetCommit }) => {
+
+    const textRef = useRef(null);
+
+    const [show, setShow] = useState(false);
+    const [metadataFields, setMetadataFields] = useState([]);
+
+    const disabled = commitState.inProgress;
+
+    useEffect(() => {
+        if (commitState.done) {
+            onHide();
+            resetCommit();
+        }
+    }, [resetCommit, commitState.done]);
+
+    const onHide = () => {
+        if (disabled) return;
+        setShow(false);
+        setMetadataFields([]);
+    };
+
+    const onSubmit = () => {
+        if (disabled) return;
+        const message = textRef.current.value;
+        const metadata = {};
+        metadataFields.forEach(pair => {
+            if (pair.key.length > 0)
+                metadata[pair.key] = pair.value;
+        });
+        doCommit(repo.id, refId.id, message, metadata);
+    };
+
+    if (!refId || refId.type !== 'branch') {
+        return <span/>;
+    }
+
+    return (
+        <>
+            <Modal show={show} onHide={onHide}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Commit Changes</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form onSubmit={(e) => {
+                        onSubmit();
+                        e.preventDefault();
+                    }}>
+                        <Form.Group controlId="message">
+                            <Form.Control type="text" placeholder="Commit Message" ref={textRef}/>
+                        </Form.Group>
+
+                        {metadataFields.map((f, i) => {
+                            return (
+                                <Form.Group controlId="message" key={`commit-metadata-field-${i}`}>
+                                    <Row>
+                                        <Col md={{span: 6}}>
+                                            <Form.Control type="text" placeholder="Key"  defaultValue={f.key} onChange={(e) => {
+                                                metadataFields[i].key = e.currentTarget.value;
+                                                setMetadataFields(metadataFields);
+                                            }}/>
+                                        </Col>
+                                        <Col md={{ span: 6}}>
+                                            <Form.Control type="text" placeholder="Value"  defaultValue={f.value}  onChange={(e) => {
+                                                metadataFields[i].value = e.currentTarget.value;
+                                                setMetadataFields(metadataFields);
+                                            }}/>
+                                        </Col>
+                                    </Row>
+                                </Form.Group>
+                            )
+                        })}
+
+                        <Button onClick={() => {
+                            setMetadataFields([...metadataFields, {key: "", value: ""}]);
+                        }} size="sm" variant="outline-secondary">
+                            <Octicon icon={Plus}/>{' '}
+                            Add Metadata field
+                        </Button>
+                    </Form>
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" disabled={disabled} onClick={onHide}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" disabled={disabled} onClick={onSubmit}>
+                        Commit Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="success" onClick={() => { setShow(true); }}>
+                <Octicon icon={GitCommit}/> Commit Changes
+            </Button>
+        </>
+    );
+});
+
 
 const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults, uploadState}) => {
     const history = useHistory();
@@ -171,9 +274,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
                 <CompareToolbar refId={refId} repo={repo} compare={compare}/>
                 <ButtonToolbar className="float-right mb-2">
                     <UploadButton refId={refId} repo={repo} path={path}/>
-                    <Button variant="success">
-                        <Octicon icon={GitCommit}/> Commit Changes
-                    </Button>
+                    <CommitButton refId={refId} repo={repo}/>
                 </ButtonToolbar>
             </div>
 
