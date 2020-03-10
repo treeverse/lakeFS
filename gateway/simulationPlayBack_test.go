@@ -41,12 +41,13 @@ func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 		t.Fatal("\n could not create directory: " + utils.PlaybackParams.PlaybackDir + "\n")
 	}
 	simulationEvents := buildEventList(t)
-	if len(simulationEvents) > 0 {
-		runEvents(simulationEvents, handler, timed, speed, t)
-		playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
-
-	} else {
+	if len(simulationEvents) == 0 {
 		t.Fatal("no events found \n")
+	}
+	allStatusEqual := runEvents(simulationEvents, handler, timed, speed, t)
+	playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
+	if !allStatusEqual {
+		t.Fatal("Some statuses where not the same, see " + utils.PlaybackParams.PlaybackDir + " \n")
 	}
 
 }
@@ -94,11 +95,12 @@ func buildEventList(t *testing.T) []simulationEvent {
 	return simulationEvents
 }
 
-func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback bool, playbackSpeed float64, t *testing.T) {
+func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback bool, playbackSpeed float64, t *testing.T) bool {
 	simulationMisses := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.PlaybackDir, "status_mismatch.log"))
 	defer func() {
 		_ = simulationMisses.Close()
 	}()
+	allStatusEqual := true
 	firstEventTime := eventsList[0].eventTime
 	durationToAdd := time.Now().Sub(firstEventTime)
 	for _, event := range eventsList {
@@ -116,12 +118,13 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 			t.Log("\nwait: ", secondDiff, "\n")
 			time.Sleep(secondDiff)
 		}
-		ServeRecordedHTTP(request, handler, &event, simulationMisses, t)
+		allStatusEqual = allStatusEqual && ServeRecordedHTTP(request, handler, &event, simulationMisses, t)
 	}
-
+	return allStatusEqual
 }
 
-func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *utils.LazyOutput, t *testing.T) {
+func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *utils.LazyOutput, t *testing.T) bool {
+	allStatusEqual := true
 	event.originalBody = r.Body
 	r.Body = event
 	w := httptest.NewRecorder()
@@ -138,7 +141,9 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	if respWrite.StatusCode != event.statusCode {
 		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
+		allStatusEqual = false
 	}
+	return allStatusEqual
 }
 
 func (r *simulationEvent) Read(b []byte) (int, error) {
