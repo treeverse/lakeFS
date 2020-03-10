@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/json"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
@@ -69,7 +68,6 @@ func IsPlayback() bool {
 }
 
 func GetUploadId() string {
-	fmt.Print("in getUploadId \n")
 	if PlaybackParams.CurrentUploadId != nil {
 		t := string(PlaybackParams.CurrentUploadId)
 		PlaybackParams.CurrentUploadId = nil
