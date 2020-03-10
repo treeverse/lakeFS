@@ -48,6 +48,11 @@ func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 	playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
 	if !allStatusEqual {
 		t.Fatal("Some statuses where not the same, see " + utils.PlaybackParams.PlaybackDir + " \n")
+	} else {
+		_, toKeep := os.LookupEnv("KEEP_RESULTS")
+		if !toKeep{
+			os.RemoveAll(utils.PlaybackParams.PlaybackDir)
+		}
 	}
 
 }
