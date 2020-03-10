@@ -180,6 +180,12 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			maxKeys,
 			descend)
 		if xerrors.Is(err, db.ErrNotFound) {
+			if xerrors.Is(err, db.ErrBranchNotFound) {
+				o.Log().WithError(err).WithFields(log.Fields{
+					"refspec": prefix.Refspec,
+					"path":    prefix.Path,
+				}).Debug("could not list objects in path")
+			}
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(log.Fields{

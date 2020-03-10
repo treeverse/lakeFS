@@ -3,6 +3,8 @@ package store
 import (
 	"fmt"
 
+	"golang.org/x/xerrors"
+
 	"github.com/treeverse/lakefs/ident"
 
 	"github.com/treeverse/lakefs/db"
@@ -129,7 +131,11 @@ func (s *KVRepoReadOnlyOperations) ListBranches(prefix string, amount int, after
 
 func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, error) {
 	b := &model.Branch{}
-	return b, s.query.GetAsProto(b, SubspaceBranches, db.CompositeStrings(s.repoId, branch))
+	err := s.query.GetAsProto(b, SubspaceBranches, db.CompositeStrings(s.repoId, branch))
+	if xerrors.Is(err, db.ErrNotFound) {
+		err = db.ErrBranchNotFound
+	}
+	return b, err
 }
 
 func (s *KVRepoReadOnlyOperations) ReadRoot(address string) (*model.Root, error) {
