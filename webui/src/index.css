@@ -25,7 +25,7 @@
     background-color: #FBFBFB;
 }
 
-.commit-actions .btn {
+.commit-actions .btn, .branch-actions .btn {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
     font-size: .8rem;
     vertical-align: center;
@@ -206,4 +206,8 @@ padding: 0;
 
 .commit-metadata {
     font-size: 0.85rem;
+}
+
+.branch-table td {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
