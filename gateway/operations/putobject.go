@@ -132,7 +132,10 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	//validate branch
 	_, err := o.Index.GetBranch(o.Repo.GetRepoId(), o.Branch)
 	if err != nil {
-		log.Debug("trying to write to invalid branch")
+		o.Log().WithError(err).WithFields(log.Fields{
+			"repo":   o.Repo.GetRepoId(),
+			"branch": o.Branch,
+		}).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)
 		return
 	}
