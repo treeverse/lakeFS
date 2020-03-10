@@ -154,18 +154,19 @@ const CommitButton = connect(
 
     const disabled = commitState.inProgress;
 
-    useEffect(() => {
-        if (commitState.done) {
-            onHide();
-            resetCommit();
-        }
-    }, [resetCommit, commitState.done]);
-
     const onHide = () => {
         if (disabled) return;
         setShow(false);
         setMetadataFields([]);
     };
+
+    useEffect(() => {
+        if (commitState.done) {
+            setShow(false);
+            setMetadataFields([]);
+            resetCommit();
+        }
+    }, [resetCommit, commitState.done]);
 
     const onSubmit = () => {
         if (disabled) return;
