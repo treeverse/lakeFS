@@ -59,9 +59,9 @@ func (l *LazyOutput) Close() error {
 }
 
 var PlaybackParams struct {
-	IsPlayback                  bool
-	CurrentUploadId             []byte // used at playback to set the upload id in
-	RecordingDir, RunResultsDir string
+	IsPlayback                bool
+	CurrentUploadId           []byte // used at playback to set the upload id in
+	RecordingDir, PlaybackDir string
 }
 
 func IsPlayback() bool {
