@@ -30,7 +30,9 @@ const (
 type Index interface {
 	Tree(repoId, branch string) error
 	ReadObject(repoId, branch, path string) (*model.Object, error)
-	ReadEntry(repoId, branch, path string) (*model.Entry, error)
+	ReadEntryObject(repoId, branch, path string) (*model.Entry, error)
+	ReadEntryTree(repoId, branch, path string) (*model.Entry, error)
+	ReadRootObject(repoId, branch string) (*model.Root, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
@@ -110,7 +112,10 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	}
 
 	// clear workspace entries
-	tx.ClearWorkspace(branch)
+	err = tx.ClearWorkspace(branch)
+	if err != nil {
+		return err
+	}
 
 	// update branch pointer to point at new workspace
 	err = tx.WriteBranch(branch, &model.Branch{
@@ -132,11 +137,32 @@ func gc(tx store.RepoOperations, addr string) {
 }
 
 type KVIndex struct {
-	kv store.Store
+	kv          store.Store
+	tsGenerator TimeGenerator
 }
 
-func NewKVIndex(kv store.Store) *KVIndex {
-	return &KVIndex{kv: kv}
+type Option func(index *KVIndex)
+
+type TimeGenerator func() int64
+
+// Option to initiate with
+// when using this option timestamps will generate using the given time generator
+// used for mocking and testing timestamps
+func WithTimeGenerator(generator TimeGenerator) Option {
+	return func(kvi *KVIndex) {
+		kvi.tsGenerator = generator
+	}
+}
+
+func NewKVIndex(kv store.Store, opts ...Option) *KVIndex {
+	kvi := &KVIndex{
+		kv:          kv,
+		tsGenerator: func() int64 { return time.Now().Unix() },
+	}
+	for _, opt := range opts {
+		opt(kvi)
+	}
+	return kvi
 }
 
 // Business logic
@@ -176,43 +202,69 @@ func (index *KVIndex) ReadObject(repoId, branch, path string) (*model.Object, er
 	}
 	return obj.(*model.Object), nil
 }
-
-func (index *KVIndex) ReadEntry(repoId, branch, path string) (*model.Entry, error) {
-	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
-		var entry *model.Entry
-		we, err := tx.ReadFromWorkspace(branch, path)
-		if xerrors.Is(err, db.ErrNotFound) {
-			// not in workspace, let's try reading it from branch tree
-			_, err := tx.ReadRepo()
-			if err != nil {
-				return nil, err
-			}
-			root, err := resolveReadRoot(tx, branch)
-			if err != nil {
-				return nil, err
-			}
-			m := merkle.New(root)
-			entry, err = m.GetEntry(tx, path, model.Entry_OBJECT)
-			if err != nil {
-				return nil, err
-			}
-			return entry, nil
-		}
+func readEntry(tx store.RepoReadOnlyOperations, branch, path string, typ model.Entry_Type) (*model.Entry, error) {
+	var entry *model.Entry
+	we, err := tx.ReadFromWorkspace(branch, path)
+	if xerrors.Is(err, db.ErrNotFound) {
+		// not in workspace, let's try reading it from branch tree
+		_, err := tx.ReadRepo()
 		if err != nil {
-			// an actual error has occurred, return it.
 			return nil, err
 		}
-		if we.GetTombstone() {
-			// object was deleted deleted
-			return nil, db.ErrNotFound
+		root, err := resolveReadRoot(tx, branch)
+		if err != nil {
+			return nil, err
 		}
-		// exists in workspace
-		return we.GetEntry(), nil
+		m := merkle.New(root)
+		entry, err = m.GetEntry(tx, path, typ)
+		if err != nil {
+			return nil, err
+		}
+		return entry, nil
+	}
+	if err != nil {
+		// an actual error has occurred, return it.
+		return nil, err
+	}
+	if we.GetTombstone() {
+		// object was deleted deleted
+		return nil, db.ErrNotFound
+	}
+	// exists in workspace
+	return we.GetEntry(), nil
+}
+func (index *KVIndex) ReadEntry(repoId, branch, path string, typ model.Entry_Type) (*model.Entry, error) {
+	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
+		return readEntry(tx, branch, path, typ)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return entry.(*model.Entry), nil
+}
+func (index *KVIndex) ReadRootObject(repoId, branch string) (*model.Root, error) {
+	root, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		_, err = tx.ReadRepo()
+		if err != nil {
+			return nil, err
+		}
+		root, err := resolveReadRoot(tx, branch)
+		if err != nil {
+			return nil, err
+		}
+		return tx.ReadRoot(root)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return root.(*model.Root), nil
+}
+func (index *KVIndex) ReadEntryTree(repoId, branch, path string) (*model.Entry, error) {
+	return index.ReadEntry(repoId, branch, path, model.Entry_TREE)
+}
+
+func (index *KVIndex) ReadEntryObject(repoId, branch, path string) (*model.Entry, error) {
+	return index.ReadEntry(repoId, branch, path, model.Entry_OBJECT)
 }
 
 func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
@@ -250,7 +302,7 @@ func (index *KVIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 }
 
 func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Object) error {
-	timestamp := time.Now()
+	timestamp := index.tsGenerator()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		addr := ident.Hash(object)
 		err := tx.WriteObject(addr, object)
@@ -268,7 +320,7 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 				Name:      pth.New(path).Basename(),
 				Address:   addr,
 				Type:      model.Entry_OBJECT,
-				Timestamp: timestamp.Unix(),
+				Timestamp: timestamp,
 				Size:      object.GetSize(),
 				Checksum:  object.GetChecksum(),
 			},
@@ -278,18 +330,25 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 	return err
 }
 
+// delete object with timestamp - for testing timestamps
 func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
+	ts := index.tsGenerator()
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		repo, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
 		}
 
+		_, err = readEntry(tx, branch, path, model.Entry_OBJECT)
+		if err != nil {
+			return nil, err
+		}
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path: path,
 			Entry: &model.Entry{
-				Name: pth.New(path).Basename(),
-				Type: model.Entry_OBJECT,
+				Name:      pth.New(path).Basename(),
+				Timestamp: ts,
+				Type:      model.Entry_OBJECT,
 			},
 			Tombstone: true,
 		})
@@ -328,7 +387,6 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 		hasMore bool
 		results []*model.Entry
 	}
-
 	entries, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch) // block on this since we traverse the tree immediately after
 		if err != nil {
@@ -358,7 +416,10 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, branch, path, from string, res
 func (index *KVIndex) ResetBranch(repoId, branch string) error {
 	// clear workspace, set branch workspace root back to commit root
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		tx.ClearWorkspace(branch)
+		err := tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
@@ -405,7 +466,7 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 }
 
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
-	ts := time.Now().Unix()
+	ts := index.tsGenerator()
 	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
@@ -536,7 +597,10 @@ func (index *KVIndex) Diff(repoId, branch, otherBranch string) (merkle.Differenc
 
 func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		tx.ClearWorkspace(branch)
+		err := tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
 		commitData, err := tx.ReadCommit(commit)
 		if err != nil {
 			return nil, err
@@ -640,7 +704,7 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 		return errors.ErrInvalidBucketName
 	}
 
-	creationDate := time.Now().Unix()
+	creationDate := index.tsGenerator()
 
 	repo := &model.Repo{
 		RepoId:             repoId,

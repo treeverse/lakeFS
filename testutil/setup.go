@@ -32,15 +32,16 @@ func (l nullLogger) Debugf(string, ...interface{})   {}
 const TimeFormat = "Jan 2 15:04:05 2006 -0700"
 const FixtureRoot = "lakeFsFixtures"
 
-func GetIndexStoreWithRepo(t *testing.T) (store.Store, *model.Repo, func()) {
+func GetIndexStoreWithRepo(t *testing.T, partialCommitRatio float32) (store.Store, *model.Repo, func()) {
 	db, closer := GetDB(t)
 	kv := store.NewKVStore(db)
 	repoCreateDate, _ := time.Parse(TimeFormat, "Apr 7 15:13:13 2005 -0700")
 	repo, err := kv.RepoTransact("myrepo", func(ops store.RepoOperations) (i interface{}, e error) {
 		repo := &model.Repo{
-			RepoId:        "myrepo",
-			CreationDate:  repoCreateDate.Unix(),
-			DefaultBranch: index.DefaultBranch,
+			RepoId:             "myrepo",
+			CreationDate:       repoCreateDate.Unix(),
+			DefaultBranch:      index.DefaultBranch,
+			PartialCommitRatio: partialCommitRatio,
 		}
 		err := ops.WriteRepo(repo)
 		if err != nil {
