@@ -7,6 +7,7 @@ import (
 var (
 	SubspaceRepos                 = db.Namespace("repos")
 	SubspaceWorkspace             = db.Namespace("workspace")
+	SubspaceRoots                 = db.Namespace("roots")
 	SubspaceEntries               = db.Namespace("entries")
 	SubspaceObjects               = db.Namespace("objects")
 	SubspaceCommits               = db.Namespace("commits")
