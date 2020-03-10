@@ -118,13 +118,14 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 			t.Log("\nwait: ", secondDiff, "\n")
 			time.Sleep(secondDiff)
 		}
-		allStatusEqual = allStatusEqual && ServeRecordedHTTP(request, handler, &event, simulationMisses, t)
+		currentResult := ServeRecordedHTTP(request, handler, &event, simulationMisses, t)
+		allStatusEqual = currentResult && allStatusEqual
 	}
 	return allStatusEqual
 }
 
 func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *utils.LazyOutput, t *testing.T) bool {
-	allStatusEqual := true
+	statusEqual := true
 	event.originalBody = r.Body
 	r.Body = event
 	w := httptest.NewRecorder()
@@ -141,9 +142,9 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	if respWrite.StatusCode != event.statusCode {
 		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
-		allStatusEqual = false
+		statusEqual = false
 	}
-	return allStatusEqual
+	return statusEqual
 }
 
 func (r *simulationEvent) Read(b []byte) (int, error) {
