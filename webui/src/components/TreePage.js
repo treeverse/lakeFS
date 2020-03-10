@@ -12,6 +12,7 @@ import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import Modal from "react-bootstrap/Modal";
+import Form from "react-bootstrap/Form";
 
 
 const CompareToolbar = ({repo, refId, compare}) => {
@@ -75,12 +76,6 @@ const UploadButton = connect(
     const textRef = useRef(null);
     const fileRef = useRef(null);
 
-    if (!refId || refId.type !== 'branch') {
-        return <span/>;
-    }
-
-    const disabled = uploadState.inProgress;
-
     useEffect(() => {
         if (uploadState.done) {
             setShow(false);
@@ -88,23 +83,45 @@ const UploadButton = connect(
         }
     }, [uploadDone, uploadState.done]);
 
+    if (!refId || refId.type !== 'branch') {
+        return <span/>;
+    }
+
+    const disabled = uploadState.inProgress;
+
+    const onHide = () => {
+        if (disabled) return; setShow(false);
+    };
+
     return (
         <>
-            <Modal show={show} onHide={() => { if (disabled) return; setShow(false)}}>
+            <Modal show={show} onHide={onHide}>
                 <Modal.Header closeButton>
                     <Modal.Title>Upload Object</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <input type="text" name="text" ref={textRef}/>
-                    <input type="file" name="content" ref={fileRef} onChange={(e) => {
-                        textRef.current.value = path + e.currentTarget.files[0].name;
-                    }}/>
+                    <Form onSubmit={(e) => {
+                        if (disabled) return;
+                        upload(repo.id, refId.id, textRef.current.value, fileRef.current.files[0]);
+                        e.preventDefault();
+                    }}>
+                        <Form.Group controlId="path">
+                            <Form.Control type="text" placeholder="Object path" autoFocus name="text" ref={textRef} defaultValue={path}/>
+                        </Form.Group>
+
+                        <Form.Group controlId="content">
+                            <Form.Control type="file" name="content" ref={fileRef} onChange={(e) => {
+                                const currPath = textRef.current.value.substr(0, textRef.current.value.lastIndexOf('/')+1);
+                                const currName = e.currentTarget.files[0].name;
+                                textRef.current.value = currPath + currName;
+                            }}/>
+                        </Form.Group>
+                    </Form>
+
+
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary"  disabled={disabled} onClick={() => {
-                        if (disabled) return;
-                        setShow(false)
-                    }}>
+                    <Button variant="secondary"  disabled={disabled} onClick={onHide}>
                         Cancel
                     </Button>
                     <Button variant="success" disabled={disabled} onClick={() => {
@@ -115,9 +132,7 @@ const UploadButton = connect(
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="light" onClick={() => {
-                setShow(true)
-            }}>
+            <Button variant="light" onClick={() => { setShow(true) }}>
                 <Octicon icon={GitCommit}/> Upload Object
             </Button>
         </>
