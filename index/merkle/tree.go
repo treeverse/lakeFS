@@ -30,6 +30,12 @@ type TreeReader interface {
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
 }
 
+type TreeReaderWriter interface {
+	TreeReader
+	WriteTree(address string, entries []*model.Entry) error
+	WriteRoot(address string, root *model.Root) error
+}
+
 func (m *Merkle) GetEntry(tx TreeReader, pth string, typ model.Entry_Type) (*model.Entry, error) {
 	currentAddress := m.root
 	if len(pth) == 0 {
@@ -70,14 +76,16 @@ func (m *Merkle) GetObject(tx store.RepoReadOnlyOperations, pth string) (*model.
 	return tx.ReadObject(entry.GetAddress())
 }
 
-func (m *Merkle) writeTree(tx store.RepoOperations, entries []*model.Entry) (string, error) {
+func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, int64, error) {
 	entryHashes := make([]string, len(entries))
+	var size int64
 	for i, entry := range entries {
 		entryHashes[i] = ident.Hash(entry)
+		size += entry.Size
 	}
 	id := ident.MultiHash(entryHashes...)
 	err := tx.WriteTree(id, entries)
-	return id, err
+	return id, size, err
 }
 
 type col struct {
@@ -220,7 +228,7 @@ func (m *Merkle) walk(tx store.RepoReadOnlyOperations, prefix, from string, amou
 	return c.data, collectedHasMore, nil
 }
 
-func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry) (*Merkle, error) {
+func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*Merkle, error) {
 	// get the max depth
 	changeTree := newChangeTree(entries)
 	rootAddr := m.root
@@ -232,14 +240,23 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 			if err != nil {
 				return nil, err
 			}
-			mergedEntries := mergeChanges(currentEntries, changes)
-
+			mergedEntries, timestamp, err := mergeChanges(currentEntries, changes)
+			if err != nil {
+				return nil, err
+			}
 			pth := path.New(treePath)
 			parts := pth.SplitParts()
 
 			if len(parts) == 1 {
 				// this is the root node, write it no matter what and return
-				addr, err := m.writeTree(tx, mergedEntries)
+				addr, size, err := m.writeTree(tx, mergedEntries)
+				if err != nil {
+					return nil, err
+				}
+				err = tx.WriteRoot(addr, &model.Root{
+					Timestamp: timestamp,
+					Size:      size,
+				})
 				if err != nil {
 					return nil, err
 				}
@@ -259,14 +276,15 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Name: pth.DirName(),
-						Type: model.Entry_TREE,
+						Name:      pth.DirName(),
+						Type:      model.Entry_TREE,
+						Timestamp: timestamp,
 					},
 					Tombstone: true,
 				})
 			} else {
 				// write tree
-				addr, err := m.writeTree(tx, mergedEntries)
+				addr, size, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
 					return nil, err
 				}
@@ -274,9 +292,11 @@ func (m *Merkle) Update(tx store.RepoOperations, entries []*model.WorkspaceEntry
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path: treePath,
 					Entry: &model.Entry{
-						Name:    pth.DirName(),
-						Address: addr,
-						Type:    model.Entry_TREE,
+						Name:      pth.DirName(),
+						Address:   addr,
+						Type:      model.Entry_TREE,
+						Size:      size,
+						Timestamp: timestamp,
 					},
 					Tombstone: false,
 				})
@@ -294,7 +314,7 @@ type WalkFn func(path, name, typ string) bool
 
 var format, _ = template.New("treeFormat").Parse("{{.Indent}}{{.Hash}} {{.Type}} {{.Time}} {{.Size}} {{.Name}}\n")
 
-func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
+func (m *Merkle) WalkAll(tx TreeReader) {
 	_ = format.Execute(os.Stdout, struct {
 		Indent string
 		Hash   string
@@ -313,7 +333,7 @@ func (m *Merkle) WalkAll(tx store.RepoReadOnlyOperations) {
 	m.walkall(tx, 1, m.root)
 }
 
-func (m *Merkle) walkall(tx store.RepoReadOnlyOperations, depth int, root string) {
+func (m *Merkle) walkall(tx TreeReader, depth int, root string) {
 
 	children, _, err := tx.ListTree(root, "", -1)
 	if err != nil {
