@@ -15,6 +15,7 @@ import (
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
+	indexErrors "github.com/treeverse/lakefs/index/errors"
 
 	"github.com/treeverse/lakefs/index/model"
 
@@ -180,7 +181,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			maxKeys,
 			descend)
 		if xerrors.Is(err, db.ErrNotFound) {
-			if xerrors.Is(err, db.ErrBranchNotFound) {
+			if xerrors.Is(err, indexErrors.ErrBranchNotFound) {
 				o.Log().WithError(err).WithFields(log.Fields{
 					"refspec": prefix.Refspec,
 					"path":    prefix.Path,

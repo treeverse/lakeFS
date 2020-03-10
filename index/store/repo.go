@@ -133,7 +133,7 @@ func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, err
 	b := &model.Branch{}
 	err := s.query.GetAsProto(b, SubspaceBranches, db.CompositeStrings(s.repoId, branch))
 	if xerrors.Is(err, db.ErrNotFound) {
-		err = db.ErrBranchNotFound
+		err = errors.ErrBranchNotFound
 	}
 	return b, err
 }
