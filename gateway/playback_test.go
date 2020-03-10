@@ -3,7 +3,6 @@ package gateway_test
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
@@ -40,28 +39,27 @@ type dependencies struct {
 	mpu    index.MultipartManager
 }
 
-func compareFiles(fName string) bool {
+func compareFiles(t *testing.T, fName string) bool {
 	var buf1, buf2 [1024]byte
 	b1 := buf1[:]
 	b2 := buf2[:]
 
 	f1, err1 := os.Open(fName)
 	defer f1.Close()
-	l := len(fName)
-	recName := fName[:l-41] + fName[l-26:]
-	f2, err2 := os.Open(recName)
+	fNameParts := filepath.SplitList(fName)
+	recordingDir := filepath.Join("gateway", "recordings", fNameParts[len(fNameParts)-2])
+
+	f2, err2 := os.Open(recordingDir)
 	defer f2.Close()
 	if err1 != nil || err2 != nil {
-		panic("file did not open")
+		t.Fatal("file " + fName + " did not open\n")
 	}
 	for true {
 		n1, err1 := f1.Read(b1)
 		n2, err2 := f2.Read(b2)
 		if n1 != n2 || err1 != err2 {
-			fmt.Print("File ", recName, "length  not the same\n")
 			return false
 		} else if bytes.Compare(b1[:n1], b2[:n2]) != 0 {
-			fmt.Print("File ", recName, " content not the same\n")
 			return false
 		}
 		if err1 == io.EOF {
@@ -71,19 +69,27 @@ func compareFiles(fName string) bool {
 	return false // need it for the compiler
 }
 
-func TestDirCompare(t *testing.T) {
-	var notSame int
-	names, err := filepath.Glob("testdata/recordings/spark/03-08-18-01-17/*.resp")
+func TestCompareAllRuns(t *testing.T) {
+
+}
+
+func SingleDirCompare(t *testing.T, playbackDir string) {
+	var notSame, areSame int
+	globPattern := filepath.Join(playbackDir, "*.resp")
+	names, err := filepath.Glob(globPattern)
 	if err != nil {
-		panic("filed Globe\n")
+		t.Fatal("failed Globe on " + globPattern + "\n")
 	}
-	for _, n := range names {
-		res := compareFiles(n)
+	for _, fName := range names {
+		res := compareFiles(t, fName)
 		if !res {
 			notSame++
+		} else {
+			areSame++
+			_ = os.Remove(fName)
 		}
 	}
-	fmt.Print(len(names), " files compared ", notSame, " files different\n")
+	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
 }
 
 func TestGatewayRecording(t *testing.T) {
@@ -97,10 +103,11 @@ func TestGatewayRecording(t *testing.T) {
 			continue
 		}
 		dirName := dir.Name()
+		setGlobalPlaybackParams(dirName)
 		handler, _, closer := getBasicHandler(t, dirName)
 		defer closer()
 		t.Run(dirName+" recording", func(t *testing.T) {
-			DoTestRun(handler, dirName, false, 1.0, t)
+			DoTestRun(handler, false, 1.0, t)
 		})
 	}
 }
@@ -113,7 +120,7 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies,
 	indexStore := store.NewKVStore(db)
 	meta := index.NewKVIndex(indexStore)
 	mpu := index.NewKVMultipartManager(indexStore)
-	authService := newGatewayAuth(directory)
+	authService := newGatewayAuth(t, directory)
 
 	closer := func() {
 		dbCloser()
@@ -135,17 +142,16 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies,
 	}, closer
 }
 
-func newGatewayAuth(directory string) *playBackMockConf {
+func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
 	m := new(playBackMockConf)
 	fName := filepath.Join(directory, "simulation_config.json")
 	confStr, err := ioutil.ReadFile(fName)
 	if err != nil {
-		log.WithError(err).Fatal(fName + " not found\n")
-		log.Panic()
+		t.Fatal(fName + " not found\n")
 	}
 	err = json.Unmarshal(confStr, m)
 	if err != nil {
-		log.WithError(err).Fatal("Failed to unmarshal configuration\n ")
+		t.Fatal("Failed to unmarshal configuration\n ")
 	}
 	return m
 }
