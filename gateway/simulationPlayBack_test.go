@@ -191,7 +191,7 @@ func compareFiles(t *testing.T, playbackFileName string) bool {
 	if err1 != nil || err2 != nil {
 		t.Fatal("file " + playbackFileName + " did not open\n")
 	}
-	for true {
+	for {
 		b1 := buf1[:]
 		b2 := buf2[:]
 		n1, err1 := f1.Read(b1)
@@ -209,5 +209,4 @@ func compareFiles(t *testing.T, playbackFileName string) bool {
 			return true
 		}
 	}
-	return false // need it for the compiler
 }
