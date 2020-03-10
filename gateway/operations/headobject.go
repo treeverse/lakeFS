@@ -22,7 +22,7 @@ func (controller *HeadObject) Action(req *http.Request) permissions.Action {
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
-	entry, err := o.Index.ReadEntry(o.Repo.GetRepoId(), o.Branch, o.Path)
+	entry, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), o.Branch, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log().
