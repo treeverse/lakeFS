@@ -3,6 +3,9 @@ package operations
 import (
 	"net/http"
 
+	"github.com/treeverse/lakefs/db"
+	"golang.org/x/xerrors"
+
 	"github.com/treeverse/lakefs/gateway/utils"
 
 	"github.com/treeverse/lakefs/permissions"
@@ -45,7 +48,10 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 	err := o.Index.DeleteObject(o.Repo.GetRepoId(), o.Branch, o.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not delete key")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
+		if !xerrors.Is(err, db.ErrNotFound) {
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
 	}
+	o.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
