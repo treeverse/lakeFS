@@ -17,8 +17,6 @@ import (
 	"testing"
 )
 
-type anyType interface{}
-
 type playBackMockConf struct {
 	ListenAddress   string                    `json:"listen_address"`
 	BareDomain      string                    `json:"bare_domain"`
@@ -37,7 +35,6 @@ type dependencies struct {
 }
 
 func TestGatewayRecording(t *testing.T) {
-	//handler,dependencies,closer := getBasicHandler(t)
 	dirList, err := ioutil.ReadDir("testdata/recordings")
 	if err != nil {
 		log.WithError(err).Fatal("Failed reading recording directories")
