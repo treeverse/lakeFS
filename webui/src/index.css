@@ -21,6 +21,9 @@
     color: #FFFFFF;
 }
 
+.commit-list .list-group-item:nth-of-type(even) {
+    background-color: #FBFBFB;
+}
 
 .commit-actions .btn {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
@@ -199,4 +202,8 @@ padding: 0;
 
 .tree-container .btn.btn-link {
     font-size: .9rem;
+}
+
+.commit-metadata {
+    font-size: 0.85rem;
 }

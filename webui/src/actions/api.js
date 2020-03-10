@@ -260,6 +260,17 @@ class Commits {
         const data = await response.json();
         return data.results;
     }
+
+    async commit(repoId, branchId, message, metadata ={}) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`, {
+            method: 'POST',
+            body: json({message, metadata}),
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
 }
 
 class Refs {

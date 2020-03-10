@@ -32,7 +32,7 @@ export default (state = initialState, action) => {
         case OBJECTS_UPLOAD_RESET:
             return {
                 ...state,
-                upload: {...state.upload, done: false},
+                upload: {...initialState.upload},
             };
         default:
             return state;
