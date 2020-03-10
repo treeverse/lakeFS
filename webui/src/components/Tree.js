@@ -65,18 +65,40 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
     const parts = pathParts(path);
     // decide if commit or not?
 
+    const qs = (dict) => {
+        const qs = new URLSearchParams();
+        Object.getOwnPropertyNames(dict).forEach(k => {
+            if (!!dict[k]) {
+                qs.set(k, dict[k]);
+            }
+        });
+        let query =  qs.toString();
+        if (query.length > 0) {
+            return `?${query}`
+        }
+        return query;
+    };
+
+    const baseUrl = `/repositories/${repo.id}/tree`;
+
     const refIdDisplay = (refId.type === 'commit') ? refId.id.substr(0, 16) : refId.id;
+
+    const refWithPath = (path, name) => {
+        const refQuery = (refId.type === 'commit') ? qs({path, commit: refId.id}) : qs({path, branch: refId.id});
+        const refUrl = `${baseUrl}${refQuery}`;
+        return (<Link to={refUrl} onClick={(e) => { e.preventDefault(); onNavigate(path) }}>{name}</Link>);
+    };
 
     return (
         <span className="lakefs-uri">
             <strong>{'lakefs://'}</strong>
-            <Link to={`/repositories/${repo.id}/tree`}>{repo.id}</Link>
+            <Link to={baseUrl}>{repo.id}</Link>
             <strong>{'@'}</strong>
-            <Button variant="link" onClick={() => { onNavigate("") }}>{refIdDisplay}</Button>
+            {refWithPath("", refIdDisplay)}
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
-                    <Button variant="link" onClick={() => onNavigate(part.path) }>{part.name}</Button>
+                    {refWithPath(part.path, part.name)}
                     <strong>{'/'}</strong>
                 </span>
             ))}
