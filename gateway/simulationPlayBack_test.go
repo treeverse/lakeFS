@@ -29,17 +29,20 @@ type simulationEvent struct {
 	originalBody io.ReadCloser
 }
 
-func DoTestRun(handler http.Handler, testDir string, timed bool, speed float64, t *testing.T) {
+func setGlobalPlaybackParams(testDir string) {
 	utils.PlaybackParams.IsPlayback = true
-	utils.PlaybackParams.RecordingDir = "testdata/recordings/" + testDir
-	utils.PlaybackParams.RunResultsDir = utils.PlaybackParams.RecordingDir + "/" + time.Now().Format("01-02-15-04-05")
+	utils.PlaybackParams.RecordingDir = filepath.Join("testdata", "recordings", testDir)
+	utils.PlaybackParams.RunResultsDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05"))
+}
+
+func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 	err := os.MkdirAll(utils.PlaybackParams.RunResultsDir, 0777)
 	if err != nil {
 		panic("\n could not create directory: " + utils.PlaybackParams.RunResultsDir + "\n")
 	}
 	simulationEvents := buildEventList()
 	if len(simulationEvents) > 0 {
-		runEvents(simulationEvents, handler, timed, speed)
+		runEvents(simulationEvents, handler, timed, speed, t)
 	} else {
 		t.Fatal("no events found \n")
 	}
@@ -89,7 +92,7 @@ func buildEventList() []simulationEvent {
 	return simulationEvents
 }
 
-func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback bool, playbackSpeed float64) {
+func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback bool, playbackSpeed float64, t *testing.T) {
 	simulationMisses := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.RunResultsDir, "status_mismatch.log"))
 	defer func() {
 		_ = simulationMisses.Close()
@@ -108,15 +111,15 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 
 		secondDiff := time.Duration(float64(event.eventTime.Add(durationToAdd).Sub(time.Now())) / playbackSpeed)
 		if secondDiff > 0 && timedPlayback {
-			fmt.Print("\n\nwait: ", secondDiff)
+			t.Log("\nwait: ", secondDiff, "\n")
 			time.Sleep(secondDiff)
 		}
-		ServeRecordedHTTP(request, handler, &event, simulationMisses)
+		ServeRecordedHTTP(request, handler, &event, simulationMisses, t)
 	}
 
 }
 
-func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *utils.LazyOutput) {
+func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *utils.LazyOutput, t *testing.T) {
 	event.originalBody = r.Body
 	r.Body = event
 	w := httptest.NewRecorder()
@@ -128,9 +131,10 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 		_ = event.Close()
 	}()
 	respWrite.ResponseLog = l
+	respWrite.Headers = make(http.Header)
 	handler.ServeHTTP(respWrite, r)
 	if respWrite.StatusCode != event.statusCode {
-		_, _ = fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
+		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
 	}
 }

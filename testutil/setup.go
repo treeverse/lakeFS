@@ -2,8 +2,8 @@ package testutil
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -30,6 +30,7 @@ func (l nullLogger) Infof(string, ...interface{})    {}
 func (l nullLogger) Debugf(string, ...interface{})   {}
 
 const TimeFormat = "Jan 2 15:04:05 2006 -0700"
+const FixtureRoot = "lakeFsFixtures"
 
 func GetIndexStoreWithRepo(t *testing.T) (store.Store, *model.Repo, func()) {
 	db, closer := GetDB(t)
@@ -72,7 +73,8 @@ func GetIndexStoreWithRepo(t *testing.T) (store.Store, *model.Repo, func()) {
 }
 
 func GetDB(t *testing.T) (db.Store, func()) {
-	dir, err := ioutil.TempDir("", fmt.Sprintf("badger-%s", uuid.Must(uuid.NewUUID()).String()))
+	dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("badger-%s", uuid.Must(uuid.NewUUID()).String()))
+	err := os.MkdirAll(dir, 0777)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -90,7 +92,8 @@ func GetDB(t *testing.T) (db.Store, func()) {
 }
 
 func GetBlockAdapter(t *testing.T) (block.Adapter, func()) {
-	dir, err := ioutil.TempDir("", fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
+	dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
+	err := os.MkdirAll(dir, 0777)
 	if err != nil {
 		t.Fatal(err)
 	}

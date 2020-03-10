@@ -24,57 +24,6 @@ type StoredEvent struct {
 
 // RECORDING - helper decorator types
 
-type ResponseWriter struct {
-	uploadId        []byte
-	OriginalWriter  http.ResponseWriter
-	lookForUploadId bool
-	ResponseLog     *LazyOutput
-	StatusCode      int
-	Headers         http.Header
-	Regexp          *regexp.Regexp
-}
-
-func (w *ResponseWriter) Header() http.Header {
-	h := w.OriginalWriter.Header()
-	for k, v := range h {
-		w.Headers[k] = v
-	}
-	return h
-}
-func (w *ResponseWriter) SaveHeaders(fName string) {
-	if len(w.Headers) == 0 {
-		return
-	}
-	s, _ := json.Marshal(w.Headers)
-	err := ioutil.WriteFile(fName, s, 0777)
-	if err != nil {
-		log.WithError(err).Fatal("failed crete file " + fName)
-	}
-}
-
-func (w *ResponseWriter) Write(data []byte) (int, error) {
-	written, err := w.OriginalWriter.Write(data)
-	if err == nil {
-		if w.lookForUploadId && len(w.uploadId) == 0 {
-			rx := w.Regexp.FindSubmatch(data)
-			if len(rx) > 1 {
-				w.uploadId = rx[1]
-			}
-		}
-		writtenSlice := data[:written]
-		_, err1 := w.ResponseLog.Write(writtenSlice)
-		if err1 != nil {
-			panic("could nor write response file\n")
-		}
-	}
-	return written, err
-}
-
-func (w *ResponseWriter) WriteHeader(statusCode int) {
-	w.StatusCode = statusCode
-	w.OriginalWriter.WriteHeader(statusCode)
-}
-
 type recordingBodyReader struct {
 	recorder     *LazyOutput
 	originalBody io.ReadCloser
