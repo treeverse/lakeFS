@@ -254,8 +254,11 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 		// validate repo exists
 		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
 		if xerrors.Is(err, db.ErrNotFound) {
-			writer.WriteHeader(http.StatusNotFound)
-			return // TODO: make sure we replicate S3's response when a bucket is not found
+			log.WithFields(log.Fields{
+				"repo": utils.GetRepo(request),
+			}).Warn("the specified repo does not exist")
+			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
+			return
 		} else if err != nil {
 			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
@@ -280,7 +283,9 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 		// validate repo exists
 		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
 		if xerrors.Is(err, db.ErrNotFound) {
-			log.Warn("the specified repo does not exist")
+			log.WithFields(log.Fields{
+				"repo": utils.GetRepo(request),
+			}).Warn("the specified repo does not exist")
 			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
 			return
 		} else if err != nil {
