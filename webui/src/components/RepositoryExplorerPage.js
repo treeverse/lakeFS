@@ -132,7 +132,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                     <CommitsPage repo={repo.payload} refId={refId}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/branches">
-                    <CommitsPage repo={repo.payload} refId={refId}/>
+                    <CommitsPage repo={repo.payload} refId={refId}/> {/* TODO: branches page */}
                 </Route>
             </Switch>
         </div>

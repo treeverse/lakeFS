@@ -13,35 +13,8 @@ import Badge from "react-bootstrap/Badge";
 import * as api from "../actions/api";
 
 
-const arrayMove = (arr, oldIndex, newIndex) => {
-    while (oldIndex < 0) {
-        oldIndex += arr.length;
-    }
-    while (newIndex < 0) {
-        newIndex += arr.length;
-    }
-    if (newIndex >= arr.length) {
-        let k = newIndex - arr.length + 1;
-        while (k--) {
-            arr.push(undefined);
-        }
-    }
-    arr.splice(newIndex, 0, arr.splice(oldIndex, 1)[0]);
-};
 
-const hoistDefaultBranch = (branches, repo) => {
-    let defaultIndex = -1;
-    const branchesWithDefault = branches.map((branch, i) => {
-        const isDefault = (branch.id === repo.default_branch);
-        if (isDefault) defaultIndex = i;
-        return { ...branch,  default: isDefault};
-    });
-    // yank the default branch and stick it first
-    if (defaultIndex !== -1) {
-        arrayMove(branchesWithDefault, defaultIndex, 0);
-    }
-    return branchesWithDefault;
-};
+
 
 const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 1000 }) => {
 
@@ -98,7 +71,7 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
     }
 
 
-    const results = hoistDefaultBranch(branches.payload.results, repo);
+    const results = branches.payload.results;
 
     return (
         <div className="ref-selector">
@@ -106,7 +79,7 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
                     {results.map(branch => (
-                        <BranchEntry key={branch.id} branch={branch} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
+                        <BranchEntry key={branch.id} repo={repo} branch={branch} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
                             const data = await api.commits.log(repo.id, branch.id);
                             setCommitList({...commitList, branch: branch, commits: data});
                         }}/>
@@ -165,7 +138,8 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
     );
 };
 
-const BranchEntry = ({branch, selectRef, selected, logCommits, withCommits}) => {
+const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits}) => {
+    console.log('branch: ', branch, 'selected: ', selected);
     return (
         <li className="list-group-item" key={branch.id}>
             {(!!selected && selected.type === 'branch' && branch.id === selected.id) ?
@@ -175,7 +149,7 @@ const BranchEntry = ({branch, selectRef, selected, logCommits, withCommits}) => 
                 }}>{branch.id}</Button>
             }
             <div className="actions">
-                {(branch.default) ? (<Badge variant="light">Default</Badge>) : <span/>}
+                {(branch.id === repo.default_branch) ? (<Badge variant="light">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
                         <Octicon icon={ChevronRight}/>
@@ -223,6 +197,7 @@ const RefDropdown = ({ repo, selected, branches,  filterBranches, listBranches, 
                         listBranches={listBranches}
                         filterBranches={filterBranches}
                         withWorkspace={withWorkspace}
+                        selected={selected}
                         selectRef={(ref) => {
                             selectRef(ref);
                             setShow(false);
@@ -250,12 +225,12 @@ const RefDropdown = ({ repo, selected, branches,  filterBranches, listBranches, 
     }
 
     const title = prefix + ((selected.type === 'branch') ? 'Branch: ' : 'Commit: ');
-    const selectedId = (selected.type === 'branch') ? selected.id : selected.id.slice(0, 16);
+    const selectedIdDisplay = (selected.type === 'branch') ? selected.id : selected.id.slice(0, 16);
 
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                {title} <strong>{selectedId}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
+                {title} <strong>{selectedIdDisplay}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
             </Button>
             {cancelButton}
             {popover}

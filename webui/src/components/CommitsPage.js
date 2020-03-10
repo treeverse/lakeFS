@@ -12,11 +12,16 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import Octicon, {Code, Link as LinkIcon} from "@primer/octicons-react";
+import Octicon, {Code, Link as LinkIcon, Diff} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
+import Table from "react-bootstrap/Table";
 
 
 const CommitWidget = ({repo, commit, previous}) => {
+
+    const buttonVariant = "outline-secondary";
 
     return (
         <ListGroupItem>
@@ -28,17 +33,44 @@ const CommitWidget = ({repo, commit, previous}) => {
                             <strong>{commit.committer}</strong> committed at <strong>{moment.unix(commit.creation_date).format("MM/DD/YYYY HH:mm:ss")}</strong> ({moment.unix(commit.creation_date).fromNow()})
                         </small>
                     </p>
+                    {(!!commit.metadata) ? (
+                        <Table className="commit-metadata" size="sm" hover>
+                            <thead>
+                                <tr>
+                                    <th>Metadata Key</th>
+                                    <th>Value</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            {Object.getOwnPropertyNames(commit.metadata).map((key, i) => {
+                                return (
+                                    <tr key={`commit-${commit.id}-metadata-${i}`}>
+                                        <td><code>{key}</code></td>
+                                        <td><code>{commit.metadata[key]}</code></td>
+                                    </tr>
+                                );
+                            })}
+                            </tbody>
+                        </Table>
+                    ) : (<span/>)}
                 </div>
                 <div className="float-right">
                     <ButtonGroup className="commit-actions">
-                        <ClipboardButton variant="light" text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
-                        <ClipboardButton variant="light" text={commit.id} tooltip="copy ID to clipboard"/>
-                        <Button variant="light" as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
-                            <Octicon icon={Code}/>
-                        </Button>
-                        <Button variant="light" as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
-                            {(commit.id.length > 16) ? commit.id.substr(0, 16) : commit.id}
-                        </Button>
+                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
+                        <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
+                        <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at commit</Tooltip>}>
+                            <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
+                                {(commit.id.length > 16) ? commit.id.substr(0, 16) : commit.id}
+                            </Button>
+                        </OverlayTrigger>
+                        {(!!previous && !!previous.parents) ? (
+                            <OverlayTrigger placement="bottom" overlay={<Tooltip>Diff with previous commit</Tooltip>}>
+                                <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}&compareCommit=${previous.id}`}>
+                                    <Octicon icon={Diff}/>
+                                </Button>
+                            </OverlayTrigger>
+                        ) : (<span/>)}
+
                     </ButtonGroup>
                 </div>
             </div>
@@ -63,7 +95,7 @@ const CommitsPage = ({repo, refId, logCommits, log }) => {
         body = (<Alert variant="danger">{log.error}</Alert> );
     } else {
         body = (
-            <ListGroup>
+            <ListGroup className="commit-list">
                 {log.payload.filter(commit => !!commit.parents).map((commit, i) => (
                     <CommitWidget key={commit.id} commit={commit} repo={repo} previous={(i < log.payload.length-1) ? log.payload[i+1] : null}/>
                 ))}
