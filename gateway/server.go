@@ -260,15 +260,6 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
 		}
-
-		// validate branch exists
-		_, err = authOp.Index.GetBranch(repo.GetRepoId(), utils.GetBranch(request))
-		if xerrors.Is(err, db.ErrNotFound) {
-			log.Debug("the specified branch does not exist")
-		} else if err != nil {
-			log.Debug("error when validating branch")
-		}
-
 		// run callback
 		handler.Handle(&operations.RepoOperation{
 			AuthenticatedOperation: authOp,
@@ -297,13 +288,6 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 			return
 		}
 
-		// validate branch exists
-		_, err = authOp.Index.GetBranch(repo.GetRepoId(), utils.GetBranch(request))
-		if xerrors.Is(err, db.ErrNotFound) {
-			log.Debug("the specified branch does not exist")
-		} else if err != nil {
-			log.Debug("error when validating branch")
-		}
 		// run callback
 		handler.Handle(&operations.PathOperation{
 			BranchOperation: &operations.BranchOperation{
