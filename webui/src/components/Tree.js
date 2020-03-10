@@ -152,14 +152,22 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate }) => {
     if (entry.diff_type === 'REMOVED') {
         size = (<Na/>);
     } else {
-        size = (<span>{humanSize(entry.size_bytes)}</span>);
+        size = (
+            <OverlayTrigger placement="bottom" overlay={<Tooltip>{entry.size_bytes} bytes</Tooltip>}>
+                <span>{humanSize(entry.size_bytes)}</span>
+            </OverlayTrigger>
+        );
     }
 
     let modified;
     if (entry.diff_type === 'REMOVED') {
         modified = (<Na/>);
     } else {
-        modified = (<span>{moment.unix(entry.mtime).fromNow()}</span>);
+        modified = (
+            <OverlayTrigger placement="bottom" overlay={<Tooltip>{moment.unix(entry.mtime).format("MM/DD/YYYY HH:mm:ss")}</Tooltip>}>
+                <span>{moment.unix(entry.mtime).fromNow()}</span>
+            </OverlayTrigger>
+        );
     }
 
     let diffIndicator;
