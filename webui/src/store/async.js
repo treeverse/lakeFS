@@ -43,24 +43,24 @@ export const actionReduce = (actionType, state, action) => {
     }
 };
 
-export const reduce = (actionType, state, action) => {
+export const reduce = (actionType, state, action, startFn = null, successFn = null, errorFn = null) => {
     if (actionType._id !== action._id) {
         return state;
     }
     switch (action.type) {
         case actionType.start:
-            return {
+            return (startFn !== null) ? startFn(state, action) : {
                 ...initialState,
                 loading: true,
             };
         case actionType.success:
-            return {
+            return (successFn !== null) ? successFn(state, action) : {
                 ...initialState,
                 loading: false,
                 payload: action.payload,
             };
         case actionType.error:
-            return {
+            return (errorFn !== null) ? errorFn(state, action) : {
                 ...initialState,
                 loading: false,
                 error: action.error,

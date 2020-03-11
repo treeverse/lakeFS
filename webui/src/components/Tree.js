@@ -302,6 +302,7 @@ const merge = (path, entriesAtPath, diffResults) => {
 };
 
 export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete }) => {
+
     let body;
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);

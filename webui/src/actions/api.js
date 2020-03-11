@@ -196,6 +196,7 @@ class Branches {
         }
         return await response.json();
     }
+
     async filter(repoId, from, amount) {
         if (!from) {
             return await this.list(repoId, from, amount);

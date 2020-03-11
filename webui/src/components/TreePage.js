@@ -7,7 +7,7 @@ import Button from "react-bootstrap/Button";
 
 import Octicon, {GitCommit, Plus} from "@primer/octicons-react";
 
-import {deleteObject, deleteObjectDone, listTree, upload, uploadDone} from "../actions/objects";
+import {deleteObject, deleteObjectDone, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
@@ -246,7 +246,7 @@ const CommitButton = connect(
 });
 
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
+const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -278,6 +278,19 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
         // eslint-disable-next-line
     },[repo.id, refId.id, listTree, diff, compareId, uploadState.done, deleteState.done]);
 
+    let paginator = (<span/>);
+    if (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more) {
+        paginator = (
+            <p className="tree-paginator">
+                <Button variant="outline-primary" onClick={() => {
+                    listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset);
+                }}>
+                    Load More
+                </Button>
+            </p>
+        );
+    }
+
     return (
         <div className="mt-3">
             <div className="action-bar">
@@ -302,11 +315,13 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
                 diffResults={diffResults}
                 list={list}
                 path={path}/>
+
+            {paginator}
         </div>
     );
 };
 
 export default connect(
     ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff, uploadState: objects.upload, deleteState: objects.delete }),
-    ({ listTree, diff, resetDiff, deleteObject, deleteObjectDone })
+    ({ listTree, listTreePaginate, diff, resetDiff, deleteObject, deleteObjectDone })
 )(TreePage);
