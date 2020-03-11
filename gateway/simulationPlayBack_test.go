@@ -144,6 +144,9 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	respWrite.ResponseLog = l
 	respWrite.Headers = make(http.Header)
 	handler.ServeHTTP(respWrite, r)
+	if respWrite.StatusCode == 0 {
+		respWrite.StatusCode = 200
+	}
 	if respWrite.StatusCode != event.statusCode {
 		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
