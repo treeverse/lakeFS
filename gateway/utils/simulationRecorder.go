@@ -109,6 +109,9 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 	}
 	event.Request = string(t)
 	event.UploadID = string(uploadId)
+	if statusCode == 0 {
+		statusCode = 200
+	}
 	event.Status = statusCode
 	jsonEvent, err := json.Marshal(event)
 	fName := filepath.Join(recordingDir, "L"+nameBase+".log")
