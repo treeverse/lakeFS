@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CompleteMultipartUploadResult><Location>http://repo_id:&#34;example&#34; bucket_name:&#34;example&#34; creation_date:1583087689 default_branch:&#34;master&#34; partial_commit_ratio:1 .s3.local:8000/master/imdb/title.basics.tsv.gz</Location><Bucket>example</Bucket><Key>imdb/title.basics.tsv.gz</Key><ETag>&#34;b70daa178b623432c3426abb0df91f57c764a22b632ad9dda4a9ef92cfd10deb&#34;</ETag></CompleteMultipartUploadResult>

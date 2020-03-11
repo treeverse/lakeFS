@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult><Name>example</Name><IsTruncated>true</IsTruncated><Prefix>master/imdb/titles_by_year/</Prefix><Delimiter>/</Delimiter><KeyCount>1</KeyCount><MaxKeys>1</MaxKeys><Marker></Marker><NextMarker>master/imdb/titles_by_year/_SUCCESS</NextMarker><Contents><Key>master/imdb/titles_by_year/_SUCCESS</Key><LastModified>2020-03-10T12:14:59.000Z</LastModified><ETag>&#34;d41d8cd98f00b204e9800998ecf8427e&#34;</ETag><Size>0</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>

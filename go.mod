@@ -3,7 +3,8 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.28.9
+	bou.ke/monkey v1.0.2 // indirect
+	github.com/aws/aws-sdk-go v1.29.8
 	github.com/dgraph-io/badger v1.6.0
 	github.com/go-openapi/errors v0.19.2
 	github.com/go-openapi/loads v0.19.4
@@ -28,9 +29,8 @@ require (
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
 	golang.org/x/crypto v0.0.0-20190617133340-57b3e21c3d56
-	golang.org/x/net v0.0.0-20200114155413-6afb5195e5aa
+	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/sys v0.0.0-20200124204421-9fbb57f87de9 // indirect
-	golang.org/x/tools v0.0.0-20190617190820-da514acc4774 // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/yaml.v2 v2.2.8 // indirect
