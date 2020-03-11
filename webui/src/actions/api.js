@@ -249,6 +249,16 @@ class Objects {
         }
         return await response.json();
     }
+
+    async delete(repoId, branchId, path) {
+        const query = qs({path});
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/objects?${query}`, {
+            method: 'DELETE',
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
 }
 
 class Commits {
