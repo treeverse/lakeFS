@@ -124,27 +124,6 @@
     padding: 0 10px;
 }
 
-.tree-container .alert {
-    margin: 20px;
-}
-
-.tree-container {
-    margin-bottom: 150px;
-    font-size: .9rem;
-}
-
-.tree-container .card .card-header {
-    padding: 10px;
-}
-
-.tree-container .card .card-body {
-padding: 0;
-}
-
-.tree-container .card .card-body > .table {
-    margin-bottom: 0;
-}
-
 .table .tree-row {
     border-bottom: 1px solid rgba(0, 0, 0, 0.125);
 }
@@ -216,8 +195,33 @@ padding: 0;
     display: inline;
 }
 
+.tree-container .alert {
+    margin: 20px;
+}
+
+.tree-container {
+    margin-bottom: 30px;
+    font-size: .9rem;
+}
+
+.tree-container .card .card-header {
+    padding: 10px;
+}
+
+.tree-container .card .card-body {
+    padding: 0;
+}
+
+.tree-container .card .card-body > .table {
+    margin-bottom: 0;
+}
+
 .tree-container .btn.btn-link {
     font-size: .9rem;
+}
+
+.tree-paginator  {
+    text-align: center;
 }
 
 .commit-metadata {
