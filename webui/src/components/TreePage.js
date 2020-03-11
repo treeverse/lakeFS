@@ -7,7 +7,7 @@ import Button from "react-bootstrap/Button";
 
 import Octicon, {GitCommit, Plus} from "@primer/octicons-react";
 
-import {listTree, upload, uploadDone} from "../actions/objects";
+import {deleteObject, deleteObjectDone, listTree, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
@@ -246,7 +246,7 @@ const CommitButton = connect(
 });
 
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults, uploadState}) => {
+const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDiff, diffResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -262,6 +262,13 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
     }, [repo.id, refId.id, path, listTree, uploadState.done]);
 
     useEffect(() => {
+        if (deleteState.done) {
+            listTree(repo.id, refId.id, path);
+            deleteObjectDone();
+        }
+    }, [repo.id, refId.id, path, listTree, deleteObjectDone, deleteState.done]);
+
+    useEffect(() => {
         if (!!compare) {
             diff(repo.id, refId.id, compare.id);
         } else {
@@ -269,7 +276,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
         }
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
-    },[repo.id, refId.id, listTree, diff, compareId, uploadState]);
+    },[repo.id, refId.id, listTree, diff, compareId, uploadState.done, deleteState.done]);
 
     return (
         <div className="mt-3">
@@ -289,6 +296,9 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
                     params.set('path', path);
                     history.push({...location, search: params.toString()});
                 }}
+                onDelete={(entry) => {
+                    deleteObject(repo.id, refId.id, entry.path);
+                }}
                 diffResults={diffResults}
                 list={list}
                 path={path}/>
@@ -297,6 +307,6 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, diff, resetDif
 };
 
 export default connect(
-    ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff, uploadState: objects.upload }),
-    ({ listTree, diff, resetDiff })
+    ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff, uploadState: objects.upload, deleteState: objects.delete }),
+    ({ listTree, diff, resetDiff, deleteObject, deleteObjectDone })
 )(TreePage);
