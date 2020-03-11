@@ -30,7 +30,7 @@ type Client interface {
 
 	ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
 	GetBranch(ctx context.Context, repoId, branchId string) (*models.Ref, error)
-	CreateBranch(ctx context.Context, repoId string, branch *models.Ref) error
+	CreateBranch(ctx context.Context, repoId string, branch *models.BranchCreation) (*models.Ref, error)
 	DeleteBranch(ctx context.Context, repoId, branchId string) error
 	RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error
 
@@ -118,13 +118,16 @@ func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*model
 	return resp.GetPayload(), nil
 }
 
-func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.Ref) error {
-	_, err := c.remote.Branches.CreateBranch(&branches.CreateBranchParams{
+func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.BranchCreation) (*models.Ref, error) {
+	resp, err := c.remote.Branches.CreateBranch(&branches.CreateBranchParams{
 		Branch:       branch,
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return resp.GetPayload(), nil
 }
 
 func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) error {

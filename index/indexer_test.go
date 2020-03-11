@@ -83,7 +83,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 		t.Fatal(err)
 	}
 	commitId := ident.Hash(commit)
-	err = kvIndex.CreateBranch(repo.RepoId, testBranch, commitId)
+	_, err = kvIndex.CreateBranch(repo.RepoId, testBranch, commitId)
 	if err != nil {
 		t.Fatal(err)
 	}

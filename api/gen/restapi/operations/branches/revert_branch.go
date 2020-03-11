@@ -33,7 +33,7 @@ func NewRevertBranch(ctx *middleware.Context, handler RevertBranchHandler) *Reve
 
 /*RevertBranch swagger:route PUT /repositories/{repositoryId}/branches/{branchId} branches revertBranch
 
-revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes
+revert branch
 
 */
 type RevertBranch struct {

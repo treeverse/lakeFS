@@ -18,6 +18,6 @@ export const upload = (repoId, branchId, path, fileObject) => {
     });
 };
 
-export const uploadDone = () => ({
-    type: OBJECTS_UPLOAD_RESET,
-});
+export const uploadDone = () => {
+    return OBJECTS_UPLOAD.resetAction();
+};

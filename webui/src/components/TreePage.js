@@ -79,6 +79,8 @@ const UploadButton = connect(
     const textRef = useRef(null);
     const fileRef = useRef(null);
 
+    console.log('STATE: uploadState.done', uploadState);
+
     useEffect(() => {
         if (uploadState.done) {
             setShow(false);

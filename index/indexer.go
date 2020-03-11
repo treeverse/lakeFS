@@ -43,7 +43,7 @@ type Index interface {
 	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
 	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
-	CreateBranch(repoId, branch, commitId string) error
+	CreateBranch(repoId, branch, ref string) (*model.Branch, error)
 	GetBranch(repoId, branch string) (*model.Branch, error)
 	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
 	GetCommit(repoId, commitId string) (*model.Commit, error)
@@ -508,8 +508,8 @@ func (index *KVIndex) ResetBranch(repoId, branch string) error {
 	return err
 }
 
-func (index *KVIndex) CreateBranch(repoId, branch, commitId string) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, error) {
+	branchData, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// ensure it doesn't exist yet
 		_, err := tx.ReadBranch(branch)
 		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
@@ -517,19 +517,23 @@ func (index *KVIndex) CreateBranch(repoId, branch, commitId string) error {
 		} else if err == nil {
 			return nil, errors.ErrBranchExists
 		}
-		// read commit at commitId
-		commit, err := tx.ReadCommit(commitId)
+		// read resolve reference
+		reference, err := resolveRef(tx, ref)
 		if err != nil {
-			return nil, xerrors.Errorf("could not read commit: %w", err)
+			return nil, xerrors.Errorf("could not read ref: %w", err)
 		}
-		return nil, tx.WriteBranch(branch, &model.Branch{
+		branchData := &model.Branch{
 			Name:          branch,
-			Commit:        commitId,
-			CommitRoot:    commit.GetTree(),
-			WorkspaceRoot: commit.GetTree(),
-		})
+			Commit:        reference.commit.GetAddress(),
+			CommitRoot:    reference.commit.GetTree(),
+			WorkspaceRoot: reference.commit.GetTree(),
+		}
+		return branchData, tx.WriteBranch(branch, branchData)
 	})
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return branchData.(*model.Branch), nil
 }
 
 func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {

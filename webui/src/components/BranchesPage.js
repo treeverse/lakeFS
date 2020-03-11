@@ -1,13 +1,12 @@
 import React, {useEffect, useRef, useState} from "react";
-import {Link} from "react-router-dom";
 
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import {connect} from "react-redux";
-import {listBranches} from "../actions/branches";
+import {listBranches, createBranch, resetBranch} from "../actions/branches";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
-import Octicon, {Diff, GitBranch, Link as LinkIcon, Browser} from "@primer/octicons-react";
+import Octicon, {GitBranch, Link as LinkIcon, Browser} from "@primer/octicons-react";
 import Alert from "react-bootstrap/Alert";
 import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
@@ -22,48 +21,69 @@ import RefDropdown from "./RefDropdown";
 
 
 const CreateBranchButton = connect(
-    ({ branches }) => ({ branches }),
-    ({ listBranches })
-)(({ repo, branches, listBranches }) => {
+    ({ branches }) => ({ status: branches.create }),
+    ({ createBranch, resetBranch })
+)(({ repo, status, createBranch, resetBranch }) => {
     const [show, setShow] = useState(false);
+    const [selectedBranch, setSelectedBranch] = useState(null);
     const textRef = useRef(null);
 
-        const onHide = () => {
+    const disabled = (status.inProgress);
+
+    const onHide = () => {
+        if (disabled) return;
          setShow(false);
+        setSelectedBranch(null);
     };
+
+    const onSubmit = () => {
+        if (disabled) return;
+        // TODO: validate
+        createBranch(repo.id, textRef.current.value, selectedBranch.id);
+    };
+
+    useEffect(() => {
+        if (status.done) {
+            setShow(false);
+            setSelectedBranch(null);
+            resetBranch();
+        }
+    }, [resetBranch, status.done]);
 
     return (
         <>
-            <Modal show={show} onHide={onHide}>
+            <Modal enforceFocus={false} show={show} onHide={onHide}>
                 <Modal.Header closeButton>
                     <Modal.Title>Create a New Branch</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Form onSubmit={(e) => { // TODO
+                    <Form onSubmit={(e) => {
+                        onSubmit();
                         e.preventDefault();
                     }}>
                         <Form.Group controlId="name">
-                            <Form.Control type="text" placeholder="Branch Name" autoFocus name="text" ref={textRef}/>
+                            <Form.Control type="text" placeholder="Branch Name" name="text" ref={textRef}/>
                         </Form.Group>
                         <Form.Group controlId="source">
                             <RefDropdown
                                 repo={repo}
-                                selectRef={r => {
-                                    console.log(r);
+                                emptyText={'Select Source Branch'}
+                                prefix={'From '}
+                                selected={selectedBranch}
+                                selectRef={(refId) => {
+                                    setSelectedBranch(refId);
                                 }}
-                                withCommits={false}
+                                withCommits={true}
                                 withWorkspace={false}/>
                         </Form.Group>
                    </Form>
 
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" onClick={onHide}>
+                    <Button variant="secondary" disabled={disabled} onClick={onHide}>
                         Cancel
                     </Button>
-                    <Button variant="success" onClick={() => {
-                        // TODO
-                    }}>
+                    <Button variant="success" disabled={disabled} onClick={onSubmit}>
                         Create Branch
                     </Button>
                 </Modal.Footer>
@@ -75,7 +95,7 @@ const CreateBranchButton = connect(
     );
 });
 
-const BranchesPage = ({repo, branches, listBranches }) => {
+const BranchesPage = ({repo, branches, listBranches, createStatus }) => {
 
 
     const buttonVariant = "outline-secondary";
@@ -83,6 +103,13 @@ const BranchesPage = ({repo, branches, listBranches }) => {
     useEffect(() => {
         listBranches(repo.id, "", 1000);
     },[listBranches, repo.id]);
+
+    useEffect(() => {
+        if (createStatus.done)
+            listBranches(repo.id, "", 1000);
+    }, [listBranches, createStatus.done, repo.id]);
+
+
 
     let body;
     if (branches.loading) {
@@ -140,6 +167,6 @@ const BranchesPage = ({repo, branches, listBranches }) => {
 };
 
 export default connect(
-    ({ branches }) => ({ branches: branches.list }),
+    ({ branches }) => ({ branches: branches.list, createStatus: branches.create }),
     ({ listBranches })
 )(BranchesPage);

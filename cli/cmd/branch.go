@@ -73,7 +73,7 @@ var branchListCmd = &cobra.Command{
 }
 
 var branchCreateCmd = &cobra.Command{
-	Use:   "create [branch uri]",
+	Use:   "create [ref uri]",
 	Short: "create a new branch in a repository",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -91,19 +91,15 @@ var branchCreateCmd = &cobra.Command{
 			DieFmt("source branch must be in the same repository")
 		}
 
-		sourceBranch, err := client.GetBranch(context.Background(), u.Repository, sourceURI.Ref)
-		if err != nil {
-			DieFmt("could not get source branch: %s", err)
-		}
-		Fmt("got source branch '%s', using commit '%s'\n",
-			sourceURI.Ref, *sourceBranch.CommitID)
-		err = client.CreateBranch(context.Background(), u.Repository, &models.Ref{
-			CommitID: sourceBranch.CommitID,
-			ID:       swag.String(u.Ref),
+		ref, err := client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
+			ID:          swag.String(u.Ref),
+			SourceRefID: swag.String(sourceURI.Ref),
 		})
 		if err != nil {
 			DieErr(err)
 		}
+
+		Fmt("created branch '%s', pointing to commit ID: '%s'\n", *ref.ID, *ref.CommitID)
 	},
 }
 
