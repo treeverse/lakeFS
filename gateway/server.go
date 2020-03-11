@@ -2,14 +2,13 @@ package gateway
 
 import (
 	"fmt"
-	"net/http"
-	"net/http/pprof"
-	"strings"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
+	"net/http"
+	"net/http/pprof"
+	"strings"
 
 	"github.com/treeverse/lakefs/permissions"
 
@@ -31,12 +30,12 @@ type ServerContext struct {
 	meta             index.Index
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
-	authService      auth.Service
+	authService      utils.GatewayService
 }
 
 type Server struct {
 	ctx        *ServerContext
-	server     *http.Server
+	Server     *http.Server
 	bareDomain string
 }
 
@@ -44,7 +43,7 @@ func NewServer(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
-	authService auth.Service,
+	authService utils.GatewayService,
 	multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
 ) *Server {
@@ -61,6 +60,8 @@ func NewServer(
 	// setup routes
 	router := mux.NewRouter()
 	attachDebug(router)
+	router.NotFoundHandler = http.HandlerFunc(notFound)
+	router.MethodNotAllowedHandler = http.HandlerFunc(notAllowed)
 	attachRoutes(bareDomain, router, ctx)
 	// also attach routes to a host string minus the port, if the host contains them
 	if strings.Contains(bareDomain, ":") {
@@ -68,15 +69,17 @@ func NewServer(
 		attachRoutes(bareDomainWithoutPort, router, ctx)
 	}
 
+	utils.RegisterRecorder(router)
+
 	router.Use(func(next http.Handler) http.Handler {
 		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)
 	})
 
-	// assemble server
+	// assemble Server
 	return &Server{
 		ctx:        ctx,
 		bareDomain: bareDomain,
-		server: &http.Server{
+		Server: &http.Server{
 			Handler: router,
 			Addr:    listenAddr,
 		},
@@ -84,7 +87,7 @@ func NewServer(
 }
 
 func (s *Server) Listen() error {
-	return s.server.ListenAndServe()
+	return s.Server.ListenAndServe()
 }
 
 func attachDebug(router *mux.Router) {
@@ -316,4 +319,12 @@ func unsupportedOperationHandler() http.HandlerFunc {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ERRLakeFSNotSupported))
 		return
 	}
+}
+
+func notFound(w http.ResponseWriter, r *http.Request) {
+	fmt.Print("URL NOT FOUND\n", r.Method, r.Host)
+}
+func notAllowed(w http.ResponseWriter, r *http.Request) {
+
+	fmt.Print("METHOD NOT ALLOWED\n", r.Method, r.Host)
 }
