@@ -419,12 +419,15 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.meta.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.CommitID))
+		branch, err := a.meta.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.SourceRefID))
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return branches.NewCreateBranchCreated().WithPayload(params.Branch)
+		return branches.NewCreateBranchCreated().WithPayload(&models.Ref{
+			CommitID: swag.String(branch.GetCommit()),
+			ID:       swag.String(branch.GetName()),
+		})
 	})
 }
 

@@ -30,6 +30,14 @@ export class AsyncActionType {
         return {_id: this._id, type: this.success, payload, asyncEnd: true};
     }
 
+    get reset() {
+        return `${this.type}_RESET`;
+    }
+
+    resetAction() {
+        return {_id: this._id, type: this.reset}
+    }
+
     execute(executeFn) {
         return async dispatch => {
             dispatch(this.startAction());

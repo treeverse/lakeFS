@@ -5,8 +5,7 @@ import {AsyncActionType} from "./request";
 
 export const
     COMMITS_LIST = new AsyncActionType('COMMITS_LIST'),
-    COMMITS_COMMIT = new AsyncActionType('COMMITS_COMMIT'),
-    COMMITS_COMMIT_RESET = 'COMMITS_COMMIT_RESET';
+    COMMITS_COMMIT = new AsyncActionType('COMMITS_COMMIT');
 
 
 export const logCommits = (repoId, branchId) => {
@@ -21,7 +20,7 @@ export const doCommit = (repoId, branchId, message, metadata={}) => {
     });
 };
 
-export const resetCommit = () => ({
-  type: COMMITS_COMMIT_RESET
-});
+export const resetCommit = () => {
+  return COMMITS_COMMIT.resetAction();
+};
 
