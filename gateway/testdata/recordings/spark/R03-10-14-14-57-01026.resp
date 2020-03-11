@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<DeleteResult><Deleted><DeleteMarker>false</DeleteMarker><DeleteMarkerVersionId></DeleteMarkerVersionId><Key>master/imdb/titles_by_year/_temporary/0/task_20200310141426_0001_m_000000/startYear=2010/part-00000-f786f4ab-00a3-4a3f-a403-554f785d7fac.c000.snappy.parquet</Key></Deleted></DeleteResult>
