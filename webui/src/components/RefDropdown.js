@@ -1,19 +1,14 @@
-import React, {useState, useRef, useEffect} from 'react';
-import {connect} from "react-redux";
+import React, {useState, useRef, useEffect, useCallback} from 'react';
 
 import Popover from "react-bootstrap/Popover";
 import Overlay from "react-bootstrap/Overlay";
 import Button from "react-bootstrap/Button";
-import Octicon, {ChevronDown, ChevronUp, ChevronRight, X} from "@primer/octicons-react";
-
-import {filterBranches, listBranches} from "../actions/branches";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
+import Octicon, {ChevronDown, ChevronUp, ChevronRight, X} from "@primer/octicons-react";
+
 import * as api from "../actions/api";
-
-
-
 
 
 const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 1000 }) => {
@@ -27,12 +22,12 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
 
     useEffect(()=> {
         listBranches(repo.id, from, amount);
-    }, [listBranches,  repo.id, amount, from]);
+    }, [listBranches, repo.id, amount, from]);
 
     const form = (
         <div className="ref-filter-form">
             <Form onSubmit={e => { e.preventDefault(); }}>
-                <Form.Control type="text" placeholder="filter branches" autoFocus onChange={(e)=> {
+                <Form.Control type="text" placeholder="filter branches" onChange={(e)=> {
                     filterBranches(repo.id, e.currentTarget.value, amount);
                 }}/>
             </Form>
@@ -104,9 +99,6 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
         return commit.message;
     };
 
-    // add current workspace into the commit list
-
-
     return (
         <div className="ref-selector">
             <h5>{branch.id}</h5>
@@ -139,7 +131,6 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 };
 
 const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits}) => {
-    console.log('branch: ', branch, 'selected: ', selected);
     return (
         <li className="list-group-item" key={branch.id}>
             {(!!selected && selected.type === 'branch' && branch.id === selected.id) ?
@@ -149,7 +140,7 @@ const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits
                 }}>{branch.id}</Button>
             }
             <div className="actions">
-                {(branch.id === repo.default_branch) ? (<Badge variant="light">Default</Badge>) : <span/>}
+                {(branch.id === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
                         <Octicon icon={ChevronRight}/>
@@ -181,10 +172,31 @@ const Paginator = ({ pagination, onPaginate, results, from }) => {
 };
 
 
-const RefDropdown = ({ repo, selected, branches,  filterBranches, listBranches, selectRef, onCancel, prefix = '', emptyText = '', withCommits = true, withWorkspace = true }) => {
+const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyText = '', withCommits = true, withWorkspace = true }) => {
     const [show, setShow] = useState(false);
     const target = useRef(null);
 
+    const [branches, setBranches] = useState({loading: true, payload: null, error: null});
+
+    const listBranches = useCallback(async (repoId, from, amount) => {
+        setBranches({loading: true, payload: null, error: null});
+        try {
+            const response = await api.branches.list(repoId, from, amount);
+            setBranches({loading: false, payload: response, error: null});
+        } catch (error) {
+            setBranches({loading: false, payload: null, error: error});
+        }
+    }, [] );
+
+    const filterBranches = useCallback(async (repoId, from, amount) => {
+        setBranches({loading: true, payload: null, error: null});
+        try {
+            const response = await api.branches.filter(repoId, from, amount);
+            setBranches({loading: false, payload: response, error: null});
+        } catch (error) {
+            setBranches({loading: false, payload: null, error: error});
+        }
+    }, []);
 
     const popover = (
         <Overlay target={target.current} show={show} placement="bottom">
@@ -238,7 +250,4 @@ const RefDropdown = ({ repo, selected, branches,  filterBranches, listBranches, 
     );
 };
 
-export default connect(
-    ({ branches }) => ({ branches: branches.list }),
-    ({ filterBranches, listBranches })
-)(RefDropdown);
+export default RefDropdown;

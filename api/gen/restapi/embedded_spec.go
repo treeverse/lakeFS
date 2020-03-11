@@ -269,7 +269,7 @@ func init() {
             "name": "branch",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/ref"
+              "$ref": "#/definitions/branch_creation"
             }
           }
         ],
@@ -341,7 +341,7 @@ func init() {
         "tags": [
           "branches"
         ],
-        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "summary": "revert branch",
         "operationId": "revertBranch",
         "parameters": [
           {
@@ -977,6 +977,21 @@ func init() {
     }
   },
   "definitions": {
+    "branch_creation": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceRefId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceRefId": {
+          "type": "string"
+        }
+      }
+    },
     "commit": {
       "type": "object",
       "properties": {
@@ -1486,7 +1501,7 @@ func init() {
             "name": "branch",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/ref"
+              "$ref": "#/definitions/branch_creation"
             }
           }
         ],
@@ -1564,7 +1579,7 @@ func init() {
         "tags": [
           "branches"
         ],
-        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "summary": "revert branch",
         "operationId": "revertBranch",
         "parameters": [
           {
@@ -2236,6 +2251,21 @@ func init() {
     }
   },
   "definitions": {
+    "branch_creation": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceRefId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceRefId": {
+          "type": "string"
+        }
+      }
+    },
     "commit": {
       "type": "object",
       "properties": {
