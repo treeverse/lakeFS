@@ -93,7 +93,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
         }
 
         if (commit.message.length > 60) {
-            return commit.message.substr(0, 57) + '...';
+            return commit.message.substr(0, 40) + '...';
         }
 
         return commit.message;

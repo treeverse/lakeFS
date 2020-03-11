@@ -2,13 +2,23 @@ import React, {useEffect, useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
-import Octicon, {File, FileDirectory, Plus, Trashcan, Pencil} from "@primer/octicons-react";
+import Octicon, {
+    File,
+    FileDirectory,
+    Plus,
+    Trashcan,
+    Pencil,
+    ChevronDown,
+    ChevronUp,
+    CloudDownload
+} from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import * as moment from "moment";
 import Card from "react-bootstrap/Card";
 import {Link} from "react-router-dom";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
+import Dropdown from "react-bootstrap/Dropdown";
 
 
 const humanSize = (bytes) => {
@@ -106,7 +116,8 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
     );
 };
 
-const PathLink = ({ repoId, refId, path, name }) => {
+
+const PathLink = ({ repoId, refId, path, children, as = null }) => {
     const [link, setLink] = useState("#");
 
     useEffect( () => {
@@ -116,15 +127,20 @@ const PathLink = ({ repoId, refId, path, name }) => {
                 setLink(link);
         });
         return () => { mounted = false };
-    }, [repoId, refId.id, path, name]);
-    return (
-        <a href={link}>{name}</a>
-    );
+    }, [repoId, refId.id, path]);
+    if (as === null) {
+        return  (<a href={link}>{children}</a>);
+    }
+
+    return React.createElement(as, {children: children, href: link});
 };
+
 
 const Na = () => (<span>&mdash;</span>);
 
-const EntryRow = ({ repo, refId, path, entry, onNavigate }) => {
+const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
+
+    const [isDropdownOpen, setDropdownOpen] = useState(false);
 
     let rowClass = 'tree-row ';
     if (entry.diff_type === 'CHANGED') {
@@ -145,7 +161,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate }) => {
             onNavigate(entry.path)
         }}>{buttonText}</Button>)
     } else {
-        button = (<PathLink path={entry.path} refId={refId} repoId={repo.id} name={buttonText}/>);
+        button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
 
     let size;
@@ -199,6 +215,28 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate }) => {
         diffIndicator = (<span/>);
     }
 
+    let deleter = (<span/>);
+    if (entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
+        deleter = (
+            <Dropdown alignRight onToggle={setDropdownOpen}>
+                <Dropdown.Toggle
+                    as={React.forwardRef(({onClick, children}, ref) => {
+                        return (
+                            <Button variant="link" onClick={(e) => { e.preventDefault(); onClick(e); }} ref={ref}>
+                                {children}
+                            </Button>
+                            );
+                    })}>
+                    <Octicon icon={(isDropdownOpen) ?  ChevronUp : ChevronDown}/>
+                </Dropdown.Toggle>
+
+                <Dropdown.Menu>
+                    <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><Octicon icon={CloudDownload}/> {' '} Download</PathLink>
+                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are  you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><Octicon icon={Trashcan}/> {' '} Delete</Dropdown.Item>
+                </Dropdown.Menu>
+            </Dropdown>
+        );
+    }
 
     return (
         <tr className={rowClass}>
@@ -214,6 +252,9 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate }) => {
             </td>
             <td className="tree-modified">
                 {modified}
+            </td>
+            <td className={"tree-row-actions"}>
+                {deleter}
             </td>
         </tr>
     );
@@ -260,7 +301,7 @@ const merge = (path, entriesAtPath, diffResults) => {
     });
 };
 
-export default ({ path, list, repo, refId, diffResults, onNavigate }) => {
+export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete }) => {
     let body;
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
@@ -272,7 +313,7 @@ export default ({ path, list, repo, refId, diffResults, onNavigate }) => {
             <Table borderless size="sm">
                 <tbody>
                 {results.map(entry => (
-                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repo={repo} refId={refId}/>
+                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repo={repo} refId={refId} onDelete={onDelete}/>
                 ))}
                 </tbody>
             </Table>
