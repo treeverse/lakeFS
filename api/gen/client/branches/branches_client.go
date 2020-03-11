@@ -211,7 +211,7 @@ func (a *Client) ListBranches(params *ListBranchesParams, authInfo runtime.Clien
 }
 
 /*
-  RevertBranch reverts branch to specified commit or revert specific path changes to last commit pipe if nothing passed reverts all non committed changes
+  RevertBranch reverts branch
 */
 func (a *Client) RevertBranch(params *RevertBranchParams, authInfo runtime.ClientAuthInfoWriter) (*RevertBranchNoContent, error) {
 	// TODO: Validate the params before sending
