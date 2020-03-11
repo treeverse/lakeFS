@@ -30,6 +30,7 @@
 # Our binaries
 lakefs
 lakectl
+main
 
 
 # client excludes
