@@ -32,7 +32,7 @@ type simulationEvent struct {
 func setGlobalPlaybackParams(testDir string) {
 	utils.PlaybackParams.IsPlayback = true
 	utils.PlaybackParams.RecordingDir = filepath.Join("testdata", "recordings", testDir)
-	utils.PlaybackParams.PlaybackDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05"))
+	utils.PlaybackParams.PlaybackDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05.000"))
 }
 
 func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
@@ -146,6 +146,9 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	handler.ServeHTTP(respWrite, r)
 	if respWrite.StatusCode == 0 {
 		respWrite.StatusCode = 200
+	}
+	if event.statusCode == 0 {
+		event.statusCode = 200
 	}
 	if respWrite.StatusCode != event.statusCode {
 		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
