@@ -3,8 +3,10 @@ import * as async from './async';
 
 import {
     BRANCHES_CREATE,
-    BRANCHES_LIST
+    BRANCHES_LIST,
+    BRANCHES_LIST_PAGINATE,
 } from '../actions/branches';
+
 
 
 const initialState = {
@@ -18,6 +20,27 @@ export default  (state = initialState, action) => {
         list: async.reduce(BRANCHES_LIST, state.list, action),
         create: async.actionReduce(BRANCHES_CREATE, state.create, action),
     };
+
+    state.list  = async.reduce(
+        BRANCHES_LIST_PAGINATE, state.list, action,
+        (listState) => {
+            return {
+                ...listState,
+                payload: listState.payload, // retain original payload
+            };
+        },
+        (listState, action) => {
+            return {
+                loading: false,
+                payload: {
+                    // add results to current results
+                    results: [...listState.payload.results, ...action.payload.results],
+                    pagination: action.payload.pagination,
+                },
+                error: null,
+            };
+        }
+    );
 
     switch (action.type) {
         default:

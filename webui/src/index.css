@@ -231,3 +231,7 @@
 .branch-table td {
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
+
+.list-group.branches-list {
+    margin-bottom: 30px;
+}
