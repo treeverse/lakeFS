@@ -17,6 +17,7 @@ import ClipboardButton from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import RefDropdown from "./RefDropdown";
+import {Link} from "react-router-dom";
 
 
 
@@ -38,7 +39,6 @@ const CreateBranchButton = connect(
 
     const onSubmit = () => {
         if (disabled) return;
-        // TODO: validate
         createBranch(repo.id, textRef.current.value, selectedBranch.id);
     };
 
@@ -125,7 +125,7 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
                             <div className="clearfix">
                                 <div className="float-left">
                                     <h6>
-                                        {branch.id}
+                                        <Link to={`/repositories/${repo.id}/tree?branch=${branch.id}`}>{branch.id}</Link>
                                         {' '}
                                         {(repo.default_branch === branch.id) ? (<Badge variant="info">Default</Badge> ) : (<span/>)}
                                     </h6>

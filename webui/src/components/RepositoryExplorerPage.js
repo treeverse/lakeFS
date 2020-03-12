@@ -55,9 +55,6 @@ const RepositoryTabs = () => {
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/branches"><Octicon icon={GitBranch}/>  Branches</RoutedTab>
             </Nav.Item>
-            <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/settings"><Octicon icon={Gear}/> Settings</RoutedTab>
-            </Nav.Item>
         </Nav>
     );
 };
