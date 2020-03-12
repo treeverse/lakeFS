@@ -14,9 +14,6 @@ const IndexPageTabs = ({ currentScreen, onNavigate }) => {
             <Tab eventKey="/" title="Repositories">
                 <RepositoryListPage/>
             </Tab>
-            <Tab eventKey="/users" title="Users">
-
-            </Tab>
         </Tabs>
     );
 };
@@ -30,9 +27,7 @@ export const IndexPage = () => {
             <Route path="/repositories/:repoId">
                 <RepositoryExplorerPage currentTab={currentPath} onNavigate={(k) => { history.push(k); }}/>
             </Route>
-            <Route exact path="/users">
-                <IndexPageTabs currentScreen={currentPath} onNavigate={(k) => { history.push(k); }}/>
-            </Route>
+
             <Route exact path="/">
                 <IndexPageTabs currentScreen={currentPath} onNavigate={(k) => { history.push(k); }}/>
             </Route>
