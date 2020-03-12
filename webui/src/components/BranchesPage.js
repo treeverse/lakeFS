@@ -2,7 +2,7 @@ import React, {useEffect, useRef, useState} from "react";
 
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import {connect} from "react-redux";
-import {listBranches, createBranch, resetBranch} from "../actions/branches";
+import {listBranches, listBranchesPaginate, createBranch, resetBranch} from "../actions/branches";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
@@ -95,18 +95,18 @@ const CreateBranchButton = connect(
     );
 });
 
-const BranchesPage = ({repo, branches, listBranches, createStatus }) => {
+const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, createStatus }) => {
 
 
     const buttonVariant = "outline-secondary";
 
     useEffect(() => {
-        listBranches(repo.id, "", 1000);
+        listBranches(repo.id, "");
     },[listBranches, repo.id]);
 
     useEffect(() => {
         if (createStatus.done)
-            listBranches(repo.id, "", 1000);
+            listBranches(repo.id, "");
     }, [listBranches, createStatus.done, repo.id]);
 
 
@@ -118,38 +118,46 @@ const BranchesPage = ({repo, branches, listBranches, createStatus }) => {
         body = (<Alert variant="danger">{branches.error}</Alert> );
     } else {
         body = (
-            <ListGroup>
-                {branches.payload.results.map((branch, i) => (
-                    <ListGroupItem key={i}>
-                        <div className="clearfix">
-                            <div className="float-left">
-                                <h6>
-                                    {branch.id}
-                                    {' '}
-                                    {(repo.default_branch === branch.id) ? (<Badge variant="info">Default</Badge> ) : (<span/>)}
-                                </h6>
+            <>
+                <ListGroup className="branches-list">
+                    {branches.payload.results.map((branch, i) => (
+                        <ListGroupItem key={i}>
+                            <div className="clearfix">
+                                <div className="float-left">
+                                    <h6>
+                                        {branch.id}
+                                        {' '}
+                                        {(repo.default_branch === branch.id) ? (<Badge variant="info">Default</Badge> ) : (<span/>)}
+                                    </h6>
+                                </div>
+                                <div className="float-right">
+                                    <ButtonGroup className="branch-actions">
+                                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
+                                        <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
+                                        <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects</Tooltip>}>
+                                            <Button href={`/repositories/${repo.id}/tree?branch=${branch.id}`} variant={buttonVariant}>
+                                                <Octicon icon={Browser}/>
+                                            </Button>
+                                        </OverlayTrigger>
+                                        <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at last commit</Tooltip>}>
+                                            <Button href={`/repositories/${repo.id}/tree?commit=${branch.commit_id}`} variant={buttonVariant}>
+                                                {branch.commit_id.slice(0, 16)}
+                                            </Button>
+                                        </OverlayTrigger>
+                                    </ButtonGroup>
+                                </div>
                             </div>
-                            <div className="float-right">
-                                <ButtonGroup className="branch-actions">
-                                    <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
-                                    <ClipboardButton variant={buttonVariant} text={branch.id} tooltip="copy ID to clipboard"/>
-                                    <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects</Tooltip>}>
-                                        <Button href={`/repositories/${repo.id}/tree?branch=${branch.id}`} variant={buttonVariant}>
-                                            <Octicon icon={Browser}/>
-                                        </Button>
-                                    </OverlayTrigger>
-                                    <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at last commit</Tooltip>}>
-                                        <Button href={`/repositories/${repo.id}/tree?commit=${branch.commit_id}`} variant={buttonVariant}>
-                                            {branch.commit_id.slice(0, 16)}
-                                        </Button>
-                                    </OverlayTrigger>
-                                </ButtonGroup>
-                            </div>
-                        </div>
-                    </ListGroupItem>
-                ))}
-
-            </ListGroup>
+                        </ListGroupItem>
+                    ))}
+                </ListGroup>
+                {(branches.payload.pagination.has_more) ? (
+                    <p className="tree-paginator">
+                        <Button variant="outline-primary" onClick={() => {
+                            listBranchesPaginate(repo.id, branches.payload.pagination.next_offset)
+                        }}>Load More</Button>
+                    </p>
+                ) : (<span/>)}
+            </>
         );
     }
 
@@ -168,5 +176,5 @@ const BranchesPage = ({repo, branches, listBranches, createStatus }) => {
 
 export default connect(
     ({ branches }) => ({ branches: branches.list, createStatus: branches.create }),
-    ({ listBranches })
+    ({ listBranches, listBranchesPaginate })
 )(BranchesPage);
