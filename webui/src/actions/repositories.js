@@ -2,7 +2,9 @@ import * as api from './api';
 import {AsyncActionType} from "./request";
 
 export const
-    REPOSITORY_LOAD_LIST = new AsyncActionType('REPOSITORY_LOAD_LIST'),
+    PAGINATION_AMOUNT = 1000,
+    REPOSITORY_LIST = new AsyncActionType('REPOSITORY_LIST'),
+    REPOSITORY_LIST_PAGINATE = new AsyncActionType('REPOSITORY_LIST_PAGINATE'),
     REPOSITORY_GET = new AsyncActionType('REPOSITORY_GET'),
     REPOSITORY_CREATE = new AsyncActionType('REPOSITORY_CREATE'),
     REPOSITORY_DELETE = new AsyncActionType('REPOSITORY_DELETE');
@@ -20,14 +22,20 @@ export const deleteRepository = (repoId) => {
     })
 };
 
-export const listRepositories = (after = "", amount = 1000) => {
-    return REPOSITORY_LOAD_LIST.execute(async () => {
+export const listRepositories = (after = "", amount = PAGINATION_AMOUNT) => {
+    return REPOSITORY_LIST.execute(async () => {
+        return await api.repositories.list(after, amount);
+    });
+};
+
+export const listRepositoriesPaginate = (after = "", amount = PAGINATION_AMOUNT) => {
+    return REPOSITORY_LIST_PAGINATE.execute(async () => {
         return await api.repositories.list(after, amount);
     });
 };
 
 export const filterRepositories = (from = "", amount = 1000) => {
-    return REPOSITORY_LOAD_LIST.execute(async () => {
+    return REPOSITORY_LIST.execute(async () => {
         return await api.repositories.filter(from, amount);
     });
 };

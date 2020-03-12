@@ -6,7 +6,7 @@ import Card from "react-bootstrap/Card";
 import {Link} from "react-router-dom";
 import * as moment from "moment";
 import {connect} from "react-redux";
-import {createRepository, filterRepositories, listRepositories} from "../actions/repositories";
+import {createRepository, filterRepositories, listRepositories, listRepositoriesPaginate} from "../actions/repositories";
 import React, {useEffect, useRef, useState} from "react";
 import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
@@ -14,6 +14,7 @@ import Octicon, {Repo, Search} from "@primer/octicons-react";
 import {DebouncedFormControl} from "./DebouncedInput";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
+import Alert from "react-bootstrap/Alert";
 
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
@@ -29,10 +30,23 @@ const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
     );
 };
 
-const RepositoryList = ({ list }) => {
+const RepositoryList = ({ list, paginate }) => {
 
     if (list.loading || !list.payload) {
         return <p>Loading...</p>;
+    }
+
+    if (!!list.error) {
+        return (<Alert variant="danger">{list.error}</Alert>);
+    }
+
+    let paginator = (<span/>);
+    if (list.payload.pagination.has_more) {
+        paginator = (
+            <p className="tree-paginator">
+                <Button variant="outline-primary" onClick={() => {paginate(list.payload.pagination.next_offset)}}>Load More</Button>
+            </p>
+        )
     }
 
     return (
@@ -55,6 +69,7 @@ const RepositoryList = ({ list }) => {
                     </Col>
                 </Row>
             ))}
+            {paginator}
         </div>
     );
 };
@@ -64,8 +79,8 @@ export const RepositoryListPage = connect(
         const {list, create, createIndex} = repositories;
         return {list, create, createIndex};
     },
-    ({ listRepositories, filterRepositories, createRepository })
-)(({listRepositories, filterRepositories, createRepository, list, create, createIndex }) => {
+    ({ listRepositories, listRepositoriesPaginate,  filterRepositories, createRepository })
+)(({listRepositories, listRepositoriesPaginate, filterRepositories, createRepository, list, create, createIndex }) => {
 
     useEffect(()=> {
         listRepositories();
@@ -104,7 +119,7 @@ export const RepositoryListPage = connect(
                     </Button>
                 </ButtonToolbar>
             </div>
-            <RepositoryList list={list}/>
+            <RepositoryList list={list} paginate={listRepositoriesPaginate}/>
             <CreateRepositoryModal
                 onCancel={closeCreateModal}
                 show={showingCreateModal}

@@ -73,3 +73,25 @@ export const reduce = (actionType, state, action, startFn = null, successFn = nu
             return state;
     }
 };
+
+export const reducePaginate =  (actionType, state, action) => {
+    return reduce(actionType, state, action,
+        () => {
+            return {
+                ...state,
+                payload: state.payload, // retain original payload
+            };
+        },
+        (newState, action) => {
+            return {
+                loading: false,
+                error: null,
+                payload: {
+                    // add results to current results
+                    results: [...state.payload.results, ...action.payload.results],
+                    pagination: action.payload.pagination,
+                },
+            };
+        }
+    );
+};

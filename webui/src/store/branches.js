@@ -8,7 +8,6 @@ import {
 } from '../actions/branches';
 
 
-
 const initialState = {
     list: async.initialState,
     create: async.actionInitialState,
@@ -21,26 +20,7 @@ export default  (state = initialState, action) => {
         create: async.actionReduce(BRANCHES_CREATE, state.create, action),
     };
 
-    state.list  = async.reduce(
-        BRANCHES_LIST_PAGINATE, state.list, action,
-        (listState) => {
-            return {
-                ...listState,
-                payload: listState.payload, // retain original payload
-            };
-        },
-        (listState, action) => {
-            return {
-                loading: false,
-                payload: {
-                    // add results to current results
-                    results: [...listState.payload.results, ...action.payload.results],
-                    pagination: action.payload.pagination,
-                },
-                error: null,
-            };
-        }
-    );
+    state.list  = async.reducePaginate(BRANCHES_LIST_PAGINATE, state.list, action);
 
     switch (action.type) {
         default:
