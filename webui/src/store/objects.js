@@ -15,26 +15,7 @@ export default (state = initialState, action) => {
         delete: async.actionReduce(OBJECTS_DELETE, state.delete, action),
     };
 
-    state.list  = async.reduce(
-        OBJECTS_LIST_TREE_PAGINATE, state.list, action,
-        (listState) => {
-            return {
-                ...listState,
-                payload: listState.payload, // retain original payload
-            };
-        },
-        (listState, action) => {
-            return {
-                loading: false,
-                payload: {
-                    // add results to current results
-                    results: [...listState.payload.results, ...action.payload.results],
-                    pagination: action.payload.pagination,
-                },
-                error: null,
-            };
-        }
-    );
+    state.list  = async.reducePaginate(OBJECTS_LIST_TREE_PAGINATE, state.list, action);
 
     switch (action.type) {
         default:
