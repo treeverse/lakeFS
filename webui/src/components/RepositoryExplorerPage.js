@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import {useParams, useLocation, Switch, Route, useRouteMatch, Link, generatePath, Redirect} from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import Octicon, {GitCommit, Gear, Database, GitBranch} from "@primer/octicons-react";
+import Octicon, {GitCommit, Database, GitBranch} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import CommitsPage from './CommitsPage';
