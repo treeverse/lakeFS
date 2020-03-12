@@ -28,7 +28,7 @@ const LoginForm = ({ loginError, login, redirectTo, onRedirect }) => {
     return (
         <Row>
             <Col md={{offset: 2, span: 8}}>
-                <Card>
+                <Card className="login-widget">
                     <Card.Header>Login</Card.Header>
                     <Card.Body>
                         <Form onSubmit={(e) => {
