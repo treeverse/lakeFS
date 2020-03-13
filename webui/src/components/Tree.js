@@ -215,9 +215,9 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
         diffIndicator = (<span/>);
     }
 
-    let deleter = (<span/>);
+    let objectDropdown = (<span/>);
     if (entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
-        deleter = (
+        objectDropdown = (
             <Dropdown alignRight onToggle={setDropdownOpen}>
                 <Dropdown.Toggle
                     as={React.forwardRef(({onClick, children}, ref) => {
@@ -254,7 +254,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
                 {modified}
             </td>
             <td className={"tree-row-actions"}>
-                {deleter}
+                {objectDropdown}
             </td>
         </tr>
     );
