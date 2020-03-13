@@ -128,6 +128,17 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
+
+	//validate branch
+	_, err := o.Index.GetBranch(o.Repo.GetRepoId(), o.Branch)
+	if err != nil {
+		o.Log().WithError(err).WithFields(log.Fields{
+			"repo":   o.Repo.GetRepoId(),
+			"branch": o.Branch,
+		}).Debug("trying to write to invalid branch")
+		o.ResponseWriter.WriteHeader(http.StatusNotFound)
+		return
+	}
 	copySource := o.Request.Header.Get(CopySourceHeader)
 	if len(copySource) > 0 {
 		controller.HandleCopy(o, copySource)
