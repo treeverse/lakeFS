@@ -1,6 +1,9 @@
 package errors
 
-import "golang.org/x/xerrors"
+import (
+	"github.com/treeverse/lakefs/db"
+	"golang.org/x/xerrors"
+)
 
 var (
 	ErrIndexMalformed             = xerrors.New("index error")
@@ -9,6 +12,7 @@ var (
 	ErrMultipartInvalidPartNumber = xerrors.New("invalid part number for multipart upload")
 	ErrMultipartInvalidPartETag   = xerrors.New("invalid ETag for multipart upload")
 	ErrRepoExists                 = xerrors.New("repository already exists")
+	ErrBranchNotFound             = xerrors.Errorf("branch : %w", db.ErrNotFound)
 	ErrBranchExists               = xerrors.New("branch already exists")
 	ErrNoMergeBase                = xerrors.New("no common merge base found")
 
