@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult><Name>example</Name><IsTruncated>false</IsTruncated><Prefix>master/imdb/titles_by_year/_temporary/0/_temporary/attempt_20200310141426_0001_m_000000_1/startYear=2023/part-00000-f786f4ab-00a3-4a3f-a403-554f785d7fac.c000.snappy.parquet/</Prefix><Delimiter>/</Delimiter><KeyCount>0</KeyCount><MaxKeys>1</MaxKeys><Marker></Marker></ListBucketResult>

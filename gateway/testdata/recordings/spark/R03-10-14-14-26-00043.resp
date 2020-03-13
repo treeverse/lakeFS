@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ListBucketResult><Name>example</Name><IsTruncated>false</IsTruncated><Prefix></Prefix><Delimiter>/</Delimiter><KeyCount>0</KeyCount><MaxKeys>1</MaxKeys><CommonPrefixes><Prefix>master/</Prefix></CommonPrefixes><Marker></Marker></ListBucketResult>

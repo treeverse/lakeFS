@@ -2,21 +2,17 @@ package main
 
 import (
 	"fmt"
-	"os"
-
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/config"
-
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/treeverse/lakefs/api"
-
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
+	"os"
 )
 
 func setupConf(cmd *cobra.Command) *config.Config {
@@ -123,11 +119,11 @@ var runCmd = &cobra.Command{
 			conf.GetS3GatewayListenAddress(),
 			conf.GetS3GatewayDomainName(),
 		)
+
 		panic(gatewayServer.Listen())
 
 		return nil
-	},
-}
+	}}
 
 var keysCmd = &cobra.Command{
 	Use:   "keys",
