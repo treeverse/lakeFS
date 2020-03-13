@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>imdb/titles_by_year/.spark-staging-f786f4ab-00a3-4a3f-a403-554f785d7fac/</Key><BucketName>example</BucketName><Resource>master@example</Resource><Region>us-east-1</Region><RequestId>266B84B1605E27C2</RequestId><HostId>947903E4E7D77E76</HostId></Error>

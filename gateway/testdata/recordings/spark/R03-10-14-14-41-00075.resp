@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>imdb/titles_by_year/_temporary/0/_temporary/attempt_20200310141426_0001_m_000000_1/startYear=2006/part-00000-f786f4ab-00a3-4a3f-a403-554f785d7fac.c000.snappy.parquet</Key><BucketName>example</BucketName><Resource>master@example</Resource><Region>us-east-1</Region><RequestId>62B3E4CECFBCFAB3</RequestId><HostId>6DB1FC4033F9D86B</HostId></Error>

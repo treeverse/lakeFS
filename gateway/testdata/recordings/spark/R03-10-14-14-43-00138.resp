@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Error><Code>NoSuchKey</Code><Message>The specified key does not exist.</Message><Key>imdb/titles_by_year/_temporary/0/_temporary/attempt_20200310141426_0001_m_000000_1/startYear=2008</Key><BucketName>example</BucketName><Resource>master@example</Resource><Region>us-east-1</Region><RequestId>878F8809E45D7005</RequestId><HostId>9E7719D83D3AD979</HostId></Error>
