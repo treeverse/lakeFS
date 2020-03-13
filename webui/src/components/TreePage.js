@@ -5,7 +5,7 @@ import {connect} from "react-redux";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 
-import Octicon, {GitCommit, Plus} from "@primer/octicons-react";
+import Octicon, {GitCommit, Plus, X} from "@primer/octicons-react";
 
 import {deleteObject, deleteObjectDone, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
@@ -200,19 +200,28 @@ const CommitButton = connect(
 
                         {metadataFields.map((f, i) => {
                             return (
-                                <Form.Group controlId="message" key={`commit-metadata-field-${i}`}>
+                                <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`}>
                                     <Row>
-                                        <Col md={{span: 6}}>
+                                        <Col md={{span: 5}}>
                                             <Form.Control type="text" placeholder="Key"  defaultValue={f.key} onChange={(e) => {
                                                 metadataFields[i].key = e.currentTarget.value;
                                                 setMetadataFields(metadataFields);
                                             }}/>
                                         </Col>
-                                        <Col md={{ span: 6}}>
+                                        <Col md={{ span: 5}}>
                                             <Form.Control type="text" placeholder="Value"  defaultValue={f.value}  onChange={(e) => {
                                                 metadataFields[i].value = e.currentTarget.value;
                                                 setMetadataFields(metadataFields);
                                             }}/>
+                                        </Col>
+                                        <Col md={{ span: 1}}>
+                                            <Form.Text>
+                                                <Button size="sm" variant="outline-secondary" onClick={() => {
+                                                    setMetadataFields([...metadataFields.slice(0,i), ...metadataFields.slice(i+1)]);
+                                                }}>
+                                                    <Octicon icon={X}/>
+                                                </Button>
+                                            </Form.Text>
                                         </Col>
                                     </Row>
                                 </Form.Group>
