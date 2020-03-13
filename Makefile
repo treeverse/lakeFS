@@ -45,7 +45,7 @@ build: ## Download dependecies and Build the default binary
 		$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
 
 test: ## Run tests for the project
-		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -race -failfast ./...
+		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
 
 test-html: test ## Run tests with HTML for the project
 		$(GOTOOL) cover -html=cover.out
