@@ -130,11 +130,11 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 
 	//validate branch
-	_, err := o.Index.GetBranch(o.Repo.GetRepoId(), o.Branch)
+	_, err := o.Index.GetBranch(o.Repo.GetRepoId(), o.Ref)
 	if err != nil {
 		o.Log().WithError(err).WithFields(log.Fields{
 			"repo":   o.Repo.GetRepoId(),
-			"branch": o.Branch,
+			"branch": o.Ref,
 		}).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)
 		return
