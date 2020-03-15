@@ -12,28 +12,28 @@ import (
 	"github.com/go-openapi/validate"
 )
 
-// Refspec refspec
-// swagger:model refspec
-type Refspec struct {
-
-	// commit id
-	// Required: true
-	CommitID *string `json:"commit_id"`
+// BranchCreation branch creation
+// swagger:model branch_creation
+type BranchCreation struct {
 
 	// id
 	// Required: true
 	ID *string `json:"id"`
+
+	// source ref Id
+	// Required: true
+	SourceRefID *string `json:"sourceRefId"`
 }
 
-// Validate validates this refspec
-func (m *Refspec) Validate(formats strfmt.Registry) error {
+// Validate validates this branch creation
+func (m *BranchCreation) Validate(formats strfmt.Registry) error {
 	var res []error
 
-	if err := m.validateCommitID(formats); err != nil {
+	if err := m.validateID(formats); err != nil {
 		res = append(res, err)
 	}
 
-	if err := m.validateID(formats); err != nil {
+	if err := m.validateSourceRefID(formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -43,16 +43,7 @@ func (m *Refspec) Validate(formats strfmt.Registry) error {
 	return nil
 }
 
-func (m *Refspec) validateCommitID(formats strfmt.Registry) error {
-
-	if err := validate.Required("commit_id", "body", m.CommitID); err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (m *Refspec) validateID(formats strfmt.Registry) error {
+func (m *BranchCreation) validateID(formats strfmt.Registry) error {
 
 	if err := validate.Required("id", "body", m.ID); err != nil {
 		return err
@@ -61,8 +52,17 @@ func (m *Refspec) validateID(formats strfmt.Registry) error {
 	return nil
 }
 
+func (m *BranchCreation) validateSourceRefID(formats strfmt.Registry) error {
+
+	if err := validate.Required("sourceRefId", "body", m.SourceRefID); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 // MarshalBinary interface implementation
-func (m *Refspec) MarshalBinary() ([]byte, error) {
+func (m *BranchCreation) MarshalBinary() ([]byte, error) {
 	if m == nil {
 		return nil, nil
 	}
@@ -70,8 +70,8 @@ func (m *Refspec) MarshalBinary() ([]byte, error) {
 }
 
 // UnmarshalBinary interface implementation
-func (m *Refspec) UnmarshalBinary(b []byte) error {
-	var res Refspec
+func (m *BranchCreation) UnmarshalBinary(b []byte) error {
+	var res BranchCreation
 	if err := swag.ReadJSON(b, &res); err != nil {
 		return err
 	}

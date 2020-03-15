@@ -7,6 +7,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
+
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
 
 	"github.com/treeverse/lakefs/ident"
@@ -78,7 +80,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.CommitsGetCommitHandler = a.GetCommitHandler()
 	api.CommitsGetBranchCommitLogHandler = a.CommitsGetBranchCommitLogHandler()
 
-	api.BranchesDiffBranchesHandler = a.BranchesDiffBranchesHandler()
+	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
@@ -120,7 +122,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		repos, hasMore, err := a.meta.ListRepos(int(amount), after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
-				WithPayload(responseError("could not list repositories"))
+				WithPayload(responseError("error listing repositories: %s", err))
 		}
 
 		repoList := make([]*models.Repository, len(repos))
@@ -163,7 +165,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 				WithPayload(responseError("repository not found"))
 		} else if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching repository"))
+				WithPayload(responseError("error fetching repository: %s", err))
 		}
 
 		return repositories.NewGetRepositoryOK().
@@ -357,13 +359,13 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		res, hasMore, err := a.meta.ListBranchesByPrefix(params.RepositoryID, "", int(amount), after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
-				WithPayload(responseError("could not list branches"))
+				WithPayload(responseError("could not list branches: %s", err))
 		}
 
-		branchList := make([]*models.Refspec, len(res))
+		branchList := make([]*models.Ref, len(res))
 		var lastId string
 		for i, branch := range res {
-			branchList[i] = &models.Refspec{
+			branchList[i] = &models.Ref{
 				CommitID: &branch.Commit,
 				ID:       &branch.Name,
 			}
@@ -399,11 +401,11 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 				WithPayload(responseError("branch not found"))
 		} else if err != nil {
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching branch"))
+				WithPayload(responseError("error fetching branch: %s", err))
 		}
 
 		return branches.NewGetBranchOK().
-			WithPayload(&models.Refspec{
+			WithPayload(&models.Ref{
 				CommitID: swag.String(branch.GetCommit()),
 				ID:       swag.String(branch.GetName()),
 			})
@@ -417,12 +419,15 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.meta.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.CommitID))
+		branch, err := a.meta.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.SourceRefID))
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		return branches.NewCreateBranchCreated().WithPayload(params.Branch)
+		return branches.NewCreateBranchCreated().WithPayload(&models.Ref{
+			CommitID: swag.String(branch.GetCommit()),
+			ID:       swag.String(branch.GetName()),
+		})
 	})
 }
 
@@ -439,7 +444,7 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 				WithPayload(responseError("branch not found"))
 		} else if err != nil {
 			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("error fetching branch"))
+				WithPayload(responseError("error fetching branch: %s", err))
 		}
 
 		return branches.NewDeleteBranchNoContent()
@@ -450,13 +455,13 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
 		if err != nil {
-			return branches.NewDiffBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+			return branches.NewDiffBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
 		diff, err := a.meta.DiffWorkspace(params.RepositoryID, params.BranchID)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
-				WithPayload(responseError("could not diff branches"))
+				WithPayload(responseError("could not diff branch: %s", err))
 		}
 
 		results := make([]*models.Diff, len(diff))
@@ -468,25 +473,24 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	})
 }
 
-func (a *Handler) BranchesDiffBranchesHandler() branches.DiffBranchesHandler {
-	return branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, user *models.User) middleware.Responder {
+func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
+	return refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
 		if err != nil {
-			return branches.NewDiffBranchesUnauthorized().WithPayload(responseErrorFrom(err))
+			return refs.NewDiffRefsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		diff, err := a.meta.Diff(params.RepositoryID, params.BranchID, params.OtherBranchID)
+		diff, err := a.meta.Diff(params.RepositoryID, params.LeftRef, params.RightRef)
 		if err != nil {
-			return branches.NewDiffBranchesDefault(http.StatusInternalServerError).
-				WithPayload(responseError("could not diff branches"))
+			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
+				WithPayload(responseError("could not diff references: %s", err))
 		}
 
 		results := make([]*models.Diff, len(diff))
 		for i, d := range diff {
 			results[i] = serializeDiff(d)
 		}
-
-		return branches.NewDiffBranchesOK().WithPayload(&branches.DiffBranchesOKBody{Results: results})
+		return refs.NewDiffRefsOK().WithPayload(&refs.DiffRefsOKBody{Results: results})
 	})
 }
 
@@ -498,7 +502,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		}
 
 		// read metadata
-		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.BranchID, params.Path)
+		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
@@ -535,7 +539,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.BranchID, params.Path)
+		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
@@ -547,9 +551,10 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		res := objects.NewGetObjectOK()
 		res.ETag = httputil.ETag(entry.GetChecksum())
 		res.LastModified = httputil.HeaderTimestamp(entry.GetTimestamp())
+		res.ContentDisposition = fmt.Sprintf("filename=\"%s\"", entry.GetName())
 
 		// get object for its blocks
-		obj, err := a.meta.ReadObject(params.RepositoryID, params.BranchID, params.Path)
+		obj, err := a.meta.ReadObject(params.RepositoryID, params.Ref, params.Path)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -591,10 +596,13 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			after = swag.StringValue(params.After)
 		}
 
-		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.BranchID, swag.StringValue(params.Tree), after, int(amount), false)
+		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, int(amount), false)
 		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
+			}
 			return objects.NewListObjectsDefault(http.StatusInternalServerError).
-				WithPayload(responseError("received error while listing objects"))
+				WithPayload(responseError("error while listing objects: %s", err))
 		}
 
 		objList := make([]*models.ObjectStats, len(res))

@@ -1,49 +1,30 @@
-import apiRequest from './api';
+import * as api from './api';
+import {AsyncActionType} from "./request";
 
-export const LOGIN_ERROR = 'LOGIN_ERROR';
-export const LOGIN_SUCCESS = 'LOGIN_SUCCESS';
-export const LOGOUT = 'LOGOUT';
-
-export const loginError = (err) => ({
-    type: LOGIN_ERROR,
-    error: err,
-});
-
-export const loginSuccess = (user) => ({
-    type: LOGIN_SUCCESS,
-    user: user,
-});
+export const
+    AUTH_LOGIN = new AsyncActionType('AUTH_LOGIN'),
+    AUTH_REDIRECTED = 'AUTH_REDIRECTED',
+    AUTH_LOGOUT = 'AUTH_LOGOUT';
 
 export const logout = () => ({
-    type: LOGOUT,
+    type: AUTH_LOGOUT,
 });
 
-export const login = ( accessKeyId, secretAccessKey, redirectFn) => {
-    return async function(dispatch)  {
-        try {
-            let response = await apiRequest(  '/authentication',
-                undefined,
-                undefined,
-                {accessKeyId, secretAccessKey});
-            if (response.status === 401) {
-                dispatch(loginError('invalid credentials, try again'))
-                return
-            }
-            if (response.status !== 200) {
-                dispatch(loginError('unknown authentication error'));
-                return
-            }
 
-            let responseJSON = await response.json();
-            dispatch(loginSuccess({
+export const redirected = () => ({
+    type: AUTH_REDIRECTED,
+});
+
+export const login = (accessKeyId, secretAccessKey, redirectedUrl) => {
+    return AUTH_LOGIN.execute(async () => {
+        const response =  await api.auth.login(accessKeyId, secretAccessKey);
+        return {
+            user: {
                 accessKeyId,
                 secretAccessKey,
-                ...responseJSON.user,
-            }));
-            redirectFn();
-
-        } catch (error) {
-            dispatch(loginError(`error connecting to API server: ${error}`));
-        }
-    };
+                ...response,
+            },
+            redirectTo: redirectedUrl,
+        };
+    })
 };

@@ -64,7 +64,7 @@ for the create branch operation typically these are written to a http.Request
 type CreateBranchParams struct {
 
 	/*Branch*/
-	Branch *models.Refspec
+	Branch *models.BranchCreation
 	/*RepositoryID*/
 	RepositoryID string
 
@@ -107,13 +107,13 @@ func (o *CreateBranchParams) SetHTTPClient(client *http.Client) {
 }
 
 // WithBranch adds the branch to the create branch params
-func (o *CreateBranchParams) WithBranch(branch *models.Refspec) *CreateBranchParams {
+func (o *CreateBranchParams) WithBranch(branch *models.BranchCreation) *CreateBranchParams {
 	o.SetBranch(branch)
 	return o
 }
 
 // SetBranch adds the branch to the create branch params
-func (o *CreateBranchParams) SetBranch(branch *models.Refspec) {
+func (o *CreateBranchParams) SetBranch(branch *models.BranchCreation) {
 	o.Branch = branch
 }
 

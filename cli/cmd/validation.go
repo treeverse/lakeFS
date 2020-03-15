@@ -19,14 +19,14 @@ func uriAtPos(args []string, pos int) (*uri.URI, error) {
 	return u, nil
 }
 
-func IsBranchURI(pos int) validationFunc {
+func IsRefURI(pos int) validationFunc {
 	return func(args []string) error {
 		u, err := uriAtPos(args, pos)
 		if err != nil {
 			return err
 		}
-		if !u.IsRefspec() {
-			return fmt.Errorf("argument at position: %d - not a branch URI", pos)
+		if !u.IsRef() {
+			return fmt.Errorf("argument at position: %d - not a ref URI", pos)
 		}
 		return nil
 	}

@@ -68,7 +68,7 @@ type StatObjectOK struct {
 }
 
 func (o *StatObjectOK) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/stat][%d] statObjectOK  %+v", 200, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/stat][%d] statObjectOK  %+v", 200, o.Payload)
 }
 
 func (o *StatObjectOK) GetPayload() *models.ObjectStats {
@@ -101,7 +101,7 @@ type StatObjectUnauthorized struct {
 }
 
 func (o *StatObjectUnauthorized) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/stat][%d] statObjectUnauthorized  %+v", 401, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/stat][%d] statObjectUnauthorized  %+v", 401, o.Payload)
 }
 
 func (o *StatObjectUnauthorized) GetPayload() *models.Error {
@@ -134,7 +134,7 @@ type StatObjectNotFound struct {
 }
 
 func (o *StatObjectNotFound) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/stat][%d] statObjectNotFound  %+v", 404, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/stat][%d] statObjectNotFound  %+v", 404, o.Payload)
 }
 
 func (o *StatObjectNotFound) GetPayload() *models.Error {
@@ -176,7 +176,7 @@ func (o *StatObjectDefault) Code() int {
 }
 
 func (o *StatObjectDefault) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/stat][%d] statObject default  %+v", o._statusCode, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/stat][%d] statObject default  %+v", o._statusCode, o.Payload)
 }
 
 func (o *StatObjectDefault) GetPayload() *models.Error {

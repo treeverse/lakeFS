@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
@@ -45,6 +46,12 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 	if api.BasicAuthAuth == nil {
 		api.BasicAuthAuth = func(user string, pass string) (*models.User, error) {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
+		}
+	}
+	// Applies when the "token" query is set
+	if api.DownloadTokenAuth == nil {
+		api.DownloadTokenAuth = func(token string) (*models.User, error) {
+			return nil, errors.NotImplemented("api key auth (download_token) token from query param [token] has not yet been implemented")
 		}
 	}
 
@@ -93,9 +100,9 @@ func configureAPI(api *operations.LakefsAPI) http.Handler {
 			return middleware.NotImplemented("operation branches.DiffBranch has not yet been implemented")
 		})
 	}
-	if api.BranchesDiffBranchesHandler == nil {
-		api.BranchesDiffBranchesHandler = branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation branches.DiffBranches has not yet been implemented")
+	if api.RefsDiffRefsHandler == nil {
+		api.RefsDiffRefsHandler = refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation refs.DiffRefs has not yet been implemented")
 		})
 	}
 	if api.BranchesGetBranchHandler == nil {

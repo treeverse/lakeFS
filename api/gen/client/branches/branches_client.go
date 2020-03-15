@@ -31,8 +31,6 @@ type ClientService interface {
 
 	DiffBranch(params *DiffBranchParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchOK, error)
 
-	DiffBranches(params *DiffBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchesOK, error)
-
 	GetBranch(params *GetBranchParams, authInfo runtime.ClientAuthInfoWriter) (*GetBranchOK, error)
 
 	ListBranches(params *ListBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*ListBranchesOK, error)
@@ -145,40 +143,6 @@ func (a *Client) DiffBranch(params *DiffBranchParams, authInfo runtime.ClientAut
 }
 
 /*
-  DiffBranches diffs branches
-*/
-func (a *Client) DiffBranches(params *DiffBranchesParams, authInfo runtime.ClientAuthInfoWriter) (*DiffBranchesOK, error) {
-	// TODO: Validate the params before sending
-	if params == nil {
-		params = NewDiffBranchesParams()
-	}
-
-	result, err := a.transport.Submit(&runtime.ClientOperation{
-		ID:                 "diffBranches",
-		Method:             "GET",
-		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}",
-		ProducesMediaTypes: []string{"application/json"},
-		ConsumesMediaTypes: []string{"application/json"},
-		Schemes:            []string{"http"},
-		Params:             params,
-		Reader:             &DiffBranchesReader{formats: a.formats},
-		AuthInfo:           authInfo,
-		Context:            params.Context,
-		Client:             params.HTTPClient,
-	})
-	if err != nil {
-		return nil, err
-	}
-	success, ok := result.(*DiffBranchesOK)
-	if ok {
-		return success, nil
-	}
-	// unexpected success response
-	unexpectedSuccess := result.(*DiffBranchesDefault)
-	return nil, runtime.NewAPIError("unexpected success response: content available as default response in error", unexpectedSuccess, unexpectedSuccess.Code())
-}
-
-/*
   GetBranch gets branch
 */
 func (a *Client) GetBranch(params *GetBranchParams, authInfo runtime.ClientAuthInfoWriter) (*GetBranchOK, error) {
@@ -247,7 +211,7 @@ func (a *Client) ListBranches(params *ListBranchesParams, authInfo runtime.Clien
 }
 
 /*
-  RevertBranch reverts branch to specified commit or revert specific path changes to last commit pipe if nothing passed reverts all non committed changes
+  RevertBranch reverts branch
 */
 func (a *Client) RevertBranch(params *RevertBranchParams, authInfo runtime.ClientAuthInfoWriter) (*RevertBranchNoContent, error) {
 	// TODO: Validate the params before sending

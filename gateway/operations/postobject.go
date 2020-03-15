@@ -67,7 +67,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		}
 	}
 
-	obj, err := o.MultipartManager.Complete(o.Repo.GetRepoId(), o.Branch, o.Path, uploadId, parts, time.Now())
+	obj, err := o.MultipartManager.Complete(o.Repo.GetRepoId(), o.Ref, o.Path, uploadId, parts, time.Now())
 	if err != nil {
 		o.Log().WithError(err).Error("could not complete multipart upload - cannot write metadata")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
@@ -76,7 +76,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 
 	// TODO: pass scheme instead of hard-coding http instead of https
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
-		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Branch, o.Path),
+		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Ref, o.Path),
 		Bucket:   o.Repo.GetRepoId(),
 		Key:      o.Path,
 		ETag:     httputil.ETag(obj.GetChecksum()),

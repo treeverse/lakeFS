@@ -16,6 +16,11 @@ basePath: /api/v1
 securityDefinitions:
   basic_auth:
     type: basic
+  download_token:
+    type: apiKey
+    in: query
+    name: token
+
 
 security:
   - basic_auth: []
@@ -96,7 +101,7 @@ definitions:
         type: string
         enum: [TREE, OBJECT]
 
-  refspec:
+  ref:
     type: object
     required:
       - id
@@ -167,6 +172,17 @@ definitions:
         type: object
         additionalProperties:
           type: string
+
+  branch_creation:
+    type: object
+    required:
+      - id
+      - sourceRefId
+    properties:
+      id:
+        type: string
+      sourceRefId:
+        type: string
 
   error:
     type: object
@@ -321,7 +337,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/refspec"
+                  $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -337,12 +353,12 @@ paths:
         - in: body
           name: branch
           schema:
-            $ref: "#/definitions/refspec"
+            $ref: "#/definitions/branch_creation"
       responses:
         201:
           description: branch
           schema:
-            $ref: "#/definitions/refspec"
+            $ref: "#/definitions/ref"
         400:
           description: validation error
           schema:
@@ -436,7 +452,7 @@ paths:
         200:
           description: branch
           schema:
-            $ref: "#/definitions/refspec"
+            $ref: "#/definitions/ref"
         401:
           $ref: "#/responses/Unauthorized"
         404:
@@ -469,7 +485,7 @@ paths:
       tags:
         - branches
       operationId: revertBranch
-      summary: "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes"
+      summary: revert branch
       parameters:
         - in: body
           name: revert
@@ -530,28 +546,30 @@ paths:
             $ref: "#/definitions/error"
 
 
-  /repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}:
+  /repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}:
     parameters:
       - in: path
         name: repositoryId
         required: true
         type: string
       - in: path
-        name: branchId
+        name: leftRef
         required: true
         type: string
+        description: a reference (could be either a branch ID or a commit ID)
       - in: path
-        name: otherBranchId
+        name: rightRef
         required: true
         type: string
+        description: a reference (could be either a branch ID or a commit ID) to compare against
     get:
       tags:
-        - branches
-      operationId: diffBranches
-      summary: diff branches
+        - refs
+      operationId: diffRefs
+      summary: diff references
       responses:
         200:
-          description: diff between branches
+          description: diff between refs
           schema:
             type: object
             properties:
@@ -603,16 +621,17 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/objects:
+  /repositories/{repositoryId}/refs/{ref}/objects:
     parameters:
       - in: path
         name: repositoryId
         required: true
         type: string
       - in: path
-        name: branchId
+        name: ref
         required: true
         type: string
+        description: a reference (could be either a branch ID or a commit ID)
       - in: query
         name: path
         required: true
@@ -622,6 +641,9 @@ paths:
         - objects
       operationId: getObject
       summary: get object content
+      security:
+        - basic_auth: []
+        - download_token: []
       produces:
         - application/octet-stream
       responses:
@@ -637,16 +659,33 @@ paths:
               type: string
             ETag:
               type: string
+            Content-Disposition:
+              type: string
         401:
           $ref: "#/responses/Unauthorized"
         404:
-          description: path or branch not found
+          description: path or ref not found
           schema:
             $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/objects:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
     post:
       tags:
         - objects
@@ -693,16 +732,17 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/objects/stat:
+  /repositories/{repositoryId}/refs/{ref}/objects/stat:
     parameters:
       - in: path
         name: repositoryId
         required: true
         type: string
       - in: path
-        name: branchId
+        name: ref
         required: true
         type: string
+        description: a reference (could be either a branch ID or a commit ID)
       - in: query
         name: path
         required: true
@@ -728,16 +768,17 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/objects/ls:
+  /repositories/{repositoryId}/refs/{ref}/objects/ls:
     parameters:
       - in: path
         name: repositoryId
         required: true
         type: string
       - in: path
-        name: branchId
+        name: ref
         required: true
         type: string
+        description: a reference (could be either a branch ID or a commit ID)
       - in: query
         name: tree
         required: false
