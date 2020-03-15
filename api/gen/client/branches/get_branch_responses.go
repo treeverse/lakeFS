@@ -64,20 +64,20 @@ func NewGetBranchOK() *GetBranchOK {
 branch
 */
 type GetBranchOK struct {
-	Payload *models.Refspec
+	Payload *models.Ref
 }
 
 func (o *GetBranchOK) Error() string {
 	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}][%d] getBranchOK  %+v", 200, o.Payload)
 }
 
-func (o *GetBranchOK) GetPayload() *models.Refspec {
+func (o *GetBranchOK) GetPayload() *models.Ref {
 	return o.Payload
 }
 
 func (o *GetBranchOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
 
-	o.Payload = new(models.Refspec)
+	o.Payload = new(models.Ref)
 
 	// response payload
 	if err := consumer.Consume(response.Body(), o.Payload); err != nil && err != io.EOF {

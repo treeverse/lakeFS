@@ -7,12 +7,12 @@ import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom
 
 import LoginForm from "./components/Login";
 import NavDropdown from "react-bootstrap/NavDropdown";
-import { logout } from './actions/auth';
-import {ApiExplorer} from "./components/ApiExplorer";
+import { logout, redirected } from './actions/auth';
+import {IndexPage} from "./components/IndexPage";
 
 // css imports
 import 'bootstrap/dist/css/bootstrap.min.css';
-import "bootswatch/dist/materia/bootstrap.min.css";
+// import 'bootswatch/dist/lumen/bootstrap.min.css';
 import './App.css';
 
 
@@ -53,10 +53,11 @@ const PrivateRoute = ({ children, user, ...rest }) => {
 };
 
 
-const App = ({ user }) => {
+const App = ({ user, redirectTo, redirected }) => {
+
     return (
         <div className="App">
-            <Navbar bg="light" expand="lg">
+            <Navbar variant="dark" bg="dark" expand="md">
                 <Navbar.Brand href="/">lakeFS</Navbar.Brand>
                 <NavUserInfo/>
             </Navbar>
@@ -64,16 +65,12 @@ const App = ({ user }) => {
                 <Router>
                     <Switch>
 
-                        <PrivateRoute path="/repositories" user={user}>
-                            <ApiExplorer/>
-                        </PrivateRoute>
-
-                        <Route path="/login">
-                            <LoginForm/>
+                        <Route path="/login" >
+                            <LoginForm redirectTo={redirectTo} onRedirect={redirected}/>
                         </Route>
 
                         <PrivateRoute path="/" user={user}>
-                            <Redirect to="/repositories"/>
+                            <IndexPage/>
                         </PrivateRoute>
 
                     </Switch>
@@ -85,5 +82,6 @@ const App = ({ user }) => {
 
 export default connect(
     ({ auth }) => ({
-        user: auth.user
-    }), null)(App);
+        user: auth.user,
+        redirectTo: auth.redirectTo,
+    }), ({ redirected }))(App);

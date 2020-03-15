@@ -71,7 +71,7 @@ type ListObjectsOK struct {
 }
 
 func (o *ListObjectsOK) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/ls][%d] listObjectsOK  %+v", 200, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/ls][%d] listObjectsOK  %+v", 200, o.Payload)
 }
 
 func (o *ListObjectsOK) GetPayload() *ListObjectsOKBody {
@@ -104,7 +104,7 @@ type ListObjectsUnauthorized struct {
 }
 
 func (o *ListObjectsUnauthorized) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/ls][%d] listObjectsUnauthorized  %+v", 401, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/ls][%d] listObjectsUnauthorized  %+v", 401, o.Payload)
 }
 
 func (o *ListObjectsUnauthorized) GetPayload() *models.Error {
@@ -137,7 +137,7 @@ type ListObjectsNotFound struct {
 }
 
 func (o *ListObjectsNotFound) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/ls][%d] listObjectsNotFound  %+v", 404, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/ls][%d] listObjectsNotFound  %+v", 404, o.Payload)
 }
 
 func (o *ListObjectsNotFound) GetPayload() *models.Error {
@@ -179,7 +179,7 @@ func (o *ListObjectsDefault) Code() int {
 }
 
 func (o *ListObjectsDefault) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects/ls][%d] listObjects default  %+v", o._statusCode, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects/ls][%d] listObjects default  %+v", o._statusCode, o.Payload)
 }
 
 func (o *ListObjectsDefault) GetPayload() *models.Error {

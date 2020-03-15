@@ -31,7 +31,7 @@ func NewStatObject(ctx *middleware.Context, handler StatObjectHandler) *StatObje
 	return &StatObject{Context: ctx, Handler: handler}
 }
 
-/*StatObject swagger:route GET /repositories/{repositoryId}/branches/{branchId}/objects/stat objects statObject
+/*StatObject swagger:route GET /repositories/{repositoryId}/refs/{ref}/objects/stat objects statObject
 
 get object metadata
 

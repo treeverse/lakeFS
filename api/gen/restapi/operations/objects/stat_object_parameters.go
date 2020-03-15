@@ -34,14 +34,14 @@ type StatObjectParams struct {
 
 	/*
 	  Required: true
-	  In: path
-	*/
-	BranchID string
-	/*
-	  Required: true
 	  In: query
 	*/
 	Path string
+	/*a reference (could be either a branch ID or a commit ID)
+	  Required: true
+	  In: path
+	*/
+	Ref string
 	/*
 	  Required: true
 	  In: path
@@ -60,13 +60,13 @@ func (o *StatObjectParams) BindRequest(r *http.Request, route *middleware.Matche
 
 	qs := runtime.Values(r.URL.Query())
 
-	rBranchID, rhkBranchID, _ := route.Params.GetOK("branchId")
-	if err := o.bindBranchID(rBranchID, rhkBranchID, route.Formats); err != nil {
+	qPath, qhkPath, _ := qs.GetOK("path")
+	if err := o.bindPath(qPath, qhkPath, route.Formats); err != nil {
 		res = append(res, err)
 	}
 
-	qPath, qhkPath, _ := qs.GetOK("path")
-	if err := o.bindPath(qPath, qhkPath, route.Formats); err != nil {
+	rRef, rhkRef, _ := route.Params.GetOK("ref")
+	if err := o.bindRef(rRef, rhkRef, route.Formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -78,21 +78,6 @@ func (o *StatObjectParams) BindRequest(r *http.Request, route *middleware.Matche
 	if len(res) > 0 {
 		return errors.CompositeValidationError(res...)
 	}
-	return nil
-}
-
-// bindBranchID binds and validates parameter BranchID from path.
-func (o *StatObjectParams) bindBranchID(rawData []string, hasKey bool, formats strfmt.Registry) error {
-	var raw string
-	if len(rawData) > 0 {
-		raw = rawData[len(rawData)-1]
-	}
-
-	// Required: true
-	// Parameter is provided by construction from the route
-
-	o.BranchID = raw
-
 	return nil
 }
 
@@ -113,6 +98,21 @@ func (o *StatObjectParams) bindPath(rawData []string, hasKey bool, formats strfm
 	}
 
 	o.Path = raw
+
+	return nil
+}
+
+// bindRef binds and validates parameter Ref from path.
+func (o *StatObjectParams) bindRef(rawData []string, hasKey bool, formats strfmt.Registry) error {
+	var raw string
+	if len(rawData) > 0 {
+		raw = rawData[len(rawData)-1]
+	}
+
+	// Required: true
+	// Parameter is provided by construction from the route
+
+	o.Ref = raw
 
 	return nil
 }
