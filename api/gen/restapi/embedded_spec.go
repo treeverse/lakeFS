@@ -241,7 +241,7 @@ func init() {
                 "results": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/refspec"
+                    "$ref": "#/definitions/ref"
                   }
                 }
               }
@@ -269,7 +269,7 @@ func init() {
             "name": "branch",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/refspec"
+              "$ref": "#/definitions/branch_creation"
             }
           }
         ],
@@ -277,7 +277,7 @@ func init() {
           "201": {
             "description": "branch",
             "schema": {
-              "$ref": "#/definitions/refspec"
+              "$ref": "#/definitions/ref"
             }
           },
           "400": {
@@ -317,7 +317,7 @@ func init() {
           "200": {
             "description": "branch",
             "schema": {
-              "$ref": "#/definitions/refspec"
+              "$ref": "#/definitions/ref"
             }
           },
           "401": {
@@ -341,7 +341,7 @@ func init() {
         "tags": [
           "branches"
         ],
-        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "summary": "revert branch",
         "operationId": "revertBranch",
         "parameters": [
           {
@@ -569,115 +569,7 @@ func init() {
         }
       ]
     },
-    "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}": {
-      "get": {
-        "tags": [
-          "branches"
-        ],
-        "summary": "diff branches",
-        "operationId": "diffBranches",
-        "responses": {
-          "200": {
-            "description": "diff between branches",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "results": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/diff"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/responses/Unauthorized"
-            }
-          },
-          "404": {
-            "description": "branch not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "name": "repositoryId",
-          "in": "path",
-          "required": true
-        },
-        {
-          "type": "string",
-          "name": "branchId",
-          "in": "path",
-          "required": true
-        },
-        {
-          "type": "string",
-          "name": "otherBranchId",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
     "/repositories/{repositoryId}/branches/{branchId}/objects": {
-      "get": {
-        "produces": [
-          "application/octet-stream"
-        ],
-        "tags": [
-          "objects"
-        ],
-        "summary": "get object content",
-        "operationId": "getObject",
-        "responses": {
-          "200": {
-            "description": "object content",
-            "schema": {
-              "type": "file"
-            },
-            "headers": {
-              "Content-Length": {
-                "type": "integer",
-                "format": "int64"
-              },
-              "ETag": {
-                "type": "string"
-              },
-              "Last-Modified": {
-                "type": "string"
-              }
-            }
-          },
-          "401": {
-            "$ref": "#/responses/Unauthorized"
-          },
-          "404": {
-            "description": "path or branch not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "post": {
         "consumes": [
           "multipart/form-data"
@@ -767,7 +659,197 @@ func init() {
         }
       ]
     },
-    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}": {
+      "get": {
+        "tags": [
+          "refs"
+        ],
+        "summary": "diff references",
+        "operationId": "diffRefs",
+        "responses": {
+          "200": {
+            "description": "diff between refs",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/responses/Unauthorized"
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "leftRef",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "description": "a reference (could be either a branch ID or a commit ID) to compare against",
+          "name": "rightRef",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/refs/{ref}/objects": {
+      "get": {
+        "security": [
+          {
+            "basic_auth": []
+          },
+          {
+            "download_token": []
+          }
+        ],
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Disposition": {
+                "type": "string"
+              },
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/responses/Unauthorized"
+          },
+          "404": {
+            "description": "path or ref not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "ref",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/refs/{ref}/objects/ls": {
       "get": {
         "tags": [
           "objects"
@@ -818,7 +900,8 @@ func init() {
         },
         {
           "type": "string",
-          "name": "branchId",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "ref",
           "in": "path",
           "required": true
         },
@@ -839,7 +922,7 @@ func init() {
         }
       ]
     },
-    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+    "/repositories/{repositoryId}/refs/{ref}/objects/stat": {
       "get": {
         "tags": [
           "objects"
@@ -879,7 +962,8 @@ func init() {
         },
         {
           "type": "string",
-          "name": "branchId",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "ref",
           "in": "path",
           "required": true
         },
@@ -890,55 +974,24 @@ func init() {
           "required": true
         }
       ]
-    },
-    "/repositories/{repositoryId}/commits/{commitId}": {
-      "get": {
-        "tags": [
-          "commits"
-        ],
-        "summary": "get commit",
-        "operationId": "getCommit",
-        "responses": {
-          "200": {
-            "description": "commit",
-            "schema": {
-              "$ref": "#/definitions/commit"
-            }
-          },
-          "401": {
-            "$ref": "#/responses/Unauthorized"
-          },
-          "404": {
-            "description": "commit not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "name": "repositoryId",
-          "in": "path",
-          "required": true
-        },
-        {
-          "type": "string",
-          "name": "commitId",
-          "in": "path",
-          "required": true
-        }
-      ]
     }
   },
   "definitions": {
+    "branch_creation": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceRefId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceRefId": {
+          "type": "string"
+        }
+      }
+    },
     "commit": {
       "type": "object",
       "properties": {
@@ -1072,7 +1125,7 @@ func init() {
         }
       }
     },
-    "refspec": {
+    "ref": {
       "type": "object",
       "required": [
         "id",
@@ -1168,6 +1221,11 @@ func init() {
   "securityDefinitions": {
     "basic_auth": {
       "type": "basic"
+    },
+    "download_token": {
+      "type": "apiKey",
+      "name": "token",
+      "in": "query"
     }
   },
   "security": [
@@ -1412,7 +1470,7 @@ func init() {
                 "results": {
                   "type": "array",
                   "items": {
-                    "$ref": "#/definitions/refspec"
+                    "$ref": "#/definitions/ref"
                   }
                 }
               }
@@ -1443,7 +1501,7 @@ func init() {
             "name": "branch",
             "in": "body",
             "schema": {
-              "$ref": "#/definitions/refspec"
+              "$ref": "#/definitions/branch_creation"
             }
           }
         ],
@@ -1451,7 +1509,7 @@ func init() {
           "201": {
             "description": "branch",
             "schema": {
-              "$ref": "#/definitions/refspec"
+              "$ref": "#/definitions/ref"
             }
           },
           "400": {
@@ -1494,7 +1552,7 @@ func init() {
           "200": {
             "description": "branch",
             "schema": {
-              "$ref": "#/definitions/refspec"
+              "$ref": "#/definitions/ref"
             }
           },
           "401": {
@@ -1521,7 +1579,7 @@ func init() {
         "tags": [
           "branches"
         ],
-        "summary": "revert branch to specified commit or revert specific path changes to last commit | if nothing passed reverts all non committed changes",
+        "summary": "revert branch",
         "operationId": "revertBranch",
         "parameters": [
           {
@@ -1764,121 +1822,7 @@ func init() {
         }
       ]
     },
-    "/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}": {
-      "get": {
-        "tags": [
-          "branches"
-        ],
-        "summary": "diff branches",
-        "operationId": "diffBranches",
-        "responses": {
-          "200": {
-            "description": "diff between branches",
-            "schema": {
-              "type": "object",
-              "properties": {
-                "results": {
-                  "type": "array",
-                  "items": {
-                    "$ref": "#/definitions/diff"
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "description": "Unauthorized",
-              "schema": {
-                "$ref": "#/definitions/error"
-              }
-            }
-          },
-          "404": {
-            "description": "branch not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "name": "repositoryId",
-          "in": "path",
-          "required": true
-        },
-        {
-          "type": "string",
-          "name": "branchId",
-          "in": "path",
-          "required": true
-        },
-        {
-          "type": "string",
-          "name": "otherBranchId",
-          "in": "path",
-          "required": true
-        }
-      ]
-    },
     "/repositories/{repositoryId}/branches/{branchId}/objects": {
-      "get": {
-        "produces": [
-          "application/octet-stream"
-        ],
-        "tags": [
-          "objects"
-        ],
-        "summary": "get object content",
-        "operationId": "getObject",
-        "responses": {
-          "200": {
-            "description": "object content",
-            "schema": {
-              "type": "file"
-            },
-            "headers": {
-              "Content-Length": {
-                "type": "integer",
-                "format": "int64"
-              },
-              "ETag": {
-                "type": "string"
-              },
-              "Last-Modified": {
-                "type": "string"
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "404": {
-            "description": "path or branch not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
       "post": {
         "consumes": [
           "multipart/form-data"
@@ -1974,7 +1918,206 @@ func init() {
         }
       ]
     },
-    "/repositories/{repositoryId}/branches/{branchId}/objects/ls": {
+    "/repositories/{repositoryId}/commits/{commitId}": {
+      "get": {
+        "tags": [
+          "commits"
+        ],
+        "summary": "get commit",
+        "operationId": "getCommit",
+        "responses": {
+          "200": {
+            "description": "commit",
+            "schema": {
+              "$ref": "#/definitions/commit"
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "commit not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "commitId",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}": {
+      "get": {
+        "tags": [
+          "refs"
+        ],
+        "summary": "diff references",
+        "operationId": "diffRefs",
+        "responses": {
+          "200": {
+            "description": "diff between refs",
+            "schema": {
+              "type": "object",
+              "properties": {
+                "results": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/diff"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "description": "Unauthorized",
+              "schema": {
+                "$ref": "#/definitions/error"
+              }
+            }
+          },
+          "404": {
+            "description": "branch not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "leftRef",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "description": "a reference (could be either a branch ID or a commit ID) to compare against",
+          "name": "rightRef",
+          "in": "path",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/refs/{ref}/objects": {
+      "get": {
+        "security": [
+          {
+            "basic_auth": []
+          },
+          {
+            "download_token": []
+          }
+        ],
+        "produces": [
+          "application/octet-stream"
+        ],
+        "tags": [
+          "objects"
+        ],
+        "summary": "get object content",
+        "operationId": "getObject",
+        "responses": {
+          "200": {
+            "description": "object content",
+            "schema": {
+              "type": "file"
+            },
+            "headers": {
+              "Content-Disposition": {
+                "type": "string"
+              },
+              "Content-Length": {
+                "type": "integer",
+                "format": "int64"
+              },
+              "ETag": {
+                "type": "string"
+              },
+              "Last-Modified": {
+                "type": "string"
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "404": {
+            "description": "path or ref not found",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          },
+          "default": {
+            "description": "generic error response",
+            "schema": {
+              "$ref": "#/definitions/error"
+            }
+          }
+        }
+      },
+      "parameters": [
+        {
+          "type": "string",
+          "name": "repositoryId",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "ref",
+          "in": "path",
+          "required": true
+        },
+        {
+          "type": "string",
+          "name": "path",
+          "in": "query",
+          "required": true
+        }
+      ]
+    },
+    "/repositories/{repositoryId}/refs/{ref}/objects/ls": {
       "get": {
         "tags": [
           "objects"
@@ -2028,7 +2171,8 @@ func init() {
         },
         {
           "type": "string",
-          "name": "branchId",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "ref",
           "in": "path",
           "required": true
         },
@@ -2049,7 +2193,7 @@ func init() {
         }
       ]
     },
-    "/repositories/{repositoryId}/branches/{branchId}/objects/stat": {
+    "/repositories/{repositoryId}/refs/{ref}/objects/stat": {
       "get": {
         "tags": [
           "objects"
@@ -2092,7 +2236,8 @@ func init() {
         },
         {
           "type": "string",
-          "name": "branchId",
+          "description": "a reference (could be either a branch ID or a commit ID)",
+          "name": "ref",
           "in": "path",
           "required": true
         },
@@ -2103,58 +2248,24 @@ func init() {
           "required": true
         }
       ]
-    },
-    "/repositories/{repositoryId}/commits/{commitId}": {
-      "get": {
-        "tags": [
-          "commits"
-        ],
-        "summary": "get commit",
-        "operationId": "getCommit",
-        "responses": {
-          "200": {
-            "description": "commit",
-            "schema": {
-              "$ref": "#/definitions/commit"
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "404": {
-            "description": "commit not found",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          },
-          "default": {
-            "description": "generic error response",
-            "schema": {
-              "$ref": "#/definitions/error"
-            }
-          }
-        }
-      },
-      "parameters": [
-        {
-          "type": "string",
-          "name": "repositoryId",
-          "in": "path",
-          "required": true
-        },
-        {
-          "type": "string",
-          "name": "commitId",
-          "in": "path",
-          "required": true
-        }
-      ]
     }
   },
   "definitions": {
+    "branch_creation": {
+      "type": "object",
+      "required": [
+        "id",
+        "sourceRefId"
+      ],
+      "properties": {
+        "id": {
+          "type": "string"
+        },
+        "sourceRefId": {
+          "type": "string"
+        }
+      }
+    },
     "commit": {
       "type": "object",
       "properties": {
@@ -2290,7 +2401,7 @@ func init() {
         }
       }
     },
-    "refspec": {
+    "ref": {
       "type": "object",
       "required": [
         "id",
@@ -2386,6 +2497,11 @@ func init() {
   "securityDefinitions": {
     "basic_auth": {
       "type": "basic"
+    },
+    "download_token": {
+      "type": "apiKey",
+      "name": "token",
+      "in": "query"
     }
   },
   "security": [

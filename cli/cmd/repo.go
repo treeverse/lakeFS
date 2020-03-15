@@ -67,7 +67,7 @@ var repoListCmd = &cobra.Command{
 			Pagination *Pagination
 		}{
 			RepoTable: &Table{
-				Headers: []interface{}{"Repository", "Creation Date", "Default Branch Name", "Storage Namespace"},
+				Headers: []interface{}{"Repository", "Creation Date", "Default Ref Name", "Storage Namespace"},
 				Rows:    rows,
 			},
 		}

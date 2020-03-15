@@ -26,6 +26,10 @@ type GetObjectOK struct {
 	/*
 
 	 */
+	ContentDisposition string `json:"Content-Disposition"`
+	/*
+
+	 */
 	ContentLength int64 `json:"Content-Length"`
 	/*
 
@@ -46,6 +50,17 @@ type GetObjectOK struct {
 func NewGetObjectOK() *GetObjectOK {
 
 	return &GetObjectOK{}
+}
+
+// WithContentDisposition adds the contentDisposition to the get object o k response
+func (o *GetObjectOK) WithContentDisposition(contentDisposition string) *GetObjectOK {
+	o.ContentDisposition = contentDisposition
+	return o
+}
+
+// SetContentDisposition sets the contentDisposition to the get object o k response
+func (o *GetObjectOK) SetContentDisposition(contentDisposition string) {
+	o.ContentDisposition = contentDisposition
 }
 
 // WithContentLength adds the contentLength to the get object o k response
@@ -94,6 +109,13 @@ func (o *GetObjectOK) SetPayload(payload io.ReadCloser) {
 
 // WriteResponse to the client
 func (o *GetObjectOK) WriteResponse(rw http.ResponseWriter, producer runtime.Producer) {
+
+	// response header Content-Disposition
+
+	contentDisposition := o.ContentDisposition
+	if contentDisposition != "" {
+		rw.Header().Set("Content-Disposition", contentDisposition)
+	}
 
 	// response header Content-Length
 
@@ -170,7 +192,7 @@ func (o *GetObjectUnauthorized) WriteResponse(rw http.ResponseWriter, producer r
 // GetObjectNotFoundCode is the HTTP code returned for type GetObjectNotFound
 const GetObjectNotFoundCode int = 404
 
-/*GetObjectNotFound path or branch not found
+/*GetObjectNotFound path or ref not found
 
 swagger:response getObjectNotFound
 */

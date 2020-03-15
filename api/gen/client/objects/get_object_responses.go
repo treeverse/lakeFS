@@ -69,6 +69,8 @@ func NewGetObjectOK(writer io.Writer) *GetObjectOK {
 object content
 */
 type GetObjectOK struct {
+	ContentDisposition string
+
 	ContentLength int64
 
 	ETag string
@@ -79,7 +81,7 @@ type GetObjectOK struct {
 }
 
 func (o *GetObjectOK) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects][%d] getObjectOK  %+v", 200, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects][%d] getObjectOK  %+v", 200, o.Payload)
 }
 
 func (o *GetObjectOK) GetPayload() io.Writer {
@@ -87,6 +89,9 @@ func (o *GetObjectOK) GetPayload() io.Writer {
 }
 
 func (o *GetObjectOK) readResponse(response runtime.ClientResponse, consumer runtime.Consumer, formats strfmt.Registry) error {
+
+	// response header Content-Disposition
+	o.ContentDisposition = response.GetHeader("Content-Disposition")
 
 	// response header Content-Length
 	contentLength, err := swag.ConvertInt64(response.GetHeader("Content-Length"))
@@ -123,7 +128,7 @@ type GetObjectUnauthorized struct {
 }
 
 func (o *GetObjectUnauthorized) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects][%d] getObjectUnauthorized  %+v", 401, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects][%d] getObjectUnauthorized  %+v", 401, o.Payload)
 }
 
 func (o *GetObjectUnauthorized) GetPayload() *models.Error {
@@ -149,14 +154,14 @@ func NewGetObjectNotFound() *GetObjectNotFound {
 
 /*GetObjectNotFound handles this case with default header values.
 
-path or branch not found
+path or ref not found
 */
 type GetObjectNotFound struct {
 	Payload *models.Error
 }
 
 func (o *GetObjectNotFound) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects][%d] getObjectNotFound  %+v", 404, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects][%d] getObjectNotFound  %+v", 404, o.Payload)
 }
 
 func (o *GetObjectNotFound) GetPayload() *models.Error {
@@ -198,7 +203,7 @@ func (o *GetObjectDefault) Code() int {
 }
 
 func (o *GetObjectDefault) Error() string {
-	return fmt.Sprintf("[GET /repositories/{repositoryId}/branches/{branchId}/objects][%d] getObject default  %+v", o._statusCode, o.Payload)
+	return fmt.Sprintf("[GET /repositories/{repositoryId}/refs/{ref}/objects][%d] getObject default  %+v", o._statusCode, o.Payload)
 }
 
 func (o *GetObjectDefault) GetPayload() *models.Error {

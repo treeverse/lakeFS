@@ -474,13 +474,17 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master1", branch.GetCommit()))
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master2", branch.GetCommit()))
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master3", branch.GetCommit()))
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master4", branch.GetCommit()))
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master5", branch.GetCommit()))
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master6", branch.GetCommit()))
-		testutil.Must(t, deps.meta.CreateBranch("repo1", "master7", branch.GetCommit()))
+		createBranch := func(repoId, branchId, commitId string) error {
+			_, err := deps.meta.CreateBranch(repoId, branchId, commitId)
+			return err
+		}
+		testutil.Must(t, createBranch("repo1", "master1", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master2", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master3", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master4", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master5", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master6", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master7", branch.GetCommit()))
 
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(2),
@@ -586,9 +590,9 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.Refspec{
-				CommitID: swag.String(branch.GetCommit()),
-				ID:       swag.String("master2"),
+			Branch: &models.BranchCreation{
+				SourceRefID: swag.String(branch.GetCommit()),
+				ID:          swag.String("master2"),
 			},
 			RepositoryID: "repo1",
 		}, bauth)
@@ -602,9 +606,9 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 
 	t.Run("create branch missing commit", func(t *testing.T) {
 		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.Refspec{
-				CommitID: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
-				ID:       swag.String("master3"),
+			Branch: &models.BranchCreation{
+				SourceRefID: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
+				ID:          swag.String("master3"),
 			},
 			RepositoryID: "repo1",
 		}, bauth)
@@ -619,9 +623,9 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, err = clt.Branches.CreateBranch(&branches.CreateBranchParams{
-			Branch: &models.Refspec{
-				CommitID: swag.String(branch.GetCommit()),
-				ID:       swag.String("master8"),
+			Branch: &models.BranchCreation{
+				SourceRefID: swag.String(branch.GetCommit()),
+				ID:          swag.String("master8"),
 			},
 			RepositoryID: "repo5",
 		}, bauth)
@@ -649,7 +653,10 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		testutil.Must(t, deps.meta.CreateBranch("my-new-repo", "master2", branch.GetCommit()))
+		_, err = deps.meta.CreateBranch("my-new-repo", "master2", branch.GetCommit())
+		if err != nil {
+			t.Fatal(err)
+		}
 
 		_, err = clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
 			BranchID:     "master2",
@@ -707,7 +714,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth)
@@ -777,7 +784,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 	t.Run("get object list", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
-			BranchID:     "master",
+			Ref:          "master",
 			RepositoryID: "repo1",
 			Tree:         swag.String("foo/"),
 		}, bauth)
@@ -793,7 +800,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	t.Run("get object list paginated", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Amount:       swag.Int64(2),
-			BranchID:     "master",
+			Ref:          "master",
 			RepositoryID: "repo1",
 			Tree:         swag.String("foo/"),
 		}, bauth)
@@ -854,7 +861,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		resp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth, buf)
@@ -913,7 +920,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		// download it
 		rbuf := new(bytes.Buffer)
 		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth, rbuf)
@@ -966,7 +973,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		// download it
 		rbuf := new(bytes.Buffer)
 		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth, rbuf)
@@ -993,7 +1000,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// get it
 		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
-			BranchID:     "master",
+			Ref:          "master",
 			Path:         "foo/bar",
 			RepositoryID: "repo1",
 		}, bauth)

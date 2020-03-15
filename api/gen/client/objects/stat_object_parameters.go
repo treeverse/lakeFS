@@ -61,10 +61,13 @@ for the stat object operation typically these are written to a http.Request
 */
 type StatObjectParams struct {
 
-	/*BranchID*/
-	BranchID string
 	/*Path*/
 	Path string
+	/*Ref
+	  a reference (could be either a branch ID or a commit ID)
+
+	*/
+	Ref string
 	/*RepositoryID*/
 	RepositoryID string
 
@@ -106,17 +109,6 @@ func (o *StatObjectParams) SetHTTPClient(client *http.Client) {
 	o.HTTPClient = client
 }
 
-// WithBranchID adds the branchID to the stat object params
-func (o *StatObjectParams) WithBranchID(branchID string) *StatObjectParams {
-	o.SetBranchID(branchID)
-	return o
-}
-
-// SetBranchID adds the branchId to the stat object params
-func (o *StatObjectParams) SetBranchID(branchID string) {
-	o.BranchID = branchID
-}
-
 // WithPath adds the path to the stat object params
 func (o *StatObjectParams) WithPath(path string) *StatObjectParams {
 	o.SetPath(path)
@@ -126,6 +118,17 @@ func (o *StatObjectParams) WithPath(path string) *StatObjectParams {
 // SetPath adds the path to the stat object params
 func (o *StatObjectParams) SetPath(path string) {
 	o.Path = path
+}
+
+// WithRef adds the ref to the stat object params
+func (o *StatObjectParams) WithRef(ref string) *StatObjectParams {
+	o.SetRef(ref)
+	return o
+}
+
+// SetRef adds the ref to the stat object params
+func (o *StatObjectParams) SetRef(ref string) {
+	o.Ref = ref
 }
 
 // WithRepositoryID adds the repositoryID to the stat object params
@@ -147,11 +150,6 @@ func (o *StatObjectParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 	}
 	var res []error
 
-	// path param branchId
-	if err := r.SetPathParam("branchId", o.BranchID); err != nil {
-		return err
-	}
-
 	// query param path
 	qrPath := o.Path
 	qPath := qrPath
@@ -159,6 +157,11 @@ func (o *StatObjectParams) WriteToRequest(r runtime.ClientRequest, reg strfmt.Re
 		if err := r.SetQueryParam("path", qPath); err != nil {
 			return err
 		}
+	}
+
+	// path param ref
+	if err := r.SetPathParam("ref", o.Ref); err != nil {
+		return err
 	}
 
 	// path param repositoryId

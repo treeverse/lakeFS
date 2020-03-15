@@ -1,9 +1,13 @@
 package api
 
-import "github.com/treeverse/lakefs/api/gen/models"
+import (
+	"fmt"
 
-func responseError(msg string) *models.Error {
-	return &models.Error{Message: msg}
+	"github.com/treeverse/lakefs/api/gen/models"
+)
+
+func responseError(msg string, args ...interface{}) *models.Error {
+	return &models.Error{Message: fmt.Sprintf(msg, args...)}
 }
 
 func responseErrorFrom(err error) *models.Error {

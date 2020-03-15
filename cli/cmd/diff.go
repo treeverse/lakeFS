@@ -29,11 +29,12 @@ import (
 )
 
 var diffCmd = &cobra.Command{
-	Use:   "diff [branch uri] <other branch uri>",
-	Short: "see the list of paths added/changed/removed in a branch or between two branches",
+	Use:   "diff [ref uri] <other ref uri>",
+	Short: "diff between commits/hashes",
+	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
 	Args: ValidationChain(
 		HasRangeArgs(1, 2),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -41,17 +42,17 @@ var diffCmd = &cobra.Command{
 		var diff []*models.Diff
 		var err error
 		if len(args) == 2 {
-			if err := IsBranchURI(1)(args); err != nil {
+			if err := IsRefURI(1)(args); err != nil {
 				DieErr(err)
 			}
-			leftBranchURI := uri.Must(uri.Parse(args[0]))
-			rightBranchURI := uri.Must(uri.Parse(args[1]))
+			leftRefURI := uri.Must(uri.Parse(args[0]))
+			rightRefURI := uri.Must(uri.Parse(args[1]))
 
-			if leftBranchURI.Repository != rightBranchURI.Repository {
-				DieFmt("both branches must belong to the same repository")
+			if leftRefURI.Repository != rightRefURI.Repository {
+				DieFmt("both references must belong to the same repository")
 			}
 
-			diff, err = client.DiffBranches(context.Background(), leftBranchURI.Repository, leftBranchURI.Refspec, rightBranchURI.Refspec)
+			diff, err = client.DiffRefs(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 			if err != nil {
 				DieErr(err)
 			}
@@ -60,7 +61,7 @@ var diffCmd = &cobra.Command{
 			}
 		} else {
 			branchURI := uri.Must(uri.Parse(args[0]))
-			diff, err = client.DiffBranch(context.Background(), branchURI.Repository, branchURI.Refspec)
+			diff, err = client.DiffBranch(context.Background(), branchURI.Repository, branchURI.Ref)
 			if err != nil {
 				DieErr(err)
 			}

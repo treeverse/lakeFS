@@ -40,11 +40,11 @@ type ListObjectsParams struct {
 	  In: query
 	*/
 	Amount *int64
-	/*
+	/*a reference (could be either a branch ID or a commit ID)
 	  Required: true
 	  In: path
 	*/
-	BranchID string
+	Ref string
 	/*
 	  Required: true
 	  In: path
@@ -77,8 +77,8 @@ func (o *ListObjectsParams) BindRequest(r *http.Request, route *middleware.Match
 		res = append(res, err)
 	}
 
-	rBranchID, rhkBranchID, _ := route.Params.GetOK("branchId")
-	if err := o.bindBranchID(rBranchID, rhkBranchID, route.Formats); err != nil {
+	rRef, rhkRef, _ := route.Params.GetOK("ref")
+	if err := o.bindRef(rRef, rhkRef, route.Formats); err != nil {
 		res = append(res, err)
 	}
 
@@ -138,8 +138,8 @@ func (o *ListObjectsParams) bindAmount(rawData []string, hasKey bool, formats st
 	return nil
 }
 
-// bindBranchID binds and validates parameter BranchID from path.
-func (o *ListObjectsParams) bindBranchID(rawData []string, hasKey bool, formats strfmt.Registry) error {
+// bindRef binds and validates parameter Ref from path.
+func (o *ListObjectsParams) bindRef(rawData []string, hasKey bool, formats strfmt.Registry) error {
 	var raw string
 	if len(rawData) > 0 {
 		raw = rawData[len(rawData)-1]
@@ -148,7 +148,7 @@ func (o *ListObjectsParams) bindBranchID(rawData []string, hasKey bool, formats 
 	// Required: true
 	// Parameter is provided by construction from the route
 
-	o.BranchID = raw
+	o.Ref = raw
 
 	return nil
 }

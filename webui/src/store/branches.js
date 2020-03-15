@@ -1,53 +1,28 @@
 
+import * as async from './async';
+
 import {
-    BRANCH_CREATE_ERROR,
-    BRANCHES_LIST_START,
-    BRANCHES_LIST_ERROR,
-    BRANCHES_LIST_SUCCESS,
-    BRANCH_PREFIX_LOADED,
-    BRANCH_SOURCE_SELECT
+    BRANCHES_CREATE,
+    BRANCHES_LIST,
+    BRANCHES_LIST_PAGINATE,
 } from '../actions/branches';
 
+
 const initialState = {
-    loading: true,
-    list: [],
-    error: null,
-    createError: null,
-    prefixList: [],
-    sourceBranchSelection: null,
+    list: async.initialState,
+    create: async.actionInitialState,
 };
 
 export default  (state = initialState, action) => {
+    state = {
+        ...state,
+        list: async.reduce(BRANCHES_LIST, state.list, action),
+        create: async.actionReduce(BRANCHES_CREATE, state.create, action),
+    };
+
+    state.list  = async.reducePaginate(BRANCHES_LIST_PAGINATE, state.list, action);
+
     switch (action.type) {
-        case BRANCHES_LIST_START:
-            return initialState;
-        case BRANCHES_LIST_SUCCESS:
-            return {
-                ...state,
-                list: action.list,
-                loading: false,
-                error: null,
-            };
-        case BRANCHES_LIST_ERROR:
-            return {
-                ...initialState,
-                error: action.error,
-            };
-        case BRANCH_PREFIX_LOADED:
-            return {
-                ...state,
-                prefixList: action.list,
-            };
-        case BRANCH_SOURCE_SELECT:
-            return {
-                ...state,
-                sourceBranchSelection: action.branch,
-            };
-        case BRANCH_CREATE_ERROR:
-            return {
-                ...state,
-                createError: action.error,
-            };
         default:
             return state;
     }

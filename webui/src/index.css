@@ -1,27 +1,242 @@
-.main-app {
-    margin-top: 20px;
+
+.card.login-widget {
+    margin-top: 130px;
 }
 
-.part-title {
-    margin-bottom: 40px;
+.action-bar {
+    padding-bottom: 10px;
+    padding-top: 10px;
+    margin-bottom: 10px;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    overflow: hidden;
 }
 
-/* fix bootstrap icon's svg placement in buttons */
-.danger-text {
-    color: red;
+.action-bar .float-left .btn {
+    margin-right: 10px;
 }
 
-button > svg {
-    margin-top: -4px;
-    font-size: 1.5em;
+.action-bar .float-right .btn {
+    margin-left: 10px;
 }
 
-small.description {
-    color: #999999;
+.navbar a.dropdown-toggle {
+    color: #DDDDDD;
+}
+.navbar a.dropdown-toggle:hover {
+    color: #FFFFFF;
+}
+
+.commit-list .list-group-item:nth-of-type(even) {
+    background-color: #FBFBFB;
+}
+
+.commit-actions .btn, .branch-actions .btn {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: .8rem;
+    vertical-align: center;
+}
+
+.lakefs-uri .octicon {
+    color: #0c5460;
+    margin-right: 5px;
+}
+
+.lakefs-uri a {
+    color: #0f6674;
+    text-decoration: underline;
+}
+.lakefs-uri {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+    font-size: .9rem;
+    color: #303030;
+}
+
+.lakefs-uri strong {
+    margin: 0 5px;
+}
+
+/*  ref dropdown */
+.ref-popover .popover-body {
+    padding:0;
+}
+
+.ref-popover, .ref-popover .btn {
+    font-size: 0.8rem;
+    line-height: 0.8rem;
+}
+
+.ref-popover {
+    max-width: 650px;
+    min-width: 450px;
+}
+
+.ref-scroller {
+    max-height: 250px;
+    overflow: auto;
+}
+
+.ref-list {
+
+}
+
+.ref-list .list-group-item:first-child {
+    border-top-left-radius: 0px;
+    border-top-right-radius: 0px;
+}
+.ref-list .list-group-item {
+    padding: 2px 10px;
+    border: 0;
+    border-bottom: 1px solid #DDD;
+    border-radius: 0;
+    clear: both;
+}
+.ref-list .list-group-item .actions {
     float: right;
-    font-family: SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+}
+.ref-list .list-group-item .actions .badge {
+    margin-right: 5px;
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-small.description .action {
-    cursor: pointer;
+.ref-popover h5 {
+    padding: 10px;
+    border-bottom: 1px solid #DDD;
+    background-color: #FBFBFB;
+    text-align: center;
+}
+
+.ref-filter-form {
+    padding: 10px;
+    border-bottom: 1px solid #DDD;
+    background-color: #FBFBFB;
+}
+.ref-filter-form form {
+    margin-bottom: 0;
+}
+.ref-paginator {
+    text-align: center;
+    padding: 10px 0;
+}
+/*  end ref dropdown */
+
+
+/* tree table */
+.diff-indicator {
+    width: 50px;
+}
+
+.diff-indicator span {
+    padding: 0 10px;
+}
+
+.table .tree-row {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+}
+
+.table .tree-row td {
+    padding-top: 10px;
+    padding-bottom: 10px;
+}
+
+.table .tree-row td:first-child {
+    padding-left: 20px;
+}
+
+.table .tree-row td:nth-child(4) {
+    padding-right: 20px;
+    text-align: right;
+}
+
+.table .tree-row td:last-child {
+    padding-right: 10px;
+    text-align: right;
+}
+
+.tree-path .octicon {
+    color: #007bff;
+    margin-right: 5px;
+    font-size: .9rem;
+}
+
+.diff-removed .tree-path, .diff-removed .tree-path .octicon, .diff-removed .diff-indicator .octicon {
+    color: #808080;
+}
+
+
+.diff-changed {
+    background-color: #ffeeba;
+}
+
+.diff-added {
+    background-color: #cdffd8;
+}
+
+.diff-removed {
+    background-color: #ffdce0;
+}
+
+.tree-row-actions {
+    width: 30px;
+    padding:0;
+}
+
+.table .tree-row .tree-row-actions .btn {
+    display: none;
+    padding: 0;
+    margin: 0;
+    font-size: 0.7rem;
+}
+
+.table .tree-row:hover .tree-row-actions .btn,
+.table .tree-row:focus .tree-row-actions .btn {
+    display: inline;
+}
+
+
+.btn.btn-link {
+    vertical-align: top;
+    line-height: inherit;
+    padding: 0;
+    display: inline;
+}
+
+.tree-container .alert {
+    margin: 20px;
+}
+
+.tree-container {
+    margin-bottom: 30px;
+    font-size: .9rem;
+}
+
+.tree-container .card .card-header {
+    padding: 10px;
+}
+
+.tree-container .card .card-body {
+    padding: 0;
+}
+
+.tree-container .card .card-body > .table {
+    margin-bottom: 0;
+}
+
+.tree-container .btn.btn-link {
+    font-size: .9rem;
+}
+
+.tree-paginator  {
+    text-align: center;
+}
+
+.commit-metadata {
+    font-size: 0.85rem;
+}
+
+.branch-table td {
+    font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
+}
+
+.list-group.branches-list {
+    margin-bottom: 30px;
 }

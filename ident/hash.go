@@ -39,3 +39,12 @@ func MultiHash(inp ...string) string {
 	}
 	return hex.EncodeToString(h.Sum(nil))
 }
+
+func IsHash(identifier string) bool {
+	if len(identifier) > HashHexLength {
+		return false
+	}
+	// check if all hexadecimal chars
+	_, err := hex.DecodeString(identifier)
+	return err == nil
+}
