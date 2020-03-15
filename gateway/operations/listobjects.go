@@ -45,7 +45,7 @@ func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
 	return maxKeys
 }
 
-func (controller *ListObjects) serializeEntries(refspec string, entries []*model.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
+func (controller *ListObjects) serializeEntries(ref string, entries []*model.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
 	dirs := make([]serde.CommonPrefixes, 0)
 	files := make([]serde.Contents, 0)
 	var lastKey string
@@ -53,10 +53,10 @@ func (controller *ListObjects) serializeEntries(refspec string, entries []*model
 		lastKey = entry.GetName()
 		switch entry.GetType() {
 		case model.Entry_TREE:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRefspec(entry.GetName(), refspec)})
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef(entry.GetName(), ref)})
 		case model.Entry_OBJECT:
 			files = append(files, serde.Contents{
-				Key:          path.WithRefspec(entry.GetName(), refspec),
+				Key:          path.WithRef(entry.GetName(), ref),
 				LastModified: serde.Timestamp(entry.GetTimestamp()),
 				ETag:         httputil.ETag(entry.GetChecksum()),
 				Size:         entry.GetSize(),
@@ -72,7 +72,7 @@ func (controller *ListObjects) serializeBranches(branches []*model.Branch) ([]se
 	var lastKey string
 	for _, branch := range branches {
 		lastKey = branch.GetName()
-		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRefspec("", branch.GetName())})
+		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef("", branch.GetName())})
 	}
 	return dirs, lastKey
 }
@@ -111,7 +111,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	var results []*model.Entry
 	hasMore := false
 
-	var refspec string
+	var ref string
 
 	// should we list branches?
 	prefix, err := path.ResolvePath(params.Get("prefix"))
@@ -126,7 +126,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	if !prefix.WithPath {
 		// list branches then.
-		branchPrefix := prefix.Refspec // TODO: same prefix logic also in V1!!!!!
+		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
 		o.Log().WithField("prefix", branchPrefix).Debug("listing branches with prefix")
 		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), branchPrefix, maxKeys, fromStr)
 		if err != nil {
@@ -159,12 +159,12 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		return
 
 	} else {
-		refspec = prefix.Refspec
+		ref = prefix.Ref
 		if len(fromStr) > 0 {
 			from, err = path.ResolvePath(fromStr)
-			if err != nil || !strings.EqualFold(from.Refspec, prefix.Refspec) {
+			if err != nil || !strings.EqualFold(from.Ref, prefix.Ref) {
 				o.Log().WithError(err).WithFields(log.Fields{
-					"branch": prefix.Refspec,
+					"branch": prefix.Ref,
 					"path":   prefix.Path,
 					"from":   fromStr,
 				}).Error("invalid marker - doesnt start with branch name")
@@ -175,7 +175,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
 			o.Repo.GetRepoId(),
-			prefix.Refspec,
+			prefix.Ref,
 			prefix.Path,
 			from.Path,
 			maxKeys,
@@ -183,22 +183,22 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		if xerrors.Is(err, db.ErrNotFound) {
 			if xerrors.Is(err, indexErrors.ErrBranchNotFound) {
 				o.Log().WithError(err).WithFields(log.Fields{
-					"refspec": prefix.Refspec,
-					"path":    prefix.Path,
+					"ref":  prefix.Ref,
+					"path": prefix.Path,
 				}).Debug("could not list objects in path")
 			}
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(log.Fields{
-				"refspec": prefix.Refspec,
-				"path":    prefix.Path,
+				"ref":  prefix.Ref,
+				"path": prefix.Path,
 			}).Error("could not list objects in path")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
 	}
 
-	dirs, files, lastKey := controller.serializeEntries(refspec, results)
+	dirs, files, lastKey := controller.serializeEntries(ref, results)
 
 	resp := serde.ListObjectsV2Output{
 		Name:           o.Repo.GetRepoId(),
@@ -216,7 +216,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	if hasMore {
 		resp.IsTruncated = true
-		resp.NextContinuationToken = path.WithRefspec(lastKey, refspec)
+		resp.NextContinuationToken = path.WithRef(lastKey, ref)
 	}
 
 	o.EncodeResponse(resp, http.StatusOK)
@@ -242,7 +242,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	var results []*model.Entry
 	hasMore := false
 
-	var refspec string
+	var ref string
 	// should we list branches?
 	prefix, err := path.ResolvePath(params.Get("prefix"))
 	if err != nil {
@@ -256,7 +256,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	if !prefix.WithPath {
 		// list branches then.
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), prefix.Refspec, maxKeys, params.Get("marker"))
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -293,15 +293,15 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
 			return
 		}
-		refspec = prefix.Refspec
+		ref = prefix.Ref
 		// see if we have a continuation token in the request to pick up from
 		var marker path.ResolvedPath
 		// strip the branch from the marker
 		if len(params.Get("marker")) > 0 {
 			marker, err = path.ResolvePath(params.Get("marker"))
-			if err != nil || !strings.EqualFold(marker.Refspec, prefix.Refspec) {
+			if err != nil || !strings.EqualFold(marker.Ref, prefix.Ref) {
 				o.Log().WithError(err).WithFields(log.Fields{
-					"branch": prefix.Refspec,
+					"branch": prefix.Ref,
 					"path":   prefix.Path,
 					"marker": marker,
 				}).Error("invalid marker - doesnt start with branch name")
@@ -312,7 +312,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
 			o.Repo.GetRepoId(),
-			prefix.Refspec,
+			prefix.Ref,
 			prefix.Path,
 			marker.Path,
 			maxKeys,
@@ -322,7 +322,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(log.Fields{
-				"branch": prefix.Refspec,
+				"branch": prefix.Ref,
 				"path":   prefix.Path,
 			}).Error("could not list objects in path")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
@@ -331,7 +331,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	}
 
 	// build a response
-	dirs, files, lastKey := controller.serializeEntries(refspec, results)
+	dirs, files, lastKey := controller.serializeEntries(ref, results)
 	resp := serde.ListBucketResult{
 		Name:           o.Repo.GetRepoId(),
 		Prefix:         params.Get("prefix"),
@@ -347,7 +347,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		resp.IsTruncated = true
 		if !descend {
 			// NextMarker is only set if a delimiter exists
-			resp.NextMarker = path.WithRefspec(lastKey, refspec)
+			resp.NextMarker = path.WithRef(lastKey, ref)
 		}
 	}
 

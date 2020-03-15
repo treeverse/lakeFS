@@ -45,7 +45,7 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 		return
 	}
 
-	err := o.Index.DeleteObject(o.Repo.GetRepoId(), o.Branch, o.Path)
+	err := o.Index.DeleteObject(o.Repo.GetRepoId(), o.Ref, o.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not delete key")
 		if !xerrors.Is(err, db.ErrNotFound) {

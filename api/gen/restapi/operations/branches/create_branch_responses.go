@@ -25,7 +25,7 @@ type CreateBranchCreated struct {
 	/*
 	  In: Body
 	*/
-	Payload *models.Refspec `json:"body,omitempty"`
+	Payload *models.Ref `json:"body,omitempty"`
 }
 
 // NewCreateBranchCreated creates CreateBranchCreated with default headers values
@@ -35,13 +35,13 @@ func NewCreateBranchCreated() *CreateBranchCreated {
 }
 
 // WithPayload adds the payload to the create branch created response
-func (o *CreateBranchCreated) WithPayload(payload *models.Refspec) *CreateBranchCreated {
+func (o *CreateBranchCreated) WithPayload(payload *models.Ref) *CreateBranchCreated {
 	o.Payload = payload
 	return o
 }
 
 // SetPayload sets the payload to the create branch created response
-func (o *CreateBranchCreated) SetPayload(payload *models.Refspec) {
+func (o *CreateBranchCreated) SetPayload(payload *models.Ref) {
 	o.Payload = payload
 }
 

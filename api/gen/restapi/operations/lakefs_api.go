@@ -24,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 )
 
@@ -71,8 +72,8 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		BranchesDiffBranchHandler: branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.DiffBranch has not yet been implemented")
 		}),
-		BranchesDiffBranchesHandler: branches.DiffBranchesHandlerFunc(func(params branches.DiffBranchesParams, principal *models.User) middleware.Responder {
-			return middleware.NotImplemented("operation branches.DiffBranches has not yet been implemented")
+		RefsDiffRefsHandler: refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, principal *models.User) middleware.Responder {
+			return middleware.NotImplemented("operation refs.DiffRefs has not yet been implemented")
 		}),
 		BranchesGetBranchHandler: branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, principal *models.User) middleware.Responder {
 			return middleware.NotImplemented("operation branches.GetBranch has not yet been implemented")
@@ -109,6 +110,11 @@ func NewLakefsAPI(spec *loads.Document) *LakefsAPI {
 		}), // Applies when the Authorization header is set with the Basic scheme
 		BasicAuthAuth: func(user string, pass string) (*models.User, error) {
 			return nil, errors.NotImplemented("basic auth  (basic_auth) has not yet been implemented")
+		},
+
+		// Applies when the "token" query is set
+		DownloadTokenAuth: func(token string) (*models.User, error) {
+			return nil, errors.NotImplemented("api key auth (download_token) token from query param [token] has not yet been implemented")
 		},
 
 		// default authorizer is authorized meaning no requests are blocked
@@ -154,6 +160,10 @@ type LakefsAPI struct {
 	// it performs authentication with basic auth
 	BasicAuthAuth func(string, string) (*models.User, error)
 
+	// DownloadTokenAuth registers a function that takes a token and returns a principal
+	// it performs authentication based on an api key token provided in the query
+	DownloadTokenAuth func(string) (*models.User, error)
+
 	// APIAuthorizer provides access control (ACL/RBAC/ABAC) by providing access to the request and authenticated principal
 	APIAuthorizer runtime.Authorizer
 
@@ -173,8 +183,8 @@ type LakefsAPI struct {
 	RepositoriesDeleteRepositoryHandler repositories.DeleteRepositoryHandler
 	// BranchesDiffBranchHandler sets the operation handler for the diff branch operation
 	BranchesDiffBranchHandler branches.DiffBranchHandler
-	// BranchesDiffBranchesHandler sets the operation handler for the diff branches operation
-	BranchesDiffBranchesHandler branches.DiffBranchesHandler
+	// RefsDiffRefsHandler sets the operation handler for the diff refs operation
+	RefsDiffRefsHandler refs.DiffRefsHandler
 	// BranchesGetBranchHandler sets the operation handler for the get branch operation
 	BranchesGetBranchHandler branches.GetBranchHandler
 	// CommitsGetBranchCommitLogHandler sets the operation handler for the get branch commit log operation
@@ -275,6 +285,10 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "BasicAuthAuth")
 	}
 
+	if o.DownloadTokenAuth == nil {
+		unregistered = append(unregistered, "TokenAuth")
+	}
+
 	if o.AuthenticationGetAuthenticationHandler == nil {
 		unregistered = append(unregistered, "Authentication.GetAuthenticationHandler")
 	}
@@ -307,8 +321,8 @@ func (o *LakefsAPI) Validate() error {
 		unregistered = append(unregistered, "Branches.DiffBranchHandler")
 	}
 
-	if o.BranchesDiffBranchesHandler == nil {
-		unregistered = append(unregistered, "Branches.DiffBranchesHandler")
+	if o.RefsDiffRefsHandler == nil {
+		unregistered = append(unregistered, "Refs.DiffRefsHandler")
 	}
 
 	if o.BranchesGetBranchHandler == nil {
@@ -377,6 +391,13 @@ func (o *LakefsAPI) AuthenticatorsFor(schemes map[string]spec.SecurityScheme) ma
 		case "basic_auth":
 			result[name] = o.BasicAuthenticator(func(username, password string) (interface{}, error) {
 				return o.BasicAuthAuth(username, password)
+			})
+
+		case "download_token":
+
+			scheme := schemes[name]
+			result[name] = o.APIKeyAuthenticator(scheme.Name, scheme.In, func(token string) (interface{}, error) {
+				return o.DownloadTokenAuth(token)
 			})
 
 		}
@@ -505,7 +526,7 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}"] = branches.NewDiffBranches(o.context, o.BranchesDiffBranchesHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}"] = refs.NewDiffRefs(o.context, o.RefsDiffRefsHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
@@ -525,7 +546,7 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects"] = objects.NewGetObject(o.context, o.ObjectsGetObjectHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/refs/{ref}/objects"] = objects.NewGetObject(o.context, o.ObjectsGetObjectHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
@@ -540,7 +561,7 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects/ls"] = objects.NewListObjects(o.context, o.ObjectsListObjectsHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/refs/{ref}/objects/ls"] = objects.NewListObjects(o.context, o.ObjectsListObjectsHandler)
 
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
@@ -555,7 +576,7 @@ func (o *LakefsAPI) initHandlerCache() {
 	if o.handlers["GET"] == nil {
 		o.handlers["GET"] = make(map[string]http.Handler)
 	}
-	o.handlers["GET"]["/repositories/{repositoryId}/branches/{branchId}/objects/stat"] = objects.NewStatObject(o.context, o.ObjectsStatObjectHandler)
+	o.handlers["GET"]["/repositories/{repositoryId}/refs/{ref}/objects/stat"] = objects.NewStatObject(o.context, o.ObjectsStatObjectHandler)
 
 	if o.handlers["POST"] == nil {
 		o.handlers["POST"] = make(map[string]http.Handler)

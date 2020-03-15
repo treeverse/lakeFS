@@ -14,7 +14,7 @@ import (
 
 // StatObjectURL generates an URL for the stat object operation
 type StatObjectURL struct {
-	BranchID     string
+	Ref          string
 	RepositoryID string
 
 	Path string
@@ -43,13 +43,13 @@ func (o *StatObjectURL) SetBasePath(bp string) {
 func (o *StatObjectURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/repositories/{repositoryId}/branches/{branchId}/objects/stat"
+	var _path = "/repositories/{repositoryId}/refs/{ref}/objects/stat"
 
-	branchID := o.BranchID
-	if branchID != "" {
-		_path = strings.Replace(_path, "{branchId}", branchID, -1)
+	ref := o.Ref
+	if ref != "" {
+		_path = strings.Replace(_path, "{ref}", ref, -1)
 	} else {
-		return nil, errors.New("branchId is required on StatObjectURL")
+		return nil, errors.New("ref is required on StatObjectURL")
 	}
 
 	repositoryID := o.RepositoryID

@@ -31,7 +31,7 @@ func NewGetObject(ctx *middleware.Context, handler GetObjectHandler) *GetObject 
 	return &GetObject{Context: ctx, Handler: handler}
 }
 
-/*GetObject swagger:route GET /repositories/{repositoryId}/branches/{branchId}/objects objects getObject
+/*GetObject swagger:route GET /repositories/{repositoryId}/refs/{ref}/objects objects getObject
 
 get object content
 

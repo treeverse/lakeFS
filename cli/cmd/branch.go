@@ -56,7 +56,7 @@ var branchListCmd = &cobra.Command{
 			Pagination  *Pagination
 		}{
 			BranchTable: &Table{
-				Headers: []interface{}{"Branch Name", "Commit ID"},
+				Headers: []interface{}{"Ref Name", "Commit ID"},
 				Rows:    rows,
 			},
 		}
@@ -73,11 +73,11 @@ var branchListCmd = &cobra.Command{
 }
 
 var branchCreateCmd = &cobra.Command{
-	Use:   "create [branch uri]",
+	Use:   "create [ref uri]",
 	Short: "create a new branch in a repository",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -91,19 +91,15 @@ var branchCreateCmd = &cobra.Command{
 			DieFmt("source branch must be in the same repository")
 		}
 
-		sourceBranch, err := client.GetBranch(context.Background(), u.Repository, sourceURI.Refspec)
-		if err != nil {
-			DieFmt("could not get source branch: %s", err)
-		}
-		Fmt("got source branch '%s', using commit '%s'\n",
-			sourceURI.Refspec, *sourceBranch.CommitID)
-		err = client.CreateBranch(context.Background(), u.Repository, &models.Refspec{
-			CommitID: sourceBranch.CommitID,
-			ID:       swag.String(u.Refspec),
+		ref, err := client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
+			ID:          swag.String(u.Ref),
+			SourceRefID: swag.String(sourceURI.Ref),
 		})
 		if err != nil {
 			DieErr(err)
 		}
+
+		Fmt("created branch '%s', pointing to commit ID: '%s'\n", *ref.ID, *ref.CommitID)
 	},
 }
 
@@ -112,7 +108,7 @@ var branchDeleteCmd = &cobra.Command{
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		sure, err := cmd.Flags().GetBool("sure")
@@ -124,7 +120,7 @@ var branchDeleteCmd = &cobra.Command{
 		}
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		err = client.DeleteBranch(context.Background(), u.Repository, u.Refspec)
+		err = client.DeleteBranch(context.Background(), u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
 		}
@@ -152,7 +148,7 @@ var branchRevertCmd = &cobra.Command{
 				4. revert uncommited changes for specific object  - revert lakefs://myrepo@master  --object path `,
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -210,7 +206,7 @@ var branchRevertCmd = &cobra.Command{
 			fmt.Println("Revert Aborted")
 			return
 		}
-		err = clt.RevertBranch(context.Background(), u.Repository, u.Refspec, &revert)
+		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, &revert)
 		if err != nil {
 			DieErr(err)
 		}
@@ -222,12 +218,12 @@ var branchShowCmd = &cobra.Command{
 	Short: "show branch metadata",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsBranchURI(0),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		resp, err := client.GetBranch(context.Background(), u.Repository, u.Refspec)
+		resp, err := client.GetBranch(context.Background(), u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
 		}

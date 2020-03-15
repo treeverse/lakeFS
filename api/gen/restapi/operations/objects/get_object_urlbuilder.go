@@ -14,7 +14,7 @@ import (
 
 // GetObjectURL generates an URL for the get object operation
 type GetObjectURL struct {
-	BranchID     string
+	Ref          string
 	RepositoryID string
 
 	Path string
@@ -43,13 +43,13 @@ func (o *GetObjectURL) SetBasePath(bp string) {
 func (o *GetObjectURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/repositories/{repositoryId}/branches/{branchId}/objects"
+	var _path = "/repositories/{repositoryId}/refs/{ref}/objects"
 
-	branchID := o.BranchID
-	if branchID != "" {
-		_path = strings.Replace(_path, "{branchId}", branchID, -1)
+	ref := o.Ref
+	if ref != "" {
+		_path = strings.Replace(_path, "{ref}", ref, -1)
 	} else {
-		return nil, errors.New("branchId is required on GetObjectURL")
+		return nil, errors.New("ref is required on GetObjectURL")
 	}
 
 	repositoryID := o.RepositoryID

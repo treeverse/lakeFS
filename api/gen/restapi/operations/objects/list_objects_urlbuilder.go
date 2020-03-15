@@ -16,7 +16,7 @@ import (
 
 // ListObjectsURL generates an URL for the list objects operation
 type ListObjectsURL struct {
-	BranchID     string
+	Ref          string
 	RepositoryID string
 
 	After  *string
@@ -47,13 +47,13 @@ func (o *ListObjectsURL) SetBasePath(bp string) {
 func (o *ListObjectsURL) Build() (*url.URL, error) {
 	var _result url.URL
 
-	var _path = "/repositories/{repositoryId}/branches/{branchId}/objects/ls"
+	var _path = "/repositories/{repositoryId}/refs/{ref}/objects/ls"
 
-	branchID := o.BranchID
-	if branchID != "" {
-		_path = strings.Replace(_path, "{branchId}", branchID, -1)
+	ref := o.Ref
+	if ref != "" {
+		_path = strings.Replace(_path, "{ref}", ref, -1)
 	} else {
-		return nil, errors.New("branchId is required on ListObjectsURL")
+		return nil, errors.New("ref is required on ListObjectsURL")
 	}
 
 	repositoryID := o.RepositoryID

@@ -86,7 +86,7 @@ func (a *Client) GetObject(params *GetObjectParams, authInfo runtime.ClientAuthI
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "getObject",
 		Method:             "GET",
-		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/objects",
+		PathPattern:        "/repositories/{repositoryId}/refs/{ref}/objects",
 		ProducesMediaTypes: []string{"application/octet-stream"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
@@ -120,7 +120,7 @@ func (a *Client) ListObjects(params *ListObjectsParams, authInfo runtime.ClientA
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "listObjects",
 		Method:             "GET",
-		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/objects/ls",
+		PathPattern:        "/repositories/{repositoryId}/refs/{ref}/objects/ls",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
@@ -154,7 +154,7 @@ func (a *Client) StatObject(params *StatObjectParams, authInfo runtime.ClientAut
 	result, err := a.transport.Submit(&runtime.ClientOperation{
 		ID:                 "statObject",
 		Method:             "GET",
-		PathPattern:        "/repositories/{repositoryId}/branches/{branchId}/objects/stat",
+		PathPattern:        "/repositories/{repositoryId}/refs/{ref}/objects/stat",
 		ProducesMediaTypes: []string{"application/json"},
 		ConsumesMediaTypes: []string{"application/json"},
 		Schemes:            []string{"http"},
