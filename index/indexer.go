@@ -3,7 +3,6 @@ package index
 import (
 	"fmt"
 	"math/rand"
-	"regexp"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -211,6 +210,14 @@ func resolveRef(tx store.RepoReadOnlyOperations, ref string) (*reference, error)
 
 // Business logic
 func (index *KVIndex) ReadObject(repoId, ref, path string) (*model.Object, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(ref),
+		ValidatePath(path))
+	if err != nil {
+		return nil, err
+	}
+
 	obj, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
 		_, err := tx.ReadRepo()
 		if err != nil {
@@ -297,6 +304,13 @@ func readEntry(tx store.RepoReadOnlyOperations, ref, path string, typ model.Entr
 }
 
 func (index *KVIndex) ReadEntry(repoId, branch, path string, typ model.Entry_Type) (*model.Entry, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return nil, err
+	}
 	entry, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (interface{}, error) {
 		return readEntry(tx, branch, path, typ)
 	})
@@ -307,6 +321,12 @@ func (index *KVIndex) ReadEntry(repoId, branch, path string, typ model.Entry_Typ
 }
 
 func (index *KVIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(ref))
+	if err != nil {
+		return nil, err
+	}
 	root, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		_, err = tx.ReadRepo()
 		if err != nil {
@@ -328,15 +348,36 @@ func (index *KVIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
 }
 
 func (index *KVIndex) ReadEntryTree(repoId, branch, path string) (*model.Entry, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return nil, err
+	}
 	return index.ReadEntry(repoId, branch, path, model.Entry_TREE)
 }
 
 func (index *KVIndex) ReadEntryObject(repoId, branch, path string) (*model.Entry, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return nil, err
+	}
 	return index.ReadEntry(repoId, branch, path, model.Entry_OBJECT)
 }
 
 func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return err
+	}
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		repo, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
@@ -355,7 +396,14 @@ func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 }
 
 func (index *KVIndex) WriteEntry(repoId, branch, path string, entry *model.Entry) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return err
+	}
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		repo, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
@@ -370,8 +418,15 @@ func (index *KVIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 }
 
 func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Object) error {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return err
+	}
 	timestamp := index.tsGenerator()
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		addr := ident.Hash(object)
 		err := tx.WriteObject(addr, object)
 		if err != nil {
@@ -400,8 +455,15 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 
 // delete object with timestamp - for testing timestamps
 func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return err
+	}
 	ts := index.tsGenerator()
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		repo, err := tx.ReadRepo()
 		if err != nil {
 			return nil, err
@@ -426,6 +488,11 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 }
 
 func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId))
+	if err != nil {
+		return nil, false, err
+	}
 	type result struct {
 		hasMore bool
 		results []*model.Branch
@@ -451,6 +518,13 @@ func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount 
 }
 
 func (index *KVIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(ref),
+		ValidatePath(path))
+	if err != nil {
+		return nil, false, err
+	}
 	type result struct {
 		hasMore bool
 		results []*model.Entry
@@ -491,8 +565,14 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 }
 
 func (index *KVIndex) ResetBranch(repoId, branch string) error {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch))
+	if err != nil {
+		return err
+	}
 	// clear workspace, set branch workspace root back to commit root
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := tx.ClearWorkspace(branch)
 		if err != nil {
 			return nil, err
@@ -509,13 +589,20 @@ func (index *KVIndex) ResetBranch(repoId, branch string) error {
 }
 
 func (index *KVIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(ref),
+		ValidateRef(branch))
+	if err != nil {
+		return nil, err
+	}
 	branchData, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// ensure it doesn't exist yet
 		_, err := tx.ReadBranch(branch)
 		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
 			return nil, err
 		} else if err == nil {
-			return nil, errors.ErrBranchExists
+			return nil, errors.ErrBranchAlreadyExists
 		}
 		// read resolve reference
 		reference, err := resolveRef(tx, ref)
@@ -537,6 +624,12 @@ func (index *KVIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, e
 }
 
 func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch))
+	if err != nil {
+		return nil, err
+	}
 	brn, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		return tx.ReadBranch(branch)
 	})
@@ -547,6 +640,13 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 }
 
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidateCommitMessage(message))
+	if err != nil {
+		return nil, err
+	}
 	ts := index.tsGenerator()
 	commit, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
@@ -584,6 +684,12 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 }
 
 func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateCommitID(commitId))
+	if err != nil {
+		return nil, err
+	}
 	commit, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		return tx.ReadCommit(commitId)
 	})
@@ -594,6 +700,12 @@ func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) 
 }
 
 func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateCommitID(fromCommitId))
+	if err != nil {
+		return nil, err
+	}
 	commits, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 		return dag.BfsScan(tx, fromCommitId)
 	})
@@ -604,7 +716,13 @@ func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit
 }
 
 func (index *KVIndex) DeleteBranch(repoId, branch string) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch))
+	if err != nil {
+		return err
+	}
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
@@ -621,6 +739,12 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 }
 
 func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch))
+	if err != nil {
+		return nil, err
+	}
 	res, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
 		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
 		if err != nil {
@@ -644,6 +768,13 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 }
 
 func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(leftRef),
+		ValidateRef(rightRef))
+	if err != nil {
+		return nil, err
+	}
 	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 
 		lRef, err := resolveRef(tx, leftRef)
@@ -690,7 +821,14 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 }
 
 func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidateCommitID(commit))
+	if err != nil {
+		return err
+	}
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := tx.ClearWorkspace(branch)
 		if err != nil {
 			return nil, err
@@ -773,10 +911,24 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 }
 
 func (index *KVIndex) RevertPath(repoId, branch, path string) error {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return err
+	}
 	return index.revertPath(repoId, branch, path, model.Entry_TREE)
 }
 
 func (index *KVIndex) RevertObject(repoId, branch, path string) error {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch),
+		ValidatePath(path))
+	if err != nil {
+		return err
+	}
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
 
@@ -788,14 +940,11 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 	return err
 }
 
-func isValidRepoId(repoId string) bool {
-	return regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`).MatchString(repoId)
-}
-
 func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
-
-	if !isValidRepoId(repoId) {
-		return errors.ErrInvalidBucketName
+	err := ValidateAll(
+		ValidateRepoId(repoId))
+	if err != nil {
+		return err
 	}
 
 	creationDate := index.tsGenerator()
@@ -809,7 +958,7 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 	}
 
 	// create repository, an empty commit and tree, and the default branch
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// make sure this repo doesn't already exist
 		_, err := tx.ReadRepo()
 		if err == nil {
@@ -865,6 +1014,11 @@ func (index *KVIndex) ListRepos(amount int, after string) ([]*model.Repo, bool, 
 }
 
 func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId))
+	if err != nil {
+		return nil, err
+	}
 	repo, err := index.kv.ReadTransact(func(tx store.ClientReadOnlyOperations) (interface{}, error) {
 		return tx.ReadRepo(repoId)
 	})
@@ -875,7 +1029,12 @@ func (index *KVIndex) GetRepo(repoId string) (*model.Repo, error) {
 }
 
 func (index *KVIndex) DeleteRepo(repoId string) error {
-	_, err := index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId))
+	if err != nil {
+		return err
+	}
+	_, err = index.kv.Transact(func(tx store.ClientOperations) (interface{}, error) {
 		_, err := tx.ReadRepo(repoId)
 		if err != nil {
 			return nil, err
@@ -890,7 +1049,13 @@ func (index *KVIndex) DeleteRepo(repoId string) error {
 }
 
 func (index *KVIndex) Tree(repoId, branch string) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(branch))
+	if err != nil {
+		return err
+	}
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
