@@ -40,12 +40,15 @@ gen-api:  ## Run the go-swagger code generator (Docker required)
 validate-swagger:  ## Validate swagger.yaml
 	$(SWAGGER) validate  ./swagger.yml
 
-build: ## Download dependecies and Build the default binary
+build: gen ## Download dependecies and Build the default binary
 		$(GOBUILD) -o $(BINARY_NAME) -v main.go
 		$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
 
-test: ## Run tests for the project
+test: gen ## Run tests for the project
 		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
+
+test-race: gen ## Run tests for the project with -race
+		$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast ./...
 
 test-html: test ## Run tests with HTML for the project
 		$(GOTOOL) cover -html=cover.out
@@ -53,11 +56,11 @@ test-html: test ## Run tests with HTML for the project
 build-docker: ## Build Docker image file (Docker required)
 		$(DOCKER) build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
-gofmt: ## gofmt code formating
+gofmt: gen ## gofmt code formating
 	@echo Running go formating with the following command:
 	$(GOFMT) -e -s -w .
 
-fmt-validator: ## Validate go format
+fmt-validator: gen ## Validate go format
 	@echo checking gofmt...
 	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./src/vendor \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
@@ -71,7 +74,6 @@ fmt-validator: ## Validate go format
 checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps
 
 # UI operations
-
 ui-build:  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build && cd -
 
@@ -84,3 +86,5 @@ help: ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
+# helppers
+gen: gen-proto gen-api ui
