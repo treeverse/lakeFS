@@ -16,6 +16,7 @@ import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {doCommit, resetCommit} from "../actions/commits";
+import Alert from "react-bootstrap/Alert";
 
 
 const CompareToolbar = ({repo, refId, compare}) => {
@@ -120,7 +121,7 @@ const UploadButton = connect(
                             }}/>
                         </Form.Group>
                     </Form>
-
+                    {(!!uploadState.error) ? (<Alert variant="danger">{uploadState.error}</Alert>) : (<span/>)}
 
                 </Modal.Body>
                 <Modal.Footer>
@@ -190,7 +191,7 @@ const CommitButton = connect(
                     <Modal.Title>Commit Changes</Modal.Title>
                 </Modal.Header>
                 <Modal.Body>
-                    <Form onSubmit={(e) => {
+                    <Form className="mb-2" onSubmit={(e) => {
                         onSubmit();
                         e.preventDefault();
                     }}>
@@ -235,6 +236,7 @@ const CommitButton = connect(
                             Add Metadata field
                         </Button>
                     </Form>
+                    {(!!commitState.error) ? (<Alert variant="danger">{commitState.error}</Alert>) : (<span/>)}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={disabled} onClick={onHide}>
