@@ -20,13 +20,20 @@ jobs:
     name: Code Test
     runs-on: ubuntu-latest
     steps:
+      - name: Check out code into the Go module directory
+        uses: actions/checkout@v1
+      - name: Setup UI (node 10)
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+      - name: install UI dependencies
+        run: npm install
+        working-directory: ./webui
       - name: Set up Go 1.13
         uses: actions/setup-go@v1
         with:
           go-version: 1.13
         id: go
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
       - name: Run tests
         run: |
           make test
