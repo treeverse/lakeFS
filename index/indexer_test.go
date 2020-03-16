@@ -56,7 +56,7 @@ func TestKVIndex_GetCommit(t *testing.T) {
 	})
 
 	t.Run("get non existing commit - expect error", func(t *testing.T) {
-		_, err := kvIndex.GetCommit(repo.RepoId, "nonexistingcommitid")
+		_, err := kvIndex.GetCommit(repo.RepoId, "a564356445bdef")
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Errorf("expected to get not found error for non existing commit")
 		}

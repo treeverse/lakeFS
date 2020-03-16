@@ -24,15 +24,13 @@ export const actionReduce = (actionType, state, action) => {
             };
         case actionType.success:
             return {
-                inProgress: false,
-                error: null,
+                ...actionInitialState,
                 done: true,
             };
         case actionType.error:
             return {
-                inProgress: false,
+                ...actionInitialState,
                 error: action.error,
-                done: true,
             };
         case actionType.reset:
             return  {
