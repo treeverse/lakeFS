@@ -39,7 +39,7 @@ const CreateBranchButton = connect(
 
     const onSubmit = () => {
         if (disabled) return;
-        createBranch(repo.id, textRef.current.value, selectedBranch.id);
+        createBranch(repo.id, textRef.current.value, (!!selectedBranch) ? selectedBranch.id : "");
     };
 
     useEffect(() => {
@@ -76,8 +76,8 @@ const CreateBranchButton = connect(
                                 withCommits={true}
                                 withWorkspace={false}/>
                         </Form.Group>
-                   </Form>
-
+                    </Form>
+                    {(!!status.error) ? (<Alert variant="danger">{status.error}</Alert>) : (<span/>)}
                 </Modal.Body>
                 <Modal.Footer>
                     <Button variant="secondary" disabled={disabled} onClick={onHide}>

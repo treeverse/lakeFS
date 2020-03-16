@@ -7,6 +7,7 @@
     "@testing-library/jest-dom": "^4.2.4",
     "@testing-library/react": "^9.4.1",
     "@testing-library/user-event": "^7.2.1",
+    "acorn": ">=7.1.1",
     "base-64": "^0.1.0",
     "bootstrap": "^4.4.1",
     "bootswatch": "^4.4.1",
