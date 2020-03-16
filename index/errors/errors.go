@@ -7,16 +7,14 @@ import (
 
 var (
 	ErrIndexMalformed             = xerrors.New("index error")
-	ErrBadBlock                   = xerrors.New("block error")
 	ErrMultipartPathMismatch      = xerrors.New("invalid path for multipart upload")
 	ErrMultipartInvalidPartNumber = xerrors.New("invalid part number for multipart upload")
 	ErrMultipartInvalidPartETag   = xerrors.New("invalid ETag for multipart upload")
 	ErrRepoExists                 = xerrors.New("repository already exists")
 	ErrBranchNotFound             = xerrors.Errorf("branch : %w", db.ErrNotFound)
-	ErrBranchExists               = xerrors.New("branch already exists")
+	ErrBranchAlreadyExists        = xerrors.New("branch already exists")
 	ErrNoMergeBase                = xerrors.New("no common merge base found")
 
 	//validation errors
-	ErrInvalid           = xerrors.New("validation error")
-	ErrInvalidBucketName = xerrors.Errorf("bucket : %w", ErrInvalid)
+	ErrInvalid = xerrors.New("validation error")
 )
