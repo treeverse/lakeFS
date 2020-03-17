@@ -35,3 +35,8 @@ main
 
 # client excludes
 webui/node_modules
+
+# server excludes
+api/gen
+statik
+model.pb.go
