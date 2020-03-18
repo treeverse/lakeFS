@@ -22,38 +22,136 @@ type Handler struct {
 	ServerErrorHandler http.Handler
 }
 
-func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	// pprof endpoints
-	h.servePprof(w, r)
+type resolver func(r *http.Request) http.Handler
 
-	// handle path based
-	h.servePathBased(w, r)
+func chainResolver(r *http.Request, resolvers ...resolver) http.Handler {
+	for _, resolverFn := range resolvers {
+		handler := resolverFn(r)
+		if handler != nil {
+			return handler
+		}
+	}
 
-	// handle virtual host
-	h.serveVirtualHost(w, r)
+	return nil
 }
 
-func (h *Handler) servePprof(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	// pprof endpoints
+	handler := chainResolver(r,
+		h.servePprof,
+		h.servePathBased,
+		h.serveVirtualHost)
+
+	if handler == nil {
+		handler = h.NotFoundHandler
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+func (h *Handler) servePprof(r *http.Request) http.Handler {
 	if !strings.HasPrefix(r.URL.Path, DebugPprofPrefix) {
-		return
+		return nil
 	}
 	endpoint := strings.TrimPrefix(r.URL.Path, DebugPprofPrefix)
 	switch endpoint {
 	case "":
-		pprof.Index(w, r)
+		return http.HandlerFunc(pprof.Index)
 	case "cmdline":
-		pprof.Cmdline(w, r)
+		return http.HandlerFunc(pprof.Cmdline)
 	case "profile":
-		pprof.Profile(w, r)
+		return http.HandlerFunc(pprof.Profile)
 	case "symbol":
-		pprof.Symbol(w, r)
+		return http.HandlerFunc(pprof.Symbol)
 	case "trace":
-		pprof.Trace(w, r)
+		return http.HandlerFunc(pprof.Trace)
 	case "block", "goroutine", "heap", "threadcreate":
-		pprof.Handler(endpoint).ServeHTTP(w, r)
-	default:
-		h.NotFoundHandler.ServeHTTP(w, r)
+		return pprof.Handler(endpoint)
 	}
+
+	return nil
+}
+
+func (h *Handler) servePathBased(r *http.Request) http.Handler {
+	host := hostOnly(r.Host)
+
+	if !strings.EqualFold(host, hostOnly(h.BareDomain)) {
+		return nil // maybe it's a virtual host, but def not a path based request because the host is wrong
+	}
+
+	if parts, ok := SplitFirst(r.URL.Path, 3); ok {
+		repositoryId := parts[0]
+		ref := parts[1]
+		key := parts[2]
+		if err := index.ValidateAll(
+			index.ValidateRepoId(repositoryId),
+			index.ValidateRef(ref),
+			index.ValidatePath(key),
+		); err != nil {
+			return h.NotFoundHandler
+		}
+
+		return h.pathBasedHandler(r.Method, repositoryId, ref, key)
+	}
+
+	// Paths for repository and ref only (none exist)
+	if _, ok := SplitFirst(r.URL.Path, 2); ok {
+		return h.NotFoundHandler
+	}
+
+	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
+		// Paths for bare repository
+		repositoryId := parts[0]
+		if err := index.ValidateAll(
+			index.ValidateRepoId(repositoryId),
+		); err != nil {
+			return h.NotFoundHandler
+		}
+
+		return h.repositoryBasedHandler(r.Method, repositoryId)
+	}
+
+	// no repository given
+	switch r.Method {
+	case http.MethodGet:
+		return OperationHandler(h.ctx, &operations.ListBuckets{})
+	}
+
+	return h.NotFoundHandler
+}
+
+func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {
+	// is it a virtual host?
+	host := hostOnly(r.Host)
+
+	if !strings.HasSuffix(host, hostOnly(h.BareDomain)) {
+		return nil
+	}
+
+	// remove bare domain suffix
+	repositoryId := strings.TrimSuffix(host, fmt.Sprintf(".%s", hostOnly(h.BareDomain)))
+
+	if err := index.ValidateRepoId(repositoryId); err != nil {
+		return h.NotFoundHandler
+	}
+
+	// Paths that have both a repository, a refId and a path
+	if parts, ok := SplitFirst(r.URL.Path, 2); ok {
+		// validate ref, key
+		ref := parts[0]
+		key := parts[1]
+		if err := index.ValidateAll(index.ValidateRef(ref), index.ValidatePath(key)); err != nil {
+			return h.NotFoundHandler
+		}
+		return h.pathBasedHandler(r.Method, repositoryId, ref, key)
+	}
+
+	// Paths that only have a repository and a refId (always 404)
+	if _, ok := SplitFirst(r.URL.Path, 1); ok {
+		return h.NotFoundHandler
+	}
+
+	return h.repositoryBasedHandler(r.Method, repositoryId)
 }
 
 func (h *Handler) pathBasedHandler(method, repositoryId, ref, path string) http.Handler {
@@ -94,110 +192,6 @@ func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handl
 	return RepoOperationHandler(h.ctx, repositoryId, handler)
 }
 
-func getHost(r *http.Request) (string, error) {
-	if strings.Contains(r.Host, ":") {
-		host, _, err := net.SplitHostPort(r.Host)
-		if err != nil {
-			return "", err
-		}
-		return host, nil
-	}
-	return r.Host, nil
-}
-
-func (h *Handler) servePathBased(w http.ResponseWriter, r *http.Request) {
-	host := r.Host
-
-	if !strings.EqualFold(host, h.BareDomain) {
-		return // maybe it's a virtual host, but def not a path based request because the host is wrong
-	}
-
-	if parts, ok := SplitFirst(r.URL.Path, 3); ok {
-		repositoryId := parts[0]
-		ref := parts[1]
-		key := parts[2]
-		if err := index.ValidateAll(
-			index.ValidateRepoId(repositoryId),
-			index.ValidateRef(ref),
-			index.ValidatePath(key),
-		); err != nil {
-			h.NotFoundHandler.ServeHTTP(w, r)
-			return // invalid path
-		}
-
-		h.pathBasedHandler(r.Method, repositoryId, ref, key).ServeHTTP(w, r)
-		return
-	}
-
-	// Paths for repository and ref only (none exist)
-	if _, ok := SplitFirst(r.URL.Path, 2); ok {
-		h.NotFoundHandler.ServeHTTP(w, r)
-		return
-	}
-
-	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
-		// Paths for bare repository
-		repositoryId := parts[0]
-		if err := index.ValidateAll(
-			index.ValidateRepoId(repositoryId),
-		); err != nil {
-			h.NotFoundHandler.ServeHTTP(w, r)
-			return
-		}
-
-		h.repositoryBasedHandler(r.Method, repositoryId).ServeHTTP(w, r)
-		return
-	}
-
-	// no repository given
-	switch r.Method {
-	case http.MethodGet:
-		OperationHandler(h.ctx, &operations.ListBuckets{}).ServeHTTP(w, r)
-		return
-	}
-
-	h.NotFoundHandler.ServeHTTP(w, r)
-}
-
-func (h *Handler) serveVirtualHost(w http.ResponseWriter, r *http.Request) {
-	// is it a virtual host?
-	host := r.Host
-
-	if !strings.HasSuffix(host, h.BareDomain) {
-		h.NotFoundHandler.ServeHTTP(w, r)
-		return // not a virtual host
-	}
-
-	// remove bare domain suffix
-	repositoryId := strings.TrimSuffix(host, fmt.Sprintf(".%s", h.BareDomain))
-
-	if err := index.ValidateRepoId(repositoryId); err != nil {
-		h.NotFoundHandler.ServeHTTP(w, r)
-		return
-	}
-
-	// Paths that have both a repository, a refId and a path
-	if parts, ok := SplitFirst(r.URL.Path, 2); ok {
-		// validate ref, key
-		ref := parts[0]
-		key := parts[1]
-		if err := index.ValidateAll(index.ValidateRef(ref), index.ValidatePath(key)); err != nil {
-			h.NotFoundHandler.ServeHTTP(w, r)
-			return
-		}
-		h.pathBasedHandler(r.Method, repositoryId, ref, key).ServeHTTP(w, r)
-		return
-	}
-
-	// Paths that only have a repository and a refId (always 404)
-	if _, ok := SplitFirst(r.URL.Path, 1); ok {
-		h.NotFoundHandler.ServeHTTP(w, r)
-		return
-	}
-
-	h.repositoryBasedHandler(r.Method, repositoryId).ServeHTTP(w, r)
-}
-
 func SplitFirst(pth string, parts int) ([]string, bool) {
 	const sep = "/"
 	result := make([]string, parts)
@@ -218,4 +212,12 @@ func SplitFirst(pth string, parts int) ([]string, bool) {
 	}
 	result[parts-1] = strings.Join(splitted[parts-1:], sep)
 	return result, true
+}
+
+func hostOnly(hostname string) string {
+	if strings.Contains(hostname, ":") {
+		host, _, _ := net.SplitHostPort(hostname)
+		return host
+	}
+	return hostname
 }

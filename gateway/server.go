@@ -1,8 +1,9 @@
 package gateway
 
 import (
-	"fmt"
 	"net/http"
+
+	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/utils"
@@ -61,11 +62,11 @@ func NewServer(
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
-	//handler = utils.RegisterRecorder(
-	//	httputil.LoggingMiddleWare(
-	//		"X-Amz-Request-Id", "s3_gateway", handler,
-	//	),
-	//)
+	handler = utils.RegisterRecorder(
+		httputil.LoggingMiddleWare(
+			"X-Amz-Request-Id", "s3_gateway", handler,
+		),
+	)
 
 	// assemble Server
 	return &Server{
@@ -252,9 +253,4 @@ func unsupportedOperationHandler() http.HandlerFunc {
 
 func notFound(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
-	fmt.Print("URL NOT FOUND\n", r.Method, r.Host)
-}
-func notAllowed(w http.ResponseWriter, r *http.Request) {
-	w.WriteHeader(http.StatusMethodNotAllowed)
-	fmt.Print("METHOD NOT ALLOWED\n", r.Method, r.Host)
 }
