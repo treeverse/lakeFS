@@ -3,7 +3,6 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
-	bou.ke/monkey v1.0.2 // indirect
 	github.com/aws/aws-sdk-go v1.29.8
 	github.com/dgraph-io/badger v1.6.0
 	github.com/go-openapi/errors v0.19.2
@@ -16,7 +15,6 @@ require (
 	github.com/golang/protobuf v1.3.2
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/gorilla/mux v1.7.3
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
