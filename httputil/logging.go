@@ -69,6 +69,7 @@ func LoggingMiddleWare(requestIdHeaderName, serviceName string, next http.Handle
 			"took":        time.Since(before),
 			"status_code": writer.StatusCode,
 			"sent_bytes":  writer.ResponseSize,
+			"host":        r.Host,
 		}).Debug("HTTP call ended")
 	})
 }
