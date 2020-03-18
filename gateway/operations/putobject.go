@@ -10,7 +10,6 @@ import (
 
 	"github.com/treeverse/lakefs/upload"
 
-	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -32,8 +31,8 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) Action(req *http.Request) permissions.Action {
-	return permissions.WriteObject(utils.GetRepo(req))
+func (controller *PutObject) Action(repoId, refId, path string) permissions.Action {
+	return permissions.WriteObject(repoId)
 }
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
