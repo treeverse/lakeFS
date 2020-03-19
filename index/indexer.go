@@ -934,8 +934,10 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 
 func (index *KVIndex) Merge(repoId, source, destination string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		return nil, nil // TODO: optimistic concurrency based optimization
-		// i.e. assume source branch receives no new commits since the start of the process
+
+		// get roots of sorce and destination branches
+		df, err := index.Diff(repoId, source, destination)
+		return df, err
 	})
 	return err
 }
