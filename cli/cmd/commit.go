@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var commitCreateTemplate = `Commit for branch "{{.Ref.Ref}}" done.
+var commitCreateTemplate = `Commit for branch "{{.Branch.Ref}}" done.
 
 ID: {{.Commit.ID|yellow}}
 Timestamp: {{.Commit.CreationDate|date}}
