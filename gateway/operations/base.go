@@ -158,7 +158,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 }
 
 type BaseOperationHandler interface {
-	Action(req *http.Request) permissions.Action
+	Action(repoId, refId, path string) permissions.Action
 }
 
 type OperationHandler interface {
