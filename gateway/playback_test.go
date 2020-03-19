@@ -7,7 +7,8 @@ import (
 	"path/filepath"
 	"testing"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
@@ -100,7 +101,7 @@ func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
 
 func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.APICredentials, error) {
 	if accessKey != m.AccessKeyId {
-		log.Fatal("access key in recording different than configuration")
+		logging.Default().Fatal("access key in recording different than configuration")
 	}
 	aCred := new(model.APICredentials)
 	aCred.AccessKeyId = accessKey

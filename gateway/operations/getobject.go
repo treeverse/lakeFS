@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
@@ -17,8 +18,6 @@ import (
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
 
-	"github.com/sirupsen/logrus"
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -41,10 +40,8 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
-		WithField("path", o.Path).
-		WithField("branch", o.Ref).
 		WithError(err).
-		Info("metadata operation to retrieve object done")
+		Debug("metadata operation to retrieve object done")
 
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
@@ -85,13 +82,11 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		o.ResponseWriter.WriteHeader(http.StatusOK)
 		n, err := io.Copy(o.ResponseWriter, ranger)
 		if err != nil {
-			o.Log().WithError(err).Errorf("could not copy range to response")
+			o.Log().WithError(err).Error("could not copy range to response")
 			return
 		}
-		l := o.Log().WithFields(log.Fields{
+		l := o.Log().WithFields(logging.Fields{
 			"range":   ranger.Range,
-			"path":    o.Path,
-			"branch":  o.Ref,
 			"written": n,
 		})
 		if n != expected {
@@ -124,14 +119,14 @@ type ObjectRanger struct {
 	Repo    string
 	obj     *model.Object
 	adapter block.Adapter
-	logger  *logrus.Entry
+	logger  logging.Logger
 
 	offset       int64 // offset within the range
 	rangeBuffer  []byte
 	rangeAddress string
 }
 
-func NewObjectRanger(spec string, repo string, obj *model.Object, adapter block.Adapter, logger *log.Entry) (*ObjectRanger, error) {
+func NewObjectRanger(spec string, repo string, obj *model.Object, adapter block.Adapter, logger logging.Logger) (*ObjectRanger, error) {
 	// let's start by deciding which blocks we actually need
 	rang, err := ghttp.ParseHTTPRange(spec, obj.GetSize())
 	if err != nil {
