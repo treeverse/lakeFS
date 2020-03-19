@@ -2,12 +2,12 @@ package db
 
 import (
 	"github.com/dgraph-io/badger"
-	"github.com/sirupsen/logrus"
+	"github.com/treeverse/lakefs/logging"
 )
 
 // logging adapter
 type badgerLogger struct {
-	logger *logrus.Entry
+	logger logging.Logger
 }
 
 func (l *badgerLogger) Errorf(s string, d ...interface{}) {
@@ -23,7 +23,7 @@ func (l *badgerLogger) Debugf(s string, d ...interface{}) {
 	l.logger.Debugf(s, d...)
 }
 
-func NewBadgerLoggingAdapter(logger *logrus.Entry) badger.Logger {
+func NewBadgerLoggingAdapter(logger logging.Logger) badger.Logger {
 	return &badgerLogger{logger: logger}
 }
 
