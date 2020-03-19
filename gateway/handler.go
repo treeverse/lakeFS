@@ -22,26 +22,17 @@ type Handler struct {
 	ServerErrorHandler http.Handler
 }
 
-type resolver func(r *http.Request) http.Handler
-
-func chainResolver(r *http.Request, resolvers ...resolver) http.Handler {
-	for _, resolverFn := range resolvers {
-		handler := resolverFn(r)
-		if handler != nil {
-			return handler
-		}
-	}
-
-	return nil
-}
-
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// pprof endpoints
-	handler := chainResolver(r,
-		h.servePprof,
-		h.servePathBased,
-		h.serveVirtualHost)
+	var handler http.Handler
 
+	handler = h.servePprof(r)
+	if handler == nil {
+		handler = h.servePathBased(r)
+	}
+	if handler == nil {
+		handler = h.serveVirtualHost(r)
+	}
 	if handler == nil {
 		handler = h.NotFoundHandler
 	}
@@ -194,24 +185,18 @@ func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handl
 
 func SplitFirst(pth string, parts int) ([]string, bool) {
 	const sep = "/"
-	result := make([]string, parts)
+	empty := make([]string, 0)
 	if strings.HasPrefix(pth, sep) {
 		pth = pth[1:]
 	}
-	splitted := strings.Split(pth, sep)
-	if len(splitted) < parts {
-		return result, false
+	pathParts := strings.SplitN(pth, sep, parts)
+	if len(pathParts) < parts {
+		return empty, false
 	}
-
-	if len(splitted) == 1 && len(splitted[0]) == 0 {
-		return result, false
+	if len(pathParts) == 1 && len(pathParts[0]) == 0 {
+		return empty, false
 	}
-
-	for i := 0; i < parts-1; i++ {
-		result[i] = splitted[i]
-	}
-	result[parts-1] = strings.Join(splitted[parts-1:], sep)
-	return result, true
+	return pathParts, true
 }
 
 func hostOnly(hostname string) string {
