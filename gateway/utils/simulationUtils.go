@@ -2,13 +2,16 @@ package utils
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/model"
+
+	"github.com/treeverse/lakefs/logging"
+
 	"io/ioutil"
 	"net/http"
 	"os"
 	"regexp"
+
+	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/model"
 )
 
 // a limited service interface for the gateway, used by simulation playback
@@ -30,28 +33,30 @@ func NewLazyOutput(name string) *LazyOutput {
 }
 
 func (l *LazyOutput) Write(d []byte) (int, error) {
+	logger := logging.Default()
 	if !l.IsOpen {
 		l.IsOpen = true
 		var err error
 		l.F, err = os.OpenFile(l.Name, os.O_CREATE|os.O_WRONLY, 0777)
 		if err != nil {
-			log.WithError(err).Fatal("file " + l.Name + " failed opened")
+			logger.WithError(err).Fatal("file " + l.Name + " failed opened")
 		}
 	}
 	written, err := l.F.Write(d)
 	if err != nil {
-		log.WithError(err).Fatal("file " + l.Name + " failed write")
+		logger.WithError(err).Fatal("file " + l.Name + " failed write")
 	}
 	return written, err
 }
 
 func (l *LazyOutput) Close() error {
+	logger := logging.Default()
 	if !l.IsOpen {
 		return nil
 	}
 	err := l.F.Close()
 	if err != nil {
-		log.WithError(err).Fatal("Failed closing " + l.Name)
+		logger.WithError(err).Fatal("Failed closing " + l.Name)
 	}
 	l.F = nil
 	return err
@@ -95,13 +100,14 @@ func (w *ResponseWriter) Header() http.Header {
 	return h
 }
 func (w *ResponseWriter) SaveHeaders(fName string) {
+	logger := logging.Default()
 	if len(w.Headers) == 0 {
 		return
 	}
 	s, _ := json.Marshal(w.Headers)
 	err := ioutil.WriteFile(fName, s, 0777)
 	if err != nil {
-		log.WithError(err).Fatal("failed crete file " + fName)
+		logger.WithError(err).Fatal("failed crete file " + fName)
 	}
 }
 

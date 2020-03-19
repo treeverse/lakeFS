@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/upload"
 
 	"github.com/treeverse/lakefs/httputil"
@@ -19,8 +20,6 @@ import (
 	"github.com/treeverse/lakefs/index/model"
 	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/permissions"
-
-	log "github.com/sirupsen/logrus"
 )
 
 const (
@@ -58,11 +57,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	// update metadata to refer to the source hash in the destination workspace
 	src, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), p.Ref, p.Path)
 	if err != nil {
-		o.Log().WithError(err).WithFields(log.Fields{
-			"repo": o.Repo,
-			"ref":  p.Ref,
-			"path": p.Path,
-		}).Error("could not read copy source")
+		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
@@ -118,7 +113,7 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	// TODO: validate the ETag sent in CompleteMultipartUpload matches the blob for the given part number
 	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.Checksum))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
-	o.Log().WithFields(log.Fields{
+	o.Log().WithFields(logging.Fields{
 		"upload_id":   uploadId,
 		"part_number": partNumber,
 	}).Info("multipart upload part done")
@@ -131,10 +126,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	//validate branch
 	_, err := o.Index.GetBranch(o.Repo.GetRepoId(), o.Ref)
 	if err != nil {
-		o.Log().WithError(err).WithFields(log.Fields{
-			"repo":   o.Repo.GetRepoId(),
-			"branch": o.Ref,
-		}).Debug("trying to write to invalid branch")
+		o.Log().WithError(err).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)
 		return
 	}
@@ -188,11 +180,8 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	o.Log().WithFields(log.Fields{
-		"took":   tookMeta,
-		"repo":   o.Repo.GetRepoId(),
-		"branch": o.Ref,
-		"path":   o.Path,
+	o.Log().WithFields(logging.Fields{
+		"took": tookMeta,
 	}).Debug("metadata update complete")
 	o.SetHeader("ETag", httputil.ETag(obj.GetChecksum()))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
