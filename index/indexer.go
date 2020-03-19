@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/index/dag"
 
@@ -768,6 +768,8 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 }
 
 func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
+	log := logging.Default()
+
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(leftRef),

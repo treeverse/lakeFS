@@ -7,6 +7,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/httputil"
@@ -18,8 +20,6 @@ import (
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
-
-	log "github.com/sirupsen/logrus"
 )
 
 type Operation struct {
@@ -40,11 +40,13 @@ func (o *Operation) RequestId() string {
 	return rid
 }
 
-func (o *Operation) Log() *log.Entry {
-	return log.WithFields(log.Fields{
-		"request_id": o.RequestId(),
-		"region":     o.Region,
-	})
+func (o *Operation) AddLogFields(fields logging.Fields) {
+	ctx := logging.AddFields(o.Request.Context(), fields)
+	o.Request = o.Request.WithContext(ctx)
+}
+
+func (o *Operation) Log() logging.Logger {
+	return logging.FromContext(o.Request.Context())
 }
 
 func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
