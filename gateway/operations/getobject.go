@@ -9,8 +9,6 @@ import (
 
 	"github.com/treeverse/lakefs/httputil"
 
-	"github.com/treeverse/lakefs/gateway/utils"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -26,8 +24,8 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) Action(req *http.Request) permissions.Action {
-	return permissions.GetObject(utils.GetRepo(req))
+func (controller *GetObject) Action(repoId, refId, path string) permissions.Action {
+	return permissions.GetObject(repoId)
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {

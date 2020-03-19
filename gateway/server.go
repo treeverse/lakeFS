@@ -1,14 +1,13 @@
 package gateway
 
 import (
-	"fmt"
+	"net/http"
+
+	"github.com/treeverse/lakefs/httputil"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/utils"
-	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
-	"net/http"
-	"net/http/pprof"
-	"strings"
 
 	"github.com/treeverse/lakefs/permissions"
 
@@ -17,10 +16,8 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
-	"github.com/treeverse/lakefs/gateway/path"
 	"golang.org/x/xerrors"
 
-	"github.com/gorilla/mux"
 	log "github.com/sirupsen/logrus"
 )
 
@@ -58,29 +55,25 @@ func NewServer(
 	}
 
 	// setup routes
-	router := mux.NewRouter()
-	attachDebug(router)
-	router.NotFoundHandler = http.HandlerFunc(notFound)
-	router.MethodNotAllowedHandler = http.HandlerFunc(notAllowed)
-	attachRoutes(bareDomain, router, ctx)
-	// also attach routes to a host string minus the port, if the host contains them
-	if strings.Contains(bareDomain, ":") {
-		bareDomainWithoutPort := strings.Split(bareDomain, ":")[0]
-		attachRoutes(bareDomainWithoutPort, router, ctx)
+	var handler http.Handler
+	handler = &Handler{
+		BareDomain:         bareDomain,
+		ctx:                ctx,
+		NotFoundHandler:    http.HandlerFunc(notFound),
+		ServerErrorHandler: nil,
 	}
-
-	utils.RegisterRecorder(router)
-
-	router.Use(func(next http.Handler) http.Handler {
-		return httputil.LoggingMiddleWare("X-Amz-Request-Id", "s3_gateway", next)
-	})
+	handler = utils.RegisterRecorder(
+		httputil.LoggingMiddleWare(
+			"X-Amz-Request-Id", "s3_gateway", handler,
+		),
+	)
 
 	// assemble Server
 	return &Server{
 		ctx:        ctx,
 		bareDomain: bareDomain,
 		Server: &http.Server{
-			Handler: router,
+			Handler: handler,
 			Addr:    listenAddr,
 		},
 	}
@@ -88,69 +81,6 @@ func NewServer(
 
 func (s *Server) Listen() error {
 	return s.Server.ListenAndServe()
-}
-
-func attachDebug(router *mux.Router) {
-	// TODO: configurable host and prefix
-	r := router.Host("localhost:8000").Subrouter()
-	r.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	r.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	r.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	r.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	r.HandleFunc("/debug/pprof/", pprof.Index)
-	r.Handle("/debug/pprof/block", pprof.Handler("block"))
-	r.Handle("/debug/pprof/goroutine", pprof.Handler("goroutine"))
-	r.Handle("/debug/pprof/heap", pprof.Handler("heap"))
-	r.Handle("/debug/pprof/threadcreate", pprof.Handler("threadcreate"))
-}
-
-func attachRoutes(bareDomain string, router *mux.Router, ctx *ServerContext) {
-	// path based routing
-	// non-bucket-specific endpoints
-	serviceEndpoint := router.Host(bareDomain).Subrouter()
-	//create bucket
-	serviceEndpoint.HandleFunc(fmt.Sprintf("/%s", path.CreateRepoMatch), unsupportedOperationHandler()).Methods(http.MethodPut)
-
-	// repo-specific actions that relate to a key
-	pathBasedRepo := serviceEndpoint.PathPrefix(fmt.Sprintf("/%s", path.RepoMatch)).Subrouter()
-	pathBasedRepoWithKey := pathBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefMatch, path.PathMatch)).Subrouter()
-	pathBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
-	pathBasedRepoWithKey.Methods(http.MethodPost).HandlerFunc(PathOperationHandler(ctx, &operations.PostObject{}))
-	pathBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
-	pathBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
-	pathBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
-	// bucket-specific actions that don't relate to a specific key
-	pathBasedRepo.
-		Methods(http.MethodGet).
-		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
-		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
-	pathBasedRepo.Methods(http.MethodDelete).HandlerFunc(unsupportedOperationHandler())
-	pathBasedRepo.Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
-	pathBasedRepo.Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
-	// global level
-	serviceEndpoint.PathPrefix("/").Methods(http.MethodGet).HandlerFunc(OperationHandler(ctx, &operations.ListBuckets{}))
-
-	// sub-domain based routing
-	subDomainBasedRepo := router.Host(strings.Join([]string{path.RepoMatch, bareDomain}, ".")).Subrouter()
-	subDomainBasedRepo.Path(fmt.Sprintf("/%s", path.RefMatch)).Methods(http.MethodHead).HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusNotFound)
-	})
-	// repo-specific actions that relate to a key
-	subDomainBasedRepoWithKey := subDomainBasedRepo.PathPrefix(fmt.Sprintf("/%s/%s", path.RefMatch, path.PathMatch)).Subrouter()
-	subDomainBasedRepoWithKey.Methods(http.MethodDelete).HandlerFunc(PathOperationHandler(ctx, &operations.DeleteObject{}))
-	subDomainBasedRepoWithKey.Methods(http.MethodPost).HandlerFunc(PathOperationHandler(ctx, &operations.PostObject{}))
-	subDomainBasedRepoWithKey.Methods(http.MethodGet).HandlerFunc(PathOperationHandler(ctx, &operations.GetObject{}))
-	subDomainBasedRepoWithKey.Methods(http.MethodHead).HandlerFunc(PathOperationHandler(ctx, &operations.HeadObject{}))
-	subDomainBasedRepoWithKey.Methods(http.MethodPut).HandlerFunc(PathOperationHandler(ctx, &operations.PutObject{}))
-	// bucket-specific actions that don't relate to a specific key
-	subDomainBasedRepo.
-		Methods(http.MethodGet).
-		//Queries("prefix", "{prefix}", "Prefix", "{prefix}", "Delimiter", "{delimiter}", "delimiter", "{delimiter}").
-		HandlerFunc(RepoOperationHandler(ctx, &operations.ListObjects{}))
-	subDomainBasedRepo.Path("/").Methods(http.MethodDelete).HandlerFunc(unsupportedOperationHandler())
-	subDomainBasedRepo.Path("/").Methods(http.MethodHead).HandlerFunc(RepoOperationHandler(ctx, &operations.HeadBucket{}))
-	subDomainBasedRepo.Path("/").Methods(http.MethodPost).HandlerFunc(RepoOperationHandler(ctx, &operations.DeleteObjects{}))
-	subDomainBasedRepo.Path("/").Methods(http.MethodPut).HandlerFunc(unsupportedOperationHandler())
 }
 
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
@@ -235,7 +165,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(request)
+		action := handler.Action("", "", "")
 		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
@@ -245,20 +175,20 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 	}
 }
 
-func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHandler) http.HandlerFunc {
+func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.RepoOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(request)
+		action := handler.Action(repoId, "", "")
 		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
+		repo, err := authOp.Index.GetRepo(repoId)
 		if xerrors.Is(err, db.ErrNotFound) {
 			log.WithFields(log.Fields{
-				"repo": utils.GetRepo(request),
+				"repo": repoId,
 			}).Warn("the specified repo does not exist")
 			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
 			return
@@ -274,20 +204,20 @@ func RepoOperationHandler(ctx *ServerContext, handler operations.RepoOperationHa
 	}
 }
 
-func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHandler) http.HandlerFunc {
+func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handler operations.PathOperationHandler) http.HandlerFunc {
 	return func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(request)
+		action := handler.Action(repoId, refId, path)
 		authOp := authenticateOperation(ctx, writer, request, action)
 		if authOp == nil {
 			return
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(utils.GetRepo(request))
+		repo, err := authOp.Index.GetRepo(repoId)
 		if xerrors.Is(err, db.ErrNotFound) {
 			log.WithFields(log.Fields{
-				"repo": utils.GetRepo(request),
+				"repo": repoId,
 			}).Warn("the specified repo does not exist")
 			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
 			return
@@ -303,9 +233,9 @@ func PathOperationHandler(ctx *ServerContext, handler operations.PathOperationHa
 					AuthenticatedOperation: authOp,
 					Repo:                   repo,
 				},
-				Ref: utils.GetRef(request),
+				Ref: refId,
 			},
-			Path: utils.GetKey(request),
+			Path: path,
 		})
 	}
 }
@@ -322,9 +252,5 @@ func unsupportedOperationHandler() http.HandlerFunc {
 }
 
 func notFound(w http.ResponseWriter, r *http.Request) {
-	fmt.Print("URL NOT FOUND\n", r.Method, r.Host)
-}
-func notAllowed(w http.ResponseWriter, r *http.Request) {
-
-	fmt.Print("METHOD NOT ALLOWED\n", r.Method, r.Host)
+	w.WriteHeader(http.StatusNotFound)
 }
