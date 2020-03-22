@@ -789,12 +789,12 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 			return nil, err
 		}
 
-		commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
+		commonCommit, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
 		if err != nil {
 			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
 			return nil, err
 		}
-		if len(commonCommits) == 0 {
+		if commonCommit == nil {
 			log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
 			return nil, errors.ErrNoMergeBase
 		}
@@ -808,7 +808,7 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		diff, err := merkle.Diff(tx,
 			merkle.New(leftTree),
 			merkle.New(rightTree),
-			merkle.New(commonCommits[0].GetTree()))
+			merkle.New(commonCommit.GetTree()))
 		if err != nil {
 			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
 		}
