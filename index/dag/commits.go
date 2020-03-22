@@ -19,29 +19,15 @@ func bfsScan(reader CommitReader, startAddr string, matchOnly []*model.Commit) (
 			matchOnlySet[node.GetAddress()] = sentinel
 		}
 	}
-
-	discoveredSet := make(map[string]struct{})
 	commits := make([]*model.Commit, 0)
-	queue := make([]string, 0)
-	queue = append(queue, startAddr)
-	for len(queue) != 0 {
-		// pop
-		currentAddr := queue[0]
-		queue = queue[1:]
-
-		// get and iterate
-		commit, err := reader.ReadCommit(currentAddr)
+	iter := NewBfsIterator(reader, startAddr)
+	for iter.advance() {
+		commit, err := iter.get()
 		if err != nil {
 			return nil, err
 		}
-		if _, isMatch := matchOnlySet[currentAddr]; matchOnly == nil || isMatch {
+		if _, isMatch := matchOnlySet[commit.Address]; matchOnly == nil || isMatch {
 			commits = append(commits, commit)
-		}
-		for _, parent := range commit.GetParents() {
-			if _, wasDiscovered := discoveredSet[parent]; !wasDiscovered {
-				queue = append(queue, parent)
-				discoveredSet[parent] = sentinel
-			}
 		}
 	}
 	return commits, nil
