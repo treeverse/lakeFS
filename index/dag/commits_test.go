@@ -35,6 +35,8 @@ func TestBfsScan(t *testing.T) {
 	cases := []struct {
 		Name     string
 		Addr     string
+		results  int
+		after    string
 		Reader   dag.CommitReader
 		Expected []string
 	}{
@@ -48,6 +50,30 @@ func TestBfsScan(t *testing.T) {
 				"6": {Parents: []string{}, Address: "6"},
 			}),
 			Expected: []string{"9", "8", "7", "6"},
+		},
+		{
+			Name:    "non_forking_graph_2_results",
+			Addr:    "9",
+			results: 2,
+			Reader: newReader(map[string]*model.Commit{
+				"9": {Parents: []string{"8"}, Address: "9"},
+				"8": {Parents: []string{"7"}, Address: "8"},
+				"7": {Parents: []string{"6"}, Address: "7"},
+				"6": {Parents: []string{}, Address: "6"},
+			}),
+			Expected: []string{"9", "8"},
+		},
+		{
+			Name:  "non_forking_graph_after_8",
+			Addr:  "9",
+			after: "8",
+			Reader: newReader(map[string]*model.Commit{
+				"9": {Parents: []string{"8"}, Address: "9"},
+				"8": {Parents: []string{"7"}, Address: "8"},
+				"7": {Parents: []string{"6"}, Address: "7"},
+				"6": {Parents: []string{}, Address: "6"},
+			}),
+			Expected: []string{"7", "6"},
 		},
 
 		{
@@ -85,11 +111,27 @@ func TestBfsScan(t *testing.T) {
 			}),
 			Expected: []string{"8", "6", "7", "3", "4", "5", "1", "2", "0"},
 		},
+		{
+			Name:    "forking_graph_after_brother", //i.e paginate starts from a node such that the next expected node is his brother (no connection between them)
+			Addr:    "6",
+			after:   "3",
+			results: 2,
+			Reader: newReader(map[string]*model.Commit{
+				"6": {Parents: []string{"4", "5"}, Address: "6"},
+				"5": {Parents: []string{"1"}, Address: "5"},
+				"4": {Parents: []string{"3", "2"}, Address: "4"},
+				"3": {Parents: []string{"0"}, Address: "3"},
+				"2": {Parents: []string{"0"}, Address: "2"},
+				"1": {Parents: []string{"0"}, Address: "1"},
+				"0": {Parents: []string{}, Address: "0"},
+			}),
+			Expected: []string{"2", "1"},
+		},
 	}
 
 	for _, tcase := range cases {
 		t.Run(tcase.Name, func(t *testing.T) {
-			commits, err := dag.BfsScan(tcase.Reader, tcase.Addr)
+			commits, err := dag.BfsScan(tcase.Reader, tcase.Addr, tcase.results, tcase.after)
 			if err != nil {
 				t.Fatal(err)
 			}

@@ -8,31 +8,25 @@ type CommitReader interface {
 	ReadCommit(addr string) (*model.Commit, error)
 }
 
-func bfsScan(reader CommitReader, startAddr string, matchOnly []*model.Commit) ([]*model.Commit, error) {
-	// make a set of skip nodes for O(1) lookup
-	var sentinel = struct{}{}
-	matchOnlySet := make(map[string]struct{})
-	if matchOnly != nil {
-		for _, node := range matchOnly {
-			matchOnlySet[node.GetAddress()] = sentinel
-		}
-	}
-	commits := make([]*model.Commit, 0)
+func BfsScan(reader CommitReader, startAddr string, results int, after string) ([]*model.Commit, error) {
 	iter := NewBfsIterator(reader, startAddr)
+	commits := make([]*model.Commit, 0)
+	passedAfter := after == ""
 	for iter.advance() {
 		commit, err := iter.get()
 		if err != nil {
 			return nil, err
 		}
-		if _, isMatch := matchOnlySet[commit.Address]; matchOnly == nil || isMatch {
+		if passedAfter {
 			commits = append(commits, commit)
+			if len(commits) == results {
+				break
+			}
+		} else {
+			passedAfter = commit.Address == after
 		}
 	}
 	return commits, nil
-}
-
-func BfsScan(reader CommitReader, startAddr string) ([]*model.Commit, error) {
-	return bfsScan(reader, startAddr, nil)
 }
 
 func FindLowestCommonAncestor(reader CommitReader, addrA, addrB string) (*model.Commit, error) {
