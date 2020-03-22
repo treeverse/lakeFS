@@ -241,7 +241,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		}
 
 		// get commit log
-		commitLog, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit())
+		commitLog, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit(), 0, "")
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
