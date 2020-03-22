@@ -46,7 +46,7 @@ type Index interface {
 	GetBranch(repoId, branch string) (*model.Branch, error)
 	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
 	GetCommit(repoId, commitId string) (*model.Commit, error)
-	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
+	GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, error)
 	DeleteBranch(repoId, branch string) error
 	Diff(repoId, leftRef, rightRef string) (merkle.Differences, error)
 	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
@@ -699,15 +699,16 @@ func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) 
 	return commit.(*model.Commit), nil
 }
 
-func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error) {
+func (index *KVIndex) GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
-		ValidateCommitID(fromCommitId))
+		ValidateCommitID(fromCommitId),
+		validateOrEmpty(ValidateCommitID, after))
 	if err != nil {
 		return nil, err
 	}
 	commits, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
-		return dag.BfsScan(tx, fromCommitId)
+		return dag.BfsScan(tx, fromCommitId, results, after)
 	})
 	if err != nil {
 		return nil, err
