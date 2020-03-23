@@ -33,12 +33,13 @@ func newReader(kv map[string]*model.Commit) dag.CommitReader {
 
 func TestBfsScan(t *testing.T) {
 	cases := []struct {
-		Name     string
-		Addr     string
-		results  int
-		after    string
-		Reader   dag.CommitReader
-		Expected []string
+		Name            string
+		Addr            string
+		results         int
+		after           string
+		Reader          dag.CommitReader
+		Expected        []string
+		ExpectedHasMore bool
 	}{
 		{
 			Name: "non_forking_graph",
@@ -61,7 +62,8 @@ func TestBfsScan(t *testing.T) {
 				"7": {Parents: []string{"6"}, Address: "7"},
 				"6": {Parents: []string{}, Address: "6"},
 			}),
-			Expected: []string{"9", "8"},
+			Expected:        []string{"9", "8"},
+			ExpectedHasMore: true,
 		},
 		{
 			Name:  "non_forking_graph_after_8",
@@ -125,13 +127,14 @@ func TestBfsScan(t *testing.T) {
 				"1": {Parents: []string{"0"}, Address: "1"},
 				"0": {Parents: []string{}, Address: "0"},
 			}),
-			Expected: []string{"2", "1"},
+			Expected:        []string{"2", "1"},
+			ExpectedHasMore: true,
 		},
 	}
 
 	for _, tcase := range cases {
 		t.Run(tcase.Name, func(t *testing.T) {
-			commits, err := dag.BfsScan(tcase.Reader, tcase.Addr, tcase.results, tcase.after)
+			commits, hasMore, err := dag.BfsScan(tcase.Reader, tcase.Addr, tcase.results, tcase.after)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -141,6 +144,9 @@ func TestBfsScan(t *testing.T) {
 			}
 			if !reflect.DeepEqual(tcase.Expected, ids) {
 				t.Fatalf("expected %v got %v", tcase.Expected, ids)
+			}
+			if tcase.ExpectedHasMore != hasMore {
+				t.Fatalf("hasMore excetption : expected %v got %v", tcase.Expected, ids)
 			}
 		})
 	}
