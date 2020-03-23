@@ -18,7 +18,7 @@ func NewBfsIterator(reader CommitReader, startAddr string) *bfsIterator {
 
 func (bfsIt *bfsIterator) advance() bool {
 
-	if len(bfsIt.queue) == 0 {
+	if !bfsIt.hasMore() {
 		// TODO: consider returning an error | something like end of...
 		return false
 	}
@@ -41,6 +41,10 @@ func (bfsIt *bfsIterator) advance() bool {
 	}
 	bfsIt.item = commit
 	return true
+}
+
+func (bfsIt *bfsIterator) hasMore() bool {
+	return len(bfsIt.queue) > 0
 }
 
 func (bfsIt *bfsIterator) get() (*model.Commit, error) {

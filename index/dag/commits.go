@@ -8,17 +8,18 @@ type CommitReader interface {
 	ReadCommit(addr string) (*model.Commit, error)
 }
 
-func BfsScan(reader CommitReader, startAddr string, results int, after string) ([]*model.Commit, error) {
+func BfsScan(reader CommitReader, startAddr string, results int, after string) ([]*model.Commit, bool, error) {
 	iter := NewBfsIterator(reader, startAddr)
 	commits := make([]*model.Commit, 0)
 	passedAfter := after == ""
 	for iter.advance() {
 		commit, err := iter.get()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
 		if passedAfter {
 			commits = append(commits, commit)
+			//result <= 0 is considered as all
 			if len(commits) == results {
 				break
 			}
@@ -26,7 +27,7 @@ func BfsScan(reader CommitReader, startAddr string, results int, after string) (
 			passedAfter = commit.Address == after
 		}
 	}
-	return commits, nil
+	return commits, iter.hasMore(), nil
 }
 
 func FindLowestCommonAncestor(reader CommitReader, addrA, addrB string) (*model.Commit, error) {
