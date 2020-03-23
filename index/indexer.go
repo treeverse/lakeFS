@@ -767,52 +767,57 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
-	err := ValidateAll(
+func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string) (i interface{}, err error) {
+	err = ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(leftRef),
 		ValidateRef(rightRef))
 	if err != nil {
 		return nil, err
 	}
+	lRef, err := resolveRef(tx, leftRef)
+	if err != nil {
+		log.WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
+		return nil, err
+	}
+
+	rRef, err := resolveRef(tx, rightRef)
+	if err != nil {
+		log.WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
+		return nil, err
+	}
+
+	commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
+	if err != nil {
+		log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
+		return nil, err
+	}
+	if len(commonCommits) == 0 {
+		log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
+		return nil, errors.ErrNoMergeBase
+	}
+
+	leftTree := lRef.commit.GetTree()
+	if lRef.isBranch {
+		leftTree = lRef.branch.GetWorkspaceRoot()
+	}
+	rightTree := rRef.commit.GetTree()
+
+	diff, err := merkle.Diff(tx,
+		merkle.New(leftTree),
+		merkle.New(rightTree),
+		merkle.New(commonCommits[0].GetTree()))
+	if err != nil {
+		log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
+	}
+	return diff, err
+}
+
+func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
+
 	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 
-		lRef, err := resolveRef(tx, leftRef)
-		if err != nil {
-			log.WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
-			return nil, err
-		}
-
-		rRef, err := resolveRef(tx, rightRef)
-		if err != nil {
-			log.WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
-			return nil, err
-		}
-
-		commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
-		if err != nil {
-			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
-			return nil, err
-		}
-		if len(commonCommits) == 0 {
-			log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
-			return nil, errors.ErrNoMergeBase
-		}
-
-		leftTree := lRef.commit.GetTree()
-		if lRef.isBranch {
-			leftTree = lRef.branch.GetWorkspaceRoot()
-		}
-		rightTree := rRef.commit.GetTree()
-
-		diff, err := merkle.Diff(tx,
-			merkle.New(leftTree),
-			merkle.New(rightTree),
-			merkle.New(commonCommits[0].GetTree()))
-		if err != nil {
-			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
-		}
-		return diff, err
+		return doDiff(tx, repoId, leftRef, rightRef)
 	})
 	if err != nil {
 		return nil, err
@@ -932,12 +937,55 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
 
+func checkCommited(tx store.RepoOperations, branch string, Error error) error {
+	b, err := tx.ReadBranch(branch)
+	if err != nil {
+		return err
+	}
+	if b.GetCommitRoot() != b.GetWorkspaceRoot() {
+		return Error
+	}
+	return nil
+}
+
 func (index *KVIndex) Merge(repoId, source, destination string) error {
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		// check that partial commit area is empty
+		err := checkCommited(tx, source, errors.ErrSourceNotCommitted)
+		if err != nil {
+			return nil, err
+		}
+		err = checkCommited(tx, source, errors.ErrDestinationNotCommitted)
+		if err != nil {
+			return nil, err
+		}
 
-		// get roots of sorce and destination branches
-		df, err := index.Diff(repoId, source, destination)
+		// compute difference
+
+		res, err := doDiff(tx, repoId, source, destination) //todo: isn't it the other way around
+		if err != nil {
+			return res, err
+		}
+		df := res.(merkle.Differences)
+		var conflicts merkle.Differences
+		for _, dif := range df {
+			if dif.Direction == merkle.DifferenceDirectionConflict {
+				conflicts = append(conflicts, dif)
+			}
+
+		}
+		if len(conflicts) > 0 {
+			return conflicts, err
+		}
+		var wsEntries []*model.WorkspaceEntry
+		for _, dif := range df {
+			if dif.Direction == merkle.DifferenceDirectionLeft {
+
+			}
+		}
+
 		return df, err
+
 	})
 	return err
 }
