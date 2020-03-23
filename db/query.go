@@ -69,7 +69,6 @@ func (q *DBReadQuery) Get(space Namespace, key CompositeKey) (KeyValue, error) {
 	kv.Key = item.KeyCopy(nil)
 	kv.Value, err = item.ValueCopy(nil)
 	return kv, err
-
 }
 
 func (q *DBReadQuery) GetAsProto(msg proto.Message, space Namespace, key CompositeKey) error {

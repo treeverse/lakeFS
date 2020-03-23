@@ -1,12 +1,18 @@
-package mergeBranch
+package mergeBranch_test
 
 import (
+	"bytes"
+	"encoding/csv"
 	"github.com/treeverse/lakefs/api/gen/client"
+	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index/model"
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"strconv"
 	"testing"
 	"time"
 
@@ -41,6 +47,7 @@ type dependencies struct {
 	auth   auth.Service
 	meta   index.Index
 	mpu    index.MultipartManager
+	db     db.Store
 }
 
 func CreateRepo(t *testing.T, kv store.KVStore) {
@@ -144,6 +151,7 @@ func getHandler(t *testing.T) (http.Handler, *dependencies, func()) {
 		auth:   authService,
 		meta:   meta,
 		mpu:    mpu,
+		db:     db,
 	}, closer
 }
 
@@ -169,7 +177,14 @@ func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, err
 	return clt.Submit(op)
 }
 
+var reportedTypes = []string{"entries", "branches"}
+
 func TestMergeDiff(t *testing.T) {
+	chacksumTranslat := newTranslationMap()
+	cs := make(csvStore)
+	cs.addType("branches", []string{"name", "commit", "commitRoot", "workspaceRoot"})
+	cs.addType("entries", []string{"owner", "name", "address", "type", "size", "checksum"})
+	cs.addType("commits", []string{"address", "tree"})
 	handler, deps, close := getHandler(t)
 	defer close()
 	// create user
@@ -179,45 +194,161 @@ func TestMergeDiff(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
-	err := uploadObject(t, "t/v/s", "master", "myrepo", 1024, clt, creds)
-	if err != nil {
-		t.Fatal("failed creating object t/v/s  ", err, "\n")
-	}
-	err = createBranch(t, "br-1", "master", "myrepo", clt, creds)
-	if err != nil {
-		t.Fatal("failed creating branch br-1 ", err, "\n")
-	}
-	err = uploadObject(t, "t/v/s1", "master", "myrepo", 2048, clt, creds)
-	if err != nil {
-		t.Fatal("failed creating object t/v/s  ", err, "\n")
-	}
-	err = deps.meta.Merge("myrepo", "master", "br-1")
+	uploadObject(t, "t/v/s", "master", "myrepo", 1024, clt, creds)
+	commit(t, "myrepo", "master", "master-1", clt, creds)
+	createBranch(t, "br-1", "master", "myrepo", clt, creds)
+	uploadObject(t, "t/v1/s", "master", "myrepo", 10000, clt, creds)
+	//uploadObject(t, "t/v1/s1", "master", "myrepo", 5000, clt, creds)
+	//uploadObject(t, "t/v/s1", "master", "myrepo", 2048, clt, creds)
+	uploadObject(t, "t/v/s31", "br-1", "myrepo", 20480, clt, creds)
+	/*uploadObject(t, "t/v/s1", "br-1", "myrepo", 4096, clt, creds)
+	uploadObject(t, "t/v1/s1", "br-1", "myrepo", 1024, clt, creds)
+	uploadObject(t, "t/v1/s1", "master", "myrepo", 2048, clt, creds)
+	uploadObject(t, "t/v/s2", "br-1", "myrepo", 5000, clt, creds)
+	commit(t,"myrepo","master","master-2",clt,creds)
+	commit(t,"myrepo","br-1","br-1-2",clt,creds)
+	uploadObject(t, "t/v/s2", "master", "myrepo", 5000, clt, creds)
+	uploadObject(t, "t/v/s3", "br-1", "myrepo", 5000, clt, creds)
+	uploadObject(t, "t/v1/s3", "br-1", "myrepo", 3000, clt, creds)*/
+	commit(t, "myrepo", "master", "master-2", clt, creds)
+	commit(t, "myrepo", "br-1", "master-2", clt, creds)
+	//commit(t,"myrepo","br-1","br-1-2",clt,creds)
+	//uploadObject(t, "t/v1/s4", "master", "myrepo", 3000, clt, creds)
+	//uploadObject(t, "t/v1/s4", "br-1", "myrepo", 3000, clt, creds)
+	showEntries(db.Store(deps.db), chacksumTranslat, cs)
+	cs.writeCSV("1-")
+
+	_ = deps.meta.Merge("myrepo", "master", "br-1")
 }
 
-func createBranch(t *testing.T, name, parent, repo string, clt *client.Lakefs, creds *authmodel.APICredentials) error {
+type translationMap struct {
+	count int
+	table map[string]string
+}
+
+func newTranslationMap() *translationMap {
+	p := make(map[string]string)
+	return &translationMap{0, p}
+}
+
+func (t *translationMap) getId(s string) string {
+	val, stat := t.table[s]
+	if stat {
+		return val
+	} else {
+		t.count++
+		i := strconv.Itoa(t.count)
+		i = "000"[0:3-len(i)] + i
+		t.table[s] = i
+		return t.table[s]
+	}
+}
+
+type csvStore map[string][][]string
+
+func (cs csvStore) addType(t string, l []string) {
+	cs[t] = make([][]string, 0)
+	cs.add(t, l)
+}
+
+func (cs csvStore) add(t string, a []string) {
+	cs[t] = append(cs[t], a)
+}
+
+func (cs csvStore) refresh() {
+	for k, v := range cs {
+		cs[k] = v[0:1]
+	}
+}
+
+func (cs csvStore) writeCSV(prefix string) {
+	for k, v := range cs {
+		f, err := os.Create(prefix + k + ".csv")
+		if err != nil {
+			panic(err)
+		}
+		o := csv.NewWriter(f)
+		err = o.WriteAll(v)
+		if err != nil {
+			panic(err)
+		}
+		f.Close()
+
+	}
+}
+func showEntries(kv db.Store, ct *translationMap, cs csvStore) {
+	kv.ReadTransact(func(q db.ReadQuery) (i interface{}, err error) {
+		iter, closer := q.RangeAll()
+		defer closer()
+		/* func (m *Entry) XXX_Unmarshal(b []byte) error {
+		return xxx_messageInfo_Entry.Unmarshal(m, b) */
+		for iter.Advance() {
+			item, _ := iter.Get()
+			//fmt.Print(len(item.Key),"   ",len(item.Value),"  ")
+			k := db.KeyFromBytes(item.Key)
+			if bytes.Compare(k[0], []byte("entries")) == 0 {
+				nk := []string{ct.getId(string(k[2])), string(k[3])}
+				m := new(model.Entry)
+				m.XXX_Unmarshal(item.Value)
+				nk = append(nk, ct.getId(m.Address))
+				nk = append(nk, strconv.Itoa(int(m.Type)))
+				nk = append(nk, strconv.Itoa(int(m.Size)))
+				nk = append(nk, ct.getId(m.Checksum))
+				cs.add("entries", nk)
+			} else if bytes.Compare(k[0], []byte("branches")) == 0 {
+
+				nk := []string{string(k[2])}
+				m := new(model.Branch)
+				m.XXX_Unmarshal(item.Value)
+				nk = append(nk, ct.getId(m.Commit))
+				nk = append(nk, ct.getId(m.CommitRoot))
+				nk = append(nk, ct.getId(m.WorkspaceRoot))
+				cs.add("branches", nk)
+			} else if bytes.Compare(k[0], []byte("commits")) == 0 {
+				nk := []string{}
+				m := new(model.Commit)
+				m.XXX_Unmarshal(item.Value)
+				nk = append(nk, ct.getId(m.Address))
+				nk = append(nk, ct.getId(m.Tree))
+				cs.add("commits", nk)
+			}
+		}
+		return nil, nil
+	})
+}
+func commit(t *testing.T, repo, branch, message string, clt *client.Lakefs, creds *authmodel.APICredentials) {
+	commitParams := commits.NewCommitParams()
+	commitParams.BranchID = branch
+	commitParams.RepositoryID = repo
+	commitParams.Commit = new(models.CommitCreation)
+	commitParams.Commit.Message = &message
+	commitParams.Commit.Metadata = make(map[string]string)
+	_, err := clt.Commits.Commit(commitParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+	if err != nil {
+		t.Fatal("could not commit\n")
+	}
+}
+func createBranch(t *testing.T, name, parent, repo string, clt *client.Lakefs, creds *authmodel.APICredentials) {
 	createBranchParams := branches.NewCreateBranchParams()
 	var b models.BranchCreation
 	b.ID = &name
 	b.SourceRefID = &parent
 	createBranchParams.Branch = &b
 	createBranchParams.RepositoryID = repo
-	branchResp, err := clt.Branches.CreateBranch(createBranchParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
-	t.Log(err)
-	t.Log(branchResp.Payload.CommitID)
-	t.Log(branchResp.Payload.ID)
-	return err
+	_, err := clt.Branches.CreateBranch(createBranchParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+	if err != nil {
+		t.Fatal("error creating brancht\n")
+	}
 }
 
-func uploadObject(t *testing.T, path, branch, repo string, size int64, clt *client.Lakefs, creds *authmodel.APICredentials) error {
+func uploadObject(t *testing.T, path, branch, repo string, size int64, clt *client.Lakefs, creds *authmodel.APICredentials) {
 	uploadObjectParams := objects.NewUploadObjectParams()
-	uploadObjectParams.BranchID = "master"
+	uploadObjectParams.BranchID = branch
 	uploadObjectParams.Content = NewReader(size, "content")
-	uploadObjectParams.RepositoryID = "myrepo"
-	uploadObjectParams.Path = "t/v/s"
-	resp, err := clt.Objects.UploadObject(uploadObjectParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+	uploadObjectParams.RepositoryID = repo
+	uploadObjectParams.Path = path
+	_, err := clt.Objects.UploadObject(uploadObjectParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 	if err != nil {
-		t.Fatalf("error uploading document\n")
+		t.Fatal("error uploading document\n")
 	}
-	t.Log(resp.Payload.Path)
-	return err
 }
