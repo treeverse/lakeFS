@@ -36,7 +36,7 @@ type Client interface {
 
 	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
-	GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error)
+	GetCommitLog(ctx context.Context, repoId, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error)
 
 	StatObject(ctx context.Context, repoId, ref, path string) (*models.ObjectStats, error)
 	ListObjects(ctx context.Context, repoId, ref, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
@@ -176,16 +176,18 @@ func (c *client) GetCommit(ctx context.Context, repoId, commitId string) (*model
 	return commit.GetPayload(), nil
 }
 
-func (c *client) GetCommitLog(ctx context.Context, repoId, branchId string) ([]*models.Commit, error) {
-	log, err := c.remote.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
+func (c *client) GetCommitLog(ctx context.Context, repoId, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error) {
+	resp, err := c.remote.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
+		Amount:       swag.Int64(int64(amount)),
+		After:        swag.String(after),
 		BranchID:     branchId,
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return log.GetPayload().Results, nil
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
 func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error) {

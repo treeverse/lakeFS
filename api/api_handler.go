@@ -107,19 +107,9 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		// amount
-		after := ""
-		amount := MaxResultsPerPage
-		if params.Amount != nil {
-			amount = swag.Int64Value(params.Amount)
-		}
+		after, amount := getPaginationParams(params.After, params.Amount)
 
-		// paginate after
-		if params.After != nil {
-			after = swag.StringValue(params.After)
-		}
-
-		repos, hasMore, err := a.meta.ListRepos(int(amount), after)
+		repos, hasMore, err := a.meta.ListRepos(amount, after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error listing repositories: %s", err))
@@ -150,6 +140,21 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 
 		return returnValue
 	})
+}
+
+func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
+	// amount
+	after := ""
+	amount := MaxResultsPerPage
+	if swagAmount != nil {
+		amount = swag.Int64Value(swagAmount)
+	}
+
+	// paginate after
+	if swagAfter != nil {
+		after = swag.StringValue(swagAfter)
+	}
+	return after, int(amount)
 }
 
 func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
@@ -240,13 +245,15 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
+		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit())
+		commitLog, hasMore, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit(), amount, after)
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		serializedCommits := make([]*models.Commit, len(commitLog))
+		lastId := ""
 		for i, commit := range commitLog {
 			serializedCommits[i] = &models.Commit{
 				Committer:    commit.GetCommitter(),
@@ -256,12 +263,21 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 				Metadata:     commit.GetMetadata(),
 				Parents:      commit.GetParents(),
 			}
+			lastId = commit.GetAddress()
 		}
 
-		return commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
+		returnValue := commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
+			Pagination: &models.Pagination{
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(serializedCommits))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
 			Results: serializedCommits,
 		})
-
+		if hasMore {
+			returnValue.Payload.Pagination.NextOffset = lastId
+		}
+		return returnValue
 	})
 }
 
@@ -344,19 +360,9 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		// amount
-		after := ""
-		amount := MaxResultsPerPage
-		if params.Amount != nil {
-			amount = swag.Int64Value(params.Amount)
-		}
+		after, amount := getPaginationParams(params.After, params.Amount)
 
-		// paginate after
-		if params.After != nil {
-			after = swag.StringValue(params.After)
-		}
-
-		res, hasMore, err := a.meta.ListBranchesByPrefix(params.RepositoryID, "", int(amount), after)
+		res, hasMore, err := a.meta.ListBranchesByPrefix(params.RepositoryID, "", amount, after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches: %s", err))
@@ -584,19 +590,9 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		// amount
-		after := ""
-		amount := MaxResultsPerPage
-		if params.Amount != nil {
-			amount = swag.Int64Value(params.Amount)
-		}
+		after, amount := getPaginationParams(params.After, params.Amount)
 
-		// paginate after
-		if params.After != nil {
-			after = swag.StringValue(params.After)
-		}
-
-		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, int(amount), false)
+		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, amount, false)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))

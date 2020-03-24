@@ -119,7 +119,7 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
     } else {
         body = (
             <>
-                <ListGroup className="branches-list">
+                <ListGroup className="branches-list pagination-group">
                     {branches.payload.results.map((branch, i) => (
                         <ListGroupItem key={i}>
                             <div className="clearfix">
