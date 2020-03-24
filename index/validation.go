@@ -63,7 +63,7 @@ func ValidateCommitMessage(msg string) error {
 	}
 	return nil
 }
-func validateOrEmpty(vFunc ValidationFunc, str string) error {
+func ValidateOrEmpty(vFunc ValidationFunc, str string) error {
 	if len(str) == 0 {
 		return nil
 	}
