@@ -96,7 +96,7 @@ const CommitsPage = ({repo, refId, logCommits,logCommitsPaginate, log }) => {
     } else {
         body = (
             <>
-            <ListGroup className="commit-list list-group">
+            <ListGroup className="commit-list pagination-group">
                 {log.payload.results.filter(commit => !!commit.parents).map((commit, i) => (
                     <CommitWidget key={commit.id} commit={commit} repo={repo} previous={(i < log.payload.results.length-1) ? log.payload[i+1] : null}/>
                 ))}
