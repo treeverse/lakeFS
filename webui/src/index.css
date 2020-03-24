@@ -237,6 +237,7 @@
     font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New", monospace;
 }
 
-.list-group.branches-list {
+.list-group.pagination-group {
     margin-bottom: 30px;
 }
+
