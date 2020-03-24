@@ -703,7 +703,7 @@ func (index *KVIndex) GetCommitLog(repoId, fromCommitId string, results int, aft
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateCommitID(fromCommitId),
-		validateOrEmpty(ValidateCommitID, after))
+		ValidateOrEmpty(ValidateCommitID, after))
 
 	type result struct {
 		hasMore bool
