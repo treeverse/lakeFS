@@ -240,3 +240,7 @@
 .list-group.branches-list {
     margin-bottom: 30px;
 }
+
+.list-group.commit-list {
+    margin-bottom: 30px;
+}
