@@ -1,5 +1,6 @@
 import base64 from 'base-64';
 import {generateDownloadToken} from '../downloadToken';
+import {isValidBranchName} from "../model/validation";
 
 
 const API_ENDPOINT = '/api/v1';
@@ -197,9 +198,6 @@ class Branches {
         return await response.json();
     }
 
-    isValidBranchName(from) {
-        return from && /^[a-zA-Z0-9\\-]{2,}$/.test(from);
-    }
 
     async filter(repoId, from, amount) {
         if (!from) {
@@ -207,7 +205,7 @@ class Branches {
         }
         const response = await this.list(repoId, from, amount);
         let self;
-        if (this.isValidBranchName(from)) {
+        if (isValidBranchName(from)) {
             try {
                 self = await this.get(repoId, from);
             } catch (error) {
