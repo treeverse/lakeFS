@@ -11,15 +11,12 @@ type bfsIterator struct {
 }
 
 func NewBfsIterator(reader CommitReader, startAddr string) *bfsIterator {
-	q := make([]string, 0)
-	q = append(q, startAddr)
-	return &bfsIterator{reader: reader, queue: q, discoveredSet: make(map[string]struct{})}
+	return &bfsIterator{reader: reader, queue: []string{startAddr}, discoveredSet: make(map[string]struct{})}
 }
 
 func (bfsIt *bfsIterator) advance() bool {
 
 	if !bfsIt.hasMore() {
-		// TODO: consider returning an error | something like end of...
 		return false
 	}
 	var sentinel = struct{}{}
