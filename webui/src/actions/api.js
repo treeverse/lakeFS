@@ -196,16 +196,18 @@ class Branches {
         }
         return await response.json();
     }
-    validBranchName(from) {
+
+    isValidBranchName(from) {
         return from && /^[a-zA-Z0-9\\-]{2,}$/.test(from);
     }
+
     async filter(repoId, from, amount) {
         if (!from) {
             return await this.list(repoId, from, amount);
         }
         const response = await this.list(repoId, from, amount);
         let self;
-        if (this.validBranchName(from)) {
+        if (this.isValidBranchName(from)) {
             try {
                 self = await this.get(repoId, from);
             } catch (error) {
