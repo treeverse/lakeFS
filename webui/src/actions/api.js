@@ -196,18 +196,22 @@ class Branches {
         }
         return await response.json();
     }
-
+    validBranchName(from) {
+        return from && /^[a-zA-Z0-9\\-]{2,}$/.test(from);
+    }
     async filter(repoId, from, amount) {
         if (!from) {
             return await this.list(repoId, from, amount);
         }
         const response = await this.list(repoId, from, amount);
         let self;
-        try {
-            self = await this.get(repoId, from);
-        } catch (error) {
-            if (!(error instanceof NotFoundError)) {
-                throw error;
+        if (this.validBranchName(from)) {
+            try {
+                self = await this.get(repoId, from);
+            } catch (error) {
+                if (!(error instanceof NotFoundError)) {
+                    throw error;
+                }
             }
         }
         let results = response.results.filter(branch => branch.id.indexOf(from) === 0);
