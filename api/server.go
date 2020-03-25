@@ -60,10 +60,10 @@ func (s *Server) DownloadToken() func(string) (*models.User, error) {
 	}
 }
 
-// BasicAuth returns a function that hooks into Swagger's basic auth provider
-// it uses the auth.Service provided to ensure credentials are valid
+// BasicAuth returns a function that hooks into Swagger's basic Auth provider
+// it uses the Auth.Service provided to ensure credentials are valid
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
-	logger := logging.Default().WithField("auth", "basic")
+	logger := logging.Default().WithField("Auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetAPICredentials(accessKey)
 		if err != nil {
@@ -76,10 +76,9 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 		}
 		userData, err := s.authService.GetUser(credentials.GetEntityId())
 		if err != nil {
-			logger.WithField("access_key", accessKey).Error("could not find user for key pair")
+			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
-		logger.WithField("access_key", accessKey).Info("successful login for key")
 		return &models.User{ID: userData.GetId()}, nil
 	}
 }
@@ -125,11 +124,12 @@ func (s *Server) Serve(listenAddr string) error {
 
 	httpServer := http.Server{
 		Addr: listenAddr,
-		Handler: httputil.LoggingMiddleWare(RequestIdHeaderName, logging.Fields{"service_name": LoggerServiceName},
-			HandlerWithUI(
+		Handler: HandlerWithUI(
+			httputil.LoggingMiddleWare(RequestIdHeaderName, logging.Fields{"service_name": LoggerServiceName},
 				srv.GetHandler(), // api
-				HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"), // ui
-			)),
+			),
+			HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"), // ui
+		),
 	}
 
 	return httpServer.ListenAndServe()

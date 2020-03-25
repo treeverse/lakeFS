@@ -1,6 +1,7 @@
 package index
 
 import (
+	"context"
 	"fmt"
 	"math/rand"
 	"time"
@@ -30,6 +31,7 @@ const (
 )
 
 type Index interface {
+	WithContext(ctx context.Context) Index
 	Tree(repoId, branch string) error
 	ReadObject(repoId, ref, path string) (*model.Object, error)
 	ReadEntryObject(repoId, ref, path string) (*model.Entry, error)
@@ -132,6 +134,8 @@ func gc(tx store.RepoOperations, addr string) {
 type KVIndex struct {
 	kv          store.Store
 	tsGenerator TimeGenerator
+
+	ctx context.Context
 }
 
 type Option func(index *KVIndex)
@@ -147,10 +151,17 @@ func WithTimeGenerator(generator TimeGenerator) Option {
 	}
 }
 
+func WithContext(ctx context.Context) Option {
+	return func(kvi *KVIndex) {
+		kvi.ctx = ctx
+	}
+}
+
 func NewKVIndex(kv store.Store, opts ...Option) *KVIndex {
 	kvi := &KVIndex{
 		kv:          kv,
 		tsGenerator: func() int64 { return time.Now().Unix() },
+		ctx:         context.Background(),
 	}
 	for _, opt := range opts {
 		opt(kvi)
@@ -208,7 +219,19 @@ func resolveRef(tx store.RepoReadOnlyOperations, ref string) (*reference, error)
 	}, nil
 }
 
+func (index *KVIndex) log() logging.Logger {
+	return logging.FromContext(index.ctx).WithField("service_name", "index")
+}
+
 // Business logic
+func (index *KVIndex) WithContext(ctx context.Context) Index {
+	return &KVIndex{
+		kv:          index.kv,
+		tsGenerator: index.tsGenerator,
+		ctx:         ctx,
+	}
+}
+
 func (index *KVIndex) ReadObject(repoId, ref, path string) (*model.Object, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -242,6 +265,7 @@ func (index *KVIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 				return obj, nil
 			} else if err != nil {
 				// an actual error has occurred, return it.
+				index.log().WithError(err).Error("could not read from workspace")
 				return nil, err
 			}
 			if we.GetTombstone() {
@@ -384,12 +408,16 @@ func (index *KVIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		}
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
+			index.log().WithError(err).Error("could not write object")
 			return nil, err
 		}
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			Path:  path,
 			Entry: entry,
 		})
+		if err != nil {
+			index.log().WithError(err).Error("could not write workspace entry")
+		}
 		return nil, err
 	})
 	return err
@@ -412,6 +440,9 @@ func (index *KVIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 			Path:  path,
 			Entry: entry,
 		})
+		if err != nil {
+			index.log().WithError(err).Error("could not write workspace entry")
+		}
 		return nil, err
 	})
 	return err
@@ -448,6 +479,9 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 				Checksum:  object.GetChecksum(),
 			},
 		})
+		if err != nil {
+			index.log().WithError(err).Error("could not write workspace entry")
+		}
 		return nil, err
 	})
 	return err
@@ -482,6 +516,9 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			},
 			Tombstone: true,
 		})
+		if err != nil {
+			index.log().WithError(err).Error("could not write workspace tombstone")
+		}
 		return nil, err
 	})
 	return err
@@ -512,12 +549,18 @@ func (index *KVIndex) ListBranchesByPrefix(repoId string, prefix string, amount 
 		}, err
 	})
 	if err != nil {
+		index.log().WithError(err).Error("could not list branches")
 		return nil, false, err
 	}
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
 func (index *KVIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
+	log := index.log().WithFields(logging.Fields{
+		"from":    from,
+		"descend": descend,
+		"results": results,
+	})
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
@@ -554,6 +597,7 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 		tree := merkle.New(root)
 		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
 		if err != nil {
+			log.WithError(err).Error("could not scan tree")
 			return nil, err
 		}
 		return &result{hasMore, res}, nil
@@ -585,6 +629,9 @@ func (index *KVIndex) ResetBranch(repoId, branch string) error {
 		branchData.WorkspaceRoot = branchData.GetCommitRoot()
 		return nil, tx.WriteBranch(branch, branchData)
 	})
+	if err != nil {
+		index.log().WithError(err).Error("could not reset branch")
+	}
 	return err
 }
 
@@ -600,6 +647,7 @@ func (index *KVIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, e
 		// ensure it doesn't exist yet
 		_, err := tx.ReadBranch(branch)
 		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
+			index.log().WithError(err).Error("could not read branch")
 			return nil, err
 		} else if err == nil {
 			return nil, errors.ErrBranchAlreadyExists
@@ -618,6 +666,7 @@ func (index *KVIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, e
 		return branchData, tx.WriteBranch(branch, branchData)
 	})
 	if err != nil {
+		index.log().WithError(err).WithField("ref", ref).Error("could not create branch")
 		return nil, err
 	}
 	return branchData.(*model.Branch), nil
@@ -669,6 +718,7 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 		commit.Address = commitAddr
 		err = tx.WriteCommit(commitAddr, commit)
 		if err != nil {
+			index.log().WithError(err).Error("could not write commit")
 			return nil, err
 		}
 		branchData.Commit = commitAddr
@@ -710,6 +760,7 @@ func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit
 		return dag.BfsScan(tx, fromCommitId)
 	})
 	if err != nil {
+		index.log().WithError(err).WithField("from", fromCommitId).Error("could not read commits")
 		return nil, err
 	}
 	return commits.([]*model.Commit), nil
@@ -729,10 +780,14 @@ func (index *KVIndex) DeleteBranch(repoId, branch string) error {
 		}
 		err = tx.ClearWorkspace(branch)
 		if err != nil {
+			index.log().WithError(err).Error("could not clear workspace")
 			return nil, err
 		}
 		gc(tx, branchData.GetWorkspaceRoot()) // changes are destroyed here
 		err = tx.DeleteBranch(branch)
+		if err != nil {
+			index.log().WithError(err).Error("could not delete branch")
+		}
 		return nil, err
 	})
 	return err
@@ -759,6 +814,9 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 			merkle.New(branch.GetWorkspaceRoot()),
 			merkle.New(branch.GetCommitRoot()),
 			merkle.New(branch.GetCommitRoot()))
+		if err != nil {
+			index.log().WithError(err).WithField("branch", branch).Error("diff workspace failed")
+		}
 		return diff, err
 	})
 	if err != nil {
@@ -768,7 +826,7 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 }
 
 func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
-	log := logging.Default()
+	log := index.log()
 
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -823,6 +881,10 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 }
 
 func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
+	log := index.log().WithFields(logging.Fields{
+		"branch": branch,
+		"commit": commit,
+	})
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(branch),
@@ -833,6 +895,7 @@ func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		err := tx.ClearWorkspace(branch)
 		if err != nil {
+			log.WithError(err).Error("could not revert commit")
 			return nil, err
 		}
 		commitData, err := tx.ReadCommit(commit)
@@ -848,12 +911,19 @@ func (index *KVIndex) RevertCommit(repoId, branch, commit string) error {
 		branchData.CommitRoot = commitData.GetTree()
 		branchData.WorkspaceRoot = commitData.GetTree()
 		err = tx.WriteBranch(branch, branchData)
+		if err != nil {
+			log.WithError(err).Error("could not write branch")
+		}
 		return nil, err
 	})
 	return err
 }
 
 func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Type) error {
+	log := index.log().WithFields(logging.Fields{
+		"branch": branch,
+		"path":   path,
+	})
 	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		p := pth.New(path)
 		if p.IsRoot() {
@@ -862,6 +932,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 
 		err := partialCommit(tx, branch)
 		if err != nil {
+			log.WithError(err).Error("could not partially commit")
 			return nil, err
 		}
 		branchData, err := tx.ReadBranch(branch)
@@ -885,6 +956,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 					Tombstone: true,
 				}
 			} else {
+				log.WithError(err).Error("could not get entry")
 				return nil, err
 			}
 		} else {
@@ -896,6 +968,7 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 		commitEntries := []*model.WorkspaceEntry{workspaceEntry}
 		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries)
 		if err != nil {
+			log.WithError(err).Error("could not update Merkle tree")
 			return nil, err
 		}
 
@@ -907,6 +980,9 @@ func (index *KVIndex) revertPath(repoId, branch, path string, typ model.Entry_Ty
 			WorkspaceRoot: workspaceMerkle.Root(),
 		})
 
+		if err != nil {
+			log.WithError(err).Error("could not write branch")
+		}
 		return nil, err
 	})
 	return err
@@ -967,6 +1043,7 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 			// couldn't verify this bucket doesn't yet exist
 			return nil, errors.ErrRepoExists
 		} else if !xerrors.Is(err, db.ErrNotFound) {
+			index.log().WithError(err).Error("could not read repo")
 			return nil, err // error reading the repo
 		}
 
@@ -984,6 +1061,7 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 		commit.Address = commitId
 		err = tx.WriteCommit(commitId, commit)
 		if err != nil {
+			index.log().WithError(err).Error("could not write initial commit")
 			return nil, err
 		}
 		err = tx.WriteBranch(repo.GetDefaultBranch(), &model.Branch{
@@ -992,6 +1070,9 @@ func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 			CommitRoot:    commit.GetTree(),
 			WorkspaceRoot: commit.GetTree(),
 		})
+		if err != nil {
+			index.log().WithError(err).Error("could not write branch")
+		}
 		return nil, err
 	})
 	return err
@@ -1010,6 +1091,7 @@ func (index *KVIndex) ListRepos(amount int, after string) ([]*model.Repo, bool, 
 		}, err
 	})
 	if err != nil {
+		index.log().WithError(err).Error("could not list repos")
 		return nil, false, err
 	}
 	return res.(*result).repos, res.(*result).hasMore, nil
@@ -1043,6 +1125,7 @@ func (index *KVIndex) DeleteRepo(repoId string) error {
 		}
 		err = tx.DeleteRepo(repoId)
 		if err != nil {
+			index.log().WithError(err).Error("could not delete repo")
 			return nil, err
 		}
 		return nil, nil

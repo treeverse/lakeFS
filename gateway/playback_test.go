@@ -31,7 +31,7 @@ type playBackMockConf struct {
 
 type dependencies struct {
 	blocks block.Adapter
-	auth   utils.GatewayService
+	auth   utils.GatewayAuthService
 	meta   index.Index
 	mpu    index.MultipartManager
 }
