@@ -48,7 +48,7 @@ type Index interface {
 	GetBranch(repoId, branch string) (*model.Branch, error)
 	Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
 	GetCommit(repoId, commitId string) (*model.Commit, error)
-	GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error)
+	GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
 	DeleteBranch(repoId, branch string) error
 	Diff(repoId, leftRef, rightRef string) (merkle.Differences, error)
 	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
@@ -749,21 +749,28 @@ func (index *KVIndex) GetCommit(repoId, commitId string) (*model.Commit, error) 
 	return commit.(*model.Commit), nil
 }
 
-func (index *KVIndex) GetCommitLog(repoId, fromCommitId string) ([]*model.Commit, error) {
+func (index *KVIndex) GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, bool, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
-		ValidateCommitID(fromCommitId))
-	if err != nil {
-		return nil, err
+		ValidateCommitID(fromCommitId),
+		ValidateOrEmpty(ValidateCommitID, after))
+
+	type result struct {
+		hasMore bool
+		results []*model.Commit
 	}
-	commits, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
-		return dag.BfsScan(tx, fromCommitId)
+	if err != nil {
+		return nil, false, err
+	}
+	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+		commits, hasMore, err := dag.BfsScan(tx, fromCommitId, results, after)
+		return &result{hasMore, commits}, err
 	})
 	if err != nil {
 		index.log().WithError(err).WithField("from", fromCommitId).Error("could not read commits")
-		return nil, err
+		return nil, false, err
 	}
-	return commits.([]*model.Commit), nil
+	return res.(*result).results, res.(*result).hasMore, nil
 }
 
 func (index *KVIndex) DeleteBranch(repoId, branch string) error {
@@ -849,12 +856,12 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 			return nil, err
 		}
 
-		commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
+		commonCommit, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
 		if err != nil {
 			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
 			return nil, err
 		}
-		if len(commonCommits) == 0 {
+		if commonCommit == nil {
 			log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
 			return nil, errors.ErrNoMergeBase
 		}
@@ -868,7 +875,7 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		diff, err := merkle.Diff(tx,
 			merkle.New(leftTree),
 			merkle.New(rightTree),
-			merkle.New(commonCommits[0].GetTree()))
+			merkle.New(commonCommit.GetTree()))
 		if err != nil {
 			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
 		}
