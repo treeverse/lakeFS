@@ -210,7 +210,7 @@ func (c *Config) BuildStore() db.Store {
 
 	opts := badger.DefaultOptions(location).
 		WithTruncate(viper.GetBool("metadata.db.badger.truncate")).
-		WithLogger(db.NewBadgerLoggingAdapter(logging.Default().WithField("subsystem", "badger")))
+		WithLogger(logging.Default().WithField("subsystem", "badger"))
 	bdb, err := badger.Open(opts)
 	if err != nil {
 		panic(fmt.Errorf("could not open badgerDB database: %s\n", err))

@@ -12,8 +12,6 @@ import (
 
 	"github.com/treeverse/lakefs/logging"
 
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/dgraph-io/badger"
 )
 
@@ -29,7 +27,7 @@ func TestBadgerDeleteRange(t *testing.T) {
 		}
 	}()
 	opts := badger.DefaultOptions(dir)
-	opts.Logger = db.NewBadgerLoggingAdapter(logging.Default().WithField("subsystem", "badger"))
+	opts.Logger = logging.Default().WithField("subsystem", "badger")
 
 	kv, err := badger.Open(opts)
 	if err != nil {
