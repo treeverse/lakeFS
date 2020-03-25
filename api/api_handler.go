@@ -2,6 +2,7 @@ package api
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"io"
 	"net/http"
@@ -45,23 +46,42 @@ const (
 	MaxResultsPerPage int64 = 1000
 )
 
+type HandlerContext struct {
+	Index        index.Index
+	Auth         auth.Service
+	BlockAdapter block.Adapter
+}
+
+func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
+	return &HandlerContext{
+		Index:        c.Index.WithContext(ctx),
+		Auth:         c.Auth, // TODO: pass context
+		BlockAdapter: c.BlockAdapter.WithContext(ctx),
+	}
+}
+
 type Handler struct {
-	meta         index.Index
-	auth         auth.Service
-	blockAdapter block.Adapter
+	context *HandlerContext
 }
 
 func NewHandler(meta index.Index, auth auth.Service, blockAdapter block.Adapter) *Handler {
 	return &Handler{
-		meta:         meta,
-		auth:         auth,
-		blockAdapter: blockAdapter,
+		context: &HandlerContext{
+			Index:        meta,
+			Auth:         auth,
+			BlockAdapter: blockAdapter,
+		},
 	}
+}
+
+func (a *Handler) ForRequest(r *http.Request) *HandlerContext {
+	return a.context.WithContext(r.Context())
 }
 
 // Configure attaches our API operations to a generated swagger API stub
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (a *Handler) Configure(api *operations.LakefsAPI) {
+
 	// Register operations here
 	api.AuthenticationGetAuthenticationHandler = a.AuthenticationGetAuthenticationHandler()
 
@@ -91,7 +111,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
-	return authorize(a.auth, user, action)
+	return authorize(a.context.Auth, user, action)
 }
 
 func (a *Handler) AuthenticationGetAuthenticationHandler() authentication.GetAuthenticationHandler {
@@ -119,7 +139,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 			after = swag.StringValue(params.After)
 		}
 
-		repos, hasMore, err := a.meta.ListRepos(int(amount), after)
+		repos, hasMore, err := a.ForRequest(params.HTTPRequest).Index.ListRepos(int(amount), after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error listing repositories: %s", err))
@@ -159,7 +179,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		repo, err := a.meta.GetRepo(params.RepositoryID)
+		repo, err := a.ForRequest(params.HTTPRequest).Index.GetRepo(params.RepositoryID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -184,7 +204,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		commit, err := a.meta.GetCommit(params.RepositoryID, params.CommitID)
+		commit, err := a.ForRequest(params.HTTPRequest).Index.GetCommit(params.RepositoryID, params.CommitID)
 
 		if xerrors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
@@ -209,7 +229,7 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		commit, err := a.meta.Commit(params.RepositoryID, params.BranchID, *params.Commit.Message, user.ID, params.Commit.Metadata)
+		commit, err := a.ForRequest(params.HTTPRequest).Index.Commit(params.RepositoryID, params.BranchID, *params.Commit.Message, user.ID, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -230,9 +250,10 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		index := a.ForRequest(params.HTTPRequest).Index
 
 		// read branch
-		branch, err := a.meta.GetBranch(params.RepositoryID, params.BranchID)
+		branch, err := index.GetBranch(params.RepositoryID, params.BranchID)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
@@ -241,7 +262,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		}
 
 		// get commit log
-		commitLog, err := a.meta.GetCommitLog(params.RepositoryID, branch.GetCommit())
+		commitLog, err := index.GetCommitLog(params.RepositoryID, branch.GetCommit())
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -290,19 +311,20 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		ctx := a.ForRequest(params.HTTPRequest)
 
-		err = testBucket(a.blockAdapter, swag.StringValue(params.Repository.BucketName))
+		err = testBucket(ctx.BlockAdapter, swag.StringValue(params.Repository.BucketName))
 		if err != nil {
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access bucket"))
 		}
-		err = a.meta.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
+		err = ctx.Index.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
-		repo, err := a.meta.GetRepo(swag.StringValue(params.Repository.ID))
+		repo, err := ctx.Index.GetRepo(swag.StringValue(params.Repository.ID))
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
@@ -323,8 +345,8 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		err = a.meta.DeleteRepo(params.RepositoryID)
+		index := a.ForRequest(params.HTTPRequest).Index
+		err = index.DeleteRepo(params.RepositoryID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -355,8 +377,9 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		if params.After != nil {
 			after = swag.StringValue(params.After)
 		}
+		index := a.ForRequest(params.HTTPRequest).Index
 
-		res, hasMore, err := a.meta.ListBranchesByPrefix(params.RepositoryID, "", int(amount), after)
+		res, hasMore, err := index.ListBranchesByPrefix(params.RepositoryID, "", int(amount), after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches: %s", err))
@@ -394,8 +417,8 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		branch, err := a.meta.GetBranch(params.RepositoryID, params.BranchID)
+		index := a.ForRequest(params.HTTPRequest).Index
+		branch, err := index.GetBranch(params.RepositoryID, params.BranchID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -418,8 +441,8 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		branch, err := a.meta.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.SourceRefID))
+		index := a.ForRequest(params.HTTPRequest).Index
+		branch, err := index.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.SourceRefID))
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -437,8 +460,8 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		err = a.meta.DeleteBranch(params.RepositoryID, params.BranchID)
+		index := a.ForRequest(params.HTTPRequest).Index
+		err = index.DeleteBranch(params.RepositoryID, params.BranchID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
 			return branches.NewDeleteBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -457,8 +480,8 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		if err != nil {
 			return branches.NewDiffBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		diff, err := a.meta.DiffWorkspace(params.RepositoryID, params.BranchID)
+		index := a.ForRequest(params.HTTPRequest).Index
+		diff, err := index.DiffWorkspace(params.RepositoryID, params.BranchID)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -479,8 +502,8 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		if err != nil {
 			return refs.NewDiffRefsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		diff, err := a.meta.Diff(params.RepositoryID, params.LeftRef, params.RightRef)
+		index := a.ForRequest(params.HTTPRequest).Index
+		diff, err := index.Diff(params.RepositoryID, params.LeftRef, params.RightRef)
 		if err != nil {
 			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff references: %s", err))
@@ -500,9 +523,10 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if err != nil {
 			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		index := a.ForRequest(params.HTTPRequest).Index
 
 		// read metadata
-		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
+		entry, err := index.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
@@ -527,9 +551,11 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		if err != nil {
 			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		ctx := a.ForRequest(params.HTTPRequest)
+		index := ctx.Index
 
 		// read repo
-		repo, err := a.meta.GetRepo(params.RepositoryID)
+		repo, err := index.GetRepo(params.RepositoryID)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
@@ -539,7 +565,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := a.meta.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
+		entry, err := index.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
@@ -554,7 +580,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		res.ContentDisposition = fmt.Sprintf("filename=\"%s\"", entry.GetName())
 
 		// get object for its blocks
-		obj, err := a.meta.ReadObject(params.RepositoryID, params.Ref, params.Path)
+		obj, err := index.ReadObject(params.RepositoryID, params.Ref, params.Path)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -564,7 +590,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		blocks := obj.GetBlocks()
 		readers := make([]io.ReadCloser, len(blocks))
 		for i, block := range blocks {
-			reader, err := a.blockAdapter.Get(repo.GetBucketName(), block.GetAddress())
+			reader, err := ctx.BlockAdapter.Get(repo.GetBucketName(), block.GetAddress())
 			if err != nil {
 				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 			}
@@ -595,8 +621,9 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		if params.After != nil {
 			after = swag.StringValue(params.After)
 		}
+		index := a.ForRequest(params.HTTPRequest).Index
 
-		res, hasMore, err := a.meta.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, int(amount), false)
+		res, hasMore, err := index.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, int(amount), false)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
@@ -644,8 +671,10 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		ctx := a.ForRequest(params.HTTPRequest)
+		index := ctx.Index
 
-		repo, err := a.meta.GetRepo(params.RepositoryID)
+		repo, err := index.GetRepo(params.RepositoryID)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
@@ -655,7 +684,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 
 		// read the content
-		blob, err := upload.ReadBlob(repo.GetBucketName(), params.Content, a.blockAdapter, upload.ObjectBlockSize)
+		blob, err := upload.ReadBlob(repo.GetBucketName(), params.Content, ctx.BlockAdapter, upload.ObjectBlockSize)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -678,7 +707,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:      blob.Size,
 			Checksum:  blob.Checksum,
 		}
-		err = a.meta.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
+		err = index.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -698,8 +727,9 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		if err != nil {
 			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		index := a.ForRequest(params.HTTPRequest).Index
 
-		err = a.meta.DeleteObject(params.RepositoryID, params.BranchID, params.Path)
+		err = index.DeleteObject(params.RepositoryID, params.BranchID, params.Path)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
@@ -717,18 +747,20 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		if err != nil {
 			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		index := a.ForRequest(params.HTTPRequest).Index
+
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
-			err = a.meta.RevertCommit(params.RepositoryID, params.BranchID, params.Revert.Commit)
+			err = index.RevertCommit(params.RepositoryID, params.BranchID, params.Revert.Commit)
 
 		case models.RevertCreationTypeTREE:
-			err = a.meta.RevertPath(params.RepositoryID, params.BranchID, params.Revert.Path)
+			err = index.RevertPath(params.RepositoryID, params.BranchID, params.Revert.Path)
 
 		case models.RevertCreationTypeRESET:
-			err = a.meta.ResetBranch(params.RepositoryID, params.BranchID)
+			err = index.ResetBranch(params.RepositoryID, params.BranchID)
 
 		case models.RevertCreationTypeOBJECT:
-			err = a.meta.RevertObject(params.RepositoryID, params.BranchID, params.Revert.Path)
+			err = index.RevertObject(params.RepositoryID, params.BranchID, params.Revert.Path)
 		default:
 			return branches.NewRevertBranchNotFound().
 				WithPayload(responseError("revert type not found"))

@@ -1,6 +1,7 @@
 package gateway
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/treeverse/lakefs/logging"
@@ -27,7 +28,18 @@ type ServerContext struct {
 	meta             index.Index
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
-	authService      utils.GatewayService
+	authService      utils.GatewayAuthService
+}
+
+func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
+	return &ServerContext{
+		region:           c.region,
+		bareDomain:       c.bareDomain,
+		meta:             c.meta.WithContext(ctx),
+		multipartManager: c.multipartManager.WithContext(ctx),
+		blockStore:       c.blockStore.WithContext(ctx),
+		authService:      c.authService, // TODO: pass context
+	}
 }
 
 type Server struct {
@@ -40,7 +52,7 @@ func NewServer(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
-	authService utils.GatewayService,
+	authService utils.GatewayAuthService,
 	multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
 ) *Server {
@@ -166,7 +178,7 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
 		action := handler.Action("", "", "")
-		authOp := authenticateOperation(ctx, writer, request, action)
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -179,7 +191,7 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
 		action := handler.Action(repoId, "", "")
-		authOp := authenticateOperation(ctx, writer, request, action)
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
 		if authOp == nil {
 			return
 		}
@@ -210,7 +222,7 @@ func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handle
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
 		action := handler.Action(repoId, refId, path)
-		authOp := authenticateOperation(ctx, writer, request, action)
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
 		if authOp == nil {
 			return
 		}
