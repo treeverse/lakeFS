@@ -2,12 +2,15 @@ package operations_test
 
 import (
 	"bytes"
+	"context"
 	"crypto/md5"
 	"crypto/rand"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"testing"
+
+	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/upload"
 )
@@ -21,6 +24,10 @@ type mockAdapter struct {
 	totalSize  int64
 	count      int
 	lastBucket string
+}
+
+func (a *mockAdapter) WithContext(ctx context.Context) block.Adapter {
+	return a
 }
 
 func newMockAdapter() *mockAdapter {
