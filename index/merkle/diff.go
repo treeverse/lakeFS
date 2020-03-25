@@ -92,6 +92,7 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 		// 		if common is the same as left, right modified
 		//		if common is the same as right, left modified
 		// 		if common is different from both, conflict!
+		// todo: How are we sure that different direcctories indicate a conflict? the change may be in different objects
 		// if it doesn't exist:
 		// 		if it doesn't exist on common as well, left created
 		//		if it exists in common, right deleted
