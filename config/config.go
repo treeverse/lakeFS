@@ -10,6 +10,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -208,7 +210,7 @@ func (c *Config) BuildStore() db.Store {
 
 	opts := badger.DefaultOptions(location).
 		WithTruncate(viper.GetBool("metadata.db.badger.truncate")).
-		WithLogger(db.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger")))
+		WithLogger(logging.Default().WithField("subsystem", "badger"))
 	bdb, err := badger.Open(opts)
 	if err != nil {
 		panic(fmt.Errorf("could not open badgerDB database: %s\n", err))

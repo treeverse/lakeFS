@@ -5,12 +5,13 @@ import (
 	"crypto/sha1"
 	"encoding/base64"
 	"fmt"
-	log "github.com/sirupsen/logrus"
 	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
 	str "strings"
+
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -43,7 +44,9 @@ func init() {
 	var sort_array []string
 	for _, word := range interestingResourcesContainer {
 		if _, ok := temp_map[word]; ok {
-			log.Warn(word + " appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
+			logging.Default().
+				WithField("word", word).
+				Warn("appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
 		} else {
 			temp_map[word] = true
 		}
@@ -81,7 +84,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 	if len(headerValue) > 0 {
 		match := V2AuthHeaderRegexp.FindStringSubmatch(headerValue)
 		if len(match) == 0 {
-			log.WithField("header", headerValue).Error("log header does not match v2 structure")
+			logging.Default().WithField("header", headerValue).Error("log header does not match v2 structure")
 			return ctx, ErrHeaderMalformed
 		}
 		result := make(map[string]string)
@@ -94,7 +97,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
-			log.WithField("header", headerValue).Error("log header does not match v2 structure (isn't proper base64)")
+			logging.Default().WithField("header", headerValue).Error("log header does not match v2 structure (isn't proper base64)")
 			return ctx, ErrHeaderMalformed
 		}
 		ctx.signature = sig
@@ -201,7 +204,7 @@ func buildPath(host, bareDomain, path string) string {
 			prePath := host[:len(host)-len(bareDomain)-1]
 			return "/" + prePath + path
 		} else { // bareDomain is not prefix of the path - how did we get here???
-			log.WithFields(log.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
+			logging.Default().WithFields(logging.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
 			return ""
 		}
 	}

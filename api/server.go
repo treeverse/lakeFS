@@ -5,11 +5,11 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/go-openapi/errors"
 
 	"github.com/rakyll/statik/fs"
-
-	log "github.com/sirupsen/logrus"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/httputil"
@@ -60,25 +60,25 @@ func (s *Server) DownloadToken() func(string) (*models.User, error) {
 	}
 }
 
-// BasicAuth returns a function that hooks into Swagger's basic auth provider
-// it uses the auth.Service provided to ensure credentials are valid
+// BasicAuth returns a function that hooks into Swagger's basic Auth provider
+// it uses the Auth.Service provided to ensure credentials are valid
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
+	logger := logging.Default().WithField("Auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetAPICredentials(accessKey)
 		if err != nil {
-			log.WithField("access_key", accessKey).Warn("could not get access key for login")
+			logger.WithField("access_key", accessKey).Warn("could not get access key for login")
 			return nil, ErrAuthenticationFailed
 		}
 		if !strings.EqualFold(secretKey, credentials.GetAccessSecretKey()) {
-			log.WithField("access_key", accessKey).Warn("access key secret does not match")
+			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
 		userData, err := s.authService.GetUser(credentials.GetEntityId())
 		if err != nil {
-			log.WithField("access_key", accessKey).Error("could not find user for key pair")
+			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
-		log.WithField("access_key", accessKey).Info("successful login for key")
 		return &models.User{ID: userData.GetId()}, nil
 	}
 }
@@ -93,7 +93,7 @@ func (s *Server) SetupServer() (*restapi.Server, error) {
 
 	api := operations.NewLakefsAPI(swaggerSpec)
 	api.Logger = func(msg string, ctx ...interface{}) {
-		log.WithField("logger", "swagger").Debugf(msg, ctx)
+		logging.Default().WithField("logger", "swagger").Debugf(msg, ctx)
 	}
 
 	api.BasicAuthAuth = s.BasicAuth()
@@ -124,11 +124,12 @@ func (s *Server) Serve(listenAddr string) error {
 
 	httpServer := http.Server{
 		Addr: listenAddr,
-		Handler: httputil.LoggingMiddleWare(RequestIdHeaderName, LoggerServiceName,
-			HandlerWithUI(
+		Handler: HandlerWithUI(
+			httputil.LoggingMiddleWare(RequestIdHeaderName, logging.Fields{"service_name": LoggerServiceName},
 				srv.GetHandler(), // api
-				HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"), // ui
-			)),
+			),
+			HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"), // ui
+		),
 	}
 
 	return httpServer.ListenAndServe()
