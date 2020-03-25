@@ -5,8 +5,9 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"github.com/treeverse/lakefs/gateway/utils"
+
+	"github.com/treeverse/lakefs/logging"
+
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -17,6 +18,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/treeverse/lakefs/gateway/utils"
 )
 
 type simulationEvent struct {
@@ -60,7 +63,7 @@ func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 func regexpGlob(directory string, logPattern *regexp.Regexp) []string {
 	dirList, err := ioutil.ReadDir(directory) //ReadDir returns files sorted by name. in the events time order
 	if err != nil {
-		log.WithError(err).Fatal("Directory read failed :" + directory)
+		logging.Default().WithError(err).Fatal("Directory read failed :" + directory)
 	}
 	// filter only request (.log) files
 	var fileList []string
@@ -89,7 +92,7 @@ func buildEventList(t *testing.T) []simulationEvent {
 		}
 		err = json.Unmarshal(event, &se)
 		if err != nil {
-			log.WithError(err).Fatal("Failed to unmarshal event " + file + "\n")
+			logging.Default().WithError(err).Fatal("Failed to unmarshal event " + file + "\n")
 		}
 		evt.statusCode = se.Status
 		evt.uploadId = []byte(se.UploadID)
@@ -112,7 +115,7 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 		bReader := bufio.NewReader(bytes.NewReader(event.request))
 		request, err := http.ReadRequest(bReader)
 		if err != nil {
-			log.WithError(err).Fatal("could not create Request from URL")
+			logging.Default().WithError(err).Fatal("could not create Request from URL")
 		}
 		if len(event.uploadId) > 0 {
 			utils.PlaybackParams.CurrentUploadId = event.uploadId

@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/permissions"
 
@@ -18,7 +19,6 @@ import (
 
 	"github.com/treeverse/lakefs/index/model"
 
-	log "github.com/sirupsen/logrus"
 	"golang.org/x/xerrors"
 )
 
@@ -77,6 +77,9 @@ func (controller *ListObjects) serializeBranches(branches []*model.Branch) ([]se
 }
 
 func (controller *ListObjects) ListV2(o *RepoOperation) {
+	o.AddLogFields(logging.Fields{
+		"list_type": "v2",
+	})
 	params := o.Request.URL.Query()
 	delimiter := params.Get("delimiter")
 	startAfter := params.Get("start-after")
@@ -162,7 +165,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		if len(fromStr) > 0 {
 			from, err = path.ResolvePath(fromStr)
 			if err != nil || !strings.EqualFold(from.Ref, prefix.Ref) {
-				o.Log().WithError(err).WithFields(log.Fields{
+				o.Log().WithError(err).WithFields(logging.Fields{
 					"branch": prefix.Ref,
 					"path":   prefix.Path,
 					"from":   fromStr,
@@ -181,14 +184,14 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			descend)
 		if xerrors.Is(err, db.ErrNotFound) {
 			if xerrors.Is(err, indexErrors.ErrBranchNotFound) {
-				o.Log().WithError(err).WithFields(log.Fields{
+				o.Log().WithError(err).WithFields(logging.Fields{
 					"ref":  prefix.Ref,
 					"path": prefix.Path,
 				}).Debug("could not list objects in path")
 			}
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
-			o.Log().WithError(err).WithFields(log.Fields{
+			o.Log().WithError(err).WithFields(logging.Fields{
 				"ref":  prefix.Ref,
 				"path": prefix.Path,
 			}).Error("could not list objects in path")
@@ -222,6 +225,10 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 }
 
 func (controller *ListObjects) ListV1(o *RepoOperation) {
+	o.AddLogFields(logging.Fields{
+		"list_type": "v1",
+	})
+
 	// handle ListObjects (v1)
 	params := o.Request.URL.Query()
 	delimiter := params.Get("delimiter")
@@ -299,7 +306,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		if len(params.Get("marker")) > 0 {
 			marker, err = path.ResolvePath(params.Get("marker"))
 			if err != nil || !strings.EqualFold(marker.Ref, prefix.Ref) {
-				o.Log().WithError(err).WithFields(log.Fields{
+				o.Log().WithError(err).WithFields(logging.Fields{
 					"branch": prefix.Ref,
 					"path":   prefix.Path,
 					"marker": marker,
@@ -320,7 +327,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		if xerrors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
-			o.Log().WithError(err).WithFields(log.Fields{
+			o.Log().WithError(err).WithFields(logging.Fields{
 				"branch": prefix.Ref,
 				"path":   prefix.Path,
 			}).Error("could not list objects in path")

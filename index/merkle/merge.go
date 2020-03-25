@@ -3,9 +3,9 @@ package merkle
 import (
 	"strings"
 
-	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/index/model"
 )
@@ -33,6 +33,7 @@ func max(a int64, b int64) int64 {
 }
 
 func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, int64, error) {
+	logger := logging.Default()
 	merged := make([]*model.Entry, 0)
 	var timeStamp int64
 	nextCurrent := 0
@@ -62,7 +63,7 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 				nextChange++
 				// changed entry comes first
 				if currChange.Tombstone {
-					log.Error("trying to remove an entry that does not exist")
+					logger.Error("trying to remove an entry that does not exist")
 					return nil, 0, db.ErrNotFound
 				} else {
 					merged = append(merged, currChange.GetEntry())
@@ -73,7 +74,7 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 			currChange := changes[nextChange]
 			timeStamp = max(timeStamp, currChange.GetEntry().GetTimestamp())
 			if currChange.GetTombstone() {
-				log.Error("trying to remove an entry that does not exist")
+				logger.Error("trying to remove an entry that does not exist")
 				return nil, 0, db.ErrNotFound
 			}
 			merged = append(merged, currChange.GetEntry())
