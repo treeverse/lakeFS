@@ -2,30 +2,7 @@ package db
 
 import (
 	"github.com/dgraph-io/badger"
-	"github.com/treeverse/lakefs/logging"
 )
-
-// logging adapter
-type badgerLogger struct {
-	logger logging.Logger
-}
-
-func (l *badgerLogger) Errorf(s string, d ...interface{}) {
-	l.logger.Errorf(s, d...)
-}
-func (l *badgerLogger) Warningf(s string, d ...interface{}) {
-	l.logger.Warningf(s, d...)
-}
-func (l *badgerLogger) Infof(s string, d ...interface{}) {
-	l.logger.Infof(s, d...)
-}
-func (l *badgerLogger) Debugf(s string, d ...interface{}) {
-	l.logger.Debugf(s, d...)
-}
-
-func NewBadgerLoggingAdapter(logger logging.Logger) badger.Logger {
-	return &badgerLogger{logger: logger}
-}
 
 type LocalDBStore struct {
 	db *badger.DB

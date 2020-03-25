@@ -31,7 +31,7 @@ type Operation struct {
 	Index            index.Index
 	MultipartManager index.MultipartManager
 	BlockStore       block.Adapter
-	Auth             utils.GatewayService
+	Auth             utils.GatewayAuthService
 }
 
 func (o *Operation) RequestId() string {
