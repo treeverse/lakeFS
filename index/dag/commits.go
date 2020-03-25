@@ -1,8 +1,6 @@
 package dag
 
 import (
-	"sort"
-
 	"github.com/treeverse/lakefs/index/model"
 )
 
@@ -10,90 +8,65 @@ type CommitReader interface {
 	ReadCommit(addr string) (*model.Commit, error)
 }
 
-func bfsScan(reader CommitReader, startAddr string, matchOnly []*model.Commit) ([]*model.Commit, error) {
-	// make a set of skip nodes for O(1) lookup
-	var sentinel = struct{}{}
-	matchOnlySet := make(map[string]struct{})
-	if matchOnly != nil {
-		for _, node := range matchOnly {
-			matchOnlySet[node.GetAddress()] = sentinel
-		}
-	}
-
-	discoveredSet := make(map[string]struct{})
+func BfsScan(reader CommitReader, startAddr string, results int, after string) ([]*model.Commit, bool, error) {
+	iter := NewBfsIterator(reader, startAddr)
 	commits := make([]*model.Commit, 0)
-	queue := make([]string, 0)
-	queue = append(queue, startAddr)
-	for len(queue) != 0 {
-		// pop
-		currentAddr := queue[0]
-		queue = queue[1:]
-
-		// get and iterate
-		commit, err := reader.ReadCommit(currentAddr)
+	passedAfter := after == ""
+	for iter.advance() {
+		commit, err := iter.get()
 		if err != nil {
-			return nil, err
+			return nil, false, err
 		}
-		if _, isMatch := matchOnlySet[currentAddr]; matchOnly == nil || isMatch {
+		if passedAfter {
 			commits = append(commits, commit)
-		}
-		for _, parent := range commit.GetParents() {
-			if _, wasDiscovered := discoveredSet[parent]; !wasDiscovered {
-				queue = append(queue, parent)
-				discoveredSet[parent] = sentinel
+			//result <= 0 is considered as all
+			if len(commits) == results {
+				break
 			}
+		} else {
+			passedAfter = commit.Address == after
 		}
 	}
-	return commits, nil
+	return commits, iter.hasMore(), nil
 }
 
-func BfsScan(reader CommitReader, startAddr string) ([]*model.Commit, error) {
-	return bfsScan(reader, startAddr, nil)
-}
+func FindLowestCommonAncestor(reader CommitReader, addrA, addrB string) (*model.Commit, error) {
+	// implementation used to be as per https://stackoverflow.com/a/27285628
 
-func FindLowestCommonAncestor(reader CommitReader, addrA, addrB string) ([]*model.Commit, error) {
-	// implementation as per https://stackoverflow.com/a/27285628
-	// TODO: there's a more efficient way to do this that doesn't require running full BFS for each one of nodes.
-	blueNodes, err := bfsScan(reader, addrA, nil)
-	if err != nil {
-		return nil, err
-	}
-	redNodes, err := bfsScan(reader, addrB, blueNodes)
-	if err != nil {
-		return nil, err
-	}
-
-	nodeMap := make(map[string]*model.Commit)
-	for _, redNode := range redNodes {
-		nodeMap[redNode.GetAddress()] = redNode
-	}
-
-	var counts = make(map[string]int)
-	var commitMap = make(map[string]*model.Commit)
-	for _, commit := range redNodes {
-		commitMap[commit.GetAddress()] = commit
-		if _, exists := counts[commit.GetAddress()]; !exists {
-			counts[commit.GetAddress()] = 0
+	var sentinel = struct{}{}
+	discoveredSet := make(map[string]struct{})
+	iterA := NewBfsIterator(reader, addrA)
+	iterB := NewBfsIterator(reader, addrB)
+	hasNextA := iterA.advance()
+	hasNextB := iterB.advance()
+	for {
+		if !hasNextA && !hasNextB {
+			// no common ancestor
+			return nil, nil
 		}
-		for _, parent := range commit.GetParents() {
-			if _, exists := counts[parent]; !exists {
-				counts[parent] = 1
+		if hasNextA {
+			commit, err := iterA.get()
+			if err != nil {
+				return nil, err
+			}
+			if _, wasDiscovered := discoveredSet[commit.Address]; !wasDiscovered {
+				discoveredSet[commit.Address] = sentinel
 			} else {
-				counts[parent] = counts[parent] + 1
+				return commit, nil
 			}
+			hasNextA = iterA.advance()
+		}
+		if hasNextB {
+			commit, err := iterB.get()
+			if err != nil {
+				return nil, err
+			}
+			if _, wasDiscovered := discoveredSet[commit.Address]; !wasDiscovered {
+				discoveredSet[commit.Address] = sentinel
+			} else {
+				return commit, nil
+			}
+			hasNextB = iterB.advance()
 		}
 	}
-	// filter all nodes whose count is 0
-	candidates := make([]*model.Commit, 0)
-	for addr, count := range counts {
-		if count == 0 {
-			candidates = append(candidates, commitMap[addr])
-		}
-	}
-
-	sort.SliceStable(candidates, func(i, j int) bool {
-		return candidates[i].GetAddress() < candidates[j].GetAddress()
-	})
-
-	return candidates, nil
 }
