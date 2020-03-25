@@ -639,6 +639,56 @@ func (index *KVIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), nil
 }
 
+func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts int64) (interface{}, error) {
+	commit := &model.Commit{
+		Tree:      branchData.GetWorkspaceRoot(),
+		Parents:   parents,
+		Committer: committer,
+		Message:   message,
+		Timestamp: ts,
+		Metadata:  metadata,
+	}
+	commitAddr := ident.Hash(commit)
+	commit.Address = commitAddr
+	err := tx.WriteCommit(commitAddr, commit)
+	if err != nil {
+		return nil, err
+	}
+	branchData.Commit = commitAddr
+	branchData.CommitRoot = commit.GetTree()
+	branchData.WorkspaceRoot = commit.GetTree()
+	return commit, tx.WriteBranch(branchData.Name, branchData)
+}
+
+/* func doCommit(tx store.RepoOperations, repoId, branch, message, committer string, metadata map[string]string, ts int64) (interface{}, error) {
+	err := partialCommit(tx, branch)
+	if err != nil {
+		return nil, err
+	}
+	branchData, err := tx.ReadBranch(branch)
+	if err != nil {
+		return nil, err
+	}
+	commit := &model.Commit{
+		Tree:      branchData.GetWorkspaceRoot(),
+		Parents:   []string{branchData.GetCommit()},
+		Committer: committer,
+		Message:   message,
+		Timestamp: ts,
+		Metadata:  metadata,
+	}
+	commitAddr := ident.Hash(commit)
+	commit.Address = commitAddr
+	err = tx.WriteCommit(commitAddr, commit)
+	if err != nil {
+		return nil, err
+	}
+	branchData.Commit = commitAddr
+	branchData.CommitRoot = commit.GetTree()
+	branchData.WorkspaceRoot = commit.GetTree()
+	return commit, tx.WriteBranch(branch, branchData)
+}*/
+
 func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -657,25 +707,7 @@ func (index *KVIndex) Commit(repoId, branch, message, committer string, metadata
 		if err != nil {
 			return nil, err
 		}
-		commit := &model.Commit{
-			Tree:      branchData.GetWorkspaceRoot(),
-			Parents:   []string{branchData.GetCommit()},
-			Committer: committer,
-			Message:   message,
-			Timestamp: ts,
-			Metadata:  metadata,
-		}
-		commitAddr := ident.Hash(commit)
-		commit.Address = commitAddr
-		err = tx.WriteCommit(commitAddr, commit)
-		if err != nil {
-			return nil, err
-		}
-		branchData.Commit = commitAddr
-		branchData.CommitRoot = commit.GetTree()
-		branchData.WorkspaceRoot = commit.GetTree()
-
-		return commit, tx.WriteBranch(branch, branchData)
+		return doCommitUpdates(tx, branchData, committer, message, []string{branchData.GetCommit()}, metadata, ts)
 	})
 	if err != nil {
 		return nil, err
@@ -936,35 +968,25 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 	}
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
-
-func checkCommited(tx store.RepoOperations, branch string, Error error) error {
-	b, err := tx.ReadBranch(branch)
-	if err != nil {
-		return err
-	}
-	if b.GetCommitRoot() != b.GetWorkspaceRoot() {
-		return Error
-	}
-	return nil
-}
-
-func (index *KVIndex) Merge(repoId, source, destination string) error {
-	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		// check that partial commit area is empty
-		err := checkCommited(tx, source, errors.ErrSourceNotCommitted)
+func (index *KVIndex) Merge(repoId, source, destination, committer, message string, metadata map[string]string) error {
+	ts := index.tsGenerator()
+	_, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) error {
+		// check that destination has no uncommitted changes
+		destinationBranch, err := tx.ReadBranch(destination)
 		if err != nil {
-			return nil, err
+			return err
 		}
-		err = checkCommited(tx, source, errors.ErrDestinationNotCommitted)
+		l, err := tx.ListWorkspace(destination)
 		if err != nil {
-			return nil, err
+			return err
 		}
-
+		if destinationBranch.GetCommitRoot() != destinationBranch.GetWorkspaceRoot() || len(l) > 0 {
+			return errors.ErrDestinationNotCommitted
+		}
 		// compute difference
-
 		res, err := doDiff(tx, repoId, source, destination) //todo: isn't it the other way around
 		if err != nil {
-			return res, err
+			return err
 		}
 		df := res.(merkle.Differences)
 		var conflicts merkle.Differences
@@ -972,23 +994,69 @@ func (index *KVIndex) Merge(repoId, source, destination string) error {
 			if dif.Direction == merkle.DifferenceDirectionConflict {
 				conflicts = append(conflicts, dif)
 			}
-
 		}
 		if len(conflicts) > 0 {
-			return conflicts, err
+			return err
 		}
+		// update destination with source changes
 		var wsEntries []*model.WorkspaceEntry
+		sourceBranch, err := tx.ReadBranch(source)
+		if err != nil {
+			return err
+		}
 		for _, dif := range df {
+			var e *model.Entry
+			m := merkle.New(sourceBranch.GetCommitRoot())
 			if dif.Direction == merkle.DifferenceDirectionLeft {
-
+				if dif.Type != merkle.DifferenceTypeRemoved {
+					e, err = m.GetEntry(tx, dif.Path, dif.PathType)
+					if err != nil {
+						log.WithError(err).Fatal("failed reading entry\n")
+					}
+				} else {
+					e = nil
+				}
 			}
+			w := new(model.WorkspaceEntry)
+			w.Entry = e
+			w.Path = dif.Path
+			w.Tombstone = (dif.Type == merkle.DifferenceTypeRemoved)
+			wsEntries = append(wsEntries, w)
 		}
 
-		return df, err
+		desinationRoot := merkle.New(destinationBranch.GetCommitRoot())
+		newRoot, err := desinationRoot.Update(tx, wsEntries)
+		if err != nil {
+			log.WithError(err).Fatal("failed updating merge destination\n")
+		}
+		destinationBranch.CommitRoot = newRoot.Root()
+		destinationBranch.WorkspaceRoot = newRoot.Root()
+		parents := []string{destinationBranch.GetCommit(), sourceBranch.GetCommit()}
+		doCommitUpdates(tx, destinationBranch, committer, message, parents, metadata, ts)
+
+		return err
 
 	})
 	return err
 }
+
+/*tree, err = tree.Update(tx, wsEntries)
+if err != nil {
+return err
+}
+
+// clear workspace entries
+err = tx.ClearWorkspace(branch)
+if err != nil {
+return err
+}
+
+// update branch pointer to point at new workspace
+err = tx.WriteBranch(branch, &model.Branch{
+Name:          branch,
+Commit:        branchData.GetCommit(),
+CommitRoot:    branchData.GetCommitRoot(),
+WorkspaceRoot: tree.Root(), // does this happen properly?*/
 
 func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
 	err := ValidateAll(
