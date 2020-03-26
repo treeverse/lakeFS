@@ -287,6 +287,7 @@ func (index *KVIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 	}
 	return obj.(*model.Object), nil
 }
+
 func readEntry(tx store.RepoReadOnlyOperations, ref, path string, typ model.Entry_Type) (*model.Entry, error) {
 	var entry *model.Entry
 
@@ -487,7 +488,6 @@ func (index *KVIndex) WriteObject(repoId, branch, path string, object *model.Obj
 	return err
 }
 
-// delete object with timestamp - for testing timestamps
 func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -502,24 +502,65 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		if err != nil {
 			return nil, err
 		}
+		/**
+		handling 4 possible cases:
+		* 1 object does not exist  - return error
+		* 2 object exists only in workspace - remove from workspace
+		* 3 object exists only in merkle - add tombstone
+		* 4 object exists in workspace and in merkle - 2 + 3
+		*/
+		notFoundCount := 0
+		wsEntry, err := tx.ReadFromWorkspace(branch, path)
+		if err != nil {
+			if xerrors.Is(err, db.ErrNotFound) {
+				notFoundCount += 1
+			} else {
+				return nil, err
+			}
+		}
 
-		_, err = readEntry(tx, branch, path, model.Entry_OBJECT)
+		br, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
 		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
-			Path: path,
-			Entry: &model.Entry{
-				Name:      pth.New(path).Basename(),
-				Timestamp: ts,
-				Type:      model.Entry_OBJECT,
-			},
-			Tombstone: true,
-		})
+		root := br.GetWorkspaceRoot()
+		m := merkle.New(root)
+		merkleEntry, err := m.GetEntry(tx, path, model.Entry_OBJECT)
 		if err != nil {
-			index.log().WithError(err).Error("could not write workspace tombstone")
+			if xerrors.Is(err, db.ErrNotFound) {
+				notFoundCount += 1
+			} else {
+				return nil, err
+			}
 		}
-		return nil, err
+
+		if notFoundCount == 2 {
+			return nil, db.ErrNotFound
+		}
+
+		if wsEntry != nil {
+			err = tx.DeleteWorkspacePath(branch, path)
+			if err != nil {
+				return nil, err
+			}
+		}
+
+		if merkleEntry != nil {
+			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+				Path: path,
+				Entry: &model.Entry{
+					Name:      pth.New(path).Basename(),
+					Timestamp: ts,
+					Type:      model.Entry_OBJECT,
+				},
+				Tombstone: true,
+			})
+			if err != nil {
+				index.log().WithError(err).Error("could not write workspace tombstone")
+			}
+			return nil, err
+		}
+		return nil, nil
 	})
 	return err
 }
@@ -586,6 +627,10 @@ func (index *KVIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 		var root string
 		if reference.isBranch {
 			err := partialCommit(tx, reference.branch.GetName()) // block on this since we traverse the tree immediately after
+			if err != nil {
+				return nil, err
+			}
+			reference.branch, err = tx.ReadBranch(reference.branch.Name)
 			if err != nil {
 				return nil, err
 			}
