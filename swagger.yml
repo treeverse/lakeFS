@@ -70,6 +70,20 @@ definitions:
       bucket_name:
         type: string
 
+  mergeSuccess:
+    type: object
+    properties:
+      created:
+        type: integer
+        format: int
+      updated:
+        type: integer
+        format: int
+      removed:
+        type: integer
+        format: int
+
+
   repository_creation:
     type: object
     required:
@@ -506,6 +520,57 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+
+
+
+
+  /repositories/{repositoryId}/refs/{leftRef}/merge/{rightRef}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: leftRef
+        required: true
+        type: string
+        description: destination branch name
+      - in: path
+        name: rightRef
+        required: true
+        type: string
+        description: source branch name
+    get:
+      tags:
+        - merge
+      operationId: mergeIntoBranch
+      summary: merge references
+      responses:
+        200:
+          description: merge compleated
+          schema:
+            $ref: "#/definitions/mergeSuccess"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        409:
+          description: conflict between branches
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/diff"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
 
   /repositories/{repositoryId}/branches/{branchId}/diff:
     parameters:
