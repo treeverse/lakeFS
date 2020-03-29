@@ -14,6 +14,7 @@ func CompareEntries(a, b *model.Entry) (eqs int) {
 	// names first
 	eqs = strings.Compare(a.GetName(), b.GetName())
 	// directories second
+	//todo: is it needed? entries can not have the same name as directories that alwys have a trailing slash
 	if eqs == 0 && a.GetType() != b.GetType() {
 		if a.GetType() < b.GetType() {
 			eqs = -1
