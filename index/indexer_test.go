@@ -416,6 +416,22 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 			[]string{"a/foo"},
 			nil,
 		},
+		{
+			"remove from twice from merkle before partial commit",
+			0,
+			[]Action{
+				{write, "a/foo"},
+				{commit, ""},
+				{write, "a/foo"},
+				{write, "a/foo/bar"},
+				{deleteEntry, "a/foo"},
+				{deleteEntry, "a/foo"},
+				{commit, ""},
+			},
+			[]string{"a/foo/bar"},
+			[]string{"a/foo"},
+			db.ErrNotFound,
+		},
 	}
 
 	for _, tc := range testData {

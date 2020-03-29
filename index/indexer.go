@@ -503,11 +503,12 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 		/**
-		handling 4 possible cases:
+		handling 5 possible cases:
 		* 1 object does not exist  - return error
 		* 2 object exists only in workspace - remove from workspace
 		* 3 object exists only in merkle - add tombstone
 		* 4 object exists in workspace and in merkle - 2 + 3
+		* 5 objects exists in merkle tombstone exists in workspace - return error
 		*/
 		notFoundCount := 0
 		wsEntry, err := tx.ReadFromWorkspace(branch, path)
@@ -539,6 +540,9 @@ func (index *KVIndex) DeleteObject(repoId, branch, path string) error {
 		}
 
 		if wsEntry != nil {
+			if wsEntry.Tombstone {
+				return nil, db.ErrNotFound
+			}
 			err = tx.DeleteWorkspacePath(branch, path)
 			if err != nil {
 				return nil, err
