@@ -5,6 +5,7 @@ import (
 	"io"
 	"net/url"
 
+	"github.com/treeverse/lakefs/api/gen/client/merge"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 
 	"github.com/treeverse/lakefs/api/gen/client/objects"
@@ -45,6 +46,7 @@ type Client interface {
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
+	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -199,6 +201,22 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 		return nil, err
 	}
 	return diff.GetPayload().Results, nil
+}
+
+func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error) {
+	//mergeBranch, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
+	_, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
+		LeftRef:      leftRef,
+		RightRef:     rightRef,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+
+	if err != nil {
+		return nil, err
+	}
+	return nil, nil
+	//return mergeBranch.GetPayload().Results, nil
 }
 
 func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error) {

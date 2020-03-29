@@ -16,24 +16,71 @@ limitations under the License.
 package cmd
 
 import (
-	"fmt"
+	"context"
+	"os"
+	"strings"
+
+	"github.com/jedib0t/go-pretty/text"
+
+	"github.com/treeverse/lakefs/api/gen/models"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/uri"
 )
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:   "merge",
-	Short: "merge changes from source branch into destination branch",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "merge  source into  destination ",
+	Long:  "merge & commit changes from source branch into destination branch",
+	Args: ValidationChain(
+		HasRangeArgs(2, 2),
+		IsRefURI(0),
+	),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("merge called")
+		client := getClient()
+
+		var conflicts []*models.Diff
+		var err error
+		if err := IsRefURI(1)(args); err != nil {
+			DieErr(err)
+		}
+		leftRefURI := uri.Must(uri.Parse(args[0]))
+		rightRefURI := uri.Must(uri.Parse(args[1]))
+
+		if leftRefURI.Repository != rightRefURI.Repository {
+			DieFmt("both references must belong to the same repository")
+		}
+
+		conflicts, err = client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+		if err != nil {
+			DieErr(err)
+		}
+		for _, line := range conflicts {
+			FmtMerge(line)
+		}
 	},
+}
+
+func FmtMerge(diff *models.Diff) {
+	var color text.Color
+	var action string
+
+	switch diff.Type {
+	case models.DiffTypeADDED:
+		color = text.FgGreen
+		action = "+ added"
+	case models.DiffTypeREMOVED:
+		color = text.FgRed
+		action = "- removed"
+	default:
+		color = text.FgYellow
+		action = "~ modified"
+	}
+
+	_, _ = os.Stdout.WriteString(
+		color.Sprintf("%s %s %s %s\n", action, strings.ToLower(diff.PathType), diff.Path),
+	)
 }
 
 func init() {

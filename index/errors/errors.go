@@ -15,6 +15,8 @@ var (
 	ErrBranchAlreadyExists        = xerrors.New("branch already exists")
 	ErrNoMergeBase                = xerrors.New("no common merge base found")
 	ErrDestinationNotCommitted    = xerrors.New("destination branch not committed before merge")
+	ErrMergeConflict              = xerrors.New("Merge Conflict")
+	ErrMergeUpdateFailed          = xerrors.New("failed updating merged destinationt")
 
 	//validation errors
 	ErrInvalid = xerrors.New("validation error")

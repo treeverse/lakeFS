@@ -3,6 +3,9 @@ package api
 import (
 	"bytes"
 	"fmt"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/merge"
+	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/index/merkle"
 	"io"
 	"net/http"
 	"time"
@@ -82,6 +85,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
+	api.MergeMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
 	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
@@ -448,6 +452,38 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 
 		return branches.NewDeleteBranchNoContent()
+	})
+}
+
+func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
+	return merge.MergeIntoBranchHandlerFunc(func(params merge.MergeIntoBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID)) //todo: change permissions to merge permissions
+		if err != nil {
+			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
+		result, err := a.meta.Merge(params.RepositoryID, params.RightRef, params.LeftRef, "", "", make(map[string]string)) // todo: fill real parameters
+		switch err {
+		case nil:
+			return merge.NewMergeIntoBranchOK().WithPayload(result.(*models.MergeSuccess))
+		case errors.ErrNoMergeBase:
+			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
+		case errors.ErrDestinationNotCommitted:
+			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
+		case errors.ErrBranchNotFound:
+			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
+		case errors.ErrMergeConflict:
+			conflicts := result.([]merkle.Difference)
+			results := make([]*models.Diff, len(conflicts))
+			for i, d := range conflicts {
+				results[i] = serializeDiff(d)
+			}
+			return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{Results: results})
+		default:
+			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
+
+		}
+
 	})
 }
 
