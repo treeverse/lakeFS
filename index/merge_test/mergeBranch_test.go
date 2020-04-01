@@ -3,7 +3,6 @@ package merge
 import (
 	"github.com/treeverse/lakefs/api/gen/client"
 	authmodel "github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index/errors"
 	"strconv"
 	"testing"
@@ -23,7 +22,7 @@ func TestMerge(t *testing.T) {
 	t.Run("simplest merge", func(t *testing.T) {
 		handler, deps, close := getHandler(t)
 		defer close()
-		creds, clt, chacksumTranslat := setupHelper(t, deps, handler)
+		creds, clt, _ := setupHelper(t, deps, handler)
 		uploadObject(t, "t/v/s", "master", 1024, clt, creds)
 		commit(t, "master", "master-1", clt, creds)
 		createBranch(t, "br-1", "master", clt, creds)
@@ -32,14 +31,16 @@ func TestMerge(t *testing.T) {
 		uploadObject(t, "t/v1/s", "master", 10000, clt, creds)
 		commit(t, "master", "master-2", clt, creds)
 		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "tzahiJ", "some message", metadata)
-		showEntries(db.Store(deps.db), chacksumTranslat, cs, "1-")
+		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v1/s", true, "merge failed - document not copied")
+
+		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "1-")
 
 	})
 
 	t.Run("merge with removee", func(t *testing.T) {
 		handler, deps, close := getHandler(t)
 		defer close()
-		creds, clt, chacksumTranslat := setupHelper(t, deps, handler)
+		creds, clt, _ := setupHelper(t, deps, handler)
 		uploadObject(t, "t/v/s", "master", 1024, clt, creds)
 		uploadObject(t, "t/v/s1", "master", 2048, clt, creds)
 		commit(t, "master", "master-1", clt, creds)
@@ -51,14 +52,15 @@ func TestMerge(t *testing.T) {
 		}
 		commit(t, "master", "master-2", clt, creds)
 		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "tzahiJ", "some message", metadata)
-		showEntries(db.Store(deps.db), chacksumTranslat, cs, "2-")
+		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v/s", false, "merge failed - document not deleted")
+		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "2-")
 
 	})
 
 	t.Run("merge without last commit", func(t *testing.T) {
 		handler, deps, close := getHandler(t)
 		defer close()
-		creds, clt, chacksumTranslat := setupHelper(t, deps, handler)
+		creds, clt, _ := setupHelper(t, deps, handler)
 		uploadObject(t, "t/v/s", "master", 1024, clt, creds)
 		commit(t, "master", "master-1", clt, creds)
 		createBranch(t, "br-1", "master", clt, creds)
@@ -67,13 +69,14 @@ func TestMerge(t *testing.T) {
 		uploadObject(t, "t/v/s1", "master", 10000, clt, creds)
 
 		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "tzahiJ", "some message", metadata)
-		showEntries(db.Store(deps.db), chacksumTranslat, cs, "3-")
+		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v/s1", false, "merge failed - uncommitted document synchronizes")
 
+		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "3-")
 	})
 	t.Run("merge with conflict", func(t *testing.T) {
 		handler, deps, close := getHandler(t)
 		defer close()
-		creds, clt, chacksumTranslat := setupHelper(t, deps, handler)
+		creds, clt, _ := setupHelper(t, deps, handler)
 		uploadObject(t, "t/v/s", "master", 1024, clt, creds)
 		commit(t, "master", "master-1", clt, creds)
 		createBranch(t, "br-1", "master", clt, creds)
@@ -82,18 +85,19 @@ func TestMerge(t *testing.T) {
 		uploadObject(t, "t/v/s1", "master", 10000, clt, creds)
 		uploadObject(t, "t/v/s1", "br-1", 5000, clt, creds)
 		commit(t, "br-1", "br-1-1", clt, creds)
+		commit(t, "master", "master-2", clt, creds)
 
 		_, err := deps.meta.Merge("myrepo", "master", "br-1", "tzahiJ", "with conflicte", metadata)
 		if err != errors.ErrMergeConflict {
 			t.Error("did not identify conflict  ", err)
 		}
-		showEntries(db.Store(deps.db), chacksumTranslat, cs, "4-")
+		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "4-")
 
 	})
 	t.Run("large tree", func(t *testing.T) {
 		handler, deps, close := getHandler(t)
 		defer close()
-		creds, clt, chacksumTranslat := setupHelper(t, deps, handler)
+		creds, clt, _ := setupHelper(t, deps, handler)
 		uploadTree(t, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 4096, clt, creds)
 		commit(t, "master", "master-1", clt, creds)
 		createBranch(t, "br-1", "master", clt, creds)
@@ -105,7 +109,7 @@ func TestMerge(t *testing.T) {
 		if err != nil {
 			t.Error("failed large merge  ", err)
 		}
-		showEntries(db.Store(deps.db), chacksumTranslat, cs, "5-")
+		// showEntries(db.Store(deps.db), chacksumTranslat, cs, "5-")
 	})
 
 }

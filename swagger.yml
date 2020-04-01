@@ -83,6 +83,14 @@ definitions:
         type: integer
         format: int
 
+  mergeConflict:
+    type: object
+    properties:
+      type:
+        type: string
+        enum: [ADDED, REMOVED, CHANGED]
+      path:
+        type: string
 
   repository_creation:
     type: object
@@ -524,22 +532,22 @@ paths:
 
 
 
-  /repositories/{repositoryId}/refs/{leftRef}/merge/{rightRef}:
+  /repositories/{repositoryId}/refs/{rightRef}/merge/{leftRef}:
     parameters:
       - in: path
         name: repositoryId
         required: true
         type: string
       - in: path
-        name: leftRef
-        required: true
-        type: string
-        description: destination branch name
-      - in: path
         name: rightRef
         required: true
         type: string
         description: source branch name
+      - in: path
+        name: leftRef
+        required: true
+        type: string
+        description: destination branch name
     get:
       tags:
         - merge
@@ -558,15 +566,15 @@ paths:
           description: branch not found
           schema:
             $ref: "#/definitions/error"
-        409:
-          description: conflict between branches
+        209:
+          description: conflict
           schema:
             type: object
             properties:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/diff"
+                  $ref: "#/definitions/mergeConflict"
         default:
           description: generic error response
           schema:

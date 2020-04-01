@@ -774,7 +774,7 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string) (i interface{}, err error) {
+func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, isMerge bool) (i interface{}, err error) {
 
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
@@ -799,7 +799,7 @@ func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string) (
 	}
 
 	leftTree := lRef.commit.GetTree()
-	if lRef.isBranch {
+	if lRef.isBranch && !isMerge {
 		leftTree = lRef.branch.GetWorkspaceRoot()
 	}
 	rightTree := rRef.commit.GetTree()
@@ -824,7 +824,7 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 	}
 	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 
-		return doDiff(tx, repoId, leftRef, rightRef)
+		return doDiff(tx, repoId, leftRef, rightRef, false)
 	})
 	if err != nil {
 		return nil, err
@@ -952,7 +952,9 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 		return nil, err
 	}
 	ts := index.tsGenerator()
-	conflicts, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	var conflicts merkle.Differences
+	mergeCounter := new(models.MergeSuccess)
+	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// check that destination has no uncommitted changes
 		destinationBranch, err := tx.ReadBranch(destination)
 		if err != nil {
@@ -968,12 +970,11 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 			return nil, errors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		res, err := doDiff(tx, repoId, source, destination) //todo: isn't it the other way around
+		res, err := doDiff(tx, repoId, source, destination, true) //todo: isn't it the other way around
 		if err != nil {
 			return nil, err
 		}
 		df := res.(merkle.Differences)
-		var conflicts merkle.Differences
 		for _, dif := range df {
 			if dif.Direction == merkle.DifferenceDirectionConflict {
 				conflicts = append(conflicts, dif)
@@ -988,7 +989,6 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 		if err != nil {
 			log.WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
 		}
-		mergeCounter := new(models.MergeSuccess)
 		for _, dif := range df {
 			var e *model.Entry
 			m := merkle.New(sourceBranch.GetWorkspaceRoot())
@@ -1032,6 +1032,14 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 		return mergeCounter, nil
 
 	})
+	switch err {
+	case nil:
+		return mergeCounter, nil
+	case errors.ErrMergeConflict:
+		return conflicts, err
+	default:
+		return nil, err
+	}
 	return conflicts, err
 }
 

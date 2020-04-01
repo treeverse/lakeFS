@@ -17,10 +17,9 @@ package cmd
 
 import (
 	"context"
-	"os"
-	"strings"
-
+	"fmt"
 	"github.com/jedib0t/go-pretty/text"
+	"os"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 
@@ -40,29 +39,34 @@ var mergeCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 
-		var conflicts []*models.Diff
+		//var conflicts *models.MergeSuccess
 		var err error
 		if err := IsRefURI(1)(args); err != nil {
 			DieErr(err)
 		}
-		leftRefURI := uri.Must(uri.Parse(args[0]))
-		rightRefURI := uri.Must(uri.Parse(args[1]))
+		rightRefURI := uri.Must(uri.Parse(args[0]))
+		leftRefURI := uri.Must(uri.Parse(args[1]))
 
 		if leftRefURI.Repository != rightRefURI.Repository {
 			DieFmt("both references must belong to the same repository")
 		}
 
-		conflicts, err = client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
-		if err != nil {
+		//conflicts, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+		success, conflicts, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+		if success != nil {
+			_, _ = os.Stdout.WriteString(fmt.Sprintf("new: %d modified: %d removed: %d \n", success.Created, success.Updated, success.Removed))
+		} else if conflicts != nil {
+			for _, line := range conflicts.Results {
+				FmtMerge(line)
+			}
+		} else {
 			DieErr(err)
 		}
-		for _, line := range conflicts {
-			FmtMerge(line)
-		}
+
 	},
 }
 
-func FmtMerge(diff *models.Diff) {
+func FmtMerge(diff *models.MergeConflict) {
 	var color text.Color
 	var action string
 
@@ -79,7 +83,7 @@ func FmtMerge(diff *models.Diff) {
 	}
 
 	_, _ = os.Stdout.WriteString(
-		color.Sprintf("%s %s %s %s\n", action, strings.ToLower(diff.PathType), diff.Path),
+		color.Sprintf("%s %s \n", action, diff.Path),
 	)
 }
 
