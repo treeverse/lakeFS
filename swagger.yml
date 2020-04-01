@@ -556,7 +556,9 @@ paths:
         required: true
         type: string
         description: destination branch name
-    get:
+
+
+    post:
       tags:
         - merge
       operationId: mergeIntoBranch
@@ -574,7 +576,7 @@ paths:
           description: branch not found
           schema:
             $ref: "#/definitions/error"
-        209:
+        409:
           description: conflict
           schema:
             type: object

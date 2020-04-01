@@ -57,9 +57,7 @@ type Index interface {
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
-	//func (index *KVIndex) Merge(repoId, source,  string, metadata map[string]string) error {
-
-	Merge(repoId, source, destination, committer, message string, metadata map[string]string) (interface{}, error)
+	Merge(repoId, source, destination string) (interface{}, error)
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
@@ -887,27 +885,27 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, isMerge bool) (i interface{}, err error) {
+func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, isMerge bool, index *KVIndex) (i interface{}, err error) {
 
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
-		log.WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
+		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
 		return nil, errors.ErrBranchNotFound
 	}
 
 	rRef, err := resolveRef(tx, rightRef)
 	if err != nil {
-		log.WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
+		index.log().WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
 		return nil, errors.ErrBranchNotFound
 	}
 
 	commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
 	if err != nil {
-		log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
+		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
 		return nil, errors.ErrNoMergeBase
 	}
-	if len(commonCommits) == 0 {
-		log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
+	if commonCommits == nil {
+		index.log().WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
 		return nil, errors.ErrNoMergeBase
 	}
 
@@ -920,9 +918,9 @@ func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, i
 	diff, err := merkle.Diff(tx,
 		merkle.New(leftTree),
 		merkle.New(rightTree),
-		merkle.New(commonCommits[0].GetTree()))
+		merkle.New(commonCommits.GetTree()))
 	if err != nil {
-		log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
+		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
 	}
 	return diff, err
 }
@@ -937,7 +935,7 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 	}
 	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
 
-		return doDiff(tx, repoId, leftRef, rightRef, false)
+		return doDiff(tx, repoId, leftRef, rightRef, false, index)
 	})
 	if err != nil {
 		return nil, err
@@ -1074,7 +1072,7 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 	}
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
-func (index *KVIndex) Merge(repoId, source, destination, committer, message string, metadata map[string]string) (interface{}, error) {
+func (index *KVIndex) Merge(repoId, source, destination string) (interface{}, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
@@ -1089,19 +1087,19 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 		// check that destination has no uncommitted changes
 		destinationBranch, err := tx.ReadBranch(destination)
 		if err != nil {
-			log.WithError(err).WithField("destination", destination).Warn(" branch " + destination + " not found")
+			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " not found")
 			return nil, errors.ErrBranchNotFound
 		}
 		l, err := tx.ListWorkspace(destination)
 		if err != nil {
-			log.WithError(err).WithField("destination", destination).Warn(" branch " + destination + " workspace not found")
+			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " workspace not found")
 			return nil, err
 		}
 		if destinationBranch.GetCommitRoot() != destinationBranch.GetWorkspaceRoot() || len(l) > 0 {
 			return nil, errors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		res, err := doDiff(tx, repoId, source, destination, true) //todo: isn't it the other way around
+		res, err := doDiff(tx, repoId, source, destination, true, index) //todo: isn't it the other way around
 		if err != nil {
 			return nil, err
 		}
@@ -1118,7 +1116,7 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 		var wsEntries []*model.WorkspaceEntry
 		sourceBranch, err := tx.ReadBranch(source)
 		if err != nil {
-			log.WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
+			index.log().WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
 		}
 		for _, dif := range df {
 			var e *model.Entry
@@ -1132,7 +1130,7 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 					}
 					e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 					if err != nil {
-						log.WithError(err).Fatal("failed reading entry\n")
+						index.log().WithError(err).Fatal("failed reading entry\n")
 					}
 				} else {
 					mergeCounter.Removed++
@@ -1152,13 +1150,13 @@ func (index *KVIndex) Merge(repoId, source, destination, committer, message stri
 		desinationRoot := merkle.New(destinationBranch.GetCommitRoot())
 		newRoot, err := desinationRoot.Update(tx, wsEntries)
 		if err != nil {
-			log.WithError(err).Fatal("failed updating merge destination\n")
+			index.log().WithError(err).Fatal("failed updating merge destination\n")
 			return nil, errors.ErrMergeUpdateFailed
 		}
 		destinationBranch.CommitRoot = newRoot.Root()
 		destinationBranch.WorkspaceRoot = newRoot.Root()
 		parents := []string{destinationBranch.GetCommit(), sourceBranch.GetCommit()}
-		doCommitUpdates(tx, destinationBranch, committer, message, parents, metadata, ts)
+		doCommitUpdates(tx, destinationBranch, "", "", parents, make(map[string]string), ts)
 
 		return mergeCounter, nil
 
