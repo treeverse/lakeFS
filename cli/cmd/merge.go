@@ -35,11 +35,11 @@ var mergeCmd = &cobra.Command{
 	Args: ValidationChain(
 		HasRangeArgs(2, 2),
 		IsRefURI(0),
+		IsRefURI(1),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 
-		//var conflicts *models.MergeSuccess
 		var err error
 		if err := IsRefURI(1)(args); err != nil {
 			DieErr(err)
@@ -51,12 +51,11 @@ var mergeCmd = &cobra.Command{
 			DieFmt("both references must belong to the same repository")
 		}
 
-		//conflicts, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		success, conflicts, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		if success != nil {
 			_, _ = os.Stdout.WriteString(fmt.Sprintf("new: %d modified: %d removed: %d \n", success.Created, success.Updated, success.Removed))
 		} else if conflicts != nil {
-			for _, line := range conflicts.Results {
+			for _, line := range conflicts {
 				FmtMerge(line)
 			}
 		} else {
@@ -89,6 +88,11 @@ func FmtMerge(diff *models.MergeConflict) {
 
 func init() {
 	rootCmd.AddCommand(mergeCmd)
+
+	/*mergeCmd.Flags().StringP("message", "m", "", "commit message")
+	_ = commitCmd.MarkFlagRequired("message")
+
+	mergeCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")*/
 
 	// Here you will define your flags and configuration settings.
 
