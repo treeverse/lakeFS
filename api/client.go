@@ -2,7 +2,6 @@ package api
 
 import (
 	"context"
-	log "github.com/sirupsen/logrus"
 	"io"
 	"net/url"
 
@@ -47,7 +46,7 @@ type Client interface {
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
-	Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, *merge.MergeIntoBranchStatus209Body, error)
+	Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, []*models.MergeConflict, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -206,25 +205,23 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, *merge.MergeIntoBranchStatus209Body, error) {
-	statusOK, conflict, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
+func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, []*models.MergeConflict, error) {
+	statusOK, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
 		LeftRef:      leftRef,
 		RightRef:     rightRef,
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
-	if err != nil {
+
+	if err == nil {
+		return statusOK.Payload, nil, nil
+	}
+	conflict, ok := err.(*merge.MergeIntoBranchConflict)
+	if ok {
+		return nil, conflict.Payload.Results, nil
+	} else {
 		return nil, nil, err
 	}
-	if statusOK != nil {
-		return statusOK.GetPayload(), nil, nil
-	} else if conflict != nil {
-		return nil, conflict.GetPayload(), nil
-	} else {
-		log.Fatal(" all results were nil\n")
-		return nil, nil, nil
-	}
-
 }
 
 func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error) {
@@ -305,13 +302,14 @@ func (c *client) DeleteObject(ctx context.Context, repoId, branchId, path string
 	return err
 }
 
-func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
+func NewClient(endpointURL, accessKeyId, secretAccessKey string) (*client, error) {
 	parsedUrl, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
 	}
-	return &client{
-		remote: genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default),
-		auth:   httptransport.BasicAuth(accessKeyId, secretAccessKey),
-	}, nil
+	cl := new(client)
+	cl.remote = genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default)
+	cl.auth = httptransport.BasicAuth(accessKeyId, secretAccessKey)
+	return cl, nil
+
 }
