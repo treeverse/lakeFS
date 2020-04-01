@@ -6,17 +6,16 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"golang.org/x/xerrors"
 
-	"github.com/treeverse/lakefs/gateway/utils"
-
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/gateway/errors"
 )
 
-type DeleteObject struct{}
+type DeleteObject struct {
+}
 
-func (controller *DeleteObject) Action(req *http.Request) permissions.Action {
-	return permissions.DeleteObject(utils.GetRepo(req))
+func (controller *DeleteObject) Action(repoId, refId, path string) permissions.Action {
+	return permissions.DeleteObject(repoId)
 }
 
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {

@@ -11,7 +11,7 @@ import (
 
 type ListBuckets struct{}
 
-func (controller *ListBuckets) Action(req *http.Request) permissions.Action {
+func (controller *ListBuckets) Action(repoId, refId, path string) permissions.Action {
 	return permissions.ListRepos()
 }
 

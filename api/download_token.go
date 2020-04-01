@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/treeverse/lakefs/logging"
 
 	"golang.org/x/xerrors"
 
@@ -26,7 +26,7 @@ var (
 )
 
 func ValidateToken(ath auth.Service, token string, currentTime time.Time) (*models.User, error) {
-	lg := log.WithField("token", token)
+	lg := logging.Default().WithField("token", token)
 	parts := strings.SplitN(token, "/", 4)
 	if len(parts) != 4 {
 		lg.Error("wrong format")

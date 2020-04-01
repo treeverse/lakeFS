@@ -44,7 +44,9 @@ build: gen  ## Download dependecies and Build the default binary
 		$(GOBUILD) -o $(BINARY_NAME) -v main.go
 		$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
 
-test: gen  ## Run tests for the project
+test: gen run-test  ## Run tests for the project
+
+run-test:  ## Run tests without generating anything (faster if already generated)
 		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
 
 test-race: gen  ## Run tests for the project with -race
