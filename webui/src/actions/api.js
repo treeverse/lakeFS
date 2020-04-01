@@ -1,5 +1,6 @@
 import base64 from 'base-64';
 import {generateDownloadToken} from '../downloadToken';
+import {isValidBranchName} from "../model/validation";
 
 
 const API_ENDPOINT = '/api/v1';
@@ -197,17 +198,20 @@ class Branches {
         return await response.json();
     }
 
+
     async filter(repoId, from, amount) {
         if (!from) {
             return await this.list(repoId, from, amount);
         }
         const response = await this.list(repoId, from, amount);
         let self;
-        try {
-            self = await this.get(repoId, from);
-        } catch (error) {
-            if (!(error instanceof NotFoundError)) {
-                throw error;
+        if (isValidBranchName(from)) {
+            try {
+                self = await this.get(repoId, from);
+            } catch (error) {
+                if (!(error instanceof NotFoundError)) {
+                    throw error;
+                }
             }
         }
         let results = response.results.filter(branch => branch.id.indexOf(from) === 0);
@@ -263,13 +267,13 @@ class Objects {
 }
 
 class Commits {
-    async log(repoId, branchId) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits`);
+    async log(repoId, branchId, after, amount) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        const data = await response.json();
-        return data.results;
+        return await response.json();
     }
 
     async commit(repoId, branchId, message, metadata ={}) {
