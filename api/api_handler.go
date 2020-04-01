@@ -491,7 +491,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		result, err := a.meta.Merge(params.RepositoryID, params.RightRef, params.LeftRef, "", "", make(map[string]string)) // todo: fill real parameters
+		result, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef)
 		switch err {
 		case nil:
 			return merge.NewMergeIntoBranchOK().WithPayload(result.(*models.MergeSuccess))
@@ -510,9 +510,9 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 				results[i].Path = tmp.Path
 				results[i].Type = tmp.Type
 			}
-			var tmp = new(merge.MergeIntoBranchStatus209Body)
+			var tmp = new(merge.MergeIntoBranchConflictBody)
 			tmp.Results = results
-			return merge.NewMergeIntoBranchStatus209().WithPayload(tmp)
+			return merge.NewMergeIntoBranchConflict().WithPayload(tmp)
 		default:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 
