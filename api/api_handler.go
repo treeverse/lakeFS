@@ -473,12 +473,17 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 		case errors.ErrBranchNotFound:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case errors.ErrMergeConflict:
-			conflicts := result.([]merkle.Difference)
-			results := make([]*models.Diff, len(conflicts))
+			conflicts := result.(merkle.Differences)
+			results := make([]*models.MergeConflict, len(conflicts))
 			for i, d := range conflicts {
-				results[i] = serializeDiff(d)
+				tmp := serializeDiff(d)
+				results[i] = new(models.MergeConflict)
+				results[i].Path = tmp.Path
+				results[i].Type = tmp.Type
 			}
-			return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{Results: results})
+			var tmp = new(merge.MergeIntoBranchStatus209Body)
+			tmp.Results = results
+			return merge.NewMergeIntoBranchStatus209().WithPayload(tmp)
 		default:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 
