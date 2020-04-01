@@ -10,11 +10,9 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/dgraph-io/badger"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func TestBadgerDeleteRange(t *testing.T) {
@@ -29,7 +27,7 @@ func TestBadgerDeleteRange(t *testing.T) {
 		}
 	}()
 	opts := badger.DefaultOptions(dir)
-	opts.Logger = db.NewBadgerLoggingAdapter(log.WithField("subsystem", "badger"))
+	opts.Logger = logging.Default().WithField("subsystem", "badger")
 
 	kv, err := badger.Open(opts)
 	if err != nil {

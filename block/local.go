@@ -1,6 +1,7 @@
 package block
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -9,6 +10,14 @@ import (
 
 type LocalFSAdapter struct {
 	path string
+	ctx  context.Context
+}
+
+func (l *LocalFSAdapter) WithContext(ctx context.Context) Adapter {
+	return &LocalFSAdapter{
+		path: l.path,
+		ctx:  ctx,
+	}
 }
 
 func NewLocalFSAdapter(path string) (Adapter, error) {
@@ -24,7 +33,7 @@ func NewLocalFSAdapter(path string) (Adapter, error) {
 	if !isDirectoryWritable(path) {
 		return nil, fmt.Errorf("path provided is not writable")
 	}
-	return &LocalFSAdapter{path: path}, nil
+	return &LocalFSAdapter{path: path, ctx: context.Background()}, nil
 }
 
 func (l *LocalFSAdapter) getPath(identifier string) string {

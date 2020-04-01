@@ -5,9 +5,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/logging"
 
-	log "github.com/sirupsen/logrus"
+	"github.com/treeverse/lakefs/auth"
 )
 
 const (
@@ -52,20 +52,37 @@ func RequestId(r *http.Request) (*http.Request, string) {
 	return r, reqId
 }
 
-func LoggingMiddleWare(requestIdHeaderName, serviceName string, next http.Handler) http.Handler {
+func GetRequestIdFromCtx(ctx context.Context) string {
+	resp := ctx.Value(RequestIdContextKey)
+	if resp == nil {
+		return ""
+	}
+	return resp.(string)
+}
+
+func LoggingMiddleWare(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Do stuff here
 		before := time.Now()
-		// Call the next handler, which can be another middleware in the chain, or the final handler.
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 		r, reqId := RequestId(r)
+
+		// add default fields to context
+		requestFields := logging.Fields{
+			"path":       r.RequestURI,
+			"method":     r.Method,
+			"host":       r.Host,
+			"request_id": reqId,
+		}
+		for k, v := range fields {
+			requestFields[k] = v
+		}
+		r = r.WithContext(logging.AddFields(r.Context(), requestFields))
+
 		next.ServeHTTP(writer, r) // handle the request
+
 		writer.Header().Set(requestIdHeaderName, reqId)
-		log.WithFields(log.Fields{
-			"service":     serviceName,
-			"request_id":  reqId,
-			"path":        r.RequestURI,
-			"method":      r.Method,
+		logging.FromContext(r.Context()).WithFields(logging.Fields{
 			"took":        time.Since(before),
 			"status_code": writer.StatusCode,
 			"sent_bytes":  writer.ResponseSize,

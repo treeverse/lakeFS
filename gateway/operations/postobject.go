@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -21,8 +20,8 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) Action(req *http.Request) permissions.Action {
-	return permissions.WriteObject(utils.GetRepo(req))
+func (controller *PostObject) Action(repoId, refId, path string) permissions.Action {
+	return permissions.WriteObject(repoId)
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {

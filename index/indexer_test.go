@@ -30,7 +30,7 @@ const (
 )
 
 func TestKVIndex_GetCommit(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
 	defer closer()
 
 	kvIndex := index.NewKVIndex(kv)
@@ -65,7 +65,7 @@ func TestKVIndex_GetCommit(t *testing.T) {
 }
 
 func TestKVIndex_RevertCommit(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
 	defer closer()
 
 	kvIndex := index.NewKVIndex(kv)
@@ -237,7 +237,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.Name, func(t *testing.T) {
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
+			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
 			defer closer()
 
 			kvIndex := index.NewKVIndex(kv)
@@ -274,20 +274,72 @@ func TestKVIndex_RevertPath(t *testing.T) {
 	}
 }
 
+func TestKVIndex_DiffWorkspace(t *testing.T) {
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
+	defer closer()
+
+	kvIndex := index.NewKVIndex(kv)
+
+	err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "foo/bar", &model.Entry{
+		Name:      "bar",
+		Address:   "123456789",
+		Timestamp: time.Now().Unix(),
+		Type:      model.Entry_OBJECT,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	diff, err := kvIndex.DiffWorkspace(repo.GetRepoId(), repo.GetDefaultBranch())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(diff) == 0 {
+		t.Errorf("expected diff size to be 1, got 0")
+	}
+}
+
+func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
+	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
+	defer closer()
+
+	kvIndex := index.NewKVIndex(kv)
+
+	err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "foo/bar", &model.Entry{
+		Name:      "bar",
+		Address:   "123456789",
+		Timestamp: time.Now().Unix(),
+		Type:      model.Entry_OBJECT,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entries, _, err := kvIndex.ListObjectsByPrefix(repo.GetRepoId(), repo.GetDefaultBranch(), "/", "", 0, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Errorf("expected entries size to be 1, got 0")
+	}
+
+}
+
 func TestKVIndex_DeleteObject(t *testing.T) {
 	type Action struct {
 		command Command
 		path    string
 	}
 	testData := []struct {
-		Name           string
-		Actions        []Action
-		ExpectExisting []string
-		ExpectMissing  []string
-		ExpectedError  error
+		Name               string
+		partialCommitRatio float32
+		Actions            []Action
+		ExpectExisting     []string
+		ExpectMissing      []string
+		ExpectedError      error
 	}{
 		{
 			"add and delete",
+			1,
 			[]Action{
 				{write, "a/foo"},
 				{deleteEntry, "a/foo"},
@@ -299,6 +351,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"delete non existing",
+			1,
 			[]Action{
 				{write, "a/bar"},
 				{deleteEntry, "a/foo"},
@@ -310,6 +363,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"rewrite deleted",
+			1,
 			[]Action{
 				{write, "a/foo"},
 				{deleteEntry, "a/foo"},
@@ -322,6 +376,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"included",
+			1,
 			[]Action{
 				{write, "a/foo/bar"},
 				{write, "a/foo"},
@@ -333,11 +388,55 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 			[]string{"a/foo"},
 			nil,
 		},
+		{
+			"remove from workspace",
+			0,
+			[]Action{
+				{write, "a/foo"},
+				{write, "a/foo/bar"},
+				{deleteEntry, "a/foo"},
+				{commit, ""},
+			},
+			[]string{"a/foo/bar"},
+			[]string{"a/foo"},
+			nil,
+		},
+		{
+			"remove from workspace and from merkle",
+			0,
+			[]Action{
+				{write, "a/foo"},
+				{commit, ""},
+				{write, "a/foo"},
+				{write, "a/foo/bar"},
+				{deleteEntry, "a/foo"},
+				{commit, ""},
+			},
+			[]string{"a/foo/bar"},
+			[]string{"a/foo"},
+			nil,
+		},
+		{
+			"remove from twice from merkle before partial commit",
+			0,
+			[]Action{
+				{write, "a/foo"},
+				{commit, ""},
+				{write, "a/foo"},
+				{write, "a/foo/bar"},
+				{deleteEntry, "a/foo"},
+				{deleteEntry, "a/foo"},
+				{commit, ""},
+			},
+			[]string{"a/foo/bar"},
+			[]string{"a/foo"},
+			db.ErrNotFound,
+		},
 	}
 
 	for _, tc := range testData {
 		t.Run(tc.Name, func(t *testing.T) {
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
+			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, tc.partialCommitRatio)
 			defer closer()
 
 			kvIndex := index.NewKVIndex(kv)
@@ -393,11 +492,11 @@ func TestSizeConsistency(t *testing.T) {
 		{
 			name: "simple case",
 			objectList: []Object{
-				{"file1", "a/", 100},
-				{"file2", "a/", 100},
-				{"file3", "a/", 100},
-				{"file4", "a/", 100},
-				{"file5", "a/", 100},
+				{"file1", "a/file1", 100},
+				{"file2", "a/file2", 100},
+				{"file3", "a/file3", 100},
+				{"file4", "a/file4", 100},
+				{"file5", "a/file5", 100},
 			},
 			wantedTrees: []Tree{
 				{"a/", 500},
@@ -407,11 +506,11 @@ func TestSizeConsistency(t *testing.T) {
 		{
 			name: "two separate trees",
 			objectList: []Object{
-				{"file1", "a/", 100},
-				{"file2", "a/", 100},
-				{"file3", "b/", 100},
-				{"file4", "b/", 100},
-				{"file5", "b/", 100},
+				{"file1", "a/file1", 100},
+				{"file2", "a/file2", 100},
+				{"file3", "b/file3", 100},
+				{"file4", "b/file4", 100},
+				{"file5", "b/file5", 100},
 			},
 			wantedTrees: []Tree{
 				{"a/", 200},
@@ -422,11 +521,11 @@ func TestSizeConsistency(t *testing.T) {
 		{
 			name: "two sub trees",
 			objectList: []Object{
-				{"file1", "parent/a/", 100},
-				{"file2", "parent/a/", 100},
-				{"file3", "parent/b/", 100},
-				{"file4", "parent/b/", 100},
-				{"file5", "parent/b/", 100},
+				{"file1", "parent/a/file1", 100},
+				{"file2", "parent/a/file2", 100},
+				{"file3", "parent/b/file3", 100},
+				{"file4", "parent/b/file4", 100},
+				{"file5", "parent/b/file5", 100},
 			},
 			wantedTrees: []Tree{
 				{"parent/a/", 200},
@@ -438,11 +537,11 @@ func TestSizeConsistency(t *testing.T) {
 		{
 			name: "deep sub trees",
 			objectList: []Object{
-				{"file1", "a/", 100},
-				{"file2", "a/b/", 100},
-				{"file3", "a/b/c/", 100},
-				{"file4", "a/b/c/d/", 100},
-				{"file5", "a/b/c/d/e/", 100},
+				{"file1", "a/file1", 100},
+				{"file2", "a/b/file2", 100},
+				{"file3", "a/b/c/file3", 100},
+				{"file4", "a/b/c/d/file4", 100},
+				{"file5", "a/b/c/d/e/file5", 100},
 			},
 			wantedTrees: []Tree{
 				{"a/", 500},
@@ -457,8 +556,7 @@ func TestSizeConsistency(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
-			//TODO: add tests with different partial commit ratio
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
+			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
 			defer closer()
 
 			kvIndex := index.NewKVIndex(kv)
@@ -474,6 +572,11 @@ func TestSizeConsistency(t *testing.T) {
 				}
 			}
 
+			//force partial commit
+			_, err := kvIndex.Commit(repo.GetRepoId(), repo.GetDefaultBranch(), "message", "committer", nil)
+			if err != nil {
+				t.Fatal(err)
+			}
 			for _, tree := range tc.wantedTrees {
 				entry, err := kvIndex.ReadEntryTree(repo.GetRepoId(), repo.GetDefaultBranch(), tree.name)
 				if err != nil {
@@ -515,19 +618,19 @@ func TestTimeStampConsistency(t *testing.T) {
 		expectedRootTS time.Duration
 	}{
 		{
-			timedObjects:   []timedObject{{"a/", "foo", 10}, {"a/", "bar", 20}},
+			timedObjects:   []timedObject{{"a/foo", "foo", 10}, {"a/bar", "bar", 20}},
 			expectedTrees:  []expectedTree{{"a/", 20}},
 			expectedRootTS: 20,
 		},
 		{
-			timedObjects:   []timedObject{{"a/", "wow", 5}, {"a/c/", "bar", 10}, {"a/b/", "bar", 20}},
+			timedObjects:   []timedObject{{"a/wow", "wow", 5}, {"a/c/bar", "bar", 10}, {"a/b/bar", "bar", 20}},
 			expectedTrees:  []expectedTree{{"a/", 20}, {"a/c/", 10}, {"a/b/", 20}},
 			expectedRootTS: 20,
 		},
 		{
 			name:           "delete file",
-			timedObjects:   []timedObject{{"a/", "wow", 5}, {"a/c/", "bar", 10}, {"a/c/", "foo", 15}, {"a/b/", "bar", 20}},
-			deleteObjects:  []timedObject{{"a/c/", "foo", 25}},
+			timedObjects:   []timedObject{{"a/wow", "wow", 5}, {"a/c/bar", "bar", 10}, {"a/c/foo", "foo", 15}, {"a/b/bar", "bar", 20}},
+			deleteObjects:  []timedObject{{"a/c/bar", "bar", 25}},
 			expectedTrees:  []expectedTree{{"a/", 25}, {"a/c/", 25}, {"a/b/", 20}},
 			expectedRootTS: 25,
 		},
@@ -557,7 +660,7 @@ func TestTimeStampConsistency(t *testing.T) {
 			}
 			for _, obj := range tc.deleteObjects {
 				currentTime = now.Add(obj.seconds * time.Second)
-				err := kvIndex.DeleteObject(repo.GetRepoId(), repo.DefaultBranch, obj.path+obj.name)
+				err := kvIndex.DeleteObject(repo.GetRepoId(), repo.DefaultBranch, obj.path)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -585,6 +688,7 @@ func TestTimeStampConsistency(t *testing.T) {
 		})
 	}
 }
+
 func runCommand(kvIndex *index.KVIndex, repo *model.Repo, command Command, actionPath string) error {
 	var err error
 	switch command {

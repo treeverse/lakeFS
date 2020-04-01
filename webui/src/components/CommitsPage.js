@@ -6,7 +6,7 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Alert from "react-bootstrap/Alert";
 
 import {connect} from "react-redux";
-import {logCommits} from '../actions/commits';
+import {logCommits, logCommitsPaginate} from '../actions/commits';
 import * as moment from "moment";
 import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
@@ -79,7 +79,7 @@ const CommitWidget = ({repo, commit, previous}) => {
 };
 
 
-const CommitsPage = ({repo, refId, logCommits, log }) => {
+const CommitsPage = ({repo, refId, logCommits,logCommitsPaginate, log }) => {
 
     const history = useHistory();
     const location = useLocation();
@@ -95,11 +95,20 @@ const CommitsPage = ({repo, refId, logCommits, log }) => {
         body = (<Alert variant="danger">{log.error}</Alert> );
     } else {
         body = (
-            <ListGroup className="commit-list">
-                {log.payload.filter(commit => !!commit.parents).map((commit, i) => (
-                    <CommitWidget key={commit.id} commit={commit} repo={repo} previous={(i < log.payload.length-1) ? log.payload[i+1] : null}/>
+            <>
+            <ListGroup className="commit-list pagination-group">
+                {log.payload.results.filter(commit => !!commit.parents).map((commit, i) => (
+                    <CommitWidget key={commit.id} commit={commit} repo={repo} previous={(i < log.payload.results.length-1) ? log.payload[i+1] : null}/>
                 ))}
             </ListGroup>
+                {(log.payload.pagination.has_more) ? (
+                    <p className="tree-paginator">
+                        <Button variant="outline-primary" onClick={() => {
+                            logCommitsPaginate(repo.id, refId.id,log.payload.pagination.next_offset)
+                        }}>Load More</Button>
+                    </p>
+                ) : (<span/>)}
+            </>
         );
     }
 
@@ -127,5 +136,5 @@ const CommitsPage = ({repo, refId, logCommits, log }) => {
 
 export default connect(
     ({ commits }) => ({ log: commits.log }),
-    ({ logCommits })
+    ({ logCommits, logCommitsPaginate })
 )(CommitsPage);
