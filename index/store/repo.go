@@ -36,6 +36,7 @@ type RepoReadOnlyOperations interface {
 
 type RepoOperations interface {
 	RepoReadOnlyOperations
+	DeleteWorkspacePath(branch, path string) error
 	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
@@ -277,6 +278,9 @@ func (s *KVRepoReadOnlyOperations) ListMultipartUploadParts(uploadId string) ([]
 	return parts, nil
 }
 
+func (s *KVRepoOperations) DeleteWorkspacePath(branch, path string) error {
+	return s.query.Delete(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
+}
 func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
 	return s.query.SetProto(entry, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
 }

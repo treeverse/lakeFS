@@ -2,7 +2,13 @@ package gateway_test
 
 import (
 	"encoding/json"
-	log "github.com/sirupsen/logrus"
+	"io/ioutil"
+	"net/http"
+	"path/filepath"
+	"testing"
+
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
@@ -11,10 +17,6 @@ import (
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/testutil"
-	"io/ioutil"
-	"net/http"
-	"path/filepath"
-	"testing"
 )
 
 type playBackMockConf struct {
@@ -29,7 +31,7 @@ type playBackMockConf struct {
 
 type dependencies struct {
 	blocks block.Adapter
-	auth   utils.GatewayService
+	auth   utils.GatewayAuthService
 	meta   index.Index
 	mpu    index.MultipartManager
 }
@@ -37,17 +39,17 @@ type dependencies struct {
 func TestGatewayRecording(t *testing.T) {
 	dirList, err := ioutil.ReadDir("testdata/recordings")
 	if err != nil {
-		log.WithError(err).Fatal("Failed reading recording directories")
+		t.Fatalf("Failed reading recording directories: %v", err)
 	}
 	for _, dir := range dirList {
 		if !dir.IsDir() {
 			continue
 		}
 		dirName := dir.Name()
-		setGlobalPlaybackParams(dirName)
-		handler, _, closer := getBasicHandler(t, dirName)
-		defer closer()
 		t.Run(dirName+" recording", func(t *testing.T) {
+			setGlobalPlaybackParams(dirName)
+			handler, _, closer := getBasicHandler(t, dirName)
+			defer closer()
 			DoTestRun(handler, false, 1.0, t)
 		})
 	}
@@ -99,7 +101,7 @@ func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
 
 func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.APICredentials, error) {
 	if accessKey != m.AccessKeyId {
-		log.Fatal("access key in recording different than configuration")
+		logging.Default().Fatal("access key in recording different than configuration")
 	}
 	aCred := new(model.APICredentials)
 	aCred.AccessKeyId = accessKey

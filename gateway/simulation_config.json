@@ -1,9 +1,0 @@
-{
-  "listen_address": "0.0.0.0:8000",
-  "bare_domain": "s3.local:8000",
-  "access_key_id": "AKIAJTZZYQTU5YGV4O3Q",
-  "access_secret_key": "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",
-  "credential_type":  0,
-  "entity_id":  "tzahi",
-  "region": "us-east-1"
-}

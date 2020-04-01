@@ -96,24 +96,6 @@ func (d *dummySigContext) GetAccessKeyId() string {
 	return d.accessKey
 }
 
-type dummyAuthenticator struct {
-	ctx *dummySigContext
-}
-
-func (d dummyAuthenticator) Parse() (SigContext, error) {
-	return d.ctx, nil
-}
-
-func (d dummyAuthenticator) Verify(c Credentials, s string) error {
-	return nil
-}
-
-func DummyAuthenticator(accessKey string) SigAuthenticator {
-	return &dummyAuthenticator{
-		&dummySigContext{accessKey: accessKey},
-	}
-}
-
 type chainedAuthenticator struct {
 	methods []SigAuthenticator
 	chosen  SigAuthenticator
