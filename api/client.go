@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	log "github.com/sirupsen/logrus"
 	"io"
 	"net/url"
 
@@ -46,7 +47,7 @@ type Client interface {
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
-	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
+	Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, *merge.MergeIntoBranchStatus209Body, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -203,20 +204,25 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error) {
-	//mergeBranch, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
-	_, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
+func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, *merge.MergeIntoBranchStatus209Body, error) {
+	statusOK, conflict, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
 		LeftRef:      leftRef,
 		RightRef:     rightRef,
 		RepositoryID: repoId,
 		Context:      ctx,
 	}, c.auth)
-
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return nil, nil
-	//return mergeBranch.GetPayload().Results, nil
+	if statusOK != nil {
+		return statusOK.GetPayload(), nil, nil
+	} else if conflict != nil {
+		return nil, conflict.GetPayload(), nil
+	} else {
+		log.Fatal(" all results were nil\n")
+		return nil, nil, nil
+	}
+
 }
 
 func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error) {
