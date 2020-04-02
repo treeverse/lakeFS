@@ -19,12 +19,10 @@ import (
 	"context"
 	"fmt"
 	"github.com/jedib0t/go-pretty/text"
-	"os"
-
-	"github.com/treeverse/lakefs/api/gen/models"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/uri"
+	"os"
 )
 
 // mergeCmd represents the merge command
@@ -88,11 +86,6 @@ func FmtMerge(diff *models.MergeConflict) {
 
 func init() {
 	rootCmd.AddCommand(mergeCmd)
-
-	/*mergeCmd.Flags().StringP("message", "m", "", "commit message")
-	_ = commitCmd.MarkFlagRequired("message")
-
-	mergeCmd.Flags().StringSlice("meta", []string{}, "key value pair in the form of key=value")*/
 
 	// Here you will define your flags and configuration settings.
 
