@@ -311,5 +311,4 @@ func NewClient(endpointURL, accessKeyId, secretAccessKey string) (*client, error
 	cl.remote = genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default)
 	cl.auth = httptransport.BasicAuth(accessKeyId, secretAccessKey)
 	return cl, nil
-
 }
