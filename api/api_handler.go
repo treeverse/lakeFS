@@ -486,7 +486,7 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 
 func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 	return merge.MergeIntoBranchHandlerFunc(func(params merge.MergeIntoBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID)) //todo: change permissions to merge permissions
+		err := a.authorize(user, permissions.MergeIntoBranc(params.RepositoryID))
 		if err != nil {
 			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
