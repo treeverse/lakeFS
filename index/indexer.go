@@ -885,7 +885,7 @@ func (index *KVIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, isMerge bool, index *KVIndex) (i interface{}, err error) {
+func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, isMerge bool, index *KVIndex) (merkle.Differences, error) {
 
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
@@ -1099,11 +1099,10 @@ func (index *KVIndex) Merge(repoId, source, destination string) (interface{}, er
 			return nil, errors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		res, err := doDiff(tx, repoId, source, destination, true, index) //todo: isn't it the other way around
+		df, err := doDiff(tx, repoId, source, destination, true, index) //todo: isn't it the other way around
 		if err != nil {
 			return nil, err
 		}
-		df := res.(merkle.Differences)
 		for _, dif := range df {
 			if dif.Direction == merkle.DifferenceDirectionConflict {
 				conflicts = append(conflicts, dif)

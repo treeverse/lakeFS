@@ -40,6 +40,7 @@ func (it *dbPrefixIterator) Advance() bool {
 func (it *dbPrefixIterator) Get() (KeyValue, error) {
 	return it.item, it.itemError
 }
+
 func (it *dbPrefixIterator) Close() {
 	it.iter.Close()
 }

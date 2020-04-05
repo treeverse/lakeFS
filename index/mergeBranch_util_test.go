@@ -1,4 +1,4 @@
-package merge
+package index_test
 
 import (
 	"bytes"
@@ -284,7 +284,7 @@ func showEntries(kv db.Store, ct *translationMap, cs csvStore, csvPrefix string)
 		return nil, nil
 	})
 }
-func commit(t *testing.T, branch, message string, clt *client.Lakefs, creds *authmodel.APICredentials) {
+func testCommit(t *testing.T, branch, message string, clt *client.Lakefs, creds *authmodel.APICredentials) {
 	repo := "myrepo"
 	commitParams := commits.NewCommitParams()
 	commitParams.BranchID = branch
