@@ -89,7 +89,7 @@ func CreateBranch(repoId string) Action {
 	}
 }
 
-func MergeIntoBranc(repoId string) Action {
+func MergeIntoBranch(repoId string) Action {
 	return Action{
 		Permission: WriteRepo,
 		Arn:        repoArn(repoId),
