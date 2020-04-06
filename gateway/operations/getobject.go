@@ -67,12 +67,11 @@ func (controller *GetObject) Handle(o *PathOperation) {
 
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
+	var ranger *ObjectRanger
 	if len(rangeSpec) > 0 {
-		ranger, err := NewObjectRanger(rangeSpec, o.Repo.GetBucketName(), obj, o.BlockStore, o.Log())
-		if err != nil {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidRange))
-			return
-		}
+		ranger, _ = NewObjectRanger(rangeSpec, o.Repo.GetBucketName(), obj, o.BlockStore, o.Log())
+	}
+	if ranger != nil {
 		// range query response
 		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
 		o.SetHeader("Content-Range",
