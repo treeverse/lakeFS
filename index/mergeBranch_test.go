@@ -30,7 +30,7 @@ func TestMerge(t *testing.T) {
 
 		uploadObject(t, "t/v1/s", "master", 10000, clt, creds)
 		testCommit(t, "master", "master-2", clt, creds)
-		_, _ = deps.meta.Merge("myrepo", "master", "br-1")
+		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v1/s", true, "merge failed - document not copied")
 
 		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "1-")
@@ -51,7 +51,7 @@ func TestMerge(t *testing.T) {
 			t.Error("could not delete object\n")
 		}
 		testCommit(t, "master", "master-2", clt, creds)
-		_, _ = deps.meta.Merge("myrepo", "master", "br-1")
+		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v/s", false, "merge failed - document not deleted")
 		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "2-")
 
@@ -68,7 +68,7 @@ func TestMerge(t *testing.T) {
 
 		uploadObject(t, "t/v/s1", "master", 10000, clt, creds)
 
-		_, _ = deps.meta.Merge("myrepo", "master", "br-1")
+		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v/s1", false, "merge failed - uncommitted document synchronizes")
 
 		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "3-")
@@ -87,7 +87,7 @@ func TestMerge(t *testing.T) {
 		testCommit(t, "br-1", "br-1-1", clt, creds)
 		testCommit(t, "master", "master-2", clt, creds)
 
-		_, err := deps.meta.Merge("myrepo", "master", "br-1")
+		_, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		if err != errors.ErrMergeConflict {
 			t.Error("did not identify conflict  ", err)
 		}
@@ -105,7 +105,7 @@ func TestMerge(t *testing.T) {
 		uploadTree(t, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 5020, clt, creds)
 		uploadTree(t, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 5020, clt, creds)
 		testCommit(t, "br-1", "br-1-2", clt, creds)
-		_, err := deps.meta.Merge("myrepo", "master", "br-1")
+		_, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		if err != nil {
 			t.Error("failed large merge  ", err)
 		}

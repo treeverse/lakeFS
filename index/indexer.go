@@ -57,7 +57,7 @@ type Index interface {
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
-	Merge(repoId, source, destination string) (interface{}, error)
+	Merge(repoId, source, destination, userId string) (interface{}, error)
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
@@ -1072,7 +1072,7 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 	}
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
-func (index *KVIndex) Merge(repoId, source, destination string) (interface{}, error) {
+func (index *KVIndex) Merge(repoId, source, destination, userId string) (interface{}, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
@@ -1155,7 +1155,8 @@ func (index *KVIndex) Merge(repoId, source, destination string) (interface{}, er
 		destinationBranch.CommitRoot = newRoot.Root()
 		destinationBranch.WorkspaceRoot = newRoot.Root()
 		parents := []string{destinationBranch.GetCommit(), sourceBranch.GetCommit()}
-		doCommitUpdates(tx, destinationBranch, "", "", parents, make(map[string]string), ts)
+		commitMessage := "Merge branch " + source + " into " + destination
+		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts)
 
 		return mergeCounter, nil
 
