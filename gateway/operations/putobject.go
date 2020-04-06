@@ -146,7 +146,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := upload.ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore, upload.ObjectBlockSize)
+	blob, err := upload.ReadBlob(o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
