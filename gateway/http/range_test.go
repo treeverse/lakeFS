@@ -16,11 +16,11 @@ func TestParseHTTPRange(t *testing.T) {
 		ExpectedEnd   int
 	}{
 		{"bytes=0-20", 50, false, 0, 20},
-		{"bytes=0-20", 10, true, 0, 0},
+		{"bytes=0-20", 10, false, 0, 9},
 		{"bytes=-20", 50, false, 30, 49},
 		{"bytes=20-", 50, false, 20, 49},
 		{"bytes=-20", 10, true, 0, 0},
-		{"bytes=0-20", 20, true, 0, 0},
+		{"bytes=0-20", 20, false, 0, 19},
 		{"bytes=0-19", 20, false, 0, 19},
 		{"bytes=-0-19", 20, true, 0, 0},
 		{"bytess=0-19", 20, true, 0, 0},
