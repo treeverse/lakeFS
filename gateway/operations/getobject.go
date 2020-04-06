@@ -67,33 +67,32 @@ func (controller *GetObject) Handle(o *PathOperation) {
 
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
-	var ranger *ObjectRanger
 	if len(rangeSpec) > 0 {
-		ranger, _ = NewObjectRanger(rangeSpec, o.Repo.GetBucketName(), obj, o.BlockStore, o.Log())
-	}
-	if ranger != nil {
-		// range query response
-		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
-		o.SetHeader("Content-Range",
-			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
-		o.SetHeader("Content-Length",
-			fmt.Sprintf("%d", expected))
-		o.ResponseWriter.WriteHeader(http.StatusOK)
-		n, err := io.Copy(o.ResponseWriter, ranger)
-		if err != nil {
-			o.Log().WithError(err).Error("could not copy range to response")
+		ranger, err := NewObjectRanger(rangeSpec, o.Repo.GetBucketName(), obj, o.BlockStore, o.Log())
+		if err == nil {
+			// range query response
+			expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
+			o.SetHeader("Content-Range",
+				fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
+			o.SetHeader("Content-Length",
+				fmt.Sprintf("%d", expected))
+			o.ResponseWriter.WriteHeader(http.StatusOK)
+			n, err := io.Copy(o.ResponseWriter, ranger)
+			if err != nil {
+				o.Log().WithError(err).Error("could not copy range to response")
+				return
+			}
+			l := o.Log().WithFields(logging.Fields{
+				"range":   ranger.Range,
+				"written": n,
+			})
+			if n != expected {
+				l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
+			} else {
+				l.Info("read the byte range requested")
+			}
 			return
 		}
-		l := o.Log().WithFields(logging.Fields{
-			"range":   ranger.Range,
-			"written": n,
-		})
-		if n != expected {
-			l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
-		} else {
-			l.Info("read the byte range requested")
-		}
-		return
 	}
 
 	// assemble a response body (range-less query)
