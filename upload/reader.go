@@ -1,72 +1,63 @@
 package upload
 
 import (
-	"bytes"
-	"crypto/md5"
+	"crypto/sha256"
 	"fmt"
-	"io"
-
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/ident"
-	"github.com/treeverse/lakefs/index/model"
+	"hash"
+	"io"
 )
 
-const (
-	// TODO: should probably be a configurable setting
-	ObjectBlockSize = 128 * 1024 * 1024
-)
+func uuidAsHex() string {
+	id := [16]byte(uuid.New())
+	return fmt.Sprintf("%x", id)
+}
 
 type Blob struct {
-	Blocks   []*model.Block
+	name     string
 	Checksum string
 	Size     int64
 }
 
-func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter, objectBlockSize int) (*Blob, error) {
-	// handle the upload itself
-	blocks := make([]*model.Block, 0)
-	cksummer := md5.New()
-	var totalSize int64
-	var done bool
-	for !done {
-		buf := make([]byte, objectBlockSize)
-		n, err := body.Read(buf)
+type sha256Reader struct {
+	sha256         hash.Hash
+	originalReader io.Reader
+	copiedSize     int64
+}
 
-		// unexpected error
-		if err != nil && err != io.EOF {
-			return nil, err
-		}
-
-		// body is completely drained and we read nothing
-		if err == io.EOF && n == 0 {
-			break // nothing left to do, we read the whole thing
-		}
-
-		// body is completely drained and we read the remainder
-		if err == io.EOF {
-			done = true
-		}
-
-		// write a block
-		blockAddr := ident.Bytes(buf[:n]) // content based addressing happens here
-		cksummer.Write(buf[:n])
-		err = adapter.Put(bucketName, blockAddr, bytes.NewReader(buf[:n]))
-		if err != nil {
-			return nil, err
-		}
-		blocks = append(blocks, &model.Block{
-			Address: blockAddr,
-			Size:    int64(n),
-		})
-		totalSize += int64(n)
-
-		if done {
-			break
-		}
+func (s *sha256Reader) Read(p []byte) (int, error) {
+	len, err := s.originalReader.Read(p)
+	if len > 0 {
+		s.sha256.Write(p[0:len])
+		s.copiedSize += int64(len)
 	}
+	return len, err
+}
+
+func newsha256Reader() (s *sha256Reader) {
+	s = new(sha256Reader)
+	s.sha256 = sha256.New()
+	return
+}
+
+func (s *sha256Reader) Seek(offset int64, whence int) (int64, error) {
+	panic("Seek was called while reading in upload\n")
+}
+
+func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+	// handle the upload itself
+	shaReader := newsha256Reader()
+	shaReader.originalReader = body
+	objName := uuidAsHex()
+	err := adapter.Put(bucketName, objName, shaReader)
+	if err != nil {
+		panic("could not copy object to destination\n")
+	}
+
 	return &Blob{
-		Blocks:   blocks,
-		Checksum: fmt.Sprintf("%x", cksummer.Sum(nil)),
-		Size:     totalSize,
+		name:     objName,
+		Checksum: fmt.Sprintf("%x", shaReader.sha256.Sum(nil)),
+		Size:     shaReader.copiedSize,
 	}, nil
 }
