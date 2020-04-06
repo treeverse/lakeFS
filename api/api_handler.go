@@ -491,7 +491,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		result, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef)
+		result, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, user.ID)
 		switch err {
 		case nil:
 			return merge.NewMergeIntoBranchOK().WithPayload(result.(*models.MergeSuccess))
