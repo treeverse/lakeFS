@@ -43,11 +43,18 @@ func (l *LocalFSAdapter) getPath(identifier string) string {
 func (l *LocalFSAdapter) Put(_ string, identifier string, reader io.ReadSeeker) error {
 	path := l.getPath(identifier)
 	f, err := os.Create(path)
+	defer f.Close()
 	_, err = io.Copy(f, reader)
 	if err != nil {
 		return err
 	}
 	return nil
+}
+
+func (l *LocalFSAdapter) Remove(_ string, identifier string) error {
+	path := l.getPath(identifier)
+	err := os.Remove(path)
+	return err
 }
 
 func (l *LocalFSAdapter) Get(_ string, identifier string) (reader io.ReadCloser, err error) {

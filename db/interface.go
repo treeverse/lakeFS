@@ -41,6 +41,14 @@ func CompositeStrings(parts ...string) CompositeKey {
 	return n
 }
 
+func CompositeBytes(parts ...[]byte) CompositeKey {
+	n := make(CompositeKey, len(parts))
+	for i, k := range parts {
+		n[i] = k
+	}
+	return n
+}
+
 func (c CompositeKey) String() string {
 	asString := make([]string, len(c))
 	for i, p := range c {
