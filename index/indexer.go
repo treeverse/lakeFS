@@ -1099,7 +1099,7 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (interfa
 			return nil, errors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		df, err := doDiff(tx, repoId, source, destination, true, index) //todo: isn't it the other way around
+		df, err := doDiff(tx, repoId, source, destination, true, index)
 		if err != nil {
 			return nil, err
 		}
