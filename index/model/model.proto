@@ -16,9 +16,14 @@ message Block {
 
 message Object {
     repeated Block blocks = 1;
-    string checksum = 2; // used as ETag in S3
+    string checksum = 2; // a UUID identifying the object
     map<string, string> metadata = 3;
     int64 size = 4;
+}
+
+message ObjectDedup {
+    bytes dedupId = 1; // used as ETag in S3
+    string objectID = 2;
 }
 
 message Root {
