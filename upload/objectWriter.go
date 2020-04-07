@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/model"
 	"hash"
 	"io"
 )
@@ -15,7 +17,7 @@ func uuidAsHex() string {
 }
 
 type Blob struct {
-	name     string
+	Blocks   []*model.Block
 	Checksum string
 	Size     int64
 }
@@ -45,8 +47,9 @@ func (s *sha256Reader) Seek(offset int64, whence int) (int64, error) {
 	panic("Seek was called while reading in upload\n")
 }
 
-func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+func WriteBlob(index index.Index, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
+
 	shaReader := newsha256Reader()
 	shaReader.originalReader = body
 	objName := uuidAsHex()
@@ -54,10 +57,15 @@ func ReadBlob(bucketName string, body io.Reader, adapter block.Adapter) (*Blob, 
 	if err != nil {
 		panic("could not copy object to destination\n")
 	}
+	block := new(model.Block)
+	dedupId := shaReader.sha256.Sum(nil)
+	objName = index.CreateDedupEntryIfNone(bucketName, dedupId, objName)
+	block.Address = objName
+	block.Size = shaReader.copiedSize
+	blob := new(Blob)
+	blob.Blocks = append(blob.Blocks, block)
+	blob.Checksum = objName
+	blob.Size = block.Size
+	return blob, nil
 
-	return &Blob{
-		name:     objName,
-		Checksum: fmt.Sprintf("%x", shaReader.sha256.Sum(nil)),
-		Size:     shaReader.copiedSize,
-	}, nil
 }

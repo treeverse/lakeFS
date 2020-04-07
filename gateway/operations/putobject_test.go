@@ -78,7 +78,7 @@ func TestReadBlob(t *testing.T) {
 			}
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
-			blob, err := upload.ReadBlob(bucketName, reader, adapter, ObjectBlockSize)
+			blob, err := upload.WriteBlob(bucketName, reader, adapter, ObjectBlockSize)
 			if err != nil {
 				t.Fatal(err)
 			}

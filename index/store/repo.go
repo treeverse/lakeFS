@@ -32,6 +32,7 @@ type RepoReadOnlyOperations interface {
 	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
 	ListMultipartUploads() ([]*model.MultipartUpload, error)
 	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
+	GetObjectDedup(DedupId []byte) (*model.ObjectDedup, error)
 }
 
 type RepoOperations interface {
@@ -52,6 +53,7 @@ type RepoOperations interface {
 	WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error
 	DeleteMultipartUpload(uploadId, path string) error
 	DeleteMultipartUploadParts(uploadId string) error
+	WriteObjectDedup(dedup *model.ObjectDedup) error
 }
 
 type KVRepoReadOnlyOperations struct {
@@ -234,6 +236,11 @@ func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.
 	return m, s.query.GetAsProto(m, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
 }
 
+func (s *KVRepoReadOnlyOperations) GetObjectDedup(DedupId []byte) (*model.ObjectDedup, error) {
+	m := &model.ObjectDedup{}
+	return m, s.query.GetAsProto(m, SubspacesDedup, db.CompositeBytes([]byte(s.repoId), DedupId))
+}
+
 func (s *KVRepoReadOnlyOperations) ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error) {
 	m := &model.MultipartUploadPart{}
 	partNumSortable := fmt.Sprintf("%.4d", partNumber) // allow up to 10k parts
@@ -283,6 +290,10 @@ func (s *KVRepoOperations) DeleteWorkspacePath(branch, path string) error {
 }
 func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
 	return s.query.SetProto(entry, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
+}
+
+func (s *KVRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
+	return s.query.SetProto(dedup, SubspacesDedup, db.CompositeBytes([]byte(s.repoId), dedup.DedupId))
 }
 
 func (s *KVRepoOperations) ClearWorkspace(branch string) error {

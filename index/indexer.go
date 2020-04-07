@@ -60,6 +60,7 @@ type Index interface {
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
+	CreateDedupEntryIfNone(repoId string, dedupId []byte, objName string) string
 }
 
 func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
@@ -1214,4 +1215,26 @@ func (index *KVIndex) Tree(repoId, branch string) error {
 		return nil, nil
 	})
 	return err
+}
+
+func (index *KVIndex) CreateDedupEntryIfNone(repoId string, dedupId []byte, objName string) string {
+	objectId, _ := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		dedupObj, err := tx.GetObjectDedup(dedupId)
+		if err == nil {
+			return dedupObj.ObjectID, nil
+		} else if xerrors.Is(err, db.ErrNotFound) {
+			d := new(model.ObjectDedup)
+			d.ObjectID = objName
+			d.DedupId = dedupId
+			err = tx.WriteObjectDedup(d)
+			if err != nil {
+
+			}
+			return nil, nil
+		} else {
+			index.log().WithError(err).Error("could not create dedup record")
+			return nil, err
+		}
+	})
+	return objectId.(string)
 }

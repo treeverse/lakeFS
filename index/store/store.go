@@ -15,6 +15,7 @@ var (
 	SubspaceRefCounts             = db.Namespace("refCounts")
 	SubspacesMultipartUploads     = db.Namespace("mpus")
 	SubspacesMultipartUploadParts = db.Namespace("mpuparts")
+	SubspacesDedup                = db.Namespace("")
 )
 
 type Store interface {

@@ -3,7 +3,6 @@ package block
 import (
 	"context"
 	"fmt"
-
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -41,6 +40,11 @@ func (s S3Adapter) Put(repo string, identifier string, reader io.ReadSeeker) err
 		s.log().WithError(err).Error("failed to put S3 object")
 		return err
 	}
+	return nil
+}
+
+func (s S3Adapter) Remove(repo string, identifier string) error {
+	s.log().Warn("S3 - remove function not implemented yet  \n")
 	return nil
 }
 
