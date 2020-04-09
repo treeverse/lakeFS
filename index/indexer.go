@@ -57,7 +57,7 @@ type Index interface {
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
-	Merge(repoId, source, destination, userId string) (interface{}, error)
+	Merge(repoId, source, destination, userId string) (*models.MergeSuccess, *[]merkle.Difference, error)
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
@@ -1072,16 +1072,17 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 	}
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
-func (index *KVIndex) Merge(repoId, source, destination, userId string) (interface{}, error) {
+
+func (index *KVIndex) Merge(repoId, source, destination, userId string) (*models.MergeSuccess, *[]merkle.Difference, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
 		ValidateRef(destination))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 	ts := index.tsGenerator()
-	var conflicts merkle.Differences
+	var conflicts []merkle.Difference
 	mergeCounter := new(models.MergeSuccess)
 	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// check that destination has no uncommitted changes
@@ -1163,13 +1164,12 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (interfa
 	})
 	switch err {
 	case nil:
-		return mergeCounter, nil
+		return mergeCounter, nil, nil
 	case errors.ErrMergeConflict:
-		return conflicts, err
+		return nil, &conflicts, err
 	default:
-		return nil, err
+		return nil, nil, err
 	}
-	return conflicts, err
 }
 
 func (index *KVIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
