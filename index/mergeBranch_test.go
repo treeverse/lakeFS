@@ -30,10 +30,19 @@ func TestMerge(t *testing.T) {
 
 		uploadObject(t, "t/v1/s", "master", 10000, clt, creds)
 		testCommit(t, "master", "master-2", clt, creds)
-		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		success, conflict, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		if err != nil {
+			t.Error("merge returned unexpected error ", err)
+		}
+		if conflict != nil {
+			t.Error("unexpected conflict result ")
+		}
+		if success.Created != 1 ||
+			success.Removed != 0 ||
+			success.Updated != 0 {
+			t.Error("success counters wrong ", success)
+		}
 		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v1/s", true, "merge failed - document not copied")
-
-		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "1-")
 
 	})
 
@@ -51,9 +60,20 @@ func TestMerge(t *testing.T) {
 			t.Error("could not delete object\n")
 		}
 		testCommit(t, "master", "master-2", clt, creds)
-		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+
+		success, conflict, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		if err != nil {
+			t.Error("merge returned unexpected error ", err)
+		}
+		if conflict != nil {
+			t.Error("unexpected conflict result ", conflict)
+		}
+		if success.Created != 0 ||
+			success.Removed != 1 ||
+			success.Updated != 0 {
+			t.Error("success counters wrong ", success)
+		}
 		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v/s", false, "merge failed - document not deleted")
-		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "2-")
 
 	})
 
@@ -68,10 +88,21 @@ func TestMerge(t *testing.T) {
 
 		uploadObject(t, "t/v/s1", "master", 10000, clt, creds)
 
-		_, _ = deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		success, conflict, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		if err != nil {
+			t.Error("merge returned unexpected error ", err)
+		}
+		if conflict != nil {
+			t.Error("unexpected conflict result ")
+		}
+		if success.Created != 0 ||
+			success.Removed != 0 ||
+			success.Updated != 0 {
+			t.Error("success counters wrong ", success)
+		}
+
 		_ = getObject(t, deps.meta, "myrepo", "br-1", "t/v/s1", false, "merge failed - uncommitted document synchronizes")
 
-		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "3-")
 	})
 	t.Run("merge with conflict", func(t *testing.T) {
 		handler, deps, close := getHandler(t)
@@ -87,11 +118,22 @@ func TestMerge(t *testing.T) {
 		testCommit(t, "br-1", "br-1-1", clt, creds)
 		testCommit(t, "master", "master-2", clt, creds)
 
-		_, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		success, conflict, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		if err != errors.ErrMergeConflict {
 			t.Error("did not identify conflict  ", err)
 		}
-		//showEntries(db.Store(deps.db), chacksumTranslat, cs, "4-")
+		if success != nil {
+			t.Error("unexpected success result ")
+		}
+
+		if conflict == nil {
+			t.Error("no conflict result")
+		} else {
+			z := (*conflict)[0]
+			if z.Type != 5 || z.Direction != 2 {
+				t.Error("incorrect conflict values", z)
+			}
+		}
 
 	})
 	t.Run("large tree", func(t *testing.T) {
@@ -105,11 +147,81 @@ func TestMerge(t *testing.T) {
 		uploadTree(t, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 5020, clt, creds)
 		uploadTree(t, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 5020, clt, creds)
 		testCommit(t, "br-1", "br-1-2", clt, creds)
-		_, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		success, conflicts, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
 		if err != nil {
 			t.Error("failed large merge  ", err)
 		}
-		// showEntries(db.Store(deps.db), chacksumTranslat, cs, "5-")
+		if success == nil {
+			t.Error("success returned nil")
+		}
+		if conflicts != nil {
+			t.Error("conflicts returned not nil")
+		}
+		if success.Created != 0 ||
+			success.Removed != 0 ||
+			success.Updated != 0 {
+			t.Error("success counters wrong ", success)
+		}
+	})
+
+	t.Run("large tree with large addition", func(t *testing.T) {
+		handler, deps, close := getHandler(t)
+		defer close()
+		creds, clt, _ := setupHelper(t, deps, handler)
+		uploadTree(t, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 4096, clt, creds)
+		testCommit(t, "master", "master-1", clt, creds)
+		createBranch(t, "br-1", "master", clt, creds)
+		testCommit(t, "br-1", "br-1-1", clt, creds)
+		uploadTree(t, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 5020, clt, creds)
+		uploadTree(t, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 5020, clt, creds)
+		testCommit(t, "br-1", "br-1-2", clt, creds)
+		testCommit(t, "master", "master-2", clt, creds)
+
+		success, conflicts, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		if err != nil {
+			t.Error("failed large merge  ", err)
+		}
+		if success == nil {
+			t.Error("success returned nil")
+		}
+		if conflicts != nil {
+			t.Error("conflicts returned not nil")
+		}
+		if success.Created != 10 ||
+			success.Removed != 0 ||
+			success.Updated != 0 {
+			t.Error("success counters wrong ", success)
+		}
+	})
+
+	t.Run("large tree with many conflicts", func(t *testing.T) {
+		handler, deps, close := getHandler(t)
+		defer close()
+		creds, clt, _ := setupHelper(t, deps, handler)
+		uploadTree(t, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 4096, clt, creds)
+		testCommit(t, "master", "master-1", clt, creds)
+		createBranch(t, "br-1", "master", clt, creds)
+		testCommit(t, "br-1", "br-1-1", clt, creds)
+		uploadTree(t, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 5020, clt, creds)
+		uploadTree(t, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 5020, clt, creds)
+		uploadTree(t, "br-1", "base", []string{"lv1", "lv2"}, []int{10, 5}, []int{10, 10}, 4096, clt, creds)
+		testCommit(t, "br-1", "br-1-2", clt, creds)
+		testCommit(t, "master", "master-2", clt, creds)
+
+		success, conflicts, err := deps.meta.Merge("myrepo", "master", "br-1", "user-1")
+		if err != errors.ErrMergeConflict {
+			t.Error("did not identify conflict ", err)
+		}
+		if success != nil {
+			t.Error("success returned not nil")
+		}
+		if conflicts == nil {
+			t.Error("conflicts returned as nil")
+		}
+		if len(*conflicts) != 50 {
+			t.Error("number of conflicts is ", len(*conflicts))
+		}
+
 	})
 
 }
@@ -122,7 +234,5 @@ func uploadTree(t *testing.T, branch, base string, nm []string, startLevel, numI
 			uploadObject(t, path, branch, size, clt, creds)
 		}
 	}
-
-	//	DeleteObject(repoId, branch, path string) error
 
 }
