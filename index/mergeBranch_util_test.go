@@ -430,7 +430,7 @@ func (c *contentCreator) Seek(seekPoint int64) error {
 func getObject(t *testing.T, i index.Index, repo, branch, path string, Expected bool, message string) bool {
 	_, err := i.ReadEntryObject(repo, branch, path)
 	if Expected != (err == nil) {
-		t.Error(message)
+		t.Error(message, err)
 	}
 	return (err == nil)
 }
