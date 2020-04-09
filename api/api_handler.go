@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/merge"
 	"github.com/treeverse/lakefs/index/errors"
-	"github.com/treeverse/lakefs/index/merkle"
 	"io"
 	"net/http"
 	"time"
@@ -491,10 +490,10 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		result, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, user.ID)
+		mergeSuccess, conflicts, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, user.ID)
 		switch err {
 		case nil:
-			return merge.NewMergeIntoBranchOK().WithPayload(result.(*models.MergeSuccess))
+			return merge.NewMergeIntoBranchOK().WithPayload(mergeSuccess)
 		case errors.ErrNoMergeBase:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
 		case errors.ErrDestinationNotCommitted:
@@ -502,9 +501,8 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 		case errors.ErrBranchNotFound:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case errors.ErrMergeConflict:
-			conflicts := result.(merkle.Differences)
-			results := make([]*models.MergeConflict, len(conflicts))
-			for i, d := range conflicts {
+			results := make([]*models.MergeConflict, len(*conflicts))
+			for i, d := range *conflicts {
 				tmp := serializeDiff(d)
 				results[i] = new(models.MergeConflict)
 				results[i].Path = tmp.Path
