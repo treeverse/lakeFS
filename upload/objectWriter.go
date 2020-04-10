@@ -37,9 +37,11 @@ func (s *sha256Reader) Read(p []byte) (int, error) {
 	return len, err
 }
 
-func newsha256Reader() (s *sha256Reader) {
+func newsha256Reader(body io.Reader) (s *sha256Reader) {
 	s = new(sha256Reader)
 	s.sha256 = sha256.New()
+	s.originalReader = body
+
 	return
 }
 
@@ -50,8 +52,7 @@ func (s *sha256Reader) Seek(offset int64, whence int) (int64, error) {
 func WriteBlob(index index.Index, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
 
-	shaReader := newsha256Reader()
-	shaReader.originalReader = body
+	shaReader := newsha256Reader(body)
 	objName := uuidAsHex()
 	err := adapter.Put(bucketName, objName, shaReader)
 	if err != nil {
