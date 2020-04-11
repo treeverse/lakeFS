@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/treeverse/lakefs/logging"
+
+	"github.com/treeverse/lakefs/db"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -151,6 +155,36 @@ var treeCmd = &cobra.Command{
 	},
 }
 
+var setupdbCmd = &cobra.Command{
+	Use:   "setupdb",
+	Short: "run schema and data migrations on a fresh database",
+	RunE: func(cmd *cobra.Command, args []string) error {
+		conf := setupConf(cmd)
+
+		// start with lakefs_index
+		mdb := conf.BuildMetadataDatabase()
+		_, err := mdb.Transact(func(tx db.Tx) (interface{}, error) {
+			err := db.MigrateSchemaAll(tx, "lakefs_index")
+			return nil, err
+		}, db.WithLogger(logging.Dummy()))
+		if err != nil {
+			panic(err)
+		}
+
+		// then auth db
+		adb := conf.BuildAuthDatabase()
+		_, err = adb.Transact(func(tx db.Tx) (interface{}, error) {
+			err := db.MigrateSchemaAll(tx, "lakefs_auth")
+			return nil, err
+		}, db.WithLogger(logging.Dummy()))
+		if err != nil {
+			panic(err)
+		}
+
+		return nil
+	},
+}
+
 var rootCmd = &cobra.Command{
 	Use:   "lakefs [sub-command]",
 	Short: "lakefs is a data lake management platform",
@@ -173,6 +207,7 @@ func init() {
 	rootCmd.AddCommand(treeCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(initCmd)
+	rootCmd.AddCommand(setupdbCmd)
 }
 
 func main() {
