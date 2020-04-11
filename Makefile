@@ -14,7 +14,6 @@ GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
 SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger:v0.23.0
-PROTOC=${DOCKER} run --rm -i -v $(CURDIR):/defs namely/protoc-all:1.28_0
 
 BINARY_NAME=lakefs
 CLI_BINARY_NAME=lakectl
@@ -26,10 +25,6 @@ DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
 
 all: build
-
-gen-proto: ## Build the protobuf definitions into go code (Docker required)
-	$(PROTOC) -f index/model/model.proto -l go -o .
-	$(PROTOC) -f auth/model/model.proto -l go -o .
 
 gen-api:  ## Run the go-swagger code generator (Docker required)
 	rm -rf api/gen/
@@ -47,10 +42,10 @@ build: gen  ## Download dependecies and Build the default binary
 test: gen run-test  ## Run tests for the project
 
 run-test:  ## Run tests without generating anything (faster if already generated)
-		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
-
-test-race: gen  ## Run tests for the project with -race
 		$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast ./...
+
+fast-test:  ## Run tests without race detector (faster)
+		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
 
 test-html: test  ## Run tests with HTML for the project
 		$(GOTOOL) cover -html=cover.out
@@ -80,13 +75,16 @@ ui-build:  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build && cd -
 
 ui-bundle:  ## Bundle static built UI app
-	$(STATIK) -src=$(UI_BUILD_DIR)
+	$(STATIK) -ns webui -src=$(UI_BUILD_DIR)
 
-ui: ui-build ui-bundle
+gen-ui: ui-build ui-bundle
+
+gen-ddl:  ## Embed data migration files into the resulting binary
+	$(STATIK) -ns "ddl" -m -f -p "ddl" -c "auto-generated SQL files for data migrations" -src "./ddl"
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
 
 # helppers
-gen: gen-proto gen-api ui
+gen: gen-api gen-ui gen-ddl

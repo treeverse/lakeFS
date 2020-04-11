@@ -16,7 +16,7 @@ import (
 
 // a limited service interface for the gateway, used by simulation playback
 type GatewayAuthService interface {
-	GetAPICredentials(accessKey string) (*model.APICredentials, error)
+	GetAPICredentials(accessKey string) (*model.Credential, error)
 	Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
 }
 

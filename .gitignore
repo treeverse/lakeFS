@@ -40,3 +40,4 @@ webui/node_modules
 api/gen
 statik
 model.pb.go
+ddl/statik.go
