@@ -18,12 +18,6 @@ var (
 	ErrUserNotFound   = xerrors.Errorf("user: %w", db.ErrNotFound)
 	ErrGroupNotFound  = xerrors.Errorf("group: %w", db.ErrNotFound)
 	ErrRoleNotFound   = xerrors.Errorf("role: %w", db.ErrNotFound)
-
-	SubspaceClients    = db.Namespace("clients")
-	SubspaceAuthKeys   = db.Namespace("keys")
-	SubspacesAuthUsers = db.Namespace("users")
-	SubspaceAuthGroups = db.Namespace("groups")
-	SubspacesAuthRoles = db.Namespace("roles")
 )
 
 // AuthenticationRequest/AuthenticationResponse are used for user login information
@@ -35,7 +29,7 @@ type AuthenticationResponse struct {
 }
 
 type AuthorizationRequest struct {
-	UserID     string
+	UserID     int
 	Permission permissions.Permission
 	SubjectARN string
 }
@@ -50,26 +44,26 @@ type Service interface {
 	CreateGroup(group *model.Group) error
 	CreateRole(group *model.Role) error
 
-	AssignRoleToUser(roleId, userId string) error
-	AssignRoleToGroup(roleId, groupId string) error
+	AssignRoleToUser(roleId, userId int) error
+	AssignRoleToGroup(roleId, groupId int) error
+	AssignPolicyToRole(roleId int, policy *model.Policy) error
 
-	GetUser(userId string) (*model.User, error)
-	GetGroup(groupId string) (*model.Group, error)
-	GetRole(roleId string) (*model.Role, error)
+	GetUser(userId int) (*model.User, error)
+	GetGroup(groupId int) (*model.Group, error)
+	GetRole(roleId int) (*model.Role, error)
 
-	CreateAppCredentials(application *model.Application) (*model.APICredentials, error)
-	CreateUserCredentials(user *model.User) (*model.APICredentials, error)
-	GetAPICredentials(accessKey string) (*model.APICredentials, error)
-	Authenticate(req *AuthenticationRequest) (*AuthenticationResponse, error)
+	CreateAppCredentials(application *model.Application) (*model.Credential, error)
+	CreateUserCredentials(user *model.User) (*model.Credential, error)
+	GetAPICredentials(accessKey string) (*model.Credential, error)
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
-type KVAuthService struct {
-	kv db.Store
+type DBAuthService struct {
+	db db.Database
 }
 
-func NewKVAuthService(store db.Store) *KVAuthService {
-	return &KVAuthService{kv: store}
+func NewDBAuthService(db db.Database) *DBAuthService {
+	return &DBAuthService{db: db}
 }
 
 func genAccessKeyId() string {
@@ -81,280 +75,225 @@ func genAccessSecretKey() string {
 	return Base64StringGenerator(30)
 }
 
-func (s *KVAuthService) CreateUser(user *model.User) error {
-	_, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		err := q.SetProto(user, SubspacesAuthUsers, db.CompositeStrings(user.GetId()))
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
-	})
-	return err
-}
-func (s *KVAuthService) CreateGroup(group *model.Group) error {
-	_, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		err := q.SetProto(group, SubspaceAuthGroups, db.CompositeStrings(group.GetId()))
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
+func (s *DBAuthService) CreateUser(user *model.User) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, tx.Get(user, `INSERT INTO users (email, full_name) VALUES ($1, $2) RETURNING id`, user.Email, user.FullName)
 	})
 	return err
 }
 
-func (s *KVAuthService) CreateRole(role *model.Role) error {
-	_, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		err := q.SetProto(role, SubspacesAuthRoles, db.CompositeStrings(role.GetId()))
-		if err != nil {
-			return nil, err
-		}
-		return nil, nil
+func (s *DBAuthService) CreateGroup(group *model.Group) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, tx.Get(group, `INSERT INTO groups (display_name) VALUES ($1) RETURNING id`, group.DisplayName)
 	})
 	return err
 }
 
-func (s *KVAuthService) CreateAppCredentials(application *model.Application) (*model.APICredentials, error) {
-	now := time.Now().Unix()
+func (s *DBAuthService) CreateRole(role *model.Role) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, tx.Get(role, `INSERT INTO roles (display_name) VALUES ($1) RETURNING id`, role.DisplayName)
+	})
+	return err
+}
+
+func (s *DBAuthService) AssignPolicyToRole(roleId int, policy *model.Policy) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// create role
+		err := tx.Get(policy, `INSERT INTO policies (permission, arn) VALUES ($1, $2) RETURNING id`,
+			policy.Permission, policy.Arn)
+		if err != nil {
+			return nil, err
+		}
+		_, err = tx.Exec(`INSERT INTO role_policies (role_id, policy_id) VALUES ($1, $2)`,
+			roleId, policy.Id)
+		return nil, err
+	})
+	return err
+}
+
+func (s *DBAuthService) CreateAppCredentials(application *model.Application) (*model.Credential, error) {
+	now := time.Now()
 	accessKey := genAccessKeyId()
 	secretKey := genAccessSecretKey() // TODO: Encrypt this?
-	creds, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		creds := &model.APICredentials{
+	creds, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		c := &model.Credential{
 			AccessKeyId:     accessKey,
 			AccessSecretKey: secretKey,
-			CredentialType:  model.APICredentials_CREDENTIAL_TYPE_APPLICATION,
-			EntityId:        application.GetId(),
+			Type:            model.CredentialTypeApplication,
 			IssuedDate:      now,
+			ApplicationId:   &application.Id,
 		}
-		err := q.SetProto(creds, SubspaceAuthKeys, db.CompositeStrings(accessKey))
-		return creds, err
+		_, err := tx.Exec(
+			`INSERT INTO credentials (access_key_id, access_secret_key, credentials_type, issued_date, application_id)
+					VALUES ($1, $2, $3, $4, $5)`,
+			c.AccessKeyId,
+			c.AccessSecretKey,
+			c.Type,
+			c.IssuedDate,
+			c.ApplicationId,
+		)
+		return c, err
 	})
-	return creds.(*model.APICredentials), err
+	return creds.(*model.Credential), err
 }
 
-func (s *KVAuthService) CreateUserCredentials(user *model.User) (*model.APICredentials, error) {
-	now := time.Now().Unix()
+func (s *DBAuthService) CreateUserCredentials(user *model.User) (*model.Credential, error) {
+	now := time.Now()
 	accessKey := genAccessKeyId()
 	secretKey := genAccessSecretKey() // TODO: Encrypt this before saving, probably with the client ID as part of the salt
-	creds, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		// ensure user exists
-		_, err := q.Get(SubspacesAuthUsers, db.CompositeStrings(user.GetId()))
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrUserNotFound
-		}
-		if err != nil {
-			return nil, err // could not validate user
-		}
-		creds := &model.APICredentials{
+	creds, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		c := &model.Credential{
 			AccessKeyId:     accessKey,
 			AccessSecretKey: secretKey,
-			CredentialType:  model.APICredentials_CREDENTIAL_TYPE_USER,
-			EntityId:        user.GetId(),
+			Type:            model.CredentialTypeUser,
 			IssuedDate:      now,
+			UserId:          &user.Id,
 		}
-		err = q.SetProto(creds, SubspaceAuthKeys, db.CompositeStrings(accessKey))
-		return creds, err
+		_, err := tx.Exec(
+			`INSERT INTO credentials (access_key_id, access_secret_key, credentials_type, issued_date, user_id)
+					VALUES ($1, $2, $3, $4, $5)`,
+			c.AccessKeyId,
+			c.AccessSecretKey,
+			c.Type,
+			c.IssuedDate,
+			c.UserId,
+		)
+		return c, err
 	})
-	return creds.(*model.APICredentials), err
+	if err != nil {
+		return nil, err
+	}
+	return creds.(*model.Credential), err
 }
 
-func (s *KVAuthService) GetUser(userId string) (*model.User, error) {
-	user, err := s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
+func (s *DBAuthService) GetUser(userId int) (*model.User, error) {
+	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
-		err := q.GetAsProto(user, SubspacesAuthUsers, db.CompositeStrings(userId))
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrUserNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		return user, nil
-	})
+		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, userId)
+		return user, err
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
 	return user.(*model.User), nil
 }
 
-func (s *KVAuthService) GetGroup(groupId string) (*model.Group, error) {
-	group, err := s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
+func (s *DBAuthService) GetGroup(groupId int) (*model.Group, error) {
+	group, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		group := &model.Group{}
-		err := q.GetAsProto(group, SubspaceAuthGroups, db.CompositeStrings(groupId))
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrGroupNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		return group, nil
-	})
+		err := tx.Get(group, `SELECT * FROM groups WHERE id = $1`, groupId)
+		return group, err
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
 	return group.(*model.Group), nil
 }
 
-func (s *KVAuthService) GetRole(roleId string) (*model.Role, error) {
-	role, err := s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
+func (s *DBAuthService) GetRole(roleId int) (*model.Role, error) {
+	role, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		role := &model.Role{}
-		err := q.GetAsProto(role, SubspacesAuthRoles, db.CompositeStrings(roleId))
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrRoleNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		return role, nil
-	})
+		err := tx.Get(role, `SELECT * FROM roles WHERE id = $1`, roleId)
+		return role, err
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
 	return role.(*model.Role), nil
 }
 
-func (s *KVAuthService) AssignRoleToUser(roleId, userId string) error {
-	_, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		// get user
-		user := &model.User{}
-		err := q.GetAsProto(user, SubspacesAuthUsers, db.CompositeStrings(userId))
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrUserNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		// get roles
-		roles := user.Roles
-		if roles == nil {
-			roles = []string{}
-		}
-		user.Roles = append(roles, roleId)
-		return nil, q.SetProto(user, SubspacesAuthUsers, db.CompositeStrings(userId))
+func (s *DBAuthService) AssignRoleToUser(roleId, userId int) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`, userId, roleId)
+		return nil, err
 	})
+
 	return err
 }
 
-func (s *KVAuthService) AssignRoleToGroup(roleId, groupId string) error {
-	_, err := s.kv.Transact(func(q db.Query) (interface{}, error) {
-		// get user
-		group := &model.Group{}
-		err := q.GetAsProto(group, SubspaceAuthGroups, db.CompositeStrings(groupId))
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrGroupNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-		// get roles
-		roles := group.Roles
-		if roles == nil {
-			roles = []string{}
-		}
-		group.Roles = append(roles, roleId)
-		return nil, q.SetProto(group, SubspaceAuthGroups, db.CompositeStrings(groupId))
+func (s *DBAuthService) AssignRoleToGroup(roleId, groupId int) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`INSERT INTO group_roles (group_id, role_id) VALUES ($1, $2)`, groupId, roleId)
+		return nil, err
 	})
+
 	return err
 }
 
-func (s *KVAuthService) GetAPICredentials(accessKey string) (*model.APICredentials, error) {
-	credentials, err := s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
-		// get the key pair for this key
-		creds := &model.APICredentials{}
-		err := q.GetAsProto(creds, SubspaceAuthKeys, db.CompositeStrings(accessKey))
-		if err != nil {
-			return nil, err
-		}
-		// TODO: decrypt secret
-		// return credential pair if it exists
-		return creds, nil
-	})
+func (s *DBAuthService) GetAPICredentials(accessKey string) (*model.Credential, error) {
+	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		credentials := &model.Credential{}
+		err := tx.Get(credentials, `SELECT * FROM credentials WHERE access_key_id = $1`, accessKey)
+		return credentials, err
+	}, db.ReadOnly())
+
 	if err != nil {
 		return nil, err
 	}
-	return credentials.(*model.APICredentials), nil
+	return credentials.(*model.Credential), nil
 }
 
-func (s *KVAuthService) Authenticate(req *AuthenticationRequest) (*AuthenticationResponse, error) {
-	panic("implement me")
-}
-
-func (s *KVAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	resp, err := s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
-		// get the user
+func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
+	resp, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
-		err := q.GetAsProto(user, SubspacesAuthUsers, db.CompositeStrings(req.UserID))
+		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, req.UserID)
 		if xerrors.Is(err, db.ErrNotFound) {
 			return nil, ErrUserNotFound
 		}
 		if err != nil {
 			return nil, err
 		}
-		// resolve all user roles and user group roles
-		roles := make(map[string]*model.Role)
 
-		// get roles and check them
-		for _, rid := range user.GetRoles() {
-			role := &model.Role{}
-			err := q.GetAsProto(role, SubspacesAuthRoles, db.CompositeStrings(rid))
-			if xerrors.Is(err, db.ErrNotFound) {
-				return nil, ErrRoleNotFound
-			}
-			if err != nil {
-				return nil, err
-			}
-			roles[rid] = role
-			for _, p := range role.GetPolicies() {
-				// get permissions....
-				if strings.EqualFold(p.GetPermission(), string(req.Permission)) && ArnMatch(p.GetArn(), req.SubjectARN) {
-					return &AuthorizationResponse{
-						Allowed: true,
-						Error:   nil,
-					}, nil
-				}
+		// resolve all policies attached to roles attached to the user
+		var userPolicies []*model.Policy
+		err = tx.Select(&userPolicies, `
+			SELECT distinct policies.id, policies.arn, policies.permission FROM policies
+			INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
+			INNER JOIN roles ON (roles.id = role_policies.role_id)
+			INNER JOIN user_roles ON (roles.id = user_roles.role_id)
+			WHERE user_roles.user_id = $1`, req.UserID)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range userPolicies {
+			// get permissions....
+			if strings.EqualFold(p.Permission, string(req.Permission)) && ArnMatch(p.Arn, req.SubjectARN) {
+				return &AuthorizationResponse{
+					Allowed: true,
+					Error:   nil,
+				}, nil
 			}
 		}
 
-		// get all groups together
-		groupIds := user.GetGroups()
-		for _, gid := range groupIds {
-			group := &model.Group{}
-			err := q.GetAsProto(group, SubspaceAuthGroups, db.CompositeStrings(gid))
-			if xerrors.Is(err, db.ErrNotFound) {
-				return nil, ErrGroupNotFound
-			}
-			if err != nil {
-				return nil, err
-			}
-			// get roles if we don't already have them from the user
-			for _, rid := range group.GetRoles() {
-				if _, exists := roles[rid]; exists {
-					continue // we've already tested that one
-				}
-				role := &model.Role{}
-				err := q.GetAsProto(role, SubspacesAuthRoles, db.CompositeStrings(rid))
-				if xerrors.Is(err, db.ErrNotFound) {
-					return nil, ErrRoleNotFound
-				}
-				if err != nil {
-					return nil, err
-				}
-				roles[rid] = role
-				for _, p := range role.GetPolicies() {
-					// get permissions....
-					if strings.EqualFold(p.GetPermission(), string(req.Permission)) && ArnMatch(p.GetArn(), req.SubjectARN) {
-						return &AuthorizationResponse{
-							Allowed: true,
-							Error:   nil,
-						}, nil
-					}
-				}
+		// resolve all policies attached to roles attached to groups attached to the user
+		var groupRoles []*model.Policy
+		err = tx.Select(groupRoles, `
+			SELECT distinct policies.id, policies.arn, policies.permission FROM policies
+			INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
+			INNER JOIN roles ON (roles.id = role_policies.role_id)
+			INNER JOIN group_roles ON (roles.id = group_roles.role_id)
+			INNER JOIN groups ON (groups.id = group_roles.group_id)
+			INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
+			WHERE user_groups.user_id = $2`, req.UserID)
+		if err != nil {
+			return nil, err
+		}
+		for _, p := range userPolicies {
+			// get permissions....
+			if strings.EqualFold(p.Permission, string(req.Permission)) && ArnMatch(p.Arn, req.SubjectARN) {
+				return &AuthorizationResponse{
+					Allowed: true,
+					Error:   nil,
+				}, nil
 			}
 		}
 
+		// otherwise, no permission
 		return &AuthorizationResponse{
 			Allowed: false,
 			Error:   ErrInsufficientPermissions,
 		}, nil
-	})
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}

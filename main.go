@@ -2,17 +2,17 @@ package main
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
-	"os"
 )
 
 func setupConf(cmd *cobra.Command) *config.Config {
@@ -31,55 +31,61 @@ var initCmd = &cobra.Command{
 	Short: "initialize a LakeFS instance, and setup an admin credential",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-		kv := conf.BuildStore()
+		adb := conf.BuildAuthDatabase()
 
-		userId, _ := cmd.Flags().GetString("user-id")
 		userEmail, _ := cmd.Flags().GetString("user-email")
 		userFullName, _ := cmd.Flags().GetString("user-name")
 
-		authService := auth.NewKVAuthService(kv)
-		err := authService.CreateUser(&model.User{
-			Id:       userId,
+		authService := auth.NewDBAuthService(adb)
+		user := &model.User{
 			Email:    userEmail,
 			FullName: userFullName,
-		})
+		}
+		err := authService.CreateUser(user)
 		if err != nil {
 			panic(err)
 		}
 
-		err = authService.CreateRole(&model.Role{
-			Id:   "admin",
-			Name: "Admin",
-			Policies: []*model.Policy{
-				{
-					Permission: string(permissions.ManageRepos),
-					Arn:        "arn:treeverse:repos:::*",
-				},
-				{
-					Permission: string(permissions.ReadRepo),
-					Arn:        "arn:treeverse:repos:::*",
-				},
-				{
-					Permission: string(permissions.WriteRepo),
-					Arn:        "arn:treeverse:repos:::*",
-				},
+		role := &model.Role{
+			DisplayName: "Admin",
+		}
+
+		err = authService.CreateRole(role)
+		if err != nil {
+			panic(err)
+		}
+		policies := []*model.Policy{
+			{
+				Permission: string(permissions.ManageRepos),
+				Arn:        "arn:treeverse:repos:::*",
 			},
-		})
+			{
+				Permission: string(permissions.ReadRepo),
+				Arn:        "arn:treeverse:repos:::*",
+			},
+			{
+				Permission: string(permissions.WriteRepo),
+				Arn:        "arn:treeverse:repos:::*",
+			},
+		}
+		for _, policy := range policies {
+			err = authService.AssignPolicyToRole(role.Id, policy)
+			if err != nil {
+				panic(err)
+			}
+		}
+
+		err = authService.AssignRoleToUser(role.Id, user.Id)
 		if err != nil {
 			panic(err)
 		}
 
-		err = authService.AssignRoleToUser("admin", userId)
+		creds, err := authService.CreateUserCredentials(user)
 		if err != nil {
 			panic(err)
 		}
 
-		creds, err := authService.CreateUserCredentials(&model.User{Id: userId})
-		if err != nil {
-			panic(err)
-		}
-
-		fmt.Printf("credentials:\naccess key id: %s\naccess secret key: %s\n", creds.GetAccessKeyId(), creds.GetAccessSecretKey())
+		fmt.Printf("credentials:\naccess key id: %s\naccess secret key: %s\n", creds.AccessKeyId, creds.AccessSecretKey)
 		return nil
 	},
 }
@@ -89,19 +95,20 @@ var runCmd = &cobra.Command{
 	Short: "run a LakeFS instance",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-		kv := conf.BuildStore()
+		mdb := conf.BuildMetadataDatabase()
+		adb := conf.BuildAuthDatabase()
 
 		// init index
-		meta := index.NewKVIndex(store.NewKVStore(kv))
+		meta := index.NewDBIndex(mdb)
 
 		// init mpu manager
-		mpu := index.NewKVMultipartManager(store.NewKVStore(kv))
+		mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
 		// init block store
 		blockStore := conf.BuildBlockAdapter()
 
 		// init authentication
-		authService := auth.NewKVAuthService(kv)
+		authService := auth.NewDBAuthService(adb)
 
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService)
@@ -123,27 +130,6 @@ var runCmd = &cobra.Command{
 		panic(gatewayServer.Listen())
 
 		return nil
-	}}
-
-var keysCmd = &cobra.Command{
-	Use:   "keys",
-	Short: "dump all metadata keys to stdout",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		conf := setupConf(cmd)
-
-		kv := conf.BuildStore()
-
-		_, err := kv.ReadTransact(func(q db.ReadQuery) (i interface{}, err error) {
-			iter, closer := q.RangeAll()
-			defer closer()
-			for iter.Advance() {
-				item, _ := iter.Get()
-				fmt.Printf("%s\n", db.KeyFromBytes(item.Key))
-			}
-			return nil, nil
-		})
-
-		return err
 	},
 }
 
@@ -154,7 +140,8 @@ var treeCmd = &cobra.Command{
 		conf := setupConf(cmd)
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
-		meta := index.NewKVIndex(store.NewKVStore(conf.BuildStore()))
+		mdb := conf.BuildMetadataDatabase()
+		meta := index.NewDBIndex(mdb)
 
 		err := meta.Tree(repo, branch)
 		if err != nil {
@@ -177,7 +164,6 @@ func init() {
 	_ = treeCmd.MarkFlagRequired("repo")
 	_ = treeCmd.MarkFlagRequired("branch")
 
-	initCmd.Flags().String("user-id", "", "ID of the user to be generated")
 	initCmd.Flags().String("user-email", "", "E-mail of the user to generate")
 	initCmd.Flags().String("user-name", "", "Full name of the user to generate")
 	_ = initCmd.MarkFlagRequired("user-id")
@@ -185,7 +171,6 @@ func init() {
 	_ = initCmd.MarkFlagRequired("user-name")
 
 	rootCmd.AddCommand(treeCmd)
-	rootCmd.AddCommand(keysCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(initCmd)
 }
