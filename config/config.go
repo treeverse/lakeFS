@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
@@ -196,20 +197,49 @@ func (c *Config) setupLogger() {
 	}
 }
 
-func (c *Config) BuildMetadataDatabase() db.Database {
-	conn, err := sqlx.Connect(DefaultDatabaseDriver, viper.GetString("metadata.db.uri"))
+func getSearchPath(uri string) (string, error) {
+	parsed, err := url.Parse(uri)
 	if err != nil {
-		panic(fmt.Errorf("could not open metadata database: %s\n", err))
+		return "", err
+	}
+	sp := parsed.Query().Get("search_path")
+	if len(sp) > 0 {
+		return sp, nil
+	}
+	return "", fmt.Errorf("search_path not present in database connection string")
+}
+
+func setupDb(uri string) db.Database {
+	schema, err := getSearchPath(uri)
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	conn, err := sqlx.Connect(DefaultDatabaseDriver, uri)
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	tx, err := conn.Beginx()
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	_, err = tx.Exec(fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS  %s`, schema))
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	err = tx.Commit()
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
 	}
 	return db.NewDatabase(conn)
 }
 
+func (c *Config) BuildMetadataDatabase() db.Database {
+	return setupDb(viper.GetString("metadata.db.uri"))
+
+}
+
 func (c *Config) BuildAuthDatabase() db.Database {
-	conn, err := sqlx.Connect(DefaultDatabaseDriver, viper.GetString("auth.db.uri"))
-	if err != nil {
-		panic(fmt.Errorf("could not open auth database: %s\n", err))
-	}
-	return db.NewDatabase(conn)
+	return setupDb(viper.GetString("auth.db.uri"))
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {
