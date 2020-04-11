@@ -145,8 +145,8 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
 		Operation:   o,
-		SubjectId:   creds.GetEntityId(),
-		SubjectType: creds.GetCredentialType(),
+		SubjectId:   *creds.UserId,
+		SubjectType: creds.Type,
 	}
 
 	// interpolate arn string
@@ -212,7 +212,7 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 			Repo:                   repo,
 		}
 		repoOperation.AddLogFields(logging.Fields{
-			"repository": repo.GetRepoId(),
+			"repository": repo.Id,
 		})
 		handler.Handle(repoOperation)
 	})
@@ -250,7 +250,7 @@ func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handle
 			Path: path,
 		}
 		operation.AddLogFields(logging.Fields{
-			"repository": repo.GetRepoId(),
+			"repository": repo.Id,
 			"ref":        refId,
 			"path":       path,
 		})

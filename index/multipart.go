@@ -33,27 +33,27 @@ type MultipartManager interface {
 	Complete(repoId, branch, path, uploadId string, parts []*model.MultipartUploadPartRequest, completionTime time.Time) (*model.Object, error)
 }
 
-type KVMultipartManager struct {
-	kv  store.Store
+type DBMultipartManager struct {
+	db  store.Store
 	ctx context.Context
 }
 
-func NewKVMultipartManager(kv store.Store) *KVMultipartManager {
-	return &KVMultipartManager{kv: kv, ctx: context.Background()}
+func NewDBMultipartManager(db store.Store) *DBMultipartManager {
+	return &DBMultipartManager{db: db, ctx: context.Background()}
 }
 
-func (m *KVMultipartManager) WithContext(ctx context.Context) MultipartManager {
-	return &KVMultipartManager{
-		kv:  m.kv,
+func (m *DBMultipartManager) WithContext(ctx context.Context) MultipartManager {
+	return &DBMultipartManager{
+		db:  m.db,
 		ctx: ctx,
 	}
 }
 
-func (m *KVMultipartManager) log() logging.Logger {
+func (m *DBMultipartManager) log() logging.Logger {
 	return logging.FromContext(m.ctx)
 }
 
-func (m *KVMultipartManager) generateId() string {
+func (m *DBMultipartManager) generateId() string {
 	id := fmt.Sprintf("%x", []byte(uuidAsSlice()+uuidAsSlice()))
 	return id
 }
@@ -63,8 +63,8 @@ func uuidAsSlice() string {
 	return string(id[:])
 }
 
-func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (string, error) {
-	uploadId, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (m *DBMultipartManager) Create(repoId, path string, createTime time.Time) (string, error) {
+	uploadId, err := m.db.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 
 		// generate 256KB of random bytes
 		var uploadId string
@@ -77,9 +77,9 @@ func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (
 
 		// save it for this repo and path
 		err = tx.WriteMultipartUpload(&model.MultipartUpload{
-			Path:      path,
-			Id:        uploadId,
-			Timestamp: createTime.Unix(),
+			Path:         path,
+			Id:           uploadId,
+			CreationDate: createTime,
 		})
 		if err != nil {
 			m.log().WithError(err).Error("failed to create MPU")
@@ -89,15 +89,15 @@ func (m *KVMultipartManager) Create(repoId, path string, createTime time.Time) (
 	return uploadId.(string), err
 }
 
-func (m *KVMultipartManager) UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart) error {
-	_, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (m *DBMultipartManager) UploadPart(repoId, path, uploadId string, partNumber int, part *model.MultipartUploadPart) error {
+	_, err := m.db.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// verify upload and part number
 		mpu, err := tx.ReadMultipartUpload(uploadId)
 		if err != nil {
 			m.log().WithError(err).Error("failed to read MPU")
 			return nil, err
 		}
-		if !strings.EqualFold(mpu.GetPath(), path) {
+		if !strings.EqualFold(mpu.Path, path) {
 			return nil, errors.ErrMultipartPathMismatch
 		}
 		// validate part number is 1-10000
@@ -117,14 +117,14 @@ func (m *KVMultipartManager) UploadPart(repoId, path, uploadId string, partNumbe
 	return err
 }
 
-func (m *KVMultipartManager) CopyPart(repoId, path, uploadId string, partNumber int, sourcePath, sourceBranch string, uploadTime time.Time) error {
-	_, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (m *DBMultipartManager) CopyPart(repoId, path, uploadId string, partNumber int, sourcePath, sourceBranch string, uploadTime time.Time) error {
+	_, err := m.db.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// verify upload and part number
 		mpu, err := tx.ReadMultipartUpload(uploadId)
 		if err != nil {
 			return nil, err
 		}
-		if !strings.EqualFold(mpu.GetPath(), path) {
+		if !strings.EqualFold(mpu.Path, path) {
 			return nil, errors.ErrMultipartPathMismatch
 		}
 		// validate part number is 1-10000
@@ -138,7 +138,7 @@ func (m *KVMultipartManager) CopyPart(repoId, path, uploadId string, partNumber 
 		}
 
 		// read root tree and traverse to path
-		tree := merkle.New(branch.GetCommitRoot())
+		tree := merkle.New(branch.CommitRoot)
 		obj, err := tree.GetObject(tx, sourcePath)
 		if err != nil {
 			return nil, err
@@ -146,10 +146,10 @@ func (m *KVMultipartManager) CopyPart(repoId, path, uploadId string, partNumber 
 
 		// copy it as MPU part
 		err = tx.WriteMultipartUploadPart(uploadId, partNumber, &model.MultipartUploadPart{
-			Blocks:    obj.GetBlocks(),
-			Checksum:  obj.GetChecksum(),
-			Timestamp: uploadTime.Unix(),
-			Size:      obj.GetSize(),
+			Blocks:       obj.Blocks,
+			Checksum:     obj.Checksum,
+			CreationDate: uploadTime,
+			Size:         obj.Size,
 		})
 		if err != nil {
 			m.log().WithError(err).Error("failed to write MPU part")
@@ -159,8 +159,8 @@ func (m *KVMultipartManager) CopyPart(repoId, path, uploadId string, partNumber 
 	return err
 }
 
-func (m *KVMultipartManager) Abort(repoId, path, uploadId string) error {
-	_, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (m *DBMultipartManager) Abort(repoId, path, uploadId string) error {
+	_, err := m.db.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// read it first
 		mpu, err := tx.ReadMultipartUpload(uploadId)
 		if err != nil {
@@ -168,18 +168,12 @@ func (m *KVMultipartManager) Abort(repoId, path, uploadId string) error {
 		}
 
 		// ensure its for the correct path
-		if !strings.EqualFold(mpu.GetPath(), path) {
+		if !strings.EqualFold(mpu.Path, path) {
 			return nil, errors.ErrMultipartPathMismatch
 		}
 
-		// delete all part references
-		err = tx.DeleteMultipartUploadParts(uploadId)
-		if err != nil {
-			m.log().WithError(err).Error("failed to delete MPU parts")
-			return nil, err
-		}
 		// delete mpu ID
-		err = tx.DeleteMultipartUpload(uploadId, mpu.GetPath())
+		err = tx.DeleteMultipartUpload(uploadId)
 		if err != nil {
 			m.log().WithError(err).Error("failed to delete MPU")
 		}
@@ -189,8 +183,8 @@ func (m *KVMultipartManager) Abort(repoId, path, uploadId string) error {
 	return err
 }
 
-func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, parts []*model.MultipartUploadPartRequest, completionTime time.Time) (*model.Object, error) {
-	obj, err := m.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (m *DBMultipartManager) Complete(repoId, branch, path, uploadId string, parts []*model.MultipartUploadPartRequest, completionTime time.Time) (*model.Object, error) {
+	obj, err := m.db.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		var err error
 
 		// create new object in the current workspace for the given branch
@@ -208,7 +202,7 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 				m.log().WithError(err).Error("failed to read MPU part")
 				return nil, err
 			}
-			if !strings.EqualFold(savedPart.GetChecksum(), part.Etag) {
+			if !strings.EqualFold(savedPart.Checksum, part.Etag) {
 				return nil, errors.ErrMultipartInvalidPartETag
 			}
 			savedParts[i] = savedPart
@@ -218,11 +212,11 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		blocks := make([]*model.Block, 0)
 		blockIds := make([]string, 0)
 		for _, part := range savedParts {
-			for _, block := range part.GetBlocks() {
+			for _, block := range part.Blocks {
 				blocks = append(blocks, block)
-				blockIds = append(blockIds, block.GetAddress())
+				blockIds = append(blockIds, block.Address)
 			}
-			size += part.GetSize()
+			size += part.Size
 		}
 
 		// build and save the object
@@ -238,33 +232,30 @@ func (m *KVMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		}
 
 		// write it to branch's workspace
-		p := pth.New(upload.GetPath())
+		p := pth.New(upload.Path)
 		upath := p.String()
-		err = tx.WriteToWorkspacePath(branch, upath, &model.WorkspaceEntry{
-			Path: upload.GetPath(),
-			Entry: &model.Entry{
-				Name:      p.Basename(),
-				Address:   ident.Hash(obj),
-				Type:      model.Entry_OBJECT,
-				Timestamp: completionTime.Unix(),
-				Size:      obj.GetSize(),
-				Checksum:  obj.GetChecksum(),
-			},
+		baseName := p.BaseName()
+		id := ident.Hash(obj)
+		typ := model.EntryTypeObject
+		err = tx.WriteToWorkspacePath(branch, parentPath(upload.Path), upath, &model.WorkspaceEntry{
+			RepositoryId:      repoId,
+			BranchId:          branch,
+			ParentPath:        parentPath(upload.Path),
+			Path:              upload.Path,
+			EntryName:         &baseName,
+			EntryAddress:      &id,
+			EntryType:         &typ,
+			EntryCreationDate: &completionTime,
+			EntrySize:         &obj.Size,
+			EntryChecksum:     &obj.Checksum,
 		})
 		if err != nil {
 			m.log().WithError(err).Error("failed to write workspace entry")
 			return nil, err
 		}
 
-		// remove MPU entry
-		err = tx.DeleteMultipartUploadParts(uploadId)
-		if err != nil {
-			m.log().WithError(err).Error("failed to delete MPU parts")
-			return nil, err
-		}
-
 		// remove MPU part entries for the MPU
-		err = tx.DeleteMultipartUpload(uploadId, upload.GetPath())
+		err = tx.DeleteMultipartUpload(uploadId)
 		if err != nil {
 			m.log().WithError(err).Error("failed to write delete MPU")
 		}

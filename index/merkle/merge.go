@@ -2,6 +2,7 @@ package merkle
 
 import (
 	"strings"
+	"time"
 
 	"github.com/treeverse/lakefs/logging"
 
@@ -12,12 +13,12 @@ import (
 
 func CompareEntries(a, b *model.Entry) (eqs int) {
 	// names first
-	eqs = strings.Compare(a.GetName(), b.GetName())
+	eqs = strings.Compare(a.Name, b.Name)
 	// directories second
-	if eqs == 0 && a.GetType() != b.GetType() {
-		if a.GetType() < b.GetType() {
+	if eqs == 0 && a.EntryType != b.EntryType {
+		if a.EntryType < b.EntryType {
 			eqs = -1
-		} else if a.GetType() > b.GetType() {
+		} else if a.EntryType > b.EntryType {
 			eqs = 1
 		} else {
 			eqs = 0
@@ -25,17 +26,17 @@ func CompareEntries(a, b *model.Entry) (eqs int) {
 	}
 	return
 }
-func max(a int64, b int64) int64 {
-	if a > b {
+func max(a, b time.Time) time.Time {
+	if a.After(b) {
 		return a
 	}
 	return b
 }
 
-func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, int64, error) {
+func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, time.Time, error) {
 	logger := logging.Default()
 	merged := make([]*model.Entry, 0)
-	var timeStamp int64
+	var timeStamp time.Time
 	nextCurrent := 0
 	nextChange := 0
 	for {
@@ -43,14 +44,14 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 		if nextChange < len(changes) && nextCurrent < len(current) {
 			currEntry := current[nextCurrent]
 			currChange := changes[nextChange]
-			timeStamp = max(timeStamp, currChange.GetEntry().GetTimestamp())
-			comparison := CompareEntries(currEntry, currChange.GetEntry())
+			timeStamp = max(timeStamp, *currChange.EntryCreationDate)
+			comparison := CompareEntries(currEntry, currChange.Entry())
 			if comparison == 0 {
 				// this is an override or deletion - do nothing
 
 				// overwrite
-				if !currChange.GetTombstone() {
-					merged = append(merged, currChange.GetEntry())
+				if !currChange.Tombstone {
+					merged = append(merged, currChange.Entry())
 				}
 				// otherwise, skip both
 				nextCurrent++
@@ -64,20 +65,20 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 				// changed entry comes first
 				if currChange.Tombstone {
 					logger.Error("trying to remove an entry that does not exist")
-					return nil, 0, db.ErrNotFound
+					return nil, timeStamp, db.ErrNotFound
 				} else {
-					merged = append(merged, currChange.GetEntry())
+					merged = append(merged, currChange.Entry())
 				}
 			}
 		} else if nextChange < len(changes) {
 			// only changes left
 			currChange := changes[nextChange]
-			timeStamp = max(timeStamp, currChange.GetEntry().GetTimestamp())
-			if currChange.GetTombstone() {
+			timeStamp = max(timeStamp, *currChange.EntryCreationDate)
+			if currChange.Tombstone {
 				logger.Error("trying to remove an entry that does not exist")
-				return nil, 0, db.ErrNotFound
+				return nil, timeStamp, db.ErrNotFound
 			}
-			merged = append(merged, currChange.GetEntry())
+			merged = append(merged, currChange.Entry())
 			nextChange++
 		} else if nextCurrent < len(current) {
 			// only current entries left

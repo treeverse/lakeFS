@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 
 	"golang.org/x/xerrors"
@@ -10,11 +11,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/golang/protobuf/proto"
 )
 
-type RepoReadOnlyOperations interface {
+type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
@@ -26,18 +25,8 @@ type RepoReadOnlyOperations interface {
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
 	ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
-
-	// Multipart uploads
-	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
-	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
-	ListMultipartUploads() ([]*model.MultipartUpload, error)
-	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
-}
-
-type RepoOperations interface {
-	RepoReadOnlyOperations
 	DeleteWorkspacePath(branch, path string) error
-	WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error
+	WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
 	WriteRoot(address string, root *model.Root) error
@@ -48,250 +37,216 @@ type RepoOperations interface {
 	WriteRepo(repo *model.Repo) error
 
 	// Multipart uploads
+	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
+	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
+	ListMultipartUploads() ([]*model.MultipartUpload, error)
+	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
 	WriteMultipartUpload(upload *model.MultipartUpload) error
 	WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error
-	DeleteMultipartUpload(uploadId, path string) error
+	DeleteMultipartUpload(uploadId string) error
 	DeleteMultipartUploadParts(uploadId string) error
 }
 
-type KVRepoReadOnlyOperations struct {
-	query  db.ReadQuery
-	store  db.Store
+type DBRepoOperations struct {
 	repoId string
+	tx     db.Tx
 }
 
-type KVRepoOperations struct {
-	*KVRepoReadOnlyOperations
-	query db.Query
-}
-
-func (s *KVRepoReadOnlyOperations) ReadRepo() (*model.Repo, error) {
+func (o *DBRepoOperations) ReadRepo() (*model.Repo, error) {
 	repo := &model.Repo{}
-	return repo, s.query.GetAsProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
+	err := o.tx.Get(repo, `SELECT * FROM repositories WHERE id = $1`, o.repoId)
+	return repo, err
 }
 
-func (s *KVRepoReadOnlyOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
-	iter, itclose := s.query.RangePrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
-	defer itclose()
-	ws := make([]*model.WorkspaceEntry, 0)
-	for iter.Advance() {
-		kv, err := iter.Get()
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		ent := &model.WorkspaceEntry{}
-		err = proto.Unmarshal(kv.Value, ent)
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		ws = append(ws, ent)
-	}
-	return ws, nil
+func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {
+	var entries []*model.WorkspaceEntry
+	err := o.tx.Select(
+		&entries,
+		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
+		o.repoId, branch)
+	return entries, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
+func (o *DBRepoOperations) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
 	ent := &model.WorkspaceEntry{}
-	return ent, s.query.GetAsProto(ent, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
+	err := o.tx.Get(ent, `SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
+		o.repoId, branch, path)
+	return ent, err
 }
 
-func (s *KVRepoReadOnlyOperations) ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error) {
-	var iter db.Iterator
-	var itclose db.IteratorCloseFn
-	prefixKey := db.CompositeStrings(s.repoId, prefix)
-	if len(after) == 0 {
-		iter, itclose = s.query.RangePrefix(SubspaceBranches, prefixKey)
+func (o *DBRepoOperations) ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error) {
+	var err error
+	var hasMore bool
+	var branches []*model.Branch
+
+	prefixCond := fmt.Sprintf("%s%%", prefix)
+	if amount >= 0 {
+		err = o.tx.Select(&branches, `SELECT * FROM branches WHERE repository_id = $1 AND id like $2 AND id > $3 ORDER BY id ASC LIMIT $4`,
+			o.repoId, prefixCond, after, amount+1)
 	} else {
-		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceBranches, prefixKey, db.CompositeStrings(s.repoId, after))
+		err = o.tx.Select(&branches, `SELECT * FROM branches WHERE repository_id = $1 AND id like $2 AND id > $3 ORDER BY id ASC`,
+			o.repoId, prefixCond, after)
 	}
-	defer itclose()
-	branches := make([]*model.Branch, 0)
-	var curr int
-	var done, hasMore bool
-	for iter.Advance() {
-		if done {
-			hasMore = true
-			break
-		}
-		branch := &model.Branch{}
-		kv, err := iter.Get()
-		if err != nil {
-			return nil, false, errors.ErrIndexMalformed
-		}
-		err = proto.Unmarshal(kv.Value, branch)
-		if err != nil {
-			return nil, false, errors.ErrIndexMalformed
-		}
-		branches = append(branches, branch)
-		curr++
-		if curr == amount {
-			done = true
-		}
+
+	if err != nil {
+		return nil, false, err
 	}
-	return branches, hasMore, nil
+
+	if amount >= 0 && len(branches) > amount {
+		branches = branches[0:amount]
+		hasMore = true
+	}
+
+	return branches, hasMore, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadBranch(branch string) (*model.Branch, error) {
+func (o *DBRepoOperations) ReadBranch(branch string) (*model.Branch, error) {
 	b := &model.Branch{}
-	err := s.query.GetAsProto(b, SubspaceBranches, db.CompositeStrings(s.repoId, branch))
+	err := o.tx.Get(b, `SELECT * FROM branches WHERE repository_id = $1 AND id = $2`, o.repoId, branch)
 	if xerrors.Is(err, db.ErrNotFound) {
 		err = errors.ErrBranchNotFound
 	}
 	return b, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadRoot(address string) (*model.Root, error) {
+func (o *DBRepoOperations) ReadRoot(address string) (*model.Root, error) {
 	r := &model.Root{}
-	return r, s.query.GetAsProto(r, SubspaceRoots, db.CompositeStrings(s.repoId, address))
+	err := o.tx.Get(r, `SELECT * FROM roots WHERE repository_id = $1 AND address = $2`, o.repoId, address)
+	return r, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadObject(addr string) (*model.Object, error) {
+func (o *DBRepoOperations) ReadObject(addr string) (*model.Object, error) {
 	obj := &model.Object{}
-	return obj, s.query.GetAsProto(obj, SubspaceObjects, db.CompositeStrings(s.repoId, addr))
+	err := o.tx.Get(obj, `SELECT * FROM objects WHERE repository_id = $1 AND address = $2`, o.repoId, addr)
+	return obj, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadCommit(addr string) (*model.Commit, error) {
+func (o *DBRepoOperations) ReadCommit(addr string) (*model.Commit, error) {
 	commit := &model.Commit{}
-	if len(addr) == ident.HashHexLength {
-		return commit, s.query.GetAsProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
-	}
-	// otherwise, it could be a truncated commit hash - we support this as long as the results are not ambiguous
-	// i.e. a truncated commit returns 1 - and only 1 result.
-	iter, close := s.query.RangePrefix(SubspaceCommits, db.CompositeStrings(s.repoId, addr))
-	defer close()
-	var hasMatch bool
-	var edata []byte
-	for iter.Advance() {
-		entryData, err := iter.Get()
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		if hasMatch {
-			// we have more than one commit matching the given prefix, this is ambiguous
-			return nil, db.ErrNotFound
-		}
-		edata = entryData.Value
-		hasMatch = true
-	}
-	if !hasMatch {
-		// our iterator had no matches
+	var err error
+	if len(addr) > ident.HashHexLength || len(addr) < 6 {
 		return nil, db.ErrNotFound
 	}
-	err := proto.Unmarshal(edata, commit)
+
+	if len(addr) == ident.HashHexLength {
+		err = o.tx.Get(commit, `SELECT * FROM commits WHERE repository_id = $1 AND address = $2`, o.repoId, addr)
+		return commit, err
+	}
+
+	// otherwise, it could be a truncated commit hash - we support this as long as the results are not ambiguous
+	// i.e. a truncated commit returns 1 - and only 1 result.
+	var commits []*model.Commit
+	err = o.tx.Select(&commits, `SELECT * FROM commits WHERE repository_id = $1 AND address LIKE $2 LIMIT 2`,
+		o.repoId, fmt.Sprintf("%s%%", addr))
 	if err != nil {
-		return nil, errors.ErrIndexMalformed
+		if err == sql.ErrNoRows {
+			return nil, db.ErrNotFound
+		}
+		return nil, err
 	}
-	return commit, nil
+	if len(commits) != 1 {
+		return nil, db.ErrNotFound
+	}
+	return commits[0], err
 }
 
-func (s *KVRepoReadOnlyOperations) ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error) {
-	var iter db.Iterator
-	var itclose db.IteratorCloseFn
+func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount int) ([]*model.Entry, bool, error) {
+	var err error
 	var hasMore bool
-	key := db.CompositeStrings(s.repoId, addr)
-	if len(prefix) > 0 {
-		key = key.With([]byte(prefix))
-	}
-	if len(after) > 0 {
-		gtValue := db.CompositeStrings(s.repoId, addr, after)
-		iter, itclose = s.query.RangePrefixGreaterThan(SubspaceEntries, key, gtValue)
+	var entries []*model.Entry
+
+	if amount >= 0 {
+		err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC LIMIT $5`,
+			o.repoId, addr, db.Prefix(prefix), after, amount+1)
 	} else {
-		iter, itclose = s.query.RangePrefix(SubspaceEntries, key)
+		err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC`,
+			o.repoId, addr, db.Prefix(prefix), after)
 	}
-	defer itclose()
-	entries := make([]*model.Entry, 0)
-	current := 0
-	for iter.Advance() {
-		entryData, err := iter.Get()
-		if err != nil {
-			return nil, false, errors.ErrIndexMalformed
-		}
-		entry := &model.Entry{}
-		err = proto.Unmarshal(entryData.Value, entry)
-		if err != nil {
-			return nil, false, errors.ErrIndexMalformed
-		}
-		entries = append(entries, entry)
-		current++
-		if results != -1 && current >= results {
-			hasMore = iter.Advance() // will return true if the iterator still has values to read
-			break
-		}
+
+	if err != nil {
+		return nil, false, err
 	}
-	return entries, hasMore, nil
+
+	if amount >= 0 && len(entries) > amount {
+		entries = entries[0:amount]
+		hasMore = true
+	}
+
+	return entries, hasMore, err
 }
 
-func (s *KVRepoReadOnlyOperations) ListTree(addr, after string, results int) ([]*model.Entry, bool, error) {
-	return s.ListTreeWithPrefix(addr, "", after, results)
+func (o *DBRepoOperations) ListTree(addr, after string, results int) ([]*model.Entry, bool, error) {
+	return o.ListTreeWithPrefix(addr, "", after, results)
 }
 
-func (s *KVRepoReadOnlyOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {
+func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {
 	entry := &model.Entry{}
-	return entry, s.query.GetAsProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, treeAddress, name))
+	err := o.tx.Get(entry, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name = $3`,
+		o.repoId, treeAddress, name)
+	return entry, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
+func (o *DBRepoOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
 	m := &model.MultipartUpload{}
-	return m, s.query.GetAsProto(m, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
+	err := o.tx.Get(m, `SELECT * FROM multipart_uploads WHERE repository_id = $1 AND id = $2`,
+		o.repoId, uploadId)
+	return m, err
 }
 
-func (s *KVRepoReadOnlyOperations) ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error) {
+func (o *DBRepoOperations) ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error) {
 	m := &model.MultipartUploadPart{}
-	partNumSortable := fmt.Sprintf("%.4d", partNumber) // allow up to 10k parts
-	return m, s.query.GetAsProto(m, SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId, partNumSortable))
+	err := o.tx.Get(m, `SELECT * FROM multipart_upload_parts WHERE repository_id = $1 AND upload_id = $2 AND part_number = $3`,
+		o.repoId, uploadId, partNumber)
+	return m, err
 }
 
-func (s *KVRepoReadOnlyOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {
-	iter, itclose := s.query.RangePrefix(SubspacesMultipartUploads, db.CompositeStrings(s.repoId))
-	defer itclose()
-	uploads := make([]*model.MultipartUpload, 0)
-	for iter.Advance() {
-		entryData, err := iter.Get()
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		m := &model.MultipartUpload{}
-		err = proto.Unmarshal(entryData.Value, m)
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		uploads = append(uploads, m)
-	}
-	return uploads, nil
+func (o *DBRepoOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {
+	var mpus []*model.MultipartUpload
+	err := o.tx.Select(&mpus, `SELECT * FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
+	return mpus, err
 }
 
-func (s *KVRepoReadOnlyOperations) ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error) {
-	iter, iterclose := s.query.RangePrefix(SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId))
-	defer iterclose()
-	parts := make([]*model.MultipartUploadPart, 0)
-	for iter.Advance() {
-		data, err := iter.Get()
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		m := &model.MultipartUploadPart{}
-		err = proto.Unmarshal(data.Value, m)
-		if err != nil {
-			return nil, errors.ErrIndexMalformed
-		}
-		parts = append(parts, m)
-	}
-	return parts, nil
+func (o *DBRepoOperations) ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error) {
+	var parts []*model.MultipartUploadPart
+	err := o.tx.Select(&parts, `SELECT * FROM multipart_upload_parts WHERE repository_id = $1 AND upload_id = $2`,
+		o.repoId, uploadId)
+	return parts, err
 }
 
-func (s *KVRepoOperations) DeleteWorkspacePath(branch, path string) error {
-	return s.query.Delete(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
-}
-func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *model.WorkspaceEntry) error {
-	return s.query.SetProto(entry, SubspaceWorkspace, db.CompositeStrings(s.repoId, branch, path))
-}
-
-func (s *KVRepoOperations) ClearWorkspace(branch string) error {
-	return s.query.ClearPrefix(SubspaceWorkspace, db.CompositeStrings(s.repoId, branch))
+func (o *DBRepoOperations) DeleteWorkspacePath(branch, path string) error {
+	_, err := o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
+		o.repoId, branch, path)
+	return err
 }
 
-func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) error {
+func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO workspace_entries (repository_id, branch_id, path, parent_path, 
+		entry_name, entry_address, entry_type, entry_creation_date, entry_size, entry_checksum, tombstone)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+		ON CONFLICT ON CONSTRAINT workspace_entries_pkey
+		DO UPDATE SET parent_path = $4, entry_name = $5, entry_address = $6, entry_type = $7, entry_creation_date = $8,
+		entry_size = $9, entry_checksum = $10, tombstone = $11`,
+		o.repoId, branch, path, parentPath, entry.EntryName, entry.EntryAddress, entry.EntryType,
+		entry.EntryCreationDate, entry.EntrySize, entry.EntryChecksum, entry.Tombstone,
+	)
+	return err
+}
+
+func (o *DBRepoOperations) ClearWorkspace(branch string) error {
+	_, err := o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
+		o.repoId, branch)
+	return err
+}
+
+func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
-		err := s.query.SetProto(entry, SubspaceEntries, db.CompositeStrings(s.repoId, address, entry.GetName()))
+		_, err := o.tx.Exec(`
+			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			ON CONFLICT ON CONSTRAINT entries_pkey
+			DO UPDATE SET address = $4, type = $5, creation_date = $6, size = $7, checksum = $8`,
+			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum)
 		if err != nil {
 			return err
 		}
@@ -299,43 +254,94 @@ func (s *KVRepoOperations) WriteTree(address string, entries []*model.Entry) err
 	return nil
 }
 
-func (s *KVRepoOperations) WriteRoot(address string, root *model.Root) error {
-	return s.query.SetProto(root, SubspaceRoots, db.CompositeStrings(s.repoId, address))
-}
-func (s *KVRepoOperations) WriteObject(addr string, object *model.Object) error {
-	return s.query.SetProto(object, SubspaceObjects, db.CompositeStrings(s.repoId, addr))
-}
-
-func (s *KVRepoOperations) WriteCommit(addr string, commit *model.Commit) error {
-	return s.query.SetProto(commit, SubspaceCommits, db.CompositeStrings(s.repoId, addr))
+func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO roots (repository_id, address, creation_date, size) VALUES ($1, $2, $3, $4)
+		ON CONFLICT ON CONSTRAINT roots_pkey
+		DO UPDATE SET creation_date = $3, size = $4`,
+		o.repoId, address, root.CreationDate, root.Size)
+	return err
 }
 
-func (s *KVRepoOperations) WriteBranch(name string, branch *model.Branch) error {
-	return s.query.SetProto(branch, SubspaceBranches, db.CompositeStrings(s.repoId, name))
+func (o *DBRepoOperations) WriteObject(addr string, object *model.Object) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO objects (repository_id, address, checksum, size, blocks, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6)
+		ON CONFLICT ON CONSTRAINT objects_pkey
+		DO NOTHING`, // since it's keyed by hash of content, no need to update, we know the fields are the same
+		o.repoId, addr, object.Checksum, object.Size, object.Blocks, object.Metadata)
+	return err
 }
 
-func (s *KVRepoOperations) DeleteBranch(name string) error {
-	return s.query.Delete(SubspaceBranches, db.CompositeStrings(s.repoId, name))
+func (o *DBRepoOperations) WriteCommit(addr string, commit *model.Commit) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO commits (repository_id, address, tree, committer, message, creation_date, parents, metadata)
+		VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+		ON CONFLICT ON CONSTRAINT commits_pkey
+		DO NOTHING`, // since it's keyed by hash of content, no need to update, we know the fields are the same
+		o.repoId, addr, commit.Tree, commit.Committer, commit.Message, commit.CreationDate, commit.Parents, commit.Metadata)
+	return err
 }
 
-func (s *KVRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
-	return s.query.SetProto(upload, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, upload.GetId()))
+func (o *DBRepoOperations) WriteBranch(name string, branch *model.Branch) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO branches (repository_id, id, commit_id, commit_root, workspace_root)
+		VALUES ($1, $2, $3, $4, $5)
+		ON CONFLICT ON CONSTRAINT branches_pkey
+		DO UPDATE SET commit_id = $3, commit_root = $4, workspace_root = $5`,
+		o.repoId, name, branch.CommitId, branch.CommitRoot, branch.WorkspaceRoot)
+	return err
 }
 
-func (s *KVRepoOperations) WriteRepo(repo *model.Repo) error {
-	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(s.repoId))
+func (o *DBRepoOperations) DeleteBranch(name string) error {
+	_, err := o.tx.Exec(`DELETE FROM branches WHERE repository_id = $1 AND id = $2`,
+		o.repoId, name)
+	return err
 }
 
-func (s *KVRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {
-	// convert part to a string sortable representation
-	partNumSortable := fmt.Sprintf("%.4d", partNumber) // allow up to 10k parts
-	return s.query.SetProto(part, SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId, partNumSortable))
+func (o *DBRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO multipart_uploads (repository_id, id, path, creation_date)
+		VALUES ($1, $2, $3, $4)`,
+		o.repoId, upload.Id, upload.Path, upload.CreationDate)
+	return err
 }
 
-func (s *KVRepoOperations) DeleteMultipartUpload(uploadId, path string) error {
-	return s.query.Delete(SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
+func (o *DBRepoOperations) WriteRepo(repo *model.Repo) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO repositories (id, storage_namespace, creation_date, default_branch)
+		VALUES ($1, $2, $3, $4)`,
+		repo.Id, repo.StorageNamespace, repo.CreationDate, repo.DefaultBranch)
+	return err
 }
 
-func (s *KVRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
-	return s.query.ClearPrefix(SubspacesMultipartUploadParts, db.CompositeStrings(s.repoId, uploadId))
+func (o *DBRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {
+	_, err := o.tx.Exec(`
+		INSERT INTO multipart_upload_parts (repository_id, upload_id, part_number, checksum, creation_date, size, blocks)
+		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+		o.repoId, uploadId, partNumber, part.Checksum, part.CreationDate, part.Size, part.Blocks)
+	return err
+}
+
+func (o *DBRepoOperations) DeleteMultipartUpload(uploadId string) error {
+	_, err := o.tx.Exec(`
+		DELETE FROM multipart_upload_parts
+		WHERE repository_id = $1 AND upload_id = $2`,
+		o.repoId, uploadId)
+	if err != nil {
+		return err
+	}
+	_, err = o.tx.Exec(`
+		DELETE FROM multipart_uploads
+		WHERE repository_id = $1 AND id = $2`,
+		o.repoId, uploadId)
+	return err
+}
+
+func (o *DBRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
+	_, err := o.tx.Exec(`
+		DELETE FROM multipart_upload_parts
+		WHERE repository_id = $1 AND upload_id = $2`,
+		o.repoId, uploadId)
+	return err
 }

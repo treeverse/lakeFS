@@ -30,7 +30,7 @@ type Difference struct {
 	Type      DifferenceType
 	Direction DifferenceDirection
 	Path      string
-	PathType  model.Entry_Type
+	PathType  string
 }
 
 func (d Difference) String() string {
@@ -54,9 +54,9 @@ func (d Difference) String() string {
 	}
 
 	switch d.PathType {
-	case model.Entry_TREE:
+	case model.EntryTypeTree:
 		pType = "D"
-	case model.Entry_OBJECT:
+	case model.EntryTypeObject:
 		pType = "O"
 	}
 
@@ -81,9 +81,9 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 	var sentinel = struct{}{}
 	visitedNames := make(map[string]struct{})
 	for _, leftEntry := range leftEntries {
-		entryPath := leftEntry.GetName()
+		entryPath := leftEntry.Name
 		if len(pth) > 0 {
-			entryPath = path.Join([]string{pth, leftEntry.GetName()})
+			entryPath = path.Join([]string{pth, leftEntry.Name})
 		}
 
 		// see if this tree exists on right
@@ -96,19 +96,19 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 		// 		if it doesn't exist on common as well, left created
 		//		if it exists in common, right deleted
 		rightIndex := sort.Search(len(rightEntries), func(i int) bool {
-			return strings.Compare(rightEntries[i].GetName(), leftEntry.GetName()) >= 0
+			return strings.Compare(rightEntries[i].Name, leftEntry.Name) >= 0
 		})
-		if rightIndex < len(rightEntries) && strings.EqualFold(rightEntries[rightIndex].GetName(), leftEntry.GetName()) {
+		if rightIndex < len(rightEntries) && strings.EqualFold(rightEntries[rightIndex].Name, leftEntry.Name) {
 			// we have such a node on the right as well, let's compare it!
 			rightEntry := rightEntries[rightIndex]
-			if strings.EqualFold(leftEntry.GetAddress(), rightEntry.GetAddress()) {
+			if strings.EqualFold(leftEntry.Address, rightEntry.Address) {
 				// same, move on
-				visitedNames[leftEntry.GetName()] = sentinel
+				visitedNames[leftEntry.Name] = sentinel
 				continue
 			}
 
 			// not the same as on the right, let's see whose change this is
-			commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.GetType())
+			commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.EntryType)
 			if xerrors.Is(err, db.ErrNotFound) {
 				// doesn't exist in common but left and right are different
 				// this means both trees created it differently, meaning a conflict
@@ -116,22 +116,22 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 					Type:      DifferenceTypeChanged,
 					Direction: DifferenceDirectionConflict,
 					Path:      entryPath,
-					PathType:  leftEntry.GetType(),
+					PathType:  leftEntry.EntryType,
 				})
-				visitedNames[leftEntry.GetName()] = sentinel
+				visitedNames[leftEntry.Name] = sentinel
 				continue
 			} else if err != nil {
 				return nil, err
 			}
 			var direction DifferenceDirection
-			if !strings.EqualFold(commonEntry.GetAddress(), leftEntry.GetAddress()) && !strings.EqualFold(commonEntry.GetAddress(), rightEntry.GetAddress()) {
+			if !strings.EqualFold(commonEntry.Address, leftEntry.Address) && !strings.EqualFold(commonEntry.Address, rightEntry.Address) {
 				// conflict
 				direction = DifferenceDirectionConflict
-			} else if strings.EqualFold(commonEntry.GetAddress(), leftEntry.GetAddress()) {
+			} else if strings.EqualFold(commonEntry.Address, leftEntry.Address) {
 				// right made change
 				// direction = DifferenceDirectionRight
 				// WE DON'T CARE ABOUT RIGHT MODIFICATIONS
-				visitedNames[leftEntry.GetName()] = sentinel
+				visitedNames[leftEntry.Name] = sentinel
 				continue
 			} else {
 				// left made change
@@ -141,34 +141,34 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 				Type:      DifferenceTypeChanged,
 				Direction: direction,
 				Path:      entryPath,
-				PathType:  leftEntry.GetType(),
+				PathType:  leftEntry.EntryType,
 			})
-			visitedNames[leftEntry.GetName()] = sentinel
+			visitedNames[leftEntry.Name] = sentinel
 			continue
 		}
 
 		// this node doesn't exist on right, so it was either deleted right or created left,
 		// let's use common to test
-		commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.GetType())
+		commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.EntryType)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// exists only on left
 			res = append(res, Difference{
 				Type:      DifferenceTypeAdded,
 				Direction: DifferenceDirectionLeft,
 				Path:      entryPath,
-				PathType:  leftEntry.GetType(),
+				PathType:  leftEntry.EntryType,
 			})
-			visitedNames[leftEntry.GetName()] = sentinel
+			visitedNames[leftEntry.Name] = sentinel
 			continue
 		} else if err != nil {
 			return nil, err
 		}
 
 		// exists on left, exists on common, doesn't exist on right
-		if strings.EqualFold(leftEntry.GetAddress(), commonEntry.GetAddress()) {
+		if strings.EqualFold(leftEntry.Address, commonEntry.Address) {
 			// if left and common are the same, right deleted
 			// WE DON'T CARE ABOUT RIGHT MODIFICATIONS
-			visitedNames[leftEntry.GetName()] = sentinel
+			visitedNames[leftEntry.Name] = sentinel
 			continue
 		}
 		// if left and common are different: left modified while right deleted - conflict
@@ -176,23 +176,23 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			Type:      DifferenceTypeChanged,
 			Direction: DifferenceDirectionConflict,
 			Path:      entryPath,
-			PathType:  leftEntry.GetType(),
+			PathType:  leftEntry.EntryType,
 		})
-		visitedNames[leftEntry.GetName()] = sentinel
+		visitedNames[leftEntry.Name] = sentinel
 		continue
 	}
 
 	for _, rightEntry := range rightEntries {
-		if _, visited := visitedNames[rightEntry.GetName()]; visited {
+		if _, visited := visitedNames[rightEntry.Name]; visited {
 			continue
 		}
 		// this node doesn't exist on the left, it was either deleted left or created right
 		// let's use common to test
-		entryPath := rightEntry.GetName()
+		entryPath := rightEntry.Name
 		if len(pth) > 0 {
-			entryPath = path.Join([]string{pth, rightEntry.GetName()})
+			entryPath = path.Join([]string{pth, rightEntry.Name})
 		}
-		commonEntry, err := common.GetEntry(tx, entryPath, rightEntry.GetType())
+		commonEntry, err := common.GetEntry(tx, entryPath, rightEntry.EntryType)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// doesn't exist left, doesn't exist common - right created
 			// we don't currently record right modifications unless they are conflicting
@@ -201,13 +201,13 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			return nil, err
 		}
 
-		if strings.EqualFold(rightEntry.GetAddress(), commonEntry.GetAddress()) {
+		if strings.EqualFold(rightEntry.Address, commonEntry.Address) {
 			// right and common are equal,left doesnt exist - left deleted
 			res = append(res, Difference{
 				Type:      DifferenceTypeRemoved,
 				Direction: DifferenceDirectionLeft,
 				Path:      entryPath,
-				PathType:  rightEntry.GetType(),
+				PathType:  rightEntry.EntryType,
 			})
 			continue
 		}
@@ -216,7 +216,7 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			Type:      DifferenceTypeRemoved,
 			Direction: DifferenceDirectionConflict,
 			Path:      entryPath,
-			PathType:  rightEntry.GetType(),
+			PathType:  rightEntry.EntryType,
 		})
 	}
 	return res, nil
@@ -233,7 +233,7 @@ func diffWalk(tx TreeReader, pth string, left, right, common *Merkle, collector 
 	}
 	for _, current := range results {
 		// if we get a "conflicting" directory, drill down into it
-		if current.PathType == model.Entry_TREE && (current.Direction == DifferenceDirectionConflict || current.Type == DifferenceTypeChanged) {
+		if current.PathType == model.EntryTypeTree && (current.Direction == DifferenceDirectionConflict || current.Type == DifferenceTypeChanged) {
 			err = diffWalk(tx, current.Path, left, right, common, collector)
 			if err != nil {
 				return err
