@@ -14,10 +14,10 @@ type changeTree struct {
 
 // returns the container depth and path
 func getContainer(entry *model.WorkspaceEntry) (int, string) {
-	p := path.New(entry.GetPath())
+	p := path.New(entry.Path)
 	parts := p.SplitParts()
 	var container string
-	if entry.GetEntry().GetType() == model.Entry_TREE {
+	if *entry.EntryType == model.EntryTypeTree {
 		container = path.Join(parts[0 : len(parts)-2])
 	} else {
 		container = path.Join(parts[0 : len(parts)-1])
@@ -50,7 +50,7 @@ func (c *changeTree) Add(depth int, path string, chg *model.WorkspaceEntry) {
 	c.data[depth][path] = append(c.data[depth][path], chg)
 	//TODO: consider change to smart insert
 	sort.Slice(c.data[depth][path], func(i, j int) bool {
-		return CompareEntries(c.data[depth][path][i].Entry, c.data[depth][path][j].Entry) <= 0
+		return CompareEntries(c.data[depth][path][i].Entry(), c.data[depth][path][j].Entry()) <= 0
 	})
 
 }

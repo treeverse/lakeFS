@@ -2,97 +2,128 @@ package testutil
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
-	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 
+	_ "github.com/jackc/pgx/stdlib"
+	"github.com/ory/dockertest/v3"
+
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/block"
 
-	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
-	"github.com/treeverse/lakefs/index/store"
-
-	"github.com/dgraph-io/badger"
-	"github.com/dgraph-io/badger/options"
 )
 
-type nullLogger struct{}
+const (
+	TimeFormat                = "Jan 2 15:04:05 2006 -0700"
+	FixtureRoot               = "lakeFsFixtures"
+	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
+)
 
-func (l nullLogger) Errorf(string, ...interface{})   {}
-func (l nullLogger) Warningf(string, ...interface{}) {}
-func (l nullLogger) Infof(string, ...interface{})    {}
-func (l nullLogger) Debugf(string, ...interface{})   {}
-
-const TimeFormat = "Jan 2 15:04:05 2006 -0700"
-const FixtureRoot = "lakeFsFixtures"
-
-func GetIndexStoreWithRepo(t *testing.T, partialCommitRatio float32) (store.Store, *model.Repo, func()) {
-	db, closer := GetDB(t)
-	kv := store.NewKVStore(db)
+func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
 	repoCreateDate, _ := time.Parse(TimeFormat, "Apr 7 15:13:13 2005 -0700")
-	repo, err := kv.RepoTransact("myrepo", func(ops store.RepoOperations) (i interface{}, e error) {
-		repo := &model.Repo{
-			RepoId:             "myrepo",
-			CreationDate:       repoCreateDate.Unix(),
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: partialCommitRatio,
-		}
-		err := ops.WriteRepo(repo)
+	createIndex := index.NewDBIndex(conn, index.WithTimeGenerator(func() time.Time {
+		return repoCreateDate
+	}))
+	Must(t, createIndex.CreateRepo("example", "s3://example", "master"))
+	return index.NewDBIndex(conn), &model.Repo{
+		Id:               "example",
+		StorageNamespace: "s3://example",
+		CreationDate:     repoCreateDate,
+		DefaultBranch:    "master",
+	}
+}
+
+func GetDBInstance(pool *dockertest.Pool) (string, func()) {
+	resource, err := pool.Run("postgres", "11", []string{
+		"POSTGRES_USER=lakefs",
+		"POSTGRES_PASSWORD=lakefs",
+		"POSTGRES_DB=lakefs_db",
+	})
+	if err != nil {
+		log.Fatalf("Could not start postgresql: %s", err)
+	}
+
+	// set cleanup
+	closer := func() {
+		err := pool.Purge(resource)
 		if err != nil {
-			t.Fatal(err)
+			log.Fatalf("could not kill postgres container")
 		}
-		commit := &model.Commit{
-			Tree:      ident.Empty(),
-			Parents:   []string{},
-			Timestamp: repoCreateDate.Unix(),
-			Metadata:  make(map[string]string),
+	}
+
+	// expire, just to make sure
+	err = resource.Expire(DBContainerTimeoutSeconds)
+	if err != nil {
+		log.Fatalf("could not expire postgres container")
+	}
+
+	// create connection
+	var conn *sqlx.DB
+	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable",
+		resource.GetPort("5432/tcp"))
+	if err = pool.Retry(func() error {
+		var err error
+		conn, err = sqlx.Connect("pgx", uri)
+		if err != nil {
+			return err
 		}
-		commitId := ident.Hash(commit)
-		commit.Address = commitId
-		err = ops.WriteCommit(commitId, commit)
+		return conn.Ping()
+	}); err != nil {
+		log.Fatalf("could not connect to postgres: %s", err)
+	}
+	_ = conn.Close()
+
+	// return DB
+	return uri, closer
+}
+
+func GetDB(t *testing.T, uri, schemaName string) db.Database {
+
+	// generate uuid as schema name
+	generatedSchema := fmt.Sprintf("schema_%s",
+		strings.ReplaceAll(uuid.New().String(), "-", ""))
+
+	// create connection
+	conn, err := sqlx.Connect("pgx", fmt.Sprintf("%s&search_path=%s", uri, generatedSchema))
+	if err != nil {
+		t.Fatalf("could not read DDL file: %s", err)
+	}
+
+	t.Cleanup(func() {
+		_ = conn.Close()
+	})
+
+	database := db.NewDatabase(conn)
+
+	// apply DDL
+	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(fmt.Sprintf(`CREATE SCHEMA %s`, generatedSchema))
 		if err != nil {
 			return nil, err
 		}
-		err = ops.WriteBranch(repo.GetDefaultBranch(), &model.Branch{
-			Name:          repo.GetDefaultBranch(),
-			Commit:        commitId,
-			CommitRoot:    commit.GetTree(),
-			WorkspaceRoot: commit.GetTree(),
-		})
-		return repo, nil
+
+		// do the actual migration
+		return nil, db.MigrateSchemaAll(tx, schemaName)
 	})
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("could not create schema: %v", err)
 	}
-	return kv, repo.(*model.Repo), closer
+
+	// return DB
+	return database
 }
 
-func GetDB(t *testing.T) (db.Store, func()) {
-	dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("badger-%s", uuid.Must(uuid.NewUUID()).String()))
-	err := os.MkdirAll(dir, 0777)
-	if err != nil {
-		t.Fatal(err)
-	}
-	opts := badger.DefaultOptions(dir)
-	opts.Logger = nullLogger{}
-	opts.TableLoadingMode = options.LoadToRAM
-	kv, err := badger.Open(opts)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return db.NewLocalDBStore(kv), func() {
-		kv.Close()
-		os.RemoveAll(dir)
-	}
-}
-
-func GetBlockAdapter(t *testing.T) (block.Adapter, func()) {
+func GetBlockAdapter(t *testing.T) block.Adapter {
 	dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
 	err := os.MkdirAll(dir, 0777)
 	if err != nil {
@@ -102,16 +133,17 @@ func GetBlockAdapter(t *testing.T) (block.Adapter, func()) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return adapter, func() {
+	t.Cleanup(func() {
 		err := os.RemoveAll(dir)
 		if err != nil {
 			t.Fatal(err)
 		}
-	}
+	})
+	return adapter
 }
 
 func Must(t *testing.T, err error) {
 	if err != nil {
-		t.Fatal(err)
+		t.Fatalf("error returned for operation: %v", err)
 	}
 }
