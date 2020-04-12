@@ -2,77 +2,54 @@ package store
 
 import (
 	"github.com/treeverse/lakefs/db"
-)
-
-var (
-	SubspaceRepos                 = db.Namespace("repos")
-	SubspaceWorkspace             = db.Namespace("workspace")
-	SubspaceRoots                 = db.Namespace("roots")
-	SubspaceEntries               = db.Namespace("entries")
-	SubspaceObjects               = db.Namespace("objects")
-	SubspaceCommits               = db.Namespace("commits")
-	SubspaceBranches              = db.Namespace("branches")
-	SubspaceRefCounts             = db.Namespace("refCounts")
-	SubspacesMultipartUploads     = db.Namespace("mpus")
-	SubspacesMultipartUploadParts = db.Namespace("mpuparts")
+	"github.com/treeverse/lakefs/logging"
 )
 
 type Store interface {
-	ReadTransact(fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error)
-	Transact(fn func(ops ClientOperations) (interface{}, error)) (interface{}, error)
-	RepoReadTransact(repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error)
-	RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error)
+	Transact(fn func(ops ClientOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error)
+	RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error)
 }
 
-type KVStore struct {
-	kv db.Store
+type DBStore struct {
+	db db.Database
 }
 
-func NewKVStore(database db.Store) *KVStore {
-	kv := database
-	return &KVStore{kv: kv}
+func NewDBStore(database db.Database) *DBStore {
+	return &DBStore{db: database}
 }
 
-func (s *KVStore) ReadTransact(fn func(ops ClientReadOnlyOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
-		return fn(&KVClientReadOnlyOperations{
-			query: q,
-			store: s.kv,
-		})
-	})
+func (s *DBStore) Transact(fn func(ops ClientOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
+	return s.db.Transact(func(tx db.Tx) (i interface{}, err error) {
+		op := &DBClientOperations{tx: tx}
+		return fn(op)
+	}, opts...)
 }
 
-func (s *KVStore) Transact(fn func(ops ClientOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.Transact(func(q db.Query) (interface{}, error) {
-		return fn(&KVClientOperations{
-			KVClientReadOnlyOperations: &KVClientReadOnlyOperations{
-				query: q,
-				store: s.kv,
-			},
-			query: q,
-		})
-	})
-}
-
-func (s *KVStore) RepoReadTransact(repoId string, fn func(ops RepoReadOnlyOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.ReadTransact(func(q db.ReadQuery) (interface{}, error) {
-		return fn(&KVRepoReadOnlyOperations{
-			query:  q,
-			store:  s.kv,
+func (s *DBStore) RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
+	return s.db.Transact(func(tx db.Tx) (i interface{}, err error) {
+		op := &DBRepoOperations{
 			repoId: repoId,
-		})
-	})
+			tx:     tx,
+		}
+		return fn(op)
+	}, opts...)
 }
 
-func (s *KVStore) RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error)) (interface{}, error) {
-	return s.kv.Transact(func(q db.Query) (interface{}, error) {
-		return fn(&KVRepoOperations{
-			KVRepoReadOnlyOperations: &KVRepoReadOnlyOperations{
-				query:  q,
-				store:  s.kv,
-				repoId: repoId,
-			},
-			query: q,
-		})
-	})
+type loggingStore struct {
+	store  Store
+	logger logging.Logger
+}
+
+func (l *loggingStore) Transact(fn func(ops ClientOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
+	opts = append(opts, db.WithLogger(l.logger))
+	return l.store.Transact(fn, opts...)
+}
+
+func (l *loggingStore) RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
+	opts = append(opts, db.WithLogger(l.logger))
+	return l.store.RepoTransact(repoId, fn, opts...)
+}
+
+func WithLogger(store Store, logger logging.Logger) Store {
+	return &loggingStore{store, logger}
 }
