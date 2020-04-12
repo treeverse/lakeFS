@@ -15,9 +15,9 @@ CREATE TABLE objects (
     blocks json NOT NULL,
     metadata json NOT NULL,
 
-
     PRIMARY KEY (repository_id, address)
 );
+
 
 CREATE TABLE roots (
     repository_id varchar(64) REFERENCES repositories(id) NOT NULL,
@@ -58,6 +58,7 @@ CREATE TABLE commits (
     FOREIGN KEY (repository_id, tree) REFERENCES roots (repository_id, address),
     PRIMARY KEY (repository_id, address)
 );
+
 
 CREATE TABLE branches (
     repository_id varchar(64) REFERENCES repositories(id) NOT NULL,
