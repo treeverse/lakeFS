@@ -31,7 +31,7 @@ func TestDiff(t *testing.T) {
 			Name: "add_file",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
 				},
 				"right":  {},
 				"common": {},
@@ -46,12 +46,12 @@ func TestDiff(t *testing.T) {
 			Name: "add_file_db_error",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1/1", Type: model.Entry_TREE},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1/1", EntryType: model.EntryTypeTree},
 				},
 				"right": {},
 				"common": {
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 			}),
 			ExpectedErr: db.ErrNotFound,
@@ -61,17 +61,17 @@ func TestDiff(t *testing.T) {
 			Name: "common_db_error",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1/1", Type: model.Entry_TREE},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1/1", EntryType: model.EntryTypeTree},
 				},
 				"right": {
-					{Name: "dir1", Address: "dir1/2", Type: model.Entry_TREE},
+					{Name: "dir1", Address: "dir1/2", EntryType: model.EntryTypeTree},
 				},
 				"dir1/1": {
-					{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
+					{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
 				},
 				"common": {
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 			}),
 			ExpectedErr: db.ErrNotFound,
@@ -81,17 +81,17 @@ func TestDiff(t *testing.T) {
 			Name: "common_unknown_error",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1/1", Type: model.Entry_TREE},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1/1", EntryType: model.EntryTypeTree},
 				},
 				"right": {
-					{Name: "dir1", Address: "dir1/2", Type: model.Entry_TREE},
+					{Name: "dir1", Address: "dir1/2", EntryType: model.EntryTypeTree},
 				},
 				"dir1/1": {
-					{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
+					{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
 				},
 				"common": {
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 			}).WithReadError(ErrUnexpected),
 			ExpectedErr: ErrUnexpected,
@@ -102,10 +102,10 @@ func TestDiff(t *testing.T) {
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {},
 				"right": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
 				},
 				"common": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
 				},
 			}),
 			Expected: []string{
@@ -117,19 +117,19 @@ func TestDiff(t *testing.T) {
 			Name: "no_diff",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 				"right": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 				"common": {
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 				"dir1": {
-					{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
+					{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
 				},
 			}),
 			Expected: []string{},
@@ -139,26 +139,26 @@ func TestDiff(t *testing.T) {
 			Name: "no_diff_on_right",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "file0", Address: "file0", Type: model.Entry_OBJECT},
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "file0", Address: "file0", EntryType: model.EntryTypeObject},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 				"right": {
-					{Name: "file0", Address: "file0_changed", Type: model.Entry_OBJECT},
-					{Name: "file3", Address: "file3", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
-					{Name: "dir2", Address: "dir2", Type: model.Entry_TREE},
+					{Name: "file0", Address: "file0_changed", EntryType: model.EntryTypeObject},
+					{Name: "file3", Address: "file3", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
+					{Name: "dir2", Address: "dir2", EntryType: model.EntryTypeTree},
 				},
 				"common": {
-					{Name: "file0", Address: "file0", Type: model.Entry_OBJECT},
-					{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-					{Name: "dir1", Address: "dir1", Type: model.Entry_TREE},
+					{Name: "file0", Address: "file0", EntryType: model.EntryTypeObject},
+					{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+					{Name: "dir1", Address: "dir1", EntryType: model.EntryTypeTree},
 				},
 				"dir1": {
-					{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
+					{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
 				},
 				"dir2": {
-					{Name: "file3", Address: "file3", Type: model.Entry_OBJECT},
+					{Name: "file3", Address: "file3", EntryType: model.EntryTypeObject},
 				},
 			}),
 			Expected: []string{},
@@ -168,10 +168,10 @@ func TestDiff(t *testing.T) {
 			Name: "add_directory",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right":  {},
 				"common": {},
@@ -185,17 +185,17 @@ func TestDiff(t *testing.T) {
 			Name: "left_modified_right_deleted",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"events/2": {
-					{Name: "file_one", Address: "file_one_2", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one_2", EntryType: model.EntryTypeObject},
 				},
 				"right": {},
 				"common": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 			}),
 			Expected: []string{
@@ -207,17 +207,17 @@ func TestDiff(t *testing.T) {
 			Name: "right_modified_left_deleted",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"right": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"events/2": {
-					{Name: "file_one", Address: "file_one_2", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one_2", EntryType: model.EntryTypeObject},
 				},
 				"left": {},
 				"common": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 			}),
 			Expected: []string{
@@ -230,13 +230,13 @@ func TestDiff(t *testing.T) {
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 				"common": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 			}),
 			Expected: []string{
@@ -248,16 +248,16 @@ func TestDiff(t *testing.T) {
 			Name: "changes_in_directory",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
 				},
 				"events/2": {
-					{Name: "file_two", Address: "file_two", Type: model.Entry_OBJECT},
+					{Name: "file_two", Address: "file_two", EntryType: model.EntryTypeObject},
 				},
 				"common": {},
 			}),
@@ -270,17 +270,17 @@ func TestDiff(t *testing.T) {
 			Name: "changes_in_directory_and_add_file",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
-					{Name: "file_three", Address: "file_three", Type: model.Entry_OBJECT},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
+					{Name: "file_three", Address: "file_three", EntryType: model.EntryTypeObject},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
 				},
 				"events/2": {
-					{Name: "file_two", Address: "file_two", Type: model.Entry_OBJECT},
+					{Name: "file_two", Address: "file_two", EntryType: model.EntryTypeObject},
 				},
 				"common": {},
 			}),
@@ -294,20 +294,20 @@ func TestDiff(t *testing.T) {
 			Name: "changes_in_directory_and_remove_file",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
-					{Name: "file_three", Address: "file_three", Type: model.Entry_OBJECT},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
+					{Name: "file_three", Address: "file_three", EntryType: model.EntryTypeObject},
 				},
 				"events/2": {
-					{Name: "file_two", Address: "file_two", Type: model.Entry_OBJECT},
+					{Name: "file_two", Address: "file_two", EntryType: model.EntryTypeObject},
 				},
 				"common": {
-					{Name: "file_three", Address: "file_three", Type: model.Entry_OBJECT},
+					{Name: "file_three", Address: "file_three", EntryType: model.EntryTypeObject},
 				},
 			}),
 			Expected: []string{
@@ -320,21 +320,21 @@ func TestDiff(t *testing.T) {
 			Name: "changes_in_directory_and_overwrite_file",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
-					{Name: "file_three", Address: "file_three_other", Type: model.Entry_OBJECT},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
+					{Name: "file_three", Address: "file_three_other", EntryType: model.EntryTypeObject},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
-					{Name: "file_three", Address: "file_three", Type: model.Entry_OBJECT},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
+					{Name: "file_three", Address: "file_three", EntryType: model.EntryTypeObject},
 				},
 				"events/2": {
-					{Name: "file_two", Address: "file_two", Type: model.Entry_OBJECT},
+					{Name: "file_two", Address: "file_two", EntryType: model.EntryTypeObject},
 				},
 				"common": {
-					{Name: "file_three", Address: "file_three", Type: model.Entry_OBJECT},
+					{Name: "file_three", Address: "file_three", EntryType: model.EntryTypeObject},
 				},
 			}),
 			Expected: []string{
@@ -347,21 +347,21 @@ func TestDiff(t *testing.T) {
 			Name: "changes_in_directory_and_conflict_file",
 			Reader: testutil.ConstructTree(map[string][]*model.Entry{
 				"left": {
-					{Name: "events/", Address: "events/1", Type: model.Entry_TREE},
-					{Name: "file_three", Address: "file_three_conflict", Type: model.Entry_OBJECT},
+					{Name: "events/", Address: "events/1", EntryType: model.EntryTypeTree},
+					{Name: "file_three", Address: "file_three_conflict", EntryType: model.EntryTypeObject},
 				},
 				"events/1": {
-					{Name: "file_one", Address: "file_one", Type: model.Entry_OBJECT},
+					{Name: "file_one", Address: "file_one", EntryType: model.EntryTypeObject},
 				},
 				"right": {
-					{Name: "events/", Address: "events/2", Type: model.Entry_TREE},
-					{Name: "file_three", Address: "file_three_other", Type: model.Entry_OBJECT},
+					{Name: "events/", Address: "events/2", EntryType: model.EntryTypeTree},
+					{Name: "file_three", Address: "file_three_other", EntryType: model.EntryTypeObject},
 				},
 				"events/2": {
-					{Name: "file_two", Address: "file_two", Type: model.Entry_OBJECT},
+					{Name: "file_two", Address: "file_two", EntryType: model.EntryTypeObject},
 				},
 				"common": {
-					{Name: "file_three", Address: "file_three", Type: model.Entry_OBJECT},
+					{Name: "file_three", Address: "file_three", EntryType: model.EntryTypeObject},
 				},
 			}),
 			Expected: []string{

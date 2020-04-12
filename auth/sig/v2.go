@@ -11,6 +11,8 @@ import (
 	"sort"
 	str "strings"
 
+	"github.com/treeverse/lakefs/auth/model"
+
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -211,7 +213,7 @@ func buildPath(host, bareDomain, path string) string {
 
 }
 
-func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error {
+func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) error {
 	/*
 		s3 sigV2 implementation:
 		the s3 signature  is somewhat different than general aws signature implementation.
@@ -241,7 +243,7 @@ func (a *V2SigAuthenticator) Verify(creds Credentials, bareDomain string) error 
 	patchedPath = str.ReplaceAll(patchedPath, "%7E", "~")
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
-	digest := signCanonicalString(stringToSigh, []byte(creds.GetAccessSecretKey()))
+	digest := signCanonicalString(stringToSigh, []byte(creds.AccessSecretKey))
 	if !hmac.Equal(digest, a.ctx.signature) {
 		return ErrBadSignature
 	}

@@ -30,7 +30,7 @@ func (bfsIt *bfsIterator) advance() bool {
 		return false
 	}
 	//fill queue
-	for _, parent := range commit.GetParents() {
+	for _, parent := range commit.Parents {
 		if _, wasDiscovered := bfsIt.discoveredSet[parent]; !wasDiscovered {
 			bfsIt.queue = append(bfsIt.queue, parent)
 			bfsIt.discoveredSet[parent] = sentinel

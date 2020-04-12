@@ -31,9 +31,7 @@ import (
 )
 
 func TestHandler_ListRepositoriesHandler(t *testing.T) {
-
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -132,8 +130,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 func TestHandler_GetRepoHandler(t *testing.T) {
 
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -175,9 +172,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 }
 
 func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
-
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -230,8 +225,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 
 func TestHandler_GetCommitHandler(t *testing.T) {
 
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -263,7 +257,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := clt.Commits.GetCommit(&commits.GetCommitParams{
-			CommitID:     b.Commit,
+			CommitID:     b.CommitId,
 			RepositoryID: "foo1",
 		}, bauth)
 
@@ -280,8 +274,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 
 func TestHandler_CommitHandler(t *testing.T) {
 
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -328,8 +321,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 }
 
 func TestHandler_CreateRepositoryHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -377,8 +369,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteRepositoryHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -444,8 +435,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_ListBranchesHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -478,13 +468,13 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 			_, err := deps.meta.CreateBranch(repoId, branchId, commitId)
 			return err
 		}
-		testutil.Must(t, createBranch("repo1", "master1", branch.GetCommit()))
-		testutil.Must(t, createBranch("repo1", "master2", branch.GetCommit()))
-		testutil.Must(t, createBranch("repo1", "master3", branch.GetCommit()))
-		testutil.Must(t, createBranch("repo1", "master4", branch.GetCommit()))
-		testutil.Must(t, createBranch("repo1", "master5", branch.GetCommit()))
-		testutil.Must(t, createBranch("repo1", "master6", branch.GetCommit()))
-		testutil.Must(t, createBranch("repo1", "master7", branch.GetCommit()))
+		testutil.Must(t, createBranch("repo1", "master1", branch.CommitId))
+		testutil.Must(t, createBranch("repo1", "master2", branch.CommitId))
+		testutil.Must(t, createBranch("repo1", "master3", branch.CommitId))
+		testutil.Must(t, createBranch("repo1", "master4", branch.CommitId))
+		testutil.Must(t, createBranch("repo1", "master5", branch.CommitId))
+		testutil.Must(t, createBranch("repo1", "master6", branch.CommitId))
+		testutil.Must(t, createBranch("repo1", "master7", branch.CommitId))
 
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(2),
@@ -525,8 +515,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 }
 
 func TestHandler_GetBranchHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -572,8 +561,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 }
 
 func TestHandler_CreateBranchHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -591,7 +579,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		}
 		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
-				SourceRefID: swag.String(branch.GetCommit()),
+				SourceRefID: swag.String(branch.CommitId),
 				ID:          swag.String("master2"),
 			},
 			RepositoryID: "repo1",
@@ -624,7 +612,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		}
 		_, err = clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
-				SourceRefID: swag.String(branch.GetCommit()),
+				SourceRefID: swag.String(branch.CommitId),
 				ID:          swag.String("master8"),
 			},
 			RepositoryID: "repo5",
@@ -636,8 +624,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteBranchHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -653,7 +640,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		_, err = deps.meta.CreateBranch("my-new-repo", "master2", branch.GetCommit())
+		_, err = deps.meta.CreateBranch("my-new-repo", "master2", branch.CommitId)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -686,8 +673,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -703,12 +689,12 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		err = deps.meta.WriteEntry("repo1", "master", "foo/bar", &model.Entry{
-			Name:      "bar",
-			Address:   "this_is_bars_address",
-			Type:      model.Entry_OBJECT,
-			Timestamp: time.Now().Unix(),
-			Size:      666,
-			Checksum:  "this_is_a_checksum",
+			Name:         "bar",
+			Address:      "this_is_bars_address",
+			EntryType:    model.EntryTypeObject,
+			CreationDate: time.Now(),
+			Size:         666,
+			Checksum:     "this_is_a_checksum",
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -732,8 +718,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -747,36 +732,36 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 	err = deps.meta.WriteEntry("repo1", "master", "foo/bar", &model.Entry{
-		Name:      "bar",
-		Address:   "this_is_bars_address",
-		Type:      model.Entry_OBJECT,
-		Timestamp: time.Now().Unix(),
-		Size:      666,
-		Checksum:  "this_is_a_checksum",
+		Name:         "bar",
+		Address:      "this_is_bars_address",
+		EntryType:    model.EntryTypeObject,
+		CreationDate: time.Now(),
+		Size:         666,
+		Checksum:     "this_is_a_checksum",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	err = deps.meta.WriteEntry("repo1", "master", "foo/baz", &model.Entry{
-		Name:      "baz",
-		Address:   "this_is_bazs_address",
-		Type:      model.Entry_OBJECT,
-		Timestamp: time.Now().Unix(),
-		Size:      666,
-		Checksum:  "baz_checksum",
+		Name:         "baz",
+		Address:      "this_is_bazs_address",
+		EntryType:    model.EntryTypeObject,
+		CreationDate: time.Now(),
+		Size:         666,
+		Checksum:     "baz_checksum",
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	err = deps.meta.WriteEntry("repo1", "master", "foo/a_dir/baz", &model.Entry{
-		Name:      "baz",
-		Address:   "this_is_bazs_address",
-		Type:      model.Entry_OBJECT,
-		Timestamp: time.Now().Unix(),
-		Size:      666,
-		Checksum:  "baz_checksum",
+		Name:         "baz",
+		Address:      "this_is_bazs_address",
+		EntryType:    model.EntryTypeObject,
+		CreationDate: time.Now(),
+		Size:         666,
+		Checksum:     "baz_checksum",
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -822,8 +807,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -849,12 +833,12 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Size:     blob.Size,
 	}
 	entry := &model.Entry{
-		Name:      "bar",
-		Address:   ident.Hash(obj),
-		Type:      model.Entry_OBJECT,
-		Timestamp: time.Now().Unix(),
-		Size:      blob.Size,
-		Checksum:  blob.Checksum,
+		Name:         "bar",
+		Address:      ident.Hash(obj),
+		EntryType:    model.EntryTypeObject,
+		CreationDate: time.Now(),
+		Size:         blob.Size,
+		Checksum:     blob.Checksum,
 	}
 	err = deps.meta.WriteFile("repo1", "master", "foo/bar", entry, obj)
 
@@ -885,8 +869,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -938,8 +921,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
