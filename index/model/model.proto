@@ -22,7 +22,7 @@ message Object {
 }
 
 message ObjectDedup {
-    bytes dedupId = 1; // used as ETag in S3
+    string dedupId = 1; // used as ETag in S3
     string objectID = 2;
 }
 
