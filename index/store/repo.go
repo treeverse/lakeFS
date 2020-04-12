@@ -32,7 +32,7 @@ type RepoReadOnlyOperations interface {
 	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
 	ListMultipartUploads() ([]*model.MultipartUpload, error)
 	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
-	GetObjectDedup(DedupId []byte) (*model.ObjectDedup, error)
+	GetObjectDedup(DedupId string) (*model.ObjectDedup, error)
 }
 
 type RepoOperations interface {
@@ -236,9 +236,9 @@ func (s *KVRepoReadOnlyOperations) ReadMultipartUpload(uploadId string) (*model.
 	return m, s.query.GetAsProto(m, SubspacesMultipartUploads, db.CompositeStrings(s.repoId, uploadId))
 }
 
-func (s *KVRepoReadOnlyOperations) GetObjectDedup(DedupId []byte) (*model.ObjectDedup, error) {
+func (s *KVRepoReadOnlyOperations) GetObjectDedup(DedupId string) (*model.ObjectDedup, error) {
 	m := &model.ObjectDedup{}
-	return m, s.query.GetAsProto(m, SubspacesDedup, db.CompositeBytes([]byte(s.repoId), DedupId))
+	return m, s.query.GetAsProto(m, SubspacesDedup, db.CompositeStrings(s.repoId, DedupId))
 }
 
 func (s *KVRepoReadOnlyOperations) ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error) {
@@ -293,7 +293,7 @@ func (s *KVRepoOperations) WriteToWorkspacePath(branch, path string, entry *mode
 }
 
 func (s *KVRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
-	return s.query.SetProto(dedup, SubspacesDedup, db.CompositeBytes([]byte(s.repoId), dedup.DedupId))
+	return s.query.SetProto(dedup, SubspacesDedup, db.CompositeStrings(s.repoId, dedup.DedupId))
 }
 
 func (s *KVRepoOperations) ClearWorkspace(branch string) error {

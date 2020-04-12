@@ -60,7 +60,7 @@ type Index interface {
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
-	CreateDedupEntryIfNone(repoId string, dedupId []byte, objName string) string
+	CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error)
 }
 
 func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
@@ -1217,8 +1217,8 @@ func (index *KVIndex) Tree(repoId, branch string) error {
 	return err
 }
 
-func (index *KVIndex) CreateDedupEntryIfNone(repoId string, dedupId []byte, objName string) string {
-	objectId, _ := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *KVIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
+	objectId, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		dedupObj, err := tx.GetObjectDedup(dedupId)
 		if err == nil {
 			return dedupObj.ObjectID, nil
@@ -1228,13 +1228,13 @@ func (index *KVIndex) CreateDedupEntryIfNone(repoId string, dedupId []byte, objN
 			d.DedupId = dedupId
 			err = tx.WriteObjectDedup(d)
 			if err != nil {
-
+				index.log().WithError(err).Error("failed writing dedup record")
 			}
-			return nil, nil
+			return objName, err
 		} else {
-			index.log().WithError(err).Error("could not create dedup record")
-			return nil, err
+			index.log().WithError(err).Error("Error reading  dedup record")
+			return objName, err
 		}
 	})
-	return objectId.(string)
+	return objectId.(string), err
 }
