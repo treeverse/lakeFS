@@ -28,7 +28,7 @@ jobs:
       - name: install UI dependencies
         run: npm install
         working-directory: ./webui
-      - name: Set up Go 1.13
+      - name: Set up Go 1.14
         uses: actions/setup-go@v1
         with:
           go-version: 1.14
