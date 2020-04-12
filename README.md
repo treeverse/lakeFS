@@ -109,7 +109,7 @@ This is the indexing interface (simplified):
     * write to workspace
 * **on delete:**
     * do read logic to ensure object exists (either in workspace or tree)
-    * if so, write a tombstone to KV
+    * if so, write a tombstone to workspace
 * **on list:**
     * traverse commit_root, union with workspace (if ref is branch) and enumerate children
 * **on commit:**
@@ -126,7 +126,7 @@ This is the indexing interface (simplified):
     * write new commit hash to branch
     * Prohibit merging into branch that has workspace entries (i.e. dirty writes)
 * **on delete branch:**
-    * delete branch kv entry
+    * delete branch entries
     * clear range on workspace
     * gc for workspace root if it's different from commit root
 

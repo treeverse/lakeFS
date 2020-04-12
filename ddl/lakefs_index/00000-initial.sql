@@ -42,8 +42,6 @@ CREATE TABLE entries (
     PRIMARY KEY (repository_id, parent_address, name)
 );
 
-CREATE INDEX id_entries_parent_address ON entries (repository_id, parent_address);
-
 
 CREATE TABLE commits (
     repository_id varchar(64) REFERENCES repositories(id) NOT NULL,

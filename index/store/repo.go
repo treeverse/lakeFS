@@ -79,7 +79,7 @@ func (o *DBRepoOperations) ListBranches(prefix string, amount int, after string)
 	var hasMore bool
 	var branches []*model.Branch
 
-	prefixCond := fmt.Sprintf("%s%%", prefix)
+	prefixCond := db.Prefix(prefix)
 	if amount >= 0 {
 		err = o.tx.Select(&branches, `SELECT * FROM branches WHERE repository_id = $1 AND id like $2 AND id > $3 ORDER BY id ASC LIMIT $4`,
 			o.repoId, prefixCond, after, amount+1)
@@ -255,7 +255,7 @@ func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) err
 			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum)
 			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT ON CONSTRAINT entries_pkey
-			DO UPDATE SET address = $4, type = $5, creation_date = $6, size = $7, checksum = $8`,
+			DO NOTHING`,
 			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum)
 		if err != nil {
 			return err
@@ -268,7 +268,7 @@ func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
 	_, err := o.tx.Exec(`
 		INSERT INTO roots (repository_id, address, creation_date, size) VALUES ($1, $2, $3, $4)
 		ON CONFLICT ON CONSTRAINT roots_pkey
-		DO UPDATE SET creation_date = $3, size = $4`,
+		DO NOTHING`,
 		o.repoId, address, root.CreationDate, root.Size)
 	return err
 }

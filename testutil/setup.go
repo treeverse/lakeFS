@@ -96,7 +96,7 @@ func GetDB(t *testing.T, uri, schemaName string) db.Database {
 	// create connection
 	conn, err := sqlx.Connect("pgx", fmt.Sprintf("%s&search_path=%s", uri, generatedSchema))
 	if err != nil {
-		t.Fatalf("could not read DDL file: %s", err)
+		t.Fatalf("could not connect to PostgreSQL: %s", err)
 	}
 
 	t.Cleanup(func() {
