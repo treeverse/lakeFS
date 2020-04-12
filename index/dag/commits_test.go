@@ -140,7 +140,7 @@ func TestBfsScan(t *testing.T) {
 			}
 			ids := make([]string, len(commits))
 			for cid, commit := range commits {
-				ids[cid] = commit.GetAddress()
+				ids[cid] = commit.Address
 			}
 			if !reflect.DeepEqual(tcase.Expected, ids) {
 				t.Fatalf("expected %v got %v", tcase.Expected, ids)
