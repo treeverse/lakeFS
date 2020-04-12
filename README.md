@@ -99,9 +99,6 @@ It uses a minimal surface area of S3 to achieve this to allow for maximum portab
 The indexing service holds the Merkle tree implementation and tracks operations to the repo. This is the brain.
 This is the indexing interface (simplified):
 
-### Data model
-
-
 
 ### Operations
 
