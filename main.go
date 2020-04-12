@@ -37,8 +37,8 @@ var initCmd = &cobra.Command{
 		conf := setupConf(cmd)
 		adb := conf.BuildAuthDatabase()
 
-		userEmail, _ := cmd.Flags().GetString("user-email")
-		userFullName, _ := cmd.Flags().GetString("user-name")
+		userEmail, _ := cmd.Flags().GetString("email")
+		userFullName, _ := cmd.Flags().GetString("full-name")
 
 		authService := auth.NewDBAuthService(adb)
 		user := &model.User{
@@ -198,11 +198,10 @@ func init() {
 	_ = treeCmd.MarkFlagRequired("repo")
 	_ = treeCmd.MarkFlagRequired("branch")
 
-	initCmd.Flags().String("user-email", "", "E-mail of the user to generate")
-	initCmd.Flags().String("user-name", "", "Full name of the user to generate")
-	_ = initCmd.MarkFlagRequired("user-id")
-	_ = initCmd.MarkFlagRequired("user-email")
-	_ = initCmd.MarkFlagRequired("user-name")
+	initCmd.Flags().String("email", "", "E-mail of the user to generate")
+	initCmd.Flags().String("full-name", "", "Full name of the user to generate")
+	_ = initCmd.MarkFlagRequired("email")
+	_ = initCmd.MarkFlagRequired("full-name")
 
 	rootCmd.AddCommand(treeCmd)
 	rootCmd.AddCommand(runCmd)
