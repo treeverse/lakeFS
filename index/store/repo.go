@@ -155,12 +155,22 @@ func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount
 	var hasMore bool
 	var entries []*model.Entry
 
-	if amount >= 0 {
-		err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC LIMIT $5`,
-			o.repoId, addr, db.Prefix(prefix), after, amount+1)
+	if len(after) == 0 {
+		if amount >= 0 {
+			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 ORDER BY name ASC LIMIT $4`,
+				o.repoId, addr, db.Prefix(prefix), amount+1)
+		} else {
+			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 ORDER BY name ASC`,
+				o.repoId, addr, db.Prefix(prefix))
+		}
 	} else {
-		err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC`,
-			o.repoId, addr, db.Prefix(prefix), after)
+		if amount >= 0 {
+			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC LIMIT $5`,
+				o.repoId, addr, db.Prefix(prefix), after, amount+1)
+		} else {
+			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC`,
+				o.repoId, addr, db.Prefix(prefix), after)
+		}
 	}
 
 	if err != nil {
