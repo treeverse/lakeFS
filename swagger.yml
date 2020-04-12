@@ -38,7 +38,7 @@ definitions:
     type: object
     properties:
       id:
-        type: string
+        type: integer
 
   pagination:
     type: object
