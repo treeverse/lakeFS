@@ -170,6 +170,35 @@ func NewDBIndex(db db.Database, opts ...Option) *DBIndex {
 	return kvi
 }
 
+func (index *DBIndex) log() logging.Logger {
+	return logging.FromContext(index.ctx).WithField("service_name", "index")
+}
+
+type loggingStore struct {
+	ctx    context.Context
+	store  store.Store
+	fields logging.Fields
+}
+
+func (l *loggingStore) Transact(fn func(ops store.ClientOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
+	opts = append(opts, db.WithLogger(logging.FromContext(l.ctx).WithFields(l.fields)))
+	return l.store.Transact(fn, opts...)
+}
+
+func (l *loggingStore) RepoTransact(repoId string, fn func(ops store.RepoOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
+	opts = append(opts, db.WithLogger(logging.FromContext(l.ctx).WithFields(l.fields)))
+	return l.store.RepoTransact(repoId, fn, opts...)
+}
+
+// Business logic
+func (index *DBIndex) WithContext(ctx context.Context) Index {
+	return &DBIndex{
+		store:       &loggingStore{ctx, index.store, logging.Fields{"service_name": "index"}},
+		tsGenerator: index.tsGenerator,
+		ctx:         ctx,
+	}
+}
+
 type reference struct {
 	commit   *model.Commit
 	branch   *model.Branch
@@ -218,19 +247,6 @@ func resolveRef(tx store.RepoOperations, ref string) (*reference, error) {
 		branch:   branch,
 		isBranch: true,
 	}, nil
-}
-
-func (index *DBIndex) log() logging.Logger {
-	return logging.FromContext(index.ctx).WithField("service_name", "index")
-}
-
-// Business logic
-func (index *DBIndex) WithContext(ctx context.Context) Index {
-	return &DBIndex{
-		store:       index.store,
-		tsGenerator: index.tsGenerator,
-		ctx:         ctx,
-	}
 }
 
 func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error) {
@@ -830,7 +846,7 @@ func (index *DBIndex) GetCommit(repoId, commitId string) (*model.Commit, error) 
 	if err != nil {
 		return nil, err
 	}
-	commit, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
+	commit, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		return tx.ReadCommit(commitId)
 	}, db.ReadOnly())
 	if err != nil {
@@ -1201,7 +1217,7 @@ func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 			index.log().WithError(err).Error("could not write branch")
 		}
 		return nil, err
-	}, db.WithLogger(index.log()))
+	})
 	return err
 }
 
@@ -1283,6 +1299,6 @@ func (index *DBIndex) Tree(repoId, branch string) error {
 		m := merkle.New(r.WorkspaceRoot)
 		m.WalkAll(tx)
 		return nil, nil
-	})
+	}, db.ReadOnly())
 	return err
 }
