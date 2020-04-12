@@ -2,7 +2,7 @@ name: Go
 on: [push]
 jobs:
   validator:
-    name: Checks Validators
+    name: Run Linters and Checkers
     runs-on: ubuntu-latest
     steps:
       - name: Set up Go 1.14
@@ -16,7 +16,7 @@ jobs:
         run: |
           make checks-validator
   test:
-    name: Code Test
+    name: Run Test Suite
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
