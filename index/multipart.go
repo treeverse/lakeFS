@@ -44,13 +44,17 @@ func NewDBMultipartManager(db store.Store) *DBMultipartManager {
 
 func (m *DBMultipartManager) WithContext(ctx context.Context) MultipartManager {
 	return &DBMultipartManager{
-		db:  m.db,
+		db:  store.WithLogger(m.db, multipartLogger(ctx)),
 		ctx: ctx,
 	}
 }
 
+func multipartLogger(ctx context.Context) logging.Logger {
+	return logging.FromContext(ctx).WithFields(logging.Fields{"service_name": "multipart_manager"})
+}
+
 func (m *DBMultipartManager) log() logging.Logger {
-	return logging.FromContext(m.ctx)
+	return multipartLogger(m.ctx)
 }
 
 func (m *DBMultipartManager) generateId() string {

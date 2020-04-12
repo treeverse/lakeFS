@@ -170,30 +170,18 @@ func NewDBIndex(db db.Database, opts ...Option) *DBIndex {
 	return kvi
 }
 
+func indexLogger(ctx context.Context) logging.Logger {
+	return logging.FromContext(ctx).WithField("service_name", "index")
+}
+
 func (index *DBIndex) log() logging.Logger {
-	return logging.FromContext(index.ctx).WithField("service_name", "index")
-}
-
-type loggingStore struct {
-	ctx    context.Context
-	store  store.Store
-	fields logging.Fields
-}
-
-func (l *loggingStore) Transact(fn func(ops store.ClientOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
-	opts = append(opts, db.WithLogger(logging.FromContext(l.ctx).WithFields(l.fields)))
-	return l.store.Transact(fn, opts...)
-}
-
-func (l *loggingStore) RepoTransact(repoId string, fn func(ops store.RepoOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
-	opts = append(opts, db.WithLogger(logging.FromContext(l.ctx).WithFields(l.fields)))
-	return l.store.RepoTransact(repoId, fn, opts...)
+	return indexLogger(index.ctx)
 }
 
 // Business logic
 func (index *DBIndex) WithContext(ctx context.Context) Index {
 	return &DBIndex{
-		store:       &loggingStore{ctx, index.store, logging.Fields{"service_name": "index"}},
+		store:       store.WithLogger(index.store, indexLogger(ctx)),
 		tsGenerator: index.tsGenerator,
 		ctx:         ctx,
 	}

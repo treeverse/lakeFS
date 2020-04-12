@@ -235,16 +235,8 @@ func (s *DBAuthService) GetAPICredentials(accessKey string) (*model.Credential, 
 
 func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	resp, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, req.UserID)
-		if xerrors.Is(err, db.ErrNotFound) {
-			return nil, ErrUserNotFound
-		}
-		if err != nil {
-			return nil, err
-		}
-
 		// resolve all policies attached to roles attached to the user
+		var err error
 		var userPolicies []*model.Policy
 		err = tx.Select(&userPolicies, `
 			SELECT distinct policies.id, policies.arn, policies.permission FROM policies
