@@ -1,9 +1,13 @@
 package store_test
 
 import (
+	"log"
+	"os"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/ory/dockertest/v3"
 
 	"github.com/treeverse/lakefs/testutil"
 
@@ -15,28 +19,44 @@ import (
 	"golang.org/x/xerrors"
 )
 
+var (
+	pool        *dockertest.Pool
+	databaseUri string
+)
+
+func TestMain(m *testing.M) {
+	var err error
+	var closer func()
+	pool, err = dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to Docker: %s", err)
+	}
+	databaseUri, closer = testutil.GetDBInstance(pool)
+	code := m.Run()
+	closer() // cleanup
+	os.Exit(code)
+}
+
 func TestReadRepo(t *testing.T) {
-	bdb, close := testutil.GetDB(t)
-	kv := store.NewKVStore(bdb)
-	defer close()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
 
 	n := time.Now()
 	repoId := "something that doesnt exist"
 
-	kv.ReadTransact(func(ops store.ClientReadOnlyOperations) (i interface{}, e error) {
+	str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		_, err := ops.ReadRepo(repoId)
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected not found error, got %v instead", err)
 		}
 		return nil, nil
-	})
+	}, db.ReadOnly())
 
-	kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		err := ops.WriteRepo(&model.Repo{
-			RepoId:             repoId,
-			CreationDate:       n.Unix(),
-			DefaultBranch:      "master",
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            repoId,
+			CreationDate:  n,
+			DefaultBranch: "master",
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -44,59 +64,53 @@ func TestReadRepo(t *testing.T) {
 		return nil, nil
 	})
 
-	kv.ReadTransact(func(ops store.ClientReadOnlyOperations) (i interface{}, e error) {
+	str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		repo, err := ops.ReadRepo(repoId)
 		if err != nil {
 			t.Fatalf("expected repo to exist, got error: %v\n", err)
 		}
-		if !strings.EqualFold(repo.GetRepoId(), repoId) {
-			t.Fatalf("expceted to get back the repo we wrote with ID: %s, got %s", repoId, repo.GetRepoId())
+		if !strings.EqualFold(repo.Id, repoId) {
+			t.Fatalf("expceted to get back the repo we wrote with ID: %s, got %s", repoId, repo.Id)
 		}
 		return nil, nil
-	})
+	}, db.ReadOnly())
 }
 
 func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
-	bdb, close := testutil.GetDB(t)
-	kv := store.NewKVStore(bdb)
-	defer close()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
+	now := time.Now()
 
-	now := time.Now().Unix()
-
-	_, err := kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err := str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		var err error
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo1",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "repo1",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo2",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "repo2",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo3",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "repo3",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "yet another repo",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "yet another repo",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -108,7 +122,7 @@ func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err = str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		repos, _, err := ops.ListRepos(-1, "")
 		if err != nil {
 			t.Fatal(err)
@@ -123,30 +137,27 @@ func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
 	}
 }
 func TestKVClientOperations_DeleteRepo(t *testing.T) {
-	bdb, close := testutil.GetDB(t)
-	kv := store.NewKVStore(bdb)
-	defer close()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
 
-	now := time.Now().Unix()
+	now := time.Now()
 
-	_, err := kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err := str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		var err error
 		//should not be deleted
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo1",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "repo1",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 		// Should be deleted
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo1asprefix",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "repo1asprefix",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -157,7 +168,7 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err = str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		var err error
 		err = ops.DeleteRepo("repo1")
 		if err != nil {
@@ -169,7 +180,7 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err = str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		_, err := ops.ReadRepo("repo1")
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected repo to be deleted, instead got error: %v", err)
@@ -187,19 +198,17 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 }
 
 func TestKVClientOperations_WriteRepo(t *testing.T) {
-	bdb, close := testutil.GetDB(t)
-	kv := store.NewKVStore(bdb)
-	defer close()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
 
-	now := time.Now().Unix()
+	now := time.Now()
 
-	_, err := kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err := str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		var err error
 		err = ops.WriteRepo(&model.Repo{
-			RepoId:             "repo1",
-			CreationDate:       now,
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: index.DefaultPartialCommitRatio,
+			Id:            "repo1",
+			CreationDate:  now,
+			DefaultBranch: index.DefaultBranch,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -211,7 +220,7 @@ func TestKVClientOperations_WriteRepo(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	_, err = kv.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
+	_, err = str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		_, err := ops.ReadRepo("repo1")
 		if xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected to read created repo, instead got error: %v", err)
@@ -221,5 +230,4 @@ func TestKVClientOperations_WriteRepo(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 }

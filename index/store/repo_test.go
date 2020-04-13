@@ -14,27 +14,28 @@ import (
 )
 
 func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
+	_, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
+	str.RepoTransact(repo.Id, func(ops store.RepoOperations) (i interface{}, e error) {
 		master, err := ops.ReadBranch("master")
 		if err != nil {
 			t.Fatal(err)
 		}
 		err = ops.WriteBranch("dev-work1", &model.Branch{
-			Name:       "dev-work1",
-			Commit:     master.GetCommit(),
-			CommitRoot: master.GetCommitRoot(),
+			Id:         "dev-work1",
+			CommitId:   master.CommitId,
+			CommitRoot: master.CommitRoot,
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
 		err = ops.WriteBranch("dev-work2", &model.Branch{
-			Name:       "dev-work2",
-			Commit:     master.GetCommit(),
-			CommitRoot: master.GetCommitRoot(),
+			Id:         "dev-work2",
+			CommitId:   master.CommitId,
+			CommitRoot: master.CommitRoot,
 		})
 		if err != nil {
 			t.Fatal(err)
@@ -42,7 +43,7 @@ func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
 		return nil, nil
 	})
 
-	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
+	str.RepoTransact(repo.Id, func(ops store.RepoOperations) (i interface{}, e error) {
 		branches, _, err := ops.ListBranches("", -1, "")
 		if err != nil {
 			t.Fatal(err)
@@ -54,56 +55,55 @@ func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
 	})
 }
 
+func dstr(d string) *string {
+	return &d
+}
+
 func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
+	_, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	n := time.Now().Unix()
+	n := time.Now()
 
-	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
+	str.RepoTransact(repo.Id, func(ops store.RepoOperations) (i interface{}, e error) {
 		var err error
-		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/bar", &model.WorkspaceEntry{
-			Path: "/foo/bar",
-			Entry: &model.Entry{
-				Name:      "bar",
-				Address:   "d41d8cd98f00b204e9800998ecf8427e",
-				Type:      model.Entry_OBJECT,
-				Timestamp: n,
-				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
-			},
+		err = ops.WriteToWorkspacePath(repo.DefaultBranch, "/foo/", "/foo/bar", &model.WorkspaceEntry{
+			Path:              "/foo/bar",
+			EntryName:         dstr("bar"),
+			EntryAddress:      dstr("d41d8cd98f00b204e9800998ecf8427e"),
+			EntryType:         dstr(model.EntryTypeObject),
+			EntryChecksum:     dstr("d41d8cd98f00b204e9800998ecf8427e"),
+			EntryCreationDate: &n,
 		})
 
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/baz/bar", &model.WorkspaceEntry{
-			Path: "/foo/baz/bar",
-			Entry: &model.Entry{
-				Name:      "bar",
-				Address:   "d41d8cd98f00b204e9800998ecf8427e",
-				Type:      model.Entry_OBJECT,
-				Timestamp: n,
-				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
-			},
+		err = ops.WriteToWorkspacePath(repo.DefaultBranch, "/foo/baz/", "/foo/baz/bar", &model.WorkspaceEntry{
+			Path:              "/foo/baz/bar",
+			EntryName:         dstr("bar"),
+			EntryAddress:      dstr("d41d8cd98f00b204e9800998ecf8427e"),
+			EntryType:         dstr(model.EntryTypeObject),
+			EntryCreationDate: &n,
+			EntryChecksum:     dstr("d41d8cd98f00b204e9800998ecf8427e"),
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/baz/barrrr", &model.WorkspaceEntry{
-			Path: "/foo/baz/barrrr",
-			Entry: &model.Entry{
-				Name:      "barrrr",
-				Address:   "d41d8cd98f00b204e9800998ecf8427e",
-				Type:      model.Entry_OBJECT,
-				Timestamp: n,
-				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
-			},
+		err = ops.WriteToWorkspacePath(repo.DefaultBranch, "/foo/baz/", "/foo/baz/barrrr", &model.WorkspaceEntry{
+			Path:              "/foo/baz/barrrr",
+			EntryName:         dstr("barrrr"),
+			EntryAddress:      dstr("d41d8cd98f00b204e9800998ecf8427e"),
+			EntryType:         dstr(model.EntryTypeObject),
+			EntryCreationDate: &n,
+			EntryChecksum:     dstr("d41d8cd98f00b204e9800998ecf8427e"),
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		wsEntries, err := ops.ListWorkspace(repo.GetDefaultBranch())
+		wsEntries, err := ops.ListWorkspace(repo.DefaultBranch)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -115,19 +115,19 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 		return nil, nil
 	})
 
-	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
-		wsEntries, err := ops.ListWorkspace(repo.GetDefaultBranch())
+	str.RepoTransact(repo.Id, func(ops store.RepoOperations) (i interface{}, e error) {
+		wsEntries, err := ops.ListWorkspace(repo.DefaultBranch)
 		if err != nil {
 			t.Fatal(err)
 		}
 		if len(wsEntries) != 3 {
 			t.Fatalf("expected 3 workspace entries, got %d", len(wsEntries))
 		}
-		err = ops.ClearWorkspace(repo.GetDefaultBranch())
+		err = ops.ClearWorkspace(repo.DefaultBranch)
 		if err != nil {
 			t.Fatal(err)
 		}
-		wsEntries, err = ops.ListWorkspace(repo.GetDefaultBranch())
+		wsEntries, err = ops.ListWorkspace(repo.DefaultBranch)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -138,8 +138,8 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 		return nil, nil
 	})
 
-	kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
-		wsEntries, err := ops.ListWorkspace(repo.GetDefaultBranch())
+	str.RepoTransact(repo.Id, func(ops store.RepoOperations) (i interface{}, e error) {
+		wsEntries, err := ops.ListWorkspace(repo.DefaultBranch)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -153,41 +153,38 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 }
 
 func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	str := store.NewDBStore(mdb)
+	_, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	n := time.Now().Unix()
+	n := time.Now()
 
-	_, err := kv.RepoTransact(repo.GetRepoId(), func(ops store.RepoOperations) (i interface{}, e error) {
+	_, err := str.RepoTransact(repo.Id, func(ops store.RepoOperations) (i interface{}, e error) {
 		var err error
-		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/bar", &model.WorkspaceEntry{
-			Path: "/foo/bar",
-			Entry: &model.Entry{
-				Name:      "bar",
-				Address:   "d41d8cd98f00b204e9800998ecf8427e",
-				Type:      model.Entry_OBJECT,
-				Timestamp: n,
-				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
-			},
+		err = ops.WriteToWorkspacePath(repo.DefaultBranch, "foo", "/foo/bar", &model.WorkspaceEntry{
+			Path:              "/foo/bar",
+			EntryName:         dstr("bar"),
+			EntryAddress:      dstr("d41d8cd98f00b204e9800998ecf8427e"),
+			EntryType:         dstr(model.EntryTypeObject),
+			EntryCreationDate: &n,
+			EntryChecksum:     dstr("d41d8cd98f00b204e9800998ecf8427e"),
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = ops.WriteToWorkspacePath(repo.GetDefaultBranch(), "/foo/baz/bar", &model.WorkspaceEntry{
-			Path: "/foo/baz/bar",
-			Entry: &model.Entry{
-				Name:      "bar",
-				Address:   "d41d8cd98f00b204e9800998ecf8427e",
-				Type:      model.Entry_OBJECT,
-				Timestamp: n,
-				Checksum:  "d41d8cd98f00b204e9800998ecf8427e",
-			},
+		err = ops.WriteToWorkspacePath(repo.DefaultBranch, "/foo/baz/", "/foo/baz/bar", &model.WorkspaceEntry{
+			Path:              "/foo/baz/bar",
+			EntryName:         dstr("bar"),
+			EntryAddress:      dstr("d41d8cd98f00b204e9800998ecf8427e"),
+			EntryType:         dstr(model.EntryTypeObject),
+			EntryCreationDate: &n,
+			EntryChecksum:     dstr("d41d8cd98f00b204e9800998ecf8427e"),
 		})
 		if err != nil {
 			t.Fatal(err)
 		}
 
-		_, err = ops.ReadFromWorkspace(repo.GetDefaultBranch(), "/foo/bbbbb")
+		_, err = ops.ReadFromWorkspace(repo.DefaultBranch, "/foo/bbbbb")
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected a not found error got %v instead", err)
 		}

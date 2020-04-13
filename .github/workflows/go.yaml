@@ -2,13 +2,13 @@ name: Go
 on: [push]
 jobs:
   validator:
-    name: Checks Validators
+    name: Run Linters and Checkers
     runs-on: ubuntu-latest
     steps:
-      - name: Set up Go 1.13
+      - name: Set up Go 1.14
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13
+          go-version: 1.14
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
@@ -16,7 +16,7 @@ jobs:
         run: |
           make checks-validator
   test:
-    name: Code Test
+    name: Run Test Suite
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
@@ -28,10 +28,10 @@ jobs:
       - name: install UI dependencies
         run: npm install
         working-directory: ./webui
-      - name: Set up Go 1.13
+      - name: Set up Go 1.14
         uses: actions/setup-go@v1
         with:
-          go-version: 1.13
+          go-version: 1.14
         id: go
       - name: Setup statik
         run: |
