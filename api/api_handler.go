@@ -490,10 +490,24 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 
-		mergeSuccess, conflicts, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, user.ID)
+		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, user.ID)
+		mergeResult := make([]*models.MergeResult, len(mergeOperations))
+
+		if err == nil || err == errors.ErrMergeConflict {
+			for i, d := range mergeOperations {
+				tmp := serializeDiff(d)
+				mergeResult[i] = new(models.MergeResult)
+				mergeResult[i].Path = tmp.Path
+				mergeResult[i].Type = tmp.Type
+				mergeResult[i].Direction = tmp.Direction
+				mergeResult[i].PathType = tmp.PathType
+			}
+		}
 		switch err {
 		case nil:
-			return merge.NewMergeIntoBranchOK().WithPayload(mergeSuccess)
+			pl := new(merge.MergeIntoBranchOKBody)
+			pl.Results = mergeResult
+			return merge.NewMergeIntoBranchOK().WithPayload(pl)
 		case errors.ErrNoMergeBase:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
 		case errors.ErrDestinationNotCommitted:
@@ -501,16 +515,10 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 		case errors.ErrBranchNotFound:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case errors.ErrMergeConflict:
-			results := make([]*models.MergeConflict, len(*conflicts))
-			for i, d := range *conflicts {
-				tmp := serializeDiff(d)
-				results[i] = new(models.MergeConflict)
-				results[i].Path = tmp.Path
-				results[i].Type = tmp.Type
-			}
-			var tmp = new(merge.MergeIntoBranchConflictBody)
-			tmp.Results = results
-			return merge.NewMergeIntoBranchConflict().WithPayload(tmp)
+
+			pl := new(merge.MergeIntoBranchConflictBody)
+			pl.Results = mergeResult
+			return merge.NewMergeIntoBranchConflict().WithPayload(pl)
 		default:
 			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 
