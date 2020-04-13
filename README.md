@@ -306,6 +306,11 @@ auth:
   db:
     # Make sure the DB connection string includes search_path (no need to create this schema beforehand)
     uri: "postgres://localhost:5432/postgres?search_path=lakefs_auth"
+  encrypt:
+    # This value must be set by the user.
+    # In production it's recommended to read this value from a safe place like AWS KMS or Hashicorp Vault
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc09e90b6641393a0a89d1a645dcf990fbd5f48cae092a5eee7b804e45c7d6a20e6b840e8124334312e01dde9a087228485512feb0780f4589d01fd2cc825dbb1925c3968c95083c2fca5ac07d61a10d15fdb6f43236dc5347dddfa3e7852f1654410ef53082b0007f33387dcdfd735c5b48e61991ceef3e8bba7267af4f0383a73af07b0c767ddd78b9a771ccb8be3d6662191f1b76d0e725ac59f1a63d110b018c2d0a727097ed9363fcb3f822d8dc7f12584bda25182cd74fece779977ca24caf774a3d5e3579228b27bbac99a5b7384367a5a6f3da629d00159edec45bc8fa"
+
 
 blockstore:
   type: s3 # or "local"
@@ -341,6 +346,7 @@ Here's a list of all possible values used in the configuration:
 | `logging.output`                              | string                                              | `"-"`                                                           | where to write the log to (`"-"` meaning stdout. Otherwise will be treated as file name                                                   |
 | `metadata.db.uri`                             | string                                              | `"postgres://localhost:5432/postgres?search_path=lakefs_index"` | Valid PostgreSQL connection string that includes a search_path query parameter (schema name to use. Doesn't have to exist)                |
 | `auth.db.uri`                                 | string                                              | `"postgres://localhost:5432/postgres?search_path=lakefs_auth"`  | Valid PostgreSQL connection string that includes a search_path query parameter (schema name to use. Doesn't have to exist)                |
+| `auth.encrypt.secret_key`                     | string                                              | N/A                                                             | Required. This key is used as a symmetric encryption key to store sensitive data encrypted. Store in a KMS or somewhere safe!             |
 | `blockstore.type`                             | one of `["local", "s3"]`                            | `"local"`                                                       | Where to store the actual data files written to the system                                                                                |
 | `blockstore.local.path`                       | string                                              | `" ~/lakefs/data"`                                              | Directory to store data written to the system when using the local blockstore type                                                        |
 | `blockstore.s3.region`                        | string                                              | `"us-east-1"`                                                   | Region used when writing to Amazon S3                                                                                                     | 

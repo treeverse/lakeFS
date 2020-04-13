@@ -74,6 +74,7 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
 	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
+
 	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
 
 	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
@@ -299,6 +300,10 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\" or \"local\"",
 			viper.GetString("blockstore.type")))
 	}
+}
+
+func (c *Config) GetAuthEncryptionSecret() string {
+	return viper.GetString("auth.encrypt.secret_key")
 }
 
 func (c *Config) GetS3GatewayRegion() string {
