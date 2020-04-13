@@ -3,7 +3,6 @@ package index
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/api/gen/models"
 	"math/rand"
 	"strings"
 	"time"
@@ -57,7 +56,7 @@ type Index interface {
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
-	Merge(repoId, source, destination, userId string) (*models.MergeSuccess, *[]merkle.Difference, error)
+	Merge(repoId, source, destination, userId string) (merkle.Differences, error)
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
@@ -1073,17 +1072,16 @@ func (index *KVIndex) RevertObject(repoId, branch, path string) error {
 	return index.revertPath(repoId, branch, path, model.Entry_OBJECT)
 }
 
-func (index *KVIndex) Merge(repoId, source, destination, userId string) (*models.MergeSuccess, *[]merkle.Difference, error) {
+func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
 		ValidateRef(destination))
 	if err != nil {
-		return nil, nil, err
+		return nil, err
 	}
 	ts := index.tsGenerator()
-	var conflicts []merkle.Difference
-	mergeCounter := new(models.MergeSuccess)
+	var mergeOperations merkle.Differences
 	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// check that destination has no uncommitted changes
 		destinationBranch, err := tx.ReadBranch(destination)
@@ -1104,41 +1102,39 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (*models
 		if err != nil {
 			return nil, err
 		}
+		var isConflict bool
 		for _, dif := range df {
 			if dif.Direction == merkle.DifferenceDirectionConflict {
-				conflicts = append(conflicts, dif)
+				isConflict = true
+			}
+			if dif.Direction != merkle.DifferenceDirectionRight {
+				mergeOperations = append(mergeOperations, dif)
 			}
 		}
-		if len(conflicts) > 0 {
-			return conflicts, errors.ErrMergeConflict
+		if isConflict {
+			return nil, errors.ErrMergeConflict
 		}
 		// update destination with source changes
 		var wsEntries []*model.WorkspaceEntry
 		sourceBranch, err := tx.ReadBranch(source)
 		if err != nil {
 			index.log().WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
+			return nil, err
 		}
-		for _, dif := range df {
+		for _, dif := range mergeOperations {
 			var e *model.Entry
 			m := merkle.New(sourceBranch.GetWorkspaceRoot())
-			if dif.Direction == merkle.DifferenceDirectionLeft {
-				if dif.Type != merkle.DifferenceTypeRemoved {
-					if dif.Type == merkle.DifferenceTypeAdded {
-						mergeCounter.Created++
-					} else if dif.Type == merkle.DifferenceTypeChanged {
-						mergeCounter.Updated++
-					}
-					e, err = m.GetEntry(tx, dif.Path, dif.PathType)
-					if err != nil {
-						index.log().WithError(err).Fatal("failed reading entry\n")
-					}
-				} else {
-					mergeCounter.Removed++
-					e = new(model.Entry)
-					p := strings.Split(dif.Path, "/")
-					e.Name = p[len(p)-1]
-					e.Type = dif.PathType
+			if dif.Type != merkle.DifferenceTypeRemoved {
+				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
+				if err != nil {
+					index.log().WithError(err).Fatal("failed reading entry\n")
+					return nil, err
 				}
+			} else {
+				e = new(model.Entry)
+				p := strings.Split(dif.Path, "/")
+				e.Name = p[len(p)-1]
+				e.Type = dif.PathType
 			}
 			w := new(model.WorkspaceEntry)
 			w.Entry = e
@@ -1159,16 +1155,13 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (*models
 		commitMessage := "Merge branch " + source + " into " + destination
 		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts)
 
-		return mergeCounter, nil
+		return mergeOperations, nil
 
 	})
-	switch err {
-	case nil:
-		return mergeCounter, nil, nil
-	case errors.ErrMergeConflict:
-		return nil, &conflicts, err
-	default:
-		return nil, nil, err
+	if err == nil || err == errors.ErrMergeConflict {
+		return mergeOperations, err
+	} else {
+		return nil, err
 	}
 }
 

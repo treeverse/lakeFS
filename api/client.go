@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/url"
 
@@ -46,7 +47,7 @@ type Client interface {
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
-	Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, []*models.MergeConflict, error)
+	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -205,7 +206,7 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) (*models.MergeSuccess, []*models.MergeConflict, error) {
+func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error) {
 	statusOK, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
 		LeftRef:      leftRef,
 		RightRef:     rightRef,
@@ -214,13 +215,13 @@ func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) (*
 	}, c.auth)
 
 	if err == nil {
-		return statusOK.Payload, nil, nil
+		return statusOK.Payload.Results, nil
 	}
 	conflict, ok := err.(*merge.MergeIntoBranchConflict)
 	if ok {
-		return nil, conflict.Payload.Results, nil
+		return conflict.Payload.Results, errors.ErrMergeConflict
 	} else {
-		return nil, nil, err
+		return nil, err
 	}
 }
 
