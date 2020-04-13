@@ -36,7 +36,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), o.Ref, o.Path)
+	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -53,13 +53,13 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		return
 	}
 
-	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.GetTimestamp()))
-	o.SetHeader("ETag", httputil.ETag(entry.GetChecksum()))
+	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
+	o.SetHeader("ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// now we might need the object itself
-	obj, err := o.Index.ReadObject(o.Repo.GetRepoId(), o.Ref, o.Path)
+	obj, err := o.Index.ReadObject(o.Repo.Id, o.Ref, o.Path)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
@@ -68,40 +68,38 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		ranger, err := NewObjectRanger(rangeSpec, o.Repo.GetBucketName(), obj, o.BlockStore, o.Log())
-		if err != nil {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidRange))
+		ranger, err := NewObjectRanger(rangeSpec, o.Repo.StorageNamespace, obj, o.BlockStore, o.Log())
+		if err == nil {
+			// range query response
+			expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
+			o.SetHeader("Content-Range",
+				fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.Size))
+			o.SetHeader("Content-Length",
+				fmt.Sprintf("%d", expected))
+			o.ResponseWriter.WriteHeader(http.StatusOK)
+			n, err := io.Copy(o.ResponseWriter, ranger)
+			if err != nil {
+				o.Log().WithError(err).Error("could not copy range to response")
+				return
+			}
+			l := o.Log().WithFields(logging.Fields{
+				"range":   ranger.Range,
+				"written": n,
+			})
+			if n != expected {
+				l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
+			} else {
+				l.Info("read the byte range requested")
+			}
 			return
 		}
-		// range query response
-		expected := ranger.Range.EndOffset - ranger.Range.StartOffset + 1 // both range ends are inclusive
-		o.SetHeader("Content-Range",
-			fmt.Sprintf("bytes %d-%d/%d", ranger.Range.StartOffset, ranger.Range.EndOffset, obj.GetSize()))
-		o.SetHeader("Content-Length",
-			fmt.Sprintf("%d", expected))
-		o.ResponseWriter.WriteHeader(http.StatusOK)
-		n, err := io.Copy(o.ResponseWriter, ranger)
-		if err != nil {
-			o.Log().WithError(err).Error("could not copy range to response")
-			return
-		}
-		l := o.Log().WithFields(logging.Fields{
-			"range":   ranger.Range,
-			"written": n,
-		})
-		if n != expected {
-			l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
-		} else {
-			l.Info("read the byte range requested")
-		}
-		return
 	}
 
 	// assemble a response body (range-less query)
-	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.GetSize()))
-	blocks := obj.GetBlocks()
+	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.Size))
+	blocks := obj.Blocks
 	for _, block := range blocks {
-		data, err := o.BlockStore.Get(o.Repo.GetBucketName(), block.GetAddress())
+		data, err := o.BlockStore.Get(o.Repo.StorageNamespace, block.Address)
 		if err != nil {
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 			return
@@ -128,7 +126,7 @@ type ObjectRanger struct {
 
 func NewObjectRanger(spec string, repo string, obj *model.Object, adapter block.Adapter, logger logging.Logger) (*ObjectRanger, error) {
 	// let's start by deciding which blocks we actually need
-	rang, err := ghttp.ParseHTTPRange(spec, obj.GetSize())
+	rang, err := ghttp.ParseHTTPRange(spec, obj.Size)
 	if err != nil {
 		logger.WithError(err).Error("failed to parse spec")
 		return nil, err
@@ -150,11 +148,11 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 
 	var returnedErr error
 	var n int
-	for _, block := range r.obj.GetBlocks() {
+	for _, block := range r.obj.Blocks {
 		// see what range we need from this block
 		thisBlockStart := scanned
-		thisBlockEnd := scanned + block.GetSize()
-		scanned += block.GetSize()
+		thisBlockEnd := scanned + block.Size
+		scanned += block.Size
 
 		if thisBlockEnd <= rangeStart {
 			continue // we haven't yet reached a block we need
@@ -175,7 +173,7 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 
 		if rangeEnd > thisBlockEnd {
 			// we need to read this entire block
-			endPosition = block.GetSize()
+			endPosition = block.Size
 		} else {
 			// we need to read up to rangeEnd
 			endPosition = rangeEnd - thisBlockStart
@@ -183,11 +181,11 @@ func (r *ObjectRanger) Read(p []byte) (int, error) {
 
 		// read the actual data required from the block
 		var data []byte
-		cacheKey := fmt.Sprintf("%s:%d-%d", block.GetAddress(), startPosition, endPosition)
+		cacheKey := fmt.Sprintf("%s:%d-%d", block.Address, startPosition, endPosition)
 		if strings.EqualFold(r.rangeAddress, cacheKey) {
 			data = r.rangeBuffer[startPosition:endPosition]
 		} else {
-			reader, err := r.adapter.GetRange(r.Repo, block.GetAddress(), startPosition, endPosition)
+			reader, err := r.adapter.GetRange(r.Repo, block.Address, startPosition, endPosition)
 			if err != nil {
 				return n, err
 			}
