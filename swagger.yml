@@ -70,27 +70,20 @@ definitions:
       bucket_name:
         type: string
 
-  mergeSuccess:
-    type: object
-    properties:
-      created:
-        type: integer
-        format: int
-      updated:
-        type: integer
-        format: int
-      removed:
-        type: integer
-        format: int
-
-  mergeConflict:
+  mergeResult:
     type: object
     properties:
       type:
         type: string
         enum: [ADDED, REMOVED, CHANGED]
+      direction:
+        type: string
+        enum: [LEFT, RIGHT, CONFLICT]
       path:
         type: string
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
 
   repository_creation:
     type: object
@@ -567,7 +560,12 @@ paths:
         200:
           description: merge compleated
           schema:
-            $ref: "#/definitions/mergeSuccess"
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/mergeResult"
         401:
           description: Unauthorized
           schema:
@@ -584,7 +582,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/mergeConflict"
+                  $ref: "#/definitions/mergeResult"
         default:
           description: generic error response
           schema:
