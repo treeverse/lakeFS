@@ -31,7 +31,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 const (
