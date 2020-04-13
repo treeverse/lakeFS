@@ -68,6 +68,10 @@ func ParseHTTPRange(spec string, length int64) (HttpRange, error) {
 	if err != nil {
 		return r, ErrBadRange
 	}
+	// if endOffset exceeds length return length : this is how it works in s3 (presto for example uses range with a huge endOffset regardless to the file size)
+	if endOffset > length-1 {
+		endOffset = length - 1
+	}
 	if beginOffset > length-1 || endOffset > length-1 {
 		return r, ErrBadRange
 	}

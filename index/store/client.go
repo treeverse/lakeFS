@@ -3,99 +3,73 @@ package store
 import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/golang/protobuf/proto"
 )
 
-type ClientReadOnlyOperations interface {
+type ClientOperations interface {
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	ReadRepo(repoId string) (*model.Repo, error)
-}
-
-type ClientOperations interface {
-	ClientReadOnlyOperations
 	DeleteRepo(repoId string) error
 	WriteRepo(repo *model.Repo) error
 }
 
-type KVClientReadOnlyOperations struct {
-	query db.ReadQuery
-	store db.Store
+type DBClientOperations struct {
+	tx db.Tx
 }
 
-type KVClientOperations struct {
-	*KVClientReadOnlyOperations
-	query db.Query
-}
-
-func (c *KVClientReadOnlyOperations) ReadRepo(repoId string) (*model.Repo, error) {
+func (c *DBClientOperations) ReadRepo(repoId string) (*model.Repo, error) {
 	repo := &model.Repo{}
-	return repo, c.query.GetAsProto(repo, SubspaceRepos, db.CompositeStrings(repoId))
+	err := c.tx.Get(repo, `SELECT * FROM repositories WHERE id = $1`, repoId)
+	return repo, err
 }
 
-func (c *KVClientReadOnlyOperations) ListRepos(amount int, after string) ([]*model.Repo, bool, error) {
-	repos := make([]*model.Repo, 0)
-
-	var iter db.Iterator
-	var iterClose db.IteratorCloseFn
-	if len(after) > 0 {
-		iter, iterClose = c.query.RangePrefixGreaterThan(SubspaceRepos, db.CompositeKey{}, db.CompositeStrings(after))
+func (c *DBClientOperations) ListRepos(amount int, after string) ([]*model.Repo, bool, error) {
+	var repos []*model.Repo
+	var hasMore bool
+	var err error
+	if amount < 0 {
+		err = c.tx.Select(&repos, `SELECT * FROM repositories WHERE id > $1 ORDER BY id ASC`, after)
 	} else {
-		iter, iterClose = c.query.Range(SubspaceRepos)
+		err = c.tx.Select(&repos, `SELECT * FROM repositories WHERE id > $1 ORDER BY id ASC LIMIT $2`, after, amount+1)
 	}
-	defer iterClose()
-
-	var curr int
-	var done, hasMore bool
-	for iter.Advance() {
-		if done {
-			hasMore = true
-			break
-		}
-		kv, err := iter.Get()
-		if err != nil {
-			return nil, false, err
-		}
-		repo := &model.Repo{}
-		err = proto.Unmarshal(kv.Value, repo)
-		if err != nil {
-			return nil, false, err
-		}
-		repos = append(repos, repo)
-		curr++
-		if curr == amount {
-			done = true
-		}
+	if err != nil {
+		return nil, false, err
 	}
-	return repos, hasMore, nil
+	if amount >= 0 && len(repos) > amount {
+		repos = repos[0:amount]
+		hasMore = true
+	}
+	return repos, hasMore, err
 }
 
-func (c *KVClientOperations) DeleteRepo(repoId string) error {
+func (c *DBClientOperations) DeleteRepo(repoId string) error {
 	// clear all workspaces, branches, entries, etc.
-	namespaces := []db.Namespace{
-		SubspaceWorkspace,
-		SubspaceBranches,
-		SubspaceCommits,
-		SubspaceRoots,
-		SubspaceEntries,
-		SubspaceObjects,
-		SubspaceRefCounts,
+	queries := []string{
+		`DELETE FROM multipart_upload_parts WHERE repository_id = $1`,
+		`DELETE FROM multipart_uploads WHERE repository_id = $1`,
+		`DELETE FROM workspace_entries WHERE repository_id = $1`,
+		`DELETE FROM branches WHERE repository_id = $1`,
+		`DELETE FROM commits WHERE repository_id = $1`,
+		`DELETE FROM entries WHERE repository_id = $1`,
+		`DELETE FROM roots WHERE repository_id = $1`,
+		`DELETE FROM objects WHERE repository_id = $1`,
+		`DELETE FROM repositories WHERE id = $1`,
 	}
 
-	for _, ns := range namespaces {
-		err := c.query.ClearChildren(ns, db.CompositeStrings(repoId))
+	for _, q := range queries {
+		_, err := c.tx.Exec(q, repoId)
 		if err != nil {
 			return err
 		}
 	}
-
-	err := c.query.Delete(SubspaceRepos, db.CompositeStrings(repoId))
-	if err != nil {
-		return err
-	}
 	return nil
 }
 
-func (s *KVClientOperations) WriteRepo(repo *model.Repo) error {
-	return s.query.SetProto(repo, SubspaceRepos, db.CompositeStrings(repo.GetRepoId()))
+func (c *DBClientOperations) WriteRepo(repo *model.Repo) error {
+	_, err := c.tx.Exec(
+		`INSERT INTO repositories (id, creation_date, default_branch, storage_namespace) VALUES ($1, $2, $3, $4)`,
+		repo.Id,
+		repo.CreationDate,
+		repo.DefaultBranch,
+		repo.StorageNamespace)
+	return err
 }

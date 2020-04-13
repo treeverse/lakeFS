@@ -18,9 +18,9 @@ func serializeDiff(d merkle.Difference) *models.Diff {
 	}
 
 	switch d.PathType {
-	case model.Entry_TREE:
+	case model.EntryTypeTree:
 		pathType = models.DiffPathTypeTREE
-	case model.Entry_OBJECT:
+	case model.EntryTypeObject:
 		pathType = models.DiffPathTypeOBJECT
 	}
 

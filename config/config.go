@@ -4,13 +4,14 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
 	"strings"
 	"syscall"
 
-	"github.com/treeverse/lakefs/logging"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/aws/aws-sdk-go/aws/credentials"
 
@@ -24,12 +25,13 @@ import (
 
 	"github.com/mitchellh/go-homedir"
 
-	"github.com/dgraph-io/badger"
 	"github.com/treeverse/lakefs/db"
 
 	log "github.com/sirupsen/logrus"
 
 	"github.com/spf13/viper"
+
+	_ "github.com/jackc/pgx/stdlib"
 )
 
 const (
@@ -40,9 +42,9 @@ const (
 	DefaultLoggingLevel  = "INFO"
 	DefaultLoggingOutput = "-"
 
-	DefaultMetadataDBType         = "badger"
-	DefaultMetadataBadgerPath     = "~/lakefs/metadata"
-	DefaultMetadataBadgerTruncate = true
+	DefaultDatabaseDriver = "pgx"
+	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
+	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
 
 	DefaultBlockStoreType      = "local"
 	DefaultBlockStoreLocalPath = "~/lakefs/data"
@@ -71,9 +73,8 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
-	viper.SetDefault("metadata.db.type", DefaultMetadataDBType)
-	viper.SetDefault("metadata.db.badger.path", DefaultMetadataBadgerPath)
-	viper.SetDefault("metadata.db.badger.truncate", DefaultMetadataBadgerTruncate)
+	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
+	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
 
 	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
 	viper.SetDefault("blockstore.local.path", DefaultBlockStoreLocalPath)
@@ -196,31 +197,49 @@ func (c *Config) setupLogger() {
 	}
 }
 
-func (c *Config) BuildStore() db.Store {
-
-	if !strings.EqualFold(viper.GetString("metadata.db.type"), "badger") {
-		panic(fmt.Errorf("metadata db: only badgerDB is currently supported"))
-	}
-
-	location := viper.GetString("metadata.db.badger.path")
-	location, err := homedir.Expand(location)
+func getSearchPath(uri string) (string, error) {
+	parsed, err := url.Parse(uri)
 	if err != nil {
-		panic(fmt.Errorf("could not parse metadata location URI: %s\n", err))
+		return "", err
 	}
+	sp := parsed.Query().Get("search_path")
+	if len(sp) > 0 {
+		return sp, nil
+	}
+	return "", fmt.Errorf("search_path not present in database connection string")
+}
 
-	opts := badger.DefaultOptions(location).
-		WithTruncate(viper.GetBool("metadata.db.badger.truncate")).
-		WithLogger(logging.Default().WithField("subsystem", "badger"))
-	bdb, err := badger.Open(opts)
+func setupDb(uri string) db.Database {
+	schema, err := getSearchPath(uri)
 	if err != nil {
-		panic(fmt.Errorf("could not open badgerDB database: %s\n", err))
+		panic(fmt.Errorf("could not open database: %s\n", err))
 	}
-	log.WithFields(log.Fields{
-		"type":     "badger",
-		"location": location,
-		"truncate": viper.GetBool("metadata.db.badger.truncate"),
-	}).Info("initialize metadata store")
-	return db.NewLocalDBStore(bdb)
+	conn, err := sqlx.Connect(DefaultDatabaseDriver, uri)
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	tx, err := conn.Beginx()
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	_, err = tx.Exec(fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS  %s`, schema))
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	err = tx.Commit()
+	if err != nil {
+		panic(fmt.Errorf("could not open database: %s\n", err))
+	}
+	return db.NewDatabase(conn)
+}
+
+func (c *Config) BuildMetadataDatabase() db.Database {
+	return setupDb(viper.GetString("metadata.db.uri"))
+
+}
+
+func (c *Config) BuildAuthDatabase() db.Database {
+	return setupDb(viper.GetString("auth.db.uri"))
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {
