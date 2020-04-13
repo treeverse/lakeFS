@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/auth/model"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"golang.org/x/xerrors"
@@ -59,7 +61,7 @@ func ValidateToken(ath auth.Service, token string, currentTime time.Time) (*mode
 	}
 
 	// get secret
-	secret := creds.GetAccessSecretKey()
+	secret := creds.AccessSecretKey
 
 	// compare hmac
 	sigBytes, err := hex.DecodeString(signature)
@@ -79,14 +81,18 @@ func ValidateToken(ath auth.Service, token string, currentTime time.Time) (*mode
 	}
 
 	// return user
-	user, err := ath.GetUser(creds.GetEntityId())
+	if creds.Type != model.CredentialTypeUser {
+		lg.Warn("could not get user: this is not a user credential type")
+		return nil, ErrBadToken
+	}
+	user, err := ath.GetUser(*creds.UserId)
 	if err != nil {
-		lg.WithField("user", creds.GetEntityId()).Error("could not get user")
+		lg.WithField("user", creds.UserId).Error("could not get user")
 		return nil, ErrBadToken
 	}
 
 	return &models.User{
-		ID: user.GetId(),
+		ID: int64(user.Id),
 	}, nil
 }
 

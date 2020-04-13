@@ -1,7 +1,6 @@
 package journal
 
 import (
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 )
 
@@ -24,17 +23,4 @@ func (e Event) Identity() []byte {
 
 type Journal interface {
 	Log(Event) error
-}
-
-type KVJournal struct {
-	store      db.Store
-	TopicName  string
-	Partitions int
-}
-
-func (kv *KVJournal) Log(e Event) error {
-	_, err := kv.store.Transact(func(q db.Query) (interface{}, error) {
-		return nil, nil
-	})
-	return err
 }

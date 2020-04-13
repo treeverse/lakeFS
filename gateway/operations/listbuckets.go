@@ -26,8 +26,8 @@ func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
 	buckets := make([]serde.Bucket, len(repos))
 	for i, repo := range repos {
 		buckets[i] = serde.Bucket{
-			CreationDate: serde.Timestamp(repo.GetCreationDate()),
-			Name:         repo.GetRepoId(),
+			CreationDate: serde.Timestamp(repo.CreationDate),
+			Name:         repo.Id,
 		}
 	}
 

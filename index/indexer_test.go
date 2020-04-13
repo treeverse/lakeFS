@@ -1,8 +1,12 @@
 package index_test
 
 import (
+	"log"
+	"os"
 	"testing"
 	"time"
+
+	"github.com/ory/dockertest/v3"
 
 	"github.com/treeverse/lakefs/index/path"
 
@@ -29,34 +33,50 @@ const (
 	deleteEntry
 )
 
+var (
+	pool        *dockertest.Pool
+	databaseUri string
+)
+
+func TestMain(m *testing.M) {
+	var err error
+	var closer func()
+	pool, err = dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to Docker: %s", err)
+	}
+	databaseUri, closer = testutil.GetDBInstance(pool)
+	code := m.Run()
+	closer() // cleanup
+	os.Exit(code)
+}
+
 func TestKVIndex_GetCommit(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	kvIndex := index.NewKVIndex(kv)
-
-	commit, err := kvIndex.Commit(repo.GetRepoId(), repo.GetDefaultBranch(), "test msg", "committer", nil)
+	commit, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	t.Run("get commit", func(t *testing.T) {
-		got, err := kvIndex.GetCommit(repo.GetRepoId(), commit.GetAddress())
+		got, err := kvIndex.GetCommit(repo.Id, commit.Address)
 		if err != nil {
 			t.Fatal(err)
 		}
 		//compare commitrer
-		if commit.GetCommitter() != got.GetCommitter() {
-			t.Errorf("got wrong committer. got:%s, expected:%s", got.GetCommitter(), commit.GetCommitter())
+		if commit.Committer != got.Committer {
+			t.Errorf("got wrong committer. got:%s, expected:%s", got.Committer, commit.Committer)
 		}
 		//compare message
-		if commit.GetMessage() != got.GetMessage() {
-			t.Errorf("got wrong message. got:%s, expected:%s", got.GetMessage(), commit.GetMessage())
+		if commit.Message != got.Message {
+			t.Errorf("got wrong message. got:%s, expected:%s", got.Message, commit.Message)
 		}
 	})
 
 	t.Run("get non existing commit - expect error", func(t *testing.T) {
-		_, err := kvIndex.GetCommit(repo.RepoId, "a564356445bdef")
+		_, err := kvIndex.GetCommit(repo.Id, "a564356445bdef")
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Errorf("expected to get not found error for non existing commit")
 		}
@@ -65,58 +85,57 @@ func TestKVIndex_GetCommit(t *testing.T) {
 }
 
 func TestKVIndex_RevertCommit(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	kvIndex := index.NewKVIndex(kv)
 	firstEntry := &model.Entry{
-		Name: "bar",
-		Type: model.Entry_OBJECT,
+		Name:      "bar",
+		EntryType: model.EntryTypeObject,
 	}
-	err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "", firstEntry)
+	err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "", firstEntry)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	commit, err := kvIndex.Commit(repo.RepoId, repo.DefaultBranch, "test msg", "committer", nil)
+	commit, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	commitId := ident.Hash(commit)
-	_, err = kvIndex.CreateBranch(repo.RepoId, testBranch, commitId)
+	_, err = kvIndex.CreateBranch(repo.Id, testBranch, commitId)
 	if err != nil {
 		t.Fatal(err)
 	}
 	secondEntry := &model.Entry{
-		Name: "foo",
-		Type: model.Entry_OBJECT,
+		Name:      "foo",
+		EntryType: model.EntryTypeObject,
 	}
 	// commit second entry to default branch
-	err = kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "", secondEntry)
+	err = kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "", secondEntry)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = kvIndex.Commit(repo.RepoId, repo.DefaultBranch, "test msg", "committer", nil)
+	_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	//commit second entry to test branch
-	err = kvIndex.WriteEntry(repo.RepoId, testBranch, "", secondEntry)
+	err = kvIndex.WriteEntry(repo.Id, testBranch, "", secondEntry)
 	if err != nil {
 		t.Fatal(err)
 	}
-	_, err = kvIndex.Commit(repo.RepoId, testBranch, "test msg", "committer", nil)
+	_, err = kvIndex.Commit(repo.Id, testBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = kvIndex.RevertCommit(repo.RepoId, repo.DefaultBranch, commitId)
+	err = kvIndex.RevertCommit(repo.Id, repo.DefaultBranch, commitId)
 	if err != nil {
 		t.Fatal(err)
 	}
 
 	// test entry1 exists
-	te, err := kvIndex.ReadEntryObject(repo.RepoId, repo.DefaultBranch, "bar")
+	te, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "bar")
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -124,13 +143,13 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 		t.Fatalf("missing data from requested commit")
 	}
 	// test secondEntry does not exist
-	_, err = kvIndex.ReadEntryObject(repo.RepoId, repo.DefaultBranch, "foo")
+	_, err = kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "foo")
 	if !xerrors.Is(err, db.ErrNotFound) {
 		t.Fatalf("missing data from requested commit")
 	}
 
 	// test secondEntry exists on test branch
-	_, err = kvIndex.ReadEntryObject(repo.RepoId, testBranch, "foo")
+	_, err = kvIndex.ReadEntryObject(repo.Id, testBranch, "foo")
 	if err != nil {
 		if xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("errased data from test branch after revert from defult branch")
@@ -237,10 +256,9 @@ func TestKVIndex_RevertPath(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.Name, func(t *testing.T) {
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
-			defer closer()
+			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
-			kvIndex := index.NewKVIndex(kv)
 			var err error
 			for _, action := range tc.Actions {
 				err = runCommand(kvIndex, repo, action.command, action.path)
@@ -255,7 +273,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				t.Fatalf("expected to get error but did not get any")
 			}
 			for _, entryPath := range tc.ExpectExisting {
-				_, err := kvIndex.ReadEntryObject(repo.RepoId, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
 				if err != nil {
 					if xerrors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
@@ -265,7 +283,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				}
 			}
 			for _, entryPath := range tc.ExpectMissing {
-				_, err := kvIndex.ReadEntryObject(repo.RepoId, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
 				if !xerrors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
@@ -275,21 +293,19 @@ func TestKVIndex_RevertPath(t *testing.T) {
 }
 
 func TestKVIndex_DiffWorkspace(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	kvIndex := index.NewKVIndex(kv)
-
-	err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "foo/bar", &model.Entry{
-		Name:      "bar",
-		Address:   "123456789",
-		Timestamp: time.Now().Unix(),
-		Type:      model.Entry_OBJECT,
+	err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "foo/bar", &model.Entry{
+		Name:         "bar",
+		Address:      "123456789",
+		CreationDate: time.Now(),
+		EntryType:    model.EntryTypeObject,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	diff, err := kvIndex.DiffWorkspace(repo.GetRepoId(), repo.GetDefaultBranch())
+	diff, err := kvIndex.DiffWorkspace(repo.Id, repo.DefaultBranch)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -299,22 +315,20 @@ func TestKVIndex_DiffWorkspace(t *testing.T) {
 }
 
 func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
-	kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
-	defer closer()
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
-	kvIndex := index.NewKVIndex(kv)
-
-	err := kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, "foo/bar", &model.Entry{
-		Name:      "bar",
-		Address:   "123456789",
-		Timestamp: time.Now().Unix(),
-		Type:      model.Entry_OBJECT,
+	err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "foo/bar", &model.Entry{
+		Name:         "bar",
+		Address:      "123456789",
+		CreationDate: time.Now(),
+		EntryType:    model.EntryTypeObject,
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	entries, _, err := kvIndex.ListObjectsByPrefix(repo.GetRepoId(), repo.GetDefaultBranch(), "/", "", 0, false)
+	entries, _, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, "/", "", -1, false)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -436,10 +450,9 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.Name, func(t *testing.T) {
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, tc.partialCommitRatio)
-			defer closer()
+			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
-			kvIndex := index.NewKVIndex(kv)
 			var err error
 			for _, action := range tc.Actions {
 				err = runCommand(kvIndex, repo, action.command, action.path)
@@ -454,7 +467,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 				t.Fatalf("expected to get error but did not get any")
 			}
 			for _, entryPath := range tc.ExpectExisting {
-				_, err := kvIndex.ReadEntryObject(repo.RepoId, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
 				if err != nil {
 					if xerrors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
@@ -464,7 +477,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 				}
 			}
 			for _, entryPath := range tc.ExpectMissing {
-				_, err := kvIndex.ReadEntryObject(repo.RepoId, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
 				if !xerrors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
@@ -556,16 +569,14 @@ func TestSizeConsistency(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 0)
-			defer closer()
-
-			kvIndex := index.NewKVIndex(kv)
+			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
 			for _, object := range tc.objectList {
-				err := kvIndex.WriteEntry(repo.GetRepoId(), repo.GetDefaultBranch(), object.path, &model.Entry{
-					Name: object.name,
-					Size: object.size,
-					Type: model.Entry_OBJECT,
+				err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, object.path, &model.Entry{
+					Name:      object.name,
+					Size:      object.size,
+					EntryType: model.EntryTypeObject,
 				})
 				if err != nil {
 					t.Fatal(err)
@@ -573,28 +584,28 @@ func TestSizeConsistency(t *testing.T) {
 			}
 
 			//force partial commit
-			_, err := kvIndex.Commit(repo.GetRepoId(), repo.GetDefaultBranch(), "message", "committer", nil)
+			_, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 			for _, tree := range tc.wantedTrees {
-				entry, err := kvIndex.ReadEntryTree(repo.GetRepoId(), repo.GetDefaultBranch(), tree.name)
+				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.name)
 				if err != nil {
 					t.Fatal(err)
 				}
 
 				// test entry size
-				if entry.GetSize() != tree.wantedSize {
-					t.Errorf("did not get the expected size for directory %s want: %d, got: %d", tree.name, tree.wantedSize, entry.GetSize())
+				if entry.Size != tree.wantedSize {
+					t.Errorf("did not get the expected size for directory %s want: %d, got: %d", tree.name, tree.wantedSize, entry.Size)
 				}
 			}
 
-			rootObject, err := kvIndex.ReadRootObject(repo.GetRepoId(), repo.DefaultBranch)
+			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch)
 			if err != nil {
 				t.Fatal(err)
 			}
-			if rootObject.GetSize() != tc.wantedRootSize {
-				t.Errorf("did not get the expected size for root want: %d, got: %d", tc.wantedRootSize, rootObject.GetSize())
+			if rootObject.Size != tc.wantedRootSize {
+				t.Errorf("did not get the expected size for root want: %d, got: %d", tc.wantedRootSize, rootObject.Size)
 			}
 		})
 	}
@@ -638,21 +649,22 @@ func TestTimeStampConsistency(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.name, func(t *testing.T) {
-			kv, repo, closer := testutil.GetIndexStoreWithRepo(t, 1)
-			defer closer()
+			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
+
 			now := time.Now()
 			currentTime := now
-			mockTime := func() int64 {
-				return currentTime.Unix()
+			mockTime := func() time.Time {
+				return currentTime
 			}
-			kvIndex := index.NewKVIndex(kv, index.WithTimeGenerator(mockTime))
+			kvIndex = index.NewDBIndex(mdb, index.WithTimeGenerator(mockTime))
 			for _, obj := range tc.timedObjects {
-				ts := now.Add(obj.seconds * time.Second).Unix()
-				err := kvIndex.WriteEntry(repo.GetRepoId(), repo.GetDefaultBranch(), obj.path, &model.Entry{
-					Name:      obj.name,
-					Address:   "12345678",
-					Type:      model.Entry_OBJECT,
-					Timestamp: ts,
+				ts := now.Add(obj.seconds * time.Second)
+				err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, obj.path, &model.Entry{
+					Name:         obj.name,
+					Address:      "12345678",
+					EntryType:    model.EntryTypeObject,
+					CreationDate: ts,
 				})
 				if err != nil {
 					t.Fatal(err)
@@ -660,57 +672,57 @@ func TestTimeStampConsistency(t *testing.T) {
 			}
 			for _, obj := range tc.deleteObjects {
 				currentTime = now.Add(obj.seconds * time.Second)
-				err := kvIndex.DeleteObject(repo.GetRepoId(), repo.DefaultBranch, obj.path)
+				err := kvIndex.DeleteObject(repo.Id, repo.DefaultBranch, obj.path)
 				if err != nil {
 					t.Fatal(err)
 				}
 			}
 			for _, tree := range tc.expectedTrees {
-				entry, err := kvIndex.ReadEntryTree(repo.GetRepoId(), repo.GetDefaultBranch(), tree.path)
+				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path)
 				if err != nil {
 					t.Fatal(err)
 				}
-				expectedTS := now.Add(tree.seconds * time.Second).Unix()
-				if entry.GetTimestamp() != expectedTS {
-					t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, entry.GetTimestamp())
+				expectedTS := now.Add(tree.seconds * time.Second)
+				if entry.CreationDate.Unix() != expectedTS.Unix() {
+					t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, entry.CreationDate)
 				}
 			}
 
-			rootObject, err := kvIndex.ReadRootObject(repo.GetRepoId(), repo.DefaultBranch)
+			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch)
 			if err != nil {
 				t.Fatal(err)
 			}
-			expectedTS := now.Add(tc.expectedRootTS * time.Second).Unix()
-			if rootObject.GetTimestamp() != expectedTS {
-				t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, rootObject.GetTimestamp())
+			expectedTS := now.Add(tc.expectedRootTS * time.Second)
+			if rootObject.CreationDate.Unix() != expectedTS.Unix() {
+				t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, rootObject.CreationDate)
 			}
 
 		})
 	}
 }
 
-func runCommand(kvIndex *index.KVIndex, repo *model.Repo, command Command, actionPath string) error {
+func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPath string) error {
 	var err error
 	switch command {
 	case write:
-		err = kvIndex.WriteEntry(repo.RepoId, repo.DefaultBranch, actionPath, &model.Entry{
-			Name:      path.New(actionPath).Basename(),
-			Address:   "123456789",
-			Timestamp: time.Now().Unix(),
-			Type:      model.Entry_OBJECT,
+		err = kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, actionPath, &model.Entry{
+			Name:         path.New(actionPath).Basename(),
+			Address:      "123456789",
+			CreationDate: time.Now(),
+			EntryType:    model.EntryTypeObject,
 		})
 
 	case commit:
-		_, err = kvIndex.Commit(repo.RepoId, repo.DefaultBranch, "test msg", "committer", nil)
+		_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
 
 	case revertTree:
-		err = kvIndex.RevertPath(repo.RepoId, repo.DefaultBranch, actionPath)
+		err = kvIndex.RevertPath(repo.Id, repo.DefaultBranch, actionPath)
 
 	case revertObj:
-		err = kvIndex.RevertObject(repo.RepoId, repo.DefaultBranch, actionPath)
+		err = kvIndex.RevertObject(repo.Id, repo.DefaultBranch, actionPath)
 
 	case deleteEntry:
-		err = kvIndex.DeleteObject(repo.RepoId, repo.DefaultBranch, actionPath)
+		err = kvIndex.DeleteObject(repo.Id, repo.DefaultBranch, actionPath)
 
 	default:
 		err = xerrors.Errorf("unknown command")

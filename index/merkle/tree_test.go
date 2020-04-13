@@ -14,7 +14,7 @@ import (
 )
 
 type entryLike interface {
-	GetType() model.Entry_Type
+	GetType() string
 	GetName() string
 	GetAddress() string
 }
@@ -35,17 +35,17 @@ func compareEntries(a, b entryLike) int {
 
 func TestNew(t *testing.T) {
 	res := compareEntries(&model.Entry{
-		Name:      "hooks",
-		Address:   "abc",
-		Type:      model.Entry_OBJECT,
-		Timestamp: time.Now().Unix(),
-		Size:      300,
+		Name:         "hooks",
+		Address:      "abc",
+		EntryType:    model.EntryTypeObject,
+		CreationDate: time.Now(),
+		Size:         300,
 	}, &model.Entry{
-		Name:      "hooks",
-		Address:   "def",
-		Type:      model.Entry_OBJECT,
-		Timestamp: time.Now().Unix(),
-		Size:      300,
+		Name:         "hooks",
+		Address:      "def",
+		EntryType:    model.EntryTypeObject,
+		CreationDate: time.Now(),
+		Size:         300,
 	})
 
 	if res != 0 {
@@ -61,7 +61,7 @@ func TestMerkle_GetEntry(t *testing.T) {
 	type args struct {
 		tx  merkle.TreeReader
 		pth string
-		typ model.Entry_Type
+		typ string
 	}
 	tests := []struct {
 		name    string
@@ -78,16 +78,16 @@ func TestMerkle_GetEntry(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"master": {
-						{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
+						{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
 					},
 				}),
 				pth: "file1",
-				typ: model.Entry_OBJECT,
+				typ: model.EntryTypeObject,
 			},
 			want: &model.Entry{
-				Name:    "file1",
-				Address: "file1",
-				Type:    model.Entry_OBJECT,
+				Name:      "file1",
+				Address:   "file1",
+				EntryType: model.EntryTypeObject,
 			},
 			wantErr: false,
 		},
@@ -99,19 +99,19 @@ func TestMerkle_GetEntry(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"root": {
-						{Name: "dir/", Address: "dir/", Type: model.Entry_TREE},
+						{Name: "dir/", Address: "dir/", EntryType: model.EntryTypeTree},
 					},
 					"dir/": {
-						{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
+						{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
 					},
 				}),
 				pth: "dir/file1",
-				typ: model.Entry_OBJECT,
+				typ: model.EntryTypeObject,
 			},
 			want: &model.Entry{
-				Name:    "file1",
-				Address: "file1",
-				Type:    model.Entry_OBJECT,
+				Name:      "file1",
+				Address:   "file1",
+				EntryType: model.EntryTypeObject,
 			},
 			wantErr: false,
 		},
@@ -123,19 +123,19 @@ func TestMerkle_GetEntry(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"root": {
-						{Name: "dir/", Address: "dir/", Type: model.Entry_TREE},
+						{Name: "dir/", Address: "dir/", EntryType: model.EntryTypeTree},
 					},
 					"dir/": {
-						{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
+						{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
 					},
 				}),
 				pth: "dir/",
-				typ: model.Entry_TREE,
+				typ: model.EntryTypeTree,
 			},
 			want: &model.Entry{
-				Name:    "dir/",
-				Address: "dir/",
-				Type:    model.Entry_TREE,
+				Name:      "dir/",
+				Address:   "dir/",
+				EntryType: model.EntryTypeTree,
 			},
 			wantErr: false,
 		},
@@ -147,11 +147,11 @@ func TestMerkle_GetEntry(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"root": {
-						{Name: "dir/", Address: "dir/", Type: model.Entry_TREE},
+						{Name: "dir/", Address: "dir/", EntryType: model.EntryTypeTree},
 					},
 				}),
 				pth: "file2",
-				typ: model.Entry_OBJECT,
+				typ: model.EntryTypeObject,
 			},
 			want:    nil,
 			wantErr: true,
@@ -195,21 +195,21 @@ func TestMerkle_GetEntries(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"master": {
-						{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-						{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
+						{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+						{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
 					},
 				}),
 				pth: "",
 			},
 			want: []*model.Entry{
 				{
-					Name:    "file1",
-					Address: "file1",
-					Type:    model.Entry_OBJECT,
+					Name:      "file1",
+					Address:   "file1",
+					EntryType: model.EntryTypeObject,
 				}, {
-					Name:    "file2",
-					Address: "file2",
-					Type:    model.Entry_OBJECT,
+					Name:      "file2",
+					Address:   "file2",
+					EntryType: model.EntryTypeObject,
 				},
 			},
 			wantErr: false,
@@ -222,31 +222,31 @@ func TestMerkle_GetEntries(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"root": {
-						{Name: "dir", Address: "dir", Type: model.Entry_TREE},
+						{Name: "dir", Address: "dir", EntryType: model.EntryTypeTree},
 					},
 					"dir": {
-						{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-						{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
-						{Name: "file3", Address: "file3", Type: model.Entry_OBJECT},
+						{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+						{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
+						{Name: "file3", Address: "file3", EntryType: model.EntryTypeObject},
 					},
 				}),
 				pth: "dir",
 			},
 			want: []*model.Entry{
 				{
-					Name:    "file1",
-					Address: "file1",
-					Type:    model.Entry_OBJECT,
+					Name:      "file1",
+					Address:   "file1",
+					EntryType: model.EntryTypeObject,
 				},
 				{
-					Name:    "file2",
-					Address: "file2",
-					Type:    model.Entry_OBJECT,
+					Name:      "file2",
+					Address:   "file2",
+					EntryType: model.EntryTypeObject,
 				},
 				{
-					Name:    "file3",
-					Address: "file3",
-					Type:    model.Entry_OBJECT,
+					Name:      "file3",
+					Address:   "file3",
+					EntryType: model.EntryTypeObject,
 				},
 			},
 			wantErr: false,
@@ -259,34 +259,34 @@ func TestMerkle_GetEntries(t *testing.T) {
 			args: args{
 				tx: testutil.ConstructTree(map[string][]*model.Entry{
 					"root": {
-						{Name: "dir", Address: "dir", Type: model.Entry_TREE},
+						{Name: "dir", Address: "dir", EntryType: model.EntryTypeTree},
 					},
 					"dir": {
-						{Name: "file1", Address: "file1", Type: model.Entry_OBJECT},
-						{Name: "file2", Address: "file2", Type: model.Entry_OBJECT},
-						{Name: "dir2", Address: "dir2", Type: model.Entry_TREE},
+						{Name: "file1", Address: "file1", EntryType: model.EntryTypeObject},
+						{Name: "file2", Address: "file2", EntryType: model.EntryTypeObject},
+						{Name: "dir2", Address: "dir2", EntryType: model.EntryTypeTree},
 					},
 					"dir2": {
-						{Name: "file4", Address: "file4", Type: model.Entry_OBJECT},
+						{Name: "file4", Address: "file4", EntryType: model.EntryTypeObject},
 					},
 				}),
 				pth: "dir",
 			},
 			want: []*model.Entry{
 				{
-					Name:    "dir2",
-					Address: "dir2",
-					Type:    model.Entry_TREE,
+					Name:      "dir2",
+					Address:   "dir2",
+					EntryType: model.EntryTypeTree,
 				},
 				{
-					Name:    "file1",
-					Address: "file1",
-					Type:    model.Entry_OBJECT,
+					Name:      "file1",
+					Address:   "file1",
+					EntryType: model.EntryTypeObject,
 				},
 				{
-					Name:    "file2",
-					Address: "file2",
-					Type:    model.Entry_OBJECT,
+					Name:      "file2",
+					Address:   "file2",
+					EntryType: model.EntryTypeObject,
 				},
 			},
 			wantErr: false,
@@ -307,8 +307,16 @@ func TestMerkle_GetEntries(t *testing.T) {
 	}
 }
 
-func TestMerkle_Update(t *testing.T) {
+func pstr(s string) *string {
+	return &s
+}
 
+func pint64(s int64) *int64 {
+	return &s
+}
+
+func TestMerkle_Update(t *testing.T) {
+	n := time.Now()
 	tests := []struct {
 		name        string
 		initialWS   []*model.WorkspaceEntry
@@ -321,29 +329,41 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -352,39 +372,63 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntrySize:         pint64(500),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntrySize:         pint64(500),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT, Size: 1000},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntrySize:         pint64(1000),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntrySize:         pint64(500),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT, Size: 500},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntrySize:         pint64(500),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT, Size: 1000},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntrySize:         pint64(1000),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -394,40 +438,58 @@ func TestMerkle_Update(t *testing.T) {
 			initialWS: []*model.WorkspaceEntry{
 
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -437,60 +499,91 @@ func TestMerkle_Update(t *testing.T) {
 			initialWS: []*model.WorkspaceEntry{
 
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/z/",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/z/",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/b/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/b/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 
 				{
-					Path:      "a/z/",
-					Entry:     &model.Entry{Name: "file4", Address: "123456789", Type: model.Entry_OBJECT},
+					Path:              "a/z/",
+					EntryName:         pstr("file4"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+
 					Tombstone: false,
 				},
 				{
-					Path:      "a/b/",
-					Entry:     &model.Entry{Name: "file5", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/b/",
+					EntryName:         pstr("file5"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/z/",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/z/",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/b/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/b/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/z/",
-					Entry:     &model.Entry{Name: "file4", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/z/",
+					EntryName:         pstr("file4"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/b/",
-					Entry:     &model.Entry{Name: "file5", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/b/",
+					EntryName:         pstr("file5"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -499,29 +592,41 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file_remove", Address: "123456788", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file_remove"),
+					EntryAddress:      pstr("123456788"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file_remove", Address: "123456788", Type: model.Entry_OBJECT},
-					Tombstone: true,
+					Path:              "",
+					EntryName:         pstr("file_remove"),
+					EntryAddress:      pstr("123456788"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         true,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -530,29 +635,41 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file_remove", Address: "123456788", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file_remove"),
+					EntryAddress:      pstr("123456788"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file_remove", Address: "123456788", Type: model.Entry_OBJECT},
-					Tombstone: true,
+					Path:              "a/",
+					EntryName:         pstr("file_remove"),
+					EntryAddress:      pstr("123456788"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         true,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -561,29 +678,41 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file_remove", Address: "123456788", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file_remove"),
+					EntryAddress:      pstr("123456788"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file_remove", Address: "123456788", Type: model.Entry_OBJECT},
-					Tombstone: true,
+					Path:              "a/",
+					EntryName:         pstr("file_remove"),
+					EntryAddress:      pstr("123456788"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         true,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -592,24 +721,33 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "no_file", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: true,
+					Path:              "",
+					EntryName:         pstr("no_file"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         true,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			wantErr: true,
@@ -619,44 +757,64 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file2", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file2"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "file3", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "a/",
+					EntryName:         pstr("file3"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file4", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file4"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "a/", Type: model.Entry_TREE},
-					Tombstone: true,
+					Path:              "a/",
+					EntryName:         pstr("a/"),
+					EntryType:         pstr(model.EntryTypeTree),
+					EntryCreationDate: &n,
+					Tombstone:         true,
 				},
 			},
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file4", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file4"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 		},
@@ -665,23 +823,32 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:      "a/",
-					Entry:     &model.Entry{Name: "a/", Address: "a/", Type: model.Entry_TREE},
-					Tombstone: true,
+					Path:              "a/",
+					EntryName:         pstr("a/"),
+					EntryAddress:      pstr("a/"),
+					EntryType:         pstr(model.EntryTypeTree),
+					EntryCreationDate: &n,
+					Tombstone:         true,
 				},
 			},
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:      "",
-					Entry:     &model.Entry{Name: "file1", Address: "123456789", Type: model.Entry_OBJECT},
-					Tombstone: false,
+					Path:              "",
+					EntryName:         pstr("file1"),
+					EntryAddress:      pstr("123456789"),
+					EntryType:         pstr(model.EntryTypeObject),
+					EntryCreationDate: &n,
+					Tombstone:         false,
 				},
 			},
 			wantErr: true,
