@@ -114,7 +114,7 @@ func getHandler(t *testing.T) (http.Handler, *dependencies) {
 	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
 	adb := testutil.GetDB(t, databaseUri, "lakefs_auth")
-	authService := auth.NewDBAuthService(adb)
+	authService := auth.NewDBAuthService(adb, "some secret")
 
 	server := api.NewServer(
 		meta,
