@@ -54,17 +54,24 @@ var configCmd = &cobra.Command{
 		}
 		viper.SetDefault(ConfigAccessKeyId, accessKeyId)
 
+		if !viper.IsSet(ConfigAccessKeyId) || len(accessKeyId) > 0 {
+			viper.Set(ConfigAccessKeyId, accessKeyId)
+		}
 		secretAccessKey, err := prompt("secret access key")
 		if err != nil {
 			DieErr(err)
 		}
-		viper.SetDefault(ConfigSecretAccessKey, secretAccessKey)
+		if !viper.IsSet(ConfigSecretAccessKey) || len(secretAccessKey) > 0 {
+			viper.Set(ConfigSecretAccessKey, secretAccessKey)
+		}
 
 		endpointUrl, err := promptUrl("endpoint URL")
 		if err != nil {
 			DieErr(err)
 		}
-		viper.SetDefault(ConfigServerEndpointUrl, endpointUrl)
+		if !viper.IsSet(ConfigServerEndpointUrl) || len(endpointUrl) > 0 {
+			viper.Set(ConfigServerEndpointUrl, endpointUrl)
+		}
 
 		err = viper.WriteConfigAs(configFile)
 		if err != nil {
