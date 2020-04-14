@@ -16,6 +16,7 @@ limitations under the License.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/mitchellh/go-homedir"
@@ -46,31 +47,10 @@ var configCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-
 		// write config
-		accessKeyId, err := prompt("access key id")
-		if err != nil {
-			DieErr(err)
-		}
-
-		if !viper.IsSet(ConfigAccessKeyId) || len(accessKeyId) > 0 {
-			viper.Set(ConfigAccessKeyId, accessKeyId)
-		}
-		secretAccessKey, err := prompt("secret access key")
-		if err != nil {
-			DieErr(err)
-		}
-		if !viper.IsSet(ConfigSecretAccessKey) || len(secretAccessKey) > 0 {
-			viper.Set(ConfigSecretAccessKey, secretAccessKey)
-		}
-
-		endpointUrl, err := promptUrl("endpoint URL")
-		if err != nil {
-			DieErr(err)
-		}
-		if !viper.IsSet(ConfigServerEndpointUrl) || len(endpointUrl) > 0 {
-			viper.Set(ConfigServerEndpointUrl, endpointUrl)
-		}
+		setConfigVal(ConfigAccessKeyId, "access key id ", prompt)
+		setConfigVal(ConfigSecretAccessKey, "secret access key", prompt)
+		setConfigVal(ConfigServerEndpointUrl, "endpoint URL", promptUrl)
 
 		err = viper.WriteConfigAs(configFile)
 		if err != nil {
@@ -81,4 +61,21 @@ var configCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(configCmd)
+}
+
+type promptFunc func(question string) (string, error)
+
+func setConfigVal(key, promptStr string, prompt promptFunc) {
+	currentAccessKeyId := viper.Get(key)
+
+	if currentAccessKeyId != nil {
+		promptStr += fmt.Sprintf(" [%s]", currentAccessKeyId)
+	}
+	accessKeyId, err := prompt(promptStr)
+	if err != nil {
+		DieErr(err)
+	}
+	if !viper.IsSet(key) || len(accessKeyId) > 0 {
+		viper.Set(key, accessKeyId)
+	}
 }
