@@ -52,7 +52,6 @@ var configCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		viper.SetDefault(ConfigAccessKeyId, accessKeyId)
 
 		if !viper.IsSet(ConfigAccessKeyId) || len(accessKeyId) > 0 {
 			viper.Set(ConfigAccessKeyId, accessKeyId)
