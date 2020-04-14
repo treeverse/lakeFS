@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 )
 
-func TestAesEncrypter_Encrypt(t *testing.T) {
+func TestSecretStore_Encrypt(t *testing.T) {
 	cases := []struct {
 		Secret string
 		Data   []byte
@@ -22,7 +22,7 @@ func TestAesEncrypter_Encrypt(t *testing.T) {
 
 	for i, cas := range cases {
 		t.Run(fmt.Sprintf("encrypt_%d", i), func(t *testing.T) {
-			aes := crypt.NewEncrypter(cas.Secret)
+			aes := crypt.NewSecretStore(cas.Secret)
 			encrypted, err := aes.Encrypt(cas.Data)
 			if err != nil {
 				t.Fatal(err)
@@ -41,10 +41,10 @@ func TestAesEncrypter_Encrypt(t *testing.T) {
 	}
 }
 
-func BenchmarkAesEncrypter_Decrypt(b *testing.B) {
+func BenchmarkSecretStore_Encrypt(b *testing.B) {
 	secret := "foo bar"
 	data := []byte("some value, it doesn't really matter what")
-	aes := crypt.NewEncrypter(secret)
+	aes := crypt.NewSecretStore(secret)
 	encrypted, err := aes.Encrypt(data)
 	if err != nil {
 		b.Fatal(err)

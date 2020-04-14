@@ -1,88 +1,90 @@
 package crypt
 
 import (
-	"crypto/aes"
-	"crypto/cipher"
 	"crypto/rand"
-	"crypto/sha256"
-	"encoding/binary"
+	"fmt"
 	"io"
+
+	"golang.org/x/crypto/nacl/secretbox"
+	"golang.org/x/crypto/scrypt"
 )
 
-type AesEncrypter struct {
+const (
+	KeySaltBytes   = 8
+	KeySizeBytes   = 32
+	NonceSizeBytes = 24
+)
+
+type SecretStore interface {
+	Encrypt(data []byte) ([]byte, error)
+	Decrypt(encrypted []byte) ([]byte, error)
+}
+
+type NaclSecretStore struct {
 	secret string
 }
 
-func NewEncrypter(secret string) *AesEncrypter {
-	return &AesEncrypter{secret: secret}
+func NewSecretStore(secret string) *NaclSecretStore {
+	return &NaclSecretStore{secret: secret}
 }
 
-func (a *AesEncrypter) keyFromSecret() ([]byte, error) {
-	hasher := sha256.New()
-	hasher.Write([]byte(a.secret))
-	return hasher.Sum(nil), nil
-}
-
-func (a *AesEncrypter) encode(nonce, encrypted []byte) []byte {
-	buf := make([]byte, 2+len(nonce)+len(encrypted))
-	binary.BigEndian.PutUint16(buf[0:2], uint16(len(nonce)))
-	for i, b := range nonce {
-		buf[i+2] = b
+func (a *NaclSecretStore) kdf(storedSalt []byte) (key [KeySizeBytes]byte, salt [KeySaltBytes]byte, err error) {
+	if storedSalt != nil {
+		copy(salt[:], storedSalt)
+	} else {
+		if _, err = io.ReadFull(rand.Reader, salt[:]); err != nil {
+			return
+		}
 	}
-	for i, b := range encrypted {
-		buf[i+2+len(nonce)] = b
+	// scrypt's N, r & p, benchmarked to run at about 1ms, since it's in the critical path.
+	// fair trade-off for a high throughput low latency system
+	keySlice, err := scrypt.Key([]byte(a.secret), salt[:], 512, 8, 1, 32)
+	if err != nil {
+		return
 	}
-	return buf
-}
-
-func (a *AesEncrypter) decode(encoded []byte) (data, nonce []byte) {
-	nonceLen := binary.BigEndian.Uint16(encoded[0:2])
-	nonce = encoded[2 : nonceLen+2]
-	data = encoded[2+nonceLen:]
+	copy(key[:], keySlice)
 	return
 }
 
-func (a *AesEncrypter) Encrypt(data []byte) ([]byte, error) {
-	key, err := a.keyFromSecret()
+func (a *NaclSecretStore) Encrypt(data []byte) ([]byte, error) {
+	// generate a random nonce
+	var nonce [NonceSizeBytes]byte
+	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
+		return nil, err
+	}
+
+	// derive a key from the stored secret, generating a new random salt
+	key, salt, err := a.kdf(nil)
 	if err != nil {
 		return nil, err
 	}
 
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
+	// use nonce and derived key to encrypt data
+	encrypted := secretbox.Seal(nonce[:], data, &nonce, &key)
 
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
-	}
-
-	nonce := make([]byte, gcm.NonceSize())
-	if _, err := io.ReadFull(rand.Reader, nonce); err != nil {
-		return nil, err
-	}
-
-	encrypted := gcm.Seal(nil, nonce, data, nil)
-	return a.encode(nonce, encrypted), nil
+	// kdf salt (8) + nonce (24) + encrypted data (rest)
+	return append(salt[:], encrypted...), nil
 }
 
-func (a *AesEncrypter) Decrypt(data []byte) ([]byte, error) {
-	key, err := a.keyFromSecret()
+func (a *NaclSecretStore) Decrypt(encrypted []byte) ([]byte, error) {
+	// extract salt
+	var salt [KeySaltBytes]byte
+	copy(salt[:], encrypted[:KeySaltBytes])
+
+	// derive encryption key from salt and stored secret
+	key, _, err := a.kdf(salt[:])
 	if err != nil {
 		return nil, err
 	}
 
-	block, err := aes.NewCipher(key)
-	if err != nil {
-		return nil, err
-	}
+	// extract nonce
+	var decryptNonce [NonceSizeBytes]byte
+	copy(decryptNonce[:], encrypted[KeySaltBytes:KeySaltBytes+NonceSizeBytes])
 
-	gcm, err := cipher.NewGCM(block)
-	if err != nil {
-		return nil, err
+	// decrypt  the rest
+	decrypted, ok := secretbox.Open(nil, encrypted[KeySaltBytes+NonceSizeBytes:], &decryptNonce, &key)
+	if !ok {
+		return nil, fmt.Errorf("could not decrypt value")
 	}
-
-	encrypted, nonce := a.decode(data)
-	return gcm.Open(nil, nonce, encrypted, nil)
+	return decrypted, nil
 }

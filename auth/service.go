@@ -61,12 +61,12 @@ type Service interface {
 }
 
 type DBAuthService struct {
-	db               db.Database
-	encryptionSecret string
+	db          db.Database
+	secretStore crypt.SecretStore
 }
 
-func NewDBAuthService(db db.Database, encryptionSecret string) *DBAuthService {
-	return &DBAuthService{db: db, encryptionSecret: encryptionSecret}
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore) *DBAuthService {
+	return &DBAuthService{db: db, secretStore: secretStore}
 }
 
 func genAccessKeyId() string {
@@ -79,7 +79,7 @@ func genAccessSecretKey() string {
 }
 
 func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
-	decrypted, err := crypt.NewEncrypter(s.encryptionSecret).Decrypt(value)
+	decrypted, err := s.secretStore.Decrypt(value)
 	if err != nil {
 		return "", err
 	}
@@ -87,7 +87,7 @@ func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
 }
 
 func (s *DBAuthService) encryptSecret(secretAccessKey string) ([]byte, error) {
-	encrypted, err := crypt.NewEncrypter(s.encryptionSecret).Encrypt([]byte(secretAccessKey))
+	encrypted, err := s.secretStore.Encrypt([]byte(secretAccessKey))
 	if err != nil {
 		return nil, err
 	}
