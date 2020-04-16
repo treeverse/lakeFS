@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/treeverse/lakefs/auth/crypt"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/db"
@@ -40,7 +42,7 @@ var initCmd = &cobra.Command{
 		userEmail, _ := cmd.Flags().GetString("email")
 		userFullName, _ := cmd.Flags().GetString("full-name")
 
-		authService := auth.NewDBAuthService(adb)
+		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(conf.GetAuthEncryptionSecret()))
 		user := &model.User{
 			Email:    userEmail,
 			FullName: userFullName,
@@ -112,7 +114,7 @@ var runCmd = &cobra.Command{
 		blockStore := conf.BuildBlockAdapter()
 
 		// init authentication
-		authService := auth.NewDBAuthService(adb)
+		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(conf.GetAuthEncryptionSecret()))
 
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService)
