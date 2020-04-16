@@ -81,10 +81,10 @@ CREATE TABLE role_policies (
 
 CREATE TABLE credentials (
     access_key_id varchar(20) NOT NULL PRIMARY KEY,
-    access_secret_key varchar(512) NOT NULL, -- this should be encrypted/decrypted out of postgres
+    access_secret_key bytea NOT NULL,
     credentials_type varchar(20) NOT NULL CHECK (credentials_type in ('user', 'application')),
     issued_date timestamptz NOT NULL,
-
+                                                 
     user_id integer REFERENCES users (id),
     application_id integer REFERENCES applications (id)
 );
