@@ -783,7 +783,7 @@ func (index *DBIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), nil
 }
 
-func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts int64) (interface{}, error) {
+func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (interface{}, error) {
 	commit := &model.Commit{
 		Tree:         branchData.WorkspaceRoot,
 		Parents:      []string{branchData.CommitId},
@@ -794,7 +794,7 @@ func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committe
 	}
 	commitAddr := ident.Hash(commit)
 	commit.Address = commitAddr
-	err = tx.WriteCommit(commitAddr, commit)
+	err := tx.WriteCommit(commitAddr, commit)
 	if err != nil {
 		index.log().WithError(err).Error("could not write commit")
 		return nil, err
@@ -803,7 +803,7 @@ func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committe
 	branchData.CommitRoot = commit.Tree
 	branchData.WorkspaceRoot = commit.Tree
 
-	return commit, tx.WriteBranch(branch, branchData)
+	return commit, tx.WriteBranch(branchData.Id, branchData)
 }
 
 func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
@@ -824,7 +824,7 @@ func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata
 		if err != nil {
 			return nil, err
 		}
-		return doCommitUpdates(tx, branchData, committer, message, []string{branchData.GetCommit()}, metadata, ts)
+		return doCommitUpdates(tx, branchData, committer, message, []string{branchData.CommitId}, metadata, ts, index)
 	})
 	if err != nil {
 		return nil, err
@@ -931,7 +931,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, isMerge bool, index *KVIndex) (merkle.Differences, error) {
+func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (merkle.Differences, error) {
 
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
@@ -945,7 +945,7 @@ func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, i
 		return nil, errors.ErrBranchNotFound
 	}
 
-	commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.GetAddress(), rRef.commit.GetAddress())
+	commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.Address, rRef.commit.Address)
 	if err != nil {
 		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
 		return nil, errors.ErrNoMergeBase
@@ -955,28 +955,23 @@ func doDiff(tx store.RepoReadOnlyOperations, repoId, leftRef, rightRef string, i
 		return nil, errors.ErrNoMergeBase
 	}
 
-	leftTree := lRef.commit.GetTree()
+	leftTree := lRef.commit.Tree
 	if lRef.isBranch && !isMerge {
-		leftTree = lRef.branch.GetWorkspaceRoot()
+		leftTree = lRef.branch.WorkspaceRoot
 	}
-	rightTree := rRef.commit.GetTree()
-		leftTree := lRef.commit.Tree
-		if lRef.isBranch {
-			leftTree = lRef.branch.WorkspaceRoot
-		}
-		rightTree := rRef.commit.Tree
+	rightTree := rRef.commit.Tree
 
 	diff, err := merkle.Diff(tx,
 		merkle.New(leftTree),
 		merkle.New(rightTree),
-		merkle.New(commonCommits.GetTree()))
+		merkle.New(commonCommits.Tree))
 	if err != nil {
 		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
 	}
 	return diff, err
 }
 
-func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
+func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(leftRef),
@@ -984,22 +979,11 @@ func (index *KVIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 	if err != nil {
 		return nil, err
 	}
-	res, err := index.kv.RepoReadTransact(repoId, func(tx store.RepoReadOnlyOperations) (i interface{}, err error) {
+	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
 
 		return doDiff(tx, repoId, leftRef, rightRef, false, index)
 	})
-		diff, err := merkle.Diff(tx,
-			merkle.New(leftTree),
-			merkle.New(rightTree),
-			merkle.New(commonCommit.Tree))
-		if err != nil {
-			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
-		}
-		return diff, err
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
+
 	return res.(merkle.Differences), nil
 }
 
@@ -1149,7 +1133,7 @@ func (index *DBIndex) RevertObject(repoId, branch, path string) error {
 	return index.revertPath(repoId, branch, path, model.EntryTypeObject)
 }
 
-func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.Differences, error) {
+func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
@@ -1159,7 +1143,7 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.
 	}
 	ts := index.tsGenerator()
 	var mergeOperations merkle.Differences
-	_, err = index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// check that destination has no uncommitted changes
 		destinationBranch, err := tx.ReadBranch(destination)
 		if err != nil {
@@ -1171,7 +1155,7 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.
 			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " workspace not found")
 			return nil, err
 		}
-		if destinationBranch.GetCommitRoot() != destinationBranch.GetWorkspaceRoot() || len(l) > 0 {
+		if destinationBranch.CommitRoot != destinationBranch.WorkspaceRoot || len(l) > 0 {
 			return nil, errors.ErrDestinationNotCommitted
 		}
 		// compute difference
@@ -1200,7 +1184,7 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		for _, dif := range mergeOperations {
 			var e *model.Entry
-			m := merkle.New(sourceBranch.GetWorkspaceRoot())
+			m := merkle.New(sourceBranch.WorkspaceRoot)
 			if dif.Type != merkle.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
@@ -1211,16 +1195,21 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.
 				e = new(model.Entry)
 				p := strings.Split(dif.Path, "/")
 				e.Name = p[len(p)-1]
-				e.Type = dif.PathType
+				e.EntryType = dif.PathType
 			}
 			w := new(model.WorkspaceEntry)
-			w.Entry = e
+			w.EntryType = &e.EntryType
+			w.EntryAddress = &e.Address
+			w.EntryName = &e.Name
+			w.EntryChecksum = &e.Checksum
+			w.EntryCreationDate = &e.CreationDate
+			w.EntrySize = &e.Size
 			w.Path = dif.Path
 			w.Tombstone = (dif.Type == merkle.DifferenceTypeRemoved)
 			wsEntries = append(wsEntries, w)
 		}
 
-		desinationRoot := merkle.New(destinationBranch.GetCommitRoot())
+		desinationRoot := merkle.New(destinationBranch.CommitRoot)
 		newRoot, err := desinationRoot.Update(tx, wsEntries)
 		if err != nil {
 			index.log().WithError(err).Fatal("failed updating merge destination\n")
@@ -1228,9 +1217,9 @@ func (index *KVIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		destinationBranch.CommitRoot = newRoot.Root()
 		destinationBranch.WorkspaceRoot = newRoot.Root()
-		parents := []string{destinationBranch.GetCommit(), sourceBranch.GetCommit()}
+		parents := []string{destinationBranch.CommitId, sourceBranch.CommitId}
 		commitMessage := "Merge branch " + source + " into " + destination
-		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts)
+		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts, index)
 
 		return mergeOperations, nil
 
