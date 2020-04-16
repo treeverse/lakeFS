@@ -15,6 +15,7 @@ require (
 	github.com/go-openapi/swag v0.19.7
 	github.com/go-openapi/validate v0.19.6
 	github.com/gofrs/uuid v3.2.0+incompatible // indirect
+	github.com/golang/protobuf v1.2.0
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect

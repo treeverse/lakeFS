@@ -1,9 +1,9 @@
 package merkle
 
 import (
-	"strings"
-
 	"github.com/treeverse/lakefs/logging"
+	"strings"
+	"time"
 
 	"github.com/treeverse/lakefs/db"
 
