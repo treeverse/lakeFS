@@ -1,326 +1,84 @@
 package index_test
 
 import (
-	"bytes"
-	"encoding/csv"
-	"github.com/go-openapi/runtime"
-	"github.com/treeverse/lakefs/api"
-	"github.com/treeverse/lakefs/api/gen/client"
-	"github.com/treeverse/lakefs/api/gen/client/commits"
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
-	"github.com/treeverse/lakefs/index/store"
-	"github.com/treeverse/lakefs/permissions"
+	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/testutil"
+	"github.com/treeverse/lakefs/upload"
 	"io"
-	"net/http"
-	"net/http/httptest"
 	str "strings"
 	"time"
 
-	"os"
 	"strconv"
 	"testing"
 
-	httptransport "github.com/go-openapi/runtime/client"
-	"github.com/treeverse/lakefs/api/gen/client/branches"
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-
 	"crypto/rand"
 	log "github.com/sirupsen/logrus"
-	authmodel "github.com/treeverse/lakefs/auth/model"
 )
 
 const (
-	DefaultUserId = "example_user"
+	DefaultUserId = 1
+	REPO          = "example"
 )
 
 type dependencies struct {
 	blocks block.Adapter
-	auth   auth.Service
 	meta   index.Index
-	mpu    index.MultipartManager
-	db     db.Store
 }
 
-func CreateRepo(t *testing.T, kv store.KVStore) {
-	repoCreateDate, _ := time.Parse(testutil.TimeFormat, "Apr 7 15:13:13 2005 -0700")
-	_, err := kv.RepoTransact("myrepo", func(ops store.RepoOperations) (i interface{}, e error) {
-		repo := &model.Repo{
-			RepoId:             "myrepo",
-			CreationDate:       repoCreateDate.Unix(),
-			DefaultBranch:      index.DefaultBranch,
-			PartialCommitRatio: 1,
-		}
-		err := ops.WriteRepo(repo)
-		if err != nil {
-			t.Fatal(err)
-		}
-		commit := &model.Commit{
-			Tree:      ident.Empty(),
-			Parents:   []string{},
-			Timestamp: repoCreateDate.Unix(),
-			Metadata:  make(map[string]string),
-		}
-		commitId := ident.Hash(commit)
-		commit.Address = commitId
-		err = ops.WriteCommit(commitId, commit)
-		if err != nil {
-			return nil, err
-		}
-		err = ops.WriteBranch(repo.GetDefaultBranch(), &model.Branch{
-			Name:          repo.GetDefaultBranch(),
-			Commit:        commitId,
-			CommitRoot:    commit.GetTree(),
-			WorkspaceRoot: commit.GetTree(),
-		})
-		return repo, nil
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-}
-
-func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.APICredentials {
-	testutil.Must(t, authService.CreateRole(&authmodel.Role{
-		Id:   "admin",
-		Name: "admin",
-		Policies: []*authmodel.Policy{
-			{
-				Permission: string(permissions.ManageRepos),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.ReadRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.WriteRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-		},
-	}))
-
-	user := &authmodel.User{
-		Id:    DefaultUserId,
-		Roles: []string{"admin"},
-	}
-	testutil.Must(t, authService.CreateUser(user))
-	creds, err := authService.CreateUserCredentials(user)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return creds
-}
-
-func getHandler(t *testing.T) (http.Handler, *dependencies, func()) {
-	db, dbCloser := testutil.GetDB(t)
-	blockAdapter, fsCloser := testutil.GetBlockAdapter(t)
-	indexStore := store.NewKVStore(db)
-	meta := index.NewKVIndex(indexStore)
-	mpu := index.NewKVMultipartManager(indexStore)
-	CreateRepo(t, store.KVStore(*indexStore))
-	authService := auth.NewKVAuthService(db)
-
-	server := api.NewServer(
-		meta,
-		mpu,
-		blockAdapter,
-		authService,
-	)
-
-	closer := func() {
-		dbCloser()
-		fsCloser()
-	}
-
-	srv, err := server.SetupServer()
-	if err != nil {
-		closer()
-		t.Fatal(err)
-	}
-	return srv.GetHandler(), &dependencies{
+func getDependencies(t *testing.T) *dependencies {
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	meta := index.NewDBIndex(mdb)
+	blockAdapter := testutil.GetBlockAdapter(t)
+	testutil.Must(t, meta.CreateRepo(REPO, "s3://"+REPO, "master"))
+	return &dependencies{
 		blocks: blockAdapter,
-		auth:   authService,
 		meta:   meta,
-		mpu:    mpu,
-		db:     db,
-	}, closer
-}
-
-type roundTripper struct {
-	Handler http.Handler
-}
-
-func (r *roundTripper) RoundTrip(req *http.Request) (*http.Response, error) {
-	recorder := httptest.NewRecorder()
-	r.Handler.ServeHTTP(recorder, req)
-	response := recorder.Result()
-	return response, nil
-}
-
-type handlerTransport struct {
-	Handler http.Handler
-}
-
-func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, error) {
-	clt := httptransport.NewWithClient("", "/api/v1", []string{"http"}, &http.Client{
-		Transport: &roundTripper{r.Handler},
-	})
-	return clt.Submit(op)
-}
-
-func setupHelper(t *testing.T, deps *dependencies, handler http.Handler) (*authmodel.APICredentials, *client.Lakefs, *translationMap) {
-
-	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
-
-	// setup client
-	clt := client.Default
-	clt.SetTransport(&handlerTransport{Handler: handler})
-	return creds, clt, newTranslationMap()
-
-}
-
-type translationMap struct {
-	count int
-	table map[string]string
-}
-
-func newTranslationMap() *translationMap {
-	p := make(map[string]string)
-	return &translationMap{0, p}
-}
-
-func (t *translationMap) getId(s string) string {
-	val, stat := t.table[s]
-	if stat {
-		return val
-	} else {
-		t.count++
-		i := strconv.Itoa(t.count)
-		i = "00000"[0:5-len(i)] + i
-		t.table[s] = i
-		return t.table[s]
 	}
 }
 
-type csvStore map[string][][]string
-
-func (cs csvStore) addType(t string, l []string) {
-	cs[t] = make([][]string, 0)
-	cs.add(t, l)
-}
-
-func (cs csvStore) add(t string, a []string) {
-	cs[t] = append(cs[t], a)
-}
-
-func (cs csvStore) refresh() {
-	for k, v := range cs {
-		cs[k] = v[0:1]
-	}
-}
-
-func (cs csvStore) writeCSV(prefix string) {
-	for k, v := range cs {
-		f, err := os.Create(prefix + k + ".csv")
-		if err != nil {
-			panic(err)
-		}
-		o := csv.NewWriter(f)
-		err = o.WriteAll(v)
-		if err != nil {
-			panic(err)
-		}
-		f.Close()
-
-	}
-}
-func showEntries(kv db.Store, ct *translationMap, cs csvStore, csvPrefix string) {
-	kv.ReadTransact(func(q db.ReadQuery) (i interface{}, err error) {
-		iter, closer := q.RangeAll()
-		defer closer()
-		/* func (m *Entry) XXX_Unmarshal(b []byte) error {
-		return xxx_messageInfo_Entry.Unmarshal(m, b) */
-		for iter.Advance() {
-			item, _ := iter.Get()
-			//fmt.Print(len(item.Key),"   ",len(item.Value),"  ")
-			k := db.KeyFromBytes(item.Key)
-			if bytes.Compare(k[0], []byte("entries")) == 0 {
-				nk := []string{ct.getId(string(k[2])), string(k[3])}
-				m := new(model.Entry)
-				m.XXX_Unmarshal(item.Value)
-				nk = append(nk, ct.getId(m.Address))
-				nk = append(nk, strconv.Itoa(int(m.Type)))
-				nk = append(nk, strconv.Itoa(int(m.Size)))
-				nk = append(nk, ct.getId(m.Checksum))
-				cs.add("entries", nk)
-			} else if bytes.Compare(k[0], []byte("branches")) == 0 {
-
-				nk := []string{string(k[2])}
-				m := new(model.Branch)
-				m.XXX_Unmarshal(item.Value)
-				nk = append(nk, ct.getId(m.Commit))
-				nk = append(nk, ct.getId(m.CommitRoot))
-				nk = append(nk, ct.getId(m.WorkspaceRoot))
-				cs.add("branches", nk)
-			} else if bytes.Compare(k[0], []byte("commits")) == 0 {
-				nk := []string{}
-				m := new(model.Commit)
-				m.XXX_Unmarshal(item.Value)
-				nk = append(nk, ct.getId(m.Address))
-				nk = append(nk, ct.getId(m.Tree))
-				cs.add("commits", nk)
-			}
-		}
-		cs.writeCSV(csvPrefix)
-		cs.refresh()
-		return nil, nil
-	})
-}
-func testCommit(t *testing.T, branch, message string, clt *client.Lakefs, creds *authmodel.APICredentials) {
-	repo := "myrepo"
-	commitParams := commits.NewCommitParams()
-	commitParams.BranchID = branch
-	commitParams.RepositoryID = repo
-	commitParams.Commit = new(models.CommitCreation)
-	commitParams.Commit.Message = &message
-	commitParams.Commit.Metadata = make(map[string]string)
-	_, err := clt.Commits.Commit(commitParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+func testCommit(t *testing.T, index index.Index, branch, message string) {
+	_, err := index.Commit(REPO, branch, message, "", make(map[string]string))
 	if err != nil {
 		t.Fatal("could not commit\n")
 	}
 }
-func createBranch(t *testing.T, name, parent string, clt *client.Lakefs, creds *authmodel.APICredentials) {
-	repo := "myrepo"
-	createBranchParams := branches.NewCreateBranchParams()
-	var b models.BranchCreation
-	b.ID = &name
-	b.SourceRefID = &parent
-	createBranchParams.Branch = &b
-	createBranchParams.RepositoryID = repo
-	_, err := clt.Branches.CreateBranch(createBranchParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+func createBranch(t *testing.T, index index.Index, name, parent string) {
+	_, err := index.CreateBranch(REPO, name, parent)
 	if err != nil {
-		t.Fatal("error creating brancht\n")
+		t.Fatal("error creating branch\n")
 	}
 }
 
-func uploadObject(t *testing.T, path, branch string, size int64, clt *client.Lakefs, creds *authmodel.APICredentials) {
-	repo := "myrepo"
-	uploadObjectParams := objects.NewUploadObjectParams()
-	uploadObjectParams.BranchID = branch
-	uploadObjectParams.Content = NewReader(size, "content")
-	uploadObjectParams.RepositoryID = repo
-	uploadObjectParams.Path = path
-	_, err := clt.Objects.UploadObject(uploadObjectParams, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+func uploadObject(t *testing.T, deps *dependencies, path, branch string, size int64) {
+	blob, err := upload.ReadBlob(REPO, NewReader(size, "content"), deps.blocks, 1024*1024*64)
 	if err != nil {
-		t.Fatal("error uploading document\n")
+		t.Error("error storin object in blocks ", err)
+		return
+	}
+	obj := &model.Object{
+		Blocks:   blob.Blocks,
+		Checksum: blob.Checksum,
+		Size:     blob.Size,
+	}
+	p := pth.New(path)
+	writeTime := time.Now()
+	entry := &model.Entry{
+		RepositoryId: REPO,
+		Name:         p.BaseName(),
+		Address:      ident.Hash(obj),
+		EntryType:    model.EntryTypeObject,
+		CreationDate: writeTime,
+		Size:         blob.Size,
+		Checksum:     blob.Checksum,
+	}
+	err = deps.meta.WriteFile(REPO, branch, path, entry, obj)
+	if err != nil {
+		t.Error("error writing file  ", err)
+		return
 	}
 }
 

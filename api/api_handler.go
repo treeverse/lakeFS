@@ -495,8 +495,12 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 		if err != nil {
 			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-
-		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, user.ID)
+		userModel, err := a.context.Auth.GetUser(int(user.ID))
+		if err != nil {
+			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
+		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, committer)
 		mergeResult := make([]*models.MergeResult, len(mergeOperations))
 
 		if err == nil || err == errors.ErrMergeConflict {
