@@ -1,6 +1,8 @@
 package model
 
-import "time"
+import (
+	"time"
+)
 
 type User struct {
 	Id       int    `db:"id"`
@@ -65,10 +67,11 @@ const (
 )
 
 type Credential struct {
-	AccessKeyId     string    `db:"access_key_id"`
-	AccessSecretKey string    `db:"access_secret_key"`
-	Type            string    `db:"credentials_type"`
-	IssuedDate      time.Time `db:"issued_date"`
-	UserId          *int      `db:"user_id"`
-	ApplicationId   *int      `db:"application_id"`
+	AccessKeyId                   string `db:"access_key_id"`
+	AccessSecretKey               string
+	AccessSecretKeyEncryptedBytes []byte    `db:"access_secret_key"`
+	Type                          string    `db:"credentials_type"`
+	IssuedDate                    time.Time `db:"issued_date"`
+	UserId                        *int      `db:"user_id"`
+	ApplicationId                 *int      `db:"application_id"`
 }
