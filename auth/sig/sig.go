@@ -7,6 +7,8 @@ import (
 	"strings"
 	"unicode/utf8"
 
+	"github.com/treeverse/lakefs/auth/model"
+
 	"golang.org/x/xerrors"
 )
 
@@ -79,13 +81,9 @@ type SigContext interface {
 	GetAccessKeyId() string
 }
 
-type Credentials interface {
-	GetAccessSecretKey() string
-}
-
 type SigAuthenticator interface {
 	Parse() (SigContext, error)
-	Verify(Credentials, string) error
+	Verify(*model.Credential, string) error
 }
 
 type dummySigContext struct {
@@ -116,7 +114,7 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 	return nil, ErrMissingAuthData
 }
 
-func (c *chainedAuthenticator) Verify(creds Credentials, domain string) error {
+func (c *chainedAuthenticator) Verify(creds *model.Credential, domain string) error {
 	return c.chosen.Verify(creds, domain)
 
 }

@@ -51,14 +51,14 @@ func (controller *ListObjects) serializeEntries(ref string, entries []*model.Ent
 	for _, entry := range entries {
 		lastKey = entry.GetName()
 		switch entry.GetType() {
-		case model.Entry_TREE:
+		case model.EntryTypeTree:
 			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef(entry.GetName(), ref)})
-		case model.Entry_OBJECT:
+		case model.EntryTypeObject:
 			files = append(files, serde.Contents{
 				Key:          path.WithRef(entry.GetName(), ref),
-				LastModified: serde.Timestamp(entry.GetTimestamp()),
-				ETag:         httputil.ETag(entry.GetChecksum()),
-				Size:         entry.GetSize(),
+				LastModified: serde.Timestamp(entry.CreationDate),
+				ETag:         httputil.ETag(entry.Checksum),
+				Size:         entry.Size,
 				StorageClass: "STANDARD",
 			})
 		}
@@ -70,8 +70,8 @@ func (controller *ListObjects) serializeBranches(branches []*model.Branch) ([]se
 	dirs := make([]serde.CommonPrefixes, 0)
 	var lastKey string
 	for _, branch := range branches {
-		lastKey = branch.GetName()
-		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef("", branch.GetName())})
+		lastKey = branch.Id
+		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef("", branch.Id)})
 	}
 	return dirs, lastKey
 }
@@ -130,7 +130,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
 		o.Log().WithField("prefix", branchPrefix).Debug("listing branches with prefix")
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), branchPrefix, maxKeys, fromStr)
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -139,7 +139,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// return branch response
 		dirs, lastKey := controller.serializeBranches(branches)
 		resp := serde.ListObjectsV2Output{
-			Name:           o.Repo.GetRepoId(),
+			Name:           o.Repo.Id,
 			Prefix:         params.Get("prefix"),
 			Delimiter:      delimiter,
 			KeyCount:       len(dirs),
@@ -176,7 +176,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		}
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
-			o.Repo.GetRepoId(),
+			o.Repo.Id,
 			prefix.Ref,
 			prefix.Path,
 			from.Path,
@@ -203,7 +203,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
 
 	resp := serde.ListObjectsV2Output{
-		Name:           o.Repo.GetRepoId(),
+		Name:           o.Repo.Id,
 		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		KeyCount:       len(results),
@@ -262,7 +262,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	if !prefix.WithPath {
 		// list branches then.
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.GetRepoId(), prefix.Ref, maxKeys, params.Get("marker"))
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -272,7 +272,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		// return branch response
 		dirs, lastKey := controller.serializeBranches(branches)
 		resp := serde.ListBucketResult{
-			Name:           o.Repo.GetRepoId(),
+			Name:           o.Repo.Id,
 			Prefix:         params.Get("prefix"),
 			Delimiter:      delimiter,
 			Marker:         params.Get("marker"),
@@ -317,7 +317,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		}
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
-			o.Repo.GetRepoId(),
+			o.Repo.Id,
 			prefix.Ref,
 			prefix.Path,
 			marker.Path,
@@ -339,7 +339,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	// build a response
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
 	resp := serde.ListBucketResult{
-		Name:           o.Repo.GetRepoId(),
+		Name:           o.Repo.Id,
 		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		Marker:         params.Get("marker"),

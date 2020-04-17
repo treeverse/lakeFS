@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/auth/model"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/go-openapi/errors"
@@ -67,19 +69,22 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetAPICredentials(accessKey)
 		if err != nil {
-			logger.WithField("access_key", accessKey).Warn("could not get access key for login")
+			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
 			return nil, ErrAuthenticationFailed
 		}
-		if !strings.EqualFold(secretKey, credentials.GetAccessSecretKey()) {
+		if !strings.EqualFold(secretKey, credentials.AccessSecretKey) {
 			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := s.authService.GetUser(credentials.GetEntityId())
+		if credentials.Type != model.CredentialTypeUser {
+			return nil, ErrAuthenticationFailed // TODO: support application auth
+		}
+		userData, err := s.authService.GetUser(*credentials.UserId)
 		if err != nil {
 			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
-		return &models.User{ID: userData.GetId()}, nil
+		return &models.User{ID: int64(userData.Id)}, nil
 	}
 }
 
@@ -117,7 +122,7 @@ func (s *Server) Serve(listenAddr string) error {
 	}
 
 	// serve embedded frontend filesystem
-	statikFS, err := fs.New()
+	statikFS, err := fs.NewWithNamespace("webui")
 	if err != nil {
 		return err
 	}
