@@ -14,6 +14,8 @@ import (
 	"strings"
 	"time"
 	"unicode"
+
+	"github.com/treeverse/lakefs/auth/model"
 )
 
 const (
@@ -123,7 +125,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	return ctx, nil
 }
 
-func V4Verify(auth V4Auth, credentials Credentials, r *http.Request) error {
+func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error {
 	// copy body
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -145,7 +147,7 @@ func V4Verify(auth V4Auth, credentials Credentials, r *http.Request) error {
 		return err
 	}
 	// sign
-	signingKey := ctx.createSignature(credentials.GetAccessSecretKey(), auth.Date, auth.Region, auth.Service)
+	signingKey := ctx.createSignature(credentials.AccessSecretKey, auth.Date, auth.Region, auth.Service)
 	signature := hex.EncodeToString(ctx.sign(signingKey, stringToSign))
 
 	// compare signatures
@@ -341,7 +343,7 @@ func (a *V4Authenticator) String() string {
 	return "sigv4"
 }
 
-func (a *V4Authenticator) Verify(creds Credentials, bareDomain string) error {
+func (a *V4Authenticator) Verify(creds *model.Credential, bareDomain string) error {
 	err := V4Verify(a.ctx, creds, a.request)
 	return err
 }

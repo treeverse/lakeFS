@@ -10,9 +10,8 @@ const (
 	DateHeaderTimestampFormat = "Mon, 02 Jan 2006 15:04:05 GMT"
 )
 
-func HeaderTimestamp(ts int64) string {
-	t := time.Unix(ts, 0)
-	return t.UTC().Format(DateHeaderTimestampFormat)
+func HeaderTimestamp(ts time.Time) string {
+	return ts.UTC().Format(DateHeaderTimestampFormat)
 }
 
 func ETag(cksum string) string {

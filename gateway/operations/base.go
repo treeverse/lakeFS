@@ -14,7 +14,6 @@ import (
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/auth"
-	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/utils"
@@ -114,8 +113,8 @@ func (o *Operation) EncodeError(err errors.APIError) {
 
 type AuthenticatedOperation struct {
 	*Operation
-	SubjectId   string
-	SubjectType authmodel.APICredentials_Type
+	SubjectId   int
+	SubjectType string
 }
 
 type RepoOperation struct {
@@ -127,9 +126,9 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 	o.EncodeResponse(errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
-		BucketName: o.Repo.GetRepoId(),
+		BucketName: o.Repo.Id,
 		Key:        "",
-		Resource:   o.Repo.GetRepoId(),
+		Resource:   o.Repo.Id,
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
@@ -150,9 +149,9 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 	o.EncodeResponse(errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
-		BucketName: o.Repo.GetRepoId(),
+		BucketName: o.Repo.Id,
 		Key:        o.Path,
-		Resource:   fmt.Sprintf("%s@%s", o.Ref, o.Repo.GetRepoId()),
+		Resource:   fmt.Sprintf("%s@%s", o.Ref, o.Repo.Id),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),

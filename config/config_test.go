@@ -87,22 +87,6 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 }
 
-func TestConfig_BuildStore(t *testing.T) {
-	t.Run("non default path badger", func(t *testing.T) {
-		var causedPanic bool
-		defer func() {
-			if r := recover(); r != nil {
-				causedPanic = true
-			}
-		}()
-		c := config.NewFromFile("testdata/valid_custom_badger_config.yaml")
-		c.BuildStore()
-		if !causedPanic {
-			t.Fatalf("expected a panic when buidling a store with a path that doesnt exist")
-		}
-	})
-}
-
 func TestConfig_JSONLogger(t *testing.T) {
 	logfile := "/tmp/lakefs_json_logger_test.log"
 	_ = os.Remove(logfile)

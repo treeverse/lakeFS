@@ -24,7 +24,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 
 	// ensure this
 
-	err := o.MultipartManager.Abort(o.Repo.GetRepoId(), o.Path, uploadId)
+	err := o.MultipartManager.Abort(o.Repo.Id, o.Path, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -44,7 +44,7 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 		return
 	}
 
-	err := o.Index.DeleteObject(o.Repo.GetRepoId(), o.Ref, o.Path)
+	err := o.Index.DeleteObject(o.Repo.Id, o.Ref, o.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not delete key")
 		if !xerrors.Is(err, db.ErrNotFound) {

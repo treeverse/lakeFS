@@ -48,22 +48,22 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// validate src and dst are in the same repo
-	if !strings.EqualFold(o.Repo.GetRepoId(), p.Repo) {
+	if !strings.EqualFold(o.Repo.Id, p.Repo) {
 		o.Log().WithError(err).Error("cannot copy objects across repos")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntryObject(o.Repo.GetRepoId(), p.Ref, p.Path)
+	src, err := o.Index.ReadEntryObject(o.Repo.Id, p.Ref, p.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 	// write this object to workspace
-	src.Timestamp = time.Now().Unix() // TODO: move this logic into the Index impl.
-	err = o.Index.WriteEntry(o.Repo.GetRepoId(), o.Ref, o.Path, src)
+	src.CreationDate = time.Now() // TODO: move this logic into the Index impl.
+	err = o.Index.WriteEntry(o.Repo.Id, o.Ref, o.Path, src)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -71,8 +71,8 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	o.EncodeResponse(&serde.CopyObjectResult{
-		LastModified: serde.Timestamp(src.GetTimestamp()),
-		ETag:         fmt.Sprintf("\"%s\"", src.GetChecksum()),
+		LastModified: serde.Timestamp(src.CreationDate),
+		ETag:         fmt.Sprintf("\"%s\"", src.Checksum),
 	}, http.StatusOK)
 }
 
@@ -89,18 +89,18 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := upload.WriteBlob(o.Index, o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
+	blob, err := upload.WriteBlob(o.Index, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 
-	err = o.MultipartManager.UploadPart(o.Repo.GetRepoId(), o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
-		Blocks:    blob.Blocks,
-		Checksum:  blob.Checksum,
-		Timestamp: time.Now().Unix(),
-		Size:      blob.Size,
+	err = o.MultipartManager.UploadPart(o.Repo.Id, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
+		Blocks:       blob.Blocks,
+		Checksum:     blob.Checksum,
+		CreationDate: time.Now(),
+		Size:         blob.Size,
 	})
 
 	if err != nil {
@@ -124,7 +124,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 
 	//validate branch
-	_, err := o.Index.GetBranch(o.Repo.GetRepoId(), o.Ref)
+	_, err := o.Index.GetBranch(o.Repo.Id, o.Ref)
 	if err != nil {
 		o.Log().WithError(err).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)
@@ -146,7 +146,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := upload.WriteBlob(o.Index, o.Repo.GetBucketName(), o.Request.Body, o.BlockStore)
+	blob, err := upload.WriteBlob(o.Index, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -165,14 +165,14 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	p := pth.New(o.Path)
 
 	entry := &model.Entry{
-		Name:      p.BaseName(),
-		Address:   ident.Hash(obj),
-		Type:      model.Entry_OBJECT,
-		Timestamp: writeTime.Unix(),
-		Size:      blob.Size,
-		Checksum:  blob.Checksum,
+		Name:         p.BaseName(),
+		Address:      ident.Hash(obj),
+		EntryType:    model.EntryTypeObject,
+		CreationDate: writeTime,
+		Size:         blob.Size,
+		Checksum:     blob.Checksum,
 	}
-	err = o.Index.WriteFile(o.Repo.GetRepoId(), o.Ref, o.Path, entry, obj)
+	err = o.Index.WriteFile(o.Repo.Id, o.Ref, o.Path, entry, obj)
 	tookMeta := time.Since(writeTime)
 
 	if err != nil {
@@ -183,6 +183,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	o.Log().WithFields(logging.Fields{
 		"took": tookMeta,
 	}).Debug("metadata update complete")
-	o.SetHeader("ETag", httputil.ETag(obj.GetChecksum()))
+	o.SetHeader("ETag", httputil.ETag(obj.Checksum))
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }
