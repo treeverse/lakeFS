@@ -1,10 +1,18 @@
 package api_test
 
 import (
+	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/treeverse/lakefs/auth/crypt"
+
+	"github.com/treeverse/lakefs/index/store"
+
+	"github.com/ory/dockertest/v3"
 
 	httptransport "github.com/go-openapi/runtime/client"
 
@@ -19,8 +27,6 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 
-	"github.com/treeverse/lakefs/index/store"
-
 	"github.com/treeverse/lakefs/auth"
 
 	"github.com/treeverse/lakefs/index"
@@ -34,6 +40,24 @@ const (
 	DefaultUserId = "example_user"
 )
 
+var (
+	pool        *dockertest.Pool
+	databaseUri string
+)
+
+func TestMain(m *testing.M) {
+	var err error
+	var closer func()
+	pool, err = dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to Docker: %s", err)
+	}
+	databaseUri, closer = testutil.GetDBInstance(pool)
+	code := m.Run()
+	closer() // cleanup
+	os.Exit(code)
+}
+
 type dependencies struct {
 	blocks block.Adapter
 	auth   auth.Service
@@ -41,31 +65,42 @@ type dependencies struct {
 	mpu    index.MultipartManager
 }
 
-func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.APICredentials {
-	testutil.Must(t, authService.CreateRole(&authmodel.Role{
-		Id:   "admin",
-		Name: "admin",
-		Policies: []*authmodel.Policy{
-			{
-				Permission: string(permissions.ManageRepos),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.ReadRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.WriteRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-		},
-	}))
-
+func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
+	// create user
 	user := &authmodel.User{
-		Id:    DefaultUserId,
-		Roles: []string{"admin"},
+		Email:    "admin@example.com",
+		FullName: "admin user",
 	}
 	testutil.Must(t, authService.CreateUser(user))
+
+	// create role
+	role := &authmodel.Role{
+		DisplayName: "Admins",
+	}
+	testutil.Must(t, authService.CreateRole(role))
+
+	// attach policies
+	policies := []*authmodel.Policy{
+		{
+			Permission: string(permissions.ManageRepos),
+			Arn:        "arn:treeverse:repos:::*",
+		},
+		{
+			Permission: string(permissions.ReadRepo),
+			Arn:        "arn:treeverse:repos:::*",
+		},
+		{
+			Permission: string(permissions.WriteRepo),
+			Arn:        "arn:treeverse:repos:::*",
+		},
+	}
+	for _, policy := range policies {
+		testutil.Must(t, authService.AssignPolicyToRole(role.Id, policy))
+	}
+
+	// assign user to role
+	testutil.Must(t, authService.AssignRoleToUser(role.Id, user.Id))
+
 	creds, err := authService.CreateUserCredentials(user)
 	if err != nil {
 		t.Fatal(err)
@@ -73,14 +108,15 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.A
 	return creds
 }
 
-func getHandler(t *testing.T) (http.Handler, *dependencies, func()) {
-	db, dbCloser := testutil.GetDB(t)
-	blockAdapter, fsCloser := testutil.GetBlockAdapter(t)
-	indexStore := store.NewKVStore(db)
-	meta := index.NewKVIndex(indexStore)
-	mpu := index.NewKVMultipartManager(indexStore)
+func getHandler(t *testing.T) (http.Handler, *dependencies) {
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	blockAdapter := testutil.GetBlockAdapter(t)
 
-	authService := auth.NewKVAuthService(db)
+	meta := index.NewDBIndex(mdb)
+	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
+
+	adb := testutil.GetDB(t, databaseUri, "lakefs_auth")
+	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
 
 	server := api.NewServer(
 		meta,
@@ -89,14 +125,8 @@ func getHandler(t *testing.T) (http.Handler, *dependencies, func()) {
 		authService,
 	)
 
-	closer := func() {
-		dbCloser()
-		fsCloser()
-	}
-
 	srv, err := server.SetupServer()
 	if err != nil {
-		closer()
 		t.Fatal(err)
 	}
 	return srv.GetHandler(), &dependencies{
@@ -104,7 +134,7 @@ func getHandler(t *testing.T) (http.Handler, *dependencies, func()) {
 		auth:   authService,
 		meta:   meta,
 		mpu:    mpu,
-	}, closer
+	}
 }
 
 type roundTripper struct {
@@ -130,8 +160,8 @@ func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, err
 }
 
 func TestServer_BasicAuth(t *testing.T) {
-	handler, deps, close := getHandler(t)
-	defer close()
+	handler, deps := getHandler(t)
+
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
 
