@@ -139,12 +139,12 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		var lastId string
 		for i, repo := range repos {
 			repoList[i] = &models.Repository{
-				BucketName:    repo.GetBucketName(),
-				CreationDate:  repo.GetCreationDate(),
-				DefaultBranch: repo.GetDefaultBranch(),
-				ID:            repo.GetRepoId(),
+				BucketName:    repo.StorageNamespace,
+				CreationDate:  repo.CreationDate.Unix(),
+				DefaultBranch: repo.DefaultBranch,
+				ID:            repo.Id,
 			}
-			lastId = repo.GetRepoId()
+			lastId = repo.Id
 		}
 		returnValue := repositories.NewListRepositoriesOK().WithPayload(&repositories.ListRepositoriesOKBody{
 			Pagination: &models.Pagination{
@@ -195,10 +195,10 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 
 		return repositories.NewGetRepositoryOK().
 			WithPayload(&models.Repository{
-				BucketName:    repo.GetBucketName(),
-				CreationDate:  repo.GetCreationDate(),
-				DefaultBranch: repo.GetDefaultBranch(),
-				ID:            repo.GetRepoId(),
+				BucketName:    repo.StorageNamespace,
+				CreationDate:  repo.CreationDate.Unix(),
+				DefaultBranch: repo.DefaultBranch,
+				ID:            repo.Id,
 			})
 	})
 }
@@ -218,12 +218,12 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 			return commits.NewGetCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		return commits.NewGetCommitOK().WithPayload(&models.Commit{
-			Committer:    commit.GetCommitter(),
-			CreationDate: commit.GetTimestamp(),
-			ID:           commit.GetAddress(),
-			Message:      commit.GetMessage(),
-			Metadata:     commit.GetMetadata(),
-			Parents:      commit.GetParents(),
+			Committer:    commit.Committer,
+			CreationDate: commit.CreationDate.Unix(),
+			ID:           commit.Address,
+			Message:      commit.Message,
+			Metadata:     commit.Metadata,
+			Parents:      commit.Parents,
 		})
 	})
 }
@@ -234,17 +234,23 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		commit, err := a.ForRequest(params.HTTPRequest).Index.Commit(params.RepositoryID, params.BranchID, *params.Commit.Message, user.ID, params.Commit.Metadata)
+		userModel, err := a.context.Auth.GetUser(int(user.ID))
+		if err != nil {
+			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
+
+		commit, err := a.ForRequest(params.HTTPRequest).Index.Commit(params.RepositoryID, params.BranchID, *params.Commit.Message, committer, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		return commits.NewCommitCreated().WithPayload(&models.Commit{
-			Committer:    commit.GetCommitter(),
-			CreationDate: commit.GetTimestamp(),
-			ID:           commit.GetAddress(),
-			Message:      commit.GetMessage(),
-			Metadata:     commit.GetMetadata(),
-			Parents:      commit.GetParents(),
+			Committer:    commit.Committer,
+			CreationDate: commit.CreationDate.Unix(),
+			ID:           commit.Address,
+			Message:      commit.Message,
+			Metadata:     commit.Metadata,
+			Parents:      commit.Parents,
 		})
 	})
 }
@@ -268,7 +274,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, hasMore, err := index.GetCommitLog(params.RepositoryID, branch.GetCommit(), amount, after)
+		commitLog, hasMore, err := index.GetCommitLog(params.RepositoryID, branch.CommitId, amount, after)
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -277,14 +283,14 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		lastId := ""
 		for i, commit := range commitLog {
 			serializedCommits[i] = &models.Commit{
-				Committer:    commit.GetCommitter(),
-				CreationDate: commit.GetTimestamp(),
-				ID:           commit.GetAddress(),
-				Message:      commit.GetMessage(),
-				Metadata:     commit.GetMetadata(),
-				Parents:      commit.GetParents(),
+				Committer:    commit.Committer,
+				CreationDate: commit.CreationDate.Unix(),
+				ID:           commit.Address,
+				Message:      commit.Message,
+				Metadata:     commit.Metadata,
+				Parents:      commit.Parents,
 			}
-			lastId = commit.GetAddress()
+			lastId = commit.Address
 		}
 
 		returnValue := commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
@@ -347,10 +353,10 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		}
 
 		return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
-			BucketName:    repo.GetBucketName(),
-			CreationDate:  repo.GetCreationDate(),
-			DefaultBranch: repo.GetDefaultBranch(),
-			ID:            repo.GetRepoId(),
+			BucketName:    repo.StorageNamespace,
+			CreationDate:  repo.CreationDate.Unix(),
+			DefaultBranch: repo.DefaultBranch,
+			ID:            repo.Id,
 		})
 	})
 }
@@ -395,10 +401,10 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		var lastId string
 		for i, branch := range res {
 			branchList[i] = &models.Ref{
-				CommitID: &branch.Commit,
-				ID:       &branch.Name,
+				CommitID: &branch.CommitId,
+				ID:       &branch.Id,
 			}
-			lastId = branch.Name
+			lastId = branch.Id
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
 			Pagination: &models.Pagination{
@@ -435,8 +441,8 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 
 		return branches.NewGetBranchOK().
 			WithPayload(&models.Ref{
-				CommitID: swag.String(branch.GetCommit()),
-				ID:       swag.String(branch.GetName()),
+				CommitID: swag.String(branch.CommitId),
+				ID:       swag.String(branch.Id),
 			})
 	})
 }
@@ -454,8 +460,8 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		}
 
 		return branches.NewCreateBranchCreated().WithPayload(&models.Ref{
-			CommitID: swag.String(branch.GetCommit()),
-			ID:       swag.String(branch.GetName()),
+			CommitID: swag.String(branch.CommitId),
+			ID:       swag.String(branch.Id),
 		})
 	})
 }
@@ -542,11 +548,11 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 
 		// serialize entry
 		return objects.NewStatObjectOK().WithPayload(&models.ObjectStats{
-			Checksum:  entry.GetChecksum(),
-			Mtime:     entry.GetTimestamp(),
+			Checksum:  entry.Checksum,
+			Mtime:     entry.CreationDate.Unix(),
 			Path:      params.Path,
 			PathType:  models.ObjectStatsPathTypeOBJECT,
-			SizeBytes: entry.GetSize(),
+			SizeBytes: entry.Size,
 		})
 	})
 }
@@ -581,8 +587,8 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 		// setup response
 		res := objects.NewGetObjectOK()
-		res.ETag = httputil.ETag(entry.GetChecksum())
-		res.LastModified = httputil.HeaderTimestamp(entry.GetTimestamp())
+		res.ETag = httputil.ETag(entry.Checksum)
+		res.LastModified = httputil.HeaderTimestamp(entry.CreationDate)
 		res.ContentDisposition = fmt.Sprintf("filename=\"%s\"", entry.GetName())
 
 		// get object for its blocks
@@ -592,11 +598,11 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// build a response as a multi-reader
-		res.ContentLength = obj.GetSize()
-		blocks := obj.GetBlocks()
+		res.ContentLength = obj.Size
+		blocks := obj.Blocks
 		readers := make([]io.ReadCloser, len(blocks))
 		for i, block := range blocks {
-			reader, err := ctx.BlockAdapter.Get(repo.GetBucketName(), block.GetAddress())
+			reader, err := ctx.BlockAdapter.Get(repo.StorageNamespace, block.Address)
 			if err != nil {
 				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 			}
@@ -632,16 +638,16 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		var lastId string
 		for i, entry := range res {
 			typ := models.ObjectStatsPathTypeTREE
-			if entry.GetType() == model.Entry_OBJECT {
+			if entry.GetType() == model.EntryTypeObject {
 				typ = models.ObjectStatsPathTypeOBJECT
 			}
 
 			objList[i] = &models.ObjectStats{
-				Checksum:  entry.GetChecksum(),
-				Mtime:     entry.GetTimestamp(),
+				Checksum:  entry.Checksum,
+				Mtime:     entry.CreationDate.Unix(),
 				Path:      entry.GetName(),
 				PathType:  typ,
-				SizeBytes: entry.GetSize(),
+				SizeBytes: entry.Size,
 			}
 			lastId = entry.GetName()
 		}
@@ -680,7 +686,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 
 		// read the content
-		blob, err := upload.WriteBlob(index, repo.GetBucketName(), params.Content, ctx.BlockAdapter)
+		blob, err := upload.WriteBlob(index, repo.StorageNamespace, params.Content, ctx.BlockAdapter)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -696,12 +702,13 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		p := pth.New(params.Path)
 
 		entry := &model.Entry{
-			Name:      p.BaseName(),
-			Address:   ident.Hash(obj),
-			Type:      model.Entry_OBJECT,
-			Timestamp: writeTime.Unix(),
-			Size:      blob.Size,
-			Checksum:  blob.Checksum,
+			RepositoryId: repo.Id,
+			Name:         p.BaseName(),
+			Address:      ident.Hash(obj),
+			EntryType:    model.EntryTypeObject,
+			CreationDate: writeTime,
+			Size:         blob.Size,
+			Checksum:     blob.Checksum,
 		}
 		err = index.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
 		if err != nil {

@@ -3,9 +3,15 @@ package gateway_test
 import (
 	"encoding/json"
 	"io/ioutil"
+	"log"
 	"net/http"
+	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/treeverse/lakefs/index/store"
+
+	"github.com/ory/dockertest/v3"
 
 	"github.com/treeverse/lakefs/logging"
 
@@ -15,18 +21,17 @@ import (
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 type playBackMockConf struct {
-	ListenAddress   string                    `json:"listen_address"`
-	BareDomain      string                    `json:"bare_domain"`
-	AccessKeyId     string                    `json:"access_key_id"`
-	AccessSecretKey string                    `json:"access_secret_Key"`
-	CredentialType  model.APICredentials_Type `json:"credential_type"`
-	EntityId        string                    `json:"entity_id"`
-	Region          string                    `json:"Region"`
+	ListenAddress   string `json:"listen_address"`
+	BareDomain      string `json:"bare_domain"`
+	AccessKeyId     string `json:"access_key_id"`
+	AccessSecretKey string `json:"access_secret_Key"`
+	CredentialType  string `json:"credential_type"`
+	UserId          int    `json:"user_id"`
+	Region          string `json:"Region"`
 }
 
 type dependencies struct {
@@ -48,27 +53,40 @@ func TestGatewayRecording(t *testing.T) {
 		dirName := dir.Name()
 		t.Run(dirName+" recording", func(t *testing.T) {
 			setGlobalPlaybackParams(dirName)
-			handler, _, closer := getBasicHandler(t, dirName)
-			defer closer()
+			handler, _ := getBasicHandler(t, dirName)
 			DoTestRun(handler, false, 1.0, t)
 		})
 	}
 }
 
-func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies, func()) {
+var (
+	pool        *dockertest.Pool
+	databaseUri string
+)
+
+func TestMain(m *testing.M) {
+	var err error
+	var closer func()
+	pool, err = dockertest.NewPool("")
+	if err != nil {
+		log.Fatalf("Could not connect to Docker: %s", err)
+	}
+	databaseUri, closer = testutil.GetDBInstance(pool)
+	code := m.Run()
+	closer() // cleanup
+	os.Exit(code)
+}
+
+func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
 	directory := filepath.Join("testdata", "recordings", testDir)
 
-	db, dbCloser := testutil.GetDB(t)
-	blockAdapter, fsCloser := testutil.GetBlockAdapter(t)
-	indexStore := store.NewKVStore(db)
-	meta := index.NewKVIndex(indexStore)
-	mpu := index.NewKVMultipartManager(indexStore)
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	meta := index.NewDBIndex(mdb)
+	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
+
+	blockAdapter := testutil.GetBlockAdapter(t)
 	authService := newGatewayAuth(t, directory)
 
-	closer := func() {
-		dbCloser()
-		fsCloser()
-	}
 	testutil.Must(t, meta.CreateRepo("example", "s3://example", "master"))
 	server := gateway.NewServer(authService.Region,
 		meta,
@@ -82,7 +100,7 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies,
 		auth:   authService,
 		meta:   meta,
 		mpu:    mpu,
-	}, closer
+	}
 }
 
 func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
@@ -99,14 +117,15 @@ func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
 	return m
 }
 
-func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.APICredentials, error) {
+func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.Credential, error) {
 	if accessKey != m.AccessKeyId {
 		logging.Default().Fatal("access key in recording different than configuration")
 	}
-	aCred := new(model.APICredentials)
+	aCred := new(model.Credential)
 	aCred.AccessKeyId = accessKey
 	aCred.AccessSecretKey = m.AccessSecretKey
-	aCred.CredentialType = m.CredentialType
+	aCred.Type = m.CredentialType
+	aCred.UserId = &m.UserId
 	return aCred, nil
 
 }
