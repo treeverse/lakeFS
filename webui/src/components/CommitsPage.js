@@ -12,7 +12,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import Octicon, {Link as LinkIcon, Diff} from "@primer/octicons-react";
+import Octicon, {Link as LinkIcon, LinkExternal as LinkExternalIcon, Diff} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
@@ -56,6 +56,7 @@ const CommitWidget = ({repo, commit, previous}) => {
                 </div>
                 <div className="float-right">
                     <ButtonGroup className="commit-actions">
+                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="copy S3 URI to clipboard" icon={LinkExternalIcon}/>
                         <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
                         <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at commit</Tooltip>}>
