@@ -70,8 +70,11 @@ fmt-validator:  ## Validate go format
 
 checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps
 
+$(UI_DIR)/node_modules:
+	cd $(UI_DIR) && $(NPM) install
+
 # UI operations
-ui-build:  ## Build UI app
+ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build && cd -
 
 ui-bundle:  ## Bundle static built UI app
