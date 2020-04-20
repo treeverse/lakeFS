@@ -59,24 +59,6 @@ func (s *mockAdapter) Remove(repo string, identifier string) error {
 	return errors.New(" remove method not implemented in mock adapter")
 }
 
-type MockDedup struct {
-	DedupIndex map[string]string
-}
-
-func NewMockDedup() *MockDedup {
-	m := make(map[string]string)
-	return &MockDedup{DedupIndex: m}
-}
-
-func (d *MockDedup) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
-	existingObj, ok := d.DedupIndex[dedupId]
-	if ok {
-		return existingObj, nil
-	} else {
-		return objName, nil
-	}
-}
-
 func TestReadBlob(t *testing.T) {
 
 	tt := []struct {
@@ -93,7 +75,7 @@ func TestReadBlob(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
-			deduper := NewMockDedup()
+			deduper := upload.NewMockDedup()
 			data := make([]byte, tc.size)
 			_, err := rand.Read(data)
 			if err != nil {

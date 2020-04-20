@@ -812,6 +812,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	deduper := upload.NewMockDedup()
 
 	// setup client
 	clt := client.Default
@@ -823,7 +824,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	blob, err := upload.WriteBlob("ns1", buf, deps.blocks, 1024)
+	blob, err := upload.WriteBlob(deduper, "ns1", buf, deps.blocks)
 	if err != nil {
 		t.Fatal(err)
 	}
