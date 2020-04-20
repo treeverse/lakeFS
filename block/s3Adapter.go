@@ -44,8 +44,17 @@ func (s S3Adapter) Put(repo string, identifier string, reader io.ReadSeeker) err
 }
 
 func (s S3Adapter) Remove(repo string, identifier string) error {
-	s.log().Warn("S3 - remove function not implemented yet  \n")
-	return nil
+	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
+	_, err := s.s3.DeleteObject(deleteObjectParams)
+	if err != nil {
+		s.log().WithError(err).Error("failed to put S3 object")
+		return err
+	}
+	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(identifier),
+	})
+	return err
 }
 
 func (s S3Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
