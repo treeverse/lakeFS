@@ -686,7 +686,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 
 		// read the content
-		blob, err := upload.WriteBlob(index, repo.StorageNamespace, params.Content, ctx.BlockAdapter)
+		blob, err := upload.WriteBlob(index, repo.Id, params.Content, ctx.BlockAdapter)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -694,9 +694,10 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		// write metadata
 		writeTime := time.Now()
 		obj := &model.Object{
-			Blocks:   blob.Blocks,
-			Checksum: blob.Checksum,
-			Size:     blob.Size,
+			RepositoryId: repo.Id,
+			Blocks:       blob.Blocks,
+			Checksum:     blob.Checksum,
+			Size:         blob.Size,
 		}
 
 		p := pth.New(params.Path)
@@ -710,7 +711,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:         blob.Size,
 			Checksum:     blob.Checksum,
 		}
-		err = index.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
+		err = index.WriteFile(repo.Id, params.BranchID, params.Path, entry, obj)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

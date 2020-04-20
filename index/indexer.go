@@ -431,6 +431,11 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		if err != nil {
 			return nil, err
 		}
+		_, err = tx.ReadBranch(branch)
+		if err != nil {
+			return nil, err
+		}
+
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
 			index.log().WithError(err).Error("could not write object")
@@ -1292,14 +1297,15 @@ func (index *DBIndex) Tree(repoId, branch string) error {
 	return err
 }
 
-func (index *KVIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
-	objectId, err := index.kv.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+func (index *DBIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
+	objectId, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		dedupObj, err := tx.GetObjectDedup(dedupId)
 		if err == nil {
-			return dedupObj.ObjectID, nil
+			return dedupObj.Address, nil
 		} else if xerrors.Is(err, db.ErrNotFound) {
 			d := new(model.ObjectDedup)
-			d.ObjectID = objName
+			d.RepositoryId = repoId
+			d.Address = objName
 			d.DedupId = dedupId
 			err = tx.WriteObjectDedup(d)
 			if err != nil {
@@ -1311,5 +1317,10 @@ func (index *KVIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objN
 			return objName, err
 		}
 	})
-	return objectId.(string), err
+	val, ok := objectId.(string)
+	if ok {
+		return val, err
+	} else {
+		return objName, err
+	}
 }

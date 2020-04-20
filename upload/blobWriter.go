@@ -7,11 +7,14 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 	"hash"
 	"io"
 )
+
+type DedupHandler interface {
+	CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error)
+}
 
 func uuidAsHex() string {
 	id := [16]byte(uuid.New())
@@ -54,7 +57,7 @@ func (s *HashingReader) Seek(offset int64, whence int) (int64, error) {
 	panic("Seek was called while reading in upload\n")
 }
 
-func WriteBlob(index index.Index, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+func WriteBlob(index DedupHandler, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
 	hashReader := newHashingReaderReader(body)
 	objName := uuidAsHex()
@@ -63,7 +66,6 @@ func WriteBlob(index index.Index, bucketName string, body io.Reader, adapter blo
 		panic("could not copy object to destination\n")
 	}
 	Block := new(model.Block)
-	Block.Size = hashReader.copiedSize
 	dedupId := hex.EncodeToString(hashReader.sha256.Sum(nil))
 	checksum := hex.EncodeToString(hashReader.md5.Sum(nil))
 	existingName, err := index.CreateDedupEntryIfNone(bucketName, dedupId, objName)
@@ -71,15 +73,8 @@ func WriteBlob(index index.Index, bucketName string, body io.Reader, adapter blo
 		adapter.Remove(bucketName, objName)
 		objName = existingName
 	}
+	Block.Size = hashReader.copiedSize
 	Block.Address = objName
-	/*obj,err := index.ReadObjectByKey(bucketName,dedupId)
-	if err == nil { // Object already exist under different name
-		adapter.Remove(bucketName,objName)
-		objName = obj.Checksum
-	} else if !xerrors.Is(err, db.ErrNotFound) {
-		panic("error reading object ")
-		return nil,err
-	}*/
 	blob := new(Blob)
 	blob.Blocks = append(blob.Blocks, Block)
 	blob.Checksum = checksum

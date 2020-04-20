@@ -32,10 +32,6 @@ type RepoOperations interface {
 	ListMultipartUploads() ([]*model.MultipartUpload, error)
 	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
 	GetObjectDedup(DedupId string) (*model.ObjectDedup, error)
-}
-
-type RepoOperations interface {
-	RepoReadOnlyOperations
 	DeleteWorkspacePath(branch, path string) error
 	WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
@@ -46,12 +42,6 @@ type RepoOperations interface {
 	WriteBranch(name string, branch *model.Branch) error
 	DeleteBranch(name string) error
 	WriteRepo(repo *model.Repo) error
-
-	// Multipart uploads
-	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
-	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
-	ListMultipartUploads() ([]*model.MultipartUpload, error)
-	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
 	WriteMultipartUpload(upload *model.MultipartUpload) error
 	WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error
 	DeleteMultipartUpload(uploadId string) error
@@ -208,9 +198,15 @@ func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry
 	return entry, err
 }
 
-func (s *KVRepoReadOnlyOperations) GetObjectDedup(DedupId string) (*model.ObjectDedup, error) {
+func (s *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, error) {
+	//hexDedup,err := hex.DecodeString(dedupId)
+	//if err != nil{
+	//	return nil,err
+	//}
 	m := &model.ObjectDedup{}
-	return m, s.query.GetAsProto(m, SubspacesDedup, db.CompositeStrings(s.repoId, DedupId))
+	err := s.tx.Get(m, `SELECT repository_id,encode(dedup_id,'hex') as dedup_id,Address FROM object_dedup WHERE repository_id = $1 AND dedup_id = decode($2,'hex')`,
+		s.repoId, dedupId)
+	return m, err
 }
 
 func (o *DBRepoOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
@@ -260,8 +256,14 @@ func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string,
 	return err
 }
 
-func (s *KVRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
-	return s.query.SetProto(dedup, SubspacesDedup, db.CompositeStrings(s.repoId, dedup.DedupId))
+func (s *DBRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
+	//hexDedup,err := hex.DecodeString(dedup.DedupId)
+	//if err != nil{
+	//	return err
+	//}
+	_, err := s.tx.Exec(`INSERT INTO object_dedup  (repository_id, dedup_id,address) values ($1,decode($2,'hex'),$3)`,
+		s.repoId, dedup.DedupId, dedup.Address)
+	return err
 }
 
 func (o *DBRepoOperations) ClearWorkspace(branch string) error {
@@ -295,6 +297,7 @@ func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
 }
 
 func (o *DBRepoOperations) WriteObject(addr string, object *model.Object) error {
+	object.Address = addr
 	_, err := o.tx.Exec(`
 		INSERT INTO objects (repository_id, address, checksum, size, blocks, metadata)
 		VALUES ($1, $2, $3, $4, $5, $6)
