@@ -4,6 +4,7 @@ import (
 	"context"
 	"io"
 	"net/url"
+	"path"
 
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 
@@ -285,6 +286,9 @@ func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error)
 	parsedUrl, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
+	}
+	if len(parsedUrl.Path) == 0 {
+		parsedUrl.Path = path.Join(parsedUrl.Path, genclient.DefaultBasePath)
 	}
 	return &client{
 		remote: genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default),
