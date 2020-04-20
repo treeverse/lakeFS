@@ -5,12 +5,12 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/rand"
+	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/block"
 	"io"
 	"io/ioutil"
 	"testing"
-
-	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/upload"
 )
@@ -54,6 +54,28 @@ func (a *mockAdapter) Get(_ string, _ string) (io.ReadCloser, error) {
 func (a *mockAdapter) GetRange(_ string, _ string, _ int64, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }
+func (s *mockAdapter) Remove(repo string, identifier string) error {
+
+	return errors.New(" remove method not implemented in mock adapter")
+}
+
+type MockDedup struct {
+	DedupIndex map[string]string
+}
+
+func NewMockDedup() *MockDedup {
+	m := make(map[string]string)
+	return &MockDedup{DedupIndex: m}
+}
+
+func (d *MockDedup) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
+	existingObj, ok := d.DedupIndex[dedupId]
+	if ok {
+		return existingObj, nil
+	} else {
+		return objName, nil
+	}
+}
 
 func TestReadBlob(t *testing.T) {
 
@@ -71,6 +93,7 @@ func TestReadBlob(t *testing.T) {
 
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
+			deduper := NewMockDedup()
 			data := make([]byte, tc.size)
 			_, err := rand.Read(data)
 			if err != nil {
@@ -78,7 +101,7 @@ func TestReadBlob(t *testing.T) {
 			}
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
-			blob, err := upload.WriteBlob(bucketName, reader, adapter, ObjectBlockSize)
+			blob, err := upload.WriteBlob(deduper, bucketName, reader, adapter)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -97,17 +120,8 @@ func TestReadBlob(t *testing.T) {
 			}
 
 			// test block number
-			if adapter.count != len(blob.Blocks) {
-				t.Fatalf("expected number of blocks in blob to be equal to number of calls to adapter adapter read size, got: blob:%d , adapter:%d", len(blob.Blocks), adapter.count)
-			}
-
-			expectedBlocks := int(tc.size/(ObjectBlockSize)) + 1
-			if tc.size%ObjectBlockSize == 0 {
-				expectedBlocks -= 1
-			}
-
-			if adapter.count != expectedBlocks {
-				t.Fatalf("expected number of blocks in blob to be equal to %d got:%d", expectedBlocks, adapter.count)
+			if len(blob.Blocks) != 1 {
+				t.Fatalf("incorrect number of blocks: %d ", len(blob.Blocks))
 			}
 
 			// test checksum

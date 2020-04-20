@@ -95,6 +95,12 @@ func (m *Object) Identity() []byte {
 	)
 }
 
+type ObjectDedup struct {
+	RepositoryId string `db:"repository_id"`
+	DedupId      string `db:"dedup_id"`
+	Address      string `db:"address"`
+}
+
 type Root struct {
 	RepositoryId string    `db:"repository_id"`
 	Address      string    `db:"address"`
