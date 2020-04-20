@@ -7,33 +7,44 @@ CREATE TABLE repositories (
 );
 
 
-CREATE TABLE objects (
-    repository_id varchar(64) REFERENCES repositories(id) NOT NULL,
-    address varchar(64) NOT NULL,
-    checksum varchar(64) NOT NULL,
-    size bigint NOT NULL CHECK(size >= 0),
-    blocks json NOT NULL,
-    metadata json NOT NULL,
+CREATE TABLE objects(
+                        repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
+                        address       varchar(64)                              NOT NULL,
+                        checksum      varchar(64)                              NOT NULL,
+                        size          bigint                                   NOT NULL CHECK (size >= 0),
+                        blocks        json                                     NOT NULL,
+                        metadata      json                                     NOT NULL,
+
+                        PRIMARY KEY (repository_id, address)
+);
+
+CREATE TABLE object_dedup
+(
+    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
+    dedup_id      bytea                                    NOT NULL,
+    address       varchar(64)                              NOT NULL,
+
+    PRIMARY KEY (repository_id, dedup_id)
+);
+
+
+CREATE TABLE roots
+(
+    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
+    address       varchar(64)                              NOT NULL,
+    creation_date timestamptz                              NOT NULL,
+    size          bigint                                   NOT NULL CHECK (size >= 0),
 
     PRIMARY KEY (repository_id, address)
 );
 
 
-CREATE TABLE roots (
-    repository_id varchar(64) REFERENCES repositories(id) NOT NULL,
-    address varchar(64) NOT NULL,
-    creation_date timestamptz NOT NULL,
-    size bigint NOT NULL CHECK(size >= 0),
-
-    PRIMARY KEY (repository_id, address)
-);
-
-
-CREATE TABLE entries (
-    repository_id varchar(64) REFERENCES repositories(id) NOT NULL,
-    parent_address varchar(64) NOT NULL,
-    name varchar NOT NULL,
-    address varchar(64) NOT NULL,
+CREATE TABLE entries
+(
+    repository_id  varchar(64) REFERENCES repositories (id) NOT NULL,
+    parent_address varchar(64)                              NOT NULL,
+    name           varchar                                  NOT NULL,
+    address        varchar(64)                              NOT NULL,
     type varchar(24) NOT NULL CHECK (type in ('object', 'tree')),
     creation_date timestamptz NOT NULL,
     size bigint NOT NULL CHECK(size >= 0),
