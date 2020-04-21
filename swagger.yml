@@ -533,19 +533,19 @@ paths:
 
 
 
-  /repositories/{repositoryId}/refs/{rightRef}/merge/{leftRef}:
+  /repositories/{repositoryId}/refs/{sourceRef}/merge/{destinationRef}:
     parameters:
       - in: path
         name: repositoryId
         required: true
         type: string
       - in: path
-        name: rightRef
+        name: sourceRef
         required: true
         type: string
         description: source branch name
       - in: path
-        name: leftRef
+        name: destinationRef
         required: true
         type: string
         description: destination branch name
@@ -553,12 +553,12 @@ paths:
 
     post:
       tags:
-        - merge
+        - refs
       operationId: mergeIntoBranch
       summary: merge references
       responses:
         200:
-          description: merge compleated
+          description: merge completed
           schema:
             type: object
             properties:
@@ -571,7 +571,7 @@ paths:
           schema:
             $ref: "#/responses/Unauthorized"
         404:
-          description: branch not found
+          description: ref not found
           schema:
             $ref: "#/definitions/error"
         409:

@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/merge"
 	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/http"
@@ -104,7 +103,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
-	api.MergeMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
+	api.RefsMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
 	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
@@ -489,18 +488,18 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	})
 }
 
-func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
-	return merge.MergeIntoBranchHandlerFunc(func(params merge.MergeIntoBranchParams, user *models.User) middleware.Responder {
+func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
+	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.MergeIntoBranch(params.RepositoryID))
 		if err != nil {
-			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		userModel, err := a.context.Auth.GetUser(int(user.ID))
 		if err != nil {
-			return merge.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
-		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.RightRef, params.LeftRef, committer)
+		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.SourceRef, params.DestinationRef, committer)
 		mergeResult := make([]*models.MergeResult, len(mergeOperations))
 
 		if err == nil || err == errors.ErrMergeConflict {
@@ -515,22 +514,22 @@ func (a *Handler) MergeMergeIntoBranchHandler() merge.MergeIntoBranchHandler {
 		}
 		switch err {
 		case nil:
-			pl := new(merge.MergeIntoBranchOKBody)
+			pl := new(refs.MergeIntoBranchOKBody)
 			pl.Results = mergeResult
-			return merge.NewMergeIntoBranchOK().WithPayload(pl)
+			return refs.NewMergeIntoBranchOK().WithPayload(pl)
 		case errors.ErrNoMergeBase:
-			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
 		case errors.ErrDestinationNotCommitted:
-			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
 		case errors.ErrBranchNotFound:
-			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case errors.ErrMergeConflict:
 
-			pl := new(merge.MergeIntoBranchConflictBody)
+			pl := new(refs.MergeIntoBranchConflictBody)
 			pl.Results = mergeResult
-			return merge.NewMergeIntoBranchConflict().WithPayload(pl)
+			return refs.NewMergeIntoBranchConflict().WithPayload(pl)
 		default:
-			return merge.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 
 		}
 
