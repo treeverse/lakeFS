@@ -5,6 +5,7 @@ import (
 	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/url"
+	"path"
 
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 
@@ -302,13 +303,16 @@ func (c *client) DeleteObject(ctx context.Context, repoId, branchId, path string
 	return err
 }
 
-func NewClient(endpointURL, accessKeyId, secretAccessKey string) (*client, error) {
+func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
 	parsedUrl, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
 	}
-	cl := new(client)
-	cl.remote = genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default)
-	cl.auth = httptransport.BasicAuth(accessKeyId, secretAccessKey)
-	return cl, nil
+	if len(parsedUrl.Path) == 0 {
+		parsedUrl.Path = path.Join(parsedUrl.Path, genclient.DefaultBasePath)
+	}
+	return &client{
+		remote: genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default),
+		auth:   httptransport.BasicAuth(accessKeyId, secretAccessKey),
+	}, nil
 }

@@ -31,7 +31,7 @@ import (
 
 	"github.com/spf13/viper"
 
-	_ "github.com/jackc/pgx/stdlib"
+	_ "github.com/jackc/pgx/v4/stdlib"
 )
 
 const (
@@ -74,6 +74,7 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
 	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
+
 	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
 
 	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
@@ -299,6 +300,14 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\" or \"local\"",
 			viper.GetString("blockstore.type")))
 	}
+}
+
+func (c *Config) GetAuthEncryptionSecret() string {
+	secret := viper.GetString("auth.encrypt.secret_key")
+	if len(secret) == 0 {
+		panic(fmt.Errorf("auth.encrypt.secret_key cannot be empty. Please set it to a unique, randomly generated value and store it somewhere safe"))
+	}
+	return secret
 }
 
 func (c *Config) GetS3GatewayRegion() string {

@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/auth/crypt"
+
 	"github.com/treeverse/lakefs/index/store"
 
 	"github.com/ory/dockertest/v3"
@@ -114,7 +116,7 @@ func getHandler(t *testing.T) (http.Handler, *dependencies) {
 	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
 	adb := testutil.GetDB(t, databaseUri, "lakefs_auth")
-	authService := auth.NewDBAuthService(adb)
+	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
 
 	server := api.NewServer(
 		meta,
