@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/url"
 
-	"github.com/treeverse/lakefs/api/gen/client/merge"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 
 	"github.com/treeverse/lakefs/api/gen/client/objects"
@@ -207,17 +206,17 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 }
 
 func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error) {
-	statusOK, err := c.remote.Merge.MergeIntoBranch(&merge.MergeIntoBranchParams{
-		LeftRef:      leftRef,
-		RightRef:     rightRef,
-		RepositoryID: repoId,
-		Context:      ctx,
+	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
+		DestinationRef: leftRef,
+		SourceRef:      rightRef,
+		RepositoryID:   repoId,
+		Context:        ctx,
 	}, c.auth)
 
 	if err == nil {
 		return statusOK.Payload.Results, nil
 	}
-	conflict, ok := err.(*merge.MergeIntoBranchConflict)
+	conflict, ok := err.(*refs.MergeIntoBranchConflict)
 	if ok {
 		return conflict.Payload.Results, errors.ErrMergeConflict
 	} else {
