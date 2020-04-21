@@ -5,6 +5,7 @@ go 1.12
 require (
 	github.com/aws/aws-sdk-go v1.29.8
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
+	github.com/cockroachdb/apd v1.1.0 // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
 	github.com/go-openapi/errors v0.19.2
 	github.com/go-openapi/loads v0.19.4
@@ -13,9 +14,9 @@ require (
 	github.com/go-openapi/strfmt v0.19.4
 	github.com/go-openapi/swag v0.19.7
 	github.com/go-openapi/validate v0.19.6
+	github.com/gofrs/uuid v3.2.0+incompatible // indirect
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
-	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
