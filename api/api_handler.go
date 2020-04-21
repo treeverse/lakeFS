@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/http"
 	"time"
@@ -102,6 +103,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
+	api.RefsMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
 	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
@@ -483,6 +485,54 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 
 		return branches.NewDeleteBranchNoContent()
+	})
+}
+
+func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
+	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.MergeIntoBranch(params.RepositoryID))
+		if err != nil {
+			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		userModel, err := a.context.Auth.GetUser(int(user.ID))
+		if err != nil {
+			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
+		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.SourceRef, params.DestinationRef, committer)
+		mergeResult := make([]*models.MergeResult, len(mergeOperations))
+
+		if err == nil || err == errors.ErrMergeConflict {
+			for i, d := range mergeOperations {
+				tmp := serializeDiff(d)
+				mergeResult[i] = new(models.MergeResult)
+				mergeResult[i].Path = tmp.Path
+				mergeResult[i].Type = tmp.Type
+				mergeResult[i].Direction = tmp.Direction
+				mergeResult[i].PathType = tmp.PathType
+			}
+		}
+		switch err {
+		case nil:
+			pl := new(refs.MergeIntoBranchOKBody)
+			pl.Results = mergeResult
+			return refs.NewMergeIntoBranchOK().WithPayload(pl)
+		case errors.ErrNoMergeBase:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
+		case errors.ErrDestinationNotCommitted:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
+		case errors.ErrBranchNotFound:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
+		case errors.ErrMergeConflict:
+
+			pl := new(refs.MergeIntoBranchConflictBody)
+			pl.Results = mergeResult
+			return refs.NewMergeIntoBranchConflict().WithPayload(pl)
+		default:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
+
+		}
+
 	})
 }
 

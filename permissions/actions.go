@@ -89,6 +89,13 @@ func CreateBranch(repoId string) Action {
 	}
 }
 
+func MergeIntoBranch(repoId string) Action {
+	return Action{
+		Permission: WriteRepo,
+		Arn:        repoArn(repoId),
+	}
+}
+
 func DeleteBranch(repoId string) Action {
 	return Action{
 		Permission: WriteRepo,
