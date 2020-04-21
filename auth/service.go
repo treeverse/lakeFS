@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/auth/crypt"
+
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/auth/model"
@@ -59,11 +61,12 @@ type Service interface {
 }
 
 type DBAuthService struct {
-	db db.Database
+	db          db.Database
+	secretStore crypt.SecretStore
 }
 
-func NewDBAuthService(db db.Database) *DBAuthService {
-	return &DBAuthService{db: db}
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore) *DBAuthService {
+	return &DBAuthService{db: db, secretStore: secretStore}
 }
 
 func genAccessKeyId() string {
@@ -73,6 +76,22 @@ func genAccessKeyId() string {
 
 func genAccessSecretKey() string {
 	return Base64StringGenerator(30)
+}
+
+func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
+	decrypted, err := s.secretStore.Decrypt(value)
+	if err != nil {
+		return "", err
+	}
+	return string(decrypted), nil
+}
+
+func (s *DBAuthService) encryptSecret(secretAccessKey string) ([]byte, error) {
+	encrypted, err := s.secretStore.Encrypt([]byte(secretAccessKey))
+	if err != nil {
+		return nil, err
+	}
+	return encrypted, nil
 }
 
 func (s *DBAuthService) CreateUser(user *model.User) error {
@@ -140,20 +159,25 @@ func (s *DBAuthService) CreateAppCredentials(application *model.Application) (*m
 func (s *DBAuthService) CreateUserCredentials(user *model.User) (*model.Credential, error) {
 	now := time.Now()
 	accessKey := genAccessKeyId()
-	secretKey := genAccessSecretKey() // TODO: Encrypt this before saving, probably with the client ID as part of the salt
+	secretKey := genAccessSecretKey()
+	encryptedKey, err := s.encryptSecret(secretKey)
+	if err != nil {
+		return nil, err
+	}
 	creds, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		c := &model.Credential{
-			AccessKeyId:     accessKey,
-			AccessSecretKey: secretKey,
-			Type:            model.CredentialTypeUser,
-			IssuedDate:      now,
-			UserId:          &user.Id,
+			AccessKeyId:                   accessKey,
+			AccessSecretKey:               secretKey,
+			AccessSecretKeyEncryptedBytes: encryptedKey,
+			Type:                          model.CredentialTypeUser,
+			IssuedDate:                    now,
+			UserId:                        &user.Id,
 		}
 		_, err := tx.Exec(
 			`INSERT INTO credentials (access_key_id, access_secret_key, credentials_type, issued_date, user_id)
 					VALUES ($1, $2, $3, $4, $5)`,
 			c.AccessKeyId,
-			c.AccessSecretKey,
+			encryptedKey,
 			c.Type,
 			c.IssuedDate,
 			c.UserId,
@@ -224,7 +248,15 @@ func (s *DBAuthService) GetAPICredentials(accessKey string) (*model.Credential, 
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		credentials := &model.Credential{}
 		err := tx.Get(credentials, `SELECT * FROM credentials WHERE access_key_id = $1`, accessKey)
-		return credentials, err
+		if err != nil {
+			return nil, err
+		}
+		key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
+		if err != nil {
+			return nil, err
+		}
+		credentials.AccessSecretKey = key
+		return credentials, nil
 	}, db.ReadOnly())
 
 	if err != nil {
