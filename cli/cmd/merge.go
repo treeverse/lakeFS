@@ -16,24 +16,86 @@ limitations under the License.
 package cmd
 
 import (
+	"context"
 	"fmt"
-
+	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/uri"
+	"os"
 )
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:   "merge",
-	Short: "merge changes from source branch into destination branch",
-	Long: `A longer description that spans multiple lines and likely contains examples
-and usage of using your command. For example:
-
-Cobra is a CLI library for Go that empowers applications.
-This application is a tool to generate the needed files
-to quickly create a Cobra application.`,
+	Short: "merge  [source ref] [destination ref] ",
+	Long:  "merge & commit changes from source branch into destination branch",
+	Args: ValidationChain(
+		HasRangeArgs(2, 2),
+		IsRefURI(0),
+		IsRefURI(1),
+	),
 	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("merge called")
+		client := getClient()
+
+		if err := IsRefURI(1)(args); err != nil {
+			DieErr(err)
+		}
+		rightRefURI := uri.Must(uri.Parse(args[0]))
+		leftRefURI := uri.Must(uri.Parse(args[1]))
+
+		if leftRefURI.Repository != rightRefURI.Repository {
+			DieFmt("both references must belong to the same repository")
+		}
+
+		result, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
+		if err == nil {
+			var added, changed, removed int
+			for _, r := range result {
+				switch r.Type {
+				case models.DiffTypeADDED:
+					added++
+				case models.DiffTypeCHANGED:
+					changed++
+				case models.DiffTypeREMOVED:
+					removed++
+				}
+			}
+			_, _ = os.Stdout.WriteString(fmt.Sprintf("new: %d modified: %d removed: %d \n", added, changed, removed))
+		} else if err == errors.ErrMergeConflict {
+			_, _ = os.Stdout.WriteString(" Conflicts:\n")
+			for _, line := range result {
+				if line.Direction == models.DiffDirectionCONFLICT {
+					FmtMerge(line)
+				}
+			}
+		} else {
+			DieErr(err)
+
+		}
 	},
+}
+
+func FmtMerge(diff *models.MergeResult) {
+	var color text.Color
+	var action string
+
+	switch diff.Type {
+	case models.DiffTypeADDED:
+		color = text.FgGreen
+		action = "+ added"
+	case models.DiffTypeREMOVED:
+		color = text.FgRed
+		action = "- removed"
+	default:
+		color = text.FgYellow
+		action = "~ modified"
+	}
+
+	_, _ = os.Stdout.WriteString(
+		color.Sprintf("    %s %s \n", action, diff.Path),
+	)
 }
 
 func init() {

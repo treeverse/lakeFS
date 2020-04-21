@@ -2,6 +2,7 @@ package api
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/url"
 	"path"
@@ -46,6 +47,7 @@ type Client interface {
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
+	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -202,6 +204,25 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 		return nil, err
 	}
 	return diff.GetPayload().Results, nil
+}
+
+func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error) {
+	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
+		DestinationRef: leftRef,
+		SourceRef:      rightRef,
+		RepositoryID:   repoId,
+		Context:        ctx,
+	}, c.auth)
+
+	if err == nil {
+		return statusOK.Payload.Results, nil
+	}
+	conflict, ok := err.(*refs.MergeIntoBranchConflict)
+	if ok {
+		return conflict.Payload.Results, errors.ErrMergeConflict
+	} else {
+		return nil, err
+	}
 }
 
 func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error) {
