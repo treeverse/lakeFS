@@ -288,6 +288,14 @@ class Commits {
     }
 }
 
+class MergeError extends Error {
+  constructor(message, payload) {
+    super(message);
+    this.name = "MergeError";
+    this.payload = payload;
+  }
+}
+
 class Refs {
     async diff(repoId, leftRef, rightRef) {
         let response;
@@ -300,6 +308,22 @@ class Refs {
             throw new Error(await extractError(response));
         }
         return await response.json();
+    }
+
+    async merge(repoId, sourceBranch, destinationBranch) {
+        const response = await apiRequest(`/repositories/${repoId}/refs/${sourceBranch}/merge/${destinationBranch}`, {
+            method: 'POST',
+            body: '{}',
+        });
+        switch (response.status) {
+            case 200:
+              return response.json();
+            case 409:
+                const resp = await response.json();
+                throw new MergeError(response.statusText, resp.body);
+            default:
+                throw new Error(await extractError(response));
+        }
     }
 }
 
