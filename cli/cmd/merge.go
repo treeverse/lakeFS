@@ -29,7 +29,7 @@ import (
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:   "merge",
-	Short: "merge  source into  destination ",
+	Short: "merge  [source ref] [destination ref] ",
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: ValidationChain(
 		HasRangeArgs(2, 2),
