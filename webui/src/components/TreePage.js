@@ -26,8 +26,8 @@ const MergeButton = connect(
         mergeState: refs.merge,
         diffResults: refs.diff,
     }),
-    ({ merge, resetMerge })
-)(({ repo, refId, compare, merge, mergeState, resetMerge, diffResults }) => {
+    ({ merge, resetMerge, resetDiff })
+)(({ repo, refId, compare, merge, mergeState, resetMerge, resetDiff, diffResults }) => {
     if (!refId || refId.type !== 'branch' || !compare || compare.type !== 'branch') {
         return null;
     }
@@ -63,8 +63,10 @@ const MergeButton = connect(
         if (mergeState.error) {
             window.alert(mergeState.error);
             resetMerge();
+        } else if (mergeState.payload && mergeState.payload.results.length > 0) {
+            resetDiff();
         }
-    }, [resetMerge, mergeState]);
+    }, [resetMerge, mergeState, resetDiff]);
 
     const onSubmit = () => {
         if (disabled) return;
