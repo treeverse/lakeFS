@@ -686,7 +686,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 
 		// read the content
-		blob, err := upload.WriteBlob(index, repo.Id, params.Content, ctx.BlockAdapter)
+		blob, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

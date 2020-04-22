@@ -83,11 +83,11 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
 	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
-
-	blockAdapter := testutil.GetBlockAdapter(t)
+	_, s3Flag := os.LookupEnv("S3")
+	blockAdapter := testutil.GetBlockAdapter(t, !s3Flag)
 	authService := newGatewayAuth(t, directory)
 
-	testutil.Must(t, meta.CreateRepo("example", "s3://example", "master"))
+	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
 	server := gateway.NewServer(authService.Region,
 		meta,
 		blockAdapter,

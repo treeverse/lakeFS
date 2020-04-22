@@ -38,7 +38,7 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(repo string, _ string, reader io.ReadSeeker) error {
+func (a *mockAdapter) Put(repo string, identifier string, reader io.ReadSeeker) error {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func TestReadBlob(t *testing.T) {
 			}
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
-			blob, err := upload.WriteBlob(deduper, bucketName, reader, adapter)
+			blob, err := upload.WriteBlob(deduper, bucketName, bucketName, reader, adapter)
 			if err != nil {
 				t.Fatal(err)
 			}
