@@ -36,16 +36,18 @@ const MergeButton = connect(
     const destinationBranchId = compare.id;
     const sourceBranchId = refId.id;
     let mergeDisabled = true;
+    let mergeVariant = 'light';
     let mergeText;
     if (destinationBranchId === sourceBranchId) {
-        mergeText = 'Select different branches';
+        mergeText = `No changes same branch - '${sourceBranchId}'`;
     } else if (diffItems.length === 0) {
-        mergeText = 'No changes found';
+        mergeText = `No changes found from '${sourceBranchId}' into '${destinationBranchId}'`;
     } else if (diffItems.some(x => x.direction === 'CONFLICT')) {
-        mergeText = 'Conflict found';
+        mergeText = `Conflict found from '${sourceBranchId}' into '${destinationBranchId}'`;
     } else {
         mergeText = `Merge '${sourceBranchId}' into '${destinationBranchId}'`;
         mergeDisabled = false;
+        mergeVariant = 'success';
     }
 
     const [show, setShow] = useState(false);
@@ -58,16 +60,6 @@ const MergeButton = connect(
     };
     
     useEffect(() => {
-        if (show) {
-            resetMerge();
-        }
-    }, [resetMerge, show]);
-
-    useEffect(() => {
-        if (mergeState.done) {
-            setShow(false);
-            resetMerge();
-        }
         if (mergeState.error) {
             window.alert(mergeState.error);
             resetMerge();
@@ -85,11 +77,11 @@ const MergeButton = connect(
         <ConfirmationModal show={show} onHide={onHide} msg={mergeText} onConfirm={onSubmit} />
         <OverlayTrigger placement="bottom" overlay={<Tooltip>{mergeText}</Tooltip>}>
             <span>
-                <Button variant="light"
+                <Button variant={mergeVariant}
                     disabled={mergeDisabled}
                     style={mergeDisabled ? { pointerEvents: "none" } : {}}
-                    onClick={() => { setShow(true); }}>
-                    <Octicon icon={GitMerge} />
+                    onClick={() => { resetMerge(); setShow(true); }}>
+                    <Octicon icon={GitMerge} /> Merge
                 </Button>
             </span>
         </OverlayTrigger>
@@ -384,7 +376,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
     return (
         <div className="mt-3">
             <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
-                <Alert.Heading>Merge completed</Alert.Heading>
+                Merge completed
             </Alert>
             <div className="action-bar">
                 <CompareToolbar refId={refId} repo={repo} compare={compare}/>

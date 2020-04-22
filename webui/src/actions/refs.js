@@ -16,9 +16,7 @@ export const resetDiff = () => ({
 });
 
 export const merge = (repoId, sourceBranchId, destinationBranchId) => {
-    console.log('[DEBUG] merge before', sourceBranchId, destinationBranchId);
     return MERGE_REFS.execute(async () => {
-        console.log('[DEBUG] calling merge', sourceBranchId, destinationBranchId);
         return await api.refs.merge(repoId, sourceBranchId, destinationBranchId);
     });
 };
