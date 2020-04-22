@@ -1309,7 +1309,7 @@ func (index *DBIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objN
 			d.DedupId = dedupId
 			err = tx.WriteObjectDedup(d)
 			if err != nil {
-				index.log().WithError(err).Error("failed writing dedup record")
+				index.log().WithError(err).Fatal("failed writing dedup record")
 			}
 			return objName, err
 		} else {

@@ -2,6 +2,9 @@ package testutil
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"log"
 	"os"
 	"path/filepath"
@@ -19,6 +22,7 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 )
@@ -34,10 +38,10 @@ func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo)
 	createIndex := index.NewDBIndex(conn, index.WithTimeGenerator(func() time.Time {
 		return repoCreateDate
 	}))
-	Must(t, createIndex.CreateRepo("example", "s3://example", "master"))
+	Must(t, createIndex.CreateRepo("example", "s3://example-tzahi", "master"))
 	return index.NewDBIndex(conn), &model.Repo{
 		Id:               "example",
-		StorageNamespace: "s3://example",
+		StorageNamespace: " example-tzahi",
 		CreationDate:     repoCreateDate,
 		DefaultBranch:    "master",
 	}
@@ -123,23 +127,38 @@ func GetDB(t *testing.T, uri, schemaName string) db.Database {
 	return database
 }
 
-func GetBlockAdapter(t *testing.T) block.Adapter {
-	dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
-	err := os.MkdirAll(dir, 0777)
-	if err != nil {
-		t.Fatal(err)
-	}
-	adapter, err := block.NewLocalFSAdapter(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		err := os.RemoveAll(dir)
+func GetBlockAdapter(t *testing.T, isLocal bool) block.Adapter {
+	if isLocal {
+		dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
+		err := os.MkdirAll(dir, 0777)
 		if err != nil {
 			t.Fatal(err)
 		}
-	})
-	return adapter
+		adapter, err := block.NewLocalFSAdapter(dir)
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+		return adapter
+	} else {
+		cfg := &aws.Config{
+			Region: aws.String("us-east-1"),
+			//Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
+		}
+		cfg.Credentials = credentials.NewSharedCredentials("", "default")
+		sess := session.Must(session.NewSession(cfg))
+		svc := s3.New(sess)
+		adapter, err := block.NewS3Adapter(svc)
+		if err != nil {
+			panic(fmt.Errorf("got error opening an S3 block adapter: %s", err))
+		}
+		return adapter
+	}
 }
 
 func Must(t *testing.T, err error) {

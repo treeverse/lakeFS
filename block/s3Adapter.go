@@ -8,8 +8,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	_ "github.com/aws/aws-sdk-go/service/s3/s3iface"
-
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"io"
 )
 
@@ -33,21 +32,26 @@ func (s S3Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
-func (s S3Adapter) Put(repo string, identifier string, reader io.ReadSeeker) error {
-	putObject := s3.PutObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier), Body: reader}
-	_, err := s.s3.PutObject(&putObject)
-	if err != nil {
-		s.log().WithError(err).Error("failed to put S3 object")
-		return err
+func (s S3Adapter) Put(repo string, identifier string, reader io.Reader) error {
+	svc := s3manager.NewUploaderWithClient(s.s3)
+	input := &s3manager.UploadInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(identifier),
+		Body:   reader,
 	}
-	return nil
+	_, err := svc.Upload(input)
+	if err != nil {
+		s.log().WithError(err).Error("failed to upload S3 object")
+	}
+
+	return err
 }
 
 func (s S3Adapter) Remove(repo string, identifier string) error {
 	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
 	_, err := s.s3.DeleteObject(deleteObjectParams)
 	if err != nil {
-		s.log().WithError(err).Error("failed to put S3 object")
+		s.log().WithError(err).Error("failed to delete S3 object")
 		return err
 	}
 	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
