@@ -33,8 +33,8 @@ const MergeButton = connect(
     }
 
     const diffItems = diffResults.payload ? diffResults.payload.results : [];
-    const destinationBranchId = refId.id;
-    const sourceBranchId = compare.id;
+    const destinationBranchId = compare.id;
+    const sourceBranchId = refId.id;
     let mergeDisabled = true;
     let mergeText;
     if (destinationBranchId === sourceBranchId) {
