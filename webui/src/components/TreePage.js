@@ -39,11 +39,11 @@ const MergeButton = connect(
     let mergeVariant = 'light';
     let mergeText;
     if (destinationBranchId === sourceBranchId) {
-        mergeText = `No changes same branch - '${sourceBranchId}'`;
+        mergeText = 'Please select a different branch to compare with';
     } else if (diffItems.length === 0) {
-        mergeText = `No changes found from '${sourceBranchId}' into '${destinationBranchId}'`;
+        mergeText = `No changes found between '${sourceBranchId}' and '${destinationBranchId}'`;
     } else if (diffItems.some(x => x.direction === 'CONFLICT')) {
-        mergeText = `Conflict found from '${sourceBranchId}' into '${destinationBranchId}'`;
+        mergeText = `Conflict found between '${sourceBranchId}' and '${destinationBranchId}'`;
     } else {
         mergeText = `Merge '${sourceBranchId}' into '${destinationBranchId}'`;
         mergeDisabled = false;
