@@ -824,7 +824,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	blob, err := upload.WriteBlob(deduper, "ns1", buf, deps.blocks)
+	blob, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks)
 	if err != nil {
 		t.Fatal(err)
 	}

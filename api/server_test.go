@@ -110,7 +110,7 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 func getHandler(t *testing.T) (http.Handler, *dependencies) {
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
-	blockAdapter := testutil.GetBlockAdapter(t)
+	blockAdapter := testutil.GetBlockAdapter(t, true)
 
 	meta := index.NewDBIndex(mdb)
 	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
