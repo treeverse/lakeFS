@@ -68,11 +68,19 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, credent
 // helper errors
 export class NotFoundError extends Error {
     constructor(message) {
-        super();
-        this.message = message;
+        super(message);
         this.name = "NotFoundError";
     }
 }
+
+export class MergeError extends Error {
+  constructor(message, payload) {
+    super(message);
+    this.name = "MergeError";
+    this.payload = payload;
+  }
+}
+
 
 // actual actions:
 export const auth = {
@@ -286,14 +294,6 @@ class Commits {
         }
         return await response.json();
     }
-}
-
-class MergeError extends Error {
-  constructor(message, payload) {
-    super(message);
-    this.name = "MergeError";
-    this.payload = payload;
-  }
 }
 
 class Refs {
