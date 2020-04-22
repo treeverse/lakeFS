@@ -18,7 +18,7 @@ export const logCommits = (repoId, branchId,from = "", amount = PAGINATION_AMOUN
 
 export const logCommitsPaginate = (repoId,branchId, from = "", amount = PAGINATION_AMOUNT) => {
     return COMMITS_LIST_PAGINATE.execute(async () => {
-        return await api.commits.log(repoId,branchId, from, amount);
+        return await api.commits.log(repoId, branchId, from, amount);
     })
 };
 export const doCommit = (repoId, branchId, message, metadata={}) => {

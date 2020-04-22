@@ -18,8 +18,8 @@ export class AsyncActionType {
         return `${this.type}_ERROR`;
     }
 
-    errorAction(error) {
-        return {_id: this._id, type: this.error, error, asyncEnd: true};
+    errorAction(error, payload) {
+        return {_id: this._id, type: this.error, error, payload, syncEnd: true};
     }
 
     get success() {
@@ -45,7 +45,7 @@ export class AsyncActionType {
                 const result = await executeFn();
                 dispatch(this.successAction(result));
             } catch (error) {
-                dispatch(this.errorAction(error.toString()));
+                dispatch(this.errorAction(error.toString(), error.payload));
             }
         }
     }

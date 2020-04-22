@@ -68,11 +68,19 @@ const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, credent
 // helper errors
 export class NotFoundError extends Error {
     constructor(message) {
-        super();
-        this.message = message;
+        super(message);
         this.name = "NotFoundError";
     }
 }
+
+export class MergeError extends Error {
+  constructor(message, payload) {
+    super(message);
+    this.name = "MergeError";
+    this.payload = payload;
+  }
+}
+
 
 // actual actions:
 export const auth = {
@@ -300,6 +308,22 @@ class Refs {
             throw new Error(await extractError(response));
         }
         return await response.json();
+    }
+
+    async merge(repoId, sourceBranch, destinationBranch) {
+        const response = await apiRequest(`/repositories/${repoId}/refs/${sourceBranch}/merge/${destinationBranch}`, {
+            method: 'POST',
+            body: '{}',
+        });
+        switch (response.status) {
+            case 200:
+              return response.json();
+            case 409:
+                const resp = await response.json();
+                throw new MergeError(response.statusText, resp.body);
+            default:
+                throw new Error(await extractError(response));
+        }
     }
 }
 
