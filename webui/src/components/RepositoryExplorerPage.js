@@ -139,5 +139,5 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
 
 export default connect(
     ({ repositories }) => ({ repo: repositories.repo }),
-    ({  getRepository })
+    ({ getRepository })
 )(RepositoryExplorerPage);
