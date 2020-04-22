@@ -62,7 +62,7 @@ func (s *HashingReader) Read(p []byte) (int, error) {
 	return len, err
 }
 
-func newHashingReaderReader(body io.Reader) (s *HashingReader) {
+func newHashingReader(body io.Reader) (s *HashingReader) {
 	s = new(HashingReader)
 	s.sha256 = sha256.New()
 	s.md5 = md5.New()
@@ -71,13 +71,9 @@ func newHashingReaderReader(body io.Reader) (s *HashingReader) {
 	return
 }
 
-func (s *HashingReader) Seek(offset int64, whence int) (int64, error) {
-	panic("Seek was called while reading in upload\n")
-}
-
-func WriteBlob(index DedupHandler, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
 	// handle the upload itself
-	hashReader := newHashingReaderReader(body)
+	hashReader := newHashingReader(body)
 	objName := uuidAsHex()
 	err := adapter.Put(bucketName, objName, hashReader)
 	if err != nil {
@@ -86,7 +82,7 @@ func WriteBlob(index DedupHandler, bucketName string, body io.Reader, adapter bl
 	Block := new(model.Block)
 	dedupId := hex.EncodeToString(hashReader.sha256.Sum(nil))
 	checksum := hex.EncodeToString(hashReader.md5.Sum(nil))
-	existingName, err := index.CreateDedupEntryIfNone(bucketName, dedupId, objName)
+	existingName, err := index.CreateDedupEntryIfNone(repoId, dedupId, objName)
 	if existingName != objName { // object already exist
 		adapter.Remove(bucketName, objName)
 		objName = existingName
