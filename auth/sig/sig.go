@@ -1,11 +1,14 @@
 package sig
 
 import (
+	"crypto/hmac"
 	"encoding/hex"
 	"fmt"
 	"regexp"
 	"strings"
 	"unicode/utf8"
+
+	errors2 "github.com/treeverse/lakefs/gateway/errors"
 
 	"github.com/treeverse/lakefs/auth/model"
 
@@ -13,12 +16,7 @@ import (
 )
 
 var (
-	ErrHeaderMalformed        = xerrors.New("header malformed")
-	ErrMissingDateHeader      = xerrors.New("missing X-Amz-Date or Date header")
-	ErrDateHeaderMalformed    = xerrors.New("wrong format for date header")
-	ErrSignatureDateMalformed = xerrors.New("signature date malformed")
-	ErrBadSignature           = xerrors.New("bad signature")
-	ErrMissingAuthData        = xerrors.New("missing authorization information")
+	ErrHeaderMalformed = xerrors.New("header malformed")
 
 	// if object matches reserved string, no need to encode them
 	reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
@@ -111,7 +109,11 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 			return ctx, nil
 		}
 	}
-	return nil, ErrMissingAuthData
+	return nil, errors2.ErrMissingFields
+}
+
+func CompareSignature(sig1, sig2 []byte) bool {
+	return hmac.Equal(sig1, sig2)
 }
 
 func (c *chainedAuthenticator) Verify(creds *model.Credential, domain string) error {
