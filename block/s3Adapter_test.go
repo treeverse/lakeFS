@@ -5,11 +5,13 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/treeverse/lakefs/block"
 	"io"
 	"io/ioutil"
 	"strings"
 	"testing"
+	//"github.com/aws/aws-sdk-go/service/s3/s3manager"
 )
 
 const (
@@ -22,8 +24,9 @@ type mockS3Client struct {
 	lastKeyReceived    string
 	lastBucketReceived string
 	callCounter        int
-	lastBodyReceived   io.ReadSeeker
+	lastBodyReceived   io.Reader
 	s3iface.S3API
+	s3manager.Uploader
 	localS3
 }
 
@@ -34,6 +37,14 @@ func newMock() *mockS3Client {
 }
 
 func (m *mockS3Client) PutObject(input *s3.PutObjectInput) (*s3.PutObjectOutput, error) {
+	m.callCounter++
+	m.lastBucketReceived = *input.Bucket
+	m.lastKeyReceived = *input.Key
+	m.lastBodyReceived = input.Body
+	return nil, nil
+}
+
+func (m *mockS3Client) Upload(input *s3manager.UploadInput, options ...func(*s3manager.Uploader)) (*s3manager.UploadOutput, error) {
 	m.callCounter++
 	m.lastBucketReceived = *input.Bucket
 	m.lastKeyReceived = *input.Key
