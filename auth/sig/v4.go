@@ -1,29 +1,35 @@
 package sig
 
 import (
-	"bytes"
+	"bufio"
 	"crypto/hmac"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"net/url"
 	"regexp"
 	"sort"
+	"strconv"
 	"strings"
 	"time"
 	"unicode"
+
+	errors2 "github.com/treeverse/lakefs/gateway/errors"
 
 	"github.com/treeverse/lakefs/auth/model"
 )
 
 const (
-	v4authHeaderName   = "Authorization"
-	v4authHeaderPrefix = "AWS4-HMAC-SHA256"
-	v4scopeTerminator  = "aws4_request"
-	v4timeFormat       = "20060102T150405Z"
-	v4shortTimeFormat  = "20060102"
+	v4authHeaderName        = "Authorization"
+	v4authHeaderPrefix      = "AWS4-HMAC-SHA256"
+	AmzDecodedContentLength = "X-Amz-Decoded-Content-Length"
+	v4StreamingPayloadHash  = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
+	v4authHeaderPayload     = "x-amz-content-sha256"
+	v4scopeTerminator       = "aws4_request"
+	v4timeFormat            = "20060102T150405Z"
+	v4shortTimeFormat       = "20060102"
 )
 
 var (
@@ -94,15 +100,15 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	query := r.URL.Query()
 	algorithm := query.Get("X-Amz-Algorithm")
 	if len(algorithm) == 0 || !strings.EqualFold(algorithm, v4authHeaderPrefix) {
-		return ctx, ErrMissingAuthData
+		return ctx, errors2.ErrInvalidQuerySignatureAlgo
 	}
 	credentialScope := query.Get("X-Amz-Credential")
 	if len(credentialScope) == 0 {
-		return ctx, ErrMissingAuthData
+		return ctx, errors2.ErrMissingCredTag
 	}
 	credsMatch := V4CredentialScopeRegexp.FindStringSubmatch(credentialScope)
 	if len(credsMatch) == 0 {
-		return ctx, ErrHeaderMalformed
+		return ctx, errors2.ErrCredMalformed
 	}
 	credsResult := make(map[string]string)
 	for i, name := range V4CredentialScopeRegexp.SubexpNames() {
@@ -126,17 +132,9 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 }
 
 func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error {
-	// copy body
-	body, err := ioutil.ReadAll(r.Body)
-	if err != nil {
-		return err
-	}
-	// reset body
-	r.Body = ioutil.NopCloser(bytes.NewReader(body))
 
 	ctx := &verificationCtx{
 		Request:   r,
-		Body:      body,
 		Query:     r.URL.Query(),
 		AuthValue: auth,
 	}
@@ -147,19 +145,25 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 		return err
 	}
 	// sign
-	signingKey := ctx.createSignature(credentials.AccessSecretKey, auth.Date, auth.Region, auth.Service)
-	signature := hex.EncodeToString(ctx.sign(signingKey, stringToSign))
+	signingKey := createSignature(credentials.AccessSecretKey, auth.Date, auth.Region, auth.Service)
+	signature := hex.EncodeToString(sign(signingKey, stringToSign))
 
 	// compare signatures
-	if !strings.EqualFold(signature, auth.Signature) {
-		return ErrBadSignature
+	if !CompareSignature([]byte(signature), []byte(auth.Signature)) {
+		return errors2.ErrSignatureDoesNotMatch
 	}
+
+	// wrap body with verifier
+	reader, err := ctx.reader(r.Body, credentials)
+	if err != nil {
+		return err
+	}
+	r.Body = reader
 	return nil
 }
 
 type verificationCtx struct {
 	Request   *http.Request
-	Body      []byte
 	Query     url.Values
 	AuthValue V4Auth
 }
@@ -222,14 +226,7 @@ func (ctx *verificationCtx) trimAll(str string) string {
 }
 
 func (ctx *verificationCtx) payloadHash() string {
-	body := ctx.Body
-	if body == nil {
-		body = []byte{}
-	}
-	h := sha256.New()
-	h.Write(body)
-	hashedBody := h.Sum(nil)
-	return hex.EncodeToString(hashedBody)
+	return ctx.Request.Header.Get(v4authHeaderPayload)
 }
 
 func (ctx *verificationCtx) buildCanonicalRequest() string {
@@ -259,7 +256,7 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 		if len(amzDate) == 0 {
 			amzDate = ctx.Request.Header.Get("date")
 			if len(amzDate) == 0 {
-				return "", ErrMissingDateHeader
+				return "", errors2.ErrMissingDateHeader
 			}
 		}
 	}
@@ -267,34 +264,34 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	// parse date
 	ts, err := time.Parse(v4timeFormat, amzDate)
 	if err != nil {
-		return "", ErrDateHeaderMalformed
+		return "", errors2.ErrMalformedDate
 	}
 
 	// parse signature date
 	sigTs, err := time.Parse(v4shortTimeFormat, ctx.AuthValue.Date)
 	if err != nil {
-		return "", ErrSignatureDateMalformed
+		return "", errors2.ErrMalformedCredentialDate
 	}
 
 	// ensure same date
 	if sigTs.Year() != ts.Year() || sigTs.Month() != ts.Month() || sigTs.Day() != ts.Day() {
-		return "", ErrSignatureDateMalformed
+		return "", errors2.ErrMalformedCredentialDate
 	}
 
 	return amzDate, nil
 }
 
-func (ctx *verificationCtx) sign(key []byte, msg string) []byte {
+func sign(key []byte, msg string) []byte {
 	h := hmac.New(sha256.New, key)
 	h.Write([]byte(msg))
 	return h.Sum(nil)
 }
 
-func (ctx *verificationCtx) createSignature(key, dateStamp, region, service string) []byte {
-	kDate := ctx.sign([]byte(fmt.Sprintf("AWS4%s", key)), dateStamp)
-	kRegion := ctx.sign(kDate, region)
-	kService := ctx.sign(kRegion, service)
-	kSigning := ctx.sign(kService, v4scopeTerminator)
+func createSignature(key, dateStamp, region, service string) []byte {
+	kDate := sign([]byte(fmt.Sprintf("AWS4%s", key)), dateStamp)
+	kRegion := sign(kDate, region)
+	kService := sign(kRegion, service)
+	kSigning := sign(kService, v4scopeTerminator)
 	return kSigning
 }
 
@@ -322,6 +319,44 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 	}, "\n")
 	return stringToSign, nil
 }
+func (ctx *verificationCtx) isStreaming() bool {
+	payloadHash := ctx.payloadHash()
+	return strings.EqualFold(payloadHash, v4StreamingPayloadHash)
+}
+
+func (ctx *verificationCtx) contentLength() (int64, error) {
+	size := ctx.Request.ContentLength
+	if ctx.isStreaming() {
+		if sizeStr, ok := ctx.Request.Header[AmzDecodedContentLength]; ok {
+			if sizeStr[0] == "" {
+				return 0, errors2.ErrMissingContentLength
+			}
+			var err error
+			size, err = strconv.ParseInt(sizeStr[0], 10, 64)
+			if err != nil {
+				//writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
+				return 0, err
+			}
+		}
+	}
+	return size, nil
+}
+
+func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential) (io.ReadCloser, error) {
+
+	if ctx.isStreaming() {
+		amzDate, err := ctx.getAmzDate()
+		if err != nil {
+			return nil, err
+		}
+		chunkReader, err := newSignV4ChunkedReader(bufio.NewReader(reader), amzDate, ctx.AuthValue, creds)
+		if err != nil {
+			return nil, err
+		}
+		return chunkReader, nil
+	}
+	return NewReader(reader, ctx.payloadHash())
+}
 
 type V4Authenticator struct {
 	request *http.Request
@@ -348,7 +383,7 @@ func (a *V4Authenticator) Verify(creds *model.Credential, bareDomain string) err
 	return err
 }
 
-func NewV4Authenticatior(r *http.Request) SigAuthenticator {
+func NewV4Authenticator(r *http.Request) SigAuthenticator {
 	return &V4Authenticator{
 		request: r,
 		ctx:     V4Auth{},
