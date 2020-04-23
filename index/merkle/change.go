@@ -12,26 +12,14 @@ type changeTree struct {
 	data  map[int]map[string][]*model.WorkspaceEntry
 }
 
-// returns the container depth and path
-func getContainer(entry *model.WorkspaceEntry) (int, string) {
-	p := path.New(entry.Path)
-	parts := p.SplitParts()
-	var container string
-	if *entry.EntryType == model.EntryTypeTree {
-		container = path.Join(parts[0 : len(parts)-2])
-	} else {
-		container = path.Join(parts[0 : len(parts)-1])
-	}
-	depth := len(p.SplitParts())
-	return depth, container
-}
-
 func newChangeTree(entries []*model.WorkspaceEntry) *changeTree {
 	changes := &changeTree{
 		data: make(map[int]map[string][]*model.WorkspaceEntry),
 	}
 	for _, entry := range entries {
-		depth, container := getContainer(entry)
+		p := path.New(entry.Path, *entry.EntryType)
+		container := p.ParentPath()
+		depth := len(p.SplitParts())
 		changes.Add(depth, container, entry)
 	}
 	return changes
