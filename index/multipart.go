@@ -236,15 +236,15 @@ func (m *DBMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		}
 
 		// write it to branch's workspace
-		p := pth.New(upload.Path)
+		typ := model.EntryTypeObject
+		p := pth.New(upload.Path, typ)
 		upath := p.String()
 		baseName := p.BaseName()
 		id := ident.Hash(obj)
-		typ := model.EntryTypeObject
-		err = tx.WriteToWorkspacePath(branch, parentPath(upload.Path), upath, &model.WorkspaceEntry{
+		err = tx.WriteToWorkspacePath(branch, p.ParentPath(), upath, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
-			ParentPath:        parentPath(upload.Path),
+			ParentPath:        p.ParentPath(),
 			Path:              upload.Path,
 			EntryName:         &baseName,
 			EntryAddress:      &id,
