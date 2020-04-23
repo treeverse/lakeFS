@@ -64,7 +64,7 @@ func uploadObject(t *testing.T, deps *dependencies, path, branch string, size in
 		Checksum: blob.Checksum,
 		Size:     blob.Size,
 	}
-	p := pth.New(path)
+	p := pth.New(path, model.EntryTypeObject)
 	writeTime := time.Now()
 	entry := &model.Entry{
 		RepositoryId: REPO,
