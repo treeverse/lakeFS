@@ -11,6 +11,8 @@ import (
 	"sort"
 	str "strings"
 
+	"github.com/treeverse/lakefs/gateway/errors"
+
 	"github.com/treeverse/lakefs/auth/model"
 
 	"github.com/treeverse/lakefs/logging"
@@ -244,8 +246,8 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.AccessSecretKey))
-	if !hmac.Equal(digest, a.ctx.signature) {
-		return ErrBadSignature
+	if !CompareSignature(digest, a.ctx.signature) {
+		return errors.ErrSignatureDoesNotMatch
 	}
 	return nil
 }
