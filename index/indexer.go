@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"sort"
 	"strings"
 	"time"
 
@@ -346,7 +347,8 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string) (*model.Entry,
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(branch),
-		ValidatePath(path))
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -783,10 +785,10 @@ func (index *DBIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), nil
 }
 
-func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (interface{}, error) {
+func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (*model.Commit, error) {
 	commit := &model.Commit{
 		Tree:         branchData.WorkspaceRoot,
-		Parents:      []string{branchData.CommitId},
+		Parents:      parents,
 		Committer:    committer,
 		Message:      message,
 		CreationDate: ts,
@@ -932,7 +934,6 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 }
 
 func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (merkle.Differences, error) {
-
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
@@ -980,7 +981,6 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-
 		return doDiff(tx, repoId, leftRef, rightRef, false, index)
 	})
 
@@ -1137,7 +1137,8 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
-		ValidateRef(destination))
+		ValidateRef(destination),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1179,7 +1180,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		var wsEntries []*model.WorkspaceEntry
 		sourceBranch, err := tx.ReadBranch(source)
 		if err != nil {
-			index.log().WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
+			index.log().WithError(err).Fatal("failed reading source branch") // failure to read a branch that was read before fatal
 			return nil, err
 		}
 		for _, dif := range mergeOperations {
@@ -1188,7 +1189,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			if dif.Type != merkle.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
-					index.log().WithError(err).Fatal("failed reading entry\n")
+					index.log().WithError(err).Fatal("failed reading entry")
 					return nil, err
 				}
 			} else {
@@ -1209,26 +1210,50 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			wsEntries = append(wsEntries, w)
 		}
 
-		desinationRoot := merkle.New(destinationBranch.CommitRoot)
-		newRoot, err := desinationRoot.Update(tx, wsEntries)
+		destinationRoot := merkle.New(destinationBranch.CommitRoot)
+		newRoot, err := destinationRoot.Update(tx, wsEntries)
 		if err != nil {
-			index.log().WithError(err).Fatal("failed updating merge destination\n")
+			index.log().WithError(err).Fatal("failed updating merge destination")
 			return nil, errors.ErrMergeUpdateFailed
 		}
 		destinationBranch.CommitRoot = newRoot.Root()
 		destinationBranch.WorkspaceRoot = newRoot.Root()
-		parents := []string{destinationBranch.CommitId, sourceBranch.CommitId}
+
+		// read commits for each branch in our merge.
+		// we like the parents to be sorted by the newest first
+		branches := []*model.Branch{sourceBranch, destinationBranch}
+		commits := make([]*model.Commit, len(branches))
+		for i, branch := range branches {
+			var err error
+			commits[i], err = tx.ReadCommit(branch.CommitId)
+			if err != nil {
+				index.log().WithError(err).Fatal("failed read commit")
+				return nil, err
+			}
+		}
+		sort.SliceStable(commits, func(a, b int) bool {
+			return commits[a].CreationDate.After(commits[b].CreationDate)
+		})
+		parents := []string{commits[0].Address, commits[1].Address}
+
 		commitMessage := "Merge branch " + source + " into " + destination
-		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts, index)
-
+		_, err = doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts, index)
+		if err != nil {
+			index.log().WithError(err).WithFields(logging.Fields{
+				"source":      source,
+				"destination": destination,
+				"userId":      userId,
+				"parents":     parents,
+			}).Error("commit merge branch")
+			return nil, err
+		}
 		return mergeOperations, nil
-
 	})
-	if err == nil || err == errors.ErrMergeConflict {
-		return mergeOperations, err
-	} else {
+	// ErrMergeConflict is the only error that will report the merge operations made so far
+	if err != nil && err != errors.ErrMergeConflict {
 		return nil, err
 	}
+	return mergeOperations, err
 }
 
 func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {

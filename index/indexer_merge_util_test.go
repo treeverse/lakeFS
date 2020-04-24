@@ -1,6 +1,10 @@
 package index_test
 
 import (
+	"io"
+	str "strings"
+	"time"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
@@ -8,14 +12,12 @@ import (
 	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/testutil"
 	"github.com/treeverse/lakefs/upload"
-	"io"
-	str "strings"
-	"time"
 
 	"strconv"
 	"testing"
 
 	"crypto/rand"
+
 	log "github.com/sirupsen/logrus"
 )
 
@@ -40,23 +42,25 @@ func getDependencies(t *testing.T) *dependencies {
 	}
 }
 
-func testCommit(t *testing.T, index index.Index, branch, message string) {
-	_, err := index.Commit(REPO, branch, message, "", make(map[string]string))
+func testCommit(t *testing.T, index index.Index, branch, message string) *model.Commit {
+	commit, err := index.Commit(REPO, branch, message, "", make(map[string]string))
 	if err != nil {
-		t.Fatal("could not commit\n")
+		t.Fatal("could not commit", err)
 	}
+	return commit
 }
+
 func createBranch(t *testing.T, index index.Index, name, parent string) {
 	_, err := index.CreateBranch(REPO, name, parent)
 	if err != nil {
-		t.Fatal("error creating branch\n")
+		t.Fatal("error creating branch", err)
 	}
 }
 
 func uploadObject(t *testing.T, deps *dependencies, path, branch string, size int64) {
 	blob, err := upload.ReadBlob(REPO, NewReader(size, "content"), deps.blocks, 1024*1024*64)
 	if err != nil {
-		t.Error("error storin object in blocks ", err)
+		t.Error("error storing object in blocks", err)
 		return
 	}
 	obj := &model.Object{
@@ -77,7 +81,7 @@ func uploadObject(t *testing.T, deps *dependencies, path, branch string, size in
 	}
 	err = deps.meta.WriteFile(REPO, branch, path, entry, obj)
 	if err != nil {
-		t.Error("error writing file  ", err)
+		t.Error("error writing file", err)
 		return
 	}
 }

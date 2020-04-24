@@ -40,11 +40,11 @@ var (
 
 func TestMain(m *testing.M) {
 	var err error
-	var closer func()
 	pool, err = dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
+	var closer func()
 	databaseUri, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
 	closer() // cleanup
