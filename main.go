@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/google/uuid"
 
@@ -47,19 +48,12 @@ func GetInstallationID(authService auth.Service) string {
 	return user.Email
 }
 
-func getStats(conf *config.Config, installationID string) (*stats.Dispatcher, context.CancelFunc) {
+func getStats(conf *config.Config, installationID string) *stats.BufferedCollector {
 	sender := stats.NewDummySender()
 	if conf.GetStatsEnabled() {
-		sender = stats.NewHTTPSender(conf.GetStatsAddress())
+		sender = stats.NewHTTPSender(installationID, uuid.New().String(), conf.GetStatsAddress(), time.Now)
 	}
-	ctx, cancelFn := context.WithCancel(context.Background())
-	return stats.NewDispatcher(
-		ctx,
-		conf.GetStatsFlushInterval(),
-		sender,
-		uuid.New().String(), // process ID
-		installationID,
-	), cancelFn
+	return stats.NewBufferedCollector(stats.WithSender(sender))
 }
 
 var initCmd = &cobra.Command{
@@ -121,15 +115,15 @@ var initCmd = &cobra.Command{
 			panic(err)
 		}
 
-		stats, cancelFn := getStats(conf, userEmail)
-		statsStopped := make(chan bool)
-		go stats.Run(statsStopped)
+		ctx, cancelFn := context.WithCancel(context.Background())
+		stats := getStats(conf, userEmail)
+		go stats.Run(ctx)
 		stats.Collect("global", "init")
 
 		fmt.Printf("credentials:\naccess key id: %s\naccess secret key: %s\n", creds.AccessKeyId, creds.AccessSecretKey)
 
 		cancelFn()
-		<-statsStopped
+		<-stats.Done()
 		return nil
 	},
 }
@@ -154,7 +148,8 @@ var runCmd = &cobra.Command{
 		// init authentication
 		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(conf.GetAuthEncryptionSecret()))
 
-		stats, cancelFn := getStats(conf, GetInstallationID(authService))
+		ctx, cancelFn := context.WithCancel(context.Background())
+		stats := getStats(conf, GetInstallationID(authService))
 
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats)
@@ -174,14 +169,13 @@ var runCmd = &cobra.Command{
 			stats,
 		)
 
-		statStopped := make(chan bool)
-		go stats.Run(statStopped)
+		go stats.Run(ctx)
 		stats.Collect("global", "run")
 
 		panic(gatewayServer.Listen())
 		// TODO: gracefully stop API And gateway servers to ensure we also drain stats
 		cancelFn()
-		<-statStopped
+		<-stats.Done()
 		return nil
 	},
 }

@@ -6,23 +6,40 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"time"
 )
 
 var ErrSendError = errors.New("stats: send error")
 
 type Sender interface {
-	Send(event InputEvent) error
+	Send(m []Metric) error
 }
+
+type TimeFn func() time.Time
 
 type HTTPSender struct {
-	addr string
+	timeFunc  TimeFn
+	userID    string
+	processID string
+	addr      string
 }
 
-func NewHTTPSender(addr string) *HTTPSender {
-	return &HTTPSender{addr}
+func NewHTTPSender(userID, processID, addr string, timeFunc TimeFn) *HTTPSender {
+	return &HTTPSender{
+		timeFunc:  timeFunc,
+		userID:    userID,
+		processID: processID,
+		addr:      addr,
+	}
 }
 
-func (s *HTTPSender) Send(event InputEvent) error {
+func (s *HTTPSender) Send(metrics []Metric) error {
+	event := &InputEvent{
+		Email:     s.userID,
+		ProcessId: s.processID,
+		Time:      s.timeFunc().Format(time.RFC3339),
+		Metrics:   metrics,
+	}
 	serialized, err := json.MarshalIndent(event, "", "  ")
 	if err != nil {
 		return fmt.Errorf("could not serialize event: %s: %w", err, ErrSendError)
@@ -41,7 +58,7 @@ func (s *HTTPSender) Send(event InputEvent) error {
 
 type dummySender struct{}
 
-func (s *dummySender) Send(event InputEvent) error {
+func (s *dummySender) Send(metrics []Metric) error {
 	return nil
 }
 

@@ -1,54 +1,44 @@
 package stats_test
 
 import (
+	"context"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/stats"
 )
 
-func TestCallHomeCollector_Collect(t *testing.T) {
-	collector := stats.NewCallHomeCollector(stats.WriteBufferSize(0))
-	go collector.Run()
-
-	// add metrics
-	collector.Collect("foo", "bar")
-	collector.Collect("foo", "bar")
-	collector.Collect("foo", "bar")
-	collector.Collect("foo", "bazzz")
-	collector.Collect("foo", "bazzz")
-	collector.Collect("other", "bar")
-
-	// ensure we flush at the given interval
-	counters := collector.Drain()
-	keys := 0
-	for k, v := range counters {
-		if k.String() == "foo/bar" {
-			keys++
-			if v != 3 {
-				t.Fatalf("expected count %d for foo/bar, got %d", 3, v)
-			}
-		}
-		if k.String() == "foo/bazzz" {
-			keys++
-			if v != 2 {
-				t.Fatalf("expected count %d for foo/bazzz, got %d", 2, v)
-			}
-		}
-		if k.String() == "other/bar" {
-			keys++
-			if v != 1 {
-				t.Fatalf("expected count %d for other/bar, got %d", 1, v)
-			}
-		}
-	}
-	if keys != 3 {
-		t.Fatalf("expected all %d keys, got %d", 3, keys)
-	}
+type mockSender struct {
+	metrics chan []stats.Metric
 }
 
-func TestCallHomeCollector_Flush(t *testing.T) {
-	collector := stats.NewCallHomeCollector(stats.WriteBufferSize(0))
-	go collector.Run()
+func (s *mockSender) Send(m []stats.Metric) error {
+	s.metrics <- m
+	return nil
+}
+
+type mockTicker struct {
+	tc chan time.Time
+}
+
+func (m *mockTicker) Stop() {
+
+}
+
+func (m *mockTicker) makeItTick() {
+	m.tc <- time.Now()
+}
+
+func (m *mockTicker) Tick() <-chan time.Time {
+	return m.tc
+}
+
+func TestCallHomeCollector_Collect(t *testing.T) {
+	sender := &mockSender{metrics: make(chan []stats.Metric, 1)}
+	ticker := &mockTicker{tc: make(chan time.Time)}
+	ctx, cancelFn := context.WithCancel(context.Background())
+	collector := stats.NewBufferedCollector(stats.WithSender(sender), stats.WithTicker(ticker), stats.WithWriteBufferSize(0))
+	go collector.Run(ctx)
 
 	// add metrics
 	collector.Collect("foo", "bar")
@@ -59,34 +49,39 @@ func TestCallHomeCollector_Flush(t *testing.T) {
 	collector.Collect("other", "bar")
 
 	// ensure we flush at the given interval
-	counters := collector.Flush()
+	ticker.makeItTick()
+
+	counters := <-sender.metrics
+
 	keys := 0
-	for k, v := range counters {
-		if k.String() == "foo/bar" {
+	for _, counter := range counters {
+		if counter.Class == "foo" && counter.Name == "bar" {
 			keys++
-			if v != 3 {
-				t.Fatalf("expected count %d for foo/bar, got %d", 3, v)
+			if counter.Value != 3 {
+				t.Fatalf("expected count %d for foo/bar, got %d", 3, counter.Value)
 			}
 		}
-		if k.String() == "foo/bazzz" {
+		if counter.Class == "foo" && counter.Name == "bazzz" {
 			keys++
-			if v != 2 {
-				t.Fatalf("expected count %d for foo/bazzz, got %d", 2, v)
+			if counter.Value != 2 {
+				t.Fatalf("expected count %d for foo/bazzz, got %d", 2, counter.Value)
 			}
 		}
-		if k.String() == "other/bar" {
+		if counter.Class == "other" && counter.Name == "bar" {
 			keys++
-			if v != 1 {
-				t.Fatalf("expected count %d for other/bar, got %d", 1, v)
+			if counter.Value != 1 {
+				t.Fatalf("expected count %d for foo/bazzz, got %d", 1, counter.Value)
 			}
 		}
+
 	}
 	if keys != 3 {
 		t.Fatalf("expected all %d keys, got %d", 3, keys)
 	}
 
-	counters = collector.Drain()
-	if len(counters) > 0 {
-		t.Fatalf("expected %d keys left to drain, got %d", 0, len(counters))
-	}
+	collector.Collect("foo", "bar")
+
+	cancelFn()
+	<-collector.Done()
+	<-sender.metrics // ensure we get another "payload"
 }
