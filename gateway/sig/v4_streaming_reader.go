@@ -233,7 +233,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			hashedChunk := hex.EncodeToString(cr.chunkSHA256Writer.Sum(nil))
 			// Calculate the chunk signature.
 			newSignature := getChunkSignature(cr.cred, cr.seedSignature, cr.region, cr.service, cr.seedDate, hashedChunk)
-			if !CompareSignature([]byte(cr.chunkSignature), []byte(newSignature)) {
+			if !Equal([]byte(cr.chunkSignature), []byte(newSignature)) {
 				return 0, errors2.ErrSignatureDoesNotMatch
 			}
 			// Newly calculated signature becomes the seed for the next chunk

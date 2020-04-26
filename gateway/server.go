@@ -15,10 +15,10 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/sig"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/gateway/sig"
 	"golang.org/x/xerrors"
 )
 
