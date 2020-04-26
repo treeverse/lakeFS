@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
-	"sort"
 	"strings"
 	"time"
 
@@ -243,7 +242,8 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
-		ValidatePath(path))
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1210,20 +1210,36 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		destinationBranch.WorkspaceRoot = newRoot.Root()
 
 		// read commits for each branch in our merge.
-		// we like the parents to be sorted by the newest first
+		// check which parents is older by searching the other parents using our DAG
+		// 1. read commits
+		// 2. use iterator with the first commit to lookup the other commit
 		branches := []*model.Branch{sourceBranch, destinationBranch}
 		commits := make([]*model.Commit, len(branches))
 		for i, branch := range branches {
 			var err error
 			commits[i], err = tx.ReadCommit(branch.CommitId)
 			if err != nil {
-				index.log().WithError(err).Fatal("failed read commit")
-				return nil, err
+				index.log().WithError(err).Error("failed read commit")
+				return nil, xerrors.Errorf("missing commit: %w", err)
 			}
 		}
-		sort.SliceStable(commits, func(a, b int) bool {
-			return commits[a].CreationDate.After(commits[b].CreationDate)
-		})
+		parent1Commit := commits[0]
+		parent2Commit := commits[1]
+		iter := dag.NewCommitIterator(tx, parent2Commit.Address)
+		parent2Older := true
+		for iter.Next() {
+			if iter.Value().Address == parent1Commit.Address {
+				parent2Older = false
+				break
+			}
+		}
+		if iter.Err() != nil {
+			index.log().WithError(err).Error("failed while lookup parent relation")
+			return nil, xerrors.Errorf("failed to scan parent commits", err)
+		}
+		if !parent2Older {
+			commits[0], commits[1] = commits[1], commits[0]
+		}
 		parents := []string{commits[0].Address, commits[1].Address}
 
 		commitMessage := "Merge branch " + source + " into " + destination
@@ -1235,7 +1251,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 				"userId":      userId,
 				"parents":     parents,
 			}).Error("commit merge branch")
-			return nil, err
+			return nil, xerrors.Errorf("failed to commit updates", err)
 		}
 		return mergeOperations, nil
 	})
