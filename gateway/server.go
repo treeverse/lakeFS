@@ -15,10 +15,10 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/sig"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/gateway/sig"
 	"golang.org/x/xerrors"
 )
 
@@ -94,7 +94,14 @@ func NewServer(
 func (s *Server) Listen() error {
 	return s.Server.ListenAndServe()
 }
-
+func getApiErrOrDefault(err error, defaultApiErr errors.APIErrorCode) errors.APIError {
+	apiError, ok := err.(*errors.APIErrorCode)
+	if ok {
+		return apiError.ToAPIErr()
+	} else {
+		return defaultApiErr.ToAPIErr()
+	}
+}
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
@@ -109,7 +116,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
-		sig.NewV4Authenticatior(request),
+		sig.NewV4Authenticator(request),
 		sig.NewV2SigAuthenticator(request))
 
 	authContext, err := authenticator.Parse()
@@ -117,7 +124,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		o.Log().WithError(err).WithFields(logging.Fields{
 			"key": authContext.GetAccessKeyId(),
 		}).Warn("error parsing signature")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		o.EncodeError(getApiErrOrDefault(err, errors.ErrAccessDenied))
 		return nil
 	}
 	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
@@ -138,7 +145,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 			"key":           authContext.GetAccessKeyId(),
 			"authenticator": authenticator,
 		}).Warn("error verifying credentials for key")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		o.EncodeError(getApiErrOrDefault(err, errors.ErrAccessDenied))
 		return nil
 	}
 
@@ -200,10 +207,10 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 		repo, err := authOp.Index.GetRepo(repoId)
 		if xerrors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
-			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
+			authOp.EncodeError(errors.ErrNoSuchBucket.ToAPIErr())
 			return
 		} else if err != nil {
-			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			authOp.EncodeError(errors.ErrInternalError.ToAPIErr())
 			return
 		}
 		// run callback
@@ -264,7 +271,7 @@ func unsupportedOperationHandler() http.Handler {
 			Request:        request,
 			ResponseWriter: writer,
 		}
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ERRLakeFSNotSupported))
+		o.EncodeError(errors.ERRLakeFSNotSupported.ToAPIErr())
 		return
 	})
 }

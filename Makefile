@@ -20,38 +20,42 @@ CLI_BINARY_NAME=lakectl
 
 UI_DIR=$(PWD)/webui
 UI_BUILD_DIR=$(UI_DIR)/build
+API_BUILD_DIR=api/gen
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
 
 all: build
 
+clean:
+	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(BINARY_NAME) $(CLI_BINARY_NAME)
+
 gen-api:  ## Run the go-swagger code generator (Docker required)
-	rm -rf api/gen/
-	mkdir -p api/gen/
-	$(SWAGGER) generate client -A lakefs -f ./swagger.yml -P models.User -t api/gen
-	$(SWAGGER) generate server -A lakefs -f ./swagger.yml -P models.User -t api/gen --exclude-main
+	@rm -rf $(API_BUILD_DIR)
+	@mkdir -p $(API_BUILD_DIR)
+	$(SWAGGER) generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)
+	$(SWAGGER) generate server -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR) --exclude-main
 
 validate-swagger:  ## Validate swagger.yaml
-	$(SWAGGER) validate  ./swagger.yml
+	$(SWAGGER) validate swagger.yml
 
 build: gen  ## Download dependecies and Build the default binary
-		$(GOBUILD) -o $(BINARY_NAME) -v main.go
-		$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
+	$(GOBUILD) -o $(BINARY_NAME) -v main.go
+	$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
 
 test: gen run-test  ## Run tests for the project
 
 run-test:  ## Run tests without generating anything (faster if already generated)
-		$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast ./...
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast ./...
 
 fast-test:  ## Run tests without race detector (faster)
-		$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
+	$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
 
 test-html: test  ## Run tests with HTML for the project
-		$(GOTOOL) cover -html=cover.out
+	$(GOTOOL) cover -html=cover.out
 
 build-docker: ## Build Docker image file (Docker required)
-		$(DOCKER) build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
@@ -75,19 +79,18 @@ $(UI_DIR)/node_modules:
 
 # UI operations
 ui-build: $(UI_DIR)/node_modules  ## Build UI app
-	cd $(UI_DIR) && $(NPM) run build && cd -
+	cd $(UI_DIR) && $(NPM) run build
 
-ui-bundle:  ## Bundle static built UI app
+ui-bundle: ui-build ## Bundle static built UI app
 	$(STATIK) -ns webui -src=$(UI_BUILD_DIR)
 
-gen-ui: ui-build ui-bundle
+gen-ui: ui-bundle
 
 gen-ddl:  ## Embed data migration files into the resulting binary
-	$(STATIK) -ns "ddl" -m -f -p "ddl" -c "auto-generated SQL files for data migrations" -src "./ddl"
+	$(STATIK) -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
 
-
-# helppers
+# helpers
 gen: gen-api gen-ui gen-ddl

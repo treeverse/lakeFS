@@ -706,7 +706,7 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 	switch command {
 	case write:
 		err = kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, actionPath, &model.Entry{
-			Name:         path.New(actionPath).Basename(),
+			Name:         path.New(actionPath, model.EntryTypeObject).BaseName(),
 			Address:      "123456789",
 			CreationDate: time.Now(),
 			EntryType:    model.EntryTypeObject,

@@ -410,16 +410,6 @@ func (index *DBIndex) ReadEntryObject(repoId, branch, path string) (*model.Entry
 	return index.ReadEntry(repoId, branch, path, model.EntryTypeObject)
 }
 
-func parentPath(path string) string {
-	p := pth.New(path)
-	parentPath := ""
-	if p.HasParent() {
-		parentPath = p.DirName()
-	}
-
-	return parentPath
-}
-
 func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -441,7 +431,7 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
-			ParentPath:        parentPath(path),
+			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
 			Path:              path,
 			EntryName:         &entry.Name,
 			EntryAddress:      &entry.Address,
@@ -475,7 +465,7 @@ func (index *DBIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
-			ParentPath:        parentPath(path),
+			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
 			Path:              path,
 			EntryName:         &entry.Name,
 			EntryAddress:      &entry.Address,
@@ -512,13 +502,13 @@ func (index *DBIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		if err != nil {
 			return nil, err
 		}
-		p := pth.New(path)
-		entryName := pth.New(path).Basename()
 		typ := model.EntryTypeObject
+		p := pth.New(path, typ)
+		entryName := pth.New(path, typ).BaseName()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			Path:              p.String(),
-			ParentPath:        parentPath(p.String()),
+			ParentPath:        p.ParentPath(),
 			BranchId:          branch,
 			EntryName:         &entryName,
 			EntryAddress:      &addr,
@@ -598,8 +588,8 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		}
 
 		if merkleEntry != nil {
-			bname := pth.New(path).Basename()
 			typ := model.EntryTypeObject
+			bname := pth.New(path, typ).BaseName()
 			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 				Path:              path,
 				EntryName:         &bname,
@@ -864,7 +854,7 @@ func (index *DBIndex) GetCommitLog(repoId, fromCommitId string, results int, aft
 		return nil, false, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		commits, hasMore, err := dag.BfsScan(tx, fromCommitId, results, after)
+		commits, hasMore, err := dag.CommitScan(tx, fromCommitId, results, after)
 		return &result{hasMore, commits}, err
 	}, db.ReadOnly())
 	if err != nil {
@@ -1032,7 +1022,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 		"path":   path,
 	})
 	_, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		p := pth.New(path)
+		p := pth.New(path, typ)
 		if p.IsRoot() {
 			return nil, index.ResetBranch(repoId, branch)
 		}
@@ -1060,7 +1050,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 				workspaceEntry = &model.WorkspaceEntry{
 					RepositoryId:      repoId,
 					BranchId:          branch,
-					ParentPath:        parentPath(path),
+					ParentPath:        p.ParentPath(),
 					Path:              path,
 					EntryName:         &pathEntry.Name,
 					EntryAddress:      &pathEntry.Address,
@@ -1078,7 +1068,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 			workspaceEntry = &model.WorkspaceEntry{
 				RepositoryId:      repoId,
 				BranchId:          branch,
-				ParentPath:        parentPath(path),
+				ParentPath:        p.ParentPath(),
 				Path:              path,
 				EntryName:         &commitEntry.Name,
 				EntryAddress:      &commitEntry.Address,
