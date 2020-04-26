@@ -134,7 +134,7 @@ func TestBfsScan(t *testing.T) {
 
 	for _, tcase := range cases {
 		t.Run(tcase.Name, func(t *testing.T) {
-			commits, hasMore, err := dag.BfsScan(tcase.Reader, tcase.Addr, tcase.results, tcase.after)
+			commits, hasMore, err := dag.CommitScan(tcase.Reader, tcase.Addr, tcase.results, tcase.after)
 			if err != nil {
 				t.Fatal(err)
 			}
