@@ -16,7 +16,7 @@ import (
 	"time"
 	"unicode"
 
-	errors2 "github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/errors"
 
 	"github.com/treeverse/lakefs/auth/model"
 )
@@ -100,15 +100,15 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	query := r.URL.Query()
 	algorithm := query.Get("X-Amz-Algorithm")
 	if len(algorithm) == 0 || !strings.EqualFold(algorithm, v4authHeaderPrefix) {
-		return ctx, errors2.ErrInvalidQuerySignatureAlgo
+		return ctx, errors.ErrInvalidQuerySignatureAlgo
 	}
 	credentialScope := query.Get("X-Amz-Credential")
 	if len(credentialScope) == 0 {
-		return ctx, errors2.ErrMissingCredTag
+		return ctx, errors.ErrMissingCredTag
 	}
 	credsMatch := V4CredentialScopeRegexp.FindStringSubmatch(credentialScope)
 	if len(credsMatch) == 0 {
-		return ctx, errors2.ErrCredMalformed
+		return ctx, errors.ErrCredMalformed
 	}
 	credsResult := make(map[string]string)
 	for i, name := range V4CredentialScopeRegexp.SubexpNames() {
@@ -149,8 +149,8 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 	signature := hex.EncodeToString(sign(signingKey, stringToSign))
 
 	// compare signatures
-	if !CompareSignature([]byte(signature), []byte(auth.Signature)) {
-		return errors2.ErrSignatureDoesNotMatch
+	if !Equal([]byte(signature), []byte(auth.Signature)) {
+		return errors.ErrSignatureDoesNotMatch
 	}
 
 	// wrap body with verifier
@@ -256,7 +256,7 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 		if len(amzDate) == 0 {
 			amzDate = ctx.Request.Header.Get("date")
 			if len(amzDate) == 0 {
-				return "", errors2.ErrMissingDateHeader
+				return "", errors.ErrMissingDateHeader
 			}
 		}
 	}
@@ -264,18 +264,18 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	// parse date
 	ts, err := time.Parse(v4timeFormat, amzDate)
 	if err != nil {
-		return "", errors2.ErrMalformedDate
+		return "", errors.ErrMalformedDate
 	}
 
 	// parse signature date
 	sigTs, err := time.Parse(v4shortTimeFormat, ctx.AuthValue.Date)
 	if err != nil {
-		return "", errors2.ErrMalformedCredentialDate
+		return "", errors.ErrMalformedCredentialDate
 	}
 
 	// ensure same date
 	if sigTs.Year() != ts.Year() || sigTs.Month() != ts.Month() || sigTs.Day() != ts.Day() {
-		return "", errors2.ErrMalformedCredentialDate
+		return "", errors.ErrMalformedCredentialDate
 	}
 
 	return amzDate, nil
@@ -329,7 +329,7 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 	if ctx.isStreaming() {
 		if sizeStr, ok := ctx.Request.Header[AmzDecodedContentLength]; ok {
 			if sizeStr[0] == "" {
-				return 0, errors2.ErrMissingContentLength
+				return 0, errors.ErrMissingContentLength
 			}
 			var err error
 			size, err = strconv.ParseInt(sizeStr[0], 10, 64)
@@ -355,7 +355,7 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 		}
 		return chunkReader, nil
 	}
-	return NewReader(reader, ctx.payloadHash())
+	return NewSha265Reader(reader, ctx.payloadHash())
 }
 
 type V4Authenticator struct {
