@@ -6,7 +6,7 @@ type CommitIterator struct {
 	reader        CommitReader
 	queue         []string
 	discoveredSet map[string]struct{}
-	item          *model.Commit
+	value         *model.Commit
 	err           error
 }
 
@@ -16,7 +16,7 @@ func NewCommitIterator(reader CommitReader, startAddr string) *CommitIterator {
 
 func (c *CommitIterator) Next() bool {
 	if c.err != nil || len(c.queue) == 0 {
-		c.item = nil
+		c.value = nil
 		return false
 	}
 
@@ -26,7 +26,7 @@ func (c *CommitIterator) Next() bool {
 	commit, err := c.reader.ReadCommit(addr)
 	if err != nil {
 		c.err = err
-		c.item = nil
+		c.value = nil
 		return false
 	}
 
@@ -38,12 +38,12 @@ func (c *CommitIterator) Next() bool {
 			c.discoveredSet[parent] = sentinel
 		}
 	}
-	c.item = commit
+	c.value = commit
 	return true
 }
 
 func (c *CommitIterator) Value() *model.Commit {
-	return c.item
+	return c.value
 }
 
 func (c *CommitIterator) Err() error {
