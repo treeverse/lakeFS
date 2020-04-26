@@ -162,7 +162,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		Size:     blob.Size,
 	}
 
-	p := pth.New(o.Path)
+	p := pth.New(o.Path, model.EntryTypeObject)
 
 	entry := &model.Entry{
 		Name:         p.BaseName(),
