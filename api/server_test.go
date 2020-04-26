@@ -108,6 +108,12 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	return creds
 }
 
+type mockCollector struct{}
+
+func (m *mockCollector) Collect(class, action string) {
+
+}
+
 func getHandler(t *testing.T) (http.Handler, *dependencies) {
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	blockAdapter := testutil.GetBlockAdapter(t)
@@ -123,6 +129,7 @@ func getHandler(t *testing.T) (http.Handler, *dependencies) {
 		mpu,
 		blockAdapter,
 		authService,
+		&mockCollector{},
 	)
 
 	srv, err := server.SetupServer()
