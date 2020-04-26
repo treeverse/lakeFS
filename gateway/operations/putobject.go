@@ -35,6 +35,7 @@ func (controller *PutObject) Action(repoId, refId, path string) permissions.Acti
 }
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
+	o.Incr("copy_object")
 	// resolve source branch and source path
 	copySourceDecoded, err := url.QueryUnescape(copySource)
 	if err != nil {
@@ -77,6 +78,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 }
 
 func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
+	o.Incr("put_mpu_part")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
 	partNumberStr := query.Get(QueryParamPartNumber)
@@ -145,6 +147,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		return
 	}
 
+	o.Incr("put_object")
 	// handle the upload itself
 	blob, err := upload.ReadBlob(o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, upload.ObjectBlockSize)
 	if err != nil {
