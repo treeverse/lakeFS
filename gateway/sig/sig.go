@@ -112,7 +112,7 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 	return nil, errors2.ErrMissingFields
 }
 
-func CompareSignature(sig1, sig2 []byte) bool {
+func Equal(sig1, sig2 []byte) bool {
 	return hmac.Equal(sig1, sig2)
 }
 

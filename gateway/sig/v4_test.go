@@ -17,7 +17,7 @@ import (
 
 	"github.com/treeverse/lakefs/auth/model"
 
-	"github.com/treeverse/lakefs/auth/sig"
+	"github.com/treeverse/lakefs/gateway/sig"
 
 	"github.com/treeverse/lakefs/gateway/errors"
 )
@@ -249,12 +249,10 @@ func TestStreamingLastByteWrong(t *testing.T) {
 
 	const (
 		method = http.MethodPut
-		host   = "s3.amazonaws.com"
-		path   = "examplebucket/chunkObject.txt"
 		ID     = "AKIAIOSFODNN7EXAMPLE"
 		SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 	)
-	req, err := http.NewRequest(method, fmt.Sprintf("https://%s/%s", host, path), nil)
+	req, err := http.NewRequest(method, "https://s3.amazonaws.com/examplebucket/chunkObject.txt", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
