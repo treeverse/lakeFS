@@ -35,10 +35,8 @@ func FindLowestCommonAncestor(reader CommitReader, addrA, addrB string) (*model.
 	discoveredSet := make(map[string]struct{})
 	iterA := NewCommitIterator(reader, addrA)
 	iterB := NewCommitIterator(reader, addrB)
-	var commit *model.Commit
-	var err error
 	for {
-		commit, err = findLowerCommonAncestorNextIter(discoveredSet, iterA)
+		commit, err := findLowerCommonAncestorNextIter(discoveredSet, iterA)
 		if commit != nil || err != nil {
 			return commit, err
 		}
@@ -60,8 +58,6 @@ func findLowerCommonAncestorNextIter(discoveredSet map[string]struct{}, iter *Co
 			return commit, nil
 		}
 		discoveredSet[commit.Address] = struct{}{}
-	} else if iter.Err() != nil {
-		return nil, iter.Err()
 	}
-	return nil, nil
+	return nil, iter.Err()
 }
