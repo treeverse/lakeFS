@@ -188,8 +188,9 @@ var setupdbCmd = &cobra.Command{
 }
 
 var rootCmd = &cobra.Command{
-	Use:   "lakefs [sub-command]",
-	Short: "lakefs is a data lake management platform",
+	Use:     "lakefs [sub-command]",
+	Short:   "lakefs is a data lake management platform",
+	Version: config.Version,
 }
 
 func init() {
