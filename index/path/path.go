@@ -2,13 +2,15 @@ package path
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/index/model"
 	"strings"
 )
 
 const Separator = "/"
 
 type Path struct {
-	str string
+	str       string
+	entryType string
 }
 
 func Join(parts []string) string {
@@ -23,14 +25,8 @@ func Join(parts []string) string {
 	return buf.String()
 }
 
-func New(str string) *Path {
-	return &Path{str}
-}
-
-func (p *Path) HasParent() bool {
-	// should return true if the path is not empty (disregarding trailing separator)
-	// and the path has a separator splitting at least 2 non empty parts
-	return len(p.SplitParts()) > 1
+func New(str, entryType string) *Path {
+	return &Path{str, entryType}
 }
 
 func (p *Path) String() string {
@@ -41,19 +37,14 @@ func (p *Path) String() string {
 	return strings.TrimPrefix(joined, Separator)
 }
 
-func (p *Path) Basename() string {
-	parts := p.SplitParts()
-	if len(parts) > 0 {
-		return parts[len(parts)-1]
-	}
-	return ""
-}
-
 func (p *Path) Equals(other *Path) bool {
 	if p == nil && other == nil {
 		return true
 	}
 	if other == nil {
+		return false
+	}
+	if p.entryType != other.entryType {
 		return false
 	}
 	mine := p.SplitParts()
@@ -83,6 +74,10 @@ func (p *Path) SplitParts() []string {
 		}
 		suffixedParts[i] = suffixedPart
 	}
+	if len(suffixedParts) >= 2 && p.entryType == model.EntryTypeTree && len(suffixedParts[len(suffixedParts)-1]) == 0 {
+		// remove empty suffix for tree type
+		suffixedParts = suffixedParts[:len(suffixedParts)-1]
+	}
 	return suffixedParts
 }
 
@@ -90,21 +85,30 @@ func (p *Path) BaseName() string {
 	var baseName string
 	parts := p.SplitParts()
 	if len(parts) > 0 {
-		baseName = parts[len(parts)-1]
+		if len(parts) > 1 && len(parts[len(parts)-1]) == 0 && p.entryType == model.EntryTypeTree {
+			baseName = parts[len(parts)-2]
+		} else {
+			baseName = parts[len(parts)-1]
+		}
 	}
 	return baseName
 }
 
-func (p *Path) DirName() string {
-	var dirName string
-	parts := p.SplitParts()
-	if len(parts) > 1 && len(parts[len(parts)-1]) == 0 {
-		return parts[len(parts)-2]
+func (p *Path) ParentPath() string {
+	if p.IsRoot() {
+		return ""
 	}
-	return dirName
+	parts := p.SplitParts()
+	if len(parts) <= 1 {
+		return ""
+	}
+	if len(parts[len(parts)-1]) == 0 && p.entryType == model.EntryTypeTree {
+		return Join(parts[:len(parts)-2])
+	}
+	return Join(parts[:len(parts)-1])
 }
 
 func (p *Path) IsRoot() bool {
-	root := New("")
+	root := New("", model.EntryTypeTree)
 	return p.Equals(root)
 }

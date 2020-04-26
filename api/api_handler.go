@@ -749,7 +749,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:     blob.Size,
 		}
 
-		p := pth.New(params.Path)
+		p := pth.New(params.Path, model.EntryTypeObject)
 
 		entry := &model.Entry{
 			RepositoryId: repo.Id,
