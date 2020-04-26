@@ -20,6 +20,7 @@ func (controller *HeadObject) Action(repoId, refId, path string) permissions.Act
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
+	o.Incr("stat_object")
 	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path)
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
