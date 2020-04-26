@@ -16,20 +16,22 @@ func NewCommitIterator(reader CommitReader, startAddr string) *CommitIterator {
 
 func (c *CommitIterator) Next() bool {
 	if c.err != nil || len(c.queue) == 0 {
+		c.item = nil
 		return false
 	}
-	var sentinel = struct{}{}
+
 	// pop
 	addr := c.queue[0]
 	c.queue = c.queue[1:]
-
 	commit, err := c.reader.ReadCommit(addr)
 	if err != nil {
 		c.err = err
 		c.item = nil
 		return false
 	}
+
 	//fill queue
+	sentinel := struct{}{}
 	for _, parent := range commit.Parents {
 		if _, wasDiscovered := c.discoveredSet[parent]; !wasDiscovered {
 			c.queue = append(c.queue, parent)

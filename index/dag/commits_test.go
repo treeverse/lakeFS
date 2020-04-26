@@ -31,7 +31,7 @@ func newReader(kv map[string]*model.Commit) dag.CommitReader {
 	return &MockCommitReader{kv, visited}
 }
 
-func TestBfsScan(t *testing.T) {
+func TestCommitScan(t *testing.T) {
 	cases := []struct {
 		Name            string
 		Addr            string
