@@ -2,10 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/treeverse/lakefs/api"
+	"github.com/treeverse/lakefs/config"
 
 	"github.com/spf13/cobra"
 
@@ -42,6 +44,7 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 			initConfig(true)
 		}
 	},
+	Version: config.Version,
 }
 
 func getClient() api.Client {
@@ -64,7 +67,7 @@ func Execute() {
 	}
 	err := rootCmd.Execute()
 	if err != nil {
-		os.Exit(1)
+		log.Fatalln(err)
 	}
 }
 
@@ -78,7 +81,6 @@ func init() {
 
 // initConfig reads in config file and ENV variables if set.
 func initConfig(readConf bool) {
-
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
