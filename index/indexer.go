@@ -852,7 +852,7 @@ func (index *DBIndex) GetCommitLog(repoId, fromCommitId string, results int, aft
 		return nil, false, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		commits, hasMore, err := dag.BfsScan(tx, fromCommitId, results, after)
+		commits, hasMore, err := dag.CommitScan(tx, fromCommitId, results, after)
 		return &result{hasMore, commits}, err
 	}, db.ReadOnly())
 	if err != nil {
