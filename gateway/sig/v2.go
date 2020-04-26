@@ -246,7 +246,7 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.AccessSecretKey))
-	if !CompareSignature(digest, a.ctx.signature) {
+	if !Equal(digest, a.ctx.signature) {
 		return errors.ErrSignatureDoesNotMatch
 	}
 	return nil
