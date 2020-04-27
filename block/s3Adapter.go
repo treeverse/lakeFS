@@ -13,18 +13,22 @@ import (
 )
 
 type S3Adapter struct {
-	s3  s3iface.S3API
-	ctx context.Context
+	s3       s3iface.S3API
+	uploader *s3manager.Uploader
+	ctx      context.Context
 }
 
 func NewS3Adapter(s3 s3iface.S3API) (Adapter, error) {
-	return &S3Adapter{s3: s3, ctx: context.Background()}, nil
+	return &S3Adapter{s3: s3,
+		uploader: s3manager.NewUploaderWithClient(s3),
+		ctx:      context.Background()}, nil
 }
 
 func (s S3Adapter) WithContext(ctx context.Context) Adapter {
 	return &S3Adapter{
-		s3:  s.s3,
-		ctx: ctx,
+		s3:       s.s3,
+		uploader: s3manager.NewUploaderWithClient(s.s3),
+		ctx:      ctx,
 	}
 }
 
@@ -32,14 +36,14 @@ func (s S3Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
+//todo: if "aws-chunked" is not be implemented before the POC. We can significantly improve memory consumption by using "content-length" field
 func (s S3Adapter) Put(repo string, identifier string, reader io.Reader) error {
-	svc := s3manager.NewUploaderWithClient(s.s3)
 	input := &s3manager.UploadInput{
 		Bucket: aws.String(repo),
 		Key:    aws.String(identifier),
 		Body:   reader,
 	}
-	_, err := svc.Upload(input)
+	_, err := s.uploader.Upload(input)
 	if err != nil {
 		s.log().WithError(err).Error("failed to upload S3 object")
 	}
