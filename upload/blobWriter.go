@@ -62,6 +62,10 @@ func (s *HashingReader) Read(p []byte) (int, error) {
 	return len, err
 }
 
+func (s *HashingReader) Close() error {
+	return nil
+}
+
 func newHashingReader(body io.Reader) (s *HashingReader) {
 	s = new(HashingReader)
 	s.sha256 = sha256.New()
@@ -77,7 +81,7 @@ func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, ad
 	objName := uuidAsHex()
 	err := adapter.Put(bucketName, objName, hashReader)
 	if err != nil {
-		panic("could not copy object to destination\n")
+		return nil, err
 	}
 	Block := new(model.Block)
 	dedupId := hex.EncodeToString(hashReader.sha256.Sum(nil))
