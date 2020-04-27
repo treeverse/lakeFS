@@ -12,7 +12,7 @@ type mockSender struct {
 	metrics chan []stats.Metric
 }
 
-func (s *mockSender) Send(m []stats.Metric) error {
+func (s *mockSender) Send(ctx context.Context, m []stats.Metric) error {
 	s.metrics <- m
 	return nil
 }
@@ -34,7 +34,7 @@ func (m *mockTicker) Tick() <-chan time.Time {
 }
 
 func TestCallHomeCollector_Collect(t *testing.T) {
-	sender := &mockSender{metrics: make(chan []stats.Metric, 1)}
+	sender := &mockSender{metrics: make(chan []stats.Metric, 10)}
 	ticker := &mockTicker{tc: make(chan time.Time)}
 	ctx, cancelFn := context.WithCancel(context.Background())
 	collector := stats.NewBufferedCollector(stats.WithSender(sender), stats.WithTicker(ticker), stats.WithWriteBufferSize(0))

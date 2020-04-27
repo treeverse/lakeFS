@@ -53,7 +53,9 @@ func getStats(conf *config.Config, installationID string) *stats.BufferedCollect
 	if conf.GetStatsEnabled() {
 		sender = stats.NewHTTPSender(installationID, uuid.New().String(), conf.GetStatsAddress(), time.Now)
 	}
-	return stats.NewBufferedCollector(stats.WithSender(sender))
+	return stats.NewBufferedCollector(
+		stats.WithSender(sender),
+		stats.WithFlushInterval(conf.GetStatsFlushInterval()))
 }
 
 var initCmd = &cobra.Command{
