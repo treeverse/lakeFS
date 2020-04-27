@@ -2,6 +2,7 @@ package stats
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -12,7 +13,7 @@ import (
 var ErrSendError = errors.New("stats: send error")
 
 type Sender interface {
-	Send(m []Metric) error
+	Send(ctx context.Context, m []Metric) error
 }
 
 type TimeFn func() time.Time
@@ -33,7 +34,7 @@ func NewHTTPSender(userID, processID, addr string, timeFunc TimeFn) *HTTPSender 
 	}
 }
 
-func (s *HTTPSender) Send(metrics []Metric) error {
+func (s *HTTPSender) Send(ctx context.Context, metrics []Metric) error {
 	event := &InputEvent{
 		Email:     s.userID,
 		ProcessId: s.processID,
@@ -45,7 +46,12 @@ func (s *HTTPSender) Send(metrics []Metric) error {
 		return fmt.Errorf("could not serialize event: %s: %w", err, ErrSendError)
 	}
 
-	res, err := http.DefaultClient.Post(s.addr+"/events", "application/json", bytes.NewBuffer(serialized))
+	req, err := http.NewRequest(http.MethodPost, s.addr+"/events", bytes.NewBuffer(serialized))
+	if err != nil {
+		return fmt.Errorf("could not create HTTP request: %s: %w", err, ErrSendError)
+	}
+	req = req.WithContext(ctx)
+	res, err := http.DefaultClient.Do(req)
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
@@ -58,7 +64,7 @@ func (s *HTTPSender) Send(metrics []Metric) error {
 
 type dummySender struct{}
 
-func (s *dummySender) Send(metrics []Metric) error {
+func (s *dummySender) Send(ctx context.Context, metrics []Metric) error {
 	return nil
 }
 

@@ -11,6 +11,7 @@ import (
 const (
 	DefaultCollectorEventBufferSize = 1024 * 1024
 	DefaultFlushInterval            = time.Second * 600
+	DefaultSendTimeout              = time.Second * 5
 )
 
 type Collector interface {
@@ -62,6 +63,7 @@ type BufferedCollector struct {
 	cache       keyIndex
 	writes      chan primaryKey
 	sender      Sender
+	sendTimeout time.Duration
 	flushTicker FlushTicker
 	done        chan bool
 }
@@ -86,12 +88,25 @@ func WithTicker(t FlushTicker) BufferedCollectorOpts {
 	}
 }
 
+func WithFlushInterval(d time.Duration) BufferedCollectorOpts {
+	return func(s *BufferedCollector) {
+		s.flushTicker = &TimeTicker{ticker: time.NewTicker(d)}
+	}
+}
+
+func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
+	return func(s *BufferedCollector) {
+		s.sendTimeout = d
+	}
+}
+
 func NewBufferedCollector(opts ...BufferedCollectorOpts) *BufferedCollector {
 	s := &BufferedCollector{
 		cache:       make(keyIndex),
 		writes:      make(chan primaryKey, DefaultCollectorEventBufferSize),
 		done:        make(chan bool),
 		sender:      NewDummySender(),
+		sendTimeout: DefaultSendTimeout,
 		flushTicker: &TimeTicker{ticker: time.NewTicker(DefaultFlushInterval)},
 	}
 
@@ -110,30 +125,20 @@ func (s *BufferedCollector) incr(k primaryKey) {
 	}
 }
 
-func (s *BufferedCollector) drain() {
-	for {
-		select {
-		case w := <-s.writes:
-			s.incr(w)
-		default:
-			return
-		}
-	}
-}
-
-func (s *BufferedCollector) send() {
-	metrics := makeMetrics(s.cache)
+func (s *BufferedCollector) send(metrics []Metric) {
 	if len(metrics) == 0 {
 		return
 	}
-	err := s.sender.Send(metrics)
+	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
+	defer cancel()
+	err := s.sender.Send(ctx, metrics)
 	if err != nil {
 		logging.Default().
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not send stats")
 	}
-	s.cache = make(keyIndex)
+
 }
 
 func (s *BufferedCollector) Collect(class, action string) {
@@ -153,10 +158,12 @@ func (s *BufferedCollector) Run(ctx context.Context) {
 		case w := <-s.writes: // collect events
 			s.incr(w)
 		case <-s.flushTicker.Tick(): // every N seconds, send the collected events
-			s.send()
+			metrics := makeMetrics(s.cache)
+			s.cache = make(keyIndex)
+			go s.send(metrics) // no need to block on this
 		case <-ctx.Done(): // we're done
-			s.drain()
-			s.send()
+			metrics := makeMetrics(s.cache)
+			s.send(metrics)
 			s.done <- true
 			return
 		}
