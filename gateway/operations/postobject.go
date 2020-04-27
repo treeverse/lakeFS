@@ -25,6 +25,7 @@ func (controller *PostObject) Action(repoId, refId, path string) permissions.Act
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
+	o.Incr("create_mpu")
 	uploadId, err := o.MultipartManager.Create(o.Repo.Id, o.Path, time.Now())
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
@@ -48,6 +49,7 @@ func trimQuotes(s string) string {
 }
 
 func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
+	o.Incr("complete_mpu")
 	uploadId := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
 
 	req := &serde.CompleteMultipartUpload{}

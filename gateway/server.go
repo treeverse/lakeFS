@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/stats"
 
 	"github.com/treeverse/lakefs/httputil"
 
@@ -29,6 +30,7 @@ type ServerContext struct {
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
 	authService      utils.GatewayAuthService
+	stats            stats.Collector
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
@@ -38,7 +40,8 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 		meta:             c.meta.WithContext(ctx),
 		multipartManager: c.multipartManager.WithContext(ctx),
 		blockStore:       c.blockStore.WithContext(ctx),
-		authService:      c.authService, // TODO: pass context
+		authService:      c.authService,
+		stats:            c.stats,
 	}
 }
 
@@ -55,6 +58,7 @@ func NewServer(
 	authService utils.GatewayAuthService,
 	multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
+	stats stats.Collector,
 ) *Server {
 
 	ctx := &ServerContext{
@@ -64,6 +68,7 @@ func NewServer(
 		blockStore:       blockStore,
 		authService:      authService,
 		multipartManager: multipartManager,
+		stats:            stats,
 	}
 
 	// setup routes
@@ -113,6 +118,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		MultipartManager: s.multipartManager,
 		BlockStore:       s.blockStore,
 		Auth:             s.authService,
+		Incr:             func(action string) { s.stats.Collect("s3_gateway", action) },
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
