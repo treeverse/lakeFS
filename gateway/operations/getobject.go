@@ -28,7 +28,7 @@ func (controller *GetObject) Action(repoId, refId, path string) permissions.Acti
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {
-
+	o.Incr("get_object")
 	query := o.Request.URL.Query()
 	if _, exists := query["versioning"]; exists {
 		o.EncodeResponse(serde.VersioningConfiguration{}, http.StatusOK)

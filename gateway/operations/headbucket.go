@@ -13,5 +13,6 @@ func (controller *HeadBucket) Action(repoId, refId, path string) permissions.Act
 }
 
 func (controller *HeadBucket) Handle(o *RepoOperation) {
+	o.Incr("get_repo")
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

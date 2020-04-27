@@ -16,6 +16,7 @@ func (controller *ListBuckets) Action(repoId, refId, path string) permissions.Ac
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
+	o.Incr("list_repos")
 	repos, _, err := o.Index.ListRepos(-1, "")
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
