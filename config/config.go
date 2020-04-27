@@ -59,7 +59,7 @@ const (
 
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
-	DefaultStatsFlushInterval = time.Second * 3
+	DefaultStatsFlushInterval = time.Second * 30
 )
 
 type LogrusAWSAdapter struct {
