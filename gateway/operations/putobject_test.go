@@ -38,7 +38,7 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(repo string, identifier string, reader io.ReadSeeker) error {
+func (a *mockAdapter) Put(repo string, identifier string, reader io.Reader) error {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
