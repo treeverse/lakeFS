@@ -17,6 +17,7 @@ func (controller *DeleteObjects) Action(repoId, refId, path string) permissions.
 }
 
 func (controller *DeleteObjects) Handle(o *RepoOperation) {
+	o.Incr("delete_objects")
 	req := &serde.Delete{}
 	err := o.DecodeXMLBody(req)
 	if err != nil {
