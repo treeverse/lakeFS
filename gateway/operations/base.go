@@ -21,6 +21,8 @@ import (
 	"github.com/treeverse/lakefs/index/model"
 )
 
+type ActionIncr func(string)
+
 type Operation struct {
 	Request        *http.Request
 	ResponseWriter http.ResponseWriter
@@ -31,6 +33,7 @@ type Operation struct {
 	MultipartManager index.MultipartManager
 	BlockStore       block.Adapter
 	Auth             utils.GatewayAuthService
+	Incr             ActionIncr
 }
 
 func (o *Operation) RequestId() string {

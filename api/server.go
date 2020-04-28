@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
 	_ "github.com/treeverse/lakefs/statik"
+	"github.com/treeverse/lakefs/stats"
 )
 
 const (
@@ -35,6 +36,7 @@ type Server struct {
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
 	authService      auth.Service
+	stats            stats.Collector
 	migrator         db.Migrator
 
 	apiServer *restapi.Server
@@ -46,6 +48,7 @@ func NewServer(
 	multipartManager index.MultipartManager,
 	blockStore block.Adapter,
 	authService auth.Service,
+	stats stats.Collector,
 	migrator db.Migrator,
 ) *Server {
 	return &Server{
@@ -53,6 +56,7 @@ func NewServer(
 		multipartManager: multipartManager,
 		blockStore:       blockStore,
 		authService:      authService,
+		stats:            stats,
 		migrator:         migrator,
 	}
 }
@@ -126,7 +130,7 @@ func (s *Server) SetupServer() error {
 	api.DownloadTokenAuth = s.DownloadToken()
 
 	// bind our handlers to the server
-	NewHandler(s.meta, s.authService, s.blockStore).Configure(api)
+	NewHandler(s.meta, s.authService, s.blockStore, s.stats).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

@@ -9,6 +9,7 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -43,6 +44,10 @@ const (
 	DefaultS3GatewayRegion     = "us-east-1"
 
 	DefaultAPIListenAddr = "0.0.0.0:8001"
+
+	DefaultStatsEnabled       = true
+	DefaultStatsAddr          = "https://stats.treeverse.io"
+	DefaultStatsFlushInterval = time.Second * 30
 )
 
 type LogrusAWSAdapter struct {
@@ -74,6 +79,10 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
 	viper.SetDefault("api.listen_address", DefaultAPIListenAddr)
+
+	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
+	viper.SetDefault("stats.address", DefaultStatsAddr)
+	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
 func NewFromFile(configPath string) *Config {
@@ -275,4 +284,16 @@ func (c *Config) GetS3GatewayDomainName() string {
 
 func (c *Config) GetAPIListenAddress() string {
 	return viper.GetString("api.listen_address")
+}
+
+func (c *Config) GetStatsEnabled() bool {
+	return viper.GetBool("stats.enabled")
+}
+
+func (c *Config) GetStatsAddress() string {
+	return viper.GetString("stats.address")
+}
+
+func (c *Config) GetStatsFlushInterval() time.Duration {
+	return viper.GetDuration("stats.flush_interval")
 }

@@ -51,7 +51,7 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 			Email:    req.Email,
 			FullName: req.FullName,
 		}
-		cred, err := setupAdminUser(authService, user)
+		cred, err := SetupAdminUser(authService, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -75,7 +75,7 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 	}
 }
 
-func setupAdminUser(authService auth.Service, user *authmodel.User) (*authmodel.Credential, error) {
+func SetupAdminUser(authService auth.Service, user *authmodel.User) (*authmodel.Credential, error) {
 	err := authService.CreateUser(user)
 	if err != nil {
 		return nil, err

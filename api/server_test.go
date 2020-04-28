@@ -100,6 +100,10 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	return creds
 }
 
+type mockCollector struct{}
+
+func (m *mockCollector) Collect(_, _ string) {}
+
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	mdb := testutil.GetDB(t, databaseUri, db.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t)
@@ -119,6 +123,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		mpu,
 		blockAdapter,
 		authService,
+		&mockCollector{},
 		migrator,
 	)
 

@@ -1,23 +1,26 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
+	"time"
 
-	"github.com/treeverse/lakefs/auth/crypt"
-
-	"github.com/treeverse/lakefs/db"
-
+	"github.com/google/uuid"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/store"
-	"github.com/treeverse/lakefs/permissions"
+	"github.com/treeverse/lakefs/stats"
 )
+
+const DefaultInstallationID = "anon@example.com"
 
 func setupConf(cmd *cobra.Command) *config.Config {
 	confFile, err := cmd.Flags().GetString("config")
@@ -28,6 +31,24 @@ func setupConf(cmd *cobra.Command) *config.Config {
 		return config.NewFromFile(confFile)
 	}
 	return config.New()
+}
+
+func GetInstallationID(authService auth.Service) string {
+	user, err := authService.GetFirstUser()
+	if err != nil {
+		return DefaultInstallationID
+	}
+	return user.Email
+}
+
+func getStats(conf *config.Config, installationID string) *stats.BufferedCollector {
+	sender := stats.NewDummySender()
+	if conf.GetStatsEnabled() {
+		sender = stats.NewHTTPSender(installationID, uuid.New().String(), conf.GetStatsAddress(), time.Now)
+	}
+	return stats.NewBufferedCollector(
+		stats.WithSender(sender),
+		stats.WithFlushInterval(conf.GetStatsFlushInterval()))
 }
 
 var initCmd = &cobra.Command{
@@ -45,51 +66,20 @@ var initCmd = &cobra.Command{
 			Email:    userEmail,
 			FullName: userFullName,
 		}
-		err := authService.CreateUser(user)
+		creds, err := api.SetupAdminUser(authService, user)
 		if err != nil {
 			panic(err)
 		}
 
-		role := &model.Role{
-			DisplayName: "Admin",
-		}
-
-		err = authService.CreateRole(role)
-		if err != nil {
-			panic(err)
-		}
-		policies := []*model.Policy{
-			{
-				Permission: string(permissions.ManageRepos),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.ReadRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.WriteRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-		}
-		for _, policy := range policies {
-			err = authService.AssignPolicyToRole(role.Id, policy)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		err = authService.AssignRoleToUser(role.Id, user.Id)
-		if err != nil {
-			panic(err)
-		}
-
-		creds, err := authService.CreateUserCredentials(user)
-		if err != nil {
-			panic(err)
-		}
+		ctx, cancelFn := context.WithCancel(context.Background())
+		stats := getStats(conf, userEmail)
+		go stats.Run(ctx)
+		stats.Collect("global", "init")
 
 		fmt.Printf("credentials:\naccess key id: %s\naccess secret key: %s\n", creds.AccessKeyId, creds.AccessSecretKey)
+
+		cancelFn()
+		<-stats.Done()
 		return nil
 	},
 }
@@ -117,8 +107,11 @@ var runCmd = &cobra.Command{
 		// init authentication
 		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(conf.GetAuthEncryptionSecret()))
 
+		ctx, cancelFn := context.WithCancel(context.Background())
+		stats := getStats(conf, GetInstallationID(authService))
+
 		// start API server
-		apiServer := api.NewServer(meta, mpu, blockStore, authService, migrator)
+		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats, migrator)
 		go func() {
 			panic(apiServer.Serve(conf.GetAPIListenAddress()))
 		}()
@@ -132,10 +125,16 @@ var runCmd = &cobra.Command{
 			mpu,
 			conf.GetS3GatewayListenAddress(),
 			conf.GetS3GatewayDomainName(),
+			stats,
 		)
 
-		panic(gatewayServer.Listen())
+		go stats.Run(ctx)
+		stats.Collect("global", "run")
 
+		panic(gatewayServer.Listen())
+		// TODO: gracefully stop API And gateway servers to ensure we also drain stats
+		cancelFn()
+		<-stats.Done()
 		return nil
 	},
 }
