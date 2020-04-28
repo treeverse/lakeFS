@@ -64,6 +64,8 @@ type RolePolicies struct {
 const (
 	CredentialTypeUser        = "user"
 	CredentialTypeApplication = "application"
+
+	RoleAdmin = "Admin"
 )
 
 type Credential struct {

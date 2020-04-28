@@ -4,34 +4,22 @@ import (
 	"fmt"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
 	"strings"
 	"syscall"
 
-	"github.com/jmoiron/sqlx"
-
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
 	"github.com/aws/aws-sdk-go/aws"
-
-	"github.com/aws/aws-sdk-go/service/s3"
-
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-
-	"github.com/treeverse/lakefs/block"
-
-	"github.com/mitchellh/go-homedir"
-
-	"github.com/treeverse/lakefs/db"
-
-	log "github.com/sirupsen/logrus"
-
-	"github.com/spf13/viper"
-
+	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/db"
 )
 
 const (
@@ -198,49 +186,12 @@ func (c *Config) setupLogger() {
 	}
 }
 
-func getSearchPath(uri string) (string, error) {
-	parsed, err := url.Parse(uri)
-	if err != nil {
-		return "", err
-	}
-	sp := parsed.Query().Get("search_path")
-	if len(sp) > 0 {
-		return sp, nil
-	}
-	return "", fmt.Errorf("search_path not present in database connection string")
+func (c *Config) ConnectMetadataDatabase() db.Database {
+	return db.ConnectDB(DefaultDatabaseDriver, viper.GetString("metadata.db.uri"))
 }
 
-func setupDb(uri string) db.Database {
-	schema, err := getSearchPath(uri)
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	conn, err := sqlx.Connect(DefaultDatabaseDriver, uri)
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	tx, err := conn.Beginx()
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	_, err = tx.Exec(fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS  %s`, schema))
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	err = tx.Commit()
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	return db.NewDatabase(conn)
-}
-
-func (c *Config) BuildMetadataDatabase() db.Database {
-	return setupDb(viper.GetString("metadata.db.uri"))
-
-}
-
-func (c *Config) BuildAuthDatabase() db.Database {
-	return setupDb(viper.GetString("auth.db.uri"))
+func (c *Config) ConnectAuthDatabase() db.Database {
+	return db.ConnectDB(DefaultDatabaseDriver, viper.GetString("auth.db.uri"))
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {

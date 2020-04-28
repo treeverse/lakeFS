@@ -6,8 +6,6 @@ import (
 
 	"github.com/treeverse/lakefs/auth/crypt"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/spf13/cobra"
@@ -37,7 +35,7 @@ var initCmd = &cobra.Command{
 	Short: "initialize a LakeFS instance, and setup an admin credential",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-		adb := conf.BuildAuthDatabase()
+		adb := conf.ConnectAuthDatabase()
 
 		userEmail, _ := cmd.Flags().GetString("email")
 		userFullName, _ := cmd.Flags().GetString("full-name")
@@ -101,8 +99,11 @@ var runCmd = &cobra.Command{
 	Short: "run a LakeFS instance",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-		mdb := conf.BuildMetadataDatabase()
-		adb := conf.BuildAuthDatabase()
+		mdb := conf.ConnectMetadataDatabase()
+		adb := conf.ConnectAuthDatabase()
+		migrator := db.NewDatabaseMigrator().
+			AddDB(db.SchemaMetadata, mdb).
+			AddDB(db.SchemaAuth, adb)
 
 		// init index
 		meta := index.NewDBIndex(mdb)
@@ -117,7 +118,7 @@ var runCmd = &cobra.Command{
 		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(conf.GetAuthEncryptionSecret()))
 
 		// start API server
-		apiServer := api.NewServer(meta, mpu, blockStore, authService)
+		apiServer := api.NewServer(meta, mpu, blockStore, authService, migrator)
 		go func() {
 			panic(apiServer.Serve(conf.GetAPIListenAddress()))
 		}()
@@ -146,7 +147,7 @@ var treeCmd = &cobra.Command{
 		conf := setupConf(cmd)
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
-		mdb := conf.BuildMetadataDatabase()
+		mdb := conf.ConnectMetadataDatabase()
 		meta := index.NewDBIndex(mdb)
 
 		err := meta.Tree(repo, branch)
@@ -162,23 +163,10 @@ var setupdbCmd = &cobra.Command{
 	Short: "run schema and data migrations on a fresh database",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-
-		// start with lakefs_index
-		mdb := conf.BuildMetadataDatabase()
-		_, err := mdb.Transact(func(tx db.Tx) (interface{}, error) {
-			err := db.MigrateSchemaAll(tx, "lakefs_index")
-			return nil, err
-		}, db.WithLogger(logging.Dummy()))
-		if err != nil {
-			panic(err)
-		}
-
-		// then auth db
-		adb := conf.BuildAuthDatabase()
-		_, err = adb.Transact(func(tx db.Tx) (interface{}, error) {
-			err := db.MigrateSchemaAll(tx, "lakefs_auth")
-			return nil, err
-		}, db.WithLogger(logging.Dummy()))
+		migrator := db.NewDatabaseMigrator().
+			AddDB(db.SchemaMetadata, conf.ConnectMetadataDatabase()).
+			AddDB(db.SchemaAuth, conf.ConnectAuthDatabase())
+		err := migrator.Migrate()
 		if err != nil {
 			panic(err)
 		}

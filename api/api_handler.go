@@ -4,41 +4,31 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/http"
 	"time"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
-
-	"github.com/treeverse/lakefs/ident"
-	pth "github.com/treeverse/lakefs/index/path"
-
-	"github.com/treeverse/lakefs/upload"
-
-	"github.com/treeverse/lakefs/httputil"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
-
-	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/treeverse/lakefs/block"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/index/model"
+	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/permissions"
+	"github.com/treeverse/lakefs/upload"
 	"golang.org/x/xerrors"
 )
 

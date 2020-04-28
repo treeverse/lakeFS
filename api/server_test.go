@@ -8,32 +8,21 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/auth/crypt"
-
-	"github.com/treeverse/lakefs/index/store"
-
-	"github.com/ory/dockertest/v3"
-
-	httptransport "github.com/go-openapi/runtime/client"
-
-	"github.com/treeverse/lakefs/api/gen/client/repositories"
-
 	"github.com/go-openapi/runtime"
-	"github.com/treeverse/lakefs/api/gen/client"
-
-	"github.com/treeverse/lakefs/permissions"
-
-	authmodel "github.com/treeverse/lakefs/auth/model"
-
-	"github.com/treeverse/lakefs/block"
-
-	"github.com/treeverse/lakefs/auth"
-
-	"github.com/treeverse/lakefs/index"
-
-	"github.com/treeverse/lakefs/testutil"
-
+	httptransport "github.com/go-openapi/runtime/client"
+	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
+	"github.com/treeverse/lakefs/api/gen/client"
+	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/crypt"
+	authmodel "github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/store"
+	"github.com/treeverse/lakefs/permissions"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 const (
@@ -63,6 +52,9 @@ type dependencies struct {
 	auth   auth.Service
 	meta   index.Index
 	mpu    index.MultipartManager
+
+	metadataDB db.Database
+	authDB     db.Database
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
@@ -108,28 +100,33 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	return creds
 }
 
-func getHandler(t *testing.T) (http.Handler, *dependencies) {
-	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+	mdb := testutil.GetDB(t, databaseUri, db.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t)
 
 	meta := index.NewDBIndex(mdb)
 	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
-	adb := testutil.GetDB(t, databaseUri, "lakefs_auth")
+	adb := testutil.GetDB(t, databaseUri, db.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
+
+	migrator := db.NewDatabaseMigrator().
+		AddDB(db.SchemaMetadata, mdb).
+		AddDB(db.SchemaAuth, adb)
 
 	server := api.NewServer(
 		meta,
 		mpu,
 		blockAdapter,
 		authService,
+		migrator,
 	)
 
-	srv, err := server.SetupServer()
+	err := server.SetupServer()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return srv.GetHandler(), &dependencies{
+	return server.Handler(), &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
 		meta:   meta,
