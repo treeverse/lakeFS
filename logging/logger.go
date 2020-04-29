@@ -21,6 +21,7 @@ type Logger interface {
 	WithField(key string, value interface{}) Logger
 	WithFields(fields Fields) Logger
 	WithError(err error) Logger
+	Trace(args ...interface{})
 	Debug(args ...interface{})
 	Info(args ...interface{})
 	Warn(args ...interface{})
@@ -28,6 +29,7 @@ type Logger interface {
 	Error(args ...interface{})
 	Fatal(args ...interface{})
 	Panic(args ...interface{})
+	Tracef(format string, args ...interface{})
 	Debugf(format string, args ...interface{})
 	Infof(format string, args ...interface{})
 	Warnf(format string, args ...interface{})
@@ -51,6 +53,10 @@ func (l *logrusEntryWrapper) WithFields(fields Fields) Logger {
 
 func (l *logrusEntryWrapper) WithError(err error) Logger {
 	return &logrusEntryWrapper{l.e.WithError(err)}
+}
+
+func (l logrusEntryWrapper) Trace(args ...interface{}) {
+	l.e.Trace(args...)
 }
 
 func (l logrusEntryWrapper) Debug(args ...interface{}) {
@@ -79,6 +85,10 @@ func (l logrusEntryWrapper) Fatal(args ...interface{}) {
 
 func (l logrusEntryWrapper) Panic(args ...interface{}) {
 	l.e.Panic(args...)
+}
+
+func (l *logrusEntryWrapper) Tracef(format string, args ...interface{}) {
+	l.e.Tracef(format, args...)
 }
 
 func (l *logrusEntryWrapper) Debugf(format string, args ...interface{}) {
