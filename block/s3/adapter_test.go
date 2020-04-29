@@ -49,7 +49,8 @@ func newMock() *mockS3Client {
 
 func (m *mockS3Client) PutObjectRequest(i *s3.PutObjectInput) (*request.Request, *s3.PutObjectOutput) {
 	cfg := &aws.Config{
-		Region: aws.String("us-east-1"),
+		Region:      aws.String("us-east-1"),
+		Credentials: credentials.NewStaticCredentials("FOO", "BAR", ""),
 	}
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig(s3.ServiceName)
