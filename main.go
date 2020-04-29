@@ -112,6 +112,7 @@ var runCmd = &cobra.Command{
 
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats, migrator)
+
 		go func() {
 			panic(apiServer.Serve(conf.GetAPIListenAddress()))
 		}()

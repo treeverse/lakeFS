@@ -93,7 +93,7 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 	}
 }
 
-func (s *Server) registerHandlers(api http.Handler, ui http.Handler, setup http.Handler) {
+func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
 	// api handler
 	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
@@ -113,9 +113,9 @@ func (s *Server) registerHandlers(api http.Handler, ui http.Handler, setup http.
 	s.handler = mux
 }
 
-// SetupServer returns a Server that has been configured with basic authenticator and is registered
+// setupServer returns a Server that has been configured with basic authenticator and is registered
 // to all relevant API handlers
-func (s *Server) SetupServer() error {
+func (s *Server) setupServer() error {
 	swaggerSpec, err := loads.Analyzed(restapi.SwaggerJSON, "")
 	if err != nil {
 		return err
@@ -142,7 +142,7 @@ func (s *Server) SetupServer() error {
 		return err
 	}
 
-	s.registerHandlers(
+	s.setupHandler(
 		// api handler
 		httputil.LoggingMiddleWare(
 			RequestIdHeaderName,
@@ -164,13 +164,24 @@ func (s *Server) SetupServer() error {
 
 // Serve starts an HTTP server at the given host and port
 func (s *Server) Serve(listenAddr string) error {
+	handler, err := s.Handler()
+	if err != nil {
+		return err
+	}
 	httpServer := http.Server{
 		Addr:    listenAddr,
-		Handler: s.handler,
+		Handler: handler,
 	}
 	return httpServer.ListenAndServe()
 }
 
-func (s *Server) Handler() http.Handler {
-	return s.handler
+func (s *Server) Handler() (http.Handler, error) {
+	if s.handler != nil {
+		return s.handler, nil
+	}
+	err := s.setupServer()
+	if err != nil {
+		return nil, err
+	}
+	return s.handler, nil
 }

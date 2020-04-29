@@ -21,8 +21,8 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 			return
 		}
 
-		if _, err := authService.GetUser(1); err == nil {
-			// we have a user - skip migrate
+		// skip migrate in case we have a user
+		if _, err := authService.GetFirstUser(); err == nil {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}

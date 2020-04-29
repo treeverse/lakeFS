@@ -52,9 +52,6 @@ type dependencies struct {
 	auth   auth.Service
 	meta   index.Index
 	mpu    index.MultipartManager
-
-	metadataDB db.Database
-	authDB     db.Database
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
@@ -127,11 +124,11 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		migrator,
 	)
 
-	err := server.SetupServer()
+	handler, err := server.Handler()
 	if err != nil {
 		t.Fatal(err)
 	}
-	return server.Handler(), &dependencies{
+	return handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
 		meta:   meta,
