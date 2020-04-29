@@ -40,7 +40,7 @@ func (l *LocalFSAdapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *LocalFSAdapter) Put(_ string, identifier string, reader io.ReadSeeker) error {
+func (l *LocalFSAdapter) Put(_ string, identifier string, _ int, reader io.Reader) error {
 	path := l.getPath(identifier)
 	f, err := os.Create(path)
 	_, err = io.Copy(f, reader)
