@@ -11,18 +11,15 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-
-	"github.com/aws/aws-sdk-go/aws/request"
-
-	"github.com/treeverse/lakefs/block"
-	s3a "github.com/treeverse/lakefs/block/s3"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/request"
+	"github.com/aws/aws-sdk-go/aws/session"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+
+	"github.com/treeverse/lakefs/block"
+	s3a "github.com/treeverse/lakefs/block/s3"
 )
 
 const (
@@ -98,6 +95,7 @@ func TestS3Adapter_Put(t *testing.T) {
 
 	putTransport.response = &http.Response{
 		StatusCode: http.StatusOK,
+		Body:       ioutil.NopCloser(bytes.NewReader([]byte(""))),
 	}
 
 	err := sf.Put(TestBucketName, fileName, len(sendData), bytes.NewReader([]byte(sendData)))
@@ -175,27 +173,12 @@ func TestMultipleReads(t *testing.T) {
 
 }
 
-func genBytes(char byte, amount int) []byte {
-	b := make([]byte, amount)
-	for i := 0; i < amount; i++ {
-		b[i] = char
-	}
-	return b
-}
-
 func mustReadFile(t *testing.T, path string) []byte {
 	data, err := ioutil.ReadFile(path)
 	if err != nil {
 		t.Fatal(err)
 	}
 	return data
-}
-
-func mustWriteFile(t *testing.T, path string, data []byte) {
-	err := ioutil.WriteFile(path, data, 0755)
-	if err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestS3StreamingReader_Read(t *testing.T) {
