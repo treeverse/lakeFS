@@ -20,6 +20,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/block"
+	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -58,8 +59,7 @@ func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
 	l.logger.Debug(vars...)
 }
 
-type Config struct {
-}
+type Config struct{}
 
 func (c *Config) setDefaults() {
 	viper.SetDefault("logging.format", DefaultLoggingFormat)
@@ -221,11 +221,9 @@ func (c *Config) buildS3Adapter() block.Adapter {
 	}
 
 	sess := session.Must(session.NewSession(cfg))
+	sess.ClientConfig(s3.ServiceName)
 	svc := s3.New(sess)
-	adapter, err := block.NewS3Adapter(svc)
-	if err != nil {
-		panic(fmt.Errorf("got error opening an S3 block adapter: %s", err))
-	}
+	adapter := s3a.NewAdapter(svc)
 	log.WithFields(log.Fields{
 		"type": "s3",
 	}).Info("initialized blockstore adapter")
