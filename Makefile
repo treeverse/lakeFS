@@ -43,6 +43,9 @@ build: gen  ## Download dependecies and Build the default binary
 	$(GOBUILD) -o $(BINARY_NAME) -v main.go
 	$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
 
+lint: gen ## Lint code
+	$(DOCKER) run --rm -it -e GL_DEBUG=linters_output -e GOPACKAGESPRINTGOLISTERRORS=1 -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.25.1 golangci-lint run -v
+
 test: gen run-test  ## Run tests for the project
 
 run-test:  ## Run tests without generating anything (faster if already generated)
