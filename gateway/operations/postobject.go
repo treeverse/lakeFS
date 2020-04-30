@@ -7,6 +7,7 @@ import (
 
 	"github.com/treeverse/lakefs/httputil"
 
+	"github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/index/model"
@@ -25,18 +26,37 @@ func (controller *PostObject) Action(repoId, refId, path string) permissions.Act
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
+	//var err error
 	o.Incr("create_mpu")
-	uploadId, err := o.MultipartManager.Create(o.Repo.Id, o.Path, time.Now())
-	if err != nil {
-		o.Log().WithError(err).Error("could not create multipart upload")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
+	adapter := o.BlockStore
+	adapterType := adapter.GetAdapterType()
+	if adapterType == "s3" {
+		s3adapter, _ := adapter.(s3.AdapterInterface)
+		uploadId, err := s3adapter.CreateMultiPartUpload(o.Repo.StorageNamespace, o.Path, o.Request)
+		if err != nil {
+			o.Log().WithError(err).Error("could not create multipart upload")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+		o.EncodeResponse(&serde.InitiateMultipartUploadResult{
+			Bucket:   o.Repo.Id,
+			Key:      o.Path,
+			UploadId: uploadId,
+		}, http.StatusOK)
+	} else {
+
+		uploadId, err := o.MultipartManager.Create(o.Repo.Id, o.Path, time.Now())
+		if err != nil {
+			o.Log().WithError(err).Error("could not create multipart upload")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+		o.EncodeResponse(&serde.InitiateMultipartUploadResult{
+			Bucket:   o.Repo.Id,
+			Key:      o.Path,
+			UploadId: uploadId,
+		}, http.StatusOK)
 	}
-	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
-		Bucket:   o.Repo.Id,
-		Key:      o.Path,
-		UploadId: uploadId,
-	}, http.StatusOK)
 }
 
 func trimQuotes(s string) string {

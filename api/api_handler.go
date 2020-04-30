@@ -330,7 +330,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(bucketName, dummyKey, len(dummyData), bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(bucketName, dummyKey, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)))
 	if err != nil {
 		return err
 	}
@@ -763,7 +763,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 
 		// read the content
-		blob, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter)
+		blob, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, params.HTTPRequest.ContentLength)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
