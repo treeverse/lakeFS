@@ -3,6 +3,8 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"github.com/huandu/go-sqlbuilder"
+	"strings"
 
 	"golang.org/x/xerrors"
 
@@ -13,9 +15,13 @@ import (
 	"github.com/treeverse/lakefs/index/model"
 )
 
+const MaxResultsAllowed = 1000
+
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
+	ListWorkspaceWithPrefix(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
+	ListWorkspaceDirectory(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
@@ -64,6 +70,76 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 		&entries,
 		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
 		o.repoId, branch)
+	return entries, err
+}
+func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string, amount int) ([]*model.WorkspaceEntry, error) {
+	if amount == 0 {
+		amount = MaxResultsAllowed
+	}
+	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	sb.Select("repository_id", "branch_id", "parent_path", "path", "entry_name", "entry_size", "entry_type", "tombstone")
+	sb.From("workspace_entries")
+	sb.Where(sb.Equal("repository_id", o.repoId))
+	sb.Where(sb.Equal("branch_id", branch))
+	sb.Where(sb.Like("path", prefix+"%"))
+	sb.OrderBy("path ASC")
+	if len(after) > 0 {
+		sb.Where(sb.GreaterThan("path", after))
+	}
+	sb.Limit(amount)
+	query, args := sb.Build()
+	query = o.tx.Rebind(query)
+	var entries []*model.WorkspaceEntry
+	err := o.tx.Select(&entries, query, args...)
+	return entries, err
+}
+
+func (o *DBRepoOperations) ListWorkspaceDirectory(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error) {
+	if amount == 0 {
+		amount = MaxResultsAllowed
+	}
+	fsb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	fsb.Select("repository_id", "branch_id", "parent_path", "path", "entry_name", "entry_size", "entry_type", "tombstone")
+	fsb.From("workspace_entries")
+	fsb.Where(fsb.Equal("repository_id", o.repoId))
+	fsb.Where(fsb.Equal("branch_id", branch))
+	fsb.Where(fsb.Equal("parent_path", parentPath))
+	fsb.OrderBy("path ASC")
+	if len(after) > 0 {
+		fsb.Where(fsb.GreaterThan("path", after))
+	}
+	fsb.Limit(amount)
+	dsb := sqlbuilder.PostgreSQL.NewSelectBuilder()
+	separatorCount := strings.Count(parentPath, "/")
+	dirEntryNameSql := fmt.Sprintf("(string_to_array(path, '/'))[%d]", separatorCount+1)
+	newPathSql := fmt.Sprintf("array_to_string((string_to_array(path, '/'))[:%d], '/') || '/'", separatorCount+1)
+	parentPathSql := fmt.Sprintf("array_to_string((string_to_array(path, '/'))[:%d], '/') || '/'", separatorCount)
+	dsb.Select(
+		"repository_id", "branch_id",
+		dsb.As(parentPathSql, "new_parent_path"),
+		dsb.As(newPathSql, "new_path"),
+		dsb.As(dirEntryNameSql, "new_entry_name"),
+		dsb.As("SUM(entry_size)", "entry_size"),
+		dsb.As("'tree'", "entry_type"), "not bool_or(not tombstone) AS tombstone")
+
+	dsb.From("workspace_entries")
+	dsb.Where(
+		dsb.Equal("repository_id", o.repoId),
+		dsb.Equal("branch_id", branch),
+		dsb.Like("parent_path", parentPath+"%"),
+		dsb.NotEqual("parent_path", parentPath))
+	if len(after) > 0 {
+		dsb.Where(dsb.GreaterThan(newPathSql, after))
+	}
+	dsb.GroupBy("repository_id", "branch_id", "new_parent_path", "new_path", "new_entry_name")
+	dsb.OrderBy("new_path ASC")
+	dsb.Limit(amount)
+
+	var entries []*model.WorkspaceEntry
+	// language=sql
+	query, args := sqlbuilder.Buildf("SELECT * FROM ((%v) UNION ALL (%v)) t ORDER BY path LIMIT %s", fsb, dsb, amount).Build()
+	query = o.tx.Rebind(query)
+	err := o.tx.Select(&entries, query, args...)
 	return entries, err
 }
 
@@ -252,11 +328,11 @@ func (o *DBRepoOperations) ClearWorkspace(branch string) error {
 func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
 		_, err := o.tx.Exec(`
-			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum, object_count)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			ON CONFLICT ON CONSTRAINT entries_pkey
 			DO NOTHING`,
-			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum)
+			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum, entry.ObjectCount)
 		if err != nil {
 			return err
 		}
@@ -266,10 +342,10 @@ func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) err
 
 func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
 	_, err := o.tx.Exec(`
-		INSERT INTO roots (repository_id, address, creation_date, size) VALUES ($1, $2, $3, $4)
+		INSERT INTO roots (repository_id, address, creation_date, size, object_count) VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT ON CONSTRAINT roots_pkey
 		DO NOTHING`,
-		o.repoId, address, root.CreationDate, root.Size)
+		o.repoId, address, root.CreationDate, root.Size, root.ObjectCount)
 	return err
 }
 

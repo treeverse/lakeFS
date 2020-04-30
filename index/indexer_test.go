@@ -323,6 +323,7 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 		Address:      "123456789",
 		CreationDate: time.Now(),
 		EntryType:    model.EntryTypeObject,
+		ObjectCount:  1,
 	})
 	if err != nil {
 		t.Fatal(err)

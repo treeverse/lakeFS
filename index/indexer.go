@@ -329,6 +329,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 				CreationDate: *we.EntryCreationDate,
 				Size:         *we.EntrySize,
 				Checksum:     *we.EntryChecksum,
+				ObjectCount:  *we.EntryObjectCount,
 			}, nil
 		}
 		root = reference.branch.WorkspaceRoot
@@ -666,15 +667,21 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 
 		var root string
 		if reference.isBranch {
-			err := partialCommit(tx, reference.branch.Id) // block on this since we traverse the tree immediately after
-			if err != nil {
-				return nil, err
-			}
 			reference.branch, err = tx.ReadBranch(reference.branch.Id)
 			if err != nil {
 				return nil, err
 			}
 			root = reference.branch.WorkspaceRoot
+			//var workspaceEntries []*model.WorkspaceEntry
+			//if descend {
+			//	workspaceEntries, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, results)
+			//
+			//} else {
+			//	workspaceEntries, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, results)
+			//}
+			//if err != nil {
+			//	return nil, err
+			//}
 		} else {
 			root = reference.commit.Tree
 		}
@@ -685,6 +692,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			log.WithError(err).Error("could not scan tree")
 			return nil, err
 		}
+
 		return &result{hasMore, res}, nil
 	})
 	if err != nil {
@@ -1058,6 +1066,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 					EntryCreationDate: &pathEntry.CreationDate,
 					EntrySize:         &pathEntry.Size,
 					EntryChecksum:     &pathEntry.Checksum,
+					EntryObjectCount:  &pathEntry.ObjectCount,
 					Tombstone:         true,
 				}
 			} else {
@@ -1076,6 +1085,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 				EntryCreationDate: &commitEntry.CreationDate,
 				EntrySize:         &commitEntry.Size,
 				EntryChecksum:     &commitEntry.Checksum,
+				EntryObjectCount:  &commitEntry.ObjectCount,
 			}
 		}
 		commitEntries := []*model.WorkspaceEntry{workspaceEntry}

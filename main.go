@@ -139,7 +139,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-var treeCmd = &cobra.Command{
+var treeCmd = &cobra.Command{ // TODO remove this
 	Use:   "tree",
 	Short: "dump the entire filesystem tree for the given repository and branch to stdout",
 	RunE: func(cmd *cobra.Command, args []string) error {
