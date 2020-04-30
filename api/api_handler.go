@@ -330,7 +330,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(bucketName, dummyKey, bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(bucketName, dummyKey, len(dummyData), bytes.NewReader([]byte(dummyData)))
 	if err != nil {
 		return err
 	}
