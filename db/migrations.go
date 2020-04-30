@@ -118,20 +118,6 @@ func ListVersions(schemaName string) ([]string, error) {
 	return versions, err
 }
 
-func MigrateAll(tx Tx) error {
-	schemas, err := ListSchemas()
-	if err != nil {
-		return err
-	}
-	for _, schema := range schemas {
-		err = MigrateSchemaAll(tx, schema)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
 func MigrateSchemaAll(tx Tx, schemaName string) error {
 	versions, err := ListVersions(schemaName)
 	if err != nil {
