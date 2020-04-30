@@ -45,7 +45,7 @@ func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error
 		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
-	log.Debug("SQL query executed successfully")
+	log.Trace("SQL query executed successfully")
 	return nil
 }
 
@@ -59,14 +59,14 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"took":  time.Since(start),
 	})
 	if err == sql.ErrNoRows {
-		log.Debug("SQL query returned no results")
+		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}
 	if err != nil {
 		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
-	log.Debug("SQL query executed successfully")
+	log.Trace("SQL query executed successfully")
 	return err
 }
 
@@ -83,7 +83,7 @@ func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
 		log.WithError(err).Error("SQL query failed with error")
 		return res, err
 	}
-	log.Debug("SQL query executed successfully")
+	log.Trace("SQL query executed successfully")
 	return res, err
 }
 

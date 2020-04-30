@@ -51,6 +51,7 @@ type Service interface {
 	AssignPolicyToRole(roleId int, policy *model.Policy) error
 
 	GetUser(userId int) (*model.User, error)
+	GetFirstUser() (*model.User, error)
 	GetGroup(groupId int) (*model.Group, error)
 	GetRole(roleId int) (*model.Role, error)
 
@@ -194,6 +195,18 @@ func (s *DBAuthService) GetUser(userId int) (*model.User, error) {
 	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
 		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, userId)
+		return user, err
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	return user.(*model.User), nil
+}
+
+func (s *DBAuthService) GetFirstUser() (*model.User, error) {
+	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		user := &model.User{}
+		err := tx.Get(user, `SELECT * FROM users ORDER BY id ASC LIMIT 1`)
 		return user, err
 	}, db.ReadOnly())
 	if err != nil {

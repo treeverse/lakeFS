@@ -10,28 +10,21 @@ import (
 	"runtime"
 	"strings"
 	"syscall"
-
-	"github.com/jmoiron/sqlx"
-
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
-	"github.com/aws/aws-sdk-go/aws"
-
-	"github.com/aws/aws-sdk-go/service/s3"
-
-	"github.com/aws/aws-sdk-go/aws/session"
+	"time"
 
 	"github.com/treeverse/lakefs/block"
-
-	"github.com/mitchellh/go-homedir"
-
+	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/db"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/spf13/viper"
-
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -55,6 +48,10 @@ const (
 	DefaultS3GatewayRegion     = "us-east-1"
 
 	DefaultAPIListenAddr = "0.0.0.0:8001"
+
+	DefaultStatsEnabled       = true
+	DefaultStatsAddr          = "https://stats.treeverse.io"
+	DefaultStatsFlushInterval = time.Second * 30
 )
 
 type LogrusAWSAdapter struct {
@@ -86,6 +83,10 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
 	viper.SetDefault("api.listen_address", DefaultAPIListenAddr)
+
+	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
+	viper.SetDefault("stats.address", DefaultStatsAddr)
+	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
 func NewFromFile(configPath string) *Config {
@@ -261,11 +262,9 @@ func (c *Config) buildS3Adapter() block.Adapter {
 	}
 
 	sess := session.Must(session.NewSession(cfg))
+	sess.ClientConfig(s3.ServiceName)
 	svc := s3.New(sess)
-	adapter, err := block.NewS3Adapter(svc)
-	if err != nil {
-		panic(fmt.Errorf("got error opening an S3 block adapter: %s", err))
-	}
+	adapter := s3a.NewAdapter(svc)
 	log.WithFields(log.Fields{
 		"type": "s3",
 	}).Info("initialized blockstore adapter")
@@ -324,4 +323,16 @@ func (c *Config) GetS3GatewayDomainName() string {
 
 func (c *Config) GetAPIListenAddress() string {
 	return viper.GetString("api.listen_address")
+}
+
+func (c *Config) GetStatsEnabled() bool {
+	return viper.GetBool("stats.enabled")
+}
+
+func (c *Config) GetStatsAddress() string {
+	return viper.GetString("stats.address")
+}
+
+func (c *Config) GetStatsFlushInterval() time.Duration {
+	return viper.GetDuration("stats.flush_interval")
 }
