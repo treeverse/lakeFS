@@ -40,7 +40,7 @@ func (l *LocalFSAdapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *LocalFSAdapter) Put(_ string, identifier string, _ int, reader io.Reader) error {
+func (l *LocalFSAdapter) Put(_ string, identifier string, _ int64, reader io.Reader) error {
 	path := l.getPath(identifier)
 	f, err := os.Create(path)
 	defer f.Close()
@@ -77,6 +77,10 @@ func (l *LocalFSAdapter) GetRange(_ string, identifier string, start int64, end 
 		return nil, err
 	}
 	return f, nil
+}
+
+func (l *LocalFSAdapter) GetAdapterType() string {
+	return "local"
 }
 
 func isDirectoryWritable(pth string) bool {
