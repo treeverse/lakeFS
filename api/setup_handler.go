@@ -5,7 +5,7 @@ import (
 	"net/http"
 
 	"github.com/treeverse/lakefs/auth"
-	authmodel "github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/permissions"
 )
@@ -14,8 +14,8 @@ import (
 //   returns 200 (ok) on creation with key/secret - content type json
 //   returns 409 (conflict) when user is found
 //   return 500 (internal error) if error during operation
-func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
+func setupHandler(authService auth.Service, migrator db.Migrator) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			return
@@ -33,10 +33,7 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 			return
 		}
 
-		req := struct {
-			Email    string `json:"email"`
-			FullName string `json:"full_name"`
-		}{}
+		var req model.User
 		err = json.NewDecoder(r.Body).Decode(&req)
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
@@ -47,7 +44,7 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
-		user := &authmodel.User{
+		user := &model.User{
 			Email:    req.Email,
 			FullName: req.FullName,
 		}
@@ -57,14 +54,10 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 			return
 		}
 
-		resp := struct {
-			AccessKeyID     string `json:"access_key_id"`
-			SecretAccessKey string `json:"secret_access_key"`
-		}{
-			AccessKeyID:     cred.AccessKeyId,
-			SecretAccessKey: cred.AccessSecretKey,
+		resp := model.CredentialKeys{
+			AccessKeyId:     cred.AccessKeyId,
+			AccessSecretKey: cred.AccessSecretKey,
 		}
-
 		respJSON, err := json.Marshal(resp)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -72,24 +65,24 @@ func setupHandler(authService auth.Service, migrator db.Migrator) http.HandlerFu
 		}
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(respJSON)
-	}
+	})
 }
 
-func SetupAdminUser(authService auth.Service, user *authmodel.User) (*authmodel.Credential, error) {
+func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
 	err := authService.CreateUser(user)
 	if err != nil {
 		return nil, err
 	}
 
-	role := &authmodel.Role{
-		DisplayName: authmodel.RoleAdmin,
+	role := &model.Role{
+		DisplayName: model.RoleAdmin,
 	}
 
 	err = authService.CreateRole(role)
 	if err != nil {
 		return nil, err
 	}
-	policies := []*authmodel.Policy{
+	policies := []*model.Policy{
 		{
 			Permission: string(permissions.ManageRepos),
 			Arn:        "arn:treeverse:repos:::*",

@@ -1,10 +1,6 @@
 package index_test
 
 import (
-	"io"
-	str "strings"
-	"time"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
@@ -12,12 +8,14 @@ import (
 	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/testutil"
 	"github.com/treeverse/lakefs/upload"
+	"io"
+	str "strings"
+	"time"
 
 	"strconv"
 	"testing"
 
 	"crypto/rand"
-
 	log "github.com/sirupsen/logrus"
 )
 

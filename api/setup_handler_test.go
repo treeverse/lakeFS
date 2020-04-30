@@ -7,23 +7,22 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func Test_setupHandler(t *testing.T) {
 	// get handler with DB without apply the DDL
-	handler, _ := getHandler(t, testutil.WithGetDBApplyDDL(false))
+	handler, deps := getHandler(t, testutil.WithGetDBApplyDDL(false))
 
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
 
-	req, err := json.Marshal(struct {
-		Email    string `json:"email"`
-		FullName string `json:"full_name"`
-	}{
+	user := model.User{
 		Email:    "tester@treeverse.io",
 		FullName: "Test Name",
-	})
+	}
+	req, err := json.Marshal(user)
 	if err != nil {
 		t.Fatal("JSON marshal request", err)
 	}
@@ -44,24 +43,25 @@ func Test_setupHandler(t *testing.T) {
 		}
 
 		// read response
-		cred := struct {
-			AccessKeyID     string `json:"access_key_id"`
-			SecretAccessKey string `json:"secret_access_key"`
-		}{}
-		err = json.NewDecoder(res.Body).Decode(&cred)
+		var credKeys model.CredentialKeys
+		err = json.NewDecoder(res.Body).Decode(&credKeys)
 		if err != nil {
 			t.Fatal("Decode response", err)
 		}
 
-		// TODO(barak): do we have a better way to validate?
-
-		const expectedKeyLen = 20
-		if len(cred.AccessKeyID) != expectedKeyLen {
-			t.Fatalf("Key >%s< len %d, expected %d", cred.AccessKeyID, len(cred.AccessKeyID), expectedKeyLen)
+		if len(credKeys.AccessKeyId) == 0 {
+			t.Fatal("Credential key id is missing")
 		}
-		const expectedSecretLen = 40
-		if len(cred.SecretAccessKey) != expectedSecretLen {
-			t.Fatalf("Secret >%s< len %d, expected %d", cred.SecretAccessKey, len(cred.SecretAccessKey), expectedSecretLen)
+
+		foundCreds, err := deps.auth.GetAPICredentials(credKeys.AccessKeyId)
+		if err != nil {
+			t.Fatal("Get API credentials key id for created access key", err)
+		}
+		if foundCreds == nil {
+			t.Fatal("Get API credentials secret key for created access key")
+		}
+		if foundCreds.AccessSecretKey != credKeys.AccessSecretKey {
+			t.Fatalf("Access secret key '%s', expected '%s'", foundCreds.AccessSecretKey, credKeys.AccessSecretKey)
 		}
 	})
 
