@@ -105,8 +105,8 @@ func (s *Adapter) Put(repo string, identifier string, sizeBytes int, reader io.R
 			aws.StringValue(sdkRequest.Config.Region),
 			s3.ServiceName,
 			sigSeed,
-			sdkRequest.Config.Credentials),
-
+			sdkRequest.Config.Credentials,
+		),
 		ChunkSize: StreamingDefaultChunkSize,
 	})
 
@@ -117,6 +117,9 @@ func (s *Adapter) Put(repo string, identifier string, sizeBytes int, reader io.R
 			Error("error making request request")
 		return err
 	}
+	defer func() {
+		_ = resp.Body.Close()
+	}()
 
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
