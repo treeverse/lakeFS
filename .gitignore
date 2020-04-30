@@ -41,3 +41,4 @@ api/gen
 statik
 model.pb.go
 ddl/statik.go
+.DS_Store
