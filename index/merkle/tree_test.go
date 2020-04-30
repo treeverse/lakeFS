@@ -329,7 +329,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -339,7 +339,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -350,7 +350,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -358,7 +358,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -372,7 +372,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -383,7 +383,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -392,7 +392,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/",
+					Path:              "a/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -404,7 +404,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -413,7 +413,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -422,7 +422,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/",
+					Path:              "a/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -438,7 +438,7 @@ func TestMerkle_Update(t *testing.T) {
 			initialWS: []*model.WorkspaceEntry{
 
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -446,7 +446,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -457,7 +457,7 @@ func TestMerkle_Update(t *testing.T) {
 			editEntries: []*model.WorkspaceEntry{
 
 				{
-					Path:              "a/",
+					Path:              "a/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -468,7 +468,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -476,7 +476,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -484,7 +484,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/",
+					Path:              "a/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -499,7 +499,7 @@ func TestMerkle_Update(t *testing.T) {
 			initialWS: []*model.WorkspaceEntry{
 
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -507,7 +507,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/z/",
+					Path:              "a/z/file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -515,7 +515,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/b/",
+					Path:              "a/b/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -526,7 +526,7 @@ func TestMerkle_Update(t *testing.T) {
 			editEntries: []*model.WorkspaceEntry{
 
 				{
-					Path:              "a/z/",
+					Path:              "a/z/file4",
 					EntryName:         pstr("file4"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -535,7 +535,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone: false,
 				},
 				{
-					Path:              "a/b/",
+					Path:              "a/b/file5",
 					EntryName:         pstr("file5"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -546,7 +546,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -554,7 +554,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/z/",
+					Path:              "a/z/file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -562,7 +562,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/b/",
+					Path:              "a/b/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -570,7 +570,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/z/",
+					Path:              "a/z/file4",
 					EntryName:         pstr("file4"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -578,7 +578,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/b/",
+					Path:              "a/b/file5",
 					EntryName:         pstr("file5"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -592,7 +592,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -600,7 +600,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file_remove",
 					EntryName:         pstr("file_remove"),
 					EntryAddress:      pstr("123456788"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -610,7 +610,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file_remove",
 					EntryName:         pstr("file_remove"),
 					EntryAddress:      pstr("123456788"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -621,7 +621,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -635,7 +635,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -643,7 +643,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/",
+					Path:              "a/file_remove",
 					EntryName:         pstr("file_remove"),
 					EntryAddress:      pstr("123456788"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -653,7 +653,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file_remove",
 					EntryName:         pstr("file_remove"),
 					EntryAddress:      pstr("123456788"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -664,7 +664,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -678,7 +678,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -686,7 +686,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/",
+					Path:              "a/file_remove",
 					EntryName:         pstr("file_remove"),
 					EntryAddress:      pstr("123456788"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -696,7 +696,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file_remove",
 					EntryName:         pstr("file_remove"),
 					EntryAddress:      pstr("123456788"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -707,7 +707,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -721,7 +721,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -731,7 +731,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			editEntries: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "no_file",
 					EntryName:         pstr("no_file"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -742,7 +742,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -757,7 +757,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "a/",
+					Path:              "a/file2",
 					EntryName:         pstr("file2"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -765,7 +765,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "a/",
+					Path:              "a/file3",
 					EntryName:         pstr("file3"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -773,7 +773,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -781,7 +781,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file4",
 					EntryName:         pstr("file4"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -801,7 +801,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -809,7 +809,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 				{
-					Path:              "",
+					Path:              "file4",
 					EntryName:         pstr("file4"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -823,7 +823,7 @@ func TestMerkle_Update(t *testing.T) {
 
 			initialWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),
@@ -843,7 +843,7 @@ func TestMerkle_Update(t *testing.T) {
 			},
 			wantedWS: []*model.WorkspaceEntry{
 				{
-					Path:              "",
+					Path:              "file1",
 					EntryName:         pstr("file1"),
 					EntryAddress:      pstr("123456789"),
 					EntryType:         pstr(model.EntryTypeObject),

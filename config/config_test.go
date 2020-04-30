@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/block"
-
+	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
 
 	log "github.com/sirupsen/logrus"
@@ -81,7 +81,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("s3 block adapter", func(t *testing.T) {
 		c := config.NewFromFile("testdata/valid_s3adapter_config.yaml")
 		adapter := c.BuildBlockAdapter()
-		if _, ok := adapter.(*block.S3Adapter); !ok {
+		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
 		}
 	})
