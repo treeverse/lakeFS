@@ -77,6 +77,12 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
+type mockCollector struct{}
+
+func (m *mockCollector) Collect(class, action string) {
+
+}
+
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
 	directory := filepath.Join("testdata", "recordings", testDir)
 
@@ -93,7 +99,7 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		blockAdapter,
 		authService,
 		mpu,
-		authService.ListenAddress, authService.BareDomain)
+		authService.ListenAddress, authService.BareDomain, &mockCollector{})
 
 	return server.Server.Handler, &dependencies{
 		blocks: blockAdapter,

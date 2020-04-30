@@ -2,8 +2,10 @@ package api
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/url"
+	"path"
 
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 
@@ -45,6 +47,7 @@ type Client interface {
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
 	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
+	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
 }
@@ -203,6 +206,25 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 	return diff.GetPayload().Results, nil
 }
 
+func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error) {
+	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
+		DestinationRef: leftRef,
+		SourceRef:      rightRef,
+		RepositoryID:   repoId,
+		Context:        ctx,
+	}, c.auth)
+
+	if err == nil {
+		return statusOK.Payload.Results, nil
+	}
+	conflict, ok := err.(*refs.MergeIntoBranchConflict)
+	if ok {
+		return conflict.Payload.Results, errors.ErrMergeConflict
+	} else {
+		return nil, err
+	}
+}
+
 func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error) {
 	diff, err := c.remote.Branches.DiffBranch(&branches.DiffBranchParams{
 		BranchID:     branch,
@@ -285,6 +307,9 @@ func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error)
 	parsedUrl, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
+	}
+	if len(parsedUrl.Path) == 0 {
+		parsedUrl.Path = path.Join(parsedUrl.Path, genclient.DefaultBasePath)
 	}
 	return &client{
 		remote: genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default),

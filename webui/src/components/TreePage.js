@@ -5,19 +5,91 @@ import {connect} from "react-redux";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 
-import Octicon, {GitCommit, Plus, X} from "@primer/octicons-react";
+import Octicon, {GitCommit, GitMerge, Plus, X} from "@primer/octicons-react";
 
 import {deleteObject, deleteObjectDone, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
-import {diff, resetDiff} from "../actions/refs";
+import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
+import ConfirmationModal from "./ConfirmationModal";
 import Modal from "react-bootstrap/Modal";
 import Form from "react-bootstrap/Form";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {doCommit, resetCommit} from "../actions/commits";
 import Alert from "react-bootstrap/Alert";
+import OverlayTrigger from "react-bootstrap/OverlayTrigger";
+import Tooltip from "react-bootstrap/Tooltip";
 
+const MergeButton = connect(
+    ({ refs }) => ({
+        mergeState: refs.merge,
+        diffResults: refs.diff,
+    }),
+    ({ merge, resetMerge, resetDiff })
+)(({ repo, refId, compare, merge, mergeState, resetMerge, resetDiff, diffResults }) => {
+    if (!refId || refId.type !== 'branch' || !compare || compare.type !== 'branch') {
+        return null;
+    }
+
+    const diffItems = diffResults.payload ? diffResults.payload.results : [];
+    const destinationBranchId = compare.id;
+    const sourceBranchId = refId.id;
+    let mergeDisabled = true;
+    let mergeVariant = 'light';
+    let mergeText;
+    if (destinationBranchId === sourceBranchId) {
+        mergeText = 'Please select a different branch to compare with';
+    } else if (diffItems.length === 0) {
+        mergeText = `No changes found between '${sourceBranchId}' and '${destinationBranchId}'`;
+    } else if (diffItems.some(x => x.direction === 'CONFLICT')) {
+        mergeText = `Conflict found between '${sourceBranchId}' and '${destinationBranchId}'`;
+    } else {
+        mergeText = `Merge '${sourceBranchId}' into '${destinationBranchId}'`;
+        mergeDisabled = false;
+        mergeVariant = 'success';
+    }
+
+    const [show, setShow] = useState(false);
+
+    const disabled = mergeState.inProgress;
+
+    const onHide = () => {
+        if (disabled) return;
+        setShow(false);
+    };
+    
+    useEffect(() => {
+        if (mergeState.error) {
+            window.alert(mergeState.error);
+            resetMerge();
+        } else if (mergeState.payload && mergeState.payload.results.length > 0) {
+            resetDiff();
+        }
+    }, [resetMerge, mergeState, resetDiff]);
+
+    const onSubmit = () => {
+        if (disabled) return;
+        merge(repo.id, sourceBranchId, destinationBranchId);
+        setShow(false);
+    };
+
+    return (
+        <>
+        <ConfirmationModal show={show} onHide={onHide} msg={mergeText} onConfirm={onSubmit} />
+        <OverlayTrigger placement="bottom" overlay={<Tooltip>{mergeText}</Tooltip>}>
+            <span>
+                <Button variant={mergeVariant}
+                    disabled={mergeDisabled}
+                    style={mergeDisabled ? { pointerEvents: "none" } : {}}
+                    onClick={() => { resetMerge(); setShow(true); }}>
+                    <Octicon icon={GitMerge} /> Merge
+                </Button>
+            </span>
+        </OverlayTrigger>
+        </>
+    );
+});
 
 const CompareToolbar = ({repo, refId, compare}) => {
     const history = useHistory();
@@ -67,6 +139,8 @@ const CompareToolbar = ({repo, refId, compare}) => {
                     }
                     history.push({...location, search: params.toString()})
                 }}/>
+
+            <MergeButton repo={repo} refId={refId} compare={compare} />
 
         </ButtonToolbar>
     );
@@ -255,7 +329,7 @@ const CommitButton = connect(
 });
 
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
+const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, resetMerge, mergeResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -300,8 +374,12 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
         );
     }
 
+    const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
+            <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
+                Merge completed
+            </Alert>
             <div className="action-bar">
                 <CompareToolbar refId={refId} repo={repo} compare={compare}/>
                 <ButtonToolbar className="float-right mb-2">
@@ -331,6 +409,12 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
 };
 
 export default connect(
-    ({ objects, refs }) => ({ list: objects.list, diffResults: refs.diff, uploadState: objects.upload, deleteState: objects.delete }),
-    ({ listTree, listTreePaginate, diff, resetDiff, deleteObject, deleteObjectDone })
+    ({ objects, refs }) => ({
+        list: objects.list,
+        diffResults: refs.diff,
+        mergeResults: refs.merge,
+        uploadState: objects.upload,
+        deleteState: objects.delete,
+    }),
+    ({ listTree, listTreePaginate, diff, resetDiff, resetMerge, deleteObject, deleteObjectDone })
 )(TreePage);

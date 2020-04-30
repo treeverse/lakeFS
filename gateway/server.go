@@ -5,6 +5,7 @@ import (
 	"net/http"
 
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/stats"
 
 	"github.com/treeverse/lakefs/httputil"
 
@@ -15,10 +16,10 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/sig"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/gateway/sig"
 	"golang.org/x/xerrors"
 )
 
@@ -29,6 +30,7 @@ type ServerContext struct {
 	multipartManager index.MultipartManager
 	blockStore       block.Adapter
 	authService      utils.GatewayAuthService
+	stats            stats.Collector
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
@@ -38,7 +40,8 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 		meta:             c.meta.WithContext(ctx),
 		multipartManager: c.multipartManager.WithContext(ctx),
 		blockStore:       c.blockStore.WithContext(ctx),
-		authService:      c.authService, // TODO: pass context
+		authService:      c.authService,
+		stats:            c.stats,
 	}
 }
 
@@ -55,6 +58,7 @@ func NewServer(
 	authService utils.GatewayAuthService,
 	multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
+	stats stats.Collector,
 ) *Server {
 
 	ctx := &ServerContext{
@@ -64,6 +68,7 @@ func NewServer(
 		blockStore:       blockStore,
 		authService:      authService,
 		multipartManager: multipartManager,
+		stats:            stats,
 	}
 
 	// setup routes
@@ -94,7 +99,14 @@ func NewServer(
 func (s *Server) Listen() error {
 	return s.Server.ListenAndServe()
 }
-
+func getApiErrOrDefault(err error, defaultApiErr errors.APIErrorCode) errors.APIError {
+	apiError, ok := err.(*errors.APIErrorCode)
+	if ok {
+		return apiError.ToAPIErr()
+	} else {
+		return defaultApiErr.ToAPIErr()
+	}
+}
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
@@ -106,10 +118,11 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		MultipartManager: s.multipartManager,
 		BlockStore:       s.blockStore,
 		Auth:             s.authService,
+		Incr:             func(action string) { s.stats.Collect("s3_gateway", action) },
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
-		sig.NewV4Authenticatior(request),
+		sig.NewV4Authenticator(request),
 		sig.NewV2SigAuthenticator(request))
 
 	authContext, err := authenticator.Parse()
@@ -117,7 +130,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		o.Log().WithError(err).WithFields(logging.Fields{
 			"key": authContext.GetAccessKeyId(),
 		}).Warn("error parsing signature")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		o.EncodeError(getApiErrOrDefault(err, errors.ErrAccessDenied))
 		return nil
 	}
 	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
@@ -138,7 +151,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 			"key":           authContext.GetAccessKeyId(),
 			"authenticator": authenticator,
 		}).Warn("error verifying credentials for key")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrAccessDenied))
+		o.EncodeError(getApiErrOrDefault(err, errors.ErrAccessDenied))
 		return nil
 	}
 
@@ -200,10 +213,10 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 		repo, err := authOp.Index.GetRepo(repoId)
 		if xerrors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
-			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
+			authOp.EncodeError(errors.ErrNoSuchBucket.ToAPIErr())
 			return
 		} else if err != nil {
-			authOp.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			authOp.EncodeError(errors.ErrInternalError.ToAPIErr())
 			return
 		}
 		// run callback
@@ -264,7 +277,7 @@ func unsupportedOperationHandler() http.Handler {
 			Request:        request,
 			ResponseWriter: writer,
 		}
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ERRLakeFSNotSupported))
+		o.EncodeError(errors.ERRLakeFSNotSupported.ToAPIErr())
 		return
 	})
 }
