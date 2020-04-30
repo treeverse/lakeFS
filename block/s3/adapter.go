@@ -31,6 +31,11 @@ type Adapter struct {
 	ctx        context.Context
 }
 
+type AdapterInterface interface {
+	block.Adapter
+	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
+}
+
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.httpClient = c
@@ -67,7 +72,7 @@ func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
-func (s *Adapter) Put(repo string, identifier string, sizeBytes int, reader io.Reader) error {
+func (s *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io.Reader) error {
 	sigTime := time.Now()
 
 	log := s.log().WithField("operation", "PutObject")
@@ -99,7 +104,7 @@ func (s *Adapter) Put(repo string, identifier string, sizeBytes int, reader io.R
 
 	req.Body = ioutil.NopCloser(&StreamingReader{
 		Reader: reader,
-		Size:   sizeBytes,
+		Size:   int(sizeBytes),
 		Time:   sigTime,
 		StreamSigner: v4.NewStreamSigner(
 			aws.StringValue(sdkRequest.Config.Region),
@@ -159,4 +164,32 @@ func (s *Adapter) GetRange(repo string, identifier string, startPosition int64, 
 		return nil, err
 	}
 	return objectOutput.Body, nil
+}
+
+func (s *Adapter) Remove(repo string, identifier string) error {
+	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
+	_, err := s.s3.DeleteObject(deleteObjectParams)
+	if err != nil {
+		s.log().WithError(err).Error("failed to delete S3 object")
+		return err
+	}
+	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+		Bucket: aws.String(repo),
+		Key:    aws.String(identifier),
+	})
+	return err
+}
+
+func (s *Adapter) GetAdapterType() string {
+	return "s3"
+}
+
+func (s *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
+	input := &s3.CreateMultipartUploadInput{
+		Bucket:      aws.String(repo),
+		Key:         aws.String(identifier),
+		ContentType: aws.String(""),
+	}
+	resp, err := s.s3.CreateMultipartUpload(input)
+	return *resp.UploadId, err
 }

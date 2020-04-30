@@ -75,11 +75,11 @@ func newHashingReader(body io.Reader) (s *HashingReader) {
 	return
 }
 
-func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter) (*Blob, error) {
+func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64) (*Blob, error) {
 	// handle the upload itself
 	hashReader := newHashingReader(body)
 	objName := uuidAsHex()
-	err := adapter.Put(bucketName, objName, hashReader)
+	err := adapter.Put(bucketName, objName, contentLength, hashReader)
 	if err != nil {
 		return nil, err
 	}
