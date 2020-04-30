@@ -2,10 +2,9 @@ package http
 
 import (
 	"fmt"
+	"golang.org/x/xerrors"
 	"strconv"
 	"strings"
-
-	"golang.org/x/xerrors"
 )
 
 var (

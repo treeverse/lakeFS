@@ -7,10 +7,11 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/block"
 	"io"
 	"io/ioutil"
 	"testing"
+
+	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/upload"
 )
@@ -38,7 +39,7 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(repo string, identifier string, reader io.Reader) error {
+func (a *mockAdapter) Put(repo string, _ string, _ int, reader io.Reader) error {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err

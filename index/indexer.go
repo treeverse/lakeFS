@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"math/rand"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -55,7 +56,7 @@ type Index interface {
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
-	Merge(repoId, source, destination string) error
+	Merge(repoId, source, destination, userId string) (merkle.Differences, error)
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
@@ -408,16 +409,6 @@ func (index *DBIndex) ReadEntryObject(repoId, branch, path string) (*model.Entry
 	return index.ReadEntry(repoId, branch, path, model.EntryTypeObject)
 }
 
-func parentPath(path string) string {
-	p := pth.New(path)
-	parentPath := ""
-	if p.HasParent() {
-		parentPath = p.DirName()
-	}
-
-	return parentPath
-}
-
 func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -444,7 +435,7 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
-			ParentPath:        parentPath(path),
+			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
 			Path:              path,
 			EntryName:         &entry.Name,
 			EntryAddress:      &entry.Address,
@@ -478,7 +469,7 @@ func (index *DBIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
-			ParentPath:        parentPath(path),
+			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
 			Path:              path,
 			EntryName:         &entry.Name,
 			EntryAddress:      &entry.Address,
@@ -515,13 +506,13 @@ func (index *DBIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		if err != nil {
 			return nil, err
 		}
-		p := pth.New(path)
-		entryName := pth.New(path).Basename()
 		typ := model.EntryTypeObject
+		p := pth.New(path, typ)
+		entryName := pth.New(path, typ).BaseName()
 		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			Path:              p.String(),
-			ParentPath:        parentPath(p.String()),
+			ParentPath:        p.ParentPath(),
 			BranchId:          branch,
 			EntryName:         &entryName,
 			EntryAddress:      &addr,
@@ -601,8 +592,8 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		}
 
 		if merkleEntry != nil {
-			bname := pth.New(path).Basename()
 			typ := model.EntryTypeObject
+			bname := pth.New(path, typ).BaseName()
 			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 				Path:              path,
 				EntryName:         &bname,
@@ -788,6 +779,29 @@ func (index *DBIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), nil
 }
 
+func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (interface{}, error) {
+	commit := &model.Commit{
+		Tree:         branchData.WorkspaceRoot,
+		Parents:      []string{branchData.CommitId},
+		Committer:    committer,
+		Message:      message,
+		CreationDate: ts,
+		Metadata:     metadata,
+	}
+	commitAddr := ident.Hash(commit)
+	commit.Address = commitAddr
+	err := tx.WriteCommit(commitAddr, commit)
+	if err != nil {
+		index.log().WithError(err).Error("could not write commit")
+		return nil, err
+	}
+	branchData.CommitId = commitAddr
+	branchData.CommitRoot = commit.Tree
+	branchData.WorkspaceRoot = commit.Tree
+
+	return commit, tx.WriteBranch(branchData.Id, branchData)
+}
+
 func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -806,26 +820,7 @@ func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata
 		if err != nil {
 			return nil, err
 		}
-		commit := &model.Commit{
-			Tree:         branchData.WorkspaceRoot,
-			Parents:      []string{branchData.CommitId},
-			Committer:    committer,
-			Message:      message,
-			CreationDate: ts,
-			Metadata:     metadata,
-		}
-		commitAddr := ident.Hash(commit)
-		commit.Address = commitAddr
-		err = tx.WriteCommit(commitAddr, commit)
-		if err != nil {
-			index.log().WithError(err).Error("could not write commit")
-			return nil, err
-		}
-		branchData.CommitId = commitAddr
-		branchData.CommitRoot = commit.Tree
-		branchData.WorkspaceRoot = commit.Tree
-
-		return commit, tx.WriteBranch(branch, branchData)
+		return doCommitUpdates(tx, branchData, committer, message, []string{branchData.CommitId}, metadata, ts, index)
 	})
 	if err != nil {
 		return nil, err
@@ -863,7 +858,7 @@ func (index *DBIndex) GetCommitLog(repoId, fromCommitId string, results int, aft
 		return nil, false, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		commits, hasMore, err := dag.BfsScan(tx, fromCommitId, results, after)
+		commits, hasMore, err := dag.CommitScan(tx, fromCommitId, results, after)
 		return &result{hasMore, commits}, err
 	}, db.ReadOnly())
 	if err != nil {
@@ -932,9 +927,47 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
-	log := index.log()
+func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (merkle.Differences, error) {
 
+	lRef, err := resolveRef(tx, leftRef)
+	if err != nil {
+		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
+		return nil, errors.ErrBranchNotFound
+	}
+
+	rRef, err := resolveRef(tx, rightRef)
+	if err != nil {
+		index.log().WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
+		return nil, errors.ErrBranchNotFound
+	}
+
+	commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.Address, rRef.commit.Address)
+	if err != nil {
+		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
+		return nil, errors.ErrNoMergeBase
+	}
+	if commonCommits == nil {
+		index.log().WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
+		return nil, errors.ErrNoMergeBase
+	}
+
+	leftTree := lRef.commit.Tree
+	if lRef.isBranch && !isMerge {
+		leftTree = lRef.branch.WorkspaceRoot
+	}
+	rightTree := rRef.commit.Tree
+
+	diff, err := merkle.Diff(tx,
+		merkle.New(leftTree),
+		merkle.New(rightTree),
+		merkle.New(commonCommits.Tree))
+	if err != nil {
+		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
+	}
+	return diff, err
+}
+
+func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(leftRef),
@@ -944,46 +977,9 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
 
-		lRef, err := resolveRef(tx, leftRef)
-		if err != nil {
-			log.WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
-			return nil, err
-		}
+		return doDiff(tx, repoId, leftRef, rightRef, false, index)
+	})
 
-		rRef, err := resolveRef(tx, rightRef)
-		if err != nil {
-			log.WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
-			return nil, err
-		}
-
-		commonCommit, err := dag.FindLowestCommonAncestor(tx, lRef.commit.Address, rRef.commit.Address)
-		if err != nil {
-			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
-			return nil, err
-		}
-		if commonCommit == nil {
-			log.WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
-			return nil, errors.ErrNoMergeBase
-		}
-
-		leftTree := lRef.commit.Tree
-		if lRef.isBranch {
-			leftTree = lRef.branch.WorkspaceRoot
-		}
-		rightTree := rRef.commit.Tree
-
-		diff, err := merkle.Diff(tx,
-			merkle.New(leftTree),
-			merkle.New(rightTree),
-			merkle.New(commonCommit.Tree))
-		if err != nil {
-			log.WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
-		}
-		return diff, err
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
 	return res.(merkle.Differences), nil
 }
 
@@ -1032,7 +1028,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 		"path":   path,
 	})
 	_, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		p := pth.New(path)
+		p := pth.New(path, typ)
 		if p.IsRoot() {
 			return nil, index.ResetBranch(repoId, branch)
 		}
@@ -1060,7 +1056,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 				workspaceEntry = &model.WorkspaceEntry{
 					RepositoryId:      repoId,
 					BranchId:          branch,
-					ParentPath:        parentPath(path),
+					ParentPath:        p.ParentPath(),
 					Path:              path,
 					EntryName:         &pathEntry.Name,
 					EntryAddress:      &pathEntry.Address,
@@ -1078,7 +1074,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 			workspaceEntry = &model.WorkspaceEntry{
 				RepositoryId:      repoId,
 				BranchId:          branch,
-				ParentPath:        parentPath(path),
+				ParentPath:        p.ParentPath(),
 				Path:              path,
 				EntryName:         &commitEntry.Name,
 				EntryAddress:      &commitEntry.Address,
@@ -1133,12 +1129,102 @@ func (index *DBIndex) RevertObject(repoId, branch, path string) error {
 	return index.revertPath(repoId, branch, path, model.EntryTypeObject)
 }
 
-func (index *DBIndex) Merge(repoId, source, destination string) error {
-	_, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		return nil, nil // TODO: optimistic concurrency based optimization
-		// i.e. assume source branch receives no new commits since the start of the process
+func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.Differences, error) {
+	err := ValidateAll(
+		ValidateRepoId(repoId),
+		ValidateRef(source),
+		ValidateRef(destination))
+	if err != nil {
+		return nil, err
+	}
+	ts := index.tsGenerator()
+	var mergeOperations merkle.Differences
+	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		// check that destination has no uncommitted changes
+		destinationBranch, err := tx.ReadBranch(destination)
+		if err != nil {
+			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " not found")
+			return nil, errors.ErrBranchNotFound
+		}
+		l, err := tx.ListWorkspace(destination)
+		if err != nil {
+			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " workspace not found")
+			return nil, err
+		}
+		if destinationBranch.CommitRoot != destinationBranch.WorkspaceRoot || len(l) > 0 {
+			return nil, errors.ErrDestinationNotCommitted
+		}
+		// compute difference
+		df, err := doDiff(tx, repoId, source, destination, true, index)
+		if err != nil {
+			return nil, err
+		}
+		var isConflict bool
+		for _, dif := range df {
+			if dif.Direction == merkle.DifferenceDirectionConflict {
+				isConflict = true
+			}
+			if dif.Direction != merkle.DifferenceDirectionRight {
+				mergeOperations = append(mergeOperations, dif)
+			}
+		}
+		if isConflict {
+			return nil, errors.ErrMergeConflict
+		}
+		// update destination with source changes
+		var wsEntries []*model.WorkspaceEntry
+		sourceBranch, err := tx.ReadBranch(source)
+		if err != nil {
+			index.log().WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
+			return nil, err
+		}
+		for _, dif := range mergeOperations {
+			var e *model.Entry
+			m := merkle.New(sourceBranch.WorkspaceRoot)
+			if dif.Type != merkle.DifferenceTypeRemoved {
+				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
+				if err != nil {
+					index.log().WithError(err).Fatal("failed reading entry\n")
+					return nil, err
+				}
+			} else {
+				e = new(model.Entry)
+				p := strings.Split(dif.Path, "/")
+				e.Name = p[len(p)-1]
+				e.EntryType = dif.PathType
+			}
+			w := new(model.WorkspaceEntry)
+			w.EntryType = &e.EntryType
+			w.EntryAddress = &e.Address
+			w.EntryName = &e.Name
+			w.EntryChecksum = &e.Checksum
+			w.EntryCreationDate = &e.CreationDate
+			w.EntrySize = &e.Size
+			w.Path = dif.Path
+			w.Tombstone = (dif.Type == merkle.DifferenceTypeRemoved)
+			wsEntries = append(wsEntries, w)
+		}
+
+		desinationRoot := merkle.New(destinationBranch.CommitRoot)
+		newRoot, err := desinationRoot.Update(tx, wsEntries)
+		if err != nil {
+			index.log().WithError(err).Fatal("failed updating merge destination\n")
+			return nil, errors.ErrMergeUpdateFailed
+		}
+		destinationBranch.CommitRoot = newRoot.Root()
+		destinationBranch.WorkspaceRoot = newRoot.Root()
+		parents := []string{destinationBranch.CommitId, sourceBranch.CommitId}
+		commitMessage := "Merge branch " + source + " into " + destination
+		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts, index)
+
+		return mergeOperations, nil
+
 	})
-	return err
+	if err == nil || err == errors.ErrMergeConflict {
+		return mergeOperations, err
+	} else {
+		return nil, err
+	}
 }
 
 func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {

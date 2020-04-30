@@ -8,15 +8,12 @@ type CommitReader interface {
 	ReadCommit(addr string) (*model.Commit, error)
 }
 
-func BfsScan(reader CommitReader, startAddr string, results int, after string) ([]*model.Commit, bool, error) {
-	iter := NewBfsIterator(reader, startAddr)
+func CommitScan(reader CommitReader, startAddr string, results int, after string) ([]*model.Commit, bool, error) {
+	iter := NewCommitIterator(reader, startAddr)
 	commits := make([]*model.Commit, 0)
 	passedAfter := after == ""
-	for iter.advance() {
-		commit, err := iter.get()
-		if err != nil {
-			return nil, false, err
-		}
+	for iter.Next() {
+		commit := iter.Value()
 		if passedAfter {
 			commits = append(commits, commit)
 			//result <= 0 is considered as all
@@ -27,46 +24,40 @@ func BfsScan(reader CommitReader, startAddr string, results int, after string) (
 			passedAfter = commit.Address == after
 		}
 	}
-	return commits, iter.hasMore(), nil
+	if iter.Err() != nil {
+		return nil, false, iter.Err()
+	}
+	return commits, iter.Next(), nil
 }
 
+// FindLowestCommonAncestor implementation used to be as per https://stackoverflow.com/a/27285628
 func FindLowestCommonAncestor(reader CommitReader, addrA, addrB string) (*model.Commit, error) {
-	// implementation used to be as per https://stackoverflow.com/a/27285628
-
-	var sentinel = struct{}{}
 	discoveredSet := make(map[string]struct{})
-	iterA := NewBfsIterator(reader, addrA)
-	iterB := NewBfsIterator(reader, addrB)
-	hasNextA := iterA.advance()
-	hasNextB := iterB.advance()
+	iterA := NewCommitIterator(reader, addrA)
+	iterB := NewCommitIterator(reader, addrB)
 	for {
-		if !hasNextA && !hasNextB {
-			// no common ancestor
-			return nil, nil
+		commit, err := findLowerCommonAncestorNextIter(discoveredSet, iterA)
+		if commit != nil || err != nil {
+			return commit, err
 		}
-		if hasNextA {
-			commit, err := iterA.get()
-			if err != nil {
-				return nil, err
-			}
-			if _, wasDiscovered := discoveredSet[commit.Address]; !wasDiscovered {
-				discoveredSet[commit.Address] = sentinel
-			} else {
-				return commit, nil
-			}
-			hasNextA = iterA.advance()
+		commit, err = findLowerCommonAncestorNextIter(discoveredSet, iterB)
+		if commit != nil || err != nil {
+			return commit, err
 		}
-		if hasNextB {
-			commit, err := iterB.get()
-			if err != nil {
-				return nil, err
-			}
-			if _, wasDiscovered := discoveredSet[commit.Address]; !wasDiscovered {
-				discoveredSet[commit.Address] = sentinel
-			} else {
-				return commit, nil
-			}
-			hasNextB = iterB.advance()
+		if iterA.Value() == nil && iterB.Value() == nil {
+			break
 		}
 	}
+	return nil, nil
+}
+
+func findLowerCommonAncestorNextIter(discoveredSet map[string]struct{}, iter *CommitIterator) (*model.Commit, error) {
+	if iter.Next() {
+		commit := iter.Value()
+		if _, wasDiscovered := discoveredSet[commit.Address]; wasDiscovered {
+			return commit, nil
+		}
+		discoveredSet[commit.Address] = struct{}{}
+	}
+	return nil, iter.Err()
 }

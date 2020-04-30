@@ -180,6 +180,13 @@ func (e errorCodeMap) ToAPIErr(errCode APIErrorCode) APIError {
 	}
 	return apiErr
 }
+func (a APIErrorCode) Error() string {
+	return Codes.ToAPIErr(a).Code
+}
+
+func (a APIErrorCode) ToAPIErr() APIError {
+	return Codes.ToAPIErr(a)
+}
 
 // error code to APIError structure, these fields carry respective
 // descriptions for all the error responses.

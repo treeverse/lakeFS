@@ -41,11 +41,9 @@ func (m *Merkle) GetEntry(tx TreeReader, pth, typ string) (*model.Entry, error) 
 	if len(pth) == 0 {
 		return &model.Entry{Address: currentAddress}, nil
 	}
-	parsed := path.New(pth)
+	parsed := path.New(pth, typ)
 	parts := parsed.SplitParts()
-	if len(parts) > 1 && typ == model.EntryTypeTree && len(parsed.BaseName()) == 0 {
-		parts = parts[0 : len(parts)-1]
-	}
+
 	var entry *model.Entry
 	for _, part := range parts {
 		ent, err := tx.ReadTreeEntry(currentAddress, part)
@@ -97,7 +95,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 		// dfs it
 		return m.walk(tx, prefix, from, amount, &col{data: make([]*model.Entry, 0)}, 0)
 	}
-	pfx := path.New(prefix).SplitParts()
+	pfx := path.New(prefix, model.EntryTypeTree).SplitParts()
 	subtreeAddr := m.root
 	subtreePath := ""
 	for i, part := range pfx {
@@ -125,7 +123,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 
 	// got a subtree
 	relativeFrom := strings.TrimPrefix(from, prefix) // only the relative portion
-	pfx = path.New(prefix).SplitParts()
+	pfx = path.New(prefix, model.EntryTypeObject).SplitParts()
 	relativePrefix := ""
 	if len(pfx) > 0 {
 		relativePrefix = pfx[len(pfx)-1]
@@ -164,7 +162,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, c *col, depth int) ([]*model.Entry, bool, error) {
 	currentFrom := ""
 	if len(from) > 0 {
-		fromParts := path.New(from).SplitParts()
+		fromParts := path.New(from, model.EntryTypeObject).SplitParts()
 		if depth < len(fromParts) {
 			currentFrom = fromParts[depth]
 		}
@@ -173,7 +171,7 @@ func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, 
 	// do the same with prefix
 	currentPrefix := ""
 	if len(prefix) > 0 {
-		prefixParts := path.New(prefix).SplitParts()
+		prefixParts := path.New(prefix, model.EntryTypeObject).SplitParts()
 		if depth < len(prefixParts) {
 			currentPrefix = prefixParts[depth]
 		}
@@ -244,10 +242,10 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 			if err != nil {
 				return nil, err
 			}
-			pth := path.New(treePath)
+			pth := path.New(treePath, model.EntryTypeTree)
 			parts := pth.SplitParts()
 
-			if len(parts) == 1 {
+			if pth.IsRoot() {
 				// this is the root node, write it no matter what and return
 				addr, size, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
@@ -274,7 +272,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 
 			if len(mergedEntries) == 0 {
 				// Add a change to the level above us saying this folder should be removed
-				dirName := pth.DirName()
+				dirName := pth.BaseName()
 				typ := model.EntryTypeTree
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path:              treePath,
@@ -290,7 +288,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					return nil, err
 				}
 				// Add a change to the level above us saying this folder should be updated
-				dirName := pth.DirName()
+				dirName := pth.BaseName()
 				typ := model.EntryTypeTree
 				changeTree.Add(i-1, parent, &model.WorkspaceEntry{
 					Path:              treePath,

@@ -361,6 +361,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 }
 
 func (controller *ListObjects) Handle(o *RepoOperation) {
+	o.Incr("list_objects")
 	// parse request parameters
 	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 

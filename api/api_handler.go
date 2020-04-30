@@ -8,6 +8,9 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/stats"
+
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
@@ -50,6 +53,7 @@ type HandlerContext struct {
 	Index        index.Index
 	Auth         auth.Service
 	BlockAdapter block.Adapter
+	Stats        stats.Collector
 }
 
 func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
@@ -57,6 +61,7 @@ func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
 		Index:        c.Index.WithContext(ctx),
 		Auth:         c.Auth, // TODO: pass context
 		BlockAdapter: c.BlockAdapter.WithContext(ctx),
+		Stats:        c.Stats,
 	}
 }
 
@@ -64,12 +69,13 @@ type Handler struct {
 	context *HandlerContext
 }
 
-func NewHandler(meta index.Index, auth auth.Service, blockAdapter block.Adapter) *Handler {
+func NewHandler(meta index.Index, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector) *Handler {
 	return &Handler{
 		context: &HandlerContext{
 			Index:        meta,
 			Auth:         auth,
 			BlockAdapter: blockAdapter,
+			Stats:        stats,
 		},
 	}
 }
@@ -102,12 +108,17 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
 	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
+	api.RefsMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
 	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
 	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
 	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
+}
+
+func (a *Handler) incrStat(action string) {
+	a.context.Stats.Collect("api_server", action)
 }
 
 func (a *Handler) authorize(user *models.User, action permissions.Action) error {
@@ -126,6 +137,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		if err != nil {
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("list_repos")
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
@@ -183,6 +195,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("get_repo")
 
 		repo, err := a.ForRequest(params.HTTPRequest).Index.GetRepo(params.RepositoryID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
@@ -209,6 +222,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("get_commit")
 		commit, err := a.ForRequest(params.HTTPRequest).Index.GetCommit(params.RepositoryID, params.CommitID)
 
 		if xerrors.Is(err, db.ErrNotFound) {
@@ -234,6 +248,7 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("create_commit")
 		userModel, err := a.context.Auth.GetUser(int(user.ID))
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
@@ -261,6 +276,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("get_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		// read branch
@@ -314,7 +330,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(bucketName, dummyKey, bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(bucketName, dummyKey, len(dummyData), bytes.NewReader([]byte(dummyData)))
 	if err != nil {
 		return err
 	}
@@ -333,6 +349,7 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("create_repo")
 		ctx := a.ForRequest(params.HTTPRequest)
 
 		err = testBucket(ctx.BlockAdapter, swag.StringValue(params.Repository.BucketName))
@@ -367,6 +384,7 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("delete_repo")
 		index := a.ForRequest(params.HTTPRequest).Index
 		err = index.DeleteRepo(params.RepositoryID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
@@ -387,6 +405,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		if err != nil {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("list_branches")
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		after, amount := getPaginationParams(params.After, params.Amount)
@@ -429,6 +448,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("get_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 		branch, err := index.GetBranch(params.RepositoryID, params.BranchID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
@@ -453,6 +473,7 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("create_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 		branch, err := index.CreateBranch(params.RepositoryID, swag.StringValue(params.Branch.ID), swag.StringValue(params.Branch.SourceRefID))
 		if err != nil {
@@ -472,6 +493,7 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("delete_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 		err = index.DeleteBranch(params.RepositoryID, params.BranchID)
 		if err != nil && xerrors.Is(err, db.ErrNotFound) {
@@ -486,12 +508,62 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	})
 }
 
+func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
+	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.MergeIntoBranch(params.RepositoryID))
+		if err != nil {
+			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		a.incrStat("merge_branches")
+		userModel, err := a.context.Auth.GetUser(int(user.ID))
+		if err != nil {
+			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
+		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.SourceRef, params.DestinationRef, committer)
+		mergeResult := make([]*models.MergeResult, len(mergeOperations))
+
+		if err == nil || err == errors.ErrMergeConflict {
+			for i, d := range mergeOperations {
+				tmp := serializeDiff(d)
+				mergeResult[i] = new(models.MergeResult)
+				mergeResult[i].Path = tmp.Path
+				mergeResult[i].Type = tmp.Type
+				mergeResult[i].Direction = tmp.Direction
+				mergeResult[i].PathType = tmp.PathType
+			}
+		}
+		switch err {
+		case nil:
+			pl := new(refs.MergeIntoBranchOKBody)
+			pl.Results = mergeResult
+			return refs.NewMergeIntoBranchOK().WithPayload(pl)
+		case errors.ErrNoMergeBase:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
+		case errors.ErrDestinationNotCommitted:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
+		case errors.ErrBranchNotFound:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
+		case errors.ErrMergeConflict:
+
+			pl := new(refs.MergeIntoBranchConflictBody)
+			pl.Results = mergeResult
+			return refs.NewMergeIntoBranchConflict().WithPayload(pl)
+		default:
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
+
+		}
+
+	})
+}
+
 func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
 		if err != nil {
 			return branches.NewDiffBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("diff_workspace")
 		index := a.ForRequest(params.HTTPRequest).Index
 		diff, err := index.DiffWorkspace(params.RepositoryID, params.BranchID)
 		if err != nil {
@@ -514,6 +586,7 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		if err != nil {
 			return refs.NewDiffRefsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("diff_refs")
 		index := a.ForRequest(params.HTTPRequest).Index
 		diff, err := index.Diff(params.RepositoryID, params.LeftRef, params.RightRef)
 		if err != nil {
@@ -535,6 +608,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if err != nil {
 			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("stat_object")
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		// read metadata
@@ -563,6 +637,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		if err != nil {
 			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("get_object")
 		ctx := a.ForRequest(params.HTTPRequest)
 		index := ctx.Index
 
@@ -621,6 +696,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		if err != nil {
 			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("list_objects")
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		after, amount := getPaginationParams(params.After, params.Amount)
@@ -673,6 +749,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("put_object")
 		ctx := a.ForRequest(params.HTTPRequest)
 		index := ctx.Index
 
@@ -700,7 +777,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:         blob.Size,
 		}
 
-		p := pth.New(params.Path)
+		p := pth.New(params.Path, model.EntryTypeObject)
 
 		entry := &model.Entry{
 			RepositoryId: repo.Id,
@@ -731,6 +808,7 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		if err != nil {
 			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("delete_object")
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		err = index.DeleteObject(params.RepositoryID, params.BranchID, params.Path)
@@ -751,6 +829,7 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		if err != nil {
 			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		a.incrStat("revert_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		switch swag.StringValue(params.Revert.Type) {
