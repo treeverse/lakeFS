@@ -37,8 +37,7 @@ type StreamingReader struct {
 	Size         int
 	StreamSigner *v4.StreamSigner
 	Time         time.Time
-
-	ChunkSize int
+	ChunkSize    int
 
 	currentChunk io.Reader
 	totalRead    int
@@ -69,16 +68,14 @@ func (s *StreamingReader) readNextChunk() error {
 	if sigErr != nil {
 		return sigErr
 	}
-	buf = append(buf, '\r') // additional \r\n after the content
-	buf = append(buf, '\n')
+	buf = append(buf, '\r', '\n') // additional \r\n after the content
 	boundary := chunkBoundary(sig, n)
 	if isEOF(err) || s.totalRead == s.Size {
 		// we're done with the upstream Reader, let's write one last chunk boundary.
 		sig, _ := s.StreamSigner.GetSignature([]byte{}, []byte{}, s.Time)
 		lastBoundary := chunkBoundary(sig, 0)
 		buf = append(buf, lastBoundary...)
-		buf = append(buf, '\r') // additional \r\n after the last boundary
-		buf = append(buf, '\n')
+		buf = append(buf, '\r', '\n') // additional \r\n after the last boundary
 	}
 	buf = append(boundary, buf...)
 	s.currentChunk = bytes.NewBuffer(buf)
