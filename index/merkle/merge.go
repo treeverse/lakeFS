@@ -1,10 +1,9 @@
 package merkle
 
 import (
+	"github.com/treeverse/lakefs/logging"
 	"strings"
 	"time"
-
-	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/db"
 
@@ -13,7 +12,7 @@ import (
 
 func CompareEntries(a, b *model.Entry) (eqs int) {
 	// names first
-	eqs = strings.Compare(a.Name, b.Name)
+	eqs = strings.Compare(a.GetName(), b.GetName())
 	// directories second
 	if eqs == 0 && a.EntryType != b.EntryType {
 		if a.EntryType < b.EntryType {
