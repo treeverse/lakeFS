@@ -15,6 +15,10 @@ func (d DummyLogger) WithError(err error) Logger {
 	return d
 }
 
+func (d DummyLogger) Trace(args ...interface{}) {
+
+}
+
 func (d DummyLogger) Debug(args ...interface{}) {
 
 }
@@ -40,6 +44,10 @@ func (d DummyLogger) Fatal(args ...interface{}) {
 }
 
 func (d DummyLogger) Panic(args ...interface{}) {
+
+}
+
+func (d DummyLogger) Tracef(format string, args ...interface{}) {
 
 }
 

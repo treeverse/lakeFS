@@ -12,27 +12,19 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/jmoiron/sqlx"
-
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
-	"github.com/aws/aws-sdk-go/aws"
-
-	"github.com/aws/aws-sdk-go/service/s3"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-
 	"github.com/treeverse/lakefs/block"
-
-	"github.com/mitchellh/go-homedir"
-
+	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/db"
 
-	log "github.com/sirupsen/logrus"
-
-	"github.com/spf13/viper"
-
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/mitchellh/go-homedir"
+	log "github.com/sirupsen/logrus"
+	"github.com/spf13/viper"
 )
 
 const (
@@ -270,11 +262,9 @@ func (c *Config) buildS3Adapter() block.Adapter {
 	}
 
 	sess := session.Must(session.NewSession(cfg))
+	sess.ClientConfig(s3.ServiceName)
 	svc := s3.New(sess)
-	adapter, err := block.NewS3Adapter(svc)
-	if err != nil {
-		panic(fmt.Errorf("got error opening an S3 block adapter: %s", err))
-	}
+	adapter := s3a.NewAdapter(svc)
 	log.WithFields(log.Fields{
 		"type": "s3",
 	}).Info("initialized blockstore adapter")
