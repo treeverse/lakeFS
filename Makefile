@@ -4,6 +4,7 @@ DOCKER=$(shell which docker)
 GOBINPATH=$(shell $(GOCMD) env GOPATH)
 NPM=$(shell which npm)
 STATIK=$(GOBINPATH)/bin/statik
+GOLANGCILINT_VERSION=v1.25.1
 
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
@@ -44,7 +45,7 @@ build: gen  ## Download dependecies and Build the default binary
 	$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
 
 lint: gen ## Lint code
-	$(DOCKER) run --rm -it -e GL_DEBUG=linters_output -e GOPACKAGESPRINTGOLISTERRORS=1 -v $(CURDIR):/app -w /app golangci/golangci-lint:v1.25.1 golangci-lint run -v
+	$(DOCKER) run --rm -it -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v
 
 test: gen run-test  ## Run tests for the project
 
