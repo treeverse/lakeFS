@@ -106,7 +106,7 @@ func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Hand
 	// swagger
 	mux.Handle("/swagger.json", api)
 	// setup system
-	mux.Handle("/setup", setup)
+	mux.Handle(SetupLakeFSRoute, setup)
 	// otherwise, serve  UI
 	mux.Handle("/", ui)
 
@@ -155,7 +155,7 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleWare(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			setupHandler(s.authService, s.migrator),
+			setupLakeFSHandler(s.authService, s.migrator),
 		),
 	)
 

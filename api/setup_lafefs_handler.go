@@ -10,11 +10,13 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 )
 
-// setupHandler setup DB and initial admin user
+const SetupLakeFSRoute = "/setup_lakefs"
+
+// setupLakeFSHandler setup DB and initial admin user
 //   returns 200 (ok) on creation with key/secret - content type json
 //   returns 409 (conflict) when user is found
 //   return 500 (internal error) if error during operation
-func setupHandler(authService auth.Service, migrator db.Migrator) http.Handler {
+func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)

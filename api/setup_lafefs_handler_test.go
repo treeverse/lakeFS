@@ -7,11 +7,12 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func Test_setupHandler(t *testing.T) {
+func Test_setupLakeFSHandler(t *testing.T) {
 	// get handler with DB without apply the DDL
 	handler, deps := getHandler(t, testutil.WithGetDBApplyDDL(false))
 
@@ -27,7 +28,7 @@ func Test_setupHandler(t *testing.T) {
 		t.Fatal("JSON marshal request", err)
 	}
 
-	reqURI := srv.URL + "/setup"
+	reqURI := srv.URL + api.SetupLakeFSRoute
 	const contentType = "application/json"
 	t.Run("fresh start", func(t *testing.T) {
 		// request to setup
