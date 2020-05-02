@@ -196,11 +196,19 @@ func (c *Config) setupLogger() {
 }
 
 func (c *Config) ConnectMetadataDatabase() db.Database {
-	return db.ConnectDB(DefaultDatabaseDriver, viper.GetString("metadata.db.uri"))
+	db, err := db.ConnectDB(DefaultDatabaseDriver, viper.GetString("metadata.db.uri"))
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 func (c *Config) ConnectAuthDatabase() db.Database {
-	return db.ConnectDB(DefaultDatabaseDriver, viper.GetString("auth.db.uri"))
+	db, err := db.ConnectDB(DefaultDatabaseDriver, viper.GetString("auth.db.uri"))
+	if err != nil {
+		panic(err)
+	}
+	return db
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {

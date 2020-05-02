@@ -20,26 +20,26 @@ func extractSchemaFromURI(uri string) (string, error) {
 	return schema, nil
 }
 
-func ConnectDB(driver string, uri string) Database {
+func ConnectDB(driver string, uri string) (Database, error) {
 	schema, err := extractSchemaFromURI(uri)
 	if err != nil {
-		panic(fmt.Errorf("could not open database: %w", err))
+		return nil, fmt.Errorf("could not open database: %w", err)
 	}
 	conn, err := sqlx.Connect(driver, uri)
 	if err != nil {
-		panic(fmt.Errorf("could not open database: %w", err))
+		return nil, fmt.Errorf("could not open database: %w", err)
 	}
 	tx, err := conn.Beginx()
 	if err != nil {
-		panic(fmt.Errorf("could not open database: %w", err))
+		return nil, fmt.Errorf("could not open database: %w", err)
 	}
 	_, err = tx.Exec("CREATE SCHEMA IF NOT EXISTS " + schema)
 	if err != nil {
-		panic(fmt.Errorf("could not open database: %w", err))
+		return nil, fmt.Errorf("could not open database: %w", err)
 	}
 	err = tx.Commit()
 	if err != nil {
-		panic(fmt.Errorf("could not open database: %w", err))
+		return nil, fmt.Errorf("could not open database: %w", err)
 	}
-	return NewDatabase(conn)
+	return NewDatabase(conn), nil
 }
