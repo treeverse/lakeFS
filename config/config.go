@@ -90,6 +90,9 @@ func NewFromFile(configPath string) *Config {
 	if err != nil {
 		panic(fmt.Errorf("failed opening config file %s: %s", configPath, err))
 	}
+	defer func() {
+		_ = handle.Close()
+	}()
 	c := &Config{}
 	c.Setup(handle)
 	return c
