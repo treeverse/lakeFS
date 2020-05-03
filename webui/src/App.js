@@ -6,7 +6,7 @@ import Container from "react-bootstrap/Container";
 import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom";
 
 import LoginForm from "./components/Login";
-import HelloForm from "./components/Setup";
+import SetupForm from "./components/Setup";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import { logout, redirected } from './actions/auth';
 import {IndexPage} from "./components/IndexPage";
@@ -70,7 +70,7 @@ const App = ({ user, redirectTo, redirected }) => {
                         </Route>
 
                         <Route path="/setup" >
-                            <HelloForm />
+                            <SetupForm />
                         </Route>
 
                         <PrivateRoute path="/" user={user}>

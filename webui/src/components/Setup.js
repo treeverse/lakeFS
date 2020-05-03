@@ -1,64 +1,94 @@
-import Form from "react-bootstrap/Form";
-import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
-import React, {useRef} from "react";
-
-import {connect} from "react-redux";
-import Col from "react-bootstrap/Col";
-import Row from "react-bootstrap/Row";
+import Button from "react-bootstrap/Button";
+import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Card from "react-bootstrap/Card";
+import ClipboardButton from "./ClipboardButton";
+import Col from "react-bootstrap/Col";
+import Form from "react-bootstrap/Form";
+import Table from "react-bootstrap/Table";
+import React, {useRef} from "react";
+import Row from "react-bootstrap/Row";
+import Octicon, {Clippy as ClippyIcon, DesktopDownload as DesktopDownloadIcon} from "@primer/octicons-react";
+import {connect} from "react-redux";
+import {doSetupLakeFS} from "../actions/setup";
+import {API_ENDPOINT} from "../actions/api";
 
-import {doSetupLakeFS, resetSetupLakeFS} from "../actions/setup";
-
-const SetupForm = ({ doSetupLakeFS, resetSetupLakeFS, setupState }) => {
+const SetupForm = ({ doSetupLakeFS, setupState }) => {
     const emailRef = useRef(null);
     const fullNameRef = useRef(null);
 
     const onSubmit = (event) => {
-        if (setupState.inProgress) return;
+        console.log('[DEBUG] on submit!');
         doSetupLakeFS(emailRef.current.value, fullNameRef.current.value);
         event.preventDefault();
     };
 
+    if (setupState.payload) {
+        const downloadContent = 'data:application/octet-stream,' + encodeURIComponent(
+`# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
+
+credentials:
+  access_key_id: ${setupState.payload.access_key_id}
+  secret_access_key: ${setupState.payload.access_secret_key}
+server:
+  endpoint_url: ${window.location.protocol}//${window.location.host}${API_ENDPOINT}
+`);
+        return (
+            <Card className="setup-widget">
+                <Card.Header>Congradulation</Card.Header>
+                <Card.Body>
+                    <Card.Text>
+                        Database was initialized and admin user was created.<br/>
+                        Here are your credentials:<br/>
+                    </Card.Text>
+                    <hr/>
+                    <Table borderless hover>
+                        <tbody>
+                            <tr>
+                                <td>Key ID</td>
+                                <td><code>{setupState.payload.access_key_id}</code> <ClipboardButton variant="link" text={setupState.payload.access_key_id} tooltip="Copy key ID" icon={ClippyIcon}/></td>
+                            </tr>
+                            <tr>
+                                <td>Secret Key</td>
+                                <td><code>{setupState.payload.access_secret_key}</code> <ClipboardButton variant="link" text={setupState.payload.access_secret_key} tooltip="Copy secret key" icon={ClippyIcon}/></td>
+                            </tr>
+                        </tbody>
+                    </Table>
+                    <Card.Text>
+                        Download the initial client configuration under your <code>$HOME/.lakectl.yaml</code> and keep a copy of the data for your login into the system<br/>
+                    </Card.Text>
+                    <Alert variant="warning">
+                        This is the <strong>only</strong> time that the secret access keys can be viewed or downloaded. You cannot recover them later.
+                    </Alert>
+                    <hr/>
+                    <ButtonToolbar>
+                        <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><Octicon icon={DesktopDownloadIcon} /> Download Configuration</Button>{' '}
+                        <Button variant="link" href="/login">Go To Login</Button>
+                    </ButtonToolbar>
+                </Card.Body>
+            </Card>
+        );
+    }
     return (
         <Row>
             <Col md={{offset: 2, span: 8}}>
                 <Card className="setup-widget">
-                    <Card.Header>Initial System Setup</Card.Header>
+                    <Card.Header>Initial Setup</Card.Header>
                     <Card.Body>
+                        <Card.Text>
+                            This process will initialize the database schema and first admin user to access the system.<br/>
+                            Enter the user information<br/>
+                        </Card.Text>
                         <Form onSubmit={onSubmit}>
-
                             <Form.Group controlId="email">
                                 <Form.Control type="text" placeholder="Email" ref={emailRef} autoFocus/>
-                                <Form.Text className="text-muted">
-                                    <em>Admin user that will be used to access lakeFS for the first time</em>
-                                </Form.Text>
                             </Form.Group>
 
                             <Form.Group controlId="fullName">
                                 <Form.Control type="text" placeholder="Full Name" ref={fullNameRef}/>
                             </Form.Group>
-
                             {setupState.error && <Alert variant={"danger"}>{setupState.error}</Alert>}
-                            {setupState.payload ?
-                                <React.Fragment>
-                                <Form.Group as={Row} controlId="formAccessKeyID">
-                                    <Form.Label column sm="2">Key ID</Form.Label>
-                                    <Col sm="10">
-                                        <Form.Control plaintext readOnly defaultValue={setupState.payload.access_key_id}/>
-                                    </Col>
-                                </Form.Group>
-
-                                <Form.Group as={Row} controlId="formAccessSecretKey">
-                                    <Form.Label column sm="2">Secret Key</Form.Label>
-                                    <Col sm="10">
-                                        <Form.Control plaintext readOnly defaultValue={setupState.payload.access_secret_key}/>
-                                    </Col>
-                                </Form.Group>
-                                </React.Fragment>
-                                    :
-                                <Button variant="primary" type="submit">Setup</Button>
-                            }
+                            <Button variant="primary" type="submit">Setup</Button>
                         </Form>
                     </Card.Body>
                 </Card>
@@ -69,5 +99,5 @@ const SetupForm = ({ doSetupLakeFS, resetSetupLakeFS, setupState }) => {
 
 export default connect(
     ({ setup }) => ({ setupState: setup.setupLakeFS }),
-    ({ doSetupLakeFS, resetSetupLakeFS })
+    ({ doSetupLakeFS })
 )(SetupForm);

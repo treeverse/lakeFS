@@ -3,7 +3,7 @@ import {generateDownloadToken} from '../downloadToken';
 import {isValidBranchName} from "../model/validation";
 
 
-const API_ENDPOINT = '/api/v1';
+export const API_ENDPOINT = '/api/v1';
 
 const basicAuth = (accessKeyId, secretAccessKey) => {
     return {
