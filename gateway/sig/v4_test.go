@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"golang.org/x/xerrors"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
 
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
@@ -211,11 +209,12 @@ func TestStreaming(t *testing.T) {
 		"X-Amz-Decoded-Content-Length": []string{"66560"},
 		"Content-Length":               []string{"66824"},
 	}
-
-	a := bytes.Repeat([]byte("a"), 65536)
+	chunk1Size := 65536
+	a := bytes.Repeat([]byte("a"), chunk1Size)
 	a = append(a, '\r', '\n')
 	chunk1 := append([]byte("10000;chunk-signature=ad80c730a21e5b8d04586a2213dd63b9a0e99e0e2307b0ade35a65485a288648\r\n"), a...)
-	b := bytes.Repeat([]byte("a"), 1024)
+	chunk2Size := 1024
+	b := bytes.Repeat([]byte("a"), chunk2Size)
 	b = append(b, '\r', '\n')
 	chunk2 := append([]byte("400;chunk-signature=0055627c9e194cb4542bae2aa5492e3c1575bbb81b612b7d234b86a503ef5497\r\n"), b...)
 	chunk3 := []byte("0;chunk-signature=b6c6ea8a5354eaf15b3cb7646744f4275b71ea724fed81ceb9323e279d449df9\r\n\r\n")
@@ -238,7 +237,9 @@ func TestStreaming(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-
+	if req.ContentLength != int64(chunk1Size+chunk2Size) {
+		t.Fatal("expected content length to be equal to decoded content length")
+	}
 	_, err = ioutil.ReadAll(req.Body)
 	if err != nil {
 		t.Fatal(err)
@@ -295,8 +296,6 @@ func TestStreamingLastByteWrong(t *testing.T) {
 	}
 
 	_, err = ioutil.ReadAll(req.Body)
-	bools := xerrors.Is(err, errors.ErrSignatureDoesNotMatch)
-	println(bools)
 	if err != errors.ErrSignatureDoesNotMatch {
 		t.Errorf("expect %v, got %v", errors.ErrSignatureDoesNotMatch, err)
 	}
