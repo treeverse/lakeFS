@@ -4,10 +4,17 @@ import (
 	"time"
 )
 
+const (
+	CredentialTypeUser        = "user"
+	CredentialTypeApplication = "application"
+
+	RoleAdmin = "Admin"
+)
+
 type User struct {
-	Id       int    `db:"id"`
-	Email    string `db:"email"`
-	FullName string `db:"full_name"`
+	Id       int    `db:"id" json:"id"`
+	Email    string `db:"email" json:"email"`
+	FullName string `db:"full_name" json:"full_name"`
 }
 
 type Application struct {
@@ -61,11 +68,6 @@ type RolePolicies struct {
 	PolicyId int `db:"policy_id"`
 }
 
-const (
-	CredentialTypeUser        = "user"
-	CredentialTypeApplication = "application"
-)
-
 type Credential struct {
 	AccessKeyId                   string `db:"access_key_id"`
 	AccessSecretKey               string
@@ -74,4 +76,9 @@ type Credential struct {
 	IssuedDate                    time.Time `db:"issued_date"`
 	UserId                        *int      `db:"user_id"`
 	ApplicationId                 *int      `db:"application_id"`
+}
+
+type CredentialKeys struct {
+	AccessKeyId     string `json:"access_key_id"`
+	AccessSecretKey string `json:"access_secret_key"`
 }
