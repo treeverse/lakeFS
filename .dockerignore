@@ -11,3 +11,6 @@ lakefs
 lakectl
 cmd/lakefs/lakefs
 cmd/lakectl/lakefs
+webui/
+golangci.yaml
+gateway/testdata/
