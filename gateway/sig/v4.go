@@ -159,6 +159,13 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 		return err
 	}
 	r.Body = reader
+
+	//update to decoded content length
+	contentLength, err := ctx.contentLength()
+	if err != nil {
+		return err
+	}
+	r.ContentLength = contentLength
 	return nil
 }
 
