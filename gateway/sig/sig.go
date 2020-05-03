@@ -8,7 +8,7 @@ import (
 	"strings"
 	"unicode/utf8"
 
-	errors2 "github.com/treeverse/lakefs/gateway/errors"
+	gwErrors "github.com/treeverse/lakefs/gateway/errors"
 
 	"github.com/treeverse/lakefs/auth/model"
 
@@ -109,7 +109,7 @@ func (c *chainedAuthenticator) Parse() (SigContext, error) {
 			return ctx, nil
 		}
 	}
-	return nil, errors2.ErrMissingFields
+	return nil, gwErrors.ErrMissingFields
 }
 
 func Equal(sig1, sig2 []byte) bool {
