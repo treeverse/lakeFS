@@ -6,13 +6,13 @@ import Container from "react-bootstrap/Container";
 import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom";
 
 import LoginForm from "./components/Login";
+import SetupForm from "./components/Setup";
 import NavDropdown from "react-bootstrap/NavDropdown";
 import { logout, redirected } from './actions/auth';
 import {IndexPage} from "./components/IndexPage";
 
 // css imports
 import 'bootstrap/dist/css/bootstrap.min.css';
-// import 'bootswatch/dist/lumen/bootstrap.min.css';
 import './App.css';
 
 
@@ -67,6 +67,10 @@ const App = ({ user, redirectTo, redirected }) => {
 
                         <Route path="/login" >
                             <LoginForm redirectTo={redirectTo} onRedirect={redirected}/>
+                        </Route>
+
+                        <Route path="/setup" >
+                            <SetupForm />
                         </Route>
 
                         <PrivateRoute path="/" user={user}>

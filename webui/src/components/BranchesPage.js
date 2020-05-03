@@ -33,7 +33,7 @@ const CreateBranchButton = connect(
 
     const onHide = () => {
         if (disabled) return;
-         setShow(false);
+        setShow(false);
         setSelectedBranch(null);
     };
 
