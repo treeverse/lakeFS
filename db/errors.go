@@ -1,8 +1,10 @@
 package db
 
-import "golang.org/x/xerrors"
+import (
+	"errors"
+)
 
 var (
-	ErrNotFound      = xerrors.New("not found")
-	ErrSerialization = xerrors.New("serialization error")
+	ErrNotFound      = errors.New("not found")
+	ErrSerialization = errors.New("serialization error")
 )
