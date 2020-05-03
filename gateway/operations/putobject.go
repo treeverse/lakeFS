@@ -2,6 +2,7 @@ package operations
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/block/s3"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -77,7 +78,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}, http.StatusOK)
 }
 
-func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
+func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	o.Incr("put_mpu_part")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
@@ -91,30 +92,48 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 
 	// handle the upload itself
-	blob, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength)
-	if err != nil {
-		o.Log().WithError(err).Error("could not write request body to block adapter")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
+	adapter := o.BlockStore
+	adapterType := adapter.GetAdapterType()
+	if adapterType == "s3" {
+		s3adapter, _ := adapter.(s3.AdapterInterface)
+		resp, err := s3adapter.UploadPart(o.Repo.StorageNamespace, o.Path, o.Request.ContentLength, o.Request.Body, uploadId, partNumber)
+		if err != nil {
+			o.Log().WithError(err).Error("part " + partNumberStr + "upload failed")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+		o.ResponseWriter.WriteHeader(http.StatusOK)
+		for k, val := range resp.Header {
+			for _, s := range val {
+				o.SetHeader(k, s)
+			}
+		}
+	} else {
+		blob, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength)
+		if err != nil {
+			o.Log().WithError(err).Error("could not write request body to block adapter")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+
+		err = o.MultipartManager.UploadPart(o.Repo.Id, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
+			Blocks:       blob.Blocks,
+			Checksum:     blob.Checksum,
+			CreationDate: time.Now(),
+			Size:         blob.Size,
+		})
+
+		if err != nil {
+			o.Log().WithError(err).Error("error writing mpu uploaded part")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+		o.ResponseWriter.WriteHeader(http.StatusOK)
+		o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.Checksum))
+
 	}
-
-	err = o.MultipartManager.UploadPart(o.Repo.Id, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
-		Blocks:       blob.Blocks,
-		Checksum:     blob.Checksum,
-		CreationDate: time.Now(),
-		Size:         blob.Size,
-	})
-
-	if err != nil {
-		o.Log().WithError(err).Error("error writing mpu uploaded part")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
-	}
-
 	// must write the etag back
 	// TODO: validate the ETag sent in CompleteMultipartUpload matches the blob for the given part number
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.Checksum))
-	o.ResponseWriter.WriteHeader(http.StatusOK)
 	o.Log().WithFields(logging.Fields{
 		"upload_id":   uploadId,
 		"part_number": partNumber,
@@ -143,7 +162,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a multipart upload creation call
 	_, hasUploadId := query[QueryParamUploadId]
 	if hasUploadId {
-		controller.HandleCreateMultipartUpload(o)
+		controller.HandleUploadPart(o)
 		return
 	}
 

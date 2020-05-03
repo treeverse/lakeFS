@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws/request"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -34,6 +35,7 @@ type Adapter struct {
 type AdapterInterface interface {
 	block.Adapter
 	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
+	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (*http.Response, error)
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -71,14 +73,25 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
-
 func (s *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io.Reader) error {
-	sigTime := time.Now()
-
-	log := s.log().WithField("operation", "PutObject")
 
 	putObject := s3.PutObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
 	sdkRequest, _ := s.s3.PutObjectRequest(&putObject)
+	_, err := s.streamToS3(sdkRequest, sizeBytes, reader)
+	return err
+}
+
+func (s *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (*http.Response, error) {
+	uploadPartObject := s3.UploadPartInput{Bucket: aws.String(repo), Key: aws.String(identifier), PartNumber: aws.Int64(partNumber), UploadId: aws.String(uploadId)}
+	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
+	resp, err := s.streamToS3(sdkRequest, sizeBytes, reader)
+	return resp, err
+}
+
+func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (*http.Response, error) {
+	sigTime := time.Now()
+	log := s.log().WithField("operation", "PutObject")
+
 	_ = sdkRequest.Build()
 
 	req, _ := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
@@ -93,13 +106,13 @@ func (s *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io
 	_, err := baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
-		return err
+		return nil, err
 	}
 
 	sigSeed, err := v4.GetSignedRequestSignature(req)
 	if err != nil {
 		log.WithError(err).Error("failed to get seed signature")
-		return err
+		return nil, err
 	}
 
 	req.Body = ioutil.NopCloser(&StreamingReader{
@@ -120,7 +133,7 @@ func (s *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			Error("error making request request")
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = resp.Body.Close()
@@ -136,9 +149,9 @@ func (s *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			WithField("status_code", resp.StatusCode).
 			Error("bad S3 PutObject response")
-		return err
+		return nil, err
 	}
-	return nil
+	return resp, nil
 }
 
 func (s *Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
