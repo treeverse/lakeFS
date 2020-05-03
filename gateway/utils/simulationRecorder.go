@@ -64,14 +64,13 @@ func RegisterRecorder(next http.Handler) http.Handler {
 	if err != nil {
 		logger.WithError(err).Fatal("FAILED creat directory for recordings \n")
 	}
-	uploadIdRegexp := regexp.MustCompile("<UploadId>([\\da-f]+)</UploadId>")
+	uploadIdRegexp := regexp.MustCompile("<UploadId>([\\dA-Za-z_.+/]+)</UploadId>")
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
 			uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
 			timeStr := time.Now().Format("01-02-15-04-05")
 			nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
-			logger.WithField("sequence", uniqueCount).Warn("Disregard warning - only to hilite display")
 			respWriter := new(ResponseWriter)
 			respWriter.OriginalWriter = w
 			respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, "R"+nameBase+".resp"))
