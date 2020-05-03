@@ -243,7 +243,8 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
-		ValidatePath(path))
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -347,7 +348,8 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string) (*model.Entry,
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(branch),
-		ValidatePath(path))
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -779,10 +781,10 @@ func (index *DBIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 	return brn.(*model.Branch), nil
 }
 
-func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (interface{}, error) {
+func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (*model.Commit, error) {
 	commit := &model.Commit{
 		Tree:         branchData.WorkspaceRoot,
-		Parents:      []string{branchData.CommitId},
+		Parents:      parents,
 		Committer:    committer,
 		Message:      message,
 		CreationDate: ts,
@@ -928,7 +930,6 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 }
 
 func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (merkle.Differences, error) {
-
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
@@ -976,7 +977,6 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-
 		return doDiff(tx, repoId, leftRef, rightRef, false, index)
 	})
 
@@ -1133,7 +1133,8 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
-		ValidateRef(destination))
+		ValidateRef(destination),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1175,7 +1176,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		var wsEntries []*model.WorkspaceEntry
 		sourceBranch, err := tx.ReadBranch(source)
 		if err != nil {
-			index.log().WithError(err).Fatal("failed reading source branch\n") // failure to read a branch that was read before fatal
+			index.log().WithError(err).Fatal("failed reading source branch") // failure to read a branch that was read before fatal
 			return nil, err
 		}
 		for _, dif := range mergeOperations {
@@ -1184,7 +1185,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			if dif.Type != merkle.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
-					index.log().WithError(err).Fatal("failed reading entry\n")
+					index.log().WithError(err).Fatal("failed reading entry")
 					return nil, err
 				}
 			} else {
@@ -1205,26 +1206,66 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			wsEntries = append(wsEntries, w)
 		}
 
-		desinationRoot := merkle.New(destinationBranch.CommitRoot)
-		newRoot, err := desinationRoot.Update(tx, wsEntries)
+		destinationRoot := merkle.New(destinationBranch.CommitRoot)
+		newRoot, err := destinationRoot.Update(tx, wsEntries)
 		if err != nil {
-			index.log().WithError(err).Fatal("failed updating merge destination\n")
+			index.log().WithError(err).Fatal("failed updating merge destination")
 			return nil, errors.ErrMergeUpdateFailed
 		}
 		destinationBranch.CommitRoot = newRoot.Root()
 		destinationBranch.WorkspaceRoot = newRoot.Root()
-		parents := []string{destinationBranch.CommitId, sourceBranch.CommitId}
+
+		// read commits for each branch in our merge.
+		// check which parents is older by searching the other parents using our DAG
+		// 1. read commits
+		// 2. use iterator with the first commit to lookup the other commit
+		branches := []*model.Branch{sourceBranch, destinationBranch}
+		commits := make([]*model.Commit, len(branches))
+		for i, branch := range branches {
+			var err error
+			commits[i], err = tx.ReadCommit(branch.CommitId)
+			if err != nil {
+				index.log().WithError(err).Error("failed read commit")
+				return nil, xerrors.Errorf("missing commit: %w", err)
+			}
+		}
+		parent1Commit := commits[0]
+		parent2Commit := commits[1]
+		iter := dag.NewCommitIterator(tx, parent2Commit.Address)
+		parent2Older := true
+		for iter.Next() {
+			if iter.Value().Address == parent1Commit.Address {
+				parent2Older = false
+				break
+			}
+		}
+		if iter.Err() != nil {
+			index.log().WithError(err).Error("failed while lookup parent relation")
+			return nil, xerrors.Errorf("failed to scan parent commits", err)
+		}
+		if !parent2Older {
+			commits[0], commits[1] = commits[1], commits[0]
+		}
+		parents := []string{commits[0].Address, commits[1].Address}
+
 		commitMessage := "Merge branch " + source + " into " + destination
-		doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts, index)
-
+		_, err = doCommitUpdates(tx, destinationBranch, userId, commitMessage, parents, make(map[string]string), ts, index)
+		if err != nil {
+			index.log().WithError(err).WithFields(logging.Fields{
+				"source":      source,
+				"destination": destination,
+				"userId":      userId,
+				"parents":     parents,
+			}).Error("commit merge branch")
+			return nil, xerrors.Errorf("failed to commit updates", err)
+		}
 		return mergeOperations, nil
-
 	})
-	if err == nil || err == errors.ErrMergeConflict {
-		return mergeOperations, err
-	} else {
+	// ErrMergeConflict is the only error that will report the merge operations made so far
+	if err != nil && err != errors.ErrMergeConflict {
 		return nil, err
 	}
+	return mergeOperations, err
 }
 
 func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
