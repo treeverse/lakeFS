@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/go-openapi/runtime"
+
 	"github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/stats"
 
@@ -761,6 +763,12 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 				return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 			}
 		}
+		// workaround in order to extract file content-length using swagger
+		file, ok := params.Content.(*runtime.File)
+		if !ok {
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("failed extracting size from file"))
+		}
+		_ = file.Header.Size
 
 		// read the content
 		blob, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, params.HTTPRequest.ContentLength)

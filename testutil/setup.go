@@ -92,7 +92,6 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 }
 
 func GetDB(t *testing.T, uri, schemaName string) db.Database {
-
 	// generate uuid as schema name
 	generatedSchema := fmt.Sprintf("schema_%s",
 		strings.ReplaceAll(uuid.New().String(), "-", ""))
