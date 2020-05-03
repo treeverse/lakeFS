@@ -41,7 +41,7 @@ const (
 	DefaultBlockStoreS3Region  = "us-east-1"
 
 	DefaultS3GatewayListenAddr = "0.0.0.0:8000"
-	DefaultS3GatewayDomainName = "s3.local"
+	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
 
 	DefaultAPIListenAddr = "0.0.0.0:8001"
