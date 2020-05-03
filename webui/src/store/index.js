@@ -8,10 +8,11 @@ import objects from './objects';
 import loader from './loader';
 import commits from './commits';
 import refs from './refs';
+import setup from './setup';
 
 const composeEnhancers = window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ || compose;
 
-const reducer = combineReducers({ auth, repositories, branches, objects, commits, loader, refs });
+const reducer = combineReducers({ auth, repositories, branches, objects, commits, loader, refs, setup });
 
 const store = createStore(reducer, composeEnhancers(applyMiddleware(thunkMiddleware)));
 

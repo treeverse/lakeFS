@@ -3,47 +3,35 @@ package api
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
 	"github.com/go-openapi/runtime"
-
-	"github.com/treeverse/lakefs/index/errors"
-	"github.com/treeverse/lakefs/stats"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
-
-	"github.com/treeverse/lakefs/ident"
-	pth "github.com/treeverse/lakefs/index/path"
-
-	"github.com/treeverse/lakefs/upload"
-
-	"github.com/treeverse/lakefs/httputil"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
-
-	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/treeverse/lakefs/block"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
-
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
-
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
+	indexerrors "github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/index/model"
+	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/permissions"
-	"golang.org/x/xerrors"
+	"github.com/treeverse/lakefs/stats"
+	"github.com/treeverse/lakefs/upload"
 )
 
 const (
@@ -198,12 +186,12 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		a.incrStat("get_repo")
-
 		repo, err := a.ForRequest(params.HTTPRequest).Index.GetRepo(params.RepositoryID)
-		if err != nil && xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
-		} else if err != nil {
+		}
+		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching repository: %s", err))
 		}
@@ -226,8 +214,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		}
 		a.incrStat("get_commit")
 		commit, err := a.ForRequest(params.HTTPRequest).Index.GetCommit(params.RepositoryID, params.CommitID)
-
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
 		if err != nil {
@@ -283,10 +270,10 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 
 		// read branch
 		branch, err := index.GetBranch(params.RepositoryID, params.BranchID)
+		if errors.Is(err, db.ErrNotFound) {
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
-			}
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
@@ -389,10 +376,11 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		a.incrStat("delete_repo")
 		index := a.ForRequest(params.HTTPRequest).Index
 		err = index.DeleteRepo(params.RepositoryID)
-		if err != nil && xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
-		} else if err != nil {
+		}
+		if err != nil {
 			return repositories.NewDeleteRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error deleting repository"))
 		}
@@ -453,10 +441,11 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		a.incrStat("get_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 		branch, err := index.GetBranch(params.RepositoryID, params.BranchID)
-		if err != nil && xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
-		} else if err != nil {
+		}
+		if err != nil {
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching branch: %s", err))
 		}
@@ -498,10 +487,11 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		a.incrStat("delete_branch")
 		index := a.ForRequest(params.HTTPRequest).Index
 		err = index.DeleteBranch(params.RepositoryID, params.BranchID)
-		if err != nil && xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewDeleteBranchNotFound().
 				WithPayload(responseError("branch not found"))
-		} else if err != nil {
+		}
+		if err != nil {
 			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching branch: %s", err))
 		}
@@ -525,7 +515,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.SourceRef, params.DestinationRef, committer)
 		mergeResult := make([]*models.MergeResult, len(mergeOperations))
 
-		if err == nil || err == errors.ErrMergeConflict {
+		if err == nil || err == indexerrors.ErrMergeConflict {
 			for i, d := range mergeOperations {
 				tmp := serializeDiff(d)
 				mergeResult[i] = new(models.MergeResult)
@@ -540,13 +530,13 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			pl := new(refs.MergeIntoBranchOKBody)
 			pl.Results = mergeResult
 			return refs.NewMergeIntoBranchOK().WithPayload(pl)
-		case errors.ErrNoMergeBase:
+		case indexerrors.ErrNoMergeBase:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
-		case errors.ErrDestinationNotCommitted:
+		case indexerrors.ErrDestinationNotCommitted:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
-		case errors.ErrBranchNotFound:
+		case indexerrors.ErrBranchNotFound:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
-		case errors.ErrMergeConflict:
+		case indexerrors.ErrMergeConflict:
 
 			pl := new(refs.MergeIntoBranchConflictBody)
 			pl.Results = mergeResult
@@ -615,10 +605,10 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 
 		// read metadata
 		entry, err := index.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
-			}
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
@@ -645,22 +635,20 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// read repo
 		repo, err := index.GetRepo(params.RepositoryID)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
-			} else {
-				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
+			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		// read the FS entry
 		entry, err := index.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
-			} else {
-				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
+			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		// setup response
 		res := objects.NewGetObjectOK()
@@ -704,10 +692,10 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		after, amount := getPaginationParams(params.After, params.Amount)
 
 		res, hasMore, err := index.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, amount, false)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
-			}
 			return objects.NewListObjectsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error while listing objects: %s", err))
 		}
@@ -756,12 +744,11 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		index := ctx.Index
 
 		repo, err := index.GetRepo(params.RepositoryID)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
-			} else {
-				return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		// workaround in order to extract file content-length using swagger
 		file, ok := params.Content.(*runtime.File)
@@ -819,12 +806,11 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		index := a.ForRequest(params.HTTPRequest).Index
 
 		err = index.DeleteObject(params.RepositoryID, params.BranchID, params.Path)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
-			} else {
-				return objects.NewDeleteObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
+			return objects.NewDeleteObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		return objects.NewDeleteObjectNoContent()
@@ -855,13 +841,11 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 			return branches.NewRevertBranchNotFound().
 				WithPayload(responseError("revert type not found"))
 		}
+		if errors.Is(err, db.ErrNotFound) {
+			return branches.NewRevertBranchNotFound().WithPayload(responseError("branch not found"))
+		}
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
-				return branches.NewRevertBranchNotFound().
-					WithPayload(responseError("branch not found"))
-			} else {
-				return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
+			return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		return branches.NewRevertBranchNoContent()
