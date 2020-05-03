@@ -12,8 +12,8 @@ RUN go mod download
 COPY . ./
 
 # Build a binaries
-RUN go build -ldflags "-X main.Version=${VERSION}" -o lakefs
-RUN go build -ldflags "-X main.Version=${VERSION}" -o lakectl ./cli
+RUN go build -ldflags "-X config.Version=${VERSION}" -o lakefs
+RUN go build -ldflags "-X config.Version=${VERSION}" -o lakectl ./cli
 
 # Actual image we push
 FROM alpine:3.11.5 AS run
