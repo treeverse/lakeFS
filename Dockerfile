@@ -17,10 +17,21 @@ RUN go build -ldflags "-X main.Version=${VERSION}" -o lakectl ./cli
 
 # Actual image we push
 FROM alpine:3.11.5 AS run
-COPY --from=build /build/lakefs /build/lakectl /go/bin/
 
-# Setup listen port
-ENV LISTEN_ADDR="0.0.0.0:4000"
-EXPOSE 4000/tcp
+WORKDIR /app
+ENV PATH /app:$PATH
+COPY --from=build /build/lakefs /build/lakectl ./
 
-ENTRYPOINT ["/go/bin/lakefs"]
+EXPOSE 8000/tcp
+EXPOSE 8001/tcp
+
+# Setup user
+RUN addgroup -S treeverse && adduser -S treeverse -G treeverse
+USER treeverse
+WORKDIR /home/treeverse
+
+# Configuration location
+VOLUME /etc/lakefs.yaml
+
+ENTRYPOINT ["/app/lakefs", "run"]
+CMD ["--config", "/etc/lakefs.yaml"]
