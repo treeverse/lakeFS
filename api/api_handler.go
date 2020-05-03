@@ -768,10 +768,10 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if !ok {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("failed extracting size from file"))
 		}
-		_ = file.Header.Size
+		byteSize := file.Header.Size
 
 		// read the content
-		blob, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, params.HTTPRequest.ContentLength)
+		blob, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
