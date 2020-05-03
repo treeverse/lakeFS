@@ -1,0 +1,13 @@
+Makefile
+*.sql
+cover.out
+Dockerfile
+README.md
+.github/
+.git/
+.doc/
+.gitignore
+lakefs
+lakectl
+cmd/lakefs/lakefs
+cmd/lakectl/lakefs
