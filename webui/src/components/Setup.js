@@ -18,7 +18,6 @@ const SetupForm = ({ doSetupLakeFS, setupState }) => {
     const fullNameRef = useRef(null);
 
     const onSubmit = (event) => {
-        console.log('[DEBUG] on submit!');
         doSetupLakeFS(emailRef.current.value, fullNameRef.current.value);
         event.preventDefault();
     };
