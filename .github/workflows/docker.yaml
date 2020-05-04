@@ -3,29 +3,28 @@ on:
   release:
     types: [published]
 jobs:
-  test:
-    name: Run Test Suite
+  deploy:
+    name: Build and push to ECR
     runs-on: ubuntu-latest
     steps:
-      - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
       - name: Setup UI (node 10)
         uses: actions/setup-node@v1
         with:
           node-version: '10.x'
+
       - name: Set up Go 1.14
         uses: actions/setup-go@v1
         with:
           go-version: 1.14
         id: go
+
       - name: Run tests
         run: |
           make test
-
-  deploy:
-    name: Build and push to ECR
-    runs-on: ubuntu-latest
-    steps:
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
@@ -37,9 +36,6 @@ jobs:
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
-
-      - name: Checkout
-        uses: actions/checkout@v2
 
       - name: Build, tag and push image to Amazon ECR
         env:
