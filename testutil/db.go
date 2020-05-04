@@ -2,9 +2,9 @@ package testutil
 
 import (
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -142,8 +142,7 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 }
 
 func GetBlockAdapter(t *testing.T) block.Adapter {
-	dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
-	err := os.MkdirAll(dir, 0777)
+	dir, err := ioutil.TempDir("", "blocks-")
 	if err != nil {
 		t.Fatal(err)
 	}
