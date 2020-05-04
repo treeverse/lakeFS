@@ -1,7 +1,6 @@
 package merkle
 
 import (
-	"fmt"
 	"sort"
 	"strings"
 
@@ -13,62 +12,10 @@ import (
 	"github.com/treeverse/lakefs/index/path"
 )
 
-type DifferenceDirection int
-type DifferenceType int
-
-const (
-	DifferenceDirectionLeft DifferenceDirection = iota
-	DifferenceDirectionRight
-	DifferenceDirectionConflict
-
-	DifferenceTypeAdded DifferenceType = iota
-	DifferenceTypeRemoved
-	DifferenceTypeChanged
-)
-
-type Difference struct {
-	Type      DifferenceType
-	Direction DifferenceDirection
-	Path      string
-	PathType  string
-}
-
-func (d Difference) String() string {
-	var symbol, direction, pType string
-	switch d.Type {
-	case DifferenceTypeAdded:
-		symbol = "+"
-	case DifferenceTypeRemoved:
-		symbol = "-"
-	case DifferenceTypeChanged:
-		symbol = "~"
-	}
-
-	switch d.Direction {
-	case DifferenceDirectionLeft:
-		direction = "<"
-	case DifferenceDirectionRight:
-		direction = ">"
-	case DifferenceDirectionConflict:
-		direction = "*"
-	}
-
-	switch d.PathType {
-	case model.EntryTypeTree:
-		pType = "D"
-	case model.EntryTypeObject:
-		pType = "O"
-	}
-
-	return fmt.Sprintf("%s%s%s %s", direction, symbol, pType, d.Path)
-}
-
-type Differences []Difference
-
-func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, error) {
+func diff(tx TreeReader, pth string, left, right, common *Merkle) (model.Differences, error) {
 	// start walking both trees
 	// when we notice a change, compare it with common to decide type and direction
-	res := make(Differences, 0)
+	res := make(model.Differences, 0)
 	leftEntries, err := left.GetEntries(tx, pth) // start with root
 	if err != nil {
 		return nil, err
@@ -113,9 +60,9 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			if xerrors.Is(err, db.ErrNotFound) {
 				// doesn't exist in common but left and right are different
 				// this means both trees created it differently, meaning a conflict
-				res = append(res, Difference{
-					Type:      DifferenceTypeChanged,
-					Direction: DifferenceDirectionConflict,
+				res = append(res, model.Difference{
+					Type:      model.DifferenceTypeChanged,
+					Direction: model.DifferenceDirectionConflict,
 					Path:      entryPath,
 					PathType:  leftEntry.EntryType,
 				})
@@ -124,10 +71,10 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			} else if err != nil {
 				return nil, err
 			}
-			var direction DifferenceDirection
+			var direction model.DifferenceDirection
 			if !strings.EqualFold(commonEntry.Address, leftEntry.Address) && !strings.EqualFold(commonEntry.Address, rightEntry.Address) {
 				// conflict
-				direction = DifferenceDirectionConflict
+				direction = model.DifferenceDirectionConflict
 			} else if strings.EqualFold(commonEntry.Address, leftEntry.Address) {
 				// right made change
 				// direction = DifferenceDirectionRight
@@ -136,10 +83,10 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 				continue
 			} else {
 				// left made change
-				direction = DifferenceDirectionLeft
+				direction = model.DifferenceDirectionLeft
 			}
-			res = append(res, Difference{
-				Type:      DifferenceTypeChanged,
+			res = append(res, model.Difference{
+				Type:      model.DifferenceTypeChanged,
 				Direction: direction,
 				Path:      entryPath,
 				PathType:  leftEntry.EntryType,
@@ -153,9 +100,9 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 		commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.EntryType)
 		if xerrors.Is(err, db.ErrNotFound) {
 			// exists only on left
-			res = append(res, Difference{
-				Type:      DifferenceTypeAdded,
-				Direction: DifferenceDirectionLeft,
+			res = append(res, model.Difference{
+				Type:      model.DifferenceTypeAdded,
+				Direction: model.DifferenceDirectionLeft,
 				Path:      entryPath,
 				PathType:  leftEntry.EntryType,
 			})
@@ -173,9 +120,9 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			continue
 		}
 		// if left and common are different: left modified while right deleted - conflict
-		res = append(res, Difference{
-			Type:      DifferenceTypeChanged,
-			Direction: DifferenceDirectionConflict,
+		res = append(res, model.Difference{
+			Type:      model.DifferenceTypeChanged,
+			Direction: model.DifferenceDirectionConflict,
 			Path:      entryPath,
 			PathType:  leftEntry.EntryType,
 		})
@@ -204,18 +151,18 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 
 		if strings.EqualFold(rightEntry.Address, commonEntry.Address) {
 			// right and common are equal,left doesnt exist - left deleted
-			res = append(res, Difference{
-				Type:      DifferenceTypeRemoved,
-				Direction: DifferenceDirectionLeft,
+			res = append(res, model.Difference{
+				Type:      model.DifferenceTypeRemoved,
+				Direction: model.DifferenceDirectionLeft,
 				Path:      entryPath,
 				PathType:  rightEntry.EntryType,
 			})
 			continue
 		}
 		// right and common are different, left doesn't exist - right modified and left deleted = conflict
-		res = append(res, Difference{
-			Type:      DifferenceTypeRemoved,
-			Direction: DifferenceDirectionConflict,
+		res = append(res, model.Difference{
+			Type:      model.DifferenceTypeRemoved,
+			Direction: model.DifferenceDirectionConflict,
 			Path:      entryPath,
 			PathType:  rightEntry.EntryType,
 		})
@@ -224,7 +171,7 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 }
 
 type diffCollector struct {
-	results Differences
+	results model.Differences
 }
 
 func diffWalk(tx TreeReader, pth string, left, right, common *Merkle, collector *diffCollector) error {
@@ -234,7 +181,7 @@ func diffWalk(tx TreeReader, pth string, left, right, common *Merkle, collector 
 	}
 	for _, current := range results {
 		// if we get a "conflicting" directory, drill down into it
-		if current.PathType == model.EntryTypeTree && (current.Direction == DifferenceDirectionConflict || current.Type == DifferenceTypeChanged) {
+		if current.PathType == model.EntryTypeTree && (current.Direction == model.DifferenceDirectionConflict || current.Type == model.DifferenceTypeChanged) {
 			err = diffWalk(tx, current.Path, left, right, common, collector)
 			if err != nil {
 				return err
@@ -246,8 +193,8 @@ func diffWalk(tx TreeReader, pth string, left, right, common *Merkle, collector 
 	return nil
 }
 
-func Diff(tx TreeReader, left, right, common *Merkle) (Differences, error) {
-	totalDiff := &diffCollector{results: make(Differences, 0)}
+func Diff(tx TreeReader, left, right, common *Merkle) (model.Differences, error) {
+	totalDiff := &diffCollector{results: make(model.Differences, 0)}
 	err := diffWalk(tx, "", left, right, common, totalDiff)
 	if err != nil {
 		return nil, err

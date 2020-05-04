@@ -51,12 +51,12 @@ type Index interface {
 	GetCommit(repoId, commitId string) (*model.Commit, error)
 	GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
 	DeleteBranch(repoId, branch string) error
-	Diff(repoId, leftRef, rightRef string) (merkle.Differences, error)
-	DiffWorkspace(repoId, branch string) (merkle.Differences, error)
+	Diff(repoId, leftRef, rightRef string) (model.Differences, error)
+	DiffWorkspace(repoId, branch string) (model.Differences, error)
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
-	Merge(repoId, source, destination, userId string) (merkle.Differences, error)
+	Merge(repoId, source, destination, userId string) (model.Differences, error)
 	CreateRepo(repoId, bucketName, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
@@ -927,7 +927,7 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 	return err
 }
 
-func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
+func (index *DBIndex) DiffWorkspace(repoId, branch string) (model.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(branch))
@@ -935,23 +935,19 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		result := make(merkle.Differences, 0)
-		wsEntries, err := tx.ListWorkspaceWithDirectories(branch)
+		result, err := tx.ListWorkspaceAsDiff(branch)
 		if err != nil {
 			return nil, err
-		}
-		for _, wsEntry := range wsEntries {
-			result = append(result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionRight, Path: wsEntry.Path, PathType: *wsEntry.EntryType})
 		}
 		return result, err
 	})
 	if err != nil {
 		return nil, err
 	}
-	return res.(merkle.Differences), nil
+	return res.(model.Differences), nil
 }
 
-func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (merkle.Differences, error) {
+func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (model.Differences, error) {
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
@@ -990,7 +986,7 @@ func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge b
 	return diff, err
 }
 
-func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences, error) {
+func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (model.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(leftRef),
@@ -1002,7 +998,7 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		return doDiff(tx, repoId, leftRef, rightRef, false, index)
 	})
 
-	return res.(merkle.Differences), nil
+	return res.(model.Differences), nil
 }
 
 func (index *DBIndex) RevertCommit(repoId, branch, commit string) error {
@@ -1153,7 +1149,7 @@ func (index *DBIndex) RevertObject(repoId, branch, path string) error {
 	return index.revertPath(repoId, branch, path, model.EntryTypeObject)
 }
 
-func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.Differences, error) {
+func (index *DBIndex) Merge(repoId, source, destination, userId string) (model.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(source),
@@ -1163,7 +1159,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		return nil, err
 	}
 	ts := index.tsGenerator()
-	var mergeOperations merkle.Differences
+	var mergeOperations model.Differences
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// check that destination has no uncommitted changes
 		destinationBranch, err := tx.ReadBranch(destination)
@@ -1186,10 +1182,10 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		var isConflict bool
 		for _, dif := range df {
-			if dif.Direction == merkle.DifferenceDirectionConflict {
+			if dif.Direction == model.DifferenceDirectionConflict {
 				isConflict = true
 			}
-			if dif.Direction != merkle.DifferenceDirectionRight {
+			if dif.Direction != model.DifferenceDirectionRight {
 				mergeOperations = append(mergeOperations, dif)
 			}
 		}
@@ -1206,7 +1202,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		for _, dif := range mergeOperations {
 			var e *model.Entry
 			m := merkle.New(sourceBranch.WorkspaceRoot)
-			if dif.Type != merkle.DifferenceTypeRemoved {
+			if dif.Type != model.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
 					index.log().WithError(err).Fatal("failed reading entry")
@@ -1226,7 +1222,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			w.EntryCreationDate = &e.CreationDate
 			w.EntrySize = &e.Size
 			w.Path = dif.Path
-			w.Tombstone = (dif.Type == merkle.DifferenceTypeRemoved)
+			w.Tombstone = (dif.Type == model.DifferenceTypeRemoved)
 			wsEntries = append(wsEntries, w)
 		}
 

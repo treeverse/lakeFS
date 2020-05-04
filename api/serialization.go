@@ -2,18 +2,17 @@ package api
 
 import (
 	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/index/merkle"
 	"github.com/treeverse/lakefs/index/model"
 )
 
-func serializeDiff(d merkle.Difference) *models.Diff {
+func serializeDiff(d model.Difference) *models.Diff {
 	var direction, pathType, diffType string
 	switch d.Direction {
-	case merkle.DifferenceDirectionLeft:
+	case model.DifferenceDirectionLeft:
 		direction = models.DiffDirectionLEFT
-	case merkle.DifferenceDirectionConflict:
+	case model.DifferenceDirectionConflict:
 		direction = models.DiffDirectionCONFLICT
-	case merkle.DifferenceDirectionRight:
+	case model.DifferenceDirectionRight:
 		direction = models.DiffDirectionRIGHT
 	}
 
@@ -25,11 +24,11 @@ func serializeDiff(d merkle.Difference) *models.Diff {
 	}
 
 	switch d.Type {
-	case merkle.DifferenceTypeChanged:
+	case model.DifferenceTypeChanged:
 		diffType = models.DiffTypeCHANGED
-	case merkle.DifferenceTypeAdded:
+	case model.DifferenceTypeAdded:
 		diffType = models.DiffTypeADDED
-	case merkle.DifferenceTypeRemoved:
+	case model.DifferenceTypeRemoved:
 		diffType = models.DiffTypeREMOVED
 	}
 

@@ -20,7 +20,7 @@ const MaxResultsAllowed = 1000
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
-	ListWorkspaceAsDiff(branch string) ([]*model.WorkspaceEntry, error)
+	ListWorkspaceAsDiff(branch string) (model.Differences, error)
 	ListWorkspaceWithPrefix(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
 	ListWorkspaceDirectory(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
 	ListTreeAndWorkspaceDirectory(branch, path string) ([]*model.SearchResultEntry, error)
@@ -93,11 +93,25 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 		o.repoId, branch)
 	return entries, err
 }
-func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) ([]*model.WorkspaceEntry, error) {
-	var entries []*model.WorkspaceEntry
+func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences, error) {
+	var entries model.Differences
 	err := o.tx.Select(
 		&entries,
-		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
+		fmt.Sprintf(`SELECT	wse.path AS path,
+                        wse.entry_type AS entry_type,
+						'%d' AS diff_direction,
+						CASE 
+							WHEN ewp.parent_path IS NULL THEN %d
+							WHEN wse.tombstone = true THEN %d
+							WHEN ewp.parent_path IS NOT NULL THEN %d
+						END as diff_type
+                    FROM workspace_entries wse 
+						LEFT JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp
+							ON wse.branch_id = ewp.branch
+                        		AND wse.parent_path = ewp.parent_path
+								AND wse.entry_name = ewp.name
+								AND wse.repository_id = ewp.repository_id
+					WHERE wse.repository_id = $1 AND wse.branch_id = $2`, model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
 		o.repoId, branch)
 	return entries, err
 }

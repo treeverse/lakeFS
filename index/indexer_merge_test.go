@@ -2,11 +2,11 @@ package index_test
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/index/model"
 	"sort"
 	"testing"
 
 	"github.com/treeverse/lakefs/index/errors"
-	"github.com/treeverse/lakefs/index/merkle"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -207,23 +207,23 @@ func uploadTree(t *testing.T, deps *dependencies, branch, base string, nm []stri
 	}
 }
 
-func countSuccess(result merkle.Differences) (added, changed, removed int) {
+func countSuccess(result model.Differences) (added, changed, removed int) {
 	for _, r := range result {
 		switch r.Type {
-		case merkle.DifferenceTypeAdded:
+		case model.DifferenceTypeAdded:
 			added++
-		case merkle.DifferenceTypeChanged:
+		case model.DifferenceTypeChanged:
 			changed++
-		case merkle.DifferenceTypeRemoved:
+		case model.DifferenceTypeRemoved:
 			removed++
 		}
 	}
 	return
 }
 
-func countConflict(result merkle.Differences) (conflict int) {
+func countConflict(result model.Differences) (conflict int) {
 	for _, r := range result {
-		if r.Direction == merkle.DifferenceDirectionConflict {
+		if r.Direction == model.DifferenceDirectionConflict {
 			conflict++
 		}
 	}
