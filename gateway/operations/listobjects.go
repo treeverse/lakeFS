@@ -44,6 +44,28 @@ func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
 	return maxKeys
 }
 
+func (controller *ListObjects) serializeSearchResultEntries(ref string, entries []*model.SearchResultEntry) ([]serde.CommonPrefixes, []serde.Contents, string) {
+	dirs := make([]serde.CommonPrefixes, 0)
+	files := make([]serde.Contents, 0)
+	var lastKey string
+	for _, entry := range entries {
+		lastKey = entry.GetName()
+		switch entry.GetType() {
+		case model.EntryTypeTree:
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef(entry.GetName(), ref)})
+		case model.EntryTypeObject:
+			files = append(files, serde.Contents{
+				Key:          path.WithRef(entry.GetName(), ref),
+				LastModified: serde.Timestamp(entry.CreationDate),
+				ETag:         httputil.ETag(entry.Checksum),
+				Size:         entry.Size,
+				StorageClass: "STANDARD",
+			})
+		}
+	}
+	return dirs, files, lastKey
+}
+
 func (controller *ListObjects) serializeEntries(ref string, entries []*model.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
 	dirs := make([]serde.CommonPrefixes, 0)
 	files := make([]serde.Contents, 0)
@@ -110,7 +132,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		descend = false
 	}
 
-	var results []*model.Entry
+	var results []*model.SearchResultEntry
 	hasMore := false
 
 	var ref string
@@ -189,7 +211,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 					"path": prefix.Path,
 				}).Debug("could not list objects in path")
 			}
-			results = make([]*model.Entry, 0) // no results found
+			results = make([]*model.SearchResultEntry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"ref":  prefix.Ref,
@@ -200,7 +222,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		}
 	}
 
-	dirs, files, lastKey := controller.serializeEntries(ref, results)
+	dirs, files, lastKey := controller.serializeSearchResultEntries(ref, results)
 
 	resp := serde.ListObjectsV2Output{
 		Name:           o.Repo.Id,
@@ -245,7 +267,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	maxKeys := controller.getMaxKeys(o)
 
-	var results []*model.Entry
+	var results []*model.SearchResultEntry
 	hasMore := false
 
 	var ref string
@@ -325,7 +347,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			descend,
 		)
 		if xerrors.Is(err, db.ErrNotFound) {
-			results = make([]*model.Entry, 0) // no results found
+			results = make([]*model.SearchResultEntry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"branch": prefix.Ref,
@@ -337,7 +359,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	}
 
 	// build a response
-	dirs, files, lastKey := controller.serializeEntries(ref, results)
+	dirs, files, lastKey := controller.serializeSearchResultEntries(ref, results)
 	resp := serde.ListBucketResult{
 		Name:           o.Repo.Id,
 		Prefix:         params.Get("prefix"),

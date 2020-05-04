@@ -139,6 +139,22 @@ func (e *Entry) Identity() []byte {
 		e.EntryType)
 }
 
+type SearchResultEntry struct {
+	Name         string    `db:"name"`
+	EntryType    string    `db:"type"`
+	CreationDate time.Time `db:"creation_date"`
+	Size         int64     `db:"size"`
+	Checksum     string    `db:"checksum"`
+}
+
+func (e *SearchResultEntry) GetName() string {
+	return e.Name
+}
+
+func (e *SearchResultEntry) GetType() string {
+	return e.EntryType
+}
+
 type Commit struct {
 	RepositoryId string          `db:"repository_id"`
 	Address      string          `db:"address"`

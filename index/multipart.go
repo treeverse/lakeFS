@@ -241,7 +241,7 @@ func (m *DBMultipartManager) Complete(repoId, branch, path, uploadId string, par
 		upath := p.String()
 		baseName := p.BaseName()
 		id := ident.Hash(obj)
-		err = tx.WriteToWorkspacePath(branch, p.ParentPath(), upath, &model.WorkspaceEntry{
+		err = tx.WriteToWorkspacePath(branch, p.ParentPath(), upath, []*model.WorkspaceEntry{{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        p.ParentPath(),
@@ -252,7 +252,7 @@ func (m *DBMultipartManager) Complete(repoId, branch, path, uploadId string, par
 			EntryCreationDate: &completionTime,
 			EntrySize:         &obj.Size,
 			EntryChecksum:     &obj.Checksum,
-		})
+		}})
 		if err != nil {
 			m.log().WithError(err).Error("failed to write workspace entry")
 			return nil, err

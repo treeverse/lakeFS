@@ -20,8 +20,11 @@ const MaxResultsAllowed = 1000
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
+	ListWorkspaceAsDiff(branch string) ([]*model.WorkspaceEntry, error)
 	ListWorkspaceWithPrefix(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
 	ListWorkspaceDirectory(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
+	ListTreeAndWorkspaceDirectory(branch, path string) ([]*model.SearchResultEntry, error)
+	CascadeDirectoryDeletion(branch, deletedPath string) error
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
@@ -32,7 +35,7 @@ type RepoOperations interface {
 	ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
 	DeleteWorkspacePath(branch, path string) error
-	WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error
+	WriteToWorkspacePath(branch, parentPath, path string, entries []*model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
 	WriteRoot(address string, root *model.Root) error
@@ -53,6 +56,24 @@ type RepoOperations interface {
 	DeleteMultipartUploadParts(uploadId string) error
 }
 
+func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch string, path string) ([]*model.SearchResultEntry, error) {
+	var entries []*model.SearchResultEntry
+	err := o.tx.Select(
+		&entries,
+		`SELECT	COALESCE(wse.parent_path, ewp.parent_path) || COALESCE(wse.entry_name, ewp.name) AS name,
+          COALESCE(wse.entry_type, ewp.type) AS type,
+          COALESCE(wse.entry_size, ewp.size) AS size,
+          COALESCE(wse.entry_creation_date, ewp.creation_date) AS creation_date,
+          COALESCE(wse.entry_checksum, ewp.checksum) AS checksum
+		  FROM workspace_entries wse FULL OUTER JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp ON wse.branch_id = ewp.branch
+		    AND wse.parent_path = ewp.parent_path AND wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
+    	  WHERE COALESCE(wse.repository_id, ewp.repository_id) = $1 
+    	    AND COALESCE(wse.branch_id, ewp.branch) = $2
+    		AND wse.tombstone IS NOT TRUE AND (wse.parent_path = $3 OR ewp.parent_path = $3) ORDER BY name`,
+		o.repoId, branch, path)
+	return entries, err
+}
+
 type DBRepoOperations struct {
 	repoId string
 	tx     db.Tx
@@ -68,10 +89,19 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 	var entries []*model.WorkspaceEntry
 	err := o.tx.Select(
 		&entries,
+		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND entry_type = 'object'`,
+		o.repoId, branch)
+	return entries, err
+}
+func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) ([]*model.WorkspaceEntry, error) {
+	var entries []*model.WorkspaceEntry
+	err := o.tx.Select(
+		&entries,
 		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
 		o.repoId, branch)
 	return entries, err
 }
+
 func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string, amount int) ([]*model.WorkspaceEntry, error) {
 	if amount == 0 {
 		amount = MaxResultsAllowed
@@ -305,17 +335,25 @@ func (o *DBRepoOperations) DeleteWorkspacePath(branch, path string) error {
 	return err
 }
 
-func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error {
-	_, err := o.tx.Exec(`
+func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string, entries []*model.WorkspaceEntry) error {
+	sqlTemplate := `
 		INSERT INTO workspace_entries (repository_id, branch_id, path, parent_path, 
-		entry_name, entry_address, entry_type, entry_creation_date, entry_size, entry_checksum, tombstone)
-		VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+			entry_name, entry_address, entry_type, entry_creation_date, entry_size, entry_checksum, tombstone)
+		VALUES %s
 		ON CONFLICT ON CONSTRAINT workspace_entries_pkey
-		DO UPDATE SET parent_path = $4, entry_name = $5, entry_address = $6, entry_type = $7, entry_creation_date = $8,
-		entry_size = $9, entry_checksum = $10, tombstone = $11`,
-		o.repoId, branch, path, parentPath, entry.EntryName, entry.EntryAddress, entry.EntryType,
-		entry.EntryCreationDate, entry.EntrySize, entry.EntryChecksum, entry.Tombstone,
-	)
+		DO UPDATE SET parent_path = excluded.parent_path, entry_name = excluded.entry_name, entry_address = excluded.entry_address, entry_type = excluded.entry_type, entry_creation_date = excluded.entry_creation_date,
+		entry_size = excluded.entry_size, entry_checksum = excluded.entry_checksum, tombstone = (excluded.tombstone AND (SELECT NOT bool_or(NOT tombstone) FROM workspace_entries hlpr WHERE hlpr.parent_path=excluded.parent_path AND hlpr.path <> excluded.path))`
+	var vals []interface{}
+	valsStr := ""
+	idx := 1
+	for _, entry := range entries {
+		valsStr += fmt.Sprintf("($%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d, $%d),", idx, idx+1, idx+2, idx+3, idx+4, idx+5, idx+6, idx+7, idx+8, idx+9, idx+10)
+		idx += 11
+		vals = append(vals, o.repoId, branch, entry.Path, entry.ParentPath, entry.EntryName, entry.EntryAddress, entry.EntryType,
+			entry.EntryCreationDate, entry.EntrySize, entry.EntryChecksum, entry.Tombstone)
+	}
+	valsStr = strings.TrimSuffix(valsStr, ",")
+	_, err := o.tx.Exec(fmt.Sprintf(sqlTemplate, valsStr), vals...)
 	return err
 }
 
@@ -429,5 +467,21 @@ func (o *DBRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
 		DELETE FROM multipart_upload_parts
 		WHERE repository_id = $1 AND upload_id = $2`,
 		o.repoId, uploadId)
+	return err
+}
+
+func (o *DBRepoOperations) CascadeDirectoryDeletion(branch, deletedPathParent string) error {
+	_, err := o.tx.Exec(`UPDATE workspace_entries we SET tombstone = 0 = (SELECT COUNT(*)
+									FROM workspace_entries we2
+									FULL OUTER JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp
+										ON we2.branch_id = ewp.branch
+											AND we2.parent_path = ewp.parent_path
+											AND we2.entry_name = ewp.name
+											AND we2.repository_id = ewp.repository_id
+										WHERE COALESCE(we2.repository_id, ewp.repository_id) = $1 AND COALESCE(we2.branch_id, ewp.branch) = $2
+											AND COALESCE(we2.entry_type, ewp.type) = $3 AND we2.tombstone IS NOT TRUE
+											AND COALESCE(we2.parent_path, ewp.parent_path) LIKE we.path || '%') 
+								WHERE repository_id = $1 AND branch_id = $2 AND entry_type = $4 AND $5 LIKE path || '%'`,
+		o.repoId, branch, model.EntryTypeObject, model.EntryTypeTree, deletedPathParent)
 	return err
 }

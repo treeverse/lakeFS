@@ -89,7 +89,7 @@ CREATE TABLE workspace_entries (
     tombstone boolean NOT NULL,
 
     FOREIGN KEY (repository_id, branch_id) REFERENCES branches (repository_id, id),
-    PRIMARY KEY (repository_id, branch_id, path)
+    PRIMARY KEY (repository_id, branch_id, path, entry_type)
 );
 
 CREATE INDEX idx_workspace_entries_parent_path ON workspace_entries (repository_id, branch_id, parent_path);

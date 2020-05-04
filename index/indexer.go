@@ -25,7 +25,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 1 // 1 writes before a partial commit
+	DefaultPartialCommitRatio = 0 // 1 writes before a partial commit
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -42,7 +42,7 @@ type Index interface {
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
+	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.SearchResultEntry, bool, error)
 	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, ref string) (*model.Branch, error)
@@ -64,7 +64,30 @@ type Index interface {
 }
 
 func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
-	err := tx.WriteToWorkspacePath(branch, entry.ParentPath, path, entry)
+	entries := make([]*model.WorkspaceEntry, 0, strings.Count(path, pth.Separator))
+	entries = append(entries, entry)
+	treeType := model.EntryTypeTree
+	currentParent := entry.ParentPath
+	var dirSize int64
+	var dirChecksum string
+	for strings.Contains(currentParent[:len(currentParent)], pth.Separator) {
+		currentPath := currentParent
+		currentParent = currentPath[:strings.LastIndex(currentParent[:len(currentParent)-1], pth.Separator)+1]
+		currentName := currentPath[len(currentParent):]
+		newEntry := model.WorkspaceEntry{
+			RepositoryId:      entry.RepositoryId,
+			BranchId:          entry.BranchId,
+			ParentPath:        currentParent,
+			Path:              currentPath,
+			EntryType:         &treeType,
+			EntryName:         &currentName,
+			EntrySize:         &dirSize,
+			EntryCreationDate: entry.EntryCreationDate,
+			EntryChecksum:     &dirChecksum,
+		}
+		entries = append(entries, &newEntry)
+	}
+	err := tx.WriteToWorkspacePath(branch, entry.ParentPath, path, entries)
 	if err != nil {
 		return err
 	}
@@ -590,8 +613,11 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 
 		if merkleEntry != nil {
 			typ := model.EntryTypeObject
-			bname := pth.New(path, typ).BaseName()
+			pathObj := pth.New(path, typ)
+			bname := pathObj.BaseName()
+			parentPath := pathObj.ParentPath()
 			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+				ParentPath:        parentPath,
 				Path:              path,
 				EntryName:         &bname,
 				EntryCreationDate: &ts,
@@ -600,6 +626,10 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			})
 			if err != nil {
 				index.log().WithError(err).Error("could not write workspace tombstone")
+			}
+			err = tx.CascadeDirectoryDeletion(branch, parentPath)
+			if err != nil {
+				index.log().WithError(err).Error("could not cascade deletion to parent tombstones")
 			}
 			return nil, err
 		}
@@ -639,12 +669,12 @@ func (index *DBIndex) ListBranchesByPrefix(repoId string, prefix string, amount 
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
-func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
-	log := index.log().WithFields(logging.Fields{
-		"from":    from,
-		"descend": descend,
-		"results": results,
-	})
+func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.SearchResultEntry, bool, error) {
+	//log := index.log().WithFields(logging.Fields{
+	//	"from":    from,
+	//	"descend": descend,
+	//	"results": results,
+	//})
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
@@ -654,7 +684,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 	}
 	type result struct {
 		hasMore bool
-		results []*model.Entry
+		results []*model.SearchResultEntry
 	}
 	entries, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		_, err := tx.ReadRepo()
@@ -667,13 +697,11 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			return nil, err
 		}
 
-		var root string
+		//var root string
+		var res []*model.SearchResultEntry
 		if reference.isBranch {
-			reference.branch, err = tx.ReadBranch(reference.branch.Id)
-			if err != nil {
-				return nil, err
-			}
-			root = reference.branch.WorkspaceRoot
+
+			res, err = tx.ListTreeAndWorkspaceDirectory(reference.branch.Id, path)
 			//var workspaceEntries []*model.WorkspaceEntry
 			//if descend {
 			//	workspaceEntries, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, results)
@@ -685,17 +713,17 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			//	return nil, err
 			//}
 		} else {
-			root = reference.commit.Tree
+			//root = reference.commit.Tree
 		}
 
-		tree := merkle.New(root)
-		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
-		if err != nil {
-			log.WithError(err).Error("could not scan tree")
-			return nil, err
-		}
+		//tree := merkle.New(root)
+		//res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
+		//if err != nil {
+		//	log.WithError(err).Error("could not scan tree")
+		//	return nil, err
+		//}
 
-		return &result{hasMore, res}, nil
+		return &result{false, res}, nil
 	})
 	if err != nil {
 		return nil, false, err
@@ -907,23 +935,15 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
+		result := make(merkle.Differences, 0)
+		wsEntries, err := tx.ListWorkspaceWithDirectories(branch)
 		if err != nil {
 			return nil, err
 		}
-		branch, err := tx.ReadBranch(branch)
-		if err != nil {
-			return nil, err
+		for _, wsEntry := range wsEntries {
+			result = append(result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionRight, Path: wsEntry.Path, PathType: *wsEntry.EntryType})
 		}
-
-		diff, err := merkle.Diff(tx,
-			merkle.New(branch.WorkspaceRoot),
-			merkle.New(branch.CommitRoot),
-			merkle.New(branch.CommitRoot))
-		if err != nil {
-			index.log().WithError(err).WithField("branch", branch).Error("diff workspace failed")
-		}
-		return diff, err
+		return result, err
 	})
 	if err != nil {
 		return nil, err
