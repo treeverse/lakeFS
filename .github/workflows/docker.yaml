@@ -26,9 +26,9 @@ jobs:
         run: |
           go get github.com/rakyll/statik
 
-      - name: Run tests
+      - name: Generate code
         run: |
-          make test
+          make gen
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
