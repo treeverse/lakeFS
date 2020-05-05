@@ -24,8 +24,8 @@ import (
 )
 
 const (
-	DefaultInstallationID    = "anon@example.com"
-	gracefullShutdownTimeout = 30 * time.Minute
+	DefaultInstallationID   = "anon@example.com"
+	gracefulShutdownTimeout = 30 * time.Second
 )
 
 func setupConf(cmd *cobra.Command) *config.Config {
@@ -150,10 +150,9 @@ var runCmd = &cobra.Command{
 			}
 		}()
 
-		go gracefullShutdown(apiServer, gatewayServer, quit, done)
+		go gracefulShutdown(apiServer, gatewayServer, quit, done)
 
 		<-done
-		// TODO: gracefully stop API And gateway servers to ensure we also drain stats
 		cancelFn()
 		<-stats.Done()
 		log.Println("Bye")
@@ -161,20 +160,20 @@ var runCmd = &cobra.Command{
 	},
 }
 
-func gracefullShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
+func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
 	log.Println("Control-C to shutdown")
 	<-quit
 	log.Println("Shutting down...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), gracefullShutdownTimeout)
+	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
 
 	if err := apiServer.Shutdown(ctx); err != nil {
-		log.Fatalf("Cloud not gracefully shutdown the api server: %v", err)
+		log.Fatalf("Cloud not shutdown the api server: %v", err)
 	}
 
 	if err := gatewayServer.Shutdown(ctx); err != nil {
-		log.Fatalf("Cloud not gracefully shutdown the gateway server: %v", err)
+		log.Fatalf("Cloud not shutdown the gateway server: %v", err)
 	}
 
 	close(done)
