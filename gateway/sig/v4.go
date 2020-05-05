@@ -26,6 +26,7 @@ const (
 	v4authHeaderPrefix      = "AWS4-HMAC-SHA256"
 	AmzDecodedContentLength = "X-Amz-Decoded-Content-Length"
 	v4StreamingPayloadHash  = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
+	v4UnsignedPayload       = "UNSIGNED-PAYLOAD"
 	v4authHeaderPayload     = "x-amz-content-sha256"
 	v4scopeTerminator       = "aws4_request"
 	v4timeFormat            = "20060102T150405Z"
@@ -202,7 +203,7 @@ func (ctx *verificationCtx) canonicalizeHeaders(headers []string) string {
 			// in Go, Host is removed from the headers and is promoted to request.Host for some reason
 			value = ctx.Request.Host
 		} else {
-			value = ctx.Request.Header.Get(header)
+			value = getInsensitiveHeader(ctx.Request, header)
 		}
 		buf.WriteString(header)
 		buf.WriteString(":")
@@ -232,8 +233,17 @@ func (ctx *verificationCtx) trimAll(str string) string {
 	return buf.String()
 }
 
+func getInsensitiveHeader(r *http.Request, headerName string) string {
+	for k, v := range r.Header {
+		if strings.EqualFold(k, headerName) {
+			return v[0]
+		}
+	}
+	return ""
+}
+
 func (ctx *verificationCtx) payloadHash() string {
-	return ctx.Request.Header.Get(v4authHeaderPayload)
+	return getInsensitiveHeader(ctx.Request, v4authHeaderPayload)
 }
 
 func (ctx *verificationCtx) buildCanonicalRequest() string {
@@ -331,6 +341,10 @@ func (ctx *verificationCtx) isStreaming() bool {
 	return strings.EqualFold(payloadHash, v4StreamingPayloadHash)
 }
 
+func (ctx *verificationCtx) isUnsigned() bool {
+	return strings.EqualFold(ctx.payloadHash(), v4UnsignedPayload)
+}
+
 func (ctx *verificationCtx) contentLength() (int64, error) {
 	size := ctx.Request.ContentLength
 	if ctx.isStreaming() {
@@ -361,6 +375,10 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 			return nil, err
 		}
 		return chunkReader, nil
+	}
+
+	if ctx.isUnsigned() {
+		return reader, nil
 	}
 	return NewSha265Reader(reader, ctx.payloadHash())
 }
