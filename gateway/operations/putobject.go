@@ -174,7 +174,6 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		CreationDate: writeTime,
 		Size:         blob.Size,
 		Checksum:     blob.Checksum,
-		ObjectCount:  1,
 	}
 	err = o.Index.WriteFile(o.Repo.Id, o.Ref, o.Path, entry, obj)
 	tookMeta := time.Since(writeTime)

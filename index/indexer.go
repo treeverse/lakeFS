@@ -353,7 +353,6 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 				CreationDate: *we.EntryCreationDate,
 				Size:         *we.EntrySize,
 				Checksum:     *we.EntryChecksum,
-				ObjectCount:  *we.EntryObjectCount,
 			}, nil
 		}
 		root = reference.branch.WorkspaceRoot
@@ -1082,7 +1081,6 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 					EntryCreationDate: &pathEntry.CreationDate,
 					EntrySize:         &pathEntry.Size,
 					EntryChecksum:     &pathEntry.Checksum,
-					EntryObjectCount:  &pathEntry.ObjectCount,
 					Tombstone:         true,
 				}
 			} else {
@@ -1101,7 +1099,6 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 				EntryCreationDate: &commitEntry.CreationDate,
 				EntrySize:         &commitEntry.Size,
 				EntryChecksum:     &commitEntry.Checksum,
-				EntryObjectCount:  &commitEntry.ObjectCount,
 			}
 		}
 		commitEntries := []*model.WorkspaceEntry{workspaceEntry}

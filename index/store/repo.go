@@ -97,24 +97,39 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences
 	var entries model.Differences
 	err := o.tx.Select(
 		&entries,
-		fmt.Sprintf(`SELECT	wse.path AS path,
-                        wse.entry_type AS entry_type,
-						'%d' AS diff_direction,
-						CASE 
-							WHEN ewp.parent_path IS NULL THEN %d
-							WHEN wse.tombstone = true THEN %d
-							WHEN ewp.parent_path IS NOT NULL THEN %d
-						END as diff_type
-                    FROM workspace_entries wse 
-						LEFT JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp
-							ON wse.branch_id = ewp.branch
-                        		AND wse.parent_path = ewp.parent_path
-								AND wse.entry_name = ewp.name
-								AND wse.repository_id = ewp.repository_id
-					WHERE wse.repository_id = $1 AND wse.branch_id = $2`, model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
+		fmt.Sprintf(`SELECT diff_path AS path, CASE object_path WHEN diff_path THEN 'object' ELSE 'tree' END AS entrY_type, %d as diff_direction,
+								CASE diff_type
+									WHEN 'ADDED' THEN %d
+									WHEN 'DELETED' THEN %d
+								 	WHEN 'CHANGED' THEN %d END AS diff_type
+								FROM workspace_diff WHERE repository_id = $1 AND branch_id = $2`,
+			model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
 		o.repoId, branch)
 	return entries, err
 }
+
+//}func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences, error) {
+//	var entries model.Differences
+//	err := o.tx.Select(
+//		&entries,
+//		fmt.Sprintf(`SELECT	wse.path AS path,
+//                        wse.entry_type AS entry_type,
+//						'%d' AS diff_direction,
+//						CASE
+//							WHEN ewp.parent_path IS NULL THEN %d
+//							WHEN wse.tombstone = true THEN %d
+//							WHEN ewp.parent_path IS NOT NULL THEN %d
+//						END as diff_type
+//                    FROM workspace_entries wse
+//						LEFT JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp
+//							ON wse.branch_id = ewp.branch
+//                        		AND wse.parent_path = ewp.parent_path
+//								AND wse.entry_name = ewp.name
+//								AND wse.repository_id = ewp.repository_id
+//					WHERE wse.repository_id = $1 AND wse.branch_id = $2`, model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
+//		o.repoId, branch)
+//	return entries, err
+//}
 
 func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string, amount int) ([]*model.WorkspaceEntry, error) {
 	if amount == 0 {
@@ -380,11 +395,11 @@ func (o *DBRepoOperations) ClearWorkspace(branch string) error {
 func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
 		_, err := o.tx.Exec(`
-			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum, object_count)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
 			ON CONFLICT ON CONSTRAINT entries_pkey
 			DO NOTHING`,
-			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum, entry.ObjectCount)
+			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum)
 		if err != nil {
 			return err
 		}
@@ -394,10 +409,10 @@ func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) err
 
 func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
 	_, err := o.tx.Exec(`
-		INSERT INTO roots (repository_id, address, creation_date, size, object_count) VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO roots (repository_id, address, creation_date, size) VALUES ($1, $2, $3, $4)
 		ON CONFLICT ON CONSTRAINT roots_pkey
 		DO NOTHING`,
-		o.repoId, address, root.CreationDate, root.Size, root.ObjectCount)
+		o.repoId, address, root.CreationDate, root.Size)
 	return err
 }
 
