@@ -5,27 +5,21 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/stats"
-
-	"github.com/treeverse/lakefs/auth/model"
-
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/go-openapi/errors"
-
-	"github.com/rakyll/statik/fs"
-
-	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/go-openapi/loads"
+	"github.com/rakyll/statik/fs"
+	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
-
+	"github.com/treeverse/lakefs/logging"
 	_ "github.com/treeverse/lakefs/statik"
+	"github.com/treeverse/lakefs/stats"
 )
 
 const (
@@ -43,6 +37,10 @@ type Server struct {
 	blockStore       block.Adapter
 	authService      auth.Service
 	stats            stats.Collector
+	migrator         db.Migrator
+
+	apiServer *restapi.Server
+	handler   *http.ServeMux
 }
 
 func NewServer(
@@ -51,6 +49,7 @@ func NewServer(
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,
+	migrator db.Migrator,
 ) *Server {
 	return &Server{
 		meta:             meta,
@@ -58,6 +57,7 @@ func NewServer(
 		blockStore:       blockStore,
 		authService:      authService,
 		stats:            stats,
+		migrator:         migrator,
 	}
 }
 
@@ -93,12 +93,32 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 	}
 }
 
-// SetupServer returns a Server that has been configured with basic authenticator and is registered
+func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
+	mux := http.NewServeMux()
+	// api handler
+	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.Header.Get("User-Agent"), "Mozilla") {
+			// this is a browser, pass a response writer that ignores www-authenticate
+			w = NonAuthenticatingResponseWriter{w}
+		}
+		api.ServeHTTP(w, r)
+	})
+	// swagger
+	mux.Handle("/swagger.json", api)
+	// setup system
+	mux.Handle(SetupLakeFSRoute, setup)
+	// otherwise, serve  UI
+	mux.Handle("/", ui)
+
+	s.handler = mux
+}
+
+// setupServer returns a Server that has been configured with basic authenticator and is registered
 // to all relevant API handlers
-func (s *Server) SetupServer() (*restapi.Server, error) {
+func (s *Server) setupServer() error {
 	swaggerSpec, err := loads.Analyzed(restapi.SwaggerJSON, "")
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	api := operations.NewLakefsAPI(swaggerSpec)
@@ -113,18 +133,8 @@ func (s *Server) SetupServer() (*restapi.Server, error) {
 	NewHandler(s.meta, s.authService, s.blockStore, s.stats).Configure(api)
 
 	// setup host/port
-	srv := restapi.NewServer(api)
-	srv.ConfigureAPI()
-
-	return srv, nil
-}
-
-// Serve starts an HTTP server at the given host and port
-func (s *Server) Serve(listenAddr string) error {
-	srv, err := s.SetupServer()
-	if err != nil {
-		return err
-	}
+	s.apiServer = restapi.NewServer(api)
+	s.apiServer.ConfigureAPI()
 
 	// serve embedded frontend filesystem
 	statikFS, err := fs.NewWithNamespace("webui")
@@ -132,15 +142,46 @@ func (s *Server) Serve(listenAddr string) error {
 		return err
 	}
 
-	httpServer := http.Server{
-		Addr: listenAddr,
-		Handler: HandlerWithUI(
-			httputil.LoggingMiddleWare(RequestIdHeaderName, logging.Fields{"service_name": LoggerServiceName},
-				srv.GetHandler(), // api
-			),
-			HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"), // ui
+	s.setupHandler(
+		// api handler
+		httputil.LoggingMiddleWare(
+			RequestIdHeaderName,
+			logging.Fields{"service_name": LoggerServiceName},
+			s.apiServer.GetHandler(),
 		),
-	}
+		// ui handler
+		HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"),
+		// setup handler
+		httputil.LoggingMiddleWare(
+			RequestIdHeaderName,
+			logging.Fields{"service_name": LoggerServiceName},
+			setupLakeFSHandler(s.authService, s.migrator),
+		),
+	)
 
+	return nil
+}
+
+// Serve starts an HTTP server at the given host and port
+func (s *Server) Serve(listenAddr string) error {
+	handler, err := s.Handler()
+	if err != nil {
+		return err
+	}
+	httpServer := http.Server{
+		Addr:    listenAddr,
+		Handler: handler,
+	}
 	return httpServer.ListenAndServe()
+}
+
+func (s *Server) Handler() (http.Handler, error) {
+	if s.handler != nil {
+		return s.handler, nil
+	}
+	err := s.setupServer()
+	if err != nil {
+		return nil, err
+	}
+	return s.handler, nil
 }

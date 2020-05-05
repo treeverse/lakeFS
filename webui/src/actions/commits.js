@@ -10,7 +10,7 @@ export const
     COMMITS_COMMIT = new AsyncActionType('COMMITS_COMMIT');
 
 
-export const logCommits = (repoId, branchId,from = "", amount = PAGINATION_AMOUNT) => {
+export const logCommits = (repoId, branchId, from = "", amount = PAGINATION_AMOUNT) => {
     return COMMITS_LIST.execute(async () => {
         return await api.commits.log(repoId, branchId, from, amount);
     })

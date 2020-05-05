@@ -1,5 +1,5 @@
 
-.card.login-widget {
+.card.login-widget,.card.setup-widget {
     margin-top: 130px;
 }
 
@@ -189,14 +189,6 @@
 
 .table .tree-row:hover .tree-row-actions .btn,
 .table .tree-row:focus .tree-row-actions .btn {
-    display: inline;
-}
-
-
-.btn.btn-link {
-    vertical-align: top;
-    line-height: inherit;
-    padding: 0;
     display: inline;
 }
 
