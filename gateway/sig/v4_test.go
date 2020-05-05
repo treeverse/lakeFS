@@ -300,3 +300,43 @@ func TestStreamingLastByteWrong(t *testing.T) {
 		t.Errorf("expect %v, got %v", errors.ErrSignatureDoesNotMatch, err)
 	}
 }
+
+func TestUnsignedPayload(t *testing.T) {
+	const (
+		ID     = "AKIAJV3OAIYRIVODAQVQ"
+		SECRET = "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"
+	)
+	req, err := http.NewRequest(http.MethodHead, "https://repo1.s3.dev.lakefs.io/imdb-spark/collections/shows/title.basics.tsv.gz", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	req.Header = http.Header{
+		"X-Forwarded-For":       []string{"10.20.1.90"},
+		"X-Forwarded-Proto":     []string{"https"},
+		"X-Forwarded-Port":      []string{"443"},
+		"Host":                  []string{"repo1.s3.dev.lakefs.io"},
+		"X-Amzn-Trace-Id":       []string{"Root=1-5eb036bc-dd84b3a2115db68a77b1c068"},
+		"amz-sdk-invocation-id": []string{"a8288d69-e8fa-219d-856b-b58b53b6fd5b"},
+		"amz-sdk-retry":         []string{"0/0/500"},
+		"Authorization":         []string{"AWS4-HMAC-SHA256 Credential=AKIAJV3OAIYRIVODAQVQ/20200504/dev/s3/aws4_request, SignedHeaders=amz-sdk-invocation-id;amz-sdk-retry;content-type;host;user-agent;x-amz-content-sha256;x-amz-date, Signature=64a7b55116b4f65346c5607fe98e7e6d61f6086671e6bf175b0b8923949b56f6"},
+		"Content-Type":          []string{"application/octet-stream"},
+		"User-Agent":            []string{"Hadoop 2.8.5-amzn-5, aws-sdk-java/1.11.682 Linux/4.14.154-99.181.amzn1.x86_64 OpenJDK_64-Bit_Server_VM/25.242-b08 java/1.8.0_242 scala/2.11.12 vendor/Oracle_Corporation"},
+		"x-amz-content-sha256":  []string{"UNSIGNED-PAYLOAD"},
+		"X-Amz-Date":            []string{"20200504T153732Z"},
+	}
+
+	authenticator := sig.NewV4Authenticator(req)
+	_, err = authenticator.Parse()
+	if err != nil {
+		t.Errorf("expect not no error, got %v", err)
+	}
+
+	err = authenticator.Verify(&model.Credential{
+		AccessKeyId:     ID,
+		AccessSecretKey: SECRET,
+		IssuedDate:      time.Now(),
+	}, "")
+	if err != nil {
+		t.Errorf("expect not no error, got %v", err)
+	}
+}
