@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -41,6 +42,7 @@ type Server struct {
 
 	apiServer *restapi.Server
 	handler   *http.ServeMux
+	server    *http.Server
 }
 
 func NewServer(
@@ -168,11 +170,16 @@ func (s *Server) Serve(listenAddr string) error {
 	if err != nil {
 		return err
 	}
-	httpServer := http.Server{
+	s.server = &http.Server{
 		Addr:    listenAddr,
 		Handler: handler,
 	}
-	return httpServer.ListenAndServe()
+	return s.server.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.server.SetKeepAlivesEnabled(false)
+	return s.server.Shutdown(ctx)
 }
 
 func (s *Server) Handler() (http.Handler, error) {
