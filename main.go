@@ -3,7 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/google/uuid"
@@ -20,7 +23,10 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
-const DefaultInstallationID = "anon@example.com"
+const (
+	DefaultInstallationID   = "anon@example.com"
+	gracefulShutdownTimeout = 30 * time.Second
+)
 
 func setupConf(cmd *cobra.Command) *config.Config {
 	confFile, err := cmd.Flags().GetString("config")
@@ -113,8 +119,14 @@ var runCmd = &cobra.Command{
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats, migrator)
 
+		done := make(chan bool, 1)
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, os.Interrupt)
+
 		go func() {
-			panic(apiServer.Serve(conf.GetAPIListenAddress()))
+			if err := apiServer.Serve(conf.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("API server failed to listen on %s: %v", conf.GetAPIListenAddress(), err)
+			}
 		}()
 
 		// init gateway server
@@ -132,12 +144,39 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.Collect("global", "run")
 
-		panic(gatewayServer.Listen())
-		// TODO: gracefully stop API And gateway servers to ensure we also drain stats
+		go func() {
+			if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Gateway server failed to listen on %s: %v", conf.GetS3GatewayListenAddress(), err)
+			}
+		}()
+
+		go gracefulShutdown(apiServer, gatewayServer, quit, done)
+
+		<-done
 		cancelFn()
 		<-stats.Done()
+		log.Println("Bye")
 		return nil
 	},
+}
+
+func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
+	log.Println("Control-C to shutdown")
+	<-quit
+	log.Println("Shutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	defer cancel()
+
+	if err := apiServer.Shutdown(ctx); err != nil {
+		log.Fatalf("Cloud not shutdown the api server: %v", err)
+	}
+
+	if err := gatewayServer.Shutdown(ctx); err != nil {
+		log.Fatalf("Cloud not shutdown the gateway server: %v", err)
+	}
+
+	close(done)
 }
 
 var treeCmd = &cobra.Command{
