@@ -195,7 +195,8 @@ type WorkspaceEntry struct {
 	EntryCreationDate *time.Time `db:"entry_creation_date"`
 	EntrySize         *int64     `db:"entry_size"`
 	EntryChecksum     *string    `db:"entry_checksum"`
-	Tombstone         bool       `db:"tombstone"`
+
+	Tombstone bool `db:"tombstone"`
 }
 
 func (ws *WorkspaceEntry) GetName() string {
@@ -218,13 +219,6 @@ func dstr(p *string) string {
 }
 
 func dint64(p *int64) int64 {
-	if p == nil {
-		return 0
-	}
-	return *p
-}
-
-func dint(p *int) int {
 	if p == nil {
 		return 0
 	}

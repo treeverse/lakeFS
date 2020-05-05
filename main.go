@@ -140,24 +140,6 @@ var runCmd = &cobra.Command{
 	},
 }
 
-var treeCmd = &cobra.Command{ // TODO remove this
-	Use:   "tree",
-	Short: "dump the entire filesystem tree for the given repository and branch to stdout",
-	RunE: func(cmd *cobra.Command, args []string) error {
-		conf := setupConf(cmd)
-		repo, _ := cmd.Flags().GetString("repo")
-		branch, _ := cmd.Flags().GetString("branch")
-		mdb := conf.ConnectMetadataDatabase()
-		meta := index.NewDBIndex(mdb)
-
-		err := meta.Tree(repo, branch)
-		if err != nil {
-			panic(err)
-		}
-		return nil
-	},
-}
-
 var setupdbCmd = &cobra.Command{
 	Use:   "setupdb",
 	Short: "run schema and data migrations on a fresh database",
@@ -183,18 +165,11 @@ var rootCmd = &cobra.Command{
 
 func init() {
 	rootCmd.PersistentFlags().StringP("config", "c", "", "configuration file path")
-
-	treeCmd.Flags().StringP("repo", "r", "", "repository to list")
-	treeCmd.Flags().StringP("branch", "b", "", "branch to list")
-	_ = treeCmd.MarkFlagRequired("repo")
-	_ = treeCmd.MarkFlagRequired("branch")
-
 	initCmd.Flags().String("email", "", "E-mail of the user to generate")
 	initCmd.Flags().String("full-name", "", "Full name of the user to generate")
 	_ = initCmd.MarkFlagRequired("email")
 	_ = initCmd.MarkFlagRequired("full-name")
 
-	rootCmd.AddCommand(treeCmd)
 	rootCmd.AddCommand(runCmd)
 	rootCmd.AddCommand(initCmd)
 	rootCmd.AddCommand(setupdbCmd)

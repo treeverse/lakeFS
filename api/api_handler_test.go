@@ -794,7 +794,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		}
 
 		if len(resp.Payload.Results) != 2 {
-			t.Fatalf("expected 3 entries, got back %d", len(resp.Payload.Results))
+			t.Fatalf("expected 2 entries, got back %d", len(resp.Payload.Results))
 		}
 		if !swag.BoolValue(resp.Payload.Pagination.HasMore) {
 			t.Fatalf("expected paginator.HasMore to be true")

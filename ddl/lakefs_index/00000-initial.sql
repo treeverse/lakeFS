@@ -117,3 +117,47 @@ CREATE TABLE multipart_upload_parts (
     FOREIGN KEY (repository_id, upload_id) REFERENCES multipart_uploads (repository_id, id),
     PRIMARY KEY (repository_id, upload_id, part_number)
 );
+
+CREATE OR REPLACE VIEW entries_with_path AS
+WITH RECURSIVE cte AS (
+    SELECT entries.parent_address AS root_address,
+           array((SELECT id FROM branches WHERE commit_root = entries.parent_address)) AS branches,
+           '' AS parent_path, entries.*
+    FROM entries JOIN branches ON entries.parent_address = branches.commit_root
+    WHERE branches.repository_id = entries.repository_id
+    UNION ALL
+    SELECT cte_1.root_address,
+           cte_1.branches,
+           cte_1.parent_path || cte_1.name,
+           entries.*
+    FROM cte cte_1
+             JOIN entries ON entries.parent_address = cte_1.address
+)
+SELECT cte.* FROM cte;
+
+CREATE OR REPLACE VIEW combined_workspace AS
+SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
+       COALESCE(wse.branch_id, ewp.branch) AS branch_id,
+       COALESCE(wse.parent_path, ewp.parent_path) AS parent_path,
+       COALESCE(wse.path, ewp.parent_path || ewp.name) AS path,
+       COALESCE(wse.entry_name, ewp.name) AS name,
+       COALESCE(wse.entry_type, ewp.type) AS entry_type,
+       COALESCE(wse.entry_size, ewp.size) AS size,
+       COALESCE(wse.entry_creation_date, ewp.creation_date) AS creation_date,
+       COALESCE(wse.entry_checksum, ewp.checksum) AS checksum,
+       COALESCE(wse.entry_address, ewp.address) AS address,
+       CASE WHEN ewp.name IS NULL THEN 'ADDED'
+            WHEN wse.tombstone THEN 'DELETED'
+            WHEN wse.entry_checksum <> ewp.checksum AND wse.entry_type = 'object' THEN 'CHANGED'
+           END AS diff_type,
+       tombstone
+FROM workspace_entries wse
+         FULL OUTER JOIN (SELECT unnest(branches) AS branch, *
+                          FROM entries_with_path) ewp
+                         ON wse.branch_id= ewp.branch AND wse.parent_path = ewp.parent_path AND
+                            wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id;
+
+
+CREATE OR REPLACE VIEW workspace_diff AS SELECT repository_id, branch_id, path as object_path, diff_type,
+                                                CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED' THEN (SELECT min(path) from combined_workspace cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
+                                                     ELSE path END AS diff_path FROM combined_workspace cw WHERE entry_type='object' AND diff_type IS NOT NULL

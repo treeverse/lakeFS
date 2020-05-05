@@ -21,9 +21,7 @@ type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ListWorkspaceAsDiff(branch string) (model.Differences, error)
-	ListWorkspaceWithPrefix(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
-	ListWorkspaceDirectory(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error)
-	ListTreeAndWorkspaceDirectory(branch, path string) ([]*model.SearchResultEntry, error)
+	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int) ([]*model.SearchResultEntry, bool, error)
 	CascadeDirectoryDeletion(branch, deletedPath string) error
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
@@ -34,8 +32,8 @@ type RepoOperations interface {
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
 	ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
-	DeleteWorkspacePath(branch, path string) error
-	WriteToWorkspacePath(branch, parentPath, path string, entries []*model.WorkspaceEntry) error
+	DeleteWorkspacePath(branch, path, typ string) error
+	WriteToWorkspacePath(branch string, entries []*model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
 	WriteRoot(address string, root *model.Root) error
@@ -56,22 +54,31 @@ type RepoOperations interface {
 	DeleteMultipartUploadParts(uploadId string) error
 }
 
-func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch string, path string) ([]*model.SearchResultEntry, error) {
+func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from string, amount int) ([]*model.SearchResultEntry, bool, error) {
 	var entries []*model.SearchResultEntry
+	var additionalCondition, limitStatement string
+	if amount > 0 {
+		limitStatement = fmt.Sprintf("LIMIT %d", amount+1)
+	}
+	if len(from) > 0 {
+		additionalCondition = "AND path > "
+	}
 	err := o.tx.Select(
-		&entries,
-		`SELECT	COALESCE(wse.parent_path, ewp.parent_path) || COALESCE(wse.entry_name, ewp.name) AS name,
-          COALESCE(wse.entry_type, ewp.type) AS type,
-          COALESCE(wse.entry_size, ewp.size) AS size,
-          COALESCE(wse.entry_creation_date, ewp.creation_date) AS creation_date,
-          COALESCE(wse.entry_checksum, ewp.checksum) AS checksum
-		  FROM workspace_entries wse FULL OUTER JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp ON wse.branch_id = ewp.branch
-		    AND wse.parent_path = ewp.parent_path AND wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
-    	  WHERE COALESCE(wse.repository_id, ewp.repository_id) = $1 
-    	    AND COALESCE(wse.branch_id, ewp.branch) = $2
-    		AND wse.tombstone IS NOT TRUE AND (wse.parent_path = $3 OR ewp.parent_path = $3) ORDER BY name`,
+		&entries, fmt.Sprintf(
+			`SELECT path AS name,
+          entry_type AS type,
+          0 AS size,
+          '2020-02-01 00:00:00'::date AS creation_date,
+          '' AS checksum
+		  FROM combined_workspace
+    	  WHERE repository_id = $1 AND branch_id = $2 AND tombstone IS NOT TRUE AND parent_path = $3 %s ORDER BY name %s`, additionalCondition, limitStatement),
 		o.repoId, branch, path)
-	return entries, err
+	hasMore := false
+	if amount > 0 && len(entries) > amount {
+		hasMore = true
+		entries = entries[:amount]
+	}
+	return entries, hasMore, err
 }
 
 type DBRepoOperations struct {
@@ -97,7 +104,7 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences
 	var entries model.Differences
 	err := o.tx.Select(
 		&entries,
-		fmt.Sprintf(`SELECT diff_path AS path, CASE object_path WHEN diff_path THEN 'object' ELSE 'tree' END AS entrY_type, %d as diff_direction,
+		fmt.Sprintf(`SELECT diff_path AS path, CASE object_path WHEN diff_path THEN 'object' ELSE 'tree' END AS entry_type,%d as diff_direction,
 								CASE diff_type
 									WHEN 'ADDED' THEN %d
 									WHEN 'DELETED' THEN %d
@@ -107,29 +114,6 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences
 		o.repoId, branch)
 	return entries, err
 }
-
-//}func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences, error) {
-//	var entries model.Differences
-//	err := o.tx.Select(
-//		&entries,
-//		fmt.Sprintf(`SELECT	wse.path AS path,
-//                        wse.entry_type AS entry_type,
-//						'%d' AS diff_direction,
-//						CASE
-//							WHEN ewp.parent_path IS NULL THEN %d
-//							WHEN wse.tombstone = true THEN %d
-//							WHEN ewp.parent_path IS NOT NULL THEN %d
-//						END as diff_type
-//                    FROM workspace_entries wse
-//						LEFT JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp
-//							ON wse.branch_id = ewp.branch
-//                        		AND wse.parent_path = ewp.parent_path
-//								AND wse.entry_name = ewp.name
-//								AND wse.repository_id = ewp.repository_id
-//					WHERE wse.repository_id = $1 AND wse.branch_id = $2`, model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
-//		o.repoId, branch)
-//	return entries, err
-//}
 
 func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string, amount int) ([]*model.WorkspaceEntry, error) {
 	if amount == 0 {
@@ -149,55 +133,6 @@ func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string,
 	query, args := sb.Build()
 	query = o.tx.Rebind(query)
 	var entries []*model.WorkspaceEntry
-	err := o.tx.Select(&entries, query, args...)
-	return entries, err
-}
-
-func (o *DBRepoOperations) ListWorkspaceDirectory(branch, parentPath, after string, amount int) ([]*model.WorkspaceEntry, error) {
-	if amount == 0 {
-		amount = MaxResultsAllowed
-	}
-	fsb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	fsb.Select("repository_id", "branch_id", "parent_path", "path", "entry_name", "entry_size", "entry_type", "tombstone")
-	fsb.From("workspace_entries")
-	fsb.Where(fsb.Equal("repository_id", o.repoId))
-	fsb.Where(fsb.Equal("branch_id", branch))
-	fsb.Where(fsb.Equal("parent_path", parentPath))
-	fsb.OrderBy("path ASC")
-	if len(after) > 0 {
-		fsb.Where(fsb.GreaterThan("path", after))
-	}
-	fsb.Limit(amount)
-	dsb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	separatorCount := strings.Count(parentPath, "/")
-	dirEntryNameSql := fmt.Sprintf("(string_to_array(path, '/'))[%d]", separatorCount+1)
-	newPathSql := fmt.Sprintf("array_to_string((string_to_array(path, '/'))[:%d], '/') || '/'", separatorCount+1)
-	parentPathSql := fmt.Sprintf("array_to_string((string_to_array(path, '/'))[:%d], '/') || '/'", separatorCount)
-	dsb.Select(
-		"repository_id", "branch_id",
-		dsb.As(parentPathSql, "new_parent_path"),
-		dsb.As(newPathSql, "new_path"),
-		dsb.As(dirEntryNameSql, "new_entry_name"),
-		dsb.As("SUM(entry_size)", "entry_size"),
-		dsb.As("'tree'", "entry_type"), "not bool_or(not tombstone) AS tombstone")
-
-	dsb.From("workspace_entries")
-	dsb.Where(
-		dsb.Equal("repository_id", o.repoId),
-		dsb.Equal("branch_id", branch),
-		dsb.Like("parent_path", parentPath+"%"),
-		dsb.NotEqual("parent_path", parentPath))
-	if len(after) > 0 {
-		dsb.Where(dsb.GreaterThan(newPathSql, after))
-	}
-	dsb.GroupBy("repository_id", "branch_id", "new_parent_path", "new_path", "new_entry_name")
-	dsb.OrderBy("new_path ASC")
-	dsb.Limit(amount)
-
-	var entries []*model.WorkspaceEntry
-	// language=sql
-	query, args := sqlbuilder.Buildf("SELECT * FROM ((%v) UNION ALL (%v)) t ORDER BY path LIMIT %s", fsb, dsb, amount).Build()
-	query = o.tx.Rebind(query)
 	err := o.tx.Select(&entries, query, args...)
 	return entries, err
 }
@@ -358,20 +293,34 @@ func (o *DBRepoOperations) ListMultipartUploadParts(uploadId string) ([]*model.M
 	return parts, err
 }
 
-func (o *DBRepoOperations) DeleteWorkspacePath(branch, path string) error {
-	_, err := o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
+func (o *DBRepoOperations) DeleteWorkspacePath(branch, path, typ string) error {
+	result, err := o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
 		o.repoId, branch, path)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return errors.ErrRevertNonExistingPath
+	}
+	if typ == model.EntryTypeTree {
+		_, err = o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%'`,
+			o.repoId, branch, path)
+	}
 	return err
 }
 
-func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string, entries []*model.WorkspaceEntry) error {
+func (o *DBRepoOperations) WriteToWorkspacePath(branch string, entries []*model.WorkspaceEntry) error {
 	sqlTemplate := `
 		INSERT INTO workspace_entries (repository_id, branch_id, path, parent_path, 
 			entry_name, entry_address, entry_type, entry_creation_date, entry_size, entry_checksum, tombstone)
 		VALUES %s
 		ON CONFLICT ON CONSTRAINT workspace_entries_pkey
 		DO UPDATE SET parent_path = excluded.parent_path, entry_name = excluded.entry_name, entry_address = excluded.entry_address, entry_type = excluded.entry_type, entry_creation_date = excluded.entry_creation_date,
-		entry_size = excluded.entry_size, entry_checksum = excluded.entry_checksum, tombstone = (excluded.tombstone AND (SELECT NOT bool_or(NOT tombstone) FROM workspace_entries hlpr WHERE hlpr.parent_path=excluded.parent_path AND hlpr.path <> excluded.path))`
+		entry_size = excluded.entry_size, entry_checksum = excluded.entry_checksum, tombstone = (excluded.tombstone AND (SELECT NOT bool_or(NOT tombstone) FROM workspace_entries hlpr WHERE hlpr.parent_path=excluded.parent_path AND hlpr.path <> excluded.path) IS TRUE)`
 	var vals []interface{}
 	valsStr := ""
 	idx := 1
@@ -501,15 +450,10 @@ func (o *DBRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
 
 func (o *DBRepoOperations) CascadeDirectoryDeletion(branch, deletedPathParent string) error {
 	_, err := o.tx.Exec(`UPDATE workspace_entries we SET tombstone = 0 = (SELECT COUNT(*)
-									FROM workspace_entries we2
-									FULL OUTER JOIN (SELECT unnest(branches) as branch, * FROM entries_with_path) ewp
-										ON we2.branch_id = ewp.branch
-											AND we2.parent_path = ewp.parent_path
-											AND we2.entry_name = ewp.name
-											AND we2.repository_id = ewp.repository_id
-										WHERE COALESCE(we2.repository_id, ewp.repository_id) = $1 AND COALESCE(we2.branch_id, ewp.branch) = $2
-											AND COALESCE(we2.entry_type, ewp.type) = $3 AND we2.tombstone IS NOT TRUE
-											AND COALESCE(we2.parent_path, ewp.parent_path) LIKE we.path || '%') 
+									FROM combined_workspace we2
+										WHERE we2.repository_id = $1 AND we2.branch_id = $2
+											AND we2.entry_type = $3 AND we2.tombstone IS NOT TRUE
+											AND we2.parent_path LIKE we.path || '%')
 								WHERE repository_id = $1 AND branch_id = $2 AND entry_type = $4 AND $5 LIKE path || '%'`,
 		o.repoId, branch, model.EntryTypeObject, model.EntryTypeTree, deletedPathParent)
 	return err

@@ -17,7 +17,7 @@ var (
 	ErrDestinationNotCommitted    = xerrors.New("destination branch has uncommitted changes")
 	ErrMergeConflict              = xerrors.New("Merge Conflict")
 	ErrMergeUpdateFailed          = xerrors.New("failed updating merged destination")
-
+	ErrRevertNonExistingPath      = xerrors.New("tried to revert non existing path")
 	//validation errors
 	ErrInvalid = xerrors.New("validation error")
 )

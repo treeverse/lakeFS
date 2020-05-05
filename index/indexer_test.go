@@ -1,6 +1,7 @@
 package index_test
 
 import (
+	"github.com/treeverse/lakefs/index/errors"
 	"log"
 	"os"
 	"testing"
@@ -240,7 +241,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			},
 			nil,
 			nil,
-			db.ErrNotFound,
+			errors.ErrRevertNonExistingPath,
 		},
 		{
 			"revert non existing tree",
@@ -250,7 +251,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			},
 			nil,
 			nil,
-			db.ErrNotFound,
+			errors.ErrRevertNonExistingPath,
 		},
 	}
 
@@ -323,7 +324,6 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 		Address:      "123456789",
 		CreationDate: time.Now(),
 		EntryType:    model.EntryTypeObject,
-		ObjectCount:  1,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -345,16 +345,14 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		path    string
 	}
 	testData := []struct {
-		Name               string
-		partialCommitRatio float32
-		Actions            []Action
-		ExpectExisting     []string
-		ExpectMissing      []string
-		ExpectedError      error
+		Name           string
+		Actions        []Action
+		ExpectExisting []string
+		ExpectMissing  []string
+		ExpectedError  error
 	}{
 		{
 			"add and delete",
-			1,
 			[]Action{
 				{write, "a/foo"},
 				{deleteEntry, "a/foo"},
@@ -366,7 +364,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"delete non existing",
-			1,
 			[]Action{
 				{write, "a/bar"},
 				{deleteEntry, "a/foo"},
@@ -378,7 +375,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"rewrite deleted",
-			1,
 			[]Action{
 				{write, "a/foo"},
 				{deleteEntry, "a/foo"},
@@ -391,7 +387,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"included",
-			1,
 			[]Action{
 				{write, "a/foo/bar"},
 				{write, "a/foo"},
@@ -405,7 +400,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"remove from workspace",
-			0,
 			[]Action{
 				{write, "a/foo"},
 				{write, "a/foo/bar"},
@@ -418,7 +412,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"remove from workspace and from merkle",
-			0,
 			[]Action{
 				{write, "a/foo"},
 				{commit, ""},
@@ -433,7 +426,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"remove from twice from merkle before partial commit",
-			0,
 			[]Action{
 				{write, "a/foo"},
 				{commit, ""},
