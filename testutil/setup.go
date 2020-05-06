@@ -5,6 +5,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/block/local"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/block"
+	lakefsS3 "github.com/treeverse/lakefs/block/s3"
 
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/treeverse/lakefs/index"
@@ -126,14 +128,14 @@ func GetDB(t *testing.T, uri, schemaName string) db.Database {
 	return database
 }
 
-func GetBlockAdapter(t *testing.T, isLocal bool) block.Adapter {
+func GetBlockAdapter(t *testing.T, isLocal bool, opts ...func(a *lakefsS3.Adapter)) block.Adapter {
 	if isLocal {
 		dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
 		err := os.MkdirAll(dir, 0777)
 		if err != nil {
 			t.Fatal(err)
 		}
-		adapter, err := block.NewLocalFSAdapter(dir)
+		adapter, err := local.NewLocalFSAdapter(dir)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -152,10 +154,7 @@ func GetBlockAdapter(t *testing.T, isLocal bool) block.Adapter {
 		cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		sess := session.Must(session.NewSession(cfg))
 		svc := s3.New(sess)
-		adapter, err := block.NewS3Adapter(svc)
-		if err != nil {
-			panic(fmt.Errorf("got error opening an S3 block adapter: %s", err))
-		}
+		adapter := lakefsS3.NewAdapter(svc, opts...)
 		return adapter
 	}
 }

@@ -28,9 +28,7 @@ type RepoOperations interface {
 
 	// Multipart uploads
 	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
-	ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error)
 	ListMultipartUploads() ([]*model.MultipartUpload, error)
-	ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error)
 	GetObjectDedup(DedupId string) (*model.ObjectDedup, error)
 	DeleteWorkspacePath(branch, path string) error
 	WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error
@@ -43,9 +41,7 @@ type RepoOperations interface {
 	DeleteBranch(name string) error
 	WriteRepo(repo *model.Repo) error
 	WriteMultipartUpload(upload *model.MultipartUpload) error
-	WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error
 	DeleteMultipartUpload(uploadId string) error
-	DeleteMultipartUploadParts(uploadId string) error
 	WriteObjectDedup(dedup *model.ObjectDedup) error
 }
 
@@ -119,7 +115,7 @@ func (o *DBRepoOperations) ReadRoot(address string) (*model.Root, error) {
 
 func (o *DBRepoOperations) ReadObject(addr string) (*model.Object, error) {
 	obj := &model.Object{}
-	err := o.tx.Get(obj, `SELECT * FROM objects WHERE repository_id = $1 AND address = $2`, o.repoId, addr)
+	err := o.tx.Get(obj, `SELECT * FROM objects WHERE repository_id = $1 AND object_address = $2`, o.repoId, addr)
 	return obj, err
 }
 
@@ -211,29 +207,15 @@ func (s *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, e
 
 func (o *DBRepoOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
 	m := &model.MultipartUpload{}
-	err := o.tx.Get(m, `SELECT * FROM multipart_uploads WHERE repository_id = $1 AND id = $2`,
+	err := o.tx.Get(m, `SELECT  repository_id,id,path,creation_date,encode(object_name,'hex') as object_name FROM multipart_uploads WHERE repository_id = $1 AND id = $2`,
 		o.repoId, uploadId)
-	return m, err
-}
-
-func (o *DBRepoOperations) ReadMultipartUploadPart(uploadId string, partNumber int) (*model.MultipartUploadPart, error) {
-	m := &model.MultipartUploadPart{}
-	err := o.tx.Get(m, `SELECT * FROM multipart_upload_parts WHERE repository_id = $1 AND upload_id = $2 AND part_number = $3`,
-		o.repoId, uploadId, partNumber)
 	return m, err
 }
 
 func (o *DBRepoOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {
 	var mpus []*model.MultipartUpload
-	err := o.tx.Select(&mpus, `SELECT * FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
+	err := o.tx.Select(&mpus, `SELECT repository_id,id,path,creation_date,encode(object_name,'hex') as object_name FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
 	return mpus, err
-}
-
-func (o *DBRepoOperations) ListMultipartUploadParts(uploadId string) ([]*model.MultipartUploadPart, error) {
-	var parts []*model.MultipartUploadPart
-	err := o.tx.Select(&parts, `SELECT * FROM multipart_upload_parts WHERE repository_id = $1 AND upload_id = $2`,
-		o.repoId, uploadId)
-	return parts, err
 }
 
 func (o *DBRepoOperations) DeleteWorkspacePath(branch, path string) error {
@@ -297,13 +279,13 @@ func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
 }
 
 func (o *DBRepoOperations) WriteObject(addr string, object *model.Object) error {
-	object.Address = addr
+	object.ObjectAddress = addr
 	_, err := o.tx.Exec(`
-		INSERT INTO objects (repository_id, address, checksum, size, blocks, metadata)
+		INSERT INTO objects (repository_id, object_address, checksum, size, physical_address, metadata)
 		VALUES ($1, $2, $3, $4, $5, $6)
 		ON CONFLICT ON CONSTRAINT objects_pkey
 		DO NOTHING`, // since it's keyed by hash of content, no need to update, we know the fields are the same
-		o.repoId, addr, object.Checksum, object.Size, object.Blocks, object.Metadata)
+		o.repoId, addr, object.Checksum, object.Size, object.PhysicalAddress, object.Metadata)
 	return err
 }
 
@@ -335,9 +317,9 @@ func (o *DBRepoOperations) DeleteBranch(name string) error {
 
 func (o *DBRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
 	_, err := o.tx.Exec(`
-		INSERT INTO multipart_uploads (repository_id, id, path, creation_date)
-		VALUES ($1, $2, $3, $4)`,
-		o.repoId, upload.Id, upload.Path, upload.CreationDate)
+		INSERT INTO multipart_uploads (repository_id, id, path, creation_date,object_name)
+		VALUES ($1, $2, $3, $4, decode($5,'hex'))`,
+		o.repoId, upload.Id, upload.Path, upload.CreationDate, upload.ObjectName)
 	return err
 }
 
@@ -349,33 +331,18 @@ func (o *DBRepoOperations) WriteRepo(repo *model.Repo) error {
 	return err
 }
 
-func (o *DBRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {
-	_, err := o.tx.Exec(`
-		INSERT INTO multipart_upload_parts (repository_id, upload_id, part_number, checksum, creation_date, size, blocks)
-		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		o.repoId, uploadId, partNumber, part.Checksum, part.CreationDate, part.Size, part.Blocks)
-	return err
-}
+//func (o *DBRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {
+//	_, err := o.tx.Exec(`
+//		INSERT INTO multipart_upload_parts (repository_id, upload_id, part_number, checksum, creation_date, size, blocks)
+//		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+//		o.repoId, uploadId, partNumber, part.Checksum, part.CreationDate, part.Size, part.Blocks)
+//	return err
+//}
 
 func (o *DBRepoOperations) DeleteMultipartUpload(uploadId string) error {
 	_, err := o.tx.Exec(`
-		DELETE FROM multipart_upload_parts
-		WHERE repository_id = $1 AND upload_id = $2`,
-		o.repoId, uploadId)
-	if err != nil {
-		return err
-	}
-	_, err = o.tx.Exec(`
 		DELETE FROM multipart_uploads
 		WHERE repository_id = $1 AND id = $2`,
-		o.repoId, uploadId)
-	return err
-}
-
-func (o *DBRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
-	_, err := o.tx.Exec(`
-		DELETE FROM multipart_upload_parts
-		WHERE repository_id = $1 AND upload_id = $2`,
 		o.repoId, uploadId)
 	return err
 }
