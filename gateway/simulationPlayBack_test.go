@@ -118,7 +118,7 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 			logging.Default().WithError(err).Fatal("could not create Request from URL")
 		}
 		if len(event.uploadId) > 0 {
-			utils.PlaybackParams.CurrentUploadId = event.uploadId
+			IdTranslator.expectedId = string(event.uploadId)
 		}
 
 		secondDiff := time.Duration(float64(event.eventTime.Add(durationToAdd).Sub(time.Now())) / playbackSpeed)

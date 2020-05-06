@@ -29,11 +29,11 @@ type Operation struct {
 	Region         string
 	FQDN           string
 
-	Index            index.Index
-	MultipartManager index.MultipartManager
-	BlockStore       block.Adapter
-	Auth             utils.GatewayAuthService
-	Incr             ActionIncr
+	Index index.Index
+	//	MultipartManager index.MultipartManager
+	BlockStore block.Adapter
+	Auth       utils.GatewayAuthService
+	Incr       ActionIncr
 }
 
 func (o *Operation) RequestId() string {

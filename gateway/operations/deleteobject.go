@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"github.com/treeverse/lakefs/block/s3"
 	"net/http"
 
 	"github.com/treeverse/lakefs/db"
@@ -19,15 +20,24 @@ func (controller *DeleteObject) Action(repoId, refId, path string) permissions.A
 }
 
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
+	o.Incr("abort_mpu")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
-
-	o.Incr("abort_mpu")
-	err := o.MultipartManager.Abort(o.Repo.Id, o.Path, uploadId)
-	if err != nil {
-		o.Log().WithError(err).Error("could not abort multipart upload")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
+	adapter := o.BlockStore
+	if adapter.GetAdapterType() == "s3" {
+		s3adapter, _ := adapter.(s3.AdapterInterface)
+		err := s3adapter.AbortMultiPartUpload(o.Repo.StorageNamespace, o.Path, uploadId)
+		if err != nil {
+			o.Log().WithError(err).Error("could not abort multipart upload")
+			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			return
+		}
+	} else { /*
+			err := o.MultipartManager.Abort(o.Repo.Id, o.Path, uploadId)
+			if err != nil {
+				o.Log().WithError(err).Error("could not abort multipart upload")
+				o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+				return}*/
 	}
 
 	// done.
