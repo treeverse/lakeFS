@@ -52,6 +52,15 @@ func isEOF(err error) bool {
 	return err == io.EOF || err == io.ErrUnexpectedEOF
 }
 
+func (s *StreamingReader) GetLastChunk() []byte {
+	res := make([]byte, 0)
+	sig, _ := s.StreamSigner.GetSignature([]byte{}, []byte{}, s.Time)
+	lastBoundary := chunkBoundary(sig, 0)
+	res = append(res, lastBoundary...)
+	res = append(res, '\r', '\n') // additional \r\n after the last boundary
+	return res
+}
+
 func (s *StreamingReader) readNextChunk() error {
 	buf := make([]byte, s.ChunkSize)
 	n, err := io.ReadFull(s.Reader, buf)
@@ -62,20 +71,21 @@ func (s *StreamingReader) readNextChunk() error {
 		return err
 	}
 	if n == 0 {
+		if s.currentChunk == nil {
+			s.currentChunk = bytes.NewBuffer(s.GetLastChunk())
+		}
 		return io.EOF
 	}
 	sig, sigErr := s.StreamSigner.GetSignature([]byte{}, buf, s.Time)
 	if sigErr != nil {
 		return sigErr
 	}
+
 	buf = append(buf, '\r', '\n') // additional \r\n after the content
 	boundary := chunkBoundary(sig, n)
 	if isEOF(err) || s.totalRead == s.Size {
 		// we're done with the upstream Reader, let's write one last chunk boundary.
-		sig, _ := s.StreamSigner.GetSignature([]byte{}, []byte{}, s.Time)
-		lastBoundary := chunkBoundary(sig, 0)
-		buf = append(buf, lastBoundary...)
-		buf = append(buf, '\r', '\n') // additional \r\n after the last boundary
+		buf = append(buf, s.GetLastChunk()...)
 	}
 	buf = append(boundary, buf...)
 	s.currentChunk = bytes.NewBuffer(buf)

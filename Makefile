@@ -25,6 +25,8 @@ API_BUILD_DIR=api/gen
 
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
+VERSION=dev
+export VERSION
 
 all: build
 
@@ -41,8 +43,8 @@ validate-swagger:  ## Validate swagger.yaml
 	$(SWAGGER) validate swagger.yml
 
 build: gen  ## Download dependecies and Build the default binary
-	$(GOBUILD) -o $(BINARY_NAME) -v main.go
-	$(GOBUILD) -o $(CLI_BINARY_NAME) -v cli/main.go
+	$(GOBUILD) -o $(BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v main.go
+	$(GOBUILD) -o $(CLI_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v cli/main.go
 
 lint: gen ## Lint code
 	$(DOCKER) run --rm -it -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v
