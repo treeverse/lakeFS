@@ -60,7 +60,8 @@ func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
 
 type Config struct{}
 
-func (c *Config) setDefaults() {
+func NewConfig() *Config {
+	c := &Config{}
 	viper.SetDefault("logging.format", DefaultLoggingFormat)
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
@@ -82,11 +83,7 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
-}
 
-func NewConfig() *Config {
-	c := &Config{}
-	c.setDefaults()
 	c.setupLogger()
 	return c
 }
