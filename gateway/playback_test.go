@@ -9,8 +9,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/treeverse/lakefs/index/store"
-
 	"github.com/ory/dockertest/v3"
 
 	"github.com/treeverse/lakefs/logging"
@@ -18,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	lakefsS3 "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
@@ -38,7 +37,6 @@ type dependencies struct {
 	blocks block.Adapter
 	auth   utils.GatewayAuthService
 	meta   index.Index
-	mpu    index.MultipartManager
 }
 
 func TestGatewayRecording(t *testing.T) {
@@ -83,14 +81,31 @@ func (m *mockCollector) Collect(class, action string) {
 
 }
 
+/*func injectIdTranslator (a *lakefsS3.Adapter){
+	{ a.uploadIdTranslator = &uploadIdTranslator{ transMap: make(map[string]string),
+		expectedId: "",
+		t: t,
+	}
+	}
+}*/
+var IdTranslator *uploadIdTranslator
+
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
 	directory := filepath.Join("testdata", "recordings", testDir)
 
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
-	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 	_, s3Flag := os.LookupEnv("S3")
 	blockAdapter := testutil.GetBlockAdapter(t, !s3Flag)
+	if s3Flag {
+		s3Adapter := blockAdapter.(lakefsS3.AdapterInterface)
+		IdTranslator = &uploadIdTranslator{transMap: make(map[string]string),
+			expectedId: "",
+			t:          t,
+		}
+		s3Adapter.InjectSimulationId(IdTranslator)
+
+	}
 	authService := newGatewayAuth(t, directory)
 
 	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
@@ -98,14 +113,12 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		meta,
 		blockAdapter,
 		authService,
-		mpu,
 		authService.ListenAddress, authService.BareDomain, &mockCollector{})
 
 	return server.Server.Handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
 		meta:   meta,
-		mpu:    mpu,
 	}
 }
 
@@ -139,3 +152,42 @@ func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.Credentia
 func (m *playBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
 	return &auth.AuthorizationResponse{true, nil}, nil
 }
+
+type uploadIdTranslator struct {
+	transMap   map[string]string
+	expectedId string
+	t          *testing.T
+}
+
+func (d *uploadIdTranslator) SetUploadId(uploadId string) string {
+	d.transMap[d.expectedId] = uploadId
+	return d.expectedId
+}
+func (d *uploadIdTranslator) TranslateUploadId(simulationId string) string {
+	id, ok := d.transMap[simulationId]
+	if !ok {
+		d.t.Error("upload id " + simulationId + " not in map")
+		return simulationId
+	} else {
+		return id
+	}
+}
+func (d *uploadIdTranslator) RemoveUploadId(inputUploadId string) {
+	var keyToRemove string
+	for k, v := range d.transMap {
+		if v == inputUploadId {
+			keyToRemove = k
+			break
+		}
+	}
+	delete(d.transMap, keyToRemove)
+}
+
+//func newUploadIdTranslator(t testing.T) s3.UploadIdTranslator{
+//	return &uploadIdTranslator{
+//		transMap: make(map[string]string),
+//		expectedId: "",
+//		t: t,
+//	}
+//
+//}

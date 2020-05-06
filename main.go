@@ -23,7 +23,6 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
 )
 
@@ -142,7 +141,7 @@ var runCmd = &cobra.Command{
 		meta := index.NewDBIndex(mdb)
 
 		// init mpu manager
-		mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
+		//mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
 		// init block store
 		blockStore := conf.BuildBlockAdapter()
@@ -154,7 +153,7 @@ var runCmd = &cobra.Command{
 		stats := getStats(conf, GetInstallationID(authService))
 
 		// start API server
-		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats)
+		apiServer := api.NewServer(meta, blockStore, authService, stats)
 		go func() {
 			panic(apiServer.Serve(conf.GetAPIListenAddress()))
 		}()
@@ -165,7 +164,6 @@ var runCmd = &cobra.Command{
 			meta,
 			blockStore,
 			authService,
-			mpu,
 			conf.GetS3GatewayListenAddress(),
 			conf.GetS3GatewayDomainName(),
 			stats,

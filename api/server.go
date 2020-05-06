@@ -38,26 +38,26 @@ var (
 )
 
 type Server struct {
-	meta             index.Index
-	multipartManager index.MultipartManager
-	blockStore       block.Adapter
-	authService      auth.Service
-	stats            stats.Collector
+	meta index.Index
+	//multipartManager index.MultipartManager
+	blockStore  block.Adapter
+	authService auth.Service
+	stats       stats.Collector
 }
 
 func NewServer(
 	meta index.Index,
-	multipartManager index.MultipartManager,
+	//multipartManager index.MultipartManager,
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,
 ) *Server {
 	return &Server{
-		meta:             meta,
-		multipartManager: multipartManager,
-		blockStore:       blockStore,
-		authService:      authService,
-		stats:            stats,
+		meta: meta,
+		//multipartManager: multipartManager,
+		blockStore:  blockStore,
+		authService: authService,
+		stats:       stats,
 	}
 }
 
