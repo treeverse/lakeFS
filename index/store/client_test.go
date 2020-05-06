@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"errors"
 	"log"
 	"os"
 	"strings"
@@ -8,15 +9,11 @@ import (
 	"time"
 
 	"github.com/ory/dockertest/v3"
-
-	"github.com/treeverse/lakefs/testutil"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/store"
-
-	"errors"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 var (

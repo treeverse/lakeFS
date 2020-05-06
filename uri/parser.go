@@ -1,9 +1,8 @@
 package uri
 
 import (
-	"strings"
-
 	"errors"
+	"strings"
 )
 
 const (

@@ -1,10 +1,9 @@
 package uri_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
-
-	"errors"
 
 	"github.com/treeverse/lakefs/uri"
 )
