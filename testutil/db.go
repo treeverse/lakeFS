@@ -6,7 +6,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/treeverse/lakefs/block/local"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"

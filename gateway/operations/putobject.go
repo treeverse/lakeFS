@@ -104,8 +104,7 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 			return
 		}
 
-		ETag := resp.Header["Etag"]
-		o.SetHeader("ETag", ETag[0])
+		o.SetHeader("ETag", ETag)
 		o.ResponseWriter.WriteHeader(http.StatusOK)
 		//for k, val := range resp.Header {
 		//	for _, s := range val {
