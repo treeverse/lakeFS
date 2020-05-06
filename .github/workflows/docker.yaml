@@ -1,0 +1,51 @@
+name: Docker
+on:
+  release:
+    types: [published]
+jobs:
+  deploy:
+    name: Build and push to ECR
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup UI (node 10)
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+
+      - name: Setup statik
+        run: |
+          go get github.com/rakyll/statik
+
+      - name: Generate code
+        run: |
+          make gen
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build, tag and push image to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY: lakefs
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:${GITHUB_REF##*/} --build-arg VERSION=${GITHUB_REF##*/} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${GITHUB_REF##*/}
+

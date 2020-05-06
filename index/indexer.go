@@ -166,7 +166,7 @@ func WithContext(ctx context.Context) Option {
 func NewDBIndex(db db.Database, opts ...Option) *DBIndex {
 	kvi := &DBIndex{
 		store:       store.NewDBStore(db),
-		tsGenerator: func() time.Time { return time.Now() },
+		tsGenerator: time.Now,
 		ctx:         context.Background(),
 	}
 	for _, opt := range opts {
@@ -418,7 +418,8 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(branch),
-		ValidatePath(path))
+		ValidatePath(path),
+	)
 	if err != nil {
 		return err
 	}
@@ -745,7 +746,8 @@ func (index *DBIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, e
 		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
 			index.log().WithError(err).Error("could not read branch")
 			return nil, err
-		} else if err == nil {
+		}
+		if err == nil {
 			return nil, errors.ErrBranchAlreadyExists
 		}
 		// read resolve reference

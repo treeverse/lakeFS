@@ -6,6 +6,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/treeverse/lakefs/block/local"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -93,7 +94,26 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	return uri, closer
 }
 
-func GetDB(t *testing.T, uri, schemaName string) db.Database {
+type GetDBOptions struct {
+	ApplyDDL bool
+}
+
+type GetDBOption func(options *GetDBOptions)
+
+func WithGetDBApplyDDL(apply bool) GetDBOption {
+	return func(options *GetDBOptions) {
+		options.ApplyDDL = apply
+	}
+}
+
+func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Database {
+	options := &GetDBOptions{
+		ApplyDDL: true,
+	}
+	for _, opt := range opts {
+		opt(options)
+	}
+
 	// generate uuid as schema name
 	generatedSchema := fmt.Sprintf("schema_%s",
 		strings.ReplaceAll(uuid.New().String(), "-", ""))
@@ -112,13 +132,15 @@ func GetDB(t *testing.T, uri, schemaName string) db.Database {
 
 	// apply DDL
 	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(fmt.Sprintf(`CREATE SCHEMA %s`, generatedSchema))
+		_, err := tx.Exec("CREATE SCHEMA " + generatedSchema)
 		if err != nil {
 			return nil, err
 		}
-
-		// do the actual migration
-		return nil, db.MigrateSchemaAll(tx, schemaName)
+		if options.ApplyDDL {
+			// do the actual migration
+			return nil, db.MigrateSchemaAll(tx, schemaName)
+		}
+		return nil, nil
 	})
 	if err != nil {
 		t.Fatalf("could not create schema: %v", err)

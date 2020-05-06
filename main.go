@@ -3,30 +3,31 @@ package main
 import (
 	"context"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
+	"os/signal"
 	"time"
 
 	"github.com/google/uuid"
-
-	"github.com/treeverse/lakefs/stats"
-
-	"github.com/treeverse/lakefs/auth/crypt"
-
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/store"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/permissions"
 )
 
-const DefaultInstallationID = "anon@example.com"
+const (
+	DefaultInstallationID   = "anon@example.com"
+	gracefulShutdownTimeout = 30 * time.Second
+)
 
 func setupConf(cmd *cobra.Command) *config.Config {
 	confFile, err := cmd.Flags().GetString("config")
@@ -62,7 +63,7 @@ var initCmd = &cobra.Command{
 	Short: "initialize a LakeFS instance, and setup an admin credential",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-		adb := conf.BuildAuthDatabase()
+		adb := conf.ConnectAuthDatabase()
 
 		userEmail, _ := cmd.Flags().GetString("email")
 		userFullName, _ := cmd.Flags().GetString("full-name")
@@ -72,46 +73,7 @@ var initCmd = &cobra.Command{
 			Email:    userEmail,
 			FullName: userFullName,
 		}
-		err := authService.CreateUser(user)
-		if err != nil {
-			panic(err)
-		}
-
-		role := &model.Role{
-			DisplayName: "Admin",
-		}
-
-		err = authService.CreateRole(role)
-		if err != nil {
-			panic(err)
-		}
-		policies := []*model.Policy{
-			{
-				Permission: string(permissions.ManageRepos),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.ReadRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-			{
-				Permission: string(permissions.WriteRepo),
-				Arn:        "arn:treeverse:repos:::*",
-			},
-		}
-		for _, policy := range policies {
-			err = authService.AssignPolicyToRole(role.Id, policy)
-			if err != nil {
-				panic(err)
-			}
-		}
-
-		err = authService.AssignRoleToUser(role.Id, user.Id)
-		if err != nil {
-			panic(err)
-		}
-
-		creds, err := authService.CreateUserCredentials(user)
+		creds, err := api.SetupAdminUser(authService, user)
 		if err != nil {
 			panic(err)
 		}
@@ -134,8 +96,11 @@ var runCmd = &cobra.Command{
 	Short: "run a LakeFS instance",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-		mdb := conf.BuildMetadataDatabase()
-		adb := conf.BuildAuthDatabase()
+		mdb := conf.ConnectMetadataDatabase()
+		adb := conf.ConnectAuthDatabase()
+		migrator := db.NewDatabaseMigrator().
+			AddDB(db.SchemaMetadata, mdb).
+			AddDB(db.SchemaAuth, adb)
 
 		// init index
 		meta := index.NewDBIndex(mdb)
@@ -154,8 +119,16 @@ var runCmd = &cobra.Command{
 
 		// start API server
 		apiServer := api.NewServer(meta, blockStore, authService, stats)
+		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats, migrator)
+
+		done := make(chan bool, 1)
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, os.Interrupt)
+
 		go func() {
-			panic(apiServer.Serve(conf.GetAPIListenAddress()))
+			if err := apiServer.Serve(conf.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("API server failed to listen on %s: %v", conf.GetAPIListenAddress(), err)
+			}
 		}()
 
 		// init gateway server
@@ -172,12 +145,39 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.Collect("global", "run")
 
-		panic(gatewayServer.Listen())
-		// TODO: gracefully stop API And gateway servers to ensure we also drain stats
+		go func() {
+			if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
+				log.Fatalf("Gateway server failed to listen on %s: %v", conf.GetS3GatewayListenAddress(), err)
+			}
+		}()
+
+		go gracefulShutdown(apiServer, gatewayServer, quit, done)
+
+		<-done
 		cancelFn()
 		<-stats.Done()
+		log.Println("Bye")
 		return nil
 	},
+}
+
+func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
+	log.Println("Control-C to shutdown")
+	<-quit
+	log.Println("Shutting down...")
+
+	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
+	defer cancel()
+
+	if err := apiServer.Shutdown(ctx); err != nil {
+		log.Fatalf("Cloud not shutdown the api server: %v", err)
+	}
+
+	if err := gatewayServer.Shutdown(ctx); err != nil {
+		log.Fatalf("Cloud not shutdown the gateway server: %v", err)
+	}
+
+	close(done)
 }
 
 var treeCmd = &cobra.Command{
@@ -187,7 +187,7 @@ var treeCmd = &cobra.Command{
 		conf := setupConf(cmd)
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
-		mdb := conf.BuildMetadataDatabase()
+		mdb := conf.ConnectMetadataDatabase()
 		meta := index.NewDBIndex(mdb)
 
 		err := meta.Tree(repo, branch)
@@ -203,23 +203,10 @@ var setupdbCmd = &cobra.Command{
 	Short: "run schema and data migrations on a fresh database",
 	RunE: func(cmd *cobra.Command, args []string) error {
 		conf := setupConf(cmd)
-
-		// start with lakefs_index
-		mdb := conf.BuildMetadataDatabase()
-		_, err := mdb.Transact(func(tx db.Tx) (interface{}, error) {
-			err := db.MigrateSchemaAll(tx, "lakefs_index")
-			return nil, err
-		}, db.WithLogger(logging.Dummy()))
-		if err != nil {
-			panic(err)
-		}
-
-		// then auth db
-		adb := conf.BuildAuthDatabase()
-		_, err = adb.Transact(func(tx db.Tx) (interface{}, error) {
-			err := db.MigrateSchemaAll(tx, "lakefs_auth")
-			return nil, err
-		}, db.WithLogger(logging.Dummy()))
+		migrator := db.NewDatabaseMigrator().
+			AddDB(db.SchemaMetadata, conf.ConnectMetadataDatabase()).
+			AddDB(db.SchemaAuth, conf.ConnectAuthDatabase())
+		err := migrator.Migrate()
 		if err != nil {
 			panic(err)
 		}

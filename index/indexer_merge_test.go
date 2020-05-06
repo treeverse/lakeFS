@@ -3,6 +3,7 @@ package index_test
 import (
 	"fmt"
 	"sort"
+	"strings"
 	"testing"
 
 	"github.com/treeverse/lakefs/index/errors"
@@ -17,13 +18,13 @@ func TestMerge(t *testing.T) {
 	t.Run("simplest merge", func(t *testing.T) {
 		deps := getDependencies(t)
 		index := deps.meta
-		uploadObject(t, deps, "t/v/s", "master", 1024)
+		uploadObject(t, deps, "t/v/s", "master", "master-t-v-s")
 		firstCommit := testCommit(t, index, "master", "master-1")
 		createBranch(t, index, "br-1", "master")
 
-		uploadObject(t, deps, "t/v1/s", "master", 10000)
+		uploadObject(t, deps, "t/v1/s", "master", "master-t-v1-s")
 		secondCommit := testCommit(t, index, "master", "master-2")
-		diffs, err := index.Merge(REPO, "master", "br-1", "user-1")
+		diffs, err := index.Merge(TestRepo, "master", "br-1", "user-1")
 		if err != nil {
 			t.Error("merge unexpected error", err)
 		}
@@ -36,13 +37,13 @@ func TestMerge(t *testing.T) {
 				createdCount, updatedCount, removedCount,
 				expectedCreated, expectedUpdated, expectedRemoved)
 		}
-		_ = getObject(t, index, REPO, "br-1", "t/v1/s", true, "merge failed - document not copied")
+		getObject(t, index, TestRepo, "br-1", "t/v1/s", true, "merge failed - document not copied")
 
 		// verify that merge commit record holds the right parents
-		branch, err := index.GetBranch(REPO, "br-1")
+		branch, err := index.GetBranch(TestRepo, "br-1")
 		testutil.Must(t, err)
 		// access merge commit
-		mergeCommit, err := index.GetCommit(REPO, branch.CommitId)
+		mergeCommit, err := index.GetCommit(TestRepo, branch.CommitId)
 		testutil.Must(t, err)
 		// verify that we have two parents
 		expectedParentsLen := 2
@@ -58,10 +59,10 @@ func TestMerge(t *testing.T) {
 			}
 		}
 		// remove last file (v1) and verify that diff will show it was removed
-		err = index.DeleteObject(REPO, "master", "t/v1/s")
+		err = index.DeleteObject(TestRepo, "master", "t/v1/s")
 		testutil.Must(t, err)
 		_ = testCommit(t, index, "master", "master-3")
-		diff, err := index.Diff(REPO, "master", "br-1")
+		diff, err := index.Diff(TestRepo, "master", "br-1")
 		testutil.Must(t, err)
 		if len(diff) != 1 {
 			t.Fatalf("Diff should show %d change, expected 1", len(diff))
@@ -76,18 +77,18 @@ func TestMerge(t *testing.T) {
 	t.Run("merge with remove", func(t *testing.T) {
 		deps := getDependencies(t)
 		index := deps.meta
-		uploadObject(t, deps, "t/v/s", "master", 1024)
-		uploadObject(t, deps, "t/v/s1", "master", 2048)
+		uploadObject(t, deps, "t/v/s", "master", "master-t-v-s")
+		uploadObject(t, deps, "t/v/s1", "master", "master-t-v-s1")
 		testCommit(t, index, "master", "master-1")
 		createBranch(t, index, "br-1", "master")
 		testCommit(t, index, "br-1", "br-1-1")
-		err := index.DeleteObject(REPO, "master", "t/v/s")
+		err := index.DeleteObject(TestRepo, "master", "t/v/s")
 		if err != nil {
 			t.Error("could not delete object\n")
 		}
 		testCommit(t, index, "master", "master-2")
 
-		diffs, err := index.Merge(REPO, "master", "br-1", "user-1")
+		diffs, err := index.Merge(TestRepo, "master", "br-1", "user-1")
 		if err != nil {
 			t.Error("unexpected error:", err)
 		}
@@ -97,23 +98,23 @@ func TestMerge(t *testing.T) {
 			updatedCount != 0 {
 			t.Errorf("success counters wrong added %d, changed %d, removed %d\n ", createdCount, updatedCount, removedCount)
 		}
-		_ = getObject(t, index, REPO, "br-1", "t/v/s", false, "merge failed - document not deleted")
+		getObject(t, index, TestRepo, "br-1", "t/v/s", false, "merge failed - document not deleted")
 	})
 
 	t.Run("merge with conflict", func(t *testing.T) {
 		deps := getDependencies(t)
 		index := deps.meta
-		uploadObject(t, deps, "t/v/s", "master", 1024)
+		uploadObject(t, deps, "t/v/s", "master", "master-t-v-s")
 		testCommit(t, index, "master", "master-1")
 		createBranch(t, index, "br-1", "master")
 		testCommit(t, index, "br-1", "br-1-1")
 
-		uploadObject(t, deps, "t/v/s1", "master", 10000)
-		uploadObject(t, deps, "t/v/s1", "br-1", 5000)
+		uploadObject(t, deps, "t/v/s1", "master", "master-t-v-s1")
+		uploadObject(t, deps, "t/v/s1", "br-1", "br-1-t-v-s1")
 		testCommit(t, index, "br-1", "br-1-1")
 		testCommit(t, index, "master", "master-2")
 
-		diffs, err := index.Merge(REPO, "master", "br-1", "user-1")
+		diffs, err := index.Merge(TestRepo, "master", "br-1", "user-1")
 		if err != errors.ErrMergeConflict {
 			t.Error("did not identify conflict  ", err)
 		}
@@ -131,14 +132,14 @@ func TestMerge(t *testing.T) {
 	t.Run("large tree", func(t *testing.T) {
 		deps := getDependencies(t)
 		index := deps.meta
-		uploadTree(t, deps, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 4096)
+		uploadTree(t, deps, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10})
 		testCommit(t, index, "master", "master-1")
 		createBranch(t, index, "br-1", "master")
 		testCommit(t, index, "br-1", "br-1-1")
-		uploadTree(t, deps, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 5020)
-		uploadTree(t, deps, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 5020)
+		uploadTree(t, deps, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10})
+		uploadTree(t, deps, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10})
 		testCommit(t, index, "br-1", "br-1-2")
-		diffs, err := index.Merge(REPO, "master", "br-1", "user-1")
+		diffs, err := index.Merge(TestRepo, "master", "br-1", "user-1")
 		if err != nil {
 			t.Error("unexpected error:", err)
 		}
@@ -153,16 +154,16 @@ func TestMerge(t *testing.T) {
 	t.Run("large tree with large addition", func(t *testing.T) {
 		deps := getDependencies(t)
 		index := deps.meta
-		uploadTree(t, deps, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 4096)
+		uploadTree(t, deps, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10})
 		testCommit(t, index, "master", "master-1")
 		createBranch(t, index, "br-1", "master")
 		testCommit(t, index, "br-1", "br-1-1")
-		uploadTree(t, deps, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 5020)
-		uploadTree(t, deps, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 5020)
+		uploadTree(t, deps, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10})
+		uploadTree(t, deps, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10})
 		testCommit(t, index, "br-1", "br-1-2")
 		testCommit(t, index, "master", "master-2")
 
-		diffs, err := index.Merge(REPO, "master", "br-1", "user-1")
+		diffs, err := index.Merge(TestRepo, "master", "br-1", "user-1")
 		if err != nil {
 			t.Error("unexpected error:", err)
 		}
@@ -178,31 +179,34 @@ func TestMerge(t *testing.T) {
 		deps := getDependencies(t)
 		index := deps.meta
 
-		uploadTree(t, deps, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 1)
+		uploadTree(t, deps, "master", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10})
 		testCommit(t, index, "master", "master-1")
 		createBranch(t, index, "br-1", "master")
 		testCommit(t, index, "br-1", "br-1-1")
-		uploadTree(t, deps, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10}, 1)
-		uploadTree(t, deps, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10}, 1)
-		uploadTree(t, deps, "br-1", "base", []string{"lv1", "lv2"}, []int{10, 5}, []int{10, 10}, 1)
+		uploadTree(t, deps, "br-1", "base", []string{"lva", "lvb"}, []int{0, 0}, []int{10, 10})
+		uploadTree(t, deps, "master", "base", []string{"lv1", "lv2"}, []int{10, 0}, []int{10, 10})
+		uploadTree(t, deps, "br-1", "base", []string{"lv1", "lv2"}, []int{10, 5}, []int{10, 10})
 		testCommit(t, index, "br-1", "br-1-2")
 		testCommit(t, index, "master", "master-2")
 
-		diffs, err := index.Merge(REPO, "master", "br-1", "user-1")
+		diffs, err := index.Merge(TestRepo, "master", "br-1", "user-1")
 		if err != errors.ErrMergeConflict {
 			t.Error("did not identify conflict ", err)
 		}
-		if countConflict(diffs) != 50 {
-			t.Error("number of conflicts is ", len(diffs))
+		const expectedConflicts = 50
+		conflicts := countConflict(diffs)
+		if conflicts != expectedConflicts {
+			t.Errorf("number of conflicts is %d, expected %d", conflicts, expectedConflicts)
 		}
 	})
 }
 
-func uploadTree(t *testing.T, deps *dependencies, branch, base string, nm []string, startLevel, numInLevel []int, size int64) {
+func uploadTree(t *testing.T, deps *dependencies, branch, base string, nm []string, startLevel, numInLevel []int) {
+	content := branch + "-" + strings.Join(nm, "_")
 	for i := 0; i < numInLevel[0]; i++ {
 		for j := 0; j < numInLevel[1]; j++ {
 			path := fmt.Sprintf("%s/%s%d/%s%d", base, nm[0], i+startLevel[0], nm[1], j+startLevel[1])
-			uploadObject(t, deps, path, branch, size)
+			uploadObject(t, deps, path, branch, content)
 		}
 	}
 }

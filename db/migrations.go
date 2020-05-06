@@ -10,11 +10,9 @@ import (
 	"time"
 
 	"github.com/rakyll/statik/fs"
+	"github.com/treeverse/lakefs/ddl"
 	_ "github.com/treeverse/lakefs/ddl"
-)
-
-const (
-	statikNamespace = "ddl"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const schemaTableDDL = `
@@ -22,15 +20,46 @@ CREATE TABLE IF NOT EXISTS schema_versions (
     id serial NOT NULL PRIMARY KEY,
     version varchar(128) NOT NULL,
     migrated_at timestamptz NOT NULL
-);
-`
+);`
+
 const insertVersionSQL = `
 INSERT INTO schema_versions (version, migrated_at)
 VALUES ($1, $2)
 `
 
+type Migrator interface {
+	Migrate() error
+}
+
+type DatabaseMigrator struct {
+	databases map[string]Database
+}
+
+func NewDatabaseMigrator() *DatabaseMigrator {
+	return &DatabaseMigrator{
+		databases: make(map[string]Database),
+	}
+}
+
+func (d *DatabaseMigrator) AddDB(schema string, db Database) *DatabaseMigrator {
+	d.databases[schema] = db
+	return d
+}
+
+func (d *DatabaseMigrator) Migrate() error {
+	for schema, db := range d.databases {
+		_, err := db.Transact(func(tx Tx) (interface{}, error) {
+			return nil, MigrateSchemaAll(tx, schema)
+		}, WithLogger(logging.Dummy()))
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func GetDDL(schemaName, version string) (string, error) {
-	migrationFs, err := fs.NewWithNamespace(statikNamespace)
+	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
 	if err != nil {
 		return "", err
 	}
@@ -51,7 +80,7 @@ func GetDDL(schemaName, version string) (string, error) {
 }
 
 func ListSchemas() ([]string, error) {
-	migrationFs, err := fs.NewWithNamespace(statikNamespace)
+	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
 	if err != nil {
 		return nil, err
 	}
@@ -70,7 +99,7 @@ func ListSchemas() ([]string, error) {
 }
 
 func ListVersions(schemaName string) ([]string, error) {
-	migrationFs, err := fs.NewWithNamespace(statikNamespace)
+	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
 	if err != nil {
 		return nil, err
 	}
@@ -87,23 +116,6 @@ func ListVersions(schemaName string) ([]string, error) {
 	})
 	sort.Strings(versions)
 	return versions, err
-}
-
-func MigrateAll(tx Tx) error {
-	schemas, err := ListSchemas()
-	if err != nil {
-		return err
-	}
-	for _, schema := range schemas {
-		fmt.Printf("Starting Schema: %s\n", schema)
-		err = MigrateSchemaAll(tx, schema)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("Done with Schema: %s\n", schema)
-	}
-	fmt.Printf("All migrations done successfully\n")
-	return nil
 }
 
 func MigrateSchemaAll(tx Tx, schemaName string) error {
@@ -134,8 +146,5 @@ func MigrateVersion(tx Tx, schemaName, version string) error {
 		return err
 	}
 	_, err = tx.Exec(insertVersionSQL, version, time.Now())
-	if err != nil {
-		return err
-	}
 	return err
 }
