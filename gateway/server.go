@@ -60,7 +60,6 @@ func NewServer(
 	listenAddr, bareDomain string,
 	stats stats.Collector,
 ) *Server {
-
 	ctx := &ServerContext{
 		meta:        meta,
 		region:      region,
@@ -99,6 +98,12 @@ func NewServer(
 func (s *Server) Listen() error {
 	return s.Server.ListenAndServe()
 }
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.Server.SetKeepAlivesEnabled(false)
+	return s.Server.Shutdown(ctx)
+}
+
 func getApiErrOrDefault(err error, defaultApiErr errors.APIErrorCode) errors.APIError {
 	apiError, ok := err.(*errors.APIErrorCode)
 	if ok {

@@ -3,14 +3,13 @@ import {generateDownloadToken} from '../downloadToken';
 import {isValidBranchName} from "../model/validation";
 
 
-const API_ENDPOINT = '/api/v1';
+export const API_ENDPOINT = '/api/v1';
 
 const basicAuth = (accessKeyId, secretAccessKey) => {
     return {
         "Authorization": `Basic ${base64.encode(`${accessKeyId}:${secretAccessKey}`)}`,
     };
 };
-
 
 export const linkToPath = async (repoId, branchId, path) => {
     const userData = getUser();
@@ -22,7 +21,7 @@ export const linkToPath = async (repoId, branchId, path) => {
 };
 
 const getUser = () => {
-    let userData = window.localStorage.getItem("user");
+    const userData = window.localStorage.getItem("user");
     return JSON.parse(userData);
 }
 
@@ -327,8 +326,34 @@ class Refs {
     }
 }
 
+class Setup {
+    async lakeFS(email, fullName) {
+        const response = await fetch('/setup_lakefs', {
+            method: 'POST',
+            headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'                
+            },
+            body: JSON.stringify({
+                email: email,
+                full_name: fullName,
+            }),
+        })
+        switch (response.status) {
+            case 200:
+                return response.json();
+            case 409:
+                throw new Error('Conflict');
+            default:
+                throw new Error('Unknown');
+        }
+    }
+}
+
+
 export const repositories = new Repositories();
 export const branches = new Branches();
 export const objects = new Objects();
 export const commits = new Commits();
 export const refs = new Refs();
+export const setup = new Setup();
