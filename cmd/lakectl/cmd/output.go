@@ -9,13 +9,10 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/treeverse/lakefs/api/gen/models"
-
 	"github.com/jedib0t/go-pretty/table"
-
-	"golang.org/x/crypto/ssh/terminal"
-
 	"github.com/jedib0t/go-pretty/text"
+	"github.com/treeverse/lakefs/api/gen/models"
+	"golang.org/x/crypto/ssh/terminal"
 )
 
 var isTerminal = true
@@ -146,12 +143,14 @@ type APIError interface {
 }
 
 func DieErr(err error) {
+	errData := struct{ Error string }{}
 	apiError, isApiError := err.(APIError)
 	if isApiError {
-		WriteTo(DeathMessage, struct{ Error string }{apiError.GetPayload().Message}, os.Stderr)
-		os.Exit(1)
+		errData.Error = apiError.GetPayload().Message
+	} else {
+		errData.Error = err.Error()
 	}
-	WriteTo(DeathMessage, struct{ Error string }{err.Error()}, os.Stderr)
+	WriteTo(DeathMessage, errData, os.Stderr)
 	os.Exit(1)
 }
 

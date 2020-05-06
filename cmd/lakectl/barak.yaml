@@ -1,0 +1,5 @@
+credentials:
+  access_key_id: barak
+  secret_access_key: amar
+server:
+  endpoint_url: ""

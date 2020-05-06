@@ -1,0 +1,5 @@
+credentials:
+  access_key_id: a
+  secret_access_key: b
+server:
+  endpoint_url: http://stam.com

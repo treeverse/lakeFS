@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"io"
 	"io/ioutil"
 	"os"
 	"os/signal"
@@ -85,40 +84,11 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-func NewFromFile(configPath string) *Config {
-	handle, err := os.Open(configPath)
-	if err != nil {
-		panic(fmt.Errorf("failed opening config file %s: %s", configPath, err))
-	}
-	defer func() {
-		_ = handle.Close()
-	}()
+func NewConfig() *Config {
 	c := &Config{}
-	c.Setup(handle)
-	return c
-}
-
-func New() *Config {
-	c := &Config{}
-	c.Setup(nil)
-	return c
-}
-
-func (c *Config) Setup(confReader io.Reader) {
-	viper.SetConfigType("yaml")
-	viper.SetEnvPrefix("LAKEFS")
-	viper.AutomaticEnv()
-
 	c.setDefaults()
-
-	if confReader != nil {
-		err := viper.ReadConfig(confReader)
-		if err != nil {
-			panic(fmt.Errorf("Error reading config file: %s\n", err))
-		}
-	}
-
 	c.setupLogger()
+	return c
 }
 
 func (c *Config) setupLogger() {

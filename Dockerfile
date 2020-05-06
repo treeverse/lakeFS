@@ -12,8 +12,8 @@ RUN go mod download
 COPY . ./
 
 # Build a binaries
-RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakefs
-RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakectl ./cli
+RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakefs ./cmd/lakefs
+RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
 # Actual image we push
 FROM alpine:3.11.5 AS run
