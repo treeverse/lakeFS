@@ -12,11 +12,11 @@ import (
 
 	"github.com/treeverse/lakefs/auth/model"
 
-	"golang.org/x/xerrors"
+	"errors"
 )
 
 var (
-	ErrHeaderMalformed = xerrors.New("header malformed")
+	ErrHeaderMalformed = errors.New("header malformed")
 
 	// if object matches reserved string, no need to encode them
 	reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")

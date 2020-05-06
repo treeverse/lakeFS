@@ -1,15 +1,13 @@
 package merkle
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
 
-	"github.com/treeverse/lakefs/index/model"
-
 	"github.com/treeverse/lakefs/db"
-	"golang.org/x/xerrors"
-
+	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/path"
 )
 
@@ -110,7 +108,7 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 
 			// not the same as on the right, let's see whose change this is
 			commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.EntryType)
-			if xerrors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, db.ErrNotFound) {
 				// doesn't exist in common but left and right are different
 				// this means both trees created it differently, meaning a conflict
 				res = append(res, Difference{
@@ -151,7 +149,7 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 		// this node doesn't exist on right, so it was either deleted right or created left,
 		// let's use common to test
 		commonEntry, err := common.GetEntry(tx, entryPath, leftEntry.EntryType)
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			// exists only on left
 			res = append(res, Difference{
 				Type:      DifferenceTypeAdded,
@@ -194,7 +192,7 @@ func diff(tx TreeReader, pth string, left, right, common *Merkle) (Differences, 
 			entryPath = path.Join([]string{pth, rightEntry.Name})
 		}
 		commonEntry, err := common.GetEntry(tx, entryPath, rightEntry.EntryType)
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			// doesn't exist left, doesn't exist common - right created
 			// we don't currently record right modifications unless they are conflicting
 			continue
