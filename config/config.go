@@ -5,7 +5,6 @@ import (
 	"github.com/treeverse/lakefs/block/local"
 	"io"
 	"io/ioutil"
-	"net/url"
 	"os"
 	"os/signal"
 	"runtime"
@@ -13,19 +12,17 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/treeverse/lakefs/block"
-	s3a "github.com/treeverse/lakefs/block/s3"
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/jmoiron/sqlx"
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/block"
+	s3a "github.com/treeverse/lakefs/block/s3"
+	"github.com/treeverse/lakefs/db"
 )
 
 const (
@@ -45,7 +42,7 @@ const (
 	DefaultBlockStoreS3Region  = "us-east-1"
 
 	DefaultS3GatewayListenAddr = "0.0.0.0:8000"
-	DefaultS3GatewayDomainName = "s3.local"
+	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
 
 	DefaultAPIListenAddr = "0.0.0.0:8001"
@@ -63,8 +60,7 @@ func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
 	l.logger.Debug(vars...)
 }
 
-type Config struct {
-}
+type Config struct{}
 
 func (c *Config) setDefaults() {
 	viper.SetDefault("logging.format", DefaultLoggingFormat)
@@ -95,6 +91,9 @@ func NewFromFile(configPath string) *Config {
 	if err != nil {
 		panic(fmt.Errorf("failed opening config file %s: %s", configPath, err))
 	}
+	defer func() {
+		_ = handle.Close()
+	}()
 	c := &Config{}
 	c.Setup(handle)
 	return c
@@ -200,49 +199,20 @@ func (c *Config) setupLogger() {
 	}
 }
 
-func getSearchPath(uri string) (string, error) {
-	parsed, err := url.Parse(uri)
+func (c *Config) ConnectMetadataDatabase() db.Database {
+	db, err := db.ConnectDB(DefaultDatabaseDriver, viper.GetString("metadata.db.uri"))
 	if err != nil {
-		return "", err
+		panic(err)
 	}
-	sp := parsed.Query().Get("search_path")
-	if len(sp) > 0 {
-		return sp, nil
-	}
-	return "", fmt.Errorf("search_path not present in database connection string")
+	return db
 }
 
-func setupDb(uri string) db.Database {
-	schema, err := getSearchPath(uri)
+func (c *Config) ConnectAuthDatabase() db.Database {
+	db, err := db.ConnectDB(DefaultDatabaseDriver, viper.GetString("auth.db.uri"))
 	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
+		panic(err)
 	}
-	conn, err := sqlx.Connect(DefaultDatabaseDriver, uri)
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	tx, err := conn.Beginx()
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	_, err = tx.Exec(fmt.Sprintf(`CREATE SCHEMA IF NOT EXISTS  %s`, schema))
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	err = tx.Commit()
-	if err != nil {
-		panic(fmt.Errorf("could not open database: %s\n", err))
-	}
-	return db.NewDatabase(conn)
-}
-
-func (c *Config) BuildMetadataDatabase() db.Database {
-	return setupDb(viper.GetString("metadata.db.uri"))
-
-}
-
-func (c *Config) BuildAuthDatabase() db.Database {
-	return setupDb(viper.GetString("auth.db.uri"))
+	return db
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {
