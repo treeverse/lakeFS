@@ -4,10 +4,8 @@ import (
 	"crypto/md5"
 	"crypto/sha256"
 	"encoding/hex"
-	"fmt"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/index/model"
 	"hash"
 	"io"
 )
@@ -32,17 +30,6 @@ func (d *MockDedup) CreateDedupEntryIfNone(repoId string, dedupId string, objNam
 	} else {
 		return objName, nil
 	}
-}
-
-func uuidAsHex() string {
-	id := [16]byte(uuid.New())
-	return fmt.Sprintf("%x", id)
-}
-
-type Blob struct {
-	Blocks   []*model.Block
-	Checksum string
-	Size     int64
 }
 
 type HashingReader struct {
@@ -71,32 +58,29 @@ func newHashingReader(body io.Reader) (s *HashingReader) {
 	s.sha256 = sha256.New()
 	s.md5 = md5.New()
 	s.originalReader = body
-
 	return
 }
 
-func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64) (*Blob, error) {
+func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64) (string, string, int64, error) {
 	// handle the upload itself
 	hashReader := newHashingReader(body)
-	objName := uuidAsHex()
+	x := ([16]byte(uuid.New()))
+	objName := hex.EncodeToString(x[:])
 	err := adapter.Put(bucketName, objName, contentLength, hashReader)
 	if err != nil {
-		return nil, err
+		return "", "", -1, err
 	}
-	Block := new(model.Block)
 	dedupId := hex.EncodeToString(hashReader.sha256.Sum(nil))
 	checksum := hex.EncodeToString(hashReader.md5.Sum(nil))
 	existingName, err := index.CreateDedupEntryIfNone(repoId, dedupId, objName)
+	if err != nil {
+		return "", "", -1, err
+	}
 	if existingName != objName { // object already exist
 		adapter.Remove(bucketName, objName)
 		objName = existingName
 	}
-	Block.Size = hashReader.copiedSize
-	Block.Address = objName
-	blob := new(Blob)
-	blob.Blocks = append(blob.Blocks, Block)
-	blob.Checksum = checksum
-	blob.Size = Block.Size
-	return blob, nil
+
+	return checksum, objName, hashReader.copiedSize, nil
 
 }
