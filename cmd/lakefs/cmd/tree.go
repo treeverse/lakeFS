@@ -1,6 +1,9 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/index"
 )
@@ -9,12 +12,16 @@ import (
 var treeCmd = &cobra.Command{
 	Use:   "tree",
 	Short: "Dump the entire filesystem tree for the given repository and branch to stdout",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
 		mdb := cfg.ConnectMetadataDatabase()
 		meta := index.NewDBIndex(mdb)
-		return meta.Tree(repo, branch)
+		err := meta.Tree(repo, branch)
+		if err != nil {
+			fmt.Printf("Failed to get tree information: %s\n", err)
+			os.Exit(1)
+		}
 	},
 }
 

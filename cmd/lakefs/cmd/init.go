@@ -3,20 +3,20 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"os"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/config"
 )
 
 // initCmd represents the init command
 var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a LakeFS instance, and setup an admin credential",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		adb := cfg.ConnectAuthDatabase()
 
 		userEmail, _ := cmd.Flags().GetString("email")
@@ -29,11 +29,12 @@ var initCmd = &cobra.Command{
 		}
 		creds, err := api.SetupAdminUser(authService, user)
 		if err != nil {
-			return err
+			fmt.Printf("Failed to setup admin user: %s\n", err)
+			os.Exit(1)
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := config.GetStats(cfg, userEmail)
+		stats := cfg.BuildStats(userEmail)
 		go stats.Run(ctx)
 		stats.Collect("global", "init")
 
@@ -41,8 +42,6 @@ var initCmd = &cobra.Command{
 
 		cancelFn()
 		<-stats.Done()
-		return nil
-
 	},
 }
 

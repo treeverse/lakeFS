@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"log"
+	"fmt"
 	"net/http"
 	"os"
 	"os/signal"
@@ -19,18 +19,22 @@ import (
 	"github.com/treeverse/lakefs/index/store"
 )
 
-const gracefulShutdownTimeout = 30 * time.Second
+const (
+	gracefulShutdownTimeout = 30 * time.Second
+
+	defaultInstallationID = "anon@example.com"
+)
 
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a LakeFS instance",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		mdb := cfg.ConnectMetadataDatabase()
 		adb := cfg.ConnectAuthDatabase()
 		migrator := db.NewDatabaseMigrator().
-			AddDB(db.SchemaMetadata, mdb).
-			AddDB(db.SchemaAuth, adb)
+			AddDB(config.SchemaMetadata, mdb).
+			AddDB(config.SchemaAuth, adb)
 
 		// init index
 		meta := index.NewDBIndex(mdb)
@@ -45,7 +49,7 @@ var runCmd = &cobra.Command{
 		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := config.GetStats(cfg, config.GetInstallationID(authService))
+		stats := cfg.BuildStats(getInstallationID(authService))
 
 		// start API server
 		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats, migrator)
@@ -56,7 +60,8 @@ var runCmd = &cobra.Command{
 
 		go func() {
 			if err := apiServer.Serve(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
-				log.Fatalf("API server failed to listen on %s: %v", cfg.GetAPIListenAddress(), err)
+				fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
+				os.Exit(1)
 			}
 		}()
 
@@ -77,7 +82,8 @@ var runCmd = &cobra.Command{
 
 		go func() {
 			if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
-				log.Fatalf("Gateway server failed to listen on %s: %v", cfg.GetS3GatewayListenAddress(), err)
+				fmt.Printf("Gateway server failed to listen on %s: %v\n", cfg.GetS3GatewayListenAddress(), err)
+				os.Exit(1)
 			}
 		}()
 
@@ -86,24 +92,33 @@ var runCmd = &cobra.Command{
 		<-done
 		cancelFn()
 		<-stats.Done()
-		return nil
 	},
 }
 
+func getInstallationID(authService auth.Service) string {
+	user, err := authService.GetFirstUser()
+	if err != nil {
+		return defaultInstallationID
+	}
+	return user.Email
+}
+
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
-	log.Println("Control-C to shutdown")
+	fmt.Println("Control-C to shutdown")
 	<-quit
-	log.Println("Shutting down...")
+	fmt.Println("Shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
 
 	if err := apiServer.Shutdown(ctx); err != nil {
-		log.Fatalf("Cloud not shutdown the api server: %v", err)
+		fmt.Printf("Cloud not shutdown the API server: %v\n", err)
+		os.Exit(1)
 	}
 
 	if err := gatewayServer.Shutdown(ctx); err != nil {
-		log.Fatalf("Cloud not shutdown the gateway server: %v", err)
+		fmt.Printf("Cloud not shutdown the gateway server: %v\n", err)
+		os.Exit(1)
 	}
 
 	close(done)

@@ -1,7 +1,11 @@
 package cmd
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -9,11 +13,15 @@ import (
 var setupdbCmd = &cobra.Command{
 	Use:   "setupdb",
 	Short: "Run schema and data migrations on a fresh database",
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		migrator := db.NewDatabaseMigrator().
-			AddDB(db.SchemaMetadata, cfg.ConnectMetadataDatabase()).
-			AddDB(db.SchemaAuth, cfg.ConnectAuthDatabase())
-		return migrator.Migrate()
+			AddDB(config.SchemaMetadata, cfg.ConnectMetadataDatabase()).
+			AddDB(config.SchemaAuth, cfg.ConnectAuthDatabase())
+		err := migrator.Migrate()
+		if err != nil {
+			fmt.Printf("Failed to setup DB: %s\n", err)
+			os.Exit(1)
+		}
 	},
 }
 

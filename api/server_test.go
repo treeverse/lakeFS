@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -102,18 +104,18 @@ type mockCollector struct{}
 func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	mdb := testutil.GetDB(t, databaseUri, db.SchemaMetadata, opts...)
+	mdb := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t)
 
 	meta := index.NewDBIndex(mdb)
 	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
-	adb := testutil.GetDB(t, databaseUri, db.SchemaAuth, opts...)
+	adb := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
 
 	migrator := db.NewDatabaseMigrator().
-		AddDB(db.SchemaMetadata, mdb).
-		AddDB(db.SchemaAuth, adb)
+		AddDB(config.SchemaMetadata, mdb).
+		AddDB(config.SchemaAuth, adb)
 
 	server := api.NewServer(
 		meta,
