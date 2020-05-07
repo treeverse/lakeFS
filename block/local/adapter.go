@@ -19,13 +19,18 @@ import (
 	"strings"
 )
 
-type LocalFSAdapter struct {
-	path string
-	ctx  context.Context
+type Adapter struct {
+	path               string
+	ctx                context.Context
+	uploadIdTranslator block.UploadIdTranslator
 }
 
-func (l *LocalFSAdapter) WithContext(ctx context.Context) block.Adapter {
-	return &LocalFSAdapter{
+func (s *Adapter) InjectSimulationId(u block.UploadIdTranslator) {
+	s.uploadIdTranslator = u
+}
+
+func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
+	return &Adapter{
 		path: l.path,
 		ctx:  ctx,
 	}
@@ -44,14 +49,14 @@ func NewLocalFSAdapter(path string) (block.Adapter, error) {
 	if !isDirectoryWritable(path) {
 		return nil, fmt.Errorf("path provided is not writable")
 	}
-	return &LocalFSAdapter{path: path, ctx: context.Background()}, nil
+	return &Adapter{path: path, ctx: context.Background()}, nil
 }
 
-func (l *LocalFSAdapter) getPath(identifier string) string {
+func (l *Adapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *LocalFSAdapter) Put(_ string, identifier string, _ int64, reader io.Reader) error {
+func (l *Adapter) Put(_ string, identifier string, _ int64, reader io.Reader) error {
 	path := l.getPath(identifier)
 	f, err := os.Create(path)
 	defer f.Close()
@@ -62,13 +67,13 @@ func (l *LocalFSAdapter) Put(_ string, identifier string, _ int64, reader io.Rea
 	return nil
 }
 
-func (l *LocalFSAdapter) Remove(_ string, identifier string) error {
+func (l *Adapter) Remove(_ string, identifier string) error {
 	path := l.getPath(identifier)
 	err := os.Remove(path)
 	return err
 }
 
-func (l *LocalFSAdapter) Get(_ string, identifier string) (reader io.ReadCloser, err error) {
+func (l *Adapter) Get(_ string, identifier string) (reader io.ReadCloser, err error) {
 	path := l.getPath(identifier)
 	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
@@ -77,7 +82,7 @@ func (l *LocalFSAdapter) Get(_ string, identifier string) (reader io.ReadCloser,
 	return f, nil
 }
 
-func (l *LocalFSAdapter) GetRange(_ string, identifier string, start int64, end int64) (io.ReadCloser, error) {
+func (l *Adapter) GetRange(_ string, identifier string, start int64, end int64) (io.ReadCloser, error) {
 	path := l.getPath(identifier)
 	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
@@ -90,7 +95,7 @@ func (l *LocalFSAdapter) GetRange(_ string, identifier string, start int64, end 
 	return f, nil
 }
 
-func (l *LocalFSAdapter) GetAdapterType() string {
+func (l *Adapter) GetAdapterType() string {
 	return "local"
 }
 
@@ -106,13 +111,14 @@ func isDirectoryWritable(pth string) bool {
 	if err == nil {
 		file.Close()
 		os.Remove(fileName)
+
 		return true
 	} else {
 		return false
 	}
 }
 
-func (l *LocalFSAdapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
+func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
 	if strings.Contains(identifier, "/") {
 		fullPath := l.getPath(identifier)
 		fullDir := path.Dir(fullPath)
@@ -129,14 +135,14 @@ func (l *LocalFSAdapter) CreateMultiPartUpload(repo string, identifier string, r
 	return uploadId, nil
 }
 
-func (l *LocalFSAdapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (l *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	md5Read := newMd5Reader(reader)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
 	err := l.Put("", fName, -1, md5Read)
 	ETag := "\"" + hex.EncodeToString(md5Read.md5.Sum(nil)) + "\""
 	return ETag, err
 }
-func (l *LocalFSAdapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
+func (l *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
 	files, err := l.getPartFiles(uploadId)
 	if err != nil {
 		return err
@@ -144,7 +150,7 @@ func (l *LocalFSAdapter) AbortMultiPartUpload(repo string, identifier string, up
 	l.removePartFiles(files)
 	return nil
 }
-func (l *LocalFSAdapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error) {
+func (l *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error) {
 	var MultipartList struct{ Parts []*s3.CompletedPart }
 	//uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	err := xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
@@ -184,7 +190,7 @@ func computeETag(Parts []*s3.CompletedPart) string {
 	return csm
 }
 
-func (l *LocalFSAdapter) unitePartFiles(identifier string, files []string) (int64, error) {
+func (l *Adapter) unitePartFiles(identifier string, files []string) (int64, error) {
 	path := l.getPath(identifier)
 	unitedFile, err := os.Create(path)
 	defer unitedFile.Close()
@@ -206,7 +212,7 @@ func (l *LocalFSAdapter) unitePartFiles(identifier string, files []string) (int6
 	size, err := io.Copy(unitedFile, unitedReader)
 	return size, err
 }
-func (l *LocalFSAdapter) removePartFiles(files []string) {
+func (l *Adapter) removePartFiles(files []string) {
 	for _, name := range files {
 		err := os.Remove(name)
 		if err != nil {
@@ -215,7 +221,7 @@ func (l *LocalFSAdapter) removePartFiles(files []string) {
 	}
 }
 
-func (l *LocalFSAdapter) getPartFiles(uploadId string) ([]string, error) {
+func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	path := l.getPath(uploadId) + "-*"
 	names, err := filepath.Glob(path)
 	if err != nil {
@@ -224,10 +230,6 @@ func (l *LocalFSAdapter) getPartFiles(uploadId string) ([]string, error) {
 	}
 	sort.Strings(names)
 	return names, err
-}
-
-func (l *LocalFSAdapter) InjectSimulationId(u UploadIdTranslator) {
-
 }
 
 type md5Reader struct {
