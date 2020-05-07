@@ -37,7 +37,7 @@ type Index interface {
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.SearchResultEntry, bool, error)
+	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
 	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, ref string) (*model.Branch, error)
@@ -637,7 +637,7 @@ func (index *DBIndex) ListBranchesByPrefix(repoId string, prefix string, amount 
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
-func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.SearchResultEntry, bool, error) {
+func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
 	//log := index.log().WithFields(logging.Fields{
 	//	"from":    from,
 	//	"descend": descend,
@@ -652,7 +652,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 	}
 	type result struct {
 		hasMore bool
-		results []*model.SearchResultEntry
+		results []*model.Entry
 	}
 	entries, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		_, err := tx.ReadRepo()
@@ -665,23 +665,20 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			return nil, err
 		}
 
-		//var root string
-		var res []*model.SearchResultEntry
+		var res []*model.Entry
 		var hasMore bool
 		if reference.isBranch {
 			normalizedPath := pth.New(path, model.EntryTypeObject).String()
-			res, hasMore, err = tx.ListTreeAndWorkspaceDirectory(reference.branch.Id, normalizedPath, from, results)
+			res, hasMore, err = tx.ListTreeAndWorkspaceDirectory(reference.branch.Id, normalizedPath, from, results, descend)
 		} else {
-			//root = reference.commit.Tree
+			/*			root := reference.commit.Tree
+						tree := merkle.New(root)
+						res, hasMore, err = tree.PrefixScan(tx, path, from, results, descend)
+						if err != nil {
+							log.WithError(err).Error("could not scan tree")
+							return nil, err
+						}*/
 		}
-
-		//tree := merkle.New(root)
-		//res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
-		//if err != nil {
-		//	log.WithError(err).Error("could not scan tree")
-		//	return nil, err
-		//}
-
 		return &result{hasMore, res}, nil
 	})
 	if err != nil {

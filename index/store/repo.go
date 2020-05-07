@@ -18,7 +18,7 @@ type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ListWorkspaceAsDiff(branch string) (model.Differences, error)
-	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.SearchResultEntry, bool, error)
+	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.Entry, bool, error)
 	CascadeDirectoryDeletion(branch, deletedPath string) error
 	ReadFromWorkspace(branch, path, typ string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
@@ -51,8 +51,8 @@ type RepoOperations interface {
 	DeleteMultipartUploadParts(uploadId string) error
 }
 
-func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.SearchResultEntry, bool, error) {
-	var entries []*model.SearchResultEntry
+func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.Entry, bool, error) {
+	var entries []*model.Entry
 	var additionalCondition, limitStatement string
 	if amount > 0 {
 		limitStatement = fmt.Sprintf("LIMIT %d", amount+1)

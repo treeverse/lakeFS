@@ -227,7 +227,7 @@ type ListResult struct {
 	Tombstone bool
 }
 
-func TestDBRepoOperations_ListWorkspaceDirectory(t *testing.T) {
+func TestDBRepoOperations_ListTreeAndWorkspaceDirectory(t *testing.T) {
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	str := store.NewDBStore(mdb)
 	_, repo := testutil.GetIndexWithRepo(t, mdb)
@@ -268,7 +268,7 @@ func TestDBRepoOperations_ListWorkspaceDirectory(t *testing.T) {
 			{"a/b/c/d/e/", []ListResult{{Path: "a/b/c/d/e/f", Type: "object"}}},
 			{"a/b/c/e/", []ListResult{}},
 		}
-		var entries []*model.SearchResultEntry
+		var entries []*model.Entry
 		var err error
 		for _, test := range testData {
 			entries, _, err = ops.ListTreeAndWorkspaceDirectory(repo.DefaultBranch, test.Path, "", 50, false)
