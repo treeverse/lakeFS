@@ -24,10 +24,9 @@ import (
 )
 
 type ServerContext struct {
-	region     string
-	bareDomain string
-	meta       index.Index
-	//multipartManager index.MultipartManager
+	region      string
+	bareDomain  string
+	meta        index.Index
 	blockStore  block.Adapter
 	authService utils.GatewayAuthService
 	stats       stats.Collector
@@ -35,10 +34,9 @@ type ServerContext struct {
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
-		region:     c.region,
-		bareDomain: c.bareDomain,
-		meta:       c.meta.WithContext(ctx),
-		//multipartManager: c.multipartManager.WithContext(ctx),
+		region:      c.region,
+		bareDomain:  c.bareDomain,
+		meta:        c.meta.WithContext(ctx),
 		blockStore:  c.blockStore.WithContext(ctx),
 		authService: c.authService,
 		stats:       c.stats,
@@ -56,7 +54,6 @@ func NewServer(
 	meta index.Index,
 	blockStore block.Adapter,
 	authService utils.GatewayAuthService,
-	//multipartManager index.MultipartManager,
 	listenAddr, bareDomain string,
 	stats stats.Collector,
 ) *Server {
@@ -66,8 +63,7 @@ func NewServer(
 		bareDomain:  bareDomain,
 		blockStore:  blockStore,
 		authService: authService,
-		//multipartManager: multipartManager,
-		stats: stats,
+		stats:       stats,
 	}
 
 	// setup routes
@@ -80,7 +76,7 @@ func NewServer(
 	}
 	handler = utils.RegisterRecorder(
 		httputil.LoggingMiddleWare(
-			"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
+			"X-Amz-Request-UploadId", logging.Fields{"service_name": "s3_gateway"}, handler,
 		),
 	)
 
@@ -119,8 +115,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Region:         s.region,
 		FQDN:           s.bareDomain,
 
-		Index: s.meta,
-		//MultipartManager: s.multipartManager,
+		Index:      s.meta,
 		BlockStore: s.blockStore,
 		Auth:       s.authService,
 		Incr:       func(action string) { s.stats.Collect("s3_gateway", action) },

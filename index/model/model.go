@@ -43,28 +43,6 @@ func (j *JSONStringSlice) Scan(src interface{}) error {
 	return nil
 }
 
-//type Block struct {
-//	ObjectAddress string `json:"address"`
-//	Size    int64  `json:"size"`
-//}
-
-//type JSONBlocks []*Block
-
-//func (j JSONBlocks) Value() (driver.Value, error) {
-//	// marshal to json
-//	if j == nil {
-//		return json.Marshal([]*Block{})
-//	}
-//	return json.Marshal(j)
-//}
-
-//func (j *JSONBlocks) Scan(src interface{}) error {
-//	if src != nil {
-//		return json.Unmarshal(src.([]byte), j)
-//	}
-//	return nil
-//}
-
 type Repo struct {
 	Id               string    `db:"id"`
 	StorageNamespace string    `db:"storage_namespace"`
@@ -92,9 +70,9 @@ func (m *Object) Identity() []byte {
 }
 
 type ObjectDedup struct {
-	RepositoryId string `db:"repository_id"`
-	DedupId      string `db:"dedup_id"`
-	Address      string `db:"address"`
+	RepositoryId    string `db:"repository_id"`
+	DedupId         string `db:"dedup_id"`
+	PhysicalAddress string `db:"physical_address"`
 }
 
 type Root struct {
@@ -228,4 +206,12 @@ func (ws *WorkspaceEntry) Entry() *Entry {
 		Size:         dint64(ws.EntrySize),
 		Checksum:     dstr(ws.EntryChecksum),
 	}
+}
+
+type MultipartUpload struct {
+	RepositoryId    string    `db:"repository_id"`
+	UploadId        string    `db:"upload_id"`
+	Path            string    `db:"path"`
+	CreationDate    time.Time `db:"creation_date"`
+	PhysicalAddress string    `db:"physical_address"`
 }

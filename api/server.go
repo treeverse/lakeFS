@@ -33,8 +33,7 @@ var (
 )
 
 type Server struct {
-	meta index.Index
-	//multipartManager index.MultipartManager
+	meta        index.Index
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
@@ -46,7 +45,6 @@ type Server struct {
 
 func NewServer(
 	meta index.Index,
-	//multipartManager index.MultipartManager,
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,

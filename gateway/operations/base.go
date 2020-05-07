@@ -29,8 +29,7 @@ type Operation struct {
 	Region         string
 	FQDN           string
 
-	Index index.Index
-	//	MultipartManager index.MultipartManager
+	Index      index.Index
 	BlockStore block.Adapter
 	Auth       utils.GatewayAuthService
 	Incr       ActionIncr
