@@ -31,7 +31,8 @@ var (
 )
 
 func init() {
-	interestingResourcesContainer := []string{"accelerate", "acl", "cors", "defaultObjectAcl",
+	interestingResourcesContainer := []string{
+		"accelerate", "acl", "cors", "defaultObjectAcl",
 		"location", "logging", "partNumber", "policy",
 		"requestPayment", "torrent",
 		"versioning", "versionId", "versions", "website",
@@ -41,25 +42,27 @@ func init() {
 		"response-content-encoding", "delete", "lifecycle",
 		"tagging", "restore", "storageClass", "notification",
 		"replication", "analytics", "metrics",
-		"inventory", "select", "select-type"}
+		"inventory", "select", "select-type",
+	}
+	sort.Strings(interestingResourcesContainer)
 	// check for duplicates in the array - if it happens it is a programmer error that will happen only when that
 	// query parameter is used - may be very hard to find.
-	temp_map := map[string]bool{}
-	var sort_array []string
+	tempMap := map[string]bool{}
+	var sortedArray []string
 	for _, word := range interestingResourcesContainer {
-		if _, ok := temp_map[word]; ok {
+		if _, ok := tempMap[word]; ok {
 			logging.Default().
 				WithField("word", word).
 				Warn("appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
 		} else {
-			temp_map[word] = true
+			tempMap[word] = true
 		}
 	}
-	for key := range temp_map {
-		sort_array = append(sort_array, key)
+	for key := range tempMap {
+		sortedArray = append(sortedArray, key)
 	}
-	sort.Strings(sort_array)
-	interestingResources = sort_array
+	sort.Strings(sortedArray)
+	interestingResources = sortedArray
 }
 
 type v2Context struct {

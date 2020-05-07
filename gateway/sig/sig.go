@@ -84,14 +84,6 @@ type SigAuthenticator interface {
 	Verify(*model.Credential, string) error
 }
 
-type dummySigContext struct {
-	accessKey string
-}
-
-func (d *dummySigContext) GetAccessKeyId() string {
-	return d.accessKey
-}
-
 type chainedAuthenticator struct {
 	methods []SigAuthenticator
 	chosen  SigAuthenticator

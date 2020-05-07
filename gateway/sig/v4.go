@@ -133,7 +133,6 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 }
 
 func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error {
-
 	ctx := &verificationCtx{
 		Request:   r,
 		Query:     r.URL.Query(),
@@ -364,7 +363,6 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 }
 
 func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential) (io.ReadCloser, error) {
-
 	if ctx.isStreaming() {
 		amzDate, err := ctx.getAmzDate()
 		if err != nil {

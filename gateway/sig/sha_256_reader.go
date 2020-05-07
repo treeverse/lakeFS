@@ -16,14 +16,12 @@ type Sha256Reader struct {
 }
 
 func NewSha265Reader(src io.ReadCloser, sha256Hex string) (io.ReadCloser, error) {
-
 	expectedHash, err := hex.DecodeString(sha256Hex)
 	if err != nil {
 		return nil, err
 	}
 
-	var Sha256hash hash.Hash
-	Sha256hash = sha256.New()
+	Sha256hash := sha256.New()
 
 	return &Sha256Reader{
 		expectedHash: expectedHash,

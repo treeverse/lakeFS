@@ -216,7 +216,8 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			authOp.EncodeError(gatewayerrors.ErrInternalError.ToAPIErr())
 			return
 		}
@@ -247,7 +248,8 @@ func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handle
 			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
 			return
-		} else if err != nil {
+		}
+		if err != nil {
 			authOp.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
@@ -279,7 +281,6 @@ func unsupportedOperationHandler() http.Handler {
 			ResponseWriter: writer,
 		}
 		o.EncodeError(gatewayerrors.ERRLakeFSNotSupported.ToAPIErr())
-		return
 	})
 }
 
