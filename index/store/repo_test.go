@@ -186,7 +186,7 @@ func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		_, err = ops.ReadFromWorkspace(repo.DefaultBranch, "/foo/bbbbb")
+		_, err = ops.ReadFromWorkspace(repo.DefaultBranch, "/foo/bbbbb", model.EntryTypeObject)
 		if !xerrors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected a not found error got %v instead", err)
 		}

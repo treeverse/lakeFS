@@ -267,7 +267,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 		var obj *model.Object
 
 		if reference.isBranch {
-			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
+			we, err := tx.ReadFromWorkspace(reference.branch.Id, path, model.EntryTypeObject)
 			if xerrors.Is(err, db.ErrNotFound) {
 				// not in workspace, let's try reading it from branch tree
 				m := merkle.New(reference.branch.WorkspaceRoot)
@@ -316,7 +316,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 	root := reference.commit.Tree
 	if reference.isBranch {
 		// try reading from workspace
-		we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
+		we, err := tx.ReadFromWorkspace(reference.branch.Id, path, typ)
 
 		// continue with we only if we got no error
 		if err != nil {
@@ -539,7 +539,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		* 5 objects exists in merkle tombstone exists in workspace - return error
 		*/
 		notFoundCount := 0
-		wsEntry, err := tx.ReadFromWorkspace(branch, path)
+		wsEntry, err := tx.ReadFromWorkspace(branch, path, model.EntryTypeObject)
 		if err != nil {
 			if xerrors.Is(err, db.ErrNotFound) {
 				notFoundCount += 1

@@ -23,7 +23,7 @@ type RepoOperations interface {
 	ListWorkspaceAsDiff(branch string) (model.Differences, error)
 	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int) ([]*model.SearchResultEntry, bool, error)
 	CascadeDirectoryDeletion(branch, deletedPath string) error
-	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
+	ReadFromWorkspace(branch, path, typ string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
 	ReadRoot(addr string) (*model.Root, error)
@@ -137,10 +137,10 @@ func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string,
 	return entries, err
 }
 
-func (o *DBRepoOperations) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
+func (o *DBRepoOperations) ReadFromWorkspace(branch, path, typ string) (*model.WorkspaceEntry, error) {
 	ent := &model.WorkspaceEntry{}
-	err := o.tx.Get(ent, `SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
-		o.repoId, branch, path)
+	err := o.tx.Get(ent, `SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3 AND entry_type = $4`,
+		o.repoId, branch, path, typ)
 	return ent, err
 }
 

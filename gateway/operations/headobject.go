@@ -2,14 +2,11 @@ package operations
 
 import (
 	"fmt"
-
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
-
 	"golang.org/x/xerrors"
 )
 
