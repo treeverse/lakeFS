@@ -39,6 +39,10 @@ definitions:
     properties:
       id:
         type: integer
+      full_name:
+        type: string
+      email:
+        type: string
 
   pagination:
     type: object
