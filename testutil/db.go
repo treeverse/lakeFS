@@ -2,16 +2,17 @@ package testutil
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/treeverse/lakefs/block/local"
 	"log"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/block/local"
 
 	"github.com/jmoiron/sqlx"
 
@@ -33,6 +34,7 @@ const (
 	TimeFormat                = "Jan 2 15:04:05 2006 -0700"
 	FixtureRoot               = "lakeFsFixtures"
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
+	S3BlockAdapterEnvVar      = "USE_S3_BLOCK_ADAPTER"
 )
 
 func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
@@ -149,14 +151,16 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 	return database
 }
 
-func GetBlockAdapter(t *testing.T, isLocal bool, opts ...func(a *lakefsS3.Adapter)) block.Adapter {
+func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Adapter {
+	_, useS3 := os.LookupEnv(S3BlockAdapterEnvVar)
+	isLocal := !useS3
 	if isLocal {
 		dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
 		err := os.MkdirAll(dir, 0777)
 		if err != nil {
 			t.Fatal(err)
 		}
-		adapter, err := local.NewAdapter(dir)
+		adapter, err := local.NewAdapter(dir, local.WithTranslator(translator))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -175,7 +179,7 @@ func GetBlockAdapter(t *testing.T, isLocal bool, opts ...func(a *lakefsS3.Adapte
 		cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		sess := session.Must(session.NewSession(cfg))
 		svc := s3.New(sess)
-		adapter := lakefsS3.NewAdapter(svc, opts...)
+		adapter := lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
 		return adapter
 	}
 }

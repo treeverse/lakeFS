@@ -6,9 +6,6 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/block"
 	"hash"
 	"io"
 	"net/http"
@@ -18,16 +15,16 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/block"
 )
 
 type Adapter struct {
 	path               string
 	ctx                context.Context
 	uploadIdTranslator block.UploadIdTranslator
-}
-
-func (s *Adapter) InjectSimulationId(u block.UploadIdTranslator) {
-	s.uploadIdTranslator = u
 }
 
 func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
@@ -38,7 +35,13 @@ func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 	}
 }
 
-func NewAdapter(path string) (block.Adapter, error) {
+func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.uploadIdTranslator = t
+	}
+}
+
+func NewAdapter(path string, opts ...func(a *Adapter)) (block.Adapter, error) {
 	stt, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -49,7 +52,14 @@ func NewAdapter(path string) (block.Adapter, error) {
 	if !isDirectoryWritable(path) {
 		return nil, fmt.Errorf("path provided is not writable")
 	}
-	return &Adapter{path: path, ctx: context.Background(), uploadIdTranslator: &block.DummyTranslator{}}, nil
+	adapter := &Adapter{
+		path: path, ctx: context.Background(),
+		uploadIdTranslator: &block.DummyTranslator{},
+	}
+	for _, opt := range opts {
+		opt(adapter)
+	}
+	return adapter, nil
 }
 
 func (l *Adapter) getPath(identifier string) string {

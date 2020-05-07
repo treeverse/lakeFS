@@ -16,12 +16,11 @@ type Adapter interface {
 	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
 	AbortMultiPartUpload(repo string, identifier string, uploadId string) error
 	CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error)
-	InjectSimulationId(u UploadIdTranslator)
 }
 
 type UploadIdTranslator interface {
 	SetUploadId(uploadId string) string
-	TranslateUploadId(smulationId string) string
+	TranslateUploadId(simulationId string) string
 	RemoveUploadId(inputUploadId string)
 }
 
