@@ -3,7 +3,6 @@ package store
 import (
 	"database/sql"
 	"fmt"
-	"github.com/huandu/go-sqlbuilder"
 	"strings"
 
 	"golang.org/x/xerrors"
@@ -14,8 +13,6 @@ import (
 	"github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
 )
-
-const MaxResultsAllowed = 1000
 
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
@@ -65,13 +62,8 @@ func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from stri
 	}
 	err := o.tx.Select(
 		&entries, fmt.Sprintf(
-			`SELECT path AS name,
-          entry_type AS type,
-          0 AS size,
-          '2020-02-01 00:00:00'::date AS creation_date,
-          '' AS checksum
-		  FROM combined_workspace
-    	  WHERE repository_id = $1 AND branch_id = $2 AND tombstone IS NOT TRUE AND parent_path = $3 %s ORDER BY name %s`, additionalCondition, limitStatement),
+			`SELECT path AS name, entry_type AS type, size, creation_date, checksum FROM combined_workspace
+    	  				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 AND tombstone IS NOT TRUE %s ORDER BY name %s`, additionalCondition, limitStatement),
 		o.repoId, branch, path)
 	hasMore := false
 	if amount > 0 && len(entries) > amount {
@@ -112,28 +104,6 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences
 								FROM workspace_diff WHERE repository_id = $1 AND branch_id = $2`,
 			model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
 		o.repoId, branch)
-	return entries, err
-}
-
-func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, after string, amount int) ([]*model.WorkspaceEntry, error) {
-	if amount == 0 {
-		amount = MaxResultsAllowed
-	}
-	sb := sqlbuilder.PostgreSQL.NewSelectBuilder()
-	sb.Select("repository_id", "branch_id", "parent_path", "path", "entry_name", "entry_size", "entry_type", "tombstone")
-	sb.From("workspace_entries")
-	sb.Where(sb.Equal("repository_id", o.repoId))
-	sb.Where(sb.Equal("branch_id", branch))
-	sb.Where(sb.Like("path", prefix+"%"))
-	sb.OrderBy("path ASC")
-	if len(after) > 0 {
-		sb.Where(sb.GreaterThan("path", after))
-	}
-	sb.Limit(amount)
-	query, args := sb.Build()
-	query = o.tx.Rebind(query)
-	var entries []*model.WorkspaceEntry
-	err := o.tx.Select(&entries, query, args...)
 	return entries, err
 }
 

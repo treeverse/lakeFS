@@ -15,7 +15,6 @@ type Tx interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (sql.Result, error)
-	Rebind(query string) string
 }
 
 type Database interface {
@@ -85,10 +84,6 @@ func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
 	}
 	log.Trace("SQL query executed successfully")
 	return res, err
-}
-
-func (d *dbTx) Rebind(query string) string {
-	return d.tx.Rebind(query)
 }
 
 type SqlxDatabase struct {
