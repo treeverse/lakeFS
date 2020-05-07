@@ -1,24 +1,19 @@
 package index_test
 
 import (
+	"errors"
 	"log"
 	"os"
 	"testing"
 	"time"
 
 	"github.com/ory/dockertest/v3"
-
-	"github.com/treeverse/lakefs/index/path"
-
-	"github.com/treeverse/lakefs/ident"
-
 	"github.com/treeverse/lakefs/db"
-	"golang.org/x/xerrors"
-
-	"github.com/treeverse/lakefs/index/model"
-	"github.com/treeverse/lakefs/testutil"
-
+	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 const testBranch = "testBranch"
@@ -77,7 +72,7 @@ func TestKVIndex_GetCommit(t *testing.T) {
 
 	t.Run("get non existing commit - expect error", func(t *testing.T) {
 		_, err := kvIndex.GetCommit(repo.Id, "a564356445bdef")
-		if !xerrors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, db.ErrNotFound) {
 			t.Errorf("expected to get not found error for non existing commit")
 		}
 	})
@@ -144,14 +139,14 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	}
 	// test secondEntry does not exist
 	_, err = kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "foo")
-	if !xerrors.Is(err, db.ErrNotFound) {
+	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("missing data from requested commit")
 	}
 
 	// test secondEntry exists on test branch
 	_, err = kvIndex.ReadEntryObject(repo.Id, testBranch, "foo")
 	if err != nil {
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("errased data from test branch after revert from defult branch")
 		} else {
 			t.Fatal(err)
@@ -263,7 +258,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			for _, action := range tc.Actions {
 				err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
-					if xerrors.Is(err, tc.ExpectedError) {
+					if errors.Is(err, tc.ExpectedError) {
 						return
 					}
 					t.Fatal(err)
@@ -275,7 +270,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			for _, entryPath := range tc.ExpectExisting {
 				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
 				if err != nil {
-					if xerrors.Is(err, db.ErrNotFound) {
+					if errors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
 					} else {
 						t.Fatal(err)
@@ -284,7 +279,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			}
 			for _, entryPath := range tc.ExpectMissing {
 				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
-				if !xerrors.Is(err, db.ErrNotFound) {
+				if !errors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
 			}
@@ -457,7 +452,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 			for _, action := range tc.Actions {
 				err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
-					if xerrors.Is(err, tc.ExpectedError) {
+					if errors.Is(err, tc.ExpectedError) {
 						return
 					}
 					t.Fatal(err)
@@ -469,7 +464,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 			for _, entryPath := range tc.ExpectExisting {
 				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
 				if err != nil {
-					if xerrors.Is(err, db.ErrNotFound) {
+					if errors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
 					} else {
 						t.Fatal(err)
@@ -478,7 +473,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 			}
 			for _, entryPath := range tc.ExpectMissing {
 				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
-				if !xerrors.Is(err, db.ErrNotFound) {
+				if !errors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
 			}
@@ -725,7 +720,7 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 		err = kvIndex.DeleteObject(repo.Id, repo.DefaultBranch, actionPath)
 
 	default:
-		err = xerrors.Errorf("unknown command")
+		err = errors.New("unknown command")
 	}
 	return err
 }

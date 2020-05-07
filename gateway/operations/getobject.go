@@ -1,24 +1,22 @@
 package operations
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
-
-	"golang.org/x/xerrors"
 )
 
 type GetObject struct{}
@@ -43,13 +41,13 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		WithError(err).
 		Debug("metadata operation to retrieve object done")
 
-	if xerrors.Is(err, db.ErrNotFound) {
+	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -61,7 +59,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// now we might need the object itself
 	obj, err := o.Index.ReadObject(o.Repo.Id, o.Ref, o.Path)
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -101,7 +99,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	for _, block := range blocks {
 		data, err := o.BlockStore.Get(o.Repo.StorageNamespace, block.Address)
 		if err != nil {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 		_, err = io.Copy(o.ResponseWriter, data)
