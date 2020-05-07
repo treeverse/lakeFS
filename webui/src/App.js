@@ -20,7 +20,7 @@ let NavUserInfo = ({ user, logout }) => {
     if (!!user) {
         return (
             <Navbar.Collapse className="justify-content-end">
-                <NavDropdown title={user.id} id="basic-nav-dropdown" alignRight>
+                <NavDropdown title={user.full_name} className="navbar-username" alignRight>
                     <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
                 </NavDropdown>
             </Navbar.Collapse>
