@@ -662,6 +662,10 @@ func TestTimeStampConsistency(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test commit", "", nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			for _, obj := range tc.deleteObjects {
 				currentTime = now.Add(obj.seconds * time.Second)
@@ -669,7 +673,12 @@ func TestTimeStampConsistency(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test commit", "", nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
+
 			for _, tree := range tc.expectedTrees {
 				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path)
 				if err != nil {

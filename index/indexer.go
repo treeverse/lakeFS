@@ -58,14 +58,12 @@ type Index interface {
 	DeleteRepo(repoId string) error
 }
 
-func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
+func writeEntryToWorkspace(tx store.RepoOperations, branch, path string, entry *model.WorkspaceEntry) error {
 	entries := make([]*model.WorkspaceEntry, 0, strings.Count(path, pth.Separator))
 	entries = append(entries, entry)
 	treeType := model.EntryTypeTree
 	currentParent := entry.ParentPath
-	var dirSize int64
-	var dirChecksum string
-	for strings.Contains(currentParent[:len(currentParent)], pth.Separator) {
+	for strings.Contains(currentParent, pth.Separator) {
 		currentPath := currentParent
 		currentParent = currentPath[:strings.LastIndex(currentParent[:len(currentParent)-1], pth.Separator)+1]
 		currentName := currentPath[len(currentParent):]
@@ -76,9 +74,10 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 			Path:              currentPath,
 			EntryType:         &treeType,
 			EntryName:         &currentName,
-			EntrySize:         &dirSize,
-			EntryCreationDate: entry.EntryCreationDate,
-			EntryChecksum:     &dirChecksum,
+			EntrySize:         new(int64),
+			EntryCreationDate: new(time.Time),
+			EntryChecksum:     new(string),
+			EntryAddress:      new(string),
 		}
 		entries = append(entries, &newEntry)
 	}
@@ -316,30 +315,28 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 	}
 	root := reference.commit.Tree
 	if reference.isBranch {
-		if typ == model.EntryTypeObject {
-			// try reading from workspace
-			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
+		// try reading from workspace
+		we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
 
-			// continue with we only if we got no error
-			if err != nil {
-				if !xerrors.Is(err, db.ErrNotFound) {
-					return nil, err
-				}
-			} else {
-				if we.Tombstone {
-					// object was deleted deleted
-					return nil, db.ErrNotFound
-				}
-				return &model.Entry{
-					RepositoryId: we.RepositoryId,
-					Name:         *we.EntryName,
-					Address:      *we.EntryAddress,
-					EntryType:    *we.EntryType,
-					CreationDate: *we.EntryCreationDate,
-					Size:         *we.EntrySize,
-					Checksum:     *we.EntryChecksum,
-				}, nil
+		// continue with we only if we got no error
+		if err != nil {
+			if !xerrors.Is(err, db.ErrNotFound) {
+				return nil, err
 			}
+		} else {
+			if we.Tombstone {
+				// object was deleted deleted
+				return nil, db.ErrNotFound
+			}
+			return &model.Entry{
+				RepositoryId: we.RepositoryId,
+				Name:         *we.EntryName,
+				Address:      *we.EntryAddress,
+				EntryType:    *we.EntryType,
+				CreationDate: *we.EntryCreationDate,
+				Size:         *we.EntrySize,
+				Checksum:     *we.EntryChecksum,
+			}, nil
 		}
 		root = reference.branch.WorkspaceRoot
 	}
@@ -428,16 +425,12 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		return err
 	}
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
 			index.log().WithError(err).Error("could not write object")
 			return nil, err
 		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -467,11 +460,7 @@ func (index *DBIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 		return err
 	}
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -507,14 +496,10 @@ func (index *DBIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		if err != nil {
 			return nil, err
 		}
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
 		typ := model.EntryTypeObject
 		p := pth.New(path, typ)
 		entryName := pth.New(path, typ).BaseName()
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			Path:              p.String(),
 			ParentPath:        p.ParentPath(),
@@ -545,10 +530,6 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 	}
 	ts := index.tsGenerator()
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
 		/**
 		handling 5 possible cases:
 		* 1 object does not exist  - return error
@@ -602,7 +583,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			pathObj := pth.New(path, typ)
 			bname := pathObj.BaseName()
 			parentPath := pathObj.ParentPath()
-			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			err = writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 				ParentPath: parentPath,
 				Path:       path,
 
