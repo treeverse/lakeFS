@@ -4,11 +4,12 @@ import {connect} from "react-redux";
 
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
+import Badge from "react-bootstrap/Badge";
 
 import Octicon, {GitCommit, GitMerge, Plus, X} from "@primer/octicons-react";
 
 import {deleteObject, deleteObjectDone, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
-import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
+import {diff, resetDiff, diffBranch, resetDiffBranch, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import ConfirmationModal from "./ConfirmationModal";
@@ -220,7 +221,7 @@ const UploadButton = connect(
 const CommitButton = connect(
     ({ commits }) => ({ commitState: commits.commit }),
     ({ doCommit, resetCommit })
-)(({ repo, refId, commitState, doCommit, resetCommit }) => {
+)(({ repo, refId, commitState, doCommit, resetCommit, changes }) => {
 
     const textRef = useRef(null);
 
@@ -257,6 +258,7 @@ const CommitButton = connect(
     if (!refId || refId.type !== 'branch') {
         return <span/>;
     }
+
 
     return (
         <>
@@ -322,14 +324,20 @@ const CommitButton = connect(
                 </Modal.Footer>
             </Modal>
             <Button variant="success" onClick={() => { setShow(true); }}>
-                <Octicon icon={GitCommit}/> Commit Changes
+                <Octicon icon={GitCommit}/> Commit Changes{' '}
+                {changes &&
+                <>
+                    <Badge variant="light">{changes.length}</Badge>
+                    <span className="sr-only">uncommited changes</span>
+                </>
+                }
             </Button>
         </>
     );
 });
 
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, resetMerge, mergeResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
+const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffBranch, resetDiffBranch, diffBranchResults, diffResults, resetMerge, mergeResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -352,14 +360,20 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
     }, [repo.id, refId.id, path, listTree, deleteObjectDone, deleteState.done]);
 
     useEffect(() => {
-        if (!!compare) {
+        if (compare) {
+            resetDiffBranch();
             diff(repo.id, refId.id, compare.id);
         } else {
             resetDiff();
+            if (refId.type === 'branch') {
+                diffBranch(repo.id, refId.id);
+            } else {
+                resetDiffBranch();
+            }
         }
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
-    },[repo.id, refId.id, listTree, diff, compareId, uploadState.done, deleteState.done]);
+    },[repo.id, refId, listTree, diff, compareId, uploadState.done, deleteState.done]);
 
     let paginator = (<span/>);
     if (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more) {
@@ -374,6 +388,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
         );
     }
 
+    const changes = diffBranchResults.payload ? diffBranchResults.payload.results : null;
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
@@ -384,7 +399,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
                 <CompareToolbar refId={refId} repo={repo} compare={compare}/>
                 <ButtonToolbar className="float-right mb-2">
                     <UploadButton refId={refId} repo={repo} path={path}/>
-                    <CommitButton refId={refId} repo={repo}/>
+                    <CommitButton refId={refId} repo={repo} changes={changes}/>
                 </ButtonToolbar>
             </div>
 
@@ -412,9 +427,10 @@ export default connect(
     ({ objects, refs }) => ({
         list: objects.list,
         diffResults: refs.diff,
+        diffBranchResults: refs.diffBranch,
         mergeResults: refs.merge,
         uploadState: objects.upload,
         deleteState: objects.delete,
     }),
-    ({ listTree, listTreePaginate, diff, resetDiff, resetMerge, deleteObject, deleteObjectDone })
+    ({ listTree, listTreePaginate, diff, resetDiff, diffBranch, resetDiffBranch, resetMerge, deleteObject, deleteObjectDone })
 )(TreePage);
