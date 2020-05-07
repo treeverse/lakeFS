@@ -1,18 +1,3 @@
-/*
-Copyright © 2020 NAME HERE <EMAIL ADDRESS>
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
-    http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-*/
 package cmd
 
 import (
@@ -25,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
-var fsStatTemplate = `Path: {{.Path | yellow }}
+const fsStatTemplate = `Path: {{.Path | yellow }}
 Modified Time: {{.Mtime|date}}
 Size: {{ .SizeBytes }} bytes
 Human Size: {{ .SizeBytes|human_bytes }}
@@ -51,7 +36,7 @@ var fsStatCmd = &cobra.Command{
 	},
 }
 
-var fsLsTemplate = `{{ range $val := . -}}
+const fsLsTemplate = `{{ range $val := . -}}
 {{ $val.PathType|ljust 6 }}    {{ $val.Mtime|date|ljust 29 }}    {{ $val.SizeBytes|human_bytes|ljust 12 }}    {{ $val.Path|yellow }}
 {{ end -}}
 `
