@@ -195,26 +195,22 @@ func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry
 }
 
 func (s *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, error) {
-	//hexDedup,err := hex.DecodeString(dedupId)
-	//if err != nil{
-	//	return nil,err
-	//}
 	m := &model.ObjectDedup{}
-	err := s.tx.Get(m, `SELECT repository_id,encode(dedup_id,'hex') as dedup_id,Address FROM object_dedup WHERE repository_id = $1 AND dedup_id = decode($2,'hex')`,
+	err := s.tx.Get(m, `SELECT repository_id,encode(dedup_id,'hex') as dedup_id,physical_address FROM object_dedup WHERE repository_id = $1 AND dedup_id = decode($2,'hex')`,
 		s.repoId, dedupId)
 	return m, err
 }
 
 func (o *DBRepoOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
 	m := &model.MultipartUpload{}
-	err := o.tx.Get(m, `SELECT  repository_id,id,path,creation_date,encode(object_name,'hex') as object_name FROM multipart_uploads WHERE repository_id = $1 AND id = $2`,
+	err := o.tx.Get(m, `SELECT  repository_id,upload_id,path,creation_date,encode(physical_address,'hex') as physical_address FROM multipart_uploads WHERE repository_id = $1 AND id = $2`,
 		o.repoId, uploadId)
 	return m, err
 }
 
 func (o *DBRepoOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {
 	var mpus []*model.MultipartUpload
-	err := o.tx.Select(&mpus, `SELECT repository_id,id,path,creation_date,encode(object_name,'hex') as object_name FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
+	err := o.tx.Select(&mpus, `SELECT repository_id,upload_id,path,creation_date,encode(physical_address,'hex') as physical_address FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
 	return mpus, err
 }
 
@@ -239,12 +235,9 @@ func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string,
 }
 
 func (s *DBRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
-	//hexDedup,err := hex.DecodeString(dedup.DedupId)
-	//if err != nil{
-	//	return err
-	//}
-	_, err := s.tx.Exec(`INSERT INTO object_dedup  (repository_id, dedup_id,address) values ($1,decode($2,'hex'),$3)`,
-		s.repoId, dedup.DedupId, dedup.Address)
+
+	_, err := s.tx.Exec(`INSERT INTO object_dedup  (repository_id, dedup_id,physical_address) values ($1,decode($2,'hex'),$3)`,
+		s.repoId, dedup.DedupId, dedup.PhysicalAddress)
 	return err
 }
 
@@ -317,9 +310,9 @@ func (o *DBRepoOperations) DeleteBranch(name string) error {
 
 func (o *DBRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
 	_, err := o.tx.Exec(`
-		INSERT INTO multipart_uploads (repository_id, id, path, creation_date,object_name)
+		INSERT INTO multipart_uploads (repository_id, upload_id, path, creation_date,physical_address)
 		VALUES ($1, $2, $3, $4, decode($5,'hex'))`,
-		o.repoId, upload.Id, upload.Path, upload.CreationDate, upload.ObjectName)
+		o.repoId, upload.UploadId, upload.Path, upload.CreationDate, upload.PhysicalAddress)
 	return err
 }
 
@@ -331,18 +324,10 @@ func (o *DBRepoOperations) WriteRepo(repo *model.Repo) error {
 	return err
 }
 
-//func (o *DBRepoOperations) WriteMultipartUploadPart(uploadId string, partNumber int, part *model.MultipartUploadPart) error {
-//	_, err := o.tx.Exec(`
-//		INSERT INTO multipart_upload_parts (repository_id, upload_id, part_number, checksum, creation_date, size, blocks)
-//		VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-//		o.repoId, uploadId, partNumber, part.Checksum, part.CreationDate, part.Size, part.Blocks)
-//	return err
-//}
-
 func (o *DBRepoOperations) DeleteMultipartUpload(uploadId string) error {
 	_, err := o.tx.Exec(`
 		DELETE FROM multipart_uploads
-		WHERE repository_id = $1 AND id = $2`,
+		WHERE repository_id = $1 AND upload_id = $2`,
 		o.repoId, uploadId)
 	return err
 }

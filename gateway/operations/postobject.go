@@ -2,7 +2,9 @@ package operations
 
 import (
 	"encoding/hex"
+	"encoding/xml"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
@@ -27,8 +29,8 @@ func (controller *PostObject) Action(repoId, refId, path string) permissions.Act
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	//var err error
 	o.Incr("create_mpu")
-	x := ([16]byte(uuid.New()))
-	objName := hex.EncodeToString(x[:])
+	UUIDbytes := ([16]byte(uuid.New()))
+	objName := hex.EncodeToString(UUIDbytes[:])
 	uploadId, err := o.BlockStore.CreateMultiPartUpload(o.Repo.StorageNamespace, objName, o.Request)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
@@ -69,9 +71,16 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	objName := multiPart.ObjectName
+	objName := multiPart.PhysicalAddress
 	XMLmultiPartComplete, err := ioutil.ReadAll(o.Request.Body)
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(o.Repo.StorageNamespace, objName, uploadId, XMLmultiPartComplete)
+	var MultipartList struct{ Parts []*s3.CompletedPart }
+	err = xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
+	if err != nil {
+		o.Log().WithError(err).Error("could not parse multipart XML on complete multipart")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(o.Repo.StorageNamespace, objName, uploadId, &MultipartList)
 	if err != nil {
 		o.Log().WithError(err).Error("could not complete multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -79,7 +88,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	existingName, err := o.Index.CreateDedupEntryIfNone(o.Repo.Id, checksum, multiPart.ObjectName)
+	existingName, err := o.Index.CreateDedupEntryIfNone(o.Repo.Id, checksum, multiPart.PhysicalAddress)
 	if err != nil {
 		o.Log().WithError(err).Error("failed checking for duplicate content")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

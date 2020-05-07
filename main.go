@@ -103,9 +103,6 @@ var runCmd = &cobra.Command{
 		// init index
 		meta := index.NewDBIndex(mdb)
 
-		// init mpu manager
-		//mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
-
 		// init block store
 		blockStore := conf.BuildBlockAdapter()
 
