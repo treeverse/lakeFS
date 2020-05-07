@@ -31,38 +31,20 @@ type Adapter struct {
 	s3                 s3iface.S3API
 	httpClient         *http.Client
 	ctx                context.Context
-	uploadIdTranslator UploadIdTranslator
+	uploadIdTranslator block.UploadIdTranslator
 }
 
-type AdapterInterface interface {
-	block.Adapter
-	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
-	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
-	AbortMultiPartUpload(repo string, identifier string, uploadId string) error
-	CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error)
-	InjectSimulationId(u UploadIdTranslator)
-}
+//type AdapterInterface interface {
+//	block.Adapter
+//	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
+//	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
+//	AbortMultiPartUpload(repo string, identifier string, uploadId string) error
+//	CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error)
+//	InjectSimulationId(u block.UploadIdTranslator)
+//}
 
-func (s *Adapter) InjectSimulationId(u UploadIdTranslator) {
+func (s *Adapter) InjectSimulationId(u block.UploadIdTranslator) {
 	s.uploadIdTranslator = u
-}
-
-type UploadIdTranslator interface {
-	SetUploadId(uploadId string) string
-	TranslateUploadId(smulationId string) string
-	RemoveUploadId(inputUploadId string)
-}
-
-type dummyTranslator struct{}
-
-func (d *dummyTranslator) SetUploadId(uploadId string) string {
-	return uploadId
-}
-func (d *dummyTranslator) TranslateUploadId(smulationId string) string {
-	return smulationId
-}
-func (d *dummyTranslator) RemoveUploadId(inputUploadId string) {
-	return
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -82,7 +64,7 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
 		s3:                 s3,
 		httpClient:         http.DefaultClient,
 		ctx:                context.Background(),
-		uploadIdTranslator: &dummyTranslator{},
+		uploadIdTranslator: &block.DummyTranslator{},
 	}
 	for _, opt := range opts {
 		opt(a)
