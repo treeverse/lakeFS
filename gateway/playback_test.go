@@ -98,9 +98,8 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
-	_, s3Flag := os.LookupEnv("S3")
-	blockAdapter := testutil.GetBlockAdapter(t, !s3Flag)
-	blockAdapter.InjectSimulationId(IdTranslator)
+
+	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
 
 	authService := newGatewayAuth(t, directory)
 
