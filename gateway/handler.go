@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/gateway/operations"
+	"github.com/treeverse/lakefs/gateway/path"
 
 	"github.com/treeverse/lakefs/index"
 )
@@ -200,9 +201,8 @@ func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handl
 }
 
 func SplitFirst(pth string, parts int) ([]string, bool) {
-	const sep = "/"
-	pth = strings.TrimPrefix(pth, sep)
-	pathParts := strings.SplitN(pth, sep, parts)
+	pth = strings.TrimPrefix(pth, path.Separator)
+	pathParts := strings.SplitN(pth, path.Separator, parts)
 	if len(pathParts) < parts {
 		return []string{}, false
 	}
