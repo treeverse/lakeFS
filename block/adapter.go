@@ -12,7 +12,6 @@ type Adapter interface {
 	Get(repo string, identifier string) (io.ReadCloser, error)
 	GetRange(repo string, identifier string, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	Remove(repo string, identifier string) error
-	GetAdapterType() string
 	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
 	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
 	AbortMultiPartUpload(repo string, identifier string, uploadId string) error

@@ -34,15 +34,6 @@ type Adapter struct {
 	uploadIdTranslator block.UploadIdTranslator
 }
 
-//type AdapterInterface interface {
-//	block.Adapter
-//	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
-//	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
-//	AbortMultiPartUpload(repo string, identifier string, uploadId string) error
-//	CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error)
-//	InjectSimulationId(u block.UploadIdTranslator)
-//}
-
 func (s *Adapter) InjectSimulationId(u block.UploadIdTranslator) {
 	s.uploadIdTranslator = u
 }
