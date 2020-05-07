@@ -59,10 +59,10 @@ func (a V4Auth) GetAccessKeyId() string {
 	return a.AccessKeyId
 }
 
-func splitHeaders(headers string) ([]string, error) {
+func splitHeaders(headers string) []string {
 	headerValues := strings.Split(headers, ";")
 	sort.Strings(headerValues)
-	return headerValues, nil
+	return headerValues
 }
 
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
@@ -81,10 +81,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 				result[name] = match[i]
 			}
 		}
-		headers, err := splitHeaders(result["SignatureHeaders"])
-		if err != nil {
-			return ctx, err
-		}
+		headers := splitHeaders(result["SignatureHeaders"])
 		ctx.AccessKeyId = result["AccessKeyId"]
 		ctx.Date = result["Date"]
 		ctx.Region = result["Region"]
@@ -123,17 +120,13 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	ctx.Service = credsResult["Service"]
 
 	ctx.SignedHeadersString = query.Get("X-Amz-SignedHeaders")
-	headers, err := splitHeaders(ctx.SignedHeadersString)
-	if err != nil {
-		return ctx, err
-	}
+	headers := splitHeaders(ctx.SignedHeadersString)
 	ctx.SignedHeaders = headers
 	ctx.Signature = query.Get("X-Amz-Signature=")
 	return ctx, nil
 }
 
 func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error {
-
 	ctx := &verificationCtx{
 		Request:   r,
 		Query:     r.URL.Query(),
@@ -249,14 +242,14 @@ func (ctx *verificationCtx) payloadHash() string {
 func (ctx *verificationCtx) buildCanonicalRequest() string {
 	// Step 1: Canonical request
 	method := ctx.Request.Method
-	canonicalUri := EncodePath(ctx.Request.URL.Path)
+	canonicalURI := EncodePath(ctx.Request.URL.Path)
 	canonicalQueryString := ctx.canonicalizeQueryString()
 	canonicalHeaders := ctx.canonicalizeHeaders(ctx.AuthValue.SignedHeaders)
 	signedHeaders := ctx.AuthValue.SignedHeadersString
 	payloadHash := ctx.payloadHash()
 	canonicalRequest := strings.Join([]string{
 		method,
-		canonicalUri,
+		canonicalURI,
 		canonicalQueryString,
 		canonicalHeaders,
 		signedHeaders,
@@ -364,7 +357,6 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 }
 
 func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential) (io.ReadCloser, error) {
-
 	if ctx.isStreaming() {
 		amzDate, err := ctx.getAmzDate()
 		if err != nil {

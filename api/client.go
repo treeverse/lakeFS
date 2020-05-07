@@ -2,26 +2,22 @@ package api
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/index/errors"
 	"io"
 	"net/url"
 	"path"
 
-	"github.com/treeverse/lakefs/api/gen/client/refs"
-
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-
-	"github.com/go-openapi/swag"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
+	"github.com/go-openapi/swag"
+	genclient "github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/objects"
+	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
-
-	genclient "github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/index/errors"
 )
 
 type Client interface {

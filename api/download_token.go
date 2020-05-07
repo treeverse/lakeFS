@@ -13,7 +13,7 @@ import (
 
 	"github.com/treeverse/lakefs/logging"
 
-	"golang.org/x/xerrors"
+	"errors"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/auth"
@@ -24,7 +24,7 @@ const (
 )
 
 var (
-	ErrBadToken = xerrors.New("invalid token")
+	ErrBadToken = errors.New("invalid token")
 )
 
 func ValidateToken(ath auth.Service, token string, currentTime time.Time) (*models.User, error) {
