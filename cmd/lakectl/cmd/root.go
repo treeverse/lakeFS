@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -88,6 +89,14 @@ func initConfig() {
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err != nil {
-		fmt.Println("Using config file:", viper.ConfigFileUsed())
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			// if we are not calling "config" we would like to fail the execution
+			if len(os.Args) <= 1 || os.Args[1] != "config" {
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", err)
+			}
+		} else {
+			// Config file was found but another error was produced
+			DieFmt("error reading configuration file %s: %v", viper.ConfigFileUsed(), err)
+		}
 	}
 }

@@ -21,7 +21,7 @@ var noColorRequested = false
 const (
 	LakectlInteractive        = "LAKECTL_INTERACTIVE"
 	LakectlInteractiveDisable = "no"
-	DeathMessage              = "Error executing command:  {{.Error|red}}\n"
+	DeathMessage              = "Error executing command: {{.Error|red}}\n"
 )
 
 func init() {

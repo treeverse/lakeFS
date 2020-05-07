@@ -2,6 +2,10 @@ package cmd
 
 import (
 	"fmt"
+	"net/url"
+	"path/filepath"
+
+	"github.com/mitchellh/go-homedir"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -14,9 +18,15 @@ var configCmd = &cobra.Command{
 	Short: "Create/update local lakeFS configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		if viper.ConfigFileUsed() == "" {
-			Die("No config file was specified", 1)
+			// Find home directory.
+			home, err := homedir.Dir()
+			if err != nil {
+				DieErr(err)
+			}
+			// Setup default config file
+			viper.SetConfigFile(filepath.Join(home, ".lakectl.yaml"))
 		}
-		fmt.Printf("Config file %s will be updated\n", viper.ConfigFileUsed())
+		fmt.Printf("Config file %s will be used\n", viper.ConfigFileUsed())
 
 		// get user input
 		questions := []struct {
@@ -25,7 +35,10 @@ var configCmd = &cobra.Command{
 		}{
 			{Key: ConfigAccessKeyId, Prompt: &promptui.Prompt{Label: "Access key ID"}},
 			{Key: ConfigSecretAccessKey, Prompt: &promptui.Prompt{Label: "Secret access key"}},
-			{Key: ConfigServerEndpointUrl, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: promptuiValidateURL}},
+			{Key: ConfigServerEndpointUrl, Prompt: &promptui.Prompt{Label: "Server endpoint URL", Validate: func(rawurl string) error {
+				_, err := url.ParseRequestURI(rawurl)
+				return err
+			}}},
 		}
 		for _, question := range questions {
 			question.Prompt.Default = viper.GetString(question.Key)
