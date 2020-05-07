@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"fmt"
-	"os"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -17,7 +16,10 @@ const (
 	ConfigServerEndpointUrl = "server.endpoint_url"
 )
 
-var cfgFile string
+var (
+	cfgFile    string
+	cfgFileErr error
+)
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
@@ -29,6 +31,18 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		if noColorRequested {
 			DisableColors()
+		}
+		if cmd == configCmd {
+			return
+		}
+		if cfgFileErr != nil {
+			if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
+				// specific message in case the file doesn't not found
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
+			} else {
+				// other errors while reading the config file
+				DieFmt("error reading configuration file: %v", cfgFileErr)
+			}
 		}
 	},
 	Version: config.Version,
@@ -87,16 +101,5 @@ func initConfig() {
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// if we are not calling "config" we would like to fail the execution
-			if len(os.Args) <= 1 || os.Args[1] != "config" {
-				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", err)
-			}
-		} else {
-			// Config file was found but another error was produced
-			DieFmt("error reading configuration file %s: %v", viper.ConfigFileUsed(), err)
-		}
-	}
+	cfgFileErr = viper.ReadInConfig()
 }
