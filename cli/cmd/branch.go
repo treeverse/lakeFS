@@ -5,15 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/xerrors"
-
 	"github.com/go-openapi/swag"
-
-	"github.com/treeverse/lakefs/api/gen/models"
-
-	"github.com/treeverse/lakefs/uri"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/uri"
 )
 
 // branchCmd represents the branch command
@@ -171,7 +166,7 @@ var branchRevertCmd = &cobra.Command{
 		isObject := len(object) > 0
 
 		if moreThanOne(isCommit, isTree, isObject) {
-			DieErr(xerrors.Errorf("can't revert by multiple commands, please choose only one [commit, tree, object]!"))
+			DieErr(fmt.Errorf("Can't revert by multiple commands, please choose only one [commit, tree, object]!"))
 		}
 
 		var revert models.RevertCreation

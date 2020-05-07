@@ -1,6 +1,7 @@
 package store_test
 
 import (
+	"errors"
 	"log"
 	"os"
 	"strings"
@@ -8,15 +9,11 @@ import (
 	"time"
 
 	"github.com/ory/dockertest/v3"
-
-	"github.com/treeverse/lakefs/testutil"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/store"
-
-	"golang.org/x/xerrors"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 var (
@@ -46,7 +43,7 @@ func TestReadRepo(t *testing.T) {
 
 	str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		_, err := ops.ReadRepo(repoId)
-		if !xerrors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected not found error, got %v instead", err)
 		}
 		return nil, nil
@@ -182,12 +179,12 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 
 	_, err = str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		_, err := ops.ReadRepo("repo1")
-		if !xerrors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected repo to be deleted, instead got error: %v", err)
 		}
 		//check prefix
 		_, err = ops.ReadRepo("repo1asprefix")
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("did not expect repo to be deleted, instead got error: %v", err)
 		}
 		return nil, nil
@@ -222,7 +219,7 @@ func TestKVClientOperations_WriteRepo(t *testing.T) {
 
 	_, err = str.Transact(func(ops store.ClientOperations) (i interface{}, e error) {
 		_, err := ops.ReadRepo("repo1")
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected to read created repo, instead got error: %v", err)
 		}
 		return nil, nil
