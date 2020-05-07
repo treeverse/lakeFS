@@ -38,16 +38,10 @@ type Server struct {
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
-	meta             index.Index
-	multipartManager index.MultipartManager
-	blockStore       block.Adapter
-	authService      auth.Service
-	stats            stats.Collector
-	migrator         db.Migrator
-
-	apiServer *restapi.Server
-	handler   *http.ServeMux
-	server    *http.Server
+	migrator    db.Migrator
+	apiServer   *restapi.Server
+	handler     *http.ServeMux
+	server      *http.Server
 }
 
 func NewServer(
@@ -59,17 +53,11 @@ func NewServer(
 	migrator db.Migrator,
 ) *Server {
 	return &Server{
-		meta: meta,
-		//multipartManager: multipartManager,
+		meta:        meta,
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
-		meta:             meta,
-		multipartManager: multipartManager,
-		blockStore:       blockStore,
-		authService:      authService,
-		stats:            stats,
-		migrator:         migrator,
+		migrator:    migrator,
 	}
 }
 
