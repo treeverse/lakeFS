@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/xml"
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws/request"
 	"io/ioutil"
 	"net/http"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/request"
 
 	"github.com/treeverse/lakefs/block"
 
@@ -34,10 +35,6 @@ type Adapter struct {
 	uploadIdTranslator block.UploadIdTranslator
 }
 
-func (s *Adapter) InjectSimulationId(u block.UploadIdTranslator) {
-	s.uploadIdTranslator = u
-}
-
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.httpClient = c
@@ -47,6 +44,12 @@ func WithHTTPClient(c *http.Client) func(a *Adapter) {
 func WithContext(ctx context.Context) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.ctx = ctx
+	}
+}
+
+func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.uploadIdTranslator = t
 	}
 }
 
