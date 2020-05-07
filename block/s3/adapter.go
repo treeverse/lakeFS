@@ -2,7 +2,6 @@ package s3
 
 import (
 	"context"
-	"encoding/xml"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -58,7 +57,7 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
 		s3:                 s3,
 		httpClient:         http.DefaultClient,
 		ctx:                context.Background(),
-		uploadIdTranslator: &block.DummyTranslator{},
+		uploadIdTranslator: &block.NoOpTranslator{},
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -91,8 +90,16 @@ func (s *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, re
 	uploadPartObject := s3.UploadPartInput{Bucket: aws.String(repo), Key: aws.String(identifier), PartNumber: aws.Int64(partNumber), UploadId: aws.String(uploadId)}
 	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
 	resp, err := s.streamToS3(sdkRequest, sizeBytes, reader)
-	ETag := resp.Header["Etag"][0]
-	return ETag, err
+	if err == nil && resp != nil {
+		etagList, ok := resp.Header["Etag"]
+		if ok && len(etagList) > 0 {
+			return etagList[0], nil
+		}
+	}
+	if err == nil {
+		err = fmt.Errorf("Etag not returned")
+	}
+	return "", err
 }
 
 func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (*http.Response, error) {
@@ -200,10 +207,6 @@ func (s *Adapter) Remove(repo string, identifier string) error {
 	return err
 }
 
-func (s *Adapter) GetAdapterType() string {
-	return "s3"
-}
-
 func (s *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
 	input := &s3.CreateMultipartUploadInput{
 		Bucket:      aws.String(repo),
@@ -211,9 +214,13 @@ func (s *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 		ContentType: aws.String(""),
 	}
 	resp, err := s.s3.CreateMultipartUpload(input)
-	uploadId := *resp.UploadId
-	uploadId = s.uploadIdTranslator.SetUploadId(uploadId)
-	return uploadId, err
+	if err == nil {
+		uploadId := *resp.UploadId
+		uploadId = s.uploadIdTranslator.SetUploadId(uploadId)
+		return uploadId, err
+	} else {
+		return "", err
+	}
 }
 func (s *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
@@ -227,11 +234,8 @@ func (s *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	return err
 }
 
-func (s *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error) {
-	var CompleteMultipartStaging struct{ Part []*s3.CompletedPart }
-	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
-	err := xml.Unmarshal([]byte(XMLmultiPartComplete), &CompleteMultipartStaging)
-	cmpu := &s3.CompletedMultipartUpload{Parts: CompleteMultipartStaging.Part}
+func (s *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error) {
+	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Parts}
 
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(repo),
@@ -240,12 +244,16 @@ func (s *Adapter) CompleteMultiPartUpload(repo string, identifier string, upload
 		MultipartUpload: cmpu,
 	}
 	resp, err := s.s3.CompleteMultipartUpload(input)
-	s.uploadIdTranslator.RemoveUploadId(uploadId)
-	headInput := &s3.HeadObjectInput{Bucket: &repo, Key: &identifier}
-	headResp, err := s.s3.HeadObject(headInput)
-	if err != nil {
-		return nil, -1, err
+	if err == nil {
+		s.uploadIdTranslator.RemoveUploadId(uploadId)
+		headInput := &s3.HeadObjectInput{Bucket: &repo, Key: &identifier}
+		headResp, err := s.s3.HeadObject(headInput)
+		if err != nil {
+			return nil, -1, err
+		} else {
+			return resp.ETag, *headResp.ContentLength, err
+		}
 	} else {
-		return resp.ETag, *headResp.ContentLength, err
+		return nil, -1, err
 	}
 }

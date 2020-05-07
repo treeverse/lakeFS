@@ -4,7 +4,6 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
-	"encoding/xml"
 	"fmt"
 	"hash"
 	"io"
@@ -54,7 +53,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (block.Adapter, error) {
 	}
 	adapter := &Adapter{
 		path: path, ctx: context.Background(),
-		uploadIdTranslator: &block.DummyTranslator{},
+		uploadIdTranslator: &block.NoOpTranslator{},
 	}
 	for _, opt := range opts {
 		opt(adapter)
@@ -105,10 +104,6 @@ func (l *Adapter) GetRange(_ string, identifier string, start int64, end int64) 
 	return f, nil
 }
 
-func (l *Adapter) GetAdapterType() string {
-	return "local"
-}
-
 func isDirectoryWritable(pth string) bool {
 	// test ability to write to directory.
 	// as there is no simple way to test this in windows, I prefer the "brute force" method
@@ -139,8 +134,8 @@ func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 		}
 
 	}
-	x := ([16]byte(uuid.New()))
-	uploadId := hex.EncodeToString(x[:])
+	UUIDbytes := ([16]byte(uuid.New()))
+	uploadId := hex.EncodeToString(UUIDbytes[:])
 	uploadId = l.uploadIdTranslator.SetUploadId(uploadId)
 	return uploadId, nil
 }
@@ -160,14 +155,7 @@ func (l *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	l.removePartFiles(files)
 	return nil
 }
-func (l *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, XMLmultiPartComplete []byte) (*string, int64, error) {
-	var MultipartList struct{ Parts []*s3.CompletedPart }
-	//uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
-	err := xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
-	if err != nil {
-		fmt.Errorf("failed parsing received XML: " + string(XMLmultiPartComplete))
-		return nil, 0, err
-	}
+func (l *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error) {
 	ETag := computeETag(MultipartList.Parts) + "-" + strconv.Itoa(len(MultipartList.Parts))
 	partFiles, err := l.getPartFiles(uploadId)
 	if err != nil {
@@ -232,10 +220,10 @@ func (l *Adapter) removePartFiles(files []string) {
 }
 
 func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
-	path := l.getPath(uploadId) + "-*"
-	names, err := filepath.Glob(path)
+	globPathPattern := l.getPath(uploadId) + "-*"
+	names, err := filepath.Glob(globPathPattern)
 	if err != nil {
-		fmt.Errorf("failed Globe on: " + path)
+		fmt.Errorf("failed Globe on: " + globPathPattern)
 		return nil, err
 	}
 	sort.Strings(names)

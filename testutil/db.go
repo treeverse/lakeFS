@@ -174,7 +174,6 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 	} else {
 		cfg := &aws.Config{
 			Region: aws.String("us-east-1"),
-			//Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
 		}
 		cfg.Credentials = credentials.NewSharedCredentials("", "default")
 		sess := session.Must(session.NewSession(cfg))
