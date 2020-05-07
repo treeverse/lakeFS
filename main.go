@@ -19,9 +19,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/stats"
-	"github.com/treeverse/lakefs/permissions"
 )
 
 const (
@@ -118,8 +116,7 @@ var runCmd = &cobra.Command{
 		stats := getStats(conf, GetInstallationID(authService))
 
 		// start API server
-		apiServer := api.NewServer(meta, blockStore, authService, stats)
-		apiServer := api.NewServer(meta, mpu, blockStore, authService, stats, migrator)
+		apiServer := api.NewServer(meta, blockStore, authService, stats, migrator)
 
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)

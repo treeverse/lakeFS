@@ -156,7 +156,7 @@ func GetBlockAdapter(t *testing.T, isLocal bool, opts ...func(a *lakefsS3.Adapte
 		if err != nil {
 			t.Fatal(err)
 		}
-		adapter, err := local.NewLocalFSAdapter(dir)
+		adapter, err := local.NewAdapter(dir)
 		if err != nil {
 			t.Fatal(err)
 		}
