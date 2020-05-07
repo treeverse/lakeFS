@@ -10,6 +10,7 @@ import (
 	"io"
 )
 
+// WriteBlob needs only this function from index. created this interface to enable easy testing
 type DedupHandler interface {
 	CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error)
 }
@@ -64,8 +65,8 @@ func newHashingReader(body io.Reader) (s *HashingReader) {
 func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64) (string, string, int64, error) {
 	// handle the upload itself
 	hashReader := newHashingReader(body)
-	x := ([16]byte(uuid.New()))
-	objName := hex.EncodeToString(x[:])
+	UUIDbytes := ([16]byte(uuid.New()))
+	objName := hex.EncodeToString(UUIDbytes[:])
 	err := adapter.Put(bucketName, objName, contentLength, hashReader)
 	if err != nil {
 		return "", "", -1, err

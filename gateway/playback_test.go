@@ -80,13 +80,6 @@ func (m *mockCollector) Collect(class, action string) {
 
 }
 
-/*func injectIdTranslator (a *lakefsS3.Adapter){
-	{ a.uploadIdTranslator = &uploadIdTranslator{ transMap: make(map[string]string),
-		expectedId: "",
-		t: t,
-	}
-	}
-}*/
 var IdTranslator *uploadIdTranslator
 
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
@@ -177,12 +170,3 @@ func (d *uploadIdTranslator) RemoveUploadId(inputUploadId string) {
 	}
 	delete(d.transMap, keyToRemove)
 }
-
-//func newUploadIdTranslator(t testing.T) s3.UploadIdTranslator{
-//	return &uploadIdTranslator{
-//		transMap: make(map[string]string),
-//		expectedId: "",
-//		t: t,
-//	}
-//
-//}

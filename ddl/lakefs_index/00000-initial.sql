@@ -21,9 +21,9 @@ CREATE TABLE objects
 
 CREATE TABLE object_dedup
 (
-    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
-    dedup_id      bytea                                    NOT NULL,
-    address       varchar(64)                              NOT NULL,
+    repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
+    dedup_id         bytea                                    NOT NULL,
+    physical_address varchar                                  NOT NULL,
 
     PRIMARY KEY (repository_id, dedup_id)
 );
@@ -112,25 +112,11 @@ CREATE INDEX idx_workspace_entries_parent_path ON workspace_entries (repository_
 
 CREATE TABLE multipart_uploads
 (
-    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
-    id            varchar(128)                             NOT NULL,
-    path          varchar                                  NOT NULL,
-    creation_date timestamptz                              NOT NULL,
-    object_name   bytea                                    NOT NULL,
-    PRIMARY KEY (repository_id, id)
+    repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
+    upload_id        varchar(128)                             NOT NULL,
+    path             varchar                                  NOT NULL,
+    creation_date    timestamptz                              NOT NULL,
+    physical_address bytea                                    NOT NULL,
+    PRIMARY KEY (repository_id, upload_id)
 );
 
-
-CREATE TABLE multipart_upload_parts
-(
-    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
-    upload_id     varchar(128)                             NOT NULL,
-    part_number   integer                                  NOT NULL,
-    checksum      varchar(64)                              NOT NULL,
-    creation_date timestamptz                              NOT NULL,
-    size          bigint                                   NOT NULL CHECK (size >= 0),
-    blocks        json                                     NOT NULL,
-
-    FOREIGN KEY (repository_id, upload_id) REFERENCES multipart_uploads (repository_id, id),
-    PRIMARY KEY (repository_id, upload_id, part_number)
-);
