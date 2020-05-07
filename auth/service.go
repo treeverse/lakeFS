@@ -6,20 +6,16 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/auth/crypt"
-
-	"github.com/treeverse/lakefs/permissions"
-
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
-
-	"golang.org/x/xerrors"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 var (
-	ErrClientNotFound = xerrors.Errorf("client: %w", db.ErrNotFound)
-	ErrUserNotFound   = xerrors.Errorf("user: %w", db.ErrNotFound)
-	ErrGroupNotFound  = xerrors.Errorf("group: %w", db.ErrNotFound)
-	ErrRoleNotFound   = xerrors.Errorf("role: %w", db.ErrNotFound)
+	ErrClientNotFound = fmt.Errorf("client: %w", db.ErrNotFound)
+	ErrUserNotFound   = fmt.Errorf("user: %w", db.ErrNotFound)
+	ErrGroupNotFound  = fmt.Errorf("group: %w", db.ErrNotFound)
+	ErrRoleNotFound   = fmt.Errorf("role: %w", db.ErrNotFound)
 )
 
 // AuthenticationRequest/AuthenticationResponse are used for user login information

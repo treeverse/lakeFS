@@ -105,7 +105,7 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 		return
 	}
 	s, _ := json.Marshal(w.Headers)
-	err := ioutil.WriteFile(fName, s, 0777)
+	err := ioutil.WriteFile(fName, s, 0600)
 	if err != nil {
 		logger.WithError(err).Fatal("failed crete file " + fName)
 	}
