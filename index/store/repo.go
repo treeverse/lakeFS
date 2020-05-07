@@ -18,7 +18,7 @@ type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ListWorkspaceAsDiff(branch string) (model.Differences, error)
-	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int) ([]*model.SearchResultEntry, bool, error)
+	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.SearchResultEntry, bool, error)
 	CascadeDirectoryDeletion(branch, deletedPath string) error
 	ReadFromWorkspace(branch, path, typ string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
@@ -51,7 +51,7 @@ type RepoOperations interface {
 	DeleteMultipartUploadParts(uploadId string) error
 }
 
-func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from string, amount int) ([]*model.SearchResultEntry, bool, error) {
+func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.SearchResultEntry, bool, error) {
 	var entries []*model.SearchResultEntry
 	var additionalCondition, limitStatement string
 	if amount > 0 {
@@ -60,10 +60,15 @@ func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from stri
 	if len(from) > 0 {
 		additionalCondition = "AND path > "
 	}
+	parentPathCondition := "parent_path = $3"
+	if descend {
+		parentPathCondition = "parent_path LIKE $3 || '%' AND entry_type ='object'"
+	}
 	err := o.tx.Select(
 		&entries, fmt.Sprintf(
 			`SELECT path AS name, entry_type AS type, size, creation_date, checksum FROM combined_workspace
-    	  				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 AND tombstone IS NOT TRUE %s ORDER BY name %s`, additionalCondition, limitStatement),
+    	  				WHERE repository_id = $1 AND branch_id = $2 AND %s AND tombstone IS NOT TRUE %s ORDER BY name %s`,
+			parentPathCondition, additionalCondition, limitStatement),
 		o.repoId, branch, path)
 	hasMore := false
 	if amount > 0 && len(entries) > amount {

@@ -202,7 +202,7 @@ func CreateWorkspaceEntries(path string, tombstone bool) []*model.WorkspaceEntry
 	treeType := model.EntryTypeTree
 	currentParent := path
 	var dirChecksum string
-	for strings.Contains(currentParent[:len(currentParent)], pth.Separator) {
+	for strings.Contains(currentParent, pth.Separator) {
 		currentPath := currentParent
 		currentParent = currentPath[:strings.LastIndex(currentParent[:len(currentParent)-1], pth.Separator)+1]
 		currentName := currentPath[len(currentParent):]
@@ -271,7 +271,7 @@ func TestDBRepoOperations_ListWorkspaceDirectory(t *testing.T) {
 		var entries []*model.SearchResultEntry
 		var err error
 		for _, test := range testData {
-			entries, _, err = ops.ListTreeAndWorkspaceDirectory(repo.DefaultBranch, test.Path, "", 50)
+			entries, _, err = ops.ListTreeAndWorkspaceDirectory(repo.DefaultBranch, test.Path, "", 50, false)
 			if err != nil {
 				//t.Fatal(err)
 			}
