@@ -73,7 +73,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c := config.NewFromFile("testdata/valid_config.yaml")
 		adapter := c.BuildBlockAdapter()
-		if _, ok := adapter.(*local.LocalFSAdapter); !ok {
+		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
 		}
 	})
