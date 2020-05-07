@@ -31,7 +31,8 @@ var (
 )
 
 func init() {
-	interestingResourcesContainer := []string{"accelerate", "acl", "cors", "defaultObjectAcl",
+	interestingResourcesContainer := []string{
+		"accelerate", "acl", "cors", "defaultObjectAcl",
 		"location", "logging", "partNumber", "policy",
 		"requestPayment", "torrent",
 		"versioning", "versionId", "versions", "website",
@@ -41,25 +42,27 @@ func init() {
 		"response-content-encoding", "delete", "lifecycle",
 		"tagging", "restore", "storageClass", "notification",
 		"replication", "analytics", "metrics",
-		"inventory", "select", "select-type"}
+		"inventory", "select", "select-type",
+	}
+	sort.Strings(interestingResourcesContainer)
 	// check for duplicates in the array - if it happens it is a programmer error that will happen only when that
 	// query parameter is used - may be very hard to find.
-	temp_map := map[string]bool{}
-	var sort_array []string
+	tempMap := map[string]bool{}
+	var sortedArray []string
 	for _, word := range interestingResourcesContainer {
-		if _, ok := temp_map[word]; ok {
+		if _, ok := tempMap[word]; ok {
 			logging.Default().
 				WithField("word", word).
 				Warn("appears twice in sig\v2.go array interestingResourcesContainer. a programmer error")
 		} else {
-			temp_map[word] = true
+			tempMap[word] = true
 		}
 	}
-	for key := range temp_map {
-		sort_array = append(sort_array, key)
+	for key := range tempMap {
+		sortedArray = append(sortedArray, key)
 	}
-	sort.Strings(sort_array)
-	interestingResources = sort_array
+	sort.Strings(sortedArray)
+	interestingResources = sortedArray
 }
 
 type v2Context struct {
@@ -132,7 +135,6 @@ func canonicalStandardHeaders(headers http.Header) string {
 				foundHoi = true
 				break
 			}
-
 		}
 		if !foundHoi {
 			returnStr += "\n"
@@ -193,26 +195,23 @@ func canonicalString(method string, query url.Values, path string, headers http.
 }
 
 func signCanonicalString(msg string, signature []byte) (digest []byte) {
-	h := hmac.New(sha1.New, []byte(signature))
+	h := hmac.New(sha1.New, signature)
 	h.Write([]byte(msg))
 	digest = h.Sum(nil)
 	return
 }
 
 func buildPath(host, bareDomain, path string) string {
-
 	if host == bareDomain {
 		return path
-	} else {
-		if str.HasSuffix(host, bareDomain) {
-			prePath := host[:len(host)-len(bareDomain)-1]
-			return "/" + prePath + path
-		} else { // bareDomain is not prefix of the path - how did we get here???
-			logging.Default().WithFields(logging.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
-			return ""
-		}
 	}
-
+	if str.HasSuffix(host, bareDomain) {
+		prePath := host[:len(host)-len(bareDomain)-1]
+		return "/" + prePath + path
+	}
+	// bareDomain is not prefix of the path - how did we get here???
+	logging.Default().WithFields(logging.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
+	return ""
 }
 
 func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) error {
@@ -229,7 +228,7 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 			- standard headers - 'content-md5', 'content-type', 'date' - if one of those does not appear, it is replaces with an
 			empty line '\n'. sorted and stringified
 			- custom headers - any header that starts with 'x-amz-'. if the header appears more than once - the values
-			are joined with ',' seperator. sorted and stringified.
+			are joined with ',' separator. sorted and stringified.
 			- path of the object
 			- QSA(Query String Arguments) - query arguments are searched for "interesting Resources". */
 

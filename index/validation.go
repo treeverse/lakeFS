@@ -1,19 +1,19 @@
 package index
 
 import (
+	"fmt"
 	"regexp"
 
-	"github.com/treeverse/lakefs/index/errors"
-	"golang.org/x/xerrors"
+	indexerrors "github.com/treeverse/lakefs/index/errors"
 )
 
 var (
-	ErrInvalidBranchName    = xerrors.Errorf("branch name: %w", errors.ErrInvalid)
-	ErrInvalidRef           = xerrors.Errorf("ref: %w", errors.ErrInvalid)
-	ErrInvalidRepositoryId  = xerrors.Errorf("repository name: %w", errors.ErrInvalid)
-	ErrInvalidPath          = xerrors.Errorf("path: %w", errors.ErrInvalid)
-	ErrInvalidCommitId      = xerrors.Errorf("commit ID: %w", errors.ErrInvalid)
-	ErrInvalidCommitMessage = xerrors.Errorf("commit message: %w", errors.ErrInvalid)
+	ErrInvalidBranchName    = fmt.Errorf("branch name: %w", indexerrors.ErrInvalid)
+	ErrInvalidRef           = fmt.Errorf("ref: %w", indexerrors.ErrInvalid)
+	ErrInvalidRepositoryId  = fmt.Errorf("repository name: %w", indexerrors.ErrInvalid)
+	ErrInvalidPath          = fmt.Errorf("path: %w", indexerrors.ErrInvalid)
+	ErrInvalidCommitId      = fmt.Errorf("commit ID: %w", indexerrors.ErrInvalid)
+	ErrInvalidCommitMessage = fmt.Errorf("commit message: %w", indexerrors.ErrInvalid)
 )
 
 type ValidationFunc func(string) error

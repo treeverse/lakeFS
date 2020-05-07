@@ -1,12 +1,11 @@
 package path
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
 	pth "github.com/treeverse/lakefs/index/path"
-
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -29,7 +28,7 @@ var (
 	EncodedPathRefRe = regexp.MustCompile(fmt.Sprintf("/?%s", RefReMatch))
 	EncodedAbsPathRe = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefReMatch, PathReMatch))
 
-	ErrPathMalformed = xerrors.New("encoded path is malformed")
+	ErrPathMalformed = errors.New("encoded path is malformed")
 )
 
 type ResolvedPath struct {

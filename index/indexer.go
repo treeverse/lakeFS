@@ -2,25 +2,21 @@ package index
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/treeverse/lakefs/index/dag"
-
-	"github.com/treeverse/lakefs/index/errors"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/index/dag"
+	indexerrors "github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/merkle"
 	"github.com/treeverse/lakefs/index/model"
 	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/index/store"
-
-	"golang.org/x/xerrors"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -94,7 +90,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 
 	// get branch info (including current workspace root)
 	branchData, err := tx.ReadBranch(branch)
-	if xerrors.Is(err, db.ErrNotFound) {
+	if errors.Is(err, db.ErrNotFound) {
 		return nil
 	} else if err != nil {
 		return err // unexpected error
@@ -211,7 +207,7 @@ func resolveRef(tx store.RepoOperations, ref string) (*reference, error) {
 	if ident.IsHash(ref) {
 		// this looks like a straight up commit, let's see if it exists
 		commit, err := tx.ReadCommit(ref)
-		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			// got an error, we can't continue
 			return nil, err
 		} else if err == nil {
@@ -262,7 +258,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 
 		if reference.isBranch {
 			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
-			if xerrors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, db.ErrNotFound) {
 				// not in workspace, let's try reading it from branch tree
 				m := merkle.New(reference.branch.WorkspaceRoot)
 				obj, err = m.GetObject(tx, path)
@@ -314,7 +310,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 
 		// continue with we only if we got no error
 		if err != nil {
-			if !xerrors.Is(err, db.ErrNotFound) {
+			if !errors.Is(err, db.ErrNotFound) {
 				return nil, err
 			}
 		} else {
@@ -552,7 +548,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		notFoundCount := 0
 		wsEntry, err := tx.ReadFromWorkspace(branch, path)
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, db.ErrNotFound) {
 				notFoundCount += 1
 			} else {
 				return nil, err
@@ -567,7 +563,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		m := merkle.New(root)
 		merkleEntry, err := m.GetEntry(tx, path, model.EntryTypeObject)
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, db.ErrNotFound) {
 				notFoundCount += 1
 			} else {
 				return nil, err
@@ -734,17 +730,17 @@ func (index *DBIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, e
 	branchData, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
 		// ensure it doesn't exist yet
 		_, err := tx.ReadBranch(branch)
-		if err != nil && !xerrors.Is(err, db.ErrNotFound) {
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			index.log().WithError(err).Error("could not read branch")
 			return nil, err
 		}
 		if err == nil {
-			return nil, errors.ErrBranchAlreadyExists
+			return nil, indexerrors.ErrBranchAlreadyExists
 		}
 		// read resolve reference
 		reference, err := resolveRef(tx, ref)
 		if err != nil {
-			return nil, xerrors.Errorf("could not read ref: %w", err)
+			return nil, fmt.Errorf("could not read ref: %w", err)
 		}
 		branchData := &model.Branch{
 			Id:            branch,
@@ -929,23 +925,23 @@ func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge b
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
-		return nil, errors.ErrBranchNotFound
+		return nil, indexerrors.ErrBranchNotFound
 	}
 
 	rRef, err := resolveRef(tx, rightRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", rRef).Error("could not resolve right ref")
-		return nil, errors.ErrBranchNotFound
+		return nil, indexerrors.ErrBranchNotFound
 	}
 
 	commonCommits, err := dag.FindLowestCommonAncestor(tx, lRef.commit.Address, rRef.commit.Address)
 	if err != nil {
 		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not find common commit")
-		return nil, errors.ErrNoMergeBase
+		return nil, indexerrors.ErrNoMergeBase
 	}
 	if commonCommits == nil {
 		index.log().WithField("left", lRef).WithField("right", rRef).Error("no common merge base found")
-		return nil, errors.ErrNoMergeBase
+		return nil, indexerrors.ErrNoMergeBase
 	}
 
 	leftTree := lRef.commit.Tree
@@ -1043,7 +1039,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 		var workspaceEntry *model.WorkspaceEntry
 		commitEntry, err := commitMerkle.GetEntry(tx, path, typ)
 		if err != nil {
-			if xerrors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, db.ErrNotFound) {
 				// remove all changes under path
 				pathEntry, err := workspaceMerkle.GetEntry(tx, path, typ)
 				if err != nil {
@@ -1141,7 +1137,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		destinationBranch, err := tx.ReadBranch(destination)
 		if err != nil {
 			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " not found")
-			return nil, errors.ErrBranchNotFound
+			return nil, indexerrors.ErrBranchNotFound
 		}
 		l, err := tx.ListWorkspace(destination)
 		if err != nil {
@@ -1149,7 +1145,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			return nil, err
 		}
 		if destinationBranch.CommitRoot != destinationBranch.WorkspaceRoot || len(l) > 0 {
-			return nil, errors.ErrDestinationNotCommitted
+			return nil, indexerrors.ErrDestinationNotCommitted
 		}
 		// compute difference
 		df, err := doDiff(tx, repoId, source, destination, true, index)
@@ -1166,7 +1162,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			}
 		}
 		if isConflict {
-			return nil, errors.ErrMergeConflict
+			return nil, indexerrors.ErrMergeConflict
 		}
 		// update destination with source changes
 		var wsEntries []*model.WorkspaceEntry
@@ -1206,7 +1202,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		newRoot, err := destinationRoot.Update(tx, wsEntries)
 		if err != nil {
 			index.log().WithError(err).Fatal("failed updating merge destination")
-			return nil, errors.ErrMergeUpdateFailed
+			return nil, indexerrors.ErrMergeUpdateFailed
 		}
 		destinationBranch.CommitRoot = newRoot.Root()
 		destinationBranch.WorkspaceRoot = newRoot.Root()
@@ -1222,7 +1218,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			commits[i], err = tx.ReadCommit(branch.CommitId)
 			if err != nil {
 				index.log().WithError(err).Error("failed read commit")
-				return nil, xerrors.Errorf("missing commit: %w", err)
+				return nil, fmt.Errorf("missing commit: %w", err)
 			}
 		}
 		parent1Commit := commits[0]
@@ -1237,7 +1233,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		if iter.Err() != nil {
 			index.log().WithError(err).Error("failed while lookup parent relation")
-			return nil, xerrors.Errorf("failed to scan parent commits", err)
+			return nil, fmt.Errorf("failed to scan parent commits: %w", err)
 		}
 		if !parent2Older {
 			commits[0], commits[1] = commits[1], commits[0]
@@ -1253,12 +1249,12 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 				"userId":      userId,
 				"parents":     parents,
 			}).Error("commit merge branch")
-			return nil, xerrors.Errorf("failed to commit updates", err)
+			return nil, fmt.Errorf("failed to commit updates: %w", err)
 		}
 		return mergeOperations, nil
 	})
 	// ErrMergeConflict is the only error that will report the merge operations made so far
-	if err != nil && err != errors.ErrMergeConflict {
+	if err != nil && err != indexerrors.ErrMergeConflict {
 		return nil, err
 	}
 	return mergeOperations, err
@@ -1286,8 +1282,8 @@ func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 		_, err := tx.ReadRepo()
 		if err == nil {
 			// couldn't verify this bucket doesn't yet exist
-			return nil, errors.ErrRepoExists
-		} else if !xerrors.Is(err, db.ErrNotFound) {
+			return nil, indexerrors.ErrRepoExists
+		} else if !errors.Is(err, db.ErrNotFound) {
 			index.log().WithError(err).Error("could not read repo")
 			return nil, err // error reading the repo
 		}
