@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/permissions"
@@ -28,10 +27,9 @@ func (controller *PostObject) Action(repoId, refId, path string) permissions.Act
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	//var err error
 	o.Incr("create_mpu")
-	adapter := o.BlockStore.(s3.AdapterInterface)
 	x := ([16]byte(uuid.New()))
 	objName := hex.EncodeToString(x[:])
-	uploadId, err := adapter.CreateMultiPartUpload(o.Repo.StorageNamespace, objName, o.Request)
+	uploadId, err := o.BlockStore.CreateMultiPartUpload(o.Repo.StorageNamespace, objName, o.Request)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -65,7 +63,6 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	var size int64
 	o.Incr("complete_mpu")
 	uploadId := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
-	adapter := o.BlockStore.(s3.AdapterInterface)
 	multiPart, err := o.Index.ReadMultiPartUpload(o.Repo.Id, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read  multipart record")
@@ -74,7 +71,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	objName := multiPart.ObjectName
 	XMLmultiPartComplete, err := ioutil.ReadAll(o.Request.Body)
-	etag, size, err = adapter.CompleteMultiPartUpload(o.Repo.StorageNamespace, objName, uploadId, XMLmultiPartComplete)
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(o.Repo.StorageNamespace, objName, uploadId, XMLmultiPartComplete)
 	if err != nil {
 		o.Log().WithError(err).Error("could not complete multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -90,7 +87,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 
 	if existingName != objName { // object already exist
-		adapter.Remove(o.Repo.StorageNamespace, objName)
+		o.BlockStore.Remove(o.Repo.StorageNamespace, objName)
 		objName = existingName
 	}
 	err = o.finishUpload(checksum, objName, size)

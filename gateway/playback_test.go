@@ -16,7 +16,6 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	lakefsS3 "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
@@ -91,21 +90,18 @@ func (m *mockCollector) Collect(class, action string) {
 var IdTranslator *uploadIdTranslator
 
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
+	IdTranslator = &uploadIdTranslator{transMap: make(map[string]string),
+		expectedId: "",
+		t:          t,
+	}
 	directory := filepath.Join("testdata", "recordings", testDir)
 
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
 	_, s3Flag := os.LookupEnv("S3")
 	blockAdapter := testutil.GetBlockAdapter(t, !s3Flag)
-	if s3Flag {
-		s3Adapter := blockAdapter.(lakefsS3.AdapterInterface)
-		IdTranslator = &uploadIdTranslator{transMap: make(map[string]string),
-			expectedId: "",
-			t:          t,
-		}
-		s3Adapter.InjectSimulationId(IdTranslator)
+	blockAdapter.InjectSimulationId(IdTranslator)
 
-	}
 	authService := newGatewayAuth(t, directory)
 
 	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))

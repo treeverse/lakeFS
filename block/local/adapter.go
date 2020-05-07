@@ -11,6 +11,7 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"hash"
 	"io"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
@@ -31,12 +32,13 @@ func (s *Adapter) InjectSimulationId(u block.UploadIdTranslator) {
 
 func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
-		path: l.path,
-		ctx:  ctx,
+		path:               l.path,
+		ctx:                ctx,
+		uploadIdTranslator: l.uploadIdTranslator,
 	}
 }
 
-func NewLocalFSAdapter(path string) (block.Adapter, error) {
+func NewAdapter(path string) (block.Adapter, error) {
 	stt, err := os.Stat(path)
 	if err != nil {
 		return nil, err
@@ -44,12 +46,10 @@ func NewLocalFSAdapter(path string) (block.Adapter, error) {
 	if !stt.IsDir() {
 		return nil, fmt.Errorf("path provided is not a valid directory")
 	}
-
-	//if unix.Access(path, unix.W_OK) != nil {
 	if !isDirectoryWritable(path) {
 		return nil, fmt.Errorf("path provided is not writable")
 	}
-	return &Adapter{path: path, ctx: context.Background()}, nil
+	return &Adapter{path: path, ctx: context.Background(), uploadIdTranslator: &block.DummyTranslator{}}, nil
 }
 
 func (l *Adapter) getPath(identifier string) string {
@@ -131,7 +131,7 @@ func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 	}
 	x := ([16]byte(uuid.New()))
 	uploadId := hex.EncodeToString(x[:])
-	uploadId += uploadId
+	uploadId = l.uploadIdTranslator.SetUploadId(uploadId)
 	return uploadId, nil
 }
 
