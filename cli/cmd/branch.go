@@ -166,7 +166,7 @@ var branchRevertCmd = &cobra.Command{
 		isObject := len(object) > 0
 
 		if moreThanOne(isCommit, isTree, isObject) {
-			DieErr(fmt.Errorf("Can't revert by multiple commands, please choose only one [commit, tree, object]!"))
+			Die("Can't revert by multiple commands, please choose only one [commit, tree, object]!", 1)
 		}
 
 		var revert models.RevertCreation
