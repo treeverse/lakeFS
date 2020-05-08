@@ -9,7 +9,7 @@ import Badge from "react-bootstrap/Badge";
 import Octicon, {GitCommit, GitMerge, Plus, X} from "@primer/octicons-react";
 
 import {deleteObject, deleteObjectDone, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
-import {diff, resetDiff, diffBranch, resetDiffBranch, merge, resetMerge} from "../actions/refs";
+import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import ConfirmationModal from "./ConfirmationModal";
@@ -343,7 +343,7 @@ const CommitButton = connect(
 });
 
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffBranch, resetDiffBranch, diffBranchResults, diffResults, resetMerge, mergeResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
+const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, resetMerge, mergeResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -367,15 +367,11 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
 
     useEffect(() => {
         if (compare) {
-            resetDiffBranch();
             diff(repo.id, refId.id, compare.id);
+        } else if (refId.type === 'branch') {
+            diff(repo.id, refId.id, refId.id);
         } else {
             resetDiff();
-            if (refId.type === 'branch') {
-                diffBranch(repo.id, refId.id);
-            } else {
-                resetDiffBranch();
-            }
         }
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
@@ -394,7 +390,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
         );
     }
 
-    const changes = diffBranchResults.payload ? diffBranchResults.payload.results : [];
+    const changes = !compare && diffResults.payload ? diffResults.payload.results : [];
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
@@ -433,10 +429,9 @@ export default connect(
     ({ objects, refs }) => ({
         list: objects.list,
         diffResults: refs.diff,
-        diffBranchResults: refs.diffBranch,
         mergeResults: refs.merge,
         uploadState: objects.upload,
         deleteState: objects.delete,
     }),
-    ({ listTree, listTreePaginate, diff, resetDiff, diffBranch, resetDiffBranch, resetMerge, deleteObject, deleteObjectDone })
+    ({ listTree, listTreePaginate, diff, resetDiff, resetMerge, deleteObject, deleteObjectDone })
 )(TreePage);
