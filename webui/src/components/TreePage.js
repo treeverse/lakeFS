@@ -259,6 +259,12 @@ const CommitButton = connect(
         return <span/>;
     }
 
+    let commitDisabled = true;
+    let commitVariant = 'secondary';
+    if (changes.length > 0) {
+        commitDisabled = false;
+        commitVariant = 'success';
+    }
 
     return (
         <>
@@ -323,9 +329,9 @@ const CommitButton = connect(
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" onClick={() => { setShow(true); }}>
+            <Button disabled={commitDisabled} variant={commitVariant} onClick={() => { setShow(true); }}>
                 <Octicon icon={GitCommit}/> Commit Changes{' '}
-                {changes &&
+                {!commitDisabled &&
                 <>
                     <Badge variant="light">{changes.length}</Badge>
                     <span className="sr-only">uncommited changes</span>
@@ -388,7 +394,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
         );
     }
 
-    const changes = diffBranchResults.payload ? diffBranchResults.payload.results : null;
+    const changes = diffBranchResults.payload ? diffBranchResults.payload.results : [];
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
