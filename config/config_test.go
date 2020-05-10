@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/block"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
 
