@@ -1,34 +1,16 @@
-import base64 from 'base-64';
-import {generateDownloadToken} from '../downloadToken';
 import {isValidBranchName} from "../model/validation";
 
 
 export const API_ENDPOINT = '/api/v1';
 
-const basicAuth = (accessKeyId, secretAccessKey) => {
-    return {
-        "Authorization": `Basic ${base64.encode(`${accessKeyId}:${secretAccessKey}`)}`,
-    };
-};
 
-export const linkToPath = async (repoId, branchId, path) => {
-    const userData = getUser();
+export const linkToPath = (repoId, branchId, path) => {
     const query = qs({
         path: path,
-        token: await generateDownloadToken(userData.accessKeyId, userData.secretAccessKey, path),
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`
 };
 
-const getUser = () => {
-    const userData = window.localStorage.getItem("user");
-    return JSON.parse(userData);
-}
-
-const cachedBasicAuth = () => {
-    const userData = getUser();
-    return basicAuth(userData.accessKeyId, userData.secretAccessKey);
-};
 
 const json =(data) => {
     return JSON.stringify(data, null, "");
@@ -50,13 +32,10 @@ export const extractError = async (response) => {
     return body;
 };
 
-const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, credentials = null, defaultHeaders ={"Accept": "application/json",
+const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, defaultHeaders ={"Accept": "application/json",
     "Content-Type": "application/json",}) => {
-    const auth = (credentials === null) ?
-        cachedBasicAuth() : basicAuth(credentials.accessKeyId, credentials.secretAccessKey);
     return await fetch(`${API_ENDPOINT}${uri}`, {
         headers: new Headers({
-            ...auth,
             ...defaultHeaders,
             ...additionalHeaders,
         }),
@@ -85,24 +64,30 @@ export class MergeError extends Error {
 export const auth = {
 
     login: async (accessKeyId, secretAccessKey) => {
-        let response = await apiRequest(  '/authentication',
-            undefined,
-            undefined,
-            {accessKeyId, secretAccessKey});
+        const response = await fetch('/auth/login', {
+            headers: new Headers({'Content-Type': 'application/json'}),
+            method: 'POST',
+            body: json({access_key_id: accessKeyId, secret_access_key: secretAccessKey})
+        });
+
         if (response.status === 401) {
             throw new Error('invalid credentials');
         }
         if (response.status !== 200) {
             throw new Error('unknown authentication error');
         }
-        let responseJSON = await response.json();
-        return {
-            accessKeyId,
-            secretAccessKey,
-            ...responseJSON.user,
-        };
+
+        const userResponse = await apiRequest('/user');
+        const body = await userResponse.json();
+        return body.user;
     },
 
+    logout: async () => {
+        const response = await fetch('/auth/logout', {method: 'POST'});
+        if (response.status !== 200) {
+            throw new Error('unknown authentication error');
+        }
+    }
 };
 
 class Repositories {
