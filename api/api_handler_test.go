@@ -812,7 +812,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
-	deduper := upload.NewMockDedup()
+	deduper := testutil.NewMockDedup()
 
 	// setup client
 	clt := client.Default
@@ -824,22 +824,22 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	blob, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks)
+	checksum, physicalAddress, size, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks, 37)
 	if err != nil {
 		t.Fatal(err)
 	}
 	obj := &model.Object{
-		Blocks:   blob.Blocks,
-		Checksum: blob.Checksum,
-		Size:     blob.Size,
+		PhysicalAddress: physicalAddress,
+		Checksum:        checksum,
+		Size:            size,
 	}
 	entry := &model.Entry{
 		Name:         "bar",
 		Address:      ident.Hash(obj),
 		EntryType:    model.EntryTypeObject,
 		CreationDate: time.Now(),
-		Size:         blob.Size,
-		Checksum:     blob.Checksum,
+		Size:         size,
+		Checksum:     checksum,
 	}
 	err = deps.meta.WriteFile("repo1", "master", "foo/bar", entry, obj)
 
