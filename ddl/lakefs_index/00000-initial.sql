@@ -143,8 +143,8 @@ CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varch
     RETURNS TABLE (repository_id varchar, branch_id varchar, parent_path varchar, path varchar,
                    name varchar, entry_type varchar, size bigint, creation_date timestamp with time zone, checksum varchar, address varchar, diff_type varchar, tombstone bool) AS
 $BODY$
-SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
-       COALESCE(wse.branch_id, ewp.branch) AS branch_id,
+SELECT $1,
+       $2,
        COALESCE(wse.parent_path, ewp.parent_path) AS parent_path,
        COALESCE(wse.path, ewp.parent_path || ewp.name) AS path,
        COALESCE(wse.entry_name, ewp.name) AS name,
@@ -159,11 +159,10 @@ SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
            END AS diff_type,
        tombstone
 FROM workspace_entries wse
-         FULL OUTER JOIN (SELECT unnest(branches) AS branch, *
-                          FROM tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND branches.id = COALESCE($3, $2)))) ewp
-                         ON wse.branch_id= ewp.branch AND wse.parent_path = ewp.parent_path AND
+         FULL OUTER JOIN tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND branches.id = COALESCE($3, $2))) ewp
+                         ON wse.branch_id = $2 AND wse.parent_path = ewp.parent_path AND
                             wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
-         WHERE COALESCE(wse.repository_id, ewp.repository_id) = $1 AND COALESCE(wse.branch_id, ewp.branch) = $2
+         WHERE COALESCE(wse.repository_id, ewp.repository_id) = $1
 $BODY$ language sql;
 
 CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default null)
@@ -172,7 +171,7 @@ $BODY$
 SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
     CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED'
             THEN (SELECT min(path) from combined_ws_fn($1, $2, $3) cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
-        ELSE path END AS diff_path
+        ELSE path END AS diff_pathavmaz
 FROM combined_ws_fn($1, $2) cw WHERE entry_type='object' AND diff_type IS NOT NULL
 $BODY$ language sql;
 
