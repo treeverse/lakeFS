@@ -15,6 +15,7 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 
+	"github.com/treeverse/lakefs/testutil"
 	"github.com/treeverse/lakefs/upload"
 )
 
@@ -22,25 +23,6 @@ const (
 	bucketName      = "test"
 	ObjectBlockSize = 1024 * 3
 )
-
-type MockDedup struct {
-	DedupIndex map[string]string
-}
-
-func NewMockDedup() *MockDedup {
-	m := make(map[string]string)
-	return &MockDedup{DedupIndex: m}
-}
-
-func (d *MockDedup) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
-	existingObj, ok := d.DedupIndex[dedupId]
-	if ok {
-		return existingObj, nil
-	} else {
-		d.DedupIndex[dedupId] = objName
-		return objName, nil
-	}
-}
 
 type mockAdapter struct {
 	totalSize  int64
@@ -108,7 +90,7 @@ func TestReadBlob(t *testing.T) {
 		{"2 blocks and 1 bytes", ObjectBlockSize*2 + 1},
 		{"1000 blocks", ObjectBlockSize * 1000},
 	}
-	deduper := NewMockDedup()
+	deduper := testutil.NewMockDedup()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
