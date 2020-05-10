@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io"
 	"net/http"
 	"time"
 
@@ -319,7 +318,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(bucketName, dummyKey, len(dummyData), bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(bucketName, dummyKey, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)))
 	if err != nil {
 		return err
 	}
@@ -664,18 +663,13 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = obj.Size
-		blocks := obj.Blocks
-		readers := make([]io.ReadCloser, len(blocks))
-		for i, block := range blocks {
-			reader, err := ctx.BlockAdapter.Get(repo.StorageNamespace, block.Address)
-			if err != nil {
-				return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-			}
-			readers[i] = reader
+		reader, err := ctx.BlockAdapter.Get(repo.StorageNamespace, obj.PhysicalAddress)
+		if err != nil {
+			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		// done
-		res.Payload = NewMultiReadCloser(readers)
+		res.Payload = reader
 		return res
 	})
 }
@@ -755,10 +749,10 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if !ok {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("failed extracting size from file"))
 		}
-		_ = file.Header.Size
+		byteSize := file.Header.Size
 
 		// read the content
-		blob, err := upload.ReadBlob(repo.StorageNamespace, params.Content, ctx.BlockAdapter, upload.ObjectBlockSize)
+		checksum, physicalAddress, size, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -766,9 +760,10 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		// write metadata
 		writeTime := time.Now()
 		obj := &model.Object{
-			Blocks:   blob.Blocks,
-			Checksum: blob.Checksum,
-			Size:     blob.Size,
+			RepositoryId:    repo.Id,
+			PhysicalAddress: physicalAddress,
+			Checksum:        checksum,
+			Size:            size,
 		}
 
 		p := pth.New(params.Path, model.EntryTypeObject)
@@ -779,19 +774,19 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Address:      ident.Hash(obj),
 			EntryType:    model.EntryTypeObject,
 			CreationDate: writeTime,
-			Size:         blob.Size,
-			Checksum:     blob.Checksum,
+			Size:         size,
+			Checksum:     checksum,
 		}
-		err = index.WriteFile(params.RepositoryID, params.BranchID, params.Path, entry, obj)
+		err = index.WriteFile(repo.Id, params.BranchID, params.Path, entry, obj)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  blob.Checksum,
+			Checksum:  checksum,
 			Mtime:     writeTime.Unix(),
 			Path:      params.Path,
 			PathType:  models.ObjectStatsPathTypeOBJECT,
-			SizeBytes: blob.Size,
+			SizeBytes: size,
 		})
 	})
 }

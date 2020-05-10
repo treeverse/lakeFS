@@ -57,6 +57,10 @@ type Index interface {
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
+	CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error)
+	CreateMultiPartUpload(repoId, id, path, objectName string, creationDate time.Time) error
+	ReadMultiPartUpload(repoId, uploadId string) (*model.MultipartUpload, error)
+	DeleteMultiPartUpload(repoId, uploadId string) error
 }
 
 func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
@@ -420,6 +424,7 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		if err != nil {
 			return nil, err
 		}
+
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
 			index.log().WithError(err).Error("could not write object")
@@ -1413,5 +1418,63 @@ func (index *DBIndex) Tree(repoId, branch string) error {
 		m.WalkAll(tx)
 		return nil, nil
 	}, db.ReadOnly())
+	return err
+}
+
+func (index *DBIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
+	objectId, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		dedupObj, err := tx.GetObjectDedup(dedupId)
+		if err == nil {
+			return dedupObj.PhysicalAddress, nil
+		} else if errors.Is(err, db.ErrNotFound) {
+			d := &model.ObjectDedup{RepositoryId: repoId, PhysicalAddress: objName, DedupId: dedupId}
+			err = tx.WriteObjectDedup(d)
+			if err != nil {
+				index.log().WithError(err).Error("failed writing dedup record")
+			}
+			return objName, err
+		} else {
+			index.log().WithError(err).Error("Error reading  dedup record")
+			return objName, err
+		}
+	})
+	val, ok := objectId.(string)
+	if ok {
+		return val, err
+	} else {
+		return objName, err
+	}
+}
+
+func (index *DBIndex) CreateMultiPartUpload(repoId, uploadId, path, objectName string, creationDate time.Time) error {
+	_, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		m := &model.MultipartUpload{RepositoryId: repoId, UploadId: uploadId, Path: path, CreationDate: creationDate, PhysicalAddress: objectName}
+		err := tx.WriteMultipartUpload(m)
+		return nil, err
+	})
+	return err
+}
+
+func (index *DBIndex) ReadMultiPartUpload(repoId, uploadId string) (*model.MultipartUpload, error) {
+	multi, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		m, err := tx.ReadMultipartUpload(uploadId)
+		if err != nil {
+			index.log().WithError(err).Error("failed reading MultiPart record")
+		}
+		return m, err
+	})
+
+	if err == nil {
+		return multi.(*model.MultipartUpload), err
+	} else {
+		return nil, err
+	}
+}
+
+func (index *DBIndex) DeleteMultiPartUpload(repoId, uploadId string) error {
+	_, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
+		err := tx.DeleteMultipartUpload(uploadId)
+		return nil, err
+	})
 	return err
 }
