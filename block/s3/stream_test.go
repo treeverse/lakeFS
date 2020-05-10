@@ -111,3 +111,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 		})
 	}
 }
+
+func mustReadFile(t *testing.T, s string) []byte {
+
+}
