@@ -663,14 +663,12 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = obj.Size
-		//readers := make([]io.ReadCloser, len(blocks))
 		reader, err := ctx.BlockAdapter.Get(repo.StorageNamespace, obj.PhysicalAddress)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		// done
-		//res.Payload = NewMultiReadCloser(readers)
 		res.Payload = reader
 		return res
 	})
