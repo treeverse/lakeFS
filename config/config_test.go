@@ -7,15 +7,26 @@ import (
 	"os"
 	"testing"
 
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/block"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
 
 	log "github.com/sirupsen/logrus"
 )
 
+func newConfigFromFile(fn string) *config.Config {
+	viper.SetConfigFile(fn)
+	err := viper.ReadInConfig()
+	if err != nil {
+		panic(err)
+	}
+	return config.NewConfig()
+}
+
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
-	c := config.New()
+	c := config.NewConfig()
 	if c.GetAPIListenAddress() != config.DefaultAPIListenAddr {
 		t.Fatalf("expected listen addr %s, got %s", config.DefaultAPIListenAddr, c.GetAPIListenAddress())
 	}
@@ -25,9 +36,8 @@ func TestConfig_Setup(t *testing.T) {
 }
 
 func TestNewFromFile(t *testing.T) {
-
 	t.Run("valid config", func(t *testing.T) {
-		c := config.NewFromFile("testdata/valid_config.yaml")
+		c := newConfigFromFile("testdata/valid_config.yaml")
 		if c.GetAPIListenAddress() != "0.0.0.0:8005" {
 			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.GetAPIListenAddress())
 		}
@@ -46,7 +56,7 @@ func TestNewFromFile(t *testing.T) {
 		if causedPanic {
 			t.Fatalf("did not expect panic before reading invalid file")
 		}
-		config.NewFromFile("testdata/invalid_config.yaml")
+		_ = newConfigFromFile("testdata/invalid_config.yaml")
 		if !causedPanic {
 			t.Fatalf("expected panic after reading invalid file")
 		}
@@ -62,7 +72,7 @@ func TestNewFromFile(t *testing.T) {
 		if causedPanic {
 			t.Fatalf("did not expect panic before reading missing file")
 		}
-		config.NewFromFile("testdata/valid_configgggggggggggggggg.yaml")
+		_ = newConfigFromFile("testdata/valid_configgggggggggggggggg.yaml")
 		if !causedPanic {
 			t.Fatalf("expected panic after reading missing file")
 		}
@@ -71,7 +81,7 @@ func TestNewFromFile(t *testing.T) {
 
 func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
-		c := config.NewFromFile("testdata/valid_config.yaml")
+		c := newConfigFromFile("testdata/valid_config.yaml")
 		adapter := c.BuildBlockAdapter()
 		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
@@ -79,7 +89,8 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
-		c := config.NewFromFile("testdata/valid_s3adapter_config.yaml")
+		newConfigFromFile("testdata/valid_s3adapter_config.yaml")
+		c := config.NewConfig()
 		adapter := c.BuildBlockAdapter()
 		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
@@ -90,7 +101,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 func TestConfig_JSONLogger(t *testing.T) {
 	logfile := "/tmp/lakefs_json_logger_test.log"
 	_ = os.Remove(logfile)
-	config.NewFromFile("testdata/valid_json_logger_config.yaml")
+	_ = newConfigFromFile("testdata/valid_json_logger_config.yaml")
 
 	log.Info("some message that I should be looking for")
 

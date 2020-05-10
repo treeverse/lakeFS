@@ -137,7 +137,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		}
 
 		repoList := make([]*models.Repository, len(repos))
-		var lastId string
+		var lastID string
 		for i, repo := range repos {
 			repoList[i] = &models.Repository{
 				BucketName:    repo.StorageNamespace,
@@ -145,7 +145,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 				DefaultBranch: repo.DefaultBranch,
 				ID:            repo.Id,
 			}
-			lastId = repo.Id
+			lastID = repo.Id
 		}
 		returnValue := repositories.NewListRepositoriesOK().WithPayload(&repositories.ListRepositoriesOKBody{
 			Pagination: &models.Pagination{
@@ -156,7 +156,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 			Results: repoList,
 		})
 		if hasMore {
-			returnValue.Payload.Pagination.NextOffset = lastId
+			returnValue.Payload.Pagination.NextOffset = lastID
 		}
 
 		return returnValue
@@ -532,7 +532,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		case indexerrors.ErrNoMergeBase:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
 		case indexerrors.ErrDestinationNotCommitted:
-			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not commited before "))
+			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("destination branch have not committed before "))
 		case indexerrors.ErrBranchNotFound:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case indexerrors.ErrMergeConflict:

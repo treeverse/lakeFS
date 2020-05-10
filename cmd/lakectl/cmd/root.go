@@ -2,30 +2,24 @@ package cmd
 
 import (
 	"fmt"
-	"log"
-	"os"
-	"strings"
-
-	"github.com/treeverse/lakefs/api"
-	"github.com/treeverse/lakefs/config"
-
-	"github.com/spf13/cobra"
 
 	homedir "github.com/mitchellh/go-homedir"
+	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/api"
+	"github.com/treeverse/lakefs/config"
 )
 
 const (
-	DefaultConfigFileDirectory = "~/.lakefs"
-	DefaultConfigFileBareName  = "config"
-	DefaultConfigFilePath      = "~/.lakefs/config.yaml"
-
 	ConfigAccessKeyId       = "credentials.access_key_id"
 	ConfigSecretAccessKey   = "credentials.secret_access_key"
 	ConfigServerEndpointUrl = "server.endpoint_url"
 )
 
-var cfgFile string
+var (
+	cfgFile    string
+	cfgFileErr error
+)
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
@@ -38,10 +32,17 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		if noColorRequested {
 			DisableColors()
 		}
-		if strings.EqualFold(cmd.Use, "config") && len(args) > 0 && strings.EqualFold(args[0], "init") {
-			initConfig(false)
-		} else {
-			initConfig(true)
+		if cmd == configCmd {
+			return
+		}
+		if cfgFileErr != nil {
+			if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
+				// specific message in case the file doesn't not found
+				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
+			} else {
+				// other errors while reading the config file
+				DieFmt("error reading configuration file: %v", cfgFileErr)
+			}
 		}
 	},
 	Version: config.Version,
@@ -67,7 +68,7 @@ func Execute() {
 	}
 	err := rootCmd.Execute()
 	if err != nil {
-		log.Fatalln(err)
+		DieErr(err)
 	}
 }
 
@@ -75,43 +76,30 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", fmt.Sprintf("config file (default is %s)", DefaultConfigFilePath))
+	cobra.OnInitialize(initConfig)
+	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "use fancy output colors (ignored when not attached to an interactive terminal)")
 }
 
 // initConfig reads in config file and ENV variables if set.
-func initConfig(readConf bool) {
+func initConfig() {
 	if cfgFile != "" {
 		// Use config file from the flag.
 		viper.SetConfigFile(cfgFile)
 	} else {
 		// Find home directory.
-		cfgHome, err := homedir.Expand(DefaultConfigFileDirectory)
+		home, err := homedir.Dir()
 		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
+			DieErr(err)
 		}
 
 		// Search config in home directory with name ".lakefs" (without extension).
-		viper.AddConfigPath(cfgHome)
-		viper.SetConfigName(DefaultConfigFileBareName)
+		viper.AddConfigPath(home)
+		viper.SetConfigType("yaml")
+		viper.SetConfigName(".lakectl")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
 
-	// if we're running "config init", don't read the config first
-	if !readConf {
-		return
-	}
-
-	// If a config file is found, read it in.
-	if err := viper.ReadInConfig(); err != nil {
-		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-			// Config file not found; ignore error if desired
-			Die(fmt.Sprintf("config file not found, please run \"lakectl config init\" to create one\n%s\n", err.Error()), 1)
-		} else {
-			// Config file was found but another error was produced
-			Die(fmt.Sprintf("error reading configuration file: %v", err), 1)
-		}
-	}
+	cfgFileErr = viper.ReadInConfig()
 }

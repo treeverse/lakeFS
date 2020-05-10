@@ -1,22 +1,18 @@
 package merkle_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/testutil"
-
-	"golang.org/x/xerrors"
-
-	"github.com/treeverse/lakefs/index/merkle"
-
 	"github.com/treeverse/lakefs/db"
-
+	"github.com/treeverse/lakefs/index/merkle"
 	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 var (
-	ErrUnexpected = xerrors.New("unexpected error")
+	ErrUnexpected = errors.New("unexpected error")
 )
 
 func TestDiff(t *testing.T) {
@@ -380,7 +376,7 @@ func TestDiff(t *testing.T) {
 			// validate errors
 			if testCase.ExpectedErr == nil && err != nil {
 				t.Fatalf("got unexpected error: %s", err)
-			} else if testCase.ExpectedErr != nil && !xerrors.Is(err, testCase.ExpectedErr) {
+			} else if testCase.ExpectedErr != nil && !errors.Is(err, testCase.ExpectedErr) {
 				t.Fatalf("expected error of type: %s, got %s instead", testCase.ExpectedErr, err)
 			} else if testCase.ExpectedErr != nil {
 				return

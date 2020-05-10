@@ -81,11 +81,9 @@ export class MergeError extends Error {
 }
 
 
-// actual actions:
-export const auth = {
-
-    login: async (accessKeyId, secretAccessKey) => {
-        let response = await apiRequest(  '/authentication',
+class Authorization {
+    async login(accessKeyId, secretAccessKey) {
+        const response = await apiRequest(  '/authentication',
             undefined,
             undefined,
             {accessKeyId, secretAccessKey});
@@ -95,15 +93,14 @@ export const auth = {
         if (response.status !== 200) {
             throw new Error('unknown authentication error');
         }
-        let responseJSON = await response.json();
+        const responseJSON = await response.json();
         return {
             accessKeyId,
             secretAccessKey,
             ...responseJSON.user,
         };
-    },
-
-};
+    }
+}
 
 class Repositories {
 
@@ -357,3 +354,4 @@ export const objects = new Objects();
 export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
+export const auth = new Authorization();

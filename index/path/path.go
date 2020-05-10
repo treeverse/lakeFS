@@ -2,8 +2,9 @@ package path
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/index/model"
 	"strings"
+
+	"github.com/treeverse/lakefs/index/model"
 )
 
 const Separator = "/"

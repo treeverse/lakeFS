@@ -1,18 +1,15 @@
 package operations
 
 import (
+	"errors"
 	"net/http"
 
 	"github.com/treeverse/lakefs/db"
-	"golang.org/x/xerrors"
-
+	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/permissions"
-
-	"github.com/treeverse/lakefs/gateway/errors"
 )
 
-type DeleteObject struct {
-}
+type DeleteObject struct{}
 
 func (controller *DeleteObject) Action(repoId, refId, path string) permissions.Action {
 	return permissions.DeleteObject(repoId)
@@ -25,7 +22,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 	err := o.BlockStore.AbortMultiPartUpload(o.Repo.StorageNamespace, o.Path, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	// done.
@@ -45,8 +42,8 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 	err := o.Index.DeleteObject(o.Repo.Id, o.Ref, o.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not delete key")
-		if !xerrors.Is(err, db.ErrNotFound) {
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		if !errors.Is(err, db.ErrNotFound) {
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 	}

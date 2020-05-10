@@ -95,29 +95,33 @@ func RegisterRecorder(next http.Handler) http.Handler {
 }
 
 func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int, recordingDir string) {
-	var event StoredEvent
-	var err error
 	t, err := httputil.DumpRequest(r, false)
 	if err != nil || len(t) == 0 {
-		logging.Default().WithError(err).
-			WithFields(logging.Fields{
-				"request": string(t),
-			}).Fatal("request dumping failed")
+		logging.Default().
+			WithError(err).
+			WithFields(logging.Fields{"request": string(t)}).
+			Fatal("request dumping failed")
 	}
-	event.Request = string(t)
-	event.UploadID = string(uploadId)
-	if statusCode == 0 {
-		statusCode = 200
+	event := StoredEvent{
+		Request:  string(t),
+		UploadID: string(uploadId),
+		Status:   statusCode,
 	}
-	event.Status = statusCode
+	if event.Status == 0 {
+		event.Status = http.StatusOK
+	}
 	jsonEvent, err := json.Marshal(event)
-	fName := filepath.Join(recordingDir, "L"+nameBase+".log")
-	err = ioutil.WriteFile(fName, jsonEvent, 0777)
 	if err != nil {
-		logging.Default().WithError(err).
-			WithFields(logging.Fields{
-				"fileName": fName,
-				"request":  string(jsonEvent),
-			}).Fatal("writing request file failed")
+		logging.Default().
+			WithError(err).
+			Fatal("marshal event as json")
+	}
+	fName := filepath.Join(recordingDir, "L"+nameBase+".log")
+	err = ioutil.WriteFile(fName, jsonEvent, 0600)
+	if err != nil {
+		logging.Default().
+			WithError(err).
+			WithFields(logging.Fields{"fileName": fName, "request": string(jsonEvent)}).
+			Fatal("writing request file failed")
 	}
 }
