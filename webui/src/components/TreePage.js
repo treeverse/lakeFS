@@ -4,6 +4,7 @@ import {connect} from "react-redux";
 
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
+import Badge from "react-bootstrap/Badge";
 
 import Octicon, {GitCommit, GitMerge, Plus, X} from "@primer/octicons-react";
 
@@ -220,7 +221,7 @@ const UploadButton = connect(
 const CommitButton = connect(
     ({ commits }) => ({ commitState: commits.commit }),
     ({ doCommit, resetCommit })
-)(({ repo, refId, commitState, doCommit, resetCommit }) => {
+)(({ repo, refId, commitState, doCommit, resetCommit, changes }) => {
 
     const textRef = useRef(null);
 
@@ -256,6 +257,13 @@ const CommitButton = connect(
 
     if (!refId || refId.type !== 'branch') {
         return <span/>;
+    }
+
+    let commitDisabled = true;
+    let commitVariant = 'secondary';
+    if (changes > 0) {
+        commitDisabled = false;
+        commitVariant = 'success';
     }
 
     return (
@@ -321,8 +329,14 @@ const CommitButton = connect(
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" onClick={() => { setShow(true); }}>
-                <Octicon icon={GitCommit}/> Commit Changes
+            <Button disabled={commitDisabled} variant={commitVariant} onClick={() => { setShow(true); }}>
+                <Octicon icon={GitCommit}/> Commit Changes{' '}
+                {!commitDisabled &&
+                <>
+                    <Badge variant="light">{changes}</Badge>
+                    <span className="sr-only">uncommited changes</span>
+                </>
+                }
             </Button>
         </>
     );
@@ -352,14 +366,16 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
     }, [repo.id, refId.id, path, listTree, deleteObjectDone, deleteState.done]);
 
     useEffect(() => {
-        if (!!compare) {
+        if (compare) {
             diff(repo.id, refId.id, compare.id);
+        } else if (refId.type === 'branch') {
+            diff(repo.id, refId.id, refId.id);
         } else {
             resetDiff();
         }
         // (compareId is computed from compare which is not included in the deps list)
         // eslint-disable-next-line
-    },[repo.id, refId.id, listTree, diff, compareId, uploadState.done, deleteState.done]);
+    },[repo.id, refId, listTree, diff, compareId, uploadState.done, deleteState.done]);
 
     let paginator = (<span/>);
     if (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more) {
@@ -374,6 +390,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
         );
     }
 
+    const changes = !compare && diffResults.payload ? diffResults.payload.results.length : 0;
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
@@ -384,7 +401,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
                 <CompareToolbar refId={refId} repo={repo} compare={compare}/>
                 <ButtonToolbar className="float-right mb-2">
                     <UploadButton refId={refId} repo={repo} path={path}/>
-                    <CommitButton refId={refId} repo={repo}/>
+                    <CommitButton refId={refId} repo={repo} changes={changes}/>
                 </ButtonToolbar>
             </div>
 
