@@ -8,7 +8,6 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sync"
 	"testing"
 
 	"github.com/treeverse/lakefs/logging"
@@ -80,12 +79,12 @@ func (m *mockCollector) Collect(class, action string) {
 
 }
 
-var IdTranslator *uploadIdTranslator
+var IdTranslator *testutil.UploadIdTranslator
 
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
-	IdTranslator = &uploadIdTranslator{transMap: make(map[string]string),
-		expectedId: "",
-		t:          t,
+	IdTranslator = &testutil.UploadIdTranslator{TransMap: make(map[string]string),
+		ExpectedId: "",
+		T:          t,
 	}
 	directory := filepath.Join("testdata", "recordings", testDir)
 
@@ -139,39 +138,4 @@ func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.Credentia
 
 func (m *playBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
 	return &auth.AuthorizationResponse{true, nil}, nil
-}
-
-type uploadIdTranslator struct {
-	transMap   map[string]string
-	expectedId string
-	t          *testing.T
-	mux        sync.Mutex
-}
-
-func (d *uploadIdTranslator) SetUploadId(uploadId string) string {
-	d.mux.Lock()
-	defer d.mux.Unlock()
-	d.transMap[d.expectedId] = uploadId
-	return d.expectedId
-}
-func (d *uploadIdTranslator) TranslateUploadId(simulationId string) string {
-	id, ok := d.transMap[simulationId]
-	if !ok {
-		d.t.Error("upload id " + simulationId + " not in map")
-		return simulationId
-	} else {
-		return id
-	}
-}
-func (d *uploadIdTranslator) RemoveUploadId(inputUploadId string) {
-	var keyToRemove string
-	d.mux.Lock()
-	defer d.mux.Unlock()
-	for k, v := range d.transMap {
-		if v == inputUploadId {
-			keyToRemove = k
-			break
-		}
-	}
-	delete(d.transMap, keyToRemove)
 }
