@@ -1,8 +1,8 @@
 package auth
 
-import "golang.org/x/xerrors"
+import "errors"
 
 var (
-	ErrInvalidArn              = xerrors.New("invalid ARN")
-	ErrInsufficientPermissions = xerrors.New("insufficient permissions")
+	ErrInvalidArn              = errors.New("invalid ARN")
+	ErrInsufficientPermissions = errors.New("insufficient permissions")
 )

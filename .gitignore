@@ -28,17 +28,17 @@
 # End of https://www.gitignore.io/api/go
 
 # Our binaries
-lakefs
-lakectl
-main
-
+/lakefs
+/lakectl
+/main
+/cmd/lakefs/lakefs
+/cmd/lakectl/lakectl
 
 # client excludes
-webui/node_modules
+/webui/node_modules
 
 # server excludes
-api/gen
-statik
-model.pb.go
-ddl/statik.go
+/api/gen
+/statik
+/ddl/statik.go
 .DS_Store

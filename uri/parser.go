@@ -1,9 +1,8 @@
 package uri
 
 import (
+	"errors"
 	"strings"
-
-	"golang.org/x/xerrors"
 )
 
 const (
@@ -19,7 +18,7 @@ const (
 )
 
 var (
-	ErrMalformedURI = xerrors.New("malformed lakefs uri")
+	ErrMalformedURI = errors.New("malformed lakefs uri")
 )
 
 type URI struct {
