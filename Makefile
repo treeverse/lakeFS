@@ -16,8 +16,8 @@ GOFMT=$(GOCMD)fmt
 
 SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger:v0.23.0
 
-BINARY_NAME=lakefs
-CLI_BINARY_NAME=lakectl
+LAKEFS_BINARY_NAME=lakefs
+LAKECTL_BINARY_NAME=lakectl
 
 UI_DIR=$(PWD)/webui
 UI_BUILD_DIR=$(UI_DIR)/build
@@ -31,7 +31,7 @@ export VERSION
 all: build
 
 clean:
-	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(BINARY_NAME) $(CLI_BINARY_NAME)
+	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME)
 
 gen-api:  ## Run the go-swagger code generator (Docker required)
 	@rm -rf $(API_BUILD_DIR)
@@ -43,8 +43,8 @@ validate-swagger:  ## Validate swagger.yaml
 	$(SWAGGER) validate swagger.yml
 
 build: gen  ## Download dependecies and Build the default binary
-	$(GOBUILD) -o $(BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v main.go
-	$(GOBUILD) -o $(CLI_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v cli/main.go
+	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKEFS_BINARY_NAME)
+	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: gen ## Lint code
 	$(DOCKER) run --rm -it -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v

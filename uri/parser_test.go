@@ -1,10 +1,9 @@
 package uri_test
 
 import (
+	"errors"
 	"strings"
 	"testing"
-
-	"golang.org/x/xerrors"
 
 	"github.com/treeverse/lakefs/uri"
 )
@@ -56,7 +55,7 @@ func TestParse(t *testing.T) {
 	for i, test := range cases {
 		u, err := uri.Parse(test.Input)
 		if test.Err != nil {
-			if !xerrors.Is(err, test.Err) {
+			if !errors.Is(err, test.Err) {
 				t.Fatalf("case (%d) - expected error %v for input %s, got error: %v", i, test.Err, test.Input, err)
 			} else {
 				continue

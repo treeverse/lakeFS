@@ -4,15 +4,17 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
 
 	"golang.org/x/xerrors"
@@ -58,7 +60,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// now we might need the object itself
 	obj, err := o.Index.ReadObject(o.Repo.Id, o.Ref, o.Path)
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
