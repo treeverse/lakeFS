@@ -139,7 +139,7 @@ WITH RECURSIVE cte AS (
 SELECT cte.* FROM cte
 $body$ language sql;
 
-CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default branch_id)
+CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar)
     RETURNS TABLE (repository_id varchar, branch_id varchar, parent_path varchar, path varchar,
                    name varchar, entry_type varchar, size bigint, creation_date timestamp with time zone, checksum varchar, address varchar, diff_type varchar, tombstone bool) AS
 $BODY$
@@ -160,17 +160,17 @@ SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
        tombstone
 FROM workspace_entries wse
          FULL OUTER JOIN (SELECT unnest(branches) AS branch, *
-                          FROM tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND branches.id = $3))) ewp
+                          FROM tree_from_root($1, (SELECT commit_root FROM branches WHERE repository_id = $1 AND id = $2))) ewp
                          ON wse.branch_id= ewp.branch AND wse.parent_path = ewp.parent_path AND
                             wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id;
 $BODY$ language sql;
 
-CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default branch_id)
+CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar)
     RETURNS TABLE (repository_id varchar, branch_id varchar, object_path varchar, diff_type varchar, diff_path varchar) AS
 $BODY$
 SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
     CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED'
-            THEN (SELECT min(path) from combined_ws_fn($1, $2, $3) cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
+            THEN (SELECT min(path) from combined_ws_fn($1, $2) cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
         ELSE path END AS diff_path
 FROM combined_ws_fn($1, $2) cw WHERE entry_type='object' AND diff_type IS NOT NULL
 $BODY$ language sql;
