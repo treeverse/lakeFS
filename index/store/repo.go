@@ -289,7 +289,7 @@ func (o *DBRepoOperations) DeleteWorkspacePath(branch, path, typ string) error {
 		return err
 	}
 	if rowsAffected == 0 {
-		return errors.ErrRevertNonExistingPath
+		return indexerrors.ErrRevertNonExistingPath
 	}
 	if typ == model.EntryTypeTree {
 		_, err = o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%'`,

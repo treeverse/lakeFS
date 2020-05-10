@@ -101,7 +101,6 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 			if err != nil {
 				return nil, err
 			}
-
 			mergedEntries, timestamp, err := mergeChanges(currentEntries, changes)
 			if err != nil {
 				return nil, err

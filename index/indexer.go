@@ -668,7 +668,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 		if reference.isBranch {
 			normalizedPath := pth.New(path, model.EntryTypeObject).String()
 			res, hasMore, err = tx.ListTreeAndWorkspaceDirectory(reference.branch.Id, normalizedPath, from, results, descend)
-		} else if descend {
+		} else {
 			root := reference.commit.Tree
 			res, hasMore, err = tx.ListTreeWithPrefix(root, path, from, results, descend)
 			if err != nil {
