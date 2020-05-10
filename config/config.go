@@ -12,6 +12,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/stats"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -26,13 +29,6 @@ import (
 )
 
 const (
-	ModuleName           = "github.com/treeverse/lakefs"
-	ProjectDirectoryName = "lakefs"
-
-	DefaultLoggingFormat = "text"
-	DefaultLoggingLevel  = "INFO"
-	DefaultLoggingOutput = "-"
-
 	DefaultDatabaseDriver = "pgx"
 	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
 	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
@@ -62,7 +58,13 @@ func (l *LogrusAWSAdapter) Log(vars ...interface{}) {
 
 type Config struct{}
 
-func (c *Config) setDefaults() {
+func NewConfig() *Config {
+	setDefaults()
+	setupLogger()
+	return &Config{}
+}
+
+func setDefaults() {
 	viper.SetDefault("logging.format", DefaultLoggingFormat)
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
@@ -84,119 +86,6 @@ func (c *Config) setDefaults() {
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
-}
-
-func NewFromFile(configPath string) *Config {
-	handle, err := os.Open(configPath)
-	if err != nil {
-		panic(fmt.Errorf("failed opening config file %s: %s", configPath, err))
-	}
-	defer func() {
-		_ = handle.Close()
-	}()
-	c := &Config{}
-	c.Setup(handle)
-	return c
-}
-
-func New() *Config {
-	c := &Config{}
-	c.Setup(nil)
-	return c
-}
-
-func (c *Config) Setup(confReader io.Reader) {
-	viper.SetConfigType("yaml")
-	viper.SetEnvPrefix("LAKEFS")
-	viper.AutomaticEnv()
-
-	c.setDefaults()
-
-	if confReader != nil {
-		err := viper.ReadConfig(confReader)
-		if err != nil {
-			panic(fmt.Errorf("Error reading config file: %s\n", err))
-		}
-	}
-
-	c.setupLogger()
-}
-
-func (c *Config) setupLogger() {
-	// add calling function/line numbers to log lines
-	log.SetReportCaller(true)
-
-	// trim calling function so it looks more readable
-	logPrettyfier := func(frame *runtime.Frame) (function string, file string) {
-		indexOfModule := strings.Index(strings.ToLower(frame.File), ProjectDirectoryName)
-		if indexOfModule != -1 {
-			file = frame.File[indexOfModule+len(ProjectDirectoryName):]
-		} else {
-			file = frame.File
-		}
-		file = fmt.Sprintf("%s:%d", strings.TrimPrefix(file, string(os.PathSeparator)), frame.Line)
-		function = strings.TrimPrefix(frame.Function, fmt.Sprintf("%s%s", ModuleName, string(os.PathSeparator)))
-		return
-	}
-
-	// set output format
-	if strings.EqualFold(viper.GetString("logging.format"), "text") {
-		log.SetFormatter(&log.TextFormatter{
-			ForceColors:      true,
-			FullTimestamp:    true,
-			CallerPrettyfier: logPrettyfier,
-		})
-	} else if strings.EqualFold(viper.GetString("logging.format"), "json") {
-		log.SetFormatter(&log.JSONFormatter{
-			CallerPrettyfier: logPrettyfier,
-			PrettyPrint:      false,
-		})
-	}
-
-	// set output
-	if strings.EqualFold(viper.GetString("logging.output"), "-") {
-		log.SetOutput(os.Stdout)
-	} else {
-		filename := viper.GetString("logging.output")
-		handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
-		if err != nil {
-			panic(fmt.Errorf("could not open log file: %s", err))
-		}
-		log.SetOutput(handle)
-		// setup signal handler to reopen logfile on SIGHUP
-		sigChannel := make(chan os.Signal, 1)
-		signal.Notify(sigChannel, syscall.SIGHUP)
-		go func() {
-			for {
-				<-sigChannel
-				log.Info("SIGHUP received, rotating log file")
-				log.SetOutput(ioutil.Discard)
-				_ = handle.Close()
-				handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
-				if err != nil {
-					panic(fmt.Errorf("could not open log file: %s", err))
-				}
-				log.SetOutput(handle)
-				log.Info("log file was rotated successfully")
-			}
-		}()
-	}
-
-	// set level
-	switch strings.ToLower(viper.GetString("logging.level")) {
-	case "trace":
-		log.SetLevel(log.TraceLevel)
-	case "debug":
-		log.SetLevel(log.DebugLevel)
-	case "info":
-		log.SetLevel(log.InfoLevel)
-	case "warn", "warning":
-		log.SetLevel(log.WarnLevel)
-	case "error":
-		log.SetLevel(log.ErrorLevel)
-	case "null", "none":
-		log.SetOutput(ioutil.Discard)
-	}
 }
 
 func (c *Config) ConnectMetadataDatabase() db.Database {
@@ -306,4 +195,14 @@ func (c *Config) GetStatsAddress() string {
 
 func (c *Config) GetStatsFlushInterval() time.Duration {
 	return viper.GetDuration("stats.flush_interval")
+}
+
+func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
+	sender := stats.NewDummySender()
+	if c.GetStatsEnabled() {
+		sender = stats.NewHTTPSender(installationID, uuid.New().String(), c.GetStatsAddress(), time.Now)
+	}
+	return stats.NewBufferedCollector(
+		stats.WithSender(sender),
+		stats.WithFlushInterval(c.GetStatsFlushInterval()))
 }

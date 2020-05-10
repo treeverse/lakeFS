@@ -87,7 +87,11 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
-		return &models.User{ID: int64(userData.Id)}, nil
+		return &models.User{
+			Email:    userData.Email,
+			FullName: userData.FullName,
+			ID:       int64(userData.Id),
+		}, nil
 	}
 }
 

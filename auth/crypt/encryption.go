@@ -31,10 +31,8 @@ func NewSecretStore(secret string) *NaclSecretStore {
 func (a *NaclSecretStore) kdf(storedSalt []byte) (key [KeySizeBytes]byte, salt [KeySaltBytes]byte, err error) {
 	if storedSalt != nil {
 		copy(salt[:], storedSalt)
-	} else {
-		if _, err = io.ReadFull(rand.Reader, salt[:]); err != nil {
-			return
-		}
+	} else if _, err = io.ReadFull(rand.Reader, salt[:]); err != nil {
+		return
 	}
 	// scrypt's N, r & p, benchmarked to run at about 1ms, since it's in the critical path.
 	// fair trade-off for a high throughput low latency system

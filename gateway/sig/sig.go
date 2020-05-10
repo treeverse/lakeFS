@@ -12,11 +12,11 @@ import (
 
 	"github.com/treeverse/lakefs/auth/model"
 
-	"golang.org/x/xerrors"
+	"errors"
 )
 
 var (
-	ErrHeaderMalformed = xerrors.New("header malformed")
+	ErrHeaderMalformed = errors.New("header malformed")
 
 	// if object matches reserved string, no need to encode them
 	reservedObjectNames = regexp.MustCompile("^[a-zA-Z0-9-_.~/]+$")
@@ -84,14 +84,6 @@ type SigAuthenticator interface {
 	Verify(*model.Credential, string) error
 }
 
-type dummySigContext struct {
-	accessKey string
-}
-
-func (d *dummySigContext) GetAccessKeyId() string {
-	return d.accessKey
-}
-
 type chainedAuthenticator struct {
 	methods []SigAuthenticator
 	chosen  SigAuthenticator
@@ -118,7 +110,6 @@ func Equal(sig1, sig2 []byte) bool {
 
 func (c *chainedAuthenticator) Verify(creds *model.Credential, domain string) error {
 	return c.chosen.Verify(creds, domain)
-
 }
 
 func (c *chainedAuthenticator) String() string {
