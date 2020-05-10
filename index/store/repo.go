@@ -2,16 +2,14 @@ package store
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"github.com/huandu/go-sqlbuilder"
 	"strings"
 
-	"golang.org/x/xerrors"
-
-	"github.com/treeverse/lakefs/ident"
-
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index/errors"
+	"github.com/treeverse/lakefs/ident"
+	indexerrors "github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
 )
 
@@ -149,8 +147,8 @@ func (o *DBRepoOperations) ListBranches(prefix string, amount int, after string)
 func (o *DBRepoOperations) ReadBranch(branch string) (*model.Branch, error) {
 	b := &model.Branch{}
 	err := o.tx.Get(b, `SELECT * FROM branches WHERE repository_id = $1 AND id = $2`, o.repoId, branch)
-	if xerrors.Is(err, db.ErrNotFound) {
-		err = errors.ErrBranchNotFound
+	if errors.Is(err, db.ErrNotFound) {
+		err = indexerrors.ErrBranchNotFound
 	}
 	return b, err
 }

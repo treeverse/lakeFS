@@ -5,15 +5,10 @@ import (
 	"fmt"
 	"strings"
 
-	"golang.org/x/xerrors"
-
 	"github.com/go-openapi/swag"
-
-	"github.com/treeverse/lakefs/api/gen/models"
-
-	"github.com/treeverse/lakefs/uri"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/uri"
 )
 
 // branchCmd represents the branch command
@@ -88,7 +83,7 @@ var branchCreateCmd = &cobra.Command{
 			DieFmt("failed to parse source URI: %s", err)
 		}
 		if !strings.EqualFold(sourceURI.Repository, u.Repository) {
-			DieFmt("source branch must be in the same repository")
+			Die("source branch must be in the same repository", 1)
 		}
 
 		ref, err := client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
@@ -115,7 +110,7 @@ var branchDeleteCmd = &cobra.Command{
 		if err != nil || !sure {
 			confirmation, err := confirm("Are you sure you want to delete branch")
 			if err != nil || !confirmation {
-				DieFmt("please confirm by passing the --sure | -y flag")
+				Die("please confirm by passing the --sure | -y flag", 1)
 			}
 		}
 		client := getClient()
@@ -154,7 +149,7 @@ var branchRevertCmd = &cobra.Command{
 		clt := getClient()
 		u := uri.Must(uri.Parse(args[0]))
 
-		commitId, err := cmd.Flags().GetString("commit")
+		commitID, err := cmd.Flags().GetString("commit")
 		if err != nil {
 			DieErr(err)
 		}
@@ -166,20 +161,20 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		isCommit := len(commitId) > 0
+		isCommit := len(commitID) > 0
 		isTree := len(tree) > 0
 		isObject := len(object) > 0
 
 		if moreThanOne(isCommit, isTree, isObject) {
-			DieErr(xerrors.Errorf("can't revert by multiple commands, please choose only one [commit, tree, object]!"))
+			Die("can't revert by multiple commands, please choose only one [commit, tree, object]!", 1)
 		}
 
 		var revert models.RevertCreation
 		var confirmationMsg string
 		if isCommit {
-			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s ?", commitId)
+			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s ?", commitID)
 			revert = models.RevertCreation{
-				Commit: commitId,
+				Commit: commitID,
 				Type:   swag.String(models.RevertCreationTypeCOMMIT),
 			}
 		} else if isTree {

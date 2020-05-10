@@ -2,32 +2,26 @@ package api_test
 
 import (
 	"bytes"
+	"errors"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/go-openapi/runtime"
-
-	"github.com/treeverse/lakefs/ident"
-
-	"github.com/treeverse/lakefs/upload"
-
-	"github.com/treeverse/lakefs/index/model"
-
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/testutil"
-	"golang.org/x/xerrors"
+	"github.com/treeverse/lakefs/upload"
 )
 
 func TestHandler_ListRepositoriesHandler(t *testing.T) {
@@ -391,7 +385,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 		}
 
 		_, err = deps.meta.GetRepo("my-new-repo")
-		if !xerrors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected repo to be gone, instead got error: %s", err)
 		}
 	})
@@ -655,7 +649,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 		}
 
 		_, err = deps.meta.GetBranch("my-new-repo", "master2")
-		if !xerrors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected branch to be gone, instead got error: %s", err)
 		}
 	})

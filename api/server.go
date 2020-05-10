@@ -1,6 +1,7 @@
 package api
 
 import (
+	"context"
 	"net/http"
 	"strings"
 	"time"
@@ -41,6 +42,7 @@ type Server struct {
 
 	apiServer *restapi.Server
 	handler   *http.ServeMux
+	server    *http.Server
 }
 
 func NewServer(
@@ -89,7 +91,11 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
-		return &models.User{ID: int64(userData.Id)}, nil
+		return &models.User{
+			Email:    userData.Email,
+			FullName: userData.FullName,
+			ID:       int64(userData.Id),
+		}, nil
 	}
 }
 
@@ -168,11 +174,16 @@ func (s *Server) Serve(listenAddr string) error {
 	if err != nil {
 		return err
 	}
-	httpServer := http.Server{
+	s.server = &http.Server{
 		Addr:    listenAddr,
 		Handler: handler,
 	}
-	return httpServer.ListenAndServe()
+	return s.server.ListenAndServe()
+}
+
+func (s *Server) Shutdown(ctx context.Context) error {
+	s.server.SetKeepAlivesEnabled(false)
+	return s.server.Shutdown(ctx)
 }
 
 func (s *Server) Handler() (http.Handler, error) {

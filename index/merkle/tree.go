@@ -1,6 +1,7 @@
 package merkle
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"strings"
@@ -12,8 +13,6 @@ import (
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/index/store"
-
-	"golang.org/x/xerrors"
 )
 
 type Merkle struct {
@@ -58,7 +57,7 @@ func (m *Merkle) GetEntry(tx TreeReader, pth, typ string) (*model.Entry, error) 
 
 func (m *Merkle) GetEntries(tx TreeReader, pth string) ([]*model.Entry, error) {
 	entry, err := m.GetEntry(tx, pth, model.EntryTypeTree)
-	if xerrors.Is(err, db.ErrNotFound) {
+	if errors.Is(err, db.ErrNotFound) {
 		empty := make([]*model.Entry, 0)
 		return empty, nil
 	}

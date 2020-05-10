@@ -1,19 +1,16 @@
 package store_test
 
 import (
+	"errors"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index/merkle"
+	"github.com/treeverse/lakefs/index/model"
 	pth "github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/index/store"
+	"github.com/treeverse/lakefs/testutil"
 	"strings"
 	"testing"
 	"time"
-
-	"github.com/treeverse/lakefs/testutil"
-
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index/model"
-	"github.com/treeverse/lakefs/index/store"
-
-	"golang.org/x/xerrors"
 )
 
 func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
@@ -188,7 +185,7 @@ func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
 		}
 
 		_, err = ops.ReadFromWorkspace(repo.DefaultBranch, "/foo/bbbbb", model.EntryTypeObject)
-		if !xerrors.Is(err, db.ErrNotFound) {
+		if !errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("expected a not found error got %v instead", err)
 		}
 		return nil, nil

@@ -26,6 +26,7 @@ const (
 	v4authHeaderPrefix      = "AWS4-HMAC-SHA256"
 	AmzDecodedContentLength = "X-Amz-Decoded-Content-Length"
 	v4StreamingPayloadHash  = "STREAMING-AWS4-HMAC-SHA256-PAYLOAD"
+	v4UnsignedPayload       = "UNSIGNED-PAYLOAD"
 	v4authHeaderPayload     = "x-amz-content-sha256"
 	v4scopeTerminator       = "aws4_request"
 	v4timeFormat            = "20060102T150405Z"
@@ -58,10 +59,10 @@ func (a V4Auth) GetAccessKeyId() string {
 	return a.AccessKeyId
 }
 
-func splitHeaders(headers string) ([]string, error) {
+func splitHeaders(headers string) []string {
 	headerValues := strings.Split(headers, ";")
 	sort.Strings(headerValues)
-	return headerValues, nil
+	return headerValues
 }
 
 func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
@@ -80,10 +81,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 				result[name] = match[i]
 			}
 		}
-		headers, err := splitHeaders(result["SignatureHeaders"])
-		if err != nil {
-			return ctx, err
-		}
+		headers := splitHeaders(result["SignatureHeaders"])
 		ctx.AccessKeyId = result["AccessKeyId"]
 		ctx.Date = result["Date"]
 		ctx.Region = result["Region"]
@@ -122,17 +120,13 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	ctx.Service = credsResult["Service"]
 
 	ctx.SignedHeadersString = query.Get("X-Amz-SignedHeaders")
-	headers, err := splitHeaders(ctx.SignedHeadersString)
-	if err != nil {
-		return ctx, err
-	}
+	headers := splitHeaders(ctx.SignedHeadersString)
 	ctx.SignedHeaders = headers
 	ctx.Signature = query.Get("X-Amz-Signature=")
 	return ctx, nil
 }
 
 func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error {
-
 	ctx := &verificationCtx{
 		Request:   r,
 		Query:     r.URL.Query(),
@@ -202,7 +196,7 @@ func (ctx *verificationCtx) canonicalizeHeaders(headers []string) string {
 			// in Go, Host is removed from the headers and is promoted to request.Host for some reason
 			value = ctx.Request.Host
 		} else {
-			value = ctx.Request.Header.Get(header)
+			value = getInsensitiveHeader(ctx.Request, header)
 		}
 		buf.WriteString(header)
 		buf.WriteString(":")
@@ -232,21 +226,30 @@ func (ctx *verificationCtx) trimAll(str string) string {
 	return buf.String()
 }
 
+func getInsensitiveHeader(r *http.Request, headerName string) string {
+	for k, v := range r.Header {
+		if strings.EqualFold(k, headerName) {
+			return v[0]
+		}
+	}
+	return ""
+}
+
 func (ctx *verificationCtx) payloadHash() string {
-	return ctx.Request.Header.Get(v4authHeaderPayload)
+	return getInsensitiveHeader(ctx.Request, v4authHeaderPayload)
 }
 
 func (ctx *verificationCtx) buildCanonicalRequest() string {
 	// Step 1: Canonical request
 	method := ctx.Request.Method
-	canonicalUri := EncodePath(ctx.Request.URL.Path)
+	canonicalURI := EncodePath(ctx.Request.URL.Path)
 	canonicalQueryString := ctx.canonicalizeQueryString()
 	canonicalHeaders := ctx.canonicalizeHeaders(ctx.AuthValue.SignedHeaders)
 	signedHeaders := ctx.AuthValue.SignedHeadersString
 	payloadHash := ctx.payloadHash()
 	canonicalRequest := strings.Join([]string{
 		method,
-		canonicalUri,
+		canonicalURI,
 		canonicalQueryString,
 		canonicalHeaders,
 		signedHeaders,
@@ -331,6 +334,10 @@ func (ctx *verificationCtx) isStreaming() bool {
 	return strings.EqualFold(payloadHash, v4StreamingPayloadHash)
 }
 
+func (ctx *verificationCtx) isUnsigned() bool {
+	return strings.EqualFold(ctx.payloadHash(), v4UnsignedPayload)
+}
+
 func (ctx *verificationCtx) contentLength() (int64, error) {
 	size := ctx.Request.ContentLength
 	if ctx.isStreaming() {
@@ -350,7 +357,6 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 }
 
 func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential) (io.ReadCloser, error) {
-
 	if ctx.isStreaming() {
 		amzDate, err := ctx.getAmzDate()
 		if err != nil {
@@ -361,6 +367,10 @@ func (ctx *verificationCtx) reader(reader io.ReadCloser, creds *model.Credential
 			return nil, err
 		}
 		return chunkReader, nil
+	}
+
+	if ctx.isUnsigned() {
+		return reader, nil
 	}
 	return NewSha265Reader(reader, ctx.payloadHash())
 }

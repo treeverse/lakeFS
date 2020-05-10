@@ -2,13 +2,12 @@ package http
 
 import (
 	"fmt"
-	"golang.org/x/xerrors"
 	"strconv"
 	"strings"
 )
 
 var (
-	ErrBadRange = xerrors.Errorf("unsatisfiable range")
+	ErrBadRange = fmt.Errorf("unsatisfiable range")
 )
 
 // HttpRange represents an RFC 2616 HTTP Range

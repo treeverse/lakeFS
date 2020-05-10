@@ -1,25 +1,20 @@
 package operations
 
 import (
+	"errors"
 	"net/http"
 	"strconv"
 	"strings"
 
-	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/treeverse/lakefs/permissions"
-
 	"github.com/treeverse/lakefs/db"
-
-	"github.com/treeverse/lakefs/gateway/errors"
+	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
-	indexErrors "github.com/treeverse/lakefs/index/errors"
-
+	"github.com/treeverse/lakefs/httputil"
+	indexerrors "github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
-
-	"golang.org/x/xerrors"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 const (
@@ -126,7 +121,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		descend = false
@@ -144,7 +139,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			WithError(err).
 			WithField("path", params.Get("prefix")).
 			Error("could not resolve path for prefix")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 		return
 	}
 
@@ -155,7 +150,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
 		}
 		// return branch response
@@ -192,7 +187,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 					"path":   prefix.Path,
 					"from":   fromStr,
 				}).Error("invalid marker - doesnt start with branch name")
-				o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+				o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 				return
 			}
 		}
@@ -204,8 +199,8 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			from.Path,
 			maxKeys,
 			descend)
-		if xerrors.Is(err, db.ErrNotFound) {
-			if xerrors.Is(err, indexErrors.ErrBranchNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
+			if errors.Is(err, indexerrors.ErrBranchNotFound) {
 				o.Log().WithError(err).WithFields(logging.Fields{
 					"ref":  prefix.Ref,
 					"path": prefix.Path,
@@ -217,7 +212,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 				"ref":  prefix.Ref,
 				"path": prefix.Path,
 			}).Error("could not list objects in path")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 	}
@@ -259,7 +254,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		descend = false
@@ -278,7 +273,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			WithError(err).
 			WithField("path", params.Get("prefix")).
 			Error("could not resolve path for prefix")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 		return
 	}
 
@@ -288,7 +283,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		// return branch response
@@ -318,7 +313,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		prefix, err := path.ResolvePath(params.Get("prefix"))
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 		ref = prefix.Ref
@@ -333,7 +328,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 					"path":   prefix.Path,
 					"marker": marker,
 				}).Error("invalid marker - doesnt start with branch name")
-				o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+				o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 				return
 			}
 		}
@@ -346,14 +341,14 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			maxKeys,
 			descend,
 		)
-		if xerrors.Is(err, db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"branch": prefix.Ref,
 				"path":   prefix.Path,
 			}).Error("could not list objects in path")
-			o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
 	}
@@ -405,7 +400,7 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 		controller.ListV1(o)
 	} else if len(listType) > 0 {
 		o.Log().WithField("list-type", listType).Error("listObjects version not supported")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 		return
 	} else {
 		// otherwise, handle ListObjectsV1
