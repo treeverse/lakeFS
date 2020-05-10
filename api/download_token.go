@@ -92,9 +92,7 @@ func ValidateToken(ath auth.Service, token string, currentTime time.Time) (*mode
 	}
 
 	return &models.User{
-		ID:       int64(user.Id),
-		FullName: user.FullName,
-		Email:    user.Email,
+		ID: int64(user.Id),
 	}, nil
 }
 

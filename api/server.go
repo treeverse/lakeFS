@@ -33,33 +33,29 @@ var (
 )
 
 type Server struct {
-	meta             index.Index
-	multipartManager index.MultipartManager
-	blockStore       block.Adapter
-	authService      auth.Service
-	stats            stats.Collector
-	migrator         db.Migrator
-
-	apiServer *restapi.Server
-	handler   *http.ServeMux
-	server    *http.Server
+	meta        index.Index
+	blockStore  block.Adapter
+	authService auth.Service
+	stats       stats.Collector
+	migrator    db.Migrator
+	apiServer   *restapi.Server
+	handler     *http.ServeMux
+	server      *http.Server
 }
 
 func NewServer(
 	meta index.Index,
-	multipartManager index.MultipartManager,
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,
 	migrator db.Migrator,
 ) *Server {
 	return &Server{
-		meta:             meta,
-		multipartManager: multipartManager,
-		blockStore:       blockStore,
-		authService:      authService,
-		stats:            stats,
-		migrator:         migrator,
+		meta:        meta,
+		blockStore:  blockStore,
+		authService: authService,
+		stats:       stats,
+		migrator:    migrator,
 	}
 }
 
@@ -92,9 +88,7 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			Email:    userData.Email,
-			FullName: userData.FullName,
-			ID:       int64(userData.Id),
+			ID: int64(userData.Id),
 		}, nil
 	}
 }

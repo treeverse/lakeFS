@@ -5,13 +5,17 @@ import (
 	"context"
 	"crypto/md5"
 	"crypto/rand"
+	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3"
 	"io"
 	"io/ioutil"
+	"net/http"
 	"testing"
 
 	"github.com/treeverse/lakefs/block"
 
+	"github.com/treeverse/lakefs/testutil"
 	"github.com/treeverse/lakefs/upload"
 )
 
@@ -38,7 +42,7 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(repo string, _ string, _ int, reader io.Reader) error {
+func (a *mockAdapter) Put(repo string, _ string, _ int64, reader io.Reader) error {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
@@ -54,6 +58,24 @@ func (a *mockAdapter) Get(_ string, _ string) (io.ReadCloser, error) {
 func (a *mockAdapter) GetRange(_ string, _ string, _ int64, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }
+func (s *mockAdapter) Remove(repo string, identifier string) error {
+
+	return errors.New(" remove method not implemented in mock adapter")
+}
+func (s *mockAdapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
+	panic("try to create multipart in mock adaptor ")
+}
+func (s *mockAdapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+	panic("try to upload part in mock adaptor ")
+
+}
+func (s *mockAdapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
+	panic("try to abort multipart in mock adaptor ")
+
+}
+func (s *mockAdapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error) {
+	panic("try to complete multipart in mock adaptor ")
+}
 
 func TestReadBlob(t *testing.T) {
 
@@ -68,17 +90,18 @@ func TestReadBlob(t *testing.T) {
 		{"2 blocks and 1 bytes", ObjectBlockSize*2 + 1},
 		{"1000 blocks", ObjectBlockSize * 1000},
 	}
-
+	deduper := testutil.NewMockDedup()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
+
 			_, err := rand.Read(data)
 			if err != nil {
 				t.Fatal(err)
 			}
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
-			blob, err := upload.ReadBlob(bucketName, reader, adapter, ObjectBlockSize)
+			checksum, physicalAddress_1, size, err := upload.WriteBlob(deduper, bucketName, bucketName, reader, adapter, tc.size)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -89,31 +112,27 @@ func TestReadBlob(t *testing.T) {
 			}
 			//test data size
 			expectedSize := int64(len(data))
-			if expectedSize != blob.Size {
+			if expectedSize != size {
 				t.Fatalf("expected sent size to be equal to adapter read size, got: sent:%d , adapter:%d", expectedSize, adapter.totalSize)
 			}
-			if adapter.totalSize != blob.Size {
-				t.Fatalf("expected blob size to be equal to adapter read size, got: blob:%d , adapter:%d", blob.Size, adapter.totalSize)
-			}
-
-			// test block number
-			if adapter.count != len(blob.Blocks) {
-				t.Fatalf("expected number of blocks in blob to be equal to number of calls to adapter adapter read size, got: blob:%d , adapter:%d", len(blob.Blocks), adapter.count)
-			}
-
-			expectedBlocks := int(tc.size/(ObjectBlockSize)) + 1
-			if tc.size%ObjectBlockSize == 0 {
-				expectedBlocks -= 1
-			}
-
-			if adapter.count != expectedBlocks {
-				t.Fatalf("expected number of blocks in blob to be equal to %d got:%d", expectedBlocks, adapter.count)
+			if adapter.totalSize != size {
+				t.Fatalf("expected blob size to be equal to adapter read size, got: blob:%d , adapter:%d", size, adapter.totalSize)
 			}
 
 			// test checksum
 			expectedMD5 := fmt.Sprintf("%x", md5.Sum(data))
-			if blob.Checksum != expectedMD5 {
-				t.Fatalf("expected blob checksum to be equal to data checksum, got: blob:%s , data:%s", blob.Checksum, expectedMD5)
+			if checksum != expectedMD5 {
+				t.Fatalf("expected blob checksum to be equal to data checksum, got: blob:%s , data:%s", checksum, expectedMD5)
+			}
+			// write the same data again - make sure it is de-duped
+			reader.Reset(data)
+			adapter = newMockAdapter()
+			_, physicalAddress_2, _, err := upload.WriteBlob(deduper, bucketName, bucketName, reader, adapter, tc.size)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if physicalAddress_1 != physicalAddress_2 {
+				t.Fatalf("duplocate data not identified, got: first: %s , second: %s", physicalAddress_1, physicalAddress_2)
 			}
 		})
 	}
