@@ -16,15 +16,15 @@ basePath: /api/v1
 securityDefinitions:
   basic_auth:
     type: basic
-  download_token:
+  jwt_token:
     type: apiKey
-    in: query
-    name: token
+    in: header
+    name: X-JWT-Authorization
 
 
 security:
   - basic_auth: []
-
+  - jwt_token: []
 
 responses:
   Unauthorized:
@@ -212,13 +212,15 @@ definitions:
 
 paths:
 
-  /authentication:
+  /user:
     get:
       tags:
         - authentication
+      operationId: get user
+      summary: get current user
       responses:
         200:
-          description: authentication successful
+          description: user
           schema:
             type: object
             properties:
@@ -726,9 +728,6 @@ paths:
         - objects
       operationId: getObject
       summary: get object content
-      security:
-        - basic_auth: []
-        - download_token: []
       produces:
         - application/octet-stream
       responses:
