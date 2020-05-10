@@ -16,6 +16,7 @@ const (
 )
 
 type SecretStore interface {
+	SharedSecret() string
 	Encrypt(data []byte) ([]byte, error)
 	Decrypt(encrypted []byte) ([]byte, error)
 }
@@ -26,6 +27,10 @@ type NaclSecretStore struct {
 
 func NewSecretStore(secret string) *NaclSecretStore {
 	return &NaclSecretStore{secret: secret}
+}
+
+func (a *NaclSecretStore) SharedSecret() string {
+	return a.secret
 }
 
 func (a *NaclSecretStore) kdf(storedSalt []byte) (key [KeySizeBytes]byte, salt [KeySaltBytes]byte, err error) {
