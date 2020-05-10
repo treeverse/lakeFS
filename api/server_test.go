@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"github.com/treeverse/lakefs/config"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -100,17 +101,17 @@ type mockCollector struct{}
 func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	mdb := testutil.GetDB(t, databaseUri, db.SchemaMetadata, opts...)
+	mdb := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
 	meta := index.NewDBIndex(mdb)
 
-	adb := testutil.GetDB(t, databaseUri, db.SchemaAuth, opts...)
+	adb := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
 
 	migrator := db.NewDatabaseMigrator().
-		AddDB(db.SchemaMetadata, mdb).
-		AddDB(db.SchemaAuth, adb)
+		AddDB(config.SchemaMetadata, mdb).
+		AddDB(config.SchemaAuth, adb)
 
 	server := api.NewServer(
 		meta,
