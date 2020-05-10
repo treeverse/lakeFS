@@ -203,7 +203,7 @@ func (s *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, e
 
 func (o *DBRepoOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
 	m := &model.MultipartUpload{}
-	err := o.tx.Get(m, `SELECT  repository_id,upload_id,path,creation_date,encode(physical_address,'hex') as physical_address FROM multipart_uploads WHERE repository_id = $1 AND id = $2`,
+	err := o.tx.Get(m, `SELECT  repository_id,upload_id,path,creation_date,encode(physical_address,'hex') as physical_address FROM multipart_uploads WHERE repository_id = $1 AND upload_id = $2`,
 		o.repoId, uploadId)
 	return m, err
 }

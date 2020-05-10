@@ -15,24 +15,6 @@ type DedupHandler interface {
 	CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error)
 }
 
-type MockDedup struct {
-	DedupIndex map[string]string
-}
-
-func NewMockDedup() *MockDedup {
-	m := make(map[string]string)
-	return &MockDedup{DedupIndex: m}
-}
-
-func (d *MockDedup) CreateDedupEntryIfNone(repoId string, dedupId string, objName string) (string, error) {
-	existingObj, ok := d.DedupIndex[dedupId]
-	if ok {
-		return existingObj, nil
-	} else {
-		return objName, nil
-	}
-}
-
 type HashingReader struct {
 	sha256         hash.Hash
 	md5            hash.Hash
