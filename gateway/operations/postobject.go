@@ -1,16 +1,18 @@
 package operations
 
 import (
+	"encoding/hex"
+	"encoding/xml"
 	"fmt"
-	"net/http"
-	"time"
-
-	"github.com/treeverse/lakefs/httputil"
-
+	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
-	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
 )
 
 const (
@@ -25,10 +27,19 @@ func (controller *PostObject) Action(repoId, refId, path string) permissions.Act
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
+	//var err error
 	o.Incr("create_mpu")
-	uploadId, err := o.MultipartManager.Create(o.Repo.Id, o.Path, time.Now())
+	UUIDbytes := ([16]byte(uuid.New()))
+	objName := hex.EncodeToString(UUIDbytes[:])
+	uploadId, err := o.BlockStore.CreateMultiPartUpload(o.Repo.StorageNamespace, objName, o.Request)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	err = o.Index.CreateMultiPartUpload(o.Repo.Id, uploadId, o.Path, objName, time.Now())
+	if err != nil {
+		o.Log().WithError(err).Error("could not write multipart upload to DB")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
@@ -37,6 +48,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 		Key:      o.Path,
 		UploadId: uploadId,
 	}, http.StatusOK)
+
 }
 
 func trimQuotes(s string) string {
@@ -49,30 +61,52 @@ func trimQuotes(s string) string {
 }
 
 func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
+	var etag *string
+	var size int64
 	o.Incr("complete_mpu")
 	uploadId := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
-
-	req := &serde.CompleteMultipartUpload{}
-	err := o.DecodeXMLBody(req)
+	multiPart, err := o.Index.ReadMultiPartUpload(o.Repo.Id, uploadId)
 	if err != nil {
-		o.Log().WithError(err).Error("could not complete multipart upload - cannot read XML body")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		o.Log().WithError(err).Error("could not read  multipart record")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	objName := multiPart.PhysicalAddress
+	XMLmultiPartComplete, err := ioutil.ReadAll(o.Request.Body)
+	var MultipartList struct{ Parts []*s3.CompletedPart }
+	err = xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
+	if err != nil {
+		o.Log().WithError(err).Error("could not parse multipart XML on complete multipart")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(o.Repo.StorageNamespace, objName, uploadId, &MultipartList)
+	if err != nil {
+		o.Log().WithError(err).Error("could not complete multipart upload")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	ch := trimQuotes(*etag)
+	checksum := strings.Split(ch, "-")[0]
+	existingName, err := o.Index.CreateDedupEntryIfNone(o.Repo.Id, checksum, multiPart.PhysicalAddress)
+	if err != nil {
+		o.Log().WithError(err).Error("failed checking for duplicate content")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 
-	parts := make([]*model.MultipartUploadPartRequest, len(req.Part))
-	for i, part := range req.Part {
-		parts[i] = &model.MultipartUploadPartRequest{
-			PartNumber: int32(part.PartNumber),
-			Etag:       trimQuotes(part.ETag), // XML structure is weird and comes with quotes around the ETag
-		}
+	if existingName != objName { // object already exist
+		o.BlockStore.Remove(o.Repo.StorageNamespace, objName)
+		objName = existingName
 	}
-
-	obj, err := o.MultipartManager.Complete(o.Repo.Id, o.Ref, o.Path, uploadId, parts, time.Now())
+	err = o.finishUpload(checksum, objName, size)
 	if err != nil {
-		o.Log().WithError(err).Error("could not complete multipart upload - cannot write metadata")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
+	}
+	err = o.Index.DeleteMultiPartUpload(o.Repo.Id, uploadId)
+	if err != nil {
+		o.Log().WithError(err).Warn("could not delete  multipart record")
 	}
 
 	// TODO: pass scheme instead of hard-coding http instead of https
@@ -80,7 +114,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repo, o.FQDN, o.Ref, o.Path),
 		Bucket:   o.Repo.Id,
 		Key:      o.Path,
-		ETag:     httputil.ETag(obj.Checksum),
+		ETag:     *etag,
 	}, http.StatusOK)
 }
 

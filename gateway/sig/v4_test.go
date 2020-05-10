@@ -315,7 +315,7 @@ func TestUnsignedPayload(t *testing.T) {
 		"X-Forwarded-Proto":     []string{"https"},
 		"X-Forwarded-Port":      []string{"443"},
 		"Host":                  []string{"repo1.s3.dev.lakefs.io"},
-		"X-Amzn-Trace-Id":       []string{"Root=1-5eb036bc-dd84b3a2115db68a77b1c068"},
+		"X-Amzn-Trace-UploadId": []string{"Root=1-5eb036bc-dd84b3a2115db68a77b1c068"},
 		"amz-sdk-invocation-id": []string{"a8288d69-e8fa-219d-856b-b58b53b6fd5b"},
 		"amz-sdk-retry":         []string{"0/0/500"},
 		"Authorization":         []string{"AWS4-HMAC-SHA256 Credential=AKIAJV3OAIYRIVODAQVQ/20200504/dev/s3/aws4_request, SignedHeaders=amz-sdk-invocation-id;amz-sdk-retry;content-type;host;user-agent;x-amz-content-sha256;x-amz-date, Signature=64a7b55116b4f65346c5607fe98e7e6d61f6086671e6bf175b0b8923949b56f6"},

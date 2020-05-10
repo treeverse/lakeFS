@@ -27,7 +27,7 @@ type dependencies struct {
 func getDependencies(t *testing.T) *dependencies {
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
-	blockAdapter := testutil.GetBlockAdapter(t)
+	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 	testutil.Must(t, meta.CreateRepo(TestRepo, "s3://"+TestRepo, "master"))
 	return &dependencies{
 		blocks: blockAdapter,
@@ -51,15 +51,15 @@ func createBranch(t *testing.T, index index.Index, name, parent string) {
 }
 
 func uploadObject(t *testing.T, deps *dependencies, path, branch string, content string) {
-	blob, err := upload.ReadBlob(TestRepo, strings.NewReader(content), deps.blocks, 1024*64)
+	checksum, physicalAddress, size, err := upload.WriteBlob(deps.meta, TestRepo, branch, strings.NewReader(content), deps.blocks, int64(len(content)))
 	if err != nil {
 		t.Error("error storing object in blocks", err)
 		return
 	}
 	obj := &model.Object{
-		Blocks:   blob.Blocks,
-		Checksum: blob.Checksum,
-		Size:     blob.Size,
+		PhysicalAddress: physicalAddress,
+		Checksum:        checksum,
+		Size:            size,
 	}
 	p := pth.New(path, model.EntryTypeObject)
 	writeTime := time.Now()
@@ -69,8 +69,8 @@ func uploadObject(t *testing.T, deps *dependencies, path, branch string, content
 		Address:      ident.Hash(obj),
 		EntryType:    model.EntryTypeObject,
 		CreationDate: writeTime,
-		Size:         blob.Size,
-		Checksum:     blob.Checksum,
+		Size:         size,
+		Checksum:     checksum,
 	}
 	err = deps.meta.WriteFile(TestRepo, branch, path, entry, obj)
 	if err != nil {
