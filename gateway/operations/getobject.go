@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/httputil"
@@ -14,7 +13,6 @@ import (
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
 	"github.com/treeverse/lakefs/gateway/serde"
-	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
 
 	"golang.org/x/xerrors"
@@ -44,11 +42,11 @@ func (controller *GetObject) Handle(o *PathOperation) {
 
 	if xerrors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchKey))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 
@@ -104,7 +102,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.Size))
 	data, err := o.BlockStore.Get(o.Repo.StorageNamespace, obj.PhysicalAddress)
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
 	n, err := io.Copy(o.ResponseWriter, data)

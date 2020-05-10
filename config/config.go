@@ -3,13 +3,6 @@ package config
 import (
 	"fmt"
 	"github.com/treeverse/lakefs/block/local"
-	"io"
-	"io/ioutil"
-	"os"
-	"os/signal"
-	"runtime"
-	"strings"
-	"syscall"
 	"time"
 
 	"github.com/google/uuid"
