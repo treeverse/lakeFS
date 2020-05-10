@@ -48,7 +48,7 @@ type Index interface {
 	GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
 	DeleteBranch(repoId, branch string) error
 	Diff(repoId, leftRef, rightRef string) (model.Differences, error)
-	DiffWorkspace(repoId, branch, otherBranch string) (model.Differences, error)
+	DiffWorkspace(repoId, branch string) (model.Differences, error)
 	RevertCommit(repoId, branch, commit string) error
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
@@ -883,16 +883,15 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 	return err
 }
 
-func (index *DBIndex) DiffWorkspace(repoId, branch, otherBranch string) (model.Differences, error) {
+func (index *DBIndex) DiffWorkspace(repoId, branch string) (model.Differences, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
-		ValidateRef(branch),
-		ValidateRef(otherBranch))
+		ValidateRef(branch))
 	if err != nil {
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		result, err := tx.ListWorkspaceAsDiff(branch, otherBranch)
+		result, err := tx.ListWorkspaceAsDiff(branch)
 		if err != nil {
 			return nil, err
 		}

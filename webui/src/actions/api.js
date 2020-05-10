@@ -297,7 +297,12 @@ class Commits {
 
 class Refs {
     async diff(repoId, leftRef, rightRef) {
-        let response = await apiRequest(`/repositories/${repoId}/branches/${leftRef}/diff/${rightRef}`);
+        let response;
+        if (leftRef === rightRef) {
+            response = await apiRequest(`/repositories/${repoId}/branches/${leftRef}/diff`);
+        } else {
+            response = await apiRequest(`/repositories/${repoId}/refs/${leftRef}/diff/${rightRef}`);
+        }
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }

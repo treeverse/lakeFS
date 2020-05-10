@@ -18,7 +18,7 @@ import (
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
-	ListWorkspaceAsDiff(branch, otherBranch string) (model.Differences, error)
+	ListWorkspaceAsDiff(branch string) (model.Differences, error)
 	ListTreeAndWorkspaceDirectory(branch, path, from string, amount int, descend bool) ([]*model.Entry, bool, error)
 	CascadeDirectoryDeletion(branch, deletedPath string) error
 	ReadFromWorkspace(branch, path, typ string) (*model.WorkspaceEntry, error)
@@ -98,7 +98,7 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 		o.repoId, branch)
 	return entries, err
 }
-func (o *DBRepoOperations) ListWorkspaceAsDiff(branch, otherBranch string) (model.Differences, error) {
+func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences, error) {
 	var entries model.Differences
 	err := o.tx.Select(
 		&entries,
@@ -107,9 +107,9 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch, otherBranch string) (mode
 									WHEN 'ADDED' THEN %d
 									WHEN 'DELETED' THEN %d
 								 	WHEN 'CHANGED' THEN %d END AS diff_type
-								FROM ws_diff_fn($1, $2, $3)`,
+								FROM ws_diff_fn($1, $2)`,
 			model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
-		o.repoId, branch, otherBranch)
+		o.repoId, branch)
 	return entries, err
 }
 

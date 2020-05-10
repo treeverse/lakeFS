@@ -557,7 +557,7 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		}
 		a.incrStat("diff_workspace")
 		index := a.ForRequest(params.HTTPRequest).Index
-		diff, err := index.DiffWorkspace(params.RepositoryID, params.BranchID, params.OtherBranchID)
+		diff, err := index.DiffWorkspace(params.RepositoryID, params.BranchID)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))

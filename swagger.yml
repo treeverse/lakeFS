@@ -588,7 +588,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/diff/{otherBranchId}:
+  /repositories/{repositoryId}/branches/{branchId}/diff:
     parameters:
       - in: path
         name: repositoryId
@@ -596,10 +596,6 @@ paths:
         type: string
       - in: path
         name: branchId
-        required: true
-        type: string
-      - in: path
-        name: otherBranchId
         required: true
         type: string
     get:
