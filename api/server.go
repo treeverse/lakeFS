@@ -88,9 +88,7 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			Email:    userData.Email,
-			FullName: userData.FullName,
-			ID:       int64(userData.Id),
+			ID: int64(userData.Id),
 		}, nil
 	}
 }
