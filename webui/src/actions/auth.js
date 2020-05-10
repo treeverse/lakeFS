@@ -1,15 +1,13 @@
-import * as api from './api';
+import * as api from "./api";
 import {AsyncActionType} from "./request";
 
-export const
-    AUTH_LOGIN = new AsyncActionType('AUTH_LOGIN'),
-    AUTH_REDIRECTED = 'AUTH_REDIRECTED',
-    AUTH_LOGOUT = 'AUTH_LOGOUT';
+export const AUTH_LOGIN = new AsyncActionType('AUTH_LOGIN');
+export const AUTH_REDIRECTED = 'AUTH_REDIRECTED';
+export const AUTH_LOGOUT = 'AUTH_LOGOUT';
 
 export const logout = () => ({
     type: AUTH_LOGOUT,
 });
-
 
 export const redirected = () => ({
     type: AUTH_REDIRECTED,
