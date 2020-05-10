@@ -36,7 +36,7 @@ export default (state = initialState, action) => {
                 redirectTo: action.payload.redirectTo,
                 loginError: null,
             };
-        case AUTH_LOGOUT:
+        case AUTH_LOGOUT.success:
             window.localStorage.removeItem('user');
             return {
                 ...initialState,
