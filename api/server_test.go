@@ -20,7 +20,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/store"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -51,7 +50,6 @@ type dependencies struct {
 	blocks block.Adapter
 	auth   auth.Service
 	meta   index.Index
-	mpu    index.MultipartManager
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
@@ -103,10 +101,9 @@ func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	mdb := testutil.GetDB(t, databaseUri, db.SchemaMetadata, opts...)
-	blockAdapter := testutil.GetBlockAdapter(t)
+	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
 	meta := index.NewDBIndex(mdb)
-	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
 	adb := testutil.GetDB(t, databaseUri, db.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
@@ -117,7 +114,6 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 
 	server := api.NewServer(
 		meta,
-		mpu,
 		blockAdapter,
 		authService,
 		&mockCollector{},
@@ -132,7 +128,6 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		blocks: blockAdapter,
 		auth:   authService,
 		meta:   meta,
-		mpu:    mpu,
 	}
 }
 

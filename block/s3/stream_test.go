@@ -63,7 +63,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			// this is just boilerplate to create a signature
-			contentLength := s3a.CalculateStreamSizeForPayload(len(cas.Input), cas.ChunkSize)
+			contentLength := s3a.CalculateStreamSizeForPayload(int64(len(cas.Input)), cas.ChunkSize)
 			creds := credentials.NewStaticCredentials("AKIAJIEMTME6UEVWXB2Q", "vlJMuY24GyMRXLca7+V2Xc6IEEAyZTnZ29NJsspN", "")
 			sigTime, _ := time.Parse("Jan 2 15:04:05 2006 -0700", "Apr 7 15:13:13 2005 -0700")
 			req, _ := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/example/foo", nil)
@@ -105,13 +105,17 @@ func TestS3StreamingReader_Read(t *testing.T) {
 				t.Fatalf("got wrong chunked data")
 			}
 
-			if len(cas.Expected) != contentLength {
+			if int64(len(cas.Expected)) != contentLength {
 				t.Fatalf("content length is wrong, got %d, expected %d", contentLength, len(cas.Expected))
 			}
 		})
 	}
 }
 
-func mustReadFile(t *testing.T, s string) []byte {
-
+func mustReadFile(t *testing.T, path string) []byte {
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return data
 }
