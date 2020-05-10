@@ -1426,7 +1426,7 @@ func (index *DBIndex) CreateDedupEntryIfNone(repoId string, dedupId string, objN
 		dedupObj, err := tx.GetObjectDedup(dedupId)
 		if err == nil {
 			return dedupObj.PhysicalAddress, nil
-		} else if xerrors.Is(err, db.ErrNotFound) {
+		} else if errors.Is(err, db.ErrNotFound) {
 			d := &model.ObjectDedup{RepositoryId: repoId, PhysicalAddress: objName, DedupId: dedupId}
 			err = tx.WriteObjectDedup(d)
 			if err != nil {
