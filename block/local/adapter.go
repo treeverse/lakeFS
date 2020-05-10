@@ -5,7 +5,6 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
-	"hash"
 	"io"
 	"net/http"
 	"os"
@@ -141,10 +140,10 @@ func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 }
 
 func (l *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
-	md5Read := newMd5Reader(reader)
+	md5Read := block.NewHashingReader(reader, block.MD5)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
 	err := l.Put("", fName, -1, md5Read)
-	ETag := "\"" + hex.EncodeToString(md5Read.md5.Sum(nil)) + "\""
+	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return ETag, err
 }
 func (l *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
@@ -183,8 +182,8 @@ func computeETag(Parts []*s3.CompletedPart) string {
 	}
 	s := strings.Join(ETagHex, "")
 	b, _ := hex.DecodeString(s)
-	md := md5.New()
-	csm := hex.EncodeToString(md.Sum(b))
+	md5res := md5.Sum(b)
+	csm := hex.EncodeToString(md5res[:])
 	return csm
 }
 
@@ -230,24 +229,25 @@ func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	return names, err
 }
 
-type md5Reader struct {
-	md5            hash.Hash
-	originalReader io.Reader
-	copiedSize     int64
-}
-
-func (s *md5Reader) Read(p []byte) (int, error) {
-	len, err := s.originalReader.Read(p)
-	if len > 0 {
-		s.md5.Write(p[0:len])
-		s.copiedSize += int64(len)
-	}
-	return len, err
-}
-
-func newMd5Reader(body io.Reader) (s *md5Reader) {
-	s = new(md5Reader)
-	s.md5 = md5.New()
-	s.originalReader = body
-	return
-}
+//
+//type md5Reader struct {
+//	md5            hash.Hash
+//	originalReader io.Reader
+//	copiedSize     int64
+//}
+//
+//func (s *md5Reader) Read(p []byte) (int, error) {
+//	len, err := s.originalReader.Read(p)
+//	if len > 0 {
+//		s.md5.Write(p[0:len])
+//		s.copiedSize += int64(len)
+//	}
+//	return len, err
+//}
+//
+//func newMd5Reader(body io.Reader) (s *md5Reader) {
+//	s = new(md5Reader)
+//	s.md5 = md5.New()
+//	s.originalReader = body
+//	return
+//}

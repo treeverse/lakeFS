@@ -2,6 +2,7 @@ package testutil
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/aws"
 	"log"
 	"os"
 	"path/filepath"
@@ -9,7 +10,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/treeverse/lakefs/block/local"
@@ -35,6 +35,8 @@ const (
 	FixtureRoot               = "lakeFsFixtures"
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 	S3BlockAdapterEnvVar      = "USE_S3_BLOCK_ADAPTER"
+	AWS_KEY                   = "AWS_ACCESS_KEY_ID"
+	AWS_SECRET                = "AWS_SECRET_ACCESS_KEY"
 )
 
 func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
@@ -175,7 +177,14 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 		cfg := &aws.Config{
 			Region: aws.String("us-east-1"),
 		}
-		cfg.Credentials = credentials.NewSharedCredentials("", "default")
+		aws_key, key_ok := os.LookupEnv(AWS_KEY)
+		aws_secret, secret_ok := os.LookupEnv(AWS_SECRET)
+		if key_ok && secret_ok {
+			cfg.Credentials = credentials.NewStaticCredentials(aws_key, aws_secret, "")
+		} else {
+			cfg.Credentials = credentials.NewSharedCredentials("", "default")
+		}
+
 		sess := session.Must(session.NewSession(cfg))
 		svc := s3.New(sess)
 		adapter := lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
