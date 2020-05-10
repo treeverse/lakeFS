@@ -261,7 +261,7 @@ const CommitButton = connect(
 
     let commitDisabled = true;
     let commitVariant = 'secondary';
-    if (changes.length > 0) {
+    if (changes > 0) {
         commitDisabled = false;
         commitVariant = 'success';
     }
@@ -333,7 +333,7 @@ const CommitButton = connect(
                 <Octicon icon={GitCommit}/> Commit Changes{' '}
                 {!commitDisabled &&
                 <>
-                    <Badge variant="light">{changes.length}</Badge>
+                    <Badge variant="light">{changes}</Badge>
                     <span className="sr-only">uncommited changes</span>
                 </>
                 }
@@ -390,7 +390,7 @@ const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePagina
         );
     }
 
-    const changes = !compare && diffResults.payload ? diffResults.payload.results : [];
+    const changes = !compare && diffResults.payload ? diffResults.payload.results.length : 0;
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
