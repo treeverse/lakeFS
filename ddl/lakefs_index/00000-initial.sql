@@ -118,13 +118,16 @@ CREATE TABLE multipart_upload_parts (
     PRIMARY KEY (repository_id, upload_id, part_number)
 );
 
-CREATE OR REPLACE VIEW entries_with_path AS
+CREATE OR REPLACE FUNCTION tree_from_root(repository_id varchar, root_address varchar)
+    RETURNS TABLE (root_address varchar, branches varchar[], parent_path varchar, repository_id varchar, parent_address varchar, name varchar, address varchar, type varchar, creation_date timestamp with time zone, size bigint, checksum varchar)
+AS
+$body$
 WITH RECURSIVE cte AS (
     SELECT entries.parent_address AS root_address,
            array((SELECT id FROM branches WHERE commit_root = entries.parent_address)) AS branches,
            '' AS parent_path, entries.*
-    FROM entries JOIN branches ON entries.parent_address = branches.commit_root
-    WHERE branches.repository_id = entries.repository_id
+    FROM entries JOIN roots ON roots.repository_id = entries.repository_id AND roots.address = entries.parent_address
+    WHERE roots.repository_id = $1 AND roots.address = $2
     UNION ALL
     SELECT cte_1.root_address,
            cte_1.branches,
@@ -133,9 +136,13 @@ WITH RECURSIVE cte AS (
     FROM cte cte_1
              JOIN entries ON entries.parent_address = cte_1.address
 )
-SELECT cte.* FROM cte;
+SELECT cte.* FROM cte
+$body$ language sql;
 
-CREATE OR REPLACE VIEW combined_workspace AS
+CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar)
+    RETURNS TABLE (repository_id varchar, branch_id varchar, parent_path varchar, path varchar,
+                   name varchar, entry_type varchar, size bigint, creation_date timestamp with time zone, checksum varchar, address varchar, diff_type varchar, tombstone bool) AS
+$BODY$
 SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
        COALESCE(wse.branch_id, ewp.branch) AS branch_id,
        COALESCE(wse.parent_path, ewp.parent_path) AS parent_path,
@@ -153,11 +160,20 @@ SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
        tombstone
 FROM workspace_entries wse
          FULL OUTER JOIN (SELECT unnest(branches) AS branch, *
-                          FROM entries_with_path) ewp
+                          FROM tree_from_root($1, (SELECT commit_root FROM branches WHERE repository_id = $1 AND id = $2))) ewp
                          ON wse.branch_id= ewp.branch AND wse.parent_path = ewp.parent_path AND
                             wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id;
+$BODY$ language sql;
+
+CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar)
+    RETURNS TABLE (repository_id varchar, branch_id varchar, object_path varchar, diff_type varchar, diff_path varchar) AS
+$BODY$
+SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
+    CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED'
+            THEN (SELECT min(path) from combined_ws_fn($1, $2) cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
+        ELSE path END AS diff_path
+FROM combined_ws_fn($1, $2) cw WHERE entry_type='object' AND diff_type IS NOT NULL
+$BODY$ language sql;
 
 
-CREATE OR REPLACE VIEW workspace_diff AS SELECT repository_id, branch_id, path as object_path, diff_type,
-                                                CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED' THEN (SELECT min(path) from combined_workspace cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
-                                                     ELSE path END AS diff_path FROM combined_workspace cw WHERE entry_type='object' AND diff_type IS NOT NULL
+

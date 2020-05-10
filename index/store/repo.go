@@ -3,6 +3,7 @@ package store
 import (
 	"database/sql"
 	"fmt"
+	"github.com/huandu/go-sqlbuilder"
 	"strings"
 
 	"golang.org/x/xerrors"
@@ -27,7 +28,7 @@ type RepoOperations interface {
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
-	ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error)
+	ListTreeWithPrefix(rootAddr, prefix, after string, results int, descend bool) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
 	DeleteWorkspacePath(branch, path, typ string) error
 	WriteToWorkspacePath(branch string, entries []*model.WorkspaceEntry) error
@@ -66,8 +67,8 @@ func (o *DBRepoOperations) ListTreeAndWorkspaceDirectory(branch, path, from stri
 	}
 	err := o.tx.Select(
 		&entries, fmt.Sprintf(
-			`SELECT path AS name, entry_type AS type, size, creation_date, checksum FROM combined_workspace
-    	  				WHERE repository_id = $1 AND branch_id = $2 AND %s AND tombstone IS NOT TRUE %s ORDER BY name %s`,
+			`SELECT path AS name, entry_type AS type, size, creation_date, checksum FROM combined_ws_fn($1, $2)
+    	  				WHERE %s AND tombstone IS NOT TRUE %s ORDER BY name %s`,
 			parentPathCondition, additionalCondition, limitStatement),
 		o.repoId, branch, path)
 	hasMore := false
@@ -106,7 +107,7 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences
 									WHEN 'ADDED' THEN %d
 									WHEN 'DELETED' THEN %d
 								 	WHEN 'CHANGED' THEN %d END AS diff_type
-								FROM workspace_diff WHERE repository_id = $1 AND branch_id = $2`,
+								FROM ws_diff_fn($1, $2)`,
 			model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
 		o.repoId, branch)
 	return entries, err
@@ -195,43 +196,54 @@ func (o *DBRepoOperations) ReadCommit(addr string) (*model.Commit, error) {
 	return commits[0], err
 }
 
-func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount int) ([]*model.Entry, bool, error) {
-	var err error
-	var hasMore bool
+func (o *DBRepoOperations) ListTreeWithPrefix(rootAddr, path, after string, amount int, descend bool) ([]*model.Entry, bool, error) {
+	sqlbuilder.NewSelectBuilder()
 	var entries []*model.Entry
-
-	if len(after) == 0 {
-		if amount >= 0 {
-			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 ORDER BY name ASC LIMIT $4`,
-				o.repoId, addr, db.Prefix(prefix), amount+1)
-		} else {
-			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 ORDER BY name ASC`,
-				o.repoId, addr, db.Prefix(prefix))
-		}
-	} else {
-		if amount >= 0 {
-			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC LIMIT $5`,
-				o.repoId, addr, db.Prefix(prefix), after, amount+1)
-		} else {
-			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC`,
-				o.repoId, addr, db.Prefix(prefix), after)
-		}
+	var additionalCondition, limitStatement string
+	argIdx := 3
+	args := []interface{}{o.repoId, rootAddr}
+	if amount > 0 {
+		limitStatement = fmt.Sprintf("LIMIT %d", amount+1)
 	}
-
-	if err != nil {
-		return nil, false, err
+	if len(after) > 0 {
+		additionalCondition = fmt.Sprintf(" AND path > $%d", argIdx)
+		args = append(args, after)
+		argIdx++
 	}
+	if !descend {
+		additionalCondition += fmt.Sprintf(" AND parent_path = $%d AND name LIKE $%d || '%%'", argIdx, argIdx+1)
+		argIdx += 2
+		parentArgValue := ""
+		if strings.Contains(path, "/") {
+			parentArgValue = path[:strings.LastIndex(path, "/")+1]
 
-	if amount >= 0 && len(entries) > amount {
-		entries = entries[0:amount]
+		}
+		nameArgValue := path[strings.LastIndex(path, "/")+1:]
+		args = append(args, parentArgValue, nameArgValue)
+	} else { // descend true
+		additionalCondition += fmt.Sprintf(" AND parent_path || name LIKE $%d || '%%' AND type='object'", argIdx)
+		argIdx++
+		argValue := ""
+		if strings.Contains(path, "/") {
+			argValue = path[:strings.LastIndex(path, "/")+1]
+		}
+		args = append(args, argValue)
+	}
+	err := o.tx.Select(
+		&entries, fmt.Sprintf(
+			`SELECT parent_path || name as name, type, size, creation_date, checksum FROM tree_from_root($1, $2)
+    	  				WHERE 1=1 %s ORDER BY name %s`,
+			additionalCondition, limitStatement), args...)
+	hasMore := false
+	if amount > 0 && len(entries) > amount {
 		hasMore = true
+		entries = entries[:amount]
 	}
-
 	return entries, hasMore, err
 }
 
 func (o *DBRepoOperations) ListTree(addr, after string, results int) ([]*model.Entry, bool, error) {
-	return o.ListTreeWithPrefix(addr, "", after, results)
+	return o.ListTreeWithPrefix(addr, "", after, results, true)
 }
 
 func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {
@@ -425,11 +437,11 @@ func (o *DBRepoOperations) DeleteMultipartUploadParts(uploadId string) error {
 
 func (o *DBRepoOperations) CascadeDirectoryDeletion(branch, deletedPathParent string) error {
 	_, err := o.tx.Exec(`UPDATE workspace_entries we SET tombstone = 0 = (SELECT COUNT(*)
-									FROM combined_workspace we2
+									FROM combined_ws_fn($1, $2) we2
 										WHERE we2.repository_id = $1 AND we2.branch_id = $2
 											AND we2.entry_type = $3 AND we2.tombstone IS NOT TRUE
 											AND we2.parent_path LIKE we.path || '%')
-								WHERE repository_id = $1 AND branch_id = $2 AND entry_type = $4 AND $5 LIKE path || '%'`,
+								WHERE entry_type = $4 AND $5 LIKE path || '%'`,
 		o.repoId, branch, model.EntryTypeObject, model.EntryTypeTree, deletedPathParent)
 	return err
 }

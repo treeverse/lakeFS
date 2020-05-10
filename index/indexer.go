@@ -3,6 +3,7 @@ package index
 import (
 	"context"
 	"fmt"
+	log "github.com/sirupsen/logrus"
 	"strings"
 	"time"
 
@@ -670,14 +671,13 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 		if reference.isBranch {
 			normalizedPath := pth.New(path, model.EntryTypeObject).String()
 			res, hasMore, err = tx.ListTreeAndWorkspaceDirectory(reference.branch.Id, normalizedPath, from, results, descend)
-		} else {
-			/*			root := reference.commit.Tree
-						tree := merkle.New(root)
-						res, hasMore, err = tree.PrefixScan(tx, path, from, results, descend)
-						if err != nil {
-							log.WithError(err).Error("could not scan tree")
-							return nil, err
-						}*/
+		} else if descend {
+			root := reference.commit.Tree
+			res, hasMore, err = tx.ListTreeWithPrefix(root, path, from, results, descend)
+			if err != nil {
+				log.WithError(err).Error("could not scan tree")
+				return nil, err
+			}
 		}
 		return &result{hasMore, res}, nil
 	})
