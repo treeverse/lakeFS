@@ -903,7 +903,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (model.Differences, e
 	return res.(model.Differences), nil
 }
 
-func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (model.Differences, error) {
+func doDiff(tx store.RepoOperations, leftRef, rightRef string, index *DBIndex) (model.Differences, error) {
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
@@ -927,9 +927,6 @@ func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge b
 	}
 
 	leftTree := lRef.commit.Tree
-	if lRef.isBranch && !isMerge {
-		leftTree = lRef.branch.WorkspaceRoot
-	}
 	rightTree := rRef.commit.Tree
 
 	diff, err := merkle.Diff(tx,
@@ -951,7 +948,7 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (model.Differences,
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		return doDiff(tx, repoId, leftRef, rightRef, false, index)
+		return doDiff(tx, leftRef, rightRef, index)
 	})
 
 	return res.(model.Differences), nil
@@ -1064,7 +1061,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (model.D
 			return nil, errors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		df, err := doDiff(tx, repoId, source, destination, true, index)
+		df, err := doDiff(tx, source, destination, index)
 		if err != nil {
 			return nil, err
 		}
