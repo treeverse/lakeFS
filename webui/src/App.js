@@ -16,26 +16,22 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 
-let NavUserInfo = ({ user, logout }) => {
-    if (!!user) {
-        return (
-            <Navbar.Collapse className="justify-content-end">
-                <NavDropdown title={user.id} id="basic-nav-dropdown" alignRight>
-                    <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
-                </NavDropdown>
-            </Navbar.Collapse>
-        );
-    } else {
-        return <span/>;
-    }
-}
-
-NavUserInfo = connect(
+const NavUserInfo = connect(
     ({ auth }) => ({ user: auth.user }),
     ( dispatch ) => ({ logout: () => { dispatch(logout()); } }),
-)(NavUserInfo);
-
-
+)(({ user, logout }) => {
+    if (!user) {
+        return null;
+    }
+    const userTitle = user.full_name || 'ID:'+ user.id;
+    return (
+        <Navbar.Collapse className="justify-content-end">
+            <NavDropdown title={userTitle} id="basic-nav-dropdown" alignRight>
+                <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
+            </NavDropdown>
+        </Navbar.Collapse>
+    );
+})
 
 const PrivateRoute = ({ children, user, ...rest }) => {
     return (
