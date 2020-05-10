@@ -139,7 +139,7 @@ WITH RECURSIVE cte AS (
 SELECT cte.* FROM cte
 $body$ language sql;
 
-CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default null)
+CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default branch_id)
     RETURNS TABLE (repository_id varchar, branch_id varchar, parent_path varchar, path varchar,
                    name varchar, entry_type varchar, size bigint, creation_date timestamp with time zone, checksum varchar, address varchar, diff_type varchar, tombstone bool) AS
 $BODY$
@@ -160,13 +160,12 @@ SELECT COALESCE(wse.repository_id, ewp.repository_id) as repository_id,
        tombstone
 FROM workspace_entries wse
          FULL OUTER JOIN (SELECT unnest(branches) AS branch, *
-                          FROM tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND branches.id = COALESCE($3, $2)))) ewp
+                          FROM tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND branches.id = $3))) ewp
                          ON wse.branch_id= ewp.branch AND wse.parent_path = ewp.parent_path AND
-                            wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
-         WHERE COALESCE(wse.repository_id, ewp.repository_id) = $1 AND COALESCE(wse.branch_id, ewp.branch) = $2
+                            wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id;
 $BODY$ language sql;
 
-CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default null)
+CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar, tree_branch_id varchar default branch_id)
     RETURNS TABLE (repository_id varchar, branch_id varchar, object_path varchar, diff_type varchar, diff_path varchar) AS
 $BODY$
 SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
@@ -176,7 +175,5 @@ SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
 FROM combined_ws_fn($1, $2) cw WHERE entry_type='object' AND diff_type IS NOT NULL
 $BODY$ language sql;
 
-select * from workspace_entries wse
-         FULL OUTER JOIN (sELECT unnest(branches) AS branch, *
-                          FROM tree_from_root('put', (SELECT commit_root FROM branches WHERE branches.repository_id = 'put' AND branches.id = COALESCE(null, 'master')))) ewp  ON wse.branch_id= ewp.branch AND wse.parent_path = ewp.parent_path AND
-                            wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
+
+
