@@ -228,26 +228,3 @@ func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	sort.Strings(names)
 	return names, err
 }
-
-//
-//type md5Reader struct {
-//	md5            hash.Hash
-//	originalReader io.Reader
-//	copiedSize     int64
-//}
-//
-//func (s *md5Reader) Read(p []byte) (int, error) {
-//	len, err := s.originalReader.Read(p)
-//	if len > 0 {
-//		s.md5.Write(p[0:len])
-//		s.copiedSize += int64(len)
-//	}
-//	return len, err
-//}
-//
-//func newMd5Reader(body io.Reader) (s *md5Reader) {
-//	s = new(md5Reader)
-//	s.md5 = md5.New()
-//	s.originalReader = body
-//	return
-//}
