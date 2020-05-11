@@ -750,7 +750,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 		{
 			name: "remove tree",
@@ -851,7 +851,7 @@ func TestMerkle_Update(t *testing.T) {
 					Tombstone:         false,
 				},
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
