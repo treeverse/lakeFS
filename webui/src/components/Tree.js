@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
@@ -118,21 +118,11 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
 
 
 const PathLink = ({ repoId, refId, path, children, as = null }) => {
-    const [link, setLink] = useState("#");
-
-    useEffect( () => {
-        let mounted = true;
-        linkToPath(repoId, refId.id, path).then(link => {
-            if (mounted)
-                setLink(link);
-        });
-        return () => { mounted = false };
-    }, [repoId, refId.id, path]);
+    const link = linkToPath(repoId, refId.id, path);
     if (as === null) {
-        return  (<a href={link}>{children}</a>);
+        return  (<a href={link} download={true}>{children}</a>);
     }
-
-    return React.createElement(as, {children: children, href: link});
+    return React.createElement(as, {children: children, href: link, download: true});
 };
 
 
