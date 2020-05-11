@@ -8,12 +8,13 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
+
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -78,8 +79,7 @@ func (a *Handler) ForRequest(r *http.Request) *HandlerContext {
 func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	// Register operations here
-	api.AuthenticationGetAuthenticationHandler = a.AuthenticationGetAuthenticationHandler()
-
+	api.AuthenticationGetUserHandler = a.GetUserHandler()
 	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
 	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
@@ -114,9 +114,11 @@ func (a *Handler) authorize(user *models.User, action permissions.Action) error 
 	return authorize(a.context.Auth, user, action)
 }
 
-func (a *Handler) AuthenticationGetAuthenticationHandler() authentication.GetAuthenticationHandler {
-	return authentication.GetAuthenticationHandlerFunc(func(params authentication.GetAuthenticationParams, user *models.User) middleware.Responder {
-		return authentication.NewGetAuthenticationOK().WithPayload(&authentication.GetAuthenticationOKBody{User: user})
+func (a *Handler) GetUserHandler() authentication.GetUserHandler {
+	return authentication.GetUserHandlerFunc(func(params authentication.GetUserParams, user *models.User) middleware.Responder {
+		return authentication.NewGetUserOK().WithPayload(&authentication.GetUserOKBody{
+			User: user,
+		})
 	})
 }
 
