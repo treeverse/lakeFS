@@ -3,7 +3,7 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.29.8
+	github.com/aws/aws-sdk-go v1.30.14
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
 	github.com/go-openapi/errors v0.19.2
@@ -31,6 +31,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
+	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
 	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/yaml.v2 v2.2.8 // indirect

@@ -131,11 +131,13 @@
 
 .table .tree-row {
     border-bottom: 1px solid rgba(0, 0, 0, 0.125);
+    height: 45px;
 }
 
 .table .tree-row td {
     padding-top: 10px;
     padding-bottom: 10px;
+    vertical-align: middle;
 }
 
 .table .tree-row td:first-child {
@@ -189,7 +191,7 @@
 
 .table .tree-row:hover .tree-row-actions .btn,
 .table .tree-row:focus .tree-row-actions .btn {
-    display: inline;
+    display: inline-block;
 }
 
 .tree-container .alert {

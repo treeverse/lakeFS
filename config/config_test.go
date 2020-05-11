@@ -3,11 +3,11 @@ package config_test
 import (
 	"bufio"
 	"encoding/json"
+	"github.com/treeverse/lakefs/block/local"
 	"os"
 	"testing"
 
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/block"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
 
@@ -82,7 +82,7 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c := newConfigFromFile("testdata/valid_config.yaml")
 		adapter := c.BuildBlockAdapter()
-		if _, ok := adapter.(*block.LocalFSAdapter); !ok {
+		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
 		}
 	})

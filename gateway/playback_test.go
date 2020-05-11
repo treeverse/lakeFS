@@ -2,16 +2,13 @@ package gateway_test
 
 import (
 	"encoding/json"
+	"github.com/ory/dockertest/v3"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"testing"
-
-	"github.com/treeverse/lakefs/index/store"
-
-	"github.com/ory/dockertest/v3"
 
 	"github.com/treeverse/lakefs/logging"
 
@@ -38,7 +35,6 @@ type dependencies struct {
 	blocks block.Adapter
 	auth   utils.GatewayAuthService
 	meta   index.Index
-	mpu    index.MultipartManager
 }
 
 func TestGatewayRecording(t *testing.T) {
@@ -83,29 +79,33 @@ func (m *mockCollector) Collect(class, action string) {
 
 }
 
+var IdTranslator *testutil.UploadIdTranslator
+
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
+	IdTranslator = &testutil.UploadIdTranslator{TransMap: make(map[string]string),
+		ExpectedId: "",
+		T:          t,
+	}
 	directory := filepath.Join("testdata", "recordings", testDir)
 
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
-	mpu := index.NewDBMultipartManager(store.NewDBStore(mdb))
 
-	blockAdapter := testutil.GetBlockAdapter(t)
+	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
+
 	authService := newGatewayAuth(t, directory)
 
-	testutil.Must(t, meta.CreateRepo("example", "s3://example", "master"))
+	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
 	server := gateway.NewServer(authService.Region,
 		meta,
 		blockAdapter,
 		authService,
-		mpu,
 		authService.ListenAddress, authService.BareDomain, &mockCollector{})
 
 	return server.Server.Handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
 		meta:   meta,
-		mpu:    mpu,
 	}
 }
 

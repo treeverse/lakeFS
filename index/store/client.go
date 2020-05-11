@@ -44,7 +44,6 @@ func (c *DBClientOperations) ListRepos(amount int, after string) ([]*model.Repo,
 func (c *DBClientOperations) DeleteRepo(repoId string) error {
 	// clear all workspaces, branches, entries, etc.
 	queries := []string{
-		`DELETE FROM multipart_upload_parts WHERE repository_id = $1`,
 		`DELETE FROM multipart_uploads WHERE repository_id = $1`,
 		`DELETE FROM workspace_entries WHERE repository_id = $1`,
 		`DELETE FROM branches WHERE repository_id = $1`,
