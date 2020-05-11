@@ -119,22 +119,16 @@ CREATE TABLE multipart_upload_parts (
 );
 
 CREATE OR REPLACE FUNCTION tree_from_root(repository_id varchar, root_address varchar)
-    RETURNS TABLE (root_address varchar, branches varchar[], parent_path varchar, repository_id varchar, parent_address varchar, name varchar, address varchar, type varchar, creation_date timestamp with time zone, size bigint, checksum varchar)
+    RETURNS TABLE (parent_path varchar, repository_id varchar, parent_address varchar, name varchar, address varchar, type varchar, creation_date timestamp with time zone, size bigint, checksum varchar)
 AS
 $body$
 WITH RECURSIVE cte AS (
-    SELECT entries.parent_address AS root_address,
-           array((SELECT id FROM branches WHERE commit_root = entries.parent_address)) AS branches,
-           '' AS parent_path, entries.*
-    FROM entries JOIN roots ON roots.repository_id = entries.repository_id AND roots.address = entries.parent_address
-    WHERE roots.repository_id = $1 AND roots.address = $2
+    SELECT '' AS parent_path, e.*
+    FROM entries e
+    WHERE e.repository_id = $1 AND parent_address = $2
     UNION ALL
-    SELECT cte_1.root_address,
-           cte_1.branches,
-           cte_1.parent_path || cte_1.name,
-           entries.*
-    FROM cte cte_1
-             JOIN entries ON entries.parent_address = cte_1.address
+    SELECT cte_1.parent_path || cte_1.name, entries.*
+    FROM cte cte_1 JOIN entries ON entries.parent_address = cte_1.address
 )
 SELECT cte.* FROM cte
 $body$ language sql;
@@ -160,8 +154,7 @@ SELECT $1,
        tombstone
 FROM (SELECT * FROM workspace_entries WHERE workspace_entries.branch_id = $2) wse
          FULL OUTER JOIN tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND id = $2)) ewp
-                         ON wse.branch_id = ANY(ewp.branches) AND wse.parent_path = ewp.parent_path AND
-                            wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
+                         ON wse.parent_path = ewp.parent_path AND wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
 $BODY$ language sql;
 
 CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar)

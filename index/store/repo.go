@@ -229,7 +229,7 @@ func (o *DBRepoOperations) ListTreeWithPrefix(rootAddr, path, after string, amou
 	}
 	err := o.tx.Select(
 		&entries, fmt.Sprintf(
-			`SELECT parent_path || name as name, type, size, creation_date, checksum FROM tree_from_root($1, $2)
+			`SELECT parent_path || name as name, type, size, creation_date, checksum, address, parent_address FROM tree_from_root($1, $2)
     	  				WHERE 1=1 %s ORDER BY name %s`,
 			additionalCondition, limitStatement), args...)
 	hasMore := false
