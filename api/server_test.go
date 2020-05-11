@@ -1,13 +1,14 @@
 package api_test
 
 import (
-	"github.com/treeverse/lakefs/config"
 	"log"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+
+	"github.com/treeverse/lakefs/config"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -107,7 +108,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	meta := index.NewDBIndex(mdb)
 
 	adb := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore("some secret"))
+	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 
 	migrator := db.NewDatabaseMigrator().
 		AddDB(config.SchemaMetadata, mdb).
