@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"hash"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -97,11 +98,7 @@ func (l *Adapter) GetRange(_ string, identifier string, start int64, end int64) 
 	if err != nil {
 		return nil, err
 	}
-	_, err = f.Seek(start, 0)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
+	return ioutil.NopCloser(io.NewSectionReader(f, start, end-start+1)), nil
 }
 
 func isDirectoryWritable(pth string) bool {
