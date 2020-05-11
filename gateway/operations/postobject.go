@@ -4,8 +4,8 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/permissions"
@@ -73,7 +73,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	objName := multiPart.PhysicalAddress
 	XMLmultiPartComplete, err := ioutil.ReadAll(o.Request.Body)
-	var MultipartList struct{ Parts []*s3.CompletedPart }
+	var MultipartList block.MultipartUploadCompletion
 	err = xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
 	if err != nil {
 		o.Log().WithError(err).Error("could not parse multipart XML on complete multipart")
