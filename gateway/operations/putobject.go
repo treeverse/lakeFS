@@ -2,23 +2,17 @@ package operations
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/upload"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/upload"
-
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
-	"github.com/treeverse/lakefs/ident"
-	"github.com/treeverse/lakefs/index/model"
-	pth "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/permissions"
 )
 
@@ -77,7 +71,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}, http.StatusOK)
 }
 
-func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
+func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	o.Incr("put_mpu_part")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
@@ -89,38 +83,23 @@ func (controller *PutObject) HandleCreateMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
 		return
 	}
-
 	// handle the upload itself
-	blob, err := upload.ReadBlob(o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, upload.ObjectBlockSize)
+	multiPart, err := o.Index.ReadMultiPartUpload(o.Repo.Id, uploadId)
 	if err != nil {
-		o.Log().WithError(err).Error("could not write request body to block adapter")
+		o.Log().WithError(err).Error("could not read  multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-
-	err = o.MultipartManager.UploadPart(o.Repo.Id, o.Path, uploadId, int(partNumber), &model.MultipartUploadPart{
-		Blocks:       blob.Blocks,
-		Checksum:     blob.Checksum,
-		CreationDate: time.Now(),
-		Size:         blob.Size,
-	})
-
+	byteSize := o.Request.ContentLength
+	ETag, err := o.BlockStore.UploadPart(o.Repo.StorageNamespace, multiPart.PhysicalAddress, byteSize, o.Request.Body, uploadId, partNumber)
 	if err != nil {
-		o.Log().WithError(err).Error("error writing mpu uploaded part")
+		o.Log().WithError(err).Error("part " + partNumberStr + " upload failed")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-
-	// must write the etag back
-	// TODO: validate the ETag sent in CompleteMultipartUpload matches the blob for the given part number
-	o.SetHeader("ETag", fmt.Sprintf("\"%s\"", blob.Checksum))
+	o.SetHeader("ETag", ETag)
 	o.ResponseWriter.WriteHeader(http.StatusOK)
-	o.Log().WithFields(logging.Fields{
-		"upload_id":   uploadId,
-		"part_number": partNumber,
-	}).Info("multipart upload part done")
 }
-
 func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
@@ -143,13 +122,13 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a multipart upload creation call
 	_, hasUploadId := query[QueryParamUploadId]
 	if hasUploadId {
-		controller.HandleCreateMultipartUpload(o)
+		controller.HandleUploadPart(o)
 		return
 	}
 
 	o.Incr("put_object")
 	// handle the upload itself
-	blob, err := upload.ReadBlob(o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, upload.ObjectBlockSize)
+	checksum, physicalAddress, size, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -157,35 +136,11 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// write metadata
-	writeTime := time.Now()
-	obj := &model.Object{
-		Blocks:   blob.Blocks,
-		Checksum: blob.Checksum,
-		Metadata: nil, // TODO: Read whatever metadata came from the request headers/params and add here
-		Size:     blob.Size,
-	}
-
-	p := pth.New(o.Path, model.EntryTypeObject)
-
-	entry := &model.Entry{
-		Name:         p.BaseName(),
-		Address:      ident.Hash(obj),
-		EntryType:    model.EntryTypeObject,
-		CreationDate: writeTime,
-		Size:         blob.Size,
-		Checksum:     blob.Checksum,
-	}
-	err = o.Index.WriteFile(o.Repo.Id, o.Ref, o.Path, entry, obj)
-	tookMeta := time.Since(writeTime)
-
-	if err != nil {
-		o.Log().WithError(err).Error("could not update metadata")
+	err = o.finishUpload(checksum, physicalAddress, size)
+	if err == nil {
+		o.SetHeader("ETag", httputil.ETag(checksum))
+		o.ResponseWriter.WriteHeader(http.StatusOK)
+	} else {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
 	}
-	o.Log().WithFields(logging.Fields{
-		"took": tookMeta,
-	}).Debug("metadata update complete")
-	o.SetHeader("ETag", httputil.ETag(obj.Checksum))
-	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

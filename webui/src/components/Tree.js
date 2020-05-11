@@ -147,9 +147,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
     if (entry.diff_type === 'REMOVED') {
         button = (<span>{buttonText}</span>);
     } else if (entry.path_type === 'TREE') {
-        button = (<Button variant="link" onClick={() => {
-            onNavigate(entry.path)
-        }}>{buttonText}</Button>)
+        button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }}>{buttonText}</Link>);
     } else {
         button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
