@@ -100,8 +100,8 @@ type Delete struct {
 }
 
 type Deleted struct {
-	DeleteMarker          bool   `xml:"DeleteMarker"`
-	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId"`
+	DeleteMarker          bool   `xml:"DeleteMarker,omitempty"`
+	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId,omitempty"`
 	Key                   string `xml:"Key"`
 	VersionId             string `xml:"versionId,omitempty"`
 }
@@ -114,6 +114,7 @@ type DeleteError struct {
 }
 
 type DeleteResult struct {
+	XMLName xml.Name      `xml:"http://s3.amazonaws.com/doc/2006-03-01/ DeleteResult"`
 	Deleted []Deleted     `xml:"Deleted"`
 	Error   []DeleteError `xml:"Error"`
 }

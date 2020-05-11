@@ -242,7 +242,7 @@ func init() {
 
 	branchDeleteCmd.Flags().BoolP("sure", "y", false, "do not ask for confirmation")
 
-	branchRevertCmd.Flags().StringP("commit", "c", "", "commit ID to revert branch to ")
-	branchRevertCmd.Flags().StringP("tree", "p", "", "path to tree to be reverted")
-	branchRevertCmd.Flags().StringP("object", "o", "", "path to object to be reverted")
+	branchRevertCmd.Flags().String("commit", "", "commit ID to revert branch to")
+	branchRevertCmd.Flags().String("tree", "", "path to tree to be reverted")
+	branchRevertCmd.Flags().String("object", "", "path to object to be reverted")
 }
