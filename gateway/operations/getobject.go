@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
@@ -63,53 +62,39 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	// range query
+	var expected int64
+	var data io.ReadCloser
+	var rng ghttp.HttpRange
+	rng.StartOffset = -1
+	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		rng, err := ghttp.ParseHTTPRange(rangeSpec, obj.Size)
+		rng, err = ghttp.ParseHTTPRange(rangeSpec, obj.Size)
 		if err != nil {
-			o.Log().WithError(err).Error("failed to parse spec")
-			return
-		}
-		//ranger, err := NewObjectRanger(rangeSpec, o.Repo.StorageNamespace, obj, o.BlockStore, o.Log())
-		data, err := o.BlockStore.GetRange(o.Repo.StorageNamespace, obj.PhysicalAddress, rng.StartOffset, rng.EndOffset)
-		if err == nil {
-			// range query response
-			expected := rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-			o.SetHeader("Content-Range",
-				fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, obj.Size))
-			o.SetHeader("Content-Length",
-				fmt.Sprintf("%d", expected))
-			o.ResponseWriter.WriteHeader(http.StatusOK)
-			n, err := io.Copy(o.ResponseWriter, data)
-			if err != nil {
-				o.Log().WithError(err).Error("could not copy range to response")
-				return
-			}
-			l := o.Log().WithFields(logging.Fields{
-				"range":   rng,
-				"written": n,
-			})
-			if n != expected {
-				l.WithField("expected", expected).Error("got object range - didn't write the correct amount of bytes!?!!")
-			} else {
-				l.Info("read the byte range requested")
-			}
-			return
+			o.Log().WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}
 	}
-
-	// assemble a response body (range-less query)
-	o.SetHeader("Content-Length", fmt.Sprintf("%d", obj.Size))
-	data, err := o.BlockStore.Get(o.Repo.StorageNamespace, obj.PhysicalAddress)
+	if rangeSpec == "" || err != nil {
+		// assemble a response body (range-less query)
+		expected = obj.Size
+		data, err = o.BlockStore.Get(o.Repo.StorageNamespace, obj.PhysicalAddress)
+	} else {
+		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
+		data, err = o.BlockStore.GetRange(o.Repo.StorageNamespace, obj.PhysicalAddress, rng.StartOffset, rng.EndOffset)
+	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
-	n, err := io.Copy(o.ResponseWriter, data)
+	defer func() {
+		_ = data.Close()
+	}()
+	o.SetHeader("Content-Length", fmt.Sprintf("%d", expected))
+	if rng.StartOffset != -1 {
+		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, obj.Size))
+	}
+	_, err = io.Copy(o.ResponseWriter, data)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write response body for object")
-	}
-	if n != obj.Size {
-		o.Log().Warnf("expected %d bytes, got %d bytes", obj.Size, n)
 	}
 }
