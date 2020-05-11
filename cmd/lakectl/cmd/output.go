@@ -147,7 +147,8 @@ func DieErr(err error) {
 	apiError, isApiError := err.(APIError)
 	if isApiError {
 		errData.Error = apiError.GetPayload().Message
-	} else {
+	}
+	if errData.Error == "" {
 		errData.Error = err.Error()
 	}
 	WriteTo(DeathMessage, errData, os.Stderr)
