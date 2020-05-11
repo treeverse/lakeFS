@@ -241,8 +241,7 @@ func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPat
 		recStr := string(recByte)
 		playStr = normalizeResponse(playStr, tagRemoveList)
 		recStr = normalizeResponse(recStr, tagRemoveList)
-		res := recStr == playStr
-		return res
+		return recStr == playStr
 	} else {
 		f1, err1 := os.Open(playbackFileName)
 		defer f1.Close()
