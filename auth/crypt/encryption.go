@@ -16,16 +16,21 @@ const (
 )
 
 type SecretStore interface {
+	SharedSecret() []byte
 	Encrypt(data []byte) ([]byte, error)
 	Decrypt(encrypted []byte) ([]byte, error)
 }
 
 type NaclSecretStore struct {
-	secret string
+	secret []byte
 }
 
-func NewSecretStore(secret string) *NaclSecretStore {
+func NewSecretStore(secret []byte) *NaclSecretStore {
 	return &NaclSecretStore{secret: secret}
+}
+
+func (a *NaclSecretStore) SharedSecret() []byte {
+	return a.secret
 }
 
 func (a *NaclSecretStore) kdf(storedSalt []byte) (key [KeySizeBytes]byte, salt [KeySaltBytes]byte, err error) {
@@ -36,7 +41,7 @@ func (a *NaclSecretStore) kdf(storedSalt []byte) (key [KeySizeBytes]byte, salt [
 	}
 	// scrypt's N, r & p, benchmarked to run at about 1ms, since it's in the critical path.
 	// fair trade-off for a high throughput low latency system
-	keySlice, err := scrypt.Key([]byte(a.secret), salt[:], 512, 8, 1, 32)
+	keySlice, err := scrypt.Key(a.secret, salt[:], 512, 8, 1, 32)
 	if err != nil {
 		return
 	}

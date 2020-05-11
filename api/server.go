@@ -2,13 +2,14 @@ package api
 
 import (
 	"context"
+	"fmt"
 	"net/http"
-	"strings"
-	"time"
+	"strconv"
+
+	"gopkg.in/dgrijalva/jwt-go.v3"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
-	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
@@ -24,8 +25,9 @@ import (
 )
 
 const (
-	RequestIdHeaderName = "X-Request-ID"
-	LoggerServiceName   = "rest_api"
+	RequestIdHeaderName        = "X-Request-ID"
+	LoggerServiceName          = "rest_api"
+	JWTAuthorizationHeaderName = "X-JWT-Authorization"
 )
 
 var (
@@ -59,23 +61,56 @@ func NewServer(
 	}
 }
 
-func (s *Server) DownloadToken() func(string) (*models.User, error) {
-	return func(token string) (*models.User, error) {
-		return ValidateToken(s.authService, token, time.Now())
+// JwtTokenAuth decodes, validates and authenticates a user that exists
+// in the X-JWT-Authorization header.
+// This header either exists natively, or is set using a token
+func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
+	logger := logging.Default().WithField("auth", "jwt")
+	return func(tokenString string) (*models.User, error) {
+		claims := &jwt.StandardClaims{}
+		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+			}
+
+			return []byte(s.authService.SecretStore().SharedSecret()), nil
+		})
+		if err != nil {
+			return nil, ErrAuthenticationFailed
+		}
+		claims, ok := token.Claims.(*jwt.StandardClaims)
+		if !ok || !token.Valid {
+			return nil, ErrAuthenticationFailed
+		}
+		uid := claims.Subject
+		userId, err := strconv.Atoi(uid)
+		if err != nil {
+			return nil, ErrAuthenticationFailed
+		}
+		userData, err := s.authService.GetUser(userId)
+		if err != nil {
+			logger.WithField("user_id", uid).Warn("could not find user for key pair")
+			return nil, ErrAuthenticationFailed
+		}
+		return &models.User{
+			Email:    userData.Email,
+			FullName: userData.FullName,
+			ID:       int64(userData.Id),
+		}, nil
 	}
 }
 
 // BasicAuth returns a function that hooks into Swagger's basic Auth provider
 // it uses the Auth.Service provided to ensure credentials are valid
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
-	logger := logging.Default().WithField("Auth", "basic")
+	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetAPICredentials(accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
 			return nil, ErrAuthenticationFailed
 		}
-		if !strings.EqualFold(secretKey, credentials.AccessSecretKey) {
+		if secretKey != credentials.AccessSecretKey {
 			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
@@ -88,7 +123,9 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			ID: int64(userData.Id),
+			Email:    userData.Email,
+			FullName: userData.FullName,
+			ID:       int64(userData.Id),
 		}, nil
 	}
 }
@@ -96,13 +133,7 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
 	// api handler
-	mux.HandleFunc("/api/", func(w http.ResponseWriter, r *http.Request) {
-		if strings.Contains(r.Header.Get("User-Agent"), "Mozilla") {
-			// this is a browser, pass a response writer that ignores www-authenticate
-			w = NonAuthenticatingResponseWriter{w}
-		}
-		api.ServeHTTP(w, r)
-	})
+	mux.Handle("/api/", api)
 	// swagger
 	mux.Handle("/swagger.json", api)
 	// setup system
@@ -125,9 +156,8 @@ func (s *Server) setupServer() error {
 	api.Logger = func(msg string, ctx ...interface{}) {
 		logging.Default().WithField("logger", "swagger").Debugf(msg, ctx)
 	}
-
 	api.BasicAuthAuth = s.BasicAuth()
-	api.DownloadTokenAuth = s.DownloadToken()
+	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
 	NewHandler(s.meta, s.authService, s.blockStore, s.stats).Configure(api)
@@ -136,21 +166,17 @@ func (s *Server) setupServer() error {
 	s.apiServer = restapi.NewServer(api)
 	s.apiServer.ConfigureAPI()
 
-	// serve embedded frontend filesystem
-	statikFS, err := fs.NewWithNamespace("webui")
-	if err != nil {
-		return err
-	}
-
 	s.setupHandler(
 		// api handler
 		httputil.LoggingMiddleWare(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			s.apiServer.GetHandler(),
+			cookieToAPIHeader(s.apiServer.GetHandler()),
 		),
+
 		// ui handler
-		HandlerWithDefault(statikFS, http.FileServer(statikFS), "/"),
+		UIHandler(s.authService),
+
 		// setup handler
 		httputil.LoggingMiddleWare(
 			RequestIdHeaderName,
@@ -160,6 +186,20 @@ func (s *Server) setupServer() error {
 	)
 
 	return nil
+}
+
+func cookieToAPIHeader(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// read cookie (no need to validate, this will be done in the API
+		cookie, err := r.Cookie(JWTCookieName)
+		if err != nil {
+			next.ServeHTTP(w, r)
+			return
+		}
+		// header found
+		r.Header.Set(JWTAuthorizationHeaderName, cookie.Value)
+		next.ServeHTTP(w, r)
+	})
 }
 
 // Serve starts an HTTP server at the given host and port

@@ -38,6 +38,8 @@ type AuthorizationResponse struct {
 }
 
 type Service interface {
+	SecretStore() crypt.SecretStore
+
 	CreateUser(user *model.User) error
 	CreateGroup(group *model.Group) error
 	CreateRole(group *model.Role) error
@@ -73,6 +75,10 @@ func genAccessKeyId() string {
 
 func genAccessSecretKey() string {
 	return Base64StringGenerator(30)
+}
+
+func (s *DBAuthService) SecretStore() crypt.SecretStore {
+	return s.secretStore
 }
 
 func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
