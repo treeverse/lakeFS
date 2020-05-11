@@ -94,7 +94,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 		// dfs it
 		return m.walk(tx, prefix, from, amount, &col{data: make([]*model.Entry, 0)}, 0)
 	}
-	pfx := path.New(prefix, model.EntryTypeTree).SplitParts()
+	pfx := path.New(prefix, model.EntryTypeObject).SplitParts()
 	subtreeAddr := m.root
 	subtreePath := ""
 	for i, part := range pfx {
