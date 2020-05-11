@@ -22,7 +22,7 @@ func TestSecretStore_Encrypt(t *testing.T) {
 
 	for i, cas := range cases {
 		t.Run(fmt.Sprintf("encrypt_%d", i), func(t *testing.T) {
-			aes := crypt.NewSecretStore(cas.Secret)
+			aes := crypt.NewSecretStore([]byte(cas.Secret))
 			encrypted, err := aes.Encrypt(cas.Data)
 			if err != nil {
 				t.Fatal(err)
@@ -44,7 +44,7 @@ func TestSecretStore_Encrypt(t *testing.T) {
 func BenchmarkSecretStore_Encrypt(b *testing.B) {
 	secret := "foo bar"
 	data := []byte("some value, it doesn't really matter what")
-	aes := crypt.NewSecretStore(secret)
+	aes := crypt.NewSecretStore([]byte(secret))
 	encrypted, err := aes.Encrypt(data)
 	if err != nil {
 		b.Fatal(err)

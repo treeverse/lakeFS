@@ -16,20 +16,6 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 import './App.css';
 
 
-let NavUserInfo = ({ user, logout }) => {
-    if (!!user) {
-        return (
-            <Navbar.Collapse className="justify-content-end">
-                <NavDropdown title={user.full_name} className="navbar-username" alignRight>
-                    <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
-                </NavDropdown>
-            </Navbar.Collapse>
-        );
-    } else {
-        return <span/>;
-    }
-}
-
 const NavUserInfo = connect(
     ({ auth }) => ({ user: auth.user }),
     ( dispatch ) => ({ logout: () => { dispatch(logout()); } }),
@@ -37,10 +23,9 @@ const NavUserInfo = connect(
     if (!user) {
         return null;
     }
-    const userTitle = user.full_name || 'ID:'+ user.id;
     return (
         <Navbar.Collapse className="justify-content-end">
-            <NavDropdown title={userTitle} id="basic-nav-dropdown" alignRight>
+            <NavDropdown title={user.full_name} className="navbar-username" alignRight>
                 <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
             </NavDropdown>
         </Navbar.Collapse>
