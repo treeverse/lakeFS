@@ -93,15 +93,17 @@ func (l *Adapter) Get(_ string, identifier string) (reader io.ReadCloser, err er
 
 func (l *Adapter) GetRange(_ string, identifier string, start int64, end int64) (io.ReadCloser, error) {
 	path := l.getPath(identifier)
-	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
+	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
 	}
-	_, err = f.Seek(start, 0)
-	if err != nil {
-		return nil, err
-	}
-	return f, nil
+	return &struct {
+		io.Reader
+		io.Closer
+	}{
+		Reader: io.NewSectionReader(f, start, end-start+1),
+		Closer: f,
+	}, nil
 }
 
 func isDirectoryWritable(pth string) bool {
