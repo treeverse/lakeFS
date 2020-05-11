@@ -7,8 +7,7 @@ import {
 
 const hydrateUser = () => {
     if (window.localStorage['user'] !== undefined) {
-        let user = JSON.parse(window.localStorage['user']);
-        return user;
+        return JSON.parse(window.localStorage['user']);
     }
     return null;
 };

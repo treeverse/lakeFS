@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/treeverse/lakefs/block/local"
 	"time"
 
 	"github.com/google/uuid"
@@ -130,7 +131,7 @@ func (c *Config) buildLocalAdapter() block.Adapter {
 		panic(fmt.Errorf("could not parse metadata location URI: %s\n", err))
 	}
 
-	adapter, err := block.NewLocalFSAdapter(location)
+	adapter, err := local.NewAdapter(location)
 	if err != nil {
 		panic(fmt.Errorf("got error opening a local block adapter with path %s: %s", location, err))
 	}
