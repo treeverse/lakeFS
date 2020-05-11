@@ -104,6 +104,7 @@ func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gat
 		return defaultApiErr.ToAPIErr()
 	}
 }
+
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
@@ -123,9 +124,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	authContext, err := authenticator.Parse()
 	if err != nil {
-		o.Log().WithError(err).WithFields(logging.Fields{
-			"key": authContext.GetAccessKeyId(),
-		}).Warn("error parsing signature")
+		o.Log().WithError(err).Warn("failed to parse signature")
 		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 		return nil
 	}
