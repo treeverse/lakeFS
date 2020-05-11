@@ -100,12 +100,12 @@ func (o *DBRepoOperations) ListWorkspaceAsDiff(branch string) (model.Differences
 	var entries model.Differences
 	err := o.tx.Select(
 		&entries,
-		fmt.Sprintf(`SELECT diff_path AS path, CASE object_path WHEN diff_path THEN 'object' ELSE 'tree' END AS entry_type,%d as diff_direction,
+		fmt.Sprintf(`SELECT path, entry_type, %d as diff_direction,
 								CASE diff_type
 									WHEN 'ADDED' THEN %d
 									WHEN 'DELETED' THEN %d
 								 	WHEN 'CHANGED' THEN %d END AS diff_type
-								FROM ws_diff_fn($1, $2)`,
+								FROM ws_diff_fn_improved($1, $2)`,
 			model.DifferenceDirectionRight, model.DifferenceTypeAdded, model.DifferenceTypeRemoved, model.DifferenceTypeChanged),
 		o.repoId, branch)
 	return entries, err

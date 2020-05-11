@@ -133,36 +133,72 @@ WITH RECURSIVE cte AS (
 SELECT cte.* FROM cte
 $body$ language sql;
 
-CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar)
+CREATE OR REPLACE FUNCTION combined_ws_fn(repository_id varchar, branch_id varchar, only_diff bool default false)
     RETURNS TABLE (repository_id varchar, branch_id varchar, parent_path varchar, path varchar,
                    name varchar, entry_type varchar, size bigint, creation_date timestamp with time zone, checksum varchar, address varchar, diff_type varchar, tombstone bool) AS
 $BODY$
 SELECT $1,
        $2,
-       COALESCE(wse.parent_path, ewp.parent_path) AS parent_path,
-       COALESCE(wse.path, ewp.parent_path || ewp.name) AS path,
-       COALESCE(wse.entry_name, ewp.name) AS name,
-       COALESCE(wse.entry_type, ewp.type) AS entry_type,
-       COALESCE(wse.entry_size, ewp.size) AS size,
-       COALESCE(wse.entry_creation_date, ewp.creation_date) AS creation_date,
-       COALESCE(wse.entry_checksum, ewp.checksum) AS checksum,
-       COALESCE(wse.entry_address, ewp.address) AS address,
-       CASE WHEN ewp.name IS NULL THEN 'ADDED'
+       COALESCE(wse.parent_path, tfr.parent_path)           AS parent_path,
+       COALESCE(wse.path, tfr.parent_path || tfr.name)      AS path,
+       COALESCE(wse.entry_name, tfr.name)                   AS name,
+       COALESCE(wse.entry_type, tfr.type)                   AS entry_type,
+       COALESCE(wse.entry_size, tfr.size)                   AS size,
+       COALESCE(wse.entry_creation_date, tfr.creation_date) AS creation_date,
+       COALESCE(wse.entry_checksum, tfr.checksum)           AS checksum,
+       COALESCE(wse.entry_address, tfr.address)             AS address,
+       CASE WHEN tfr.name IS NULL THEN 'ADDED'
             WHEN wse.tombstone THEN 'DELETED'
-            WHEN wse.entry_checksum <> ewp.checksum AND wse.entry_type = 'object' THEN 'CHANGED'
-           END AS diff_type,
+            WHEN wse.entry_checksum <> tfr.checksum AND wse.entry_type = 'object' THEN 'CHANGED'
+       END AS diff_type,
        tombstone
-FROM (SELECT * FROM workspace_entries WHERE workspace_entries.branch_id = $2) wse
-         FULL OUTER JOIN tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND id = $2)) ewp
-                         ON wse.parent_path = ewp.parent_path AND wse.entry_name = ewp.name AND wse.repository_id = ewp.repository_id
+FROM (SELECT * FROM workspace_entries WHERE workspace_entries.repository_id = $1 AND workspace_entries.branch_id = $2) wse
+         FULL JOIN tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND id = $2)) tfr
+                         ON wse.parent_path = tfr.parent_path AND wse.entry_name = tfr.name AND wse.repository_id = tfr.repository_id
+WHERE (NOT $3 OR wse.path IS NOT NULL)
 $BODY$ language sql;
 
+-- CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar)
+--     RETURNS TABLE (repository_id varchar, branch_id varchar, object_path varchar, diff_type varchar, diff_path varchar) AS
+-- $BODY$
+-- SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
+--     CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED'
+--             THEN (SELECT min(path) from combined_ws_fn($1, $2) cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
+--         ELSE path END AS diff_path
+-- FROM combined_ws_fn($1, $2) cw WHERE entry_type='object' AND diff_type IS NOT NULL
+-- $BODY$ language plpgsql;
+--
+-- CREATE OR REPLACE FUNCTION tree_dif(repository_id varchar, branch_id varchar)
+-- RETURNS TABLE (r varchar) AS
+-- $BODY$recur
+-- WITH RECURSIVE cte AS(
+--     SELECT 0 AS depth, * FROM combined_ws_fn($1, $2, 0)
+--     UNION ALL
+--     SELECT cte_1.depth, cws.* FROM combined_ws_fn($1, $2, depth + 1) cws JOIN cte cte_1 ON cte_1.path = cws.parent_path
+-- )
+-- SELECT * FROM cte
+--$BODY$ language sql;
+
 CREATE OR REPLACE FUNCTION ws_diff_fn(repository_id varchar, branch_id varchar)
-    RETURNS TABLE (repository_id varchar, branch_id varchar, object_path varchar, diff_type varchar, diff_path varchar) AS
+    RETURNS TABLE (repository_id varchar, branch_id varchar, parent_path varchar, path varchar,
+                   name varchar, entry_type varchar, size bigint, creation_date timestamp with time zone, checksum varchar, address varchar, diff_type varchar, tombstone bool) AS
 $BODY$
-SELECT cw.repository_id, cw.branch_id, path as object_path, diff_type,
-    CASE WHEN diff_type = 'ADDED' OR diff_type = 'DELETED'
-            THEN (SELECT min(path) from combined_ws_fn($1, $2) cw2 where cw.path like cw2.path || '%' and cw2.diff_type = cw.diff_type)
-        ELSE path END AS diff_path
-FROM combined_ws_fn($1, $2) cw WHERE entry_type='object' AND diff_type IS NOT NULL
+SELECT wse.repository_id, wse.branch_id, wse.parent_path AS parent_path, wse.path, wse.entry_name, wse.entry_type, wse.entry_size, wse.entry_creation_date,
+       wse.entry_checksum, wse.entry_address,
+       CASE WHEN tfr.name IS NULL THEN 'ADDED'
+            WHEN wse.tombstone THEN 'DELETED'
+            WHEN wse.entry_checksum <> tfr.checksum AND wse.entry_type = 'object' THEN 'CHANGED'
+       END AS diff_type,
+       tombstone
+FROM workspace_entries wse
+         LEFT JOIN tree_from_root($1, (SELECT commit_root FROM branches WHERE branches.repository_id = $1 AND id = $2)) tfr
+                         ON wse.parent_path = tfr.parent_path AND wse.entry_name = tfr.name AND wse.repository_id = tfr.repository_id
+         WHERE wse.repository_id = $1 AND wse.branch_id = $2
 $BODY$ language sql;
+
+CREATE OR REPLACE FUNCTION ws_diff_fn_improved(repository_id varchar, branch_id varchar)
+RETURNS TABLE(path varchar, diff_type varchar,  entry_type varchar) AS
+    $BODY$
+        SELECT d1.path, d1.diff_type, d1.entry_type FROM combined_ws_fn($1, $2, true) d1 JOIN combined_ws_fn($1, $2, true) d2
+            ON d1.parent_path = d2.path AND (d1.diff_type = 'CHANGED' OR d2.diff_type IS NULL OR d2.diff_type <> d1.diff_type)
+    $BODY$ language sql;
