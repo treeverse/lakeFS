@@ -2,12 +2,17 @@ package testutil
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/treeverse/lakefs/block/local"
 
 	"github.com/jmoiron/sqlx"
 
@@ -18,7 +23,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/block"
+	lakefsS3 "github.com/treeverse/lakefs/block/s3"
 
+	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 )
@@ -27,6 +34,7 @@ const (
 	TimeFormat                = "Jan 2 15:04:05 2006 -0700"
 	FixtureRoot               = "lakeFsFixtures"
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
+	S3BlockAdapterEnvVar      = "USE_S3_BLOCK_ADAPTER"
 )
 
 func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
@@ -34,10 +42,10 @@ func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo)
 	createIndex := index.NewDBIndex(conn, index.WithTimeGenerator(func() time.Time {
 		return repoCreateDate
 	}))
-	Must(t, createIndex.CreateRepo("example", "s3://example", "master"))
+	Must(t, createIndex.CreateRepo("example", "s3://example-tzahi", "master"))
 	return index.NewDBIndex(conn), &model.Repo{
 		Id:               "example",
-		StorageNamespace: "s3://example",
+		StorageNamespace: " example-tzahi",
 		CreationDate:     repoCreateDate,
 		DefaultBranch:    "master",
 	}
@@ -123,6 +131,7 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 
 	database := db.NewDatabase(conn)
 
+	// apply DDL
 	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec("CREATE SCHEMA " + generatedSchema)
 		if err != nil {
@@ -138,25 +147,40 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 		t.Fatalf("could not create schema: %v", err)
 	}
 
+	// return DB
 	return database
 }
 
-func GetBlockAdapter(t *testing.T) block.Adapter {
-	dir, err := ioutil.TempDir("", "blocks-")
-	if err != nil {
-		t.Fatal(err)
-	}
-	adapter, err := block.NewLocalFSAdapter(dir)
-	if err != nil {
-		t.Fatal(err)
-	}
-	t.Cleanup(func() {
-		err := os.RemoveAll(dir)
+func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Adapter {
+	_, useS3 := os.LookupEnv(S3BlockAdapterEnvVar)
+	isLocal := !useS3
+	if isLocal {
+		dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
+		err := os.MkdirAll(dir, 0777)
 		if err != nil {
 			t.Fatal(err)
 		}
-	})
-	return adapter
+		adapter, err := local.NewAdapter(dir, local.WithTranslator(translator))
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() {
+			err := os.RemoveAll(dir)
+			if err != nil {
+				t.Fatal(err)
+			}
+		})
+		return adapter
+	} else {
+		cfg := &aws.Config{
+			Region: aws.String("us-east-1"),
+		}
+		cfg.Credentials = credentials.NewSharedCredentials("", "default")
+		sess := session.Must(session.NewSession(cfg))
+		svc := s3.New(sess)
+		adapter := lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
+		return adapter
+	}
 }
 
 func Must(t *testing.T, err error) {

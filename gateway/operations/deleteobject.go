@@ -16,17 +16,15 @@ func (controller *DeleteObject) Action(repoId, refId, path string) permissions.A
 }
 
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
+	o.Incr("abort_mpu")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
-
-	o.Incr("abort_mpu")
-	err := o.MultipartManager.Abort(o.Repo.Id, o.Path, uploadId)
+	err := o.BlockStore.AbortMultiPartUpload(o.Repo.StorageNamespace, o.Path, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
 	}
-
 	// done.
 	o.ResponseWriter.WriteHeader(http.StatusNoContent)
 }
