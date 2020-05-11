@@ -1,11 +1,10 @@
 package merkle
 
 import (
-	"github.com/treeverse/lakefs/logging"
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/index/model"
 )
@@ -63,8 +62,7 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 				nextChange++
 				// changed entry comes first
 				if currChange.Tombstone {
-					logger.Error("trying to remove an entry that does not exist")
-					return nil, timeStamp, db.ErrNotFound
+					logger.WithField("name", currChange.GetName()).Debug("trying to remove an entry that does not exist")
 				} else {
 					merged = append(merged, currChange.Entry())
 				}
@@ -74,10 +72,10 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 			currChange := changes[nextChange]
 			timeStamp = max(timeStamp, *currChange.EntryCreationDate)
 			if currChange.Tombstone {
-				logger.Error("trying to remove an entry that does not exist")
-				return nil, timeStamp, db.ErrNotFound
+				logger.WithField("name", currChange.GetName()).Debug("trying to remove an entry that does not exist")
+			} else {
+				merged = append(merged, currChange.Entry())
 			}
-			merged = append(merged, currChange.Entry())
 			nextChange++
 		} else if nextCurrent < len(current) {
 			// only current entries left
