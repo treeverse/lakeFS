@@ -154,12 +154,12 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 	}
 }
 
-func (c *Config) GetAuthEncryptionSecret() string {
+func (c *Config) GetAuthEncryptionSecret() []byte {
 	secret := viper.GetString("auth.encrypt.secret_key")
 	if len(secret) == 0 {
 		panic(fmt.Errorf("auth.encrypt.secret_key cannot be empty. Please set it to a unique, randomly generated value and store it somewhere safe"))
 	}
-	return secret
+	return []byte(secret)
 }
 
 func (c *Config) GetS3GatewayRegion() string {

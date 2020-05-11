@@ -343,4 +343,3 @@ export const objects = new Objects();
 export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
-export const auth = new Authorization();
