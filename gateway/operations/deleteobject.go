@@ -41,7 +41,7 @@ func (controller *DeleteObject) Handle(o *PathOperation) {
 	o.Incr("delete_object")
 	err := o.Index.DeleteObject(o.Repo.Id, o.Ref, o.Path)
 	if err != nil {
-		o.Log().WithError(err).Error("could not delete key")
+		o.Log().WithError(err).Debug("could not delete key")
 		if !errors.Is(err, db.ErrNotFound) {
 			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 			return
