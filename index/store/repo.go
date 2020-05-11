@@ -241,7 +241,7 @@ func (o *DBRepoOperations) ListTreeWithPrefix(rootAddr, path, after string, amou
 }
 
 func (o *DBRepoOperations) ListTree(addr, after string, results int) ([]*model.Entry, bool, error) {
-	return o.ListTreeWithPrefix(addr, "", after, results, true)
+	return o.ListTreeWithPrefix(addr, "", after, results, false)
 }
 
 func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {

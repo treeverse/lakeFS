@@ -1,6 +1,7 @@
 package index_test
 
 import (
+	"errors"
 	"log"
 	"os"
 	"testing"
@@ -10,10 +11,10 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index"
+	indexerrors "github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/testutil"
-	"github.com/treeverse/lakefs/index/errors"
 )
 
 const testBranch = "testBranch"
@@ -235,7 +236,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			},
 			nil,
 			nil,
-			errors.ErrRevertNonExistingPath,
+			indexerrors.ErrRevertNonExistingPath,
 		},
 		{
 			"revert non existing tree",
@@ -245,7 +246,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 			},
 			nil,
 			nil,
-			errors.ErrRevertNonExistingPath,
+			indexerrors.ErrRevertNonExistingPath,
 		},
 	}
 
