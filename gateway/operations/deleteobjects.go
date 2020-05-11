@@ -1,10 +1,13 @@
 package operations
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 
-	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/db"
+
+	gerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/permissions"
@@ -21,7 +24,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 	req := &serde.Delete{}
 	err := o.DecodeXMLBody(req)
 	if err != nil {
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrBadRequest))
+		o.EncodeError(gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 	}
 	// delete all the files and collect responses
 	errs := make([]serde.DeleteError, 0)
@@ -37,7 +40,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			continue
 		}
 		err = o.Index.DeleteObject(o.Repo.Id, resolvedPath.Ref, resolvedPath.Path)
-		if err != nil {
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",
 				Key:     obj.Key,
