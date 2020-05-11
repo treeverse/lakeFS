@@ -154,8 +154,8 @@ func (l *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	l.removePartFiles(files)
 	return nil
 }
-func (l *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error) {
-	ETag := computeETag(MultipartList.Parts) + "-" + strconv.Itoa(len(MultipartList.Parts))
+func (l *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	ETag := computeETag(MultipartList.Part) + "-" + strconv.Itoa(len(MultipartList.Part))
 	partFiles, err := l.getPartFiles(uploadId)
 	if err != nil {
 		fmt.Errorf("did not find part files for: " + uploadId)
