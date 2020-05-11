@@ -1093,8 +1093,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (model.D
 				}
 			} else {
 				e = new(model.Entry)
-				p := strings.Split(dif.Path, "/")
-				e.Name = p[len(p)-1]
+				e.Name = pth.New(dif.Path, dif.PathType).BaseName()
 				e.EntryType = dif.PathType
 			}
 			w := new(model.WorkspaceEntry)
@@ -1105,7 +1104,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (model.D
 			w.EntryCreationDate = &e.CreationDate
 			w.EntrySize = &e.Size
 			w.Path = dif.Path
-			w.Tombstone = (dif.Type == model.DifferenceTypeRemoved)
+			w.Tombstone = dif.Type == model.DifferenceTypeRemoved
 			wsEntries = append(wsEntries, w)
 		}
 

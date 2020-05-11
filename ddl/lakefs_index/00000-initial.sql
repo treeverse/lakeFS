@@ -149,7 +149,7 @@ SELECT $1,
        COALESCE(wse.entry_address, tfr.address)             AS address,
        CASE WHEN tfr.name IS NULL THEN 'ADDED'
             WHEN wse.tombstone THEN 'DELETED'
-            ELSE 'CHANGED'
+            WHEN wse.path IS NOT NULL THEN 'CHANGED'
        END AS diff_type,
        tombstone
 FROM (SELECT * FROM workspace_entries WHERE workspace_entries.repository_id = $1 AND workspace_entries.branch_id = $2) wse
@@ -163,5 +163,5 @@ CREATE OR REPLACE FUNCTION ws_diff_fn_improved(repository_id varchar, branch_id 
 RETURNS TABLE(path varchar, diff_type varchar,  entry_type varchar) AS
     $BODY$
         SELECT d1.path, d1.diff_type, d1.entry_type FROM combined_ws_fn($1, $2, true) d1 LEFT JOIN combined_ws_fn($1, $2, true) d2
-            ON d1.parent_path = d2.path AND (d1.diff_type = 'CHANGED' OR (d2.diff_type IS NULL AND d1.diff_type <> 'NULL') OR d2.diff_type <> d1.diff_type)
+            ON d1.parent_path = d2.path AND (d1.diff_type = 'CHANGED' OR (d2.diff_type IS NULL AND d1.diff_type IS NOT NULL) OR d2.diff_type <> d1.diff_type)
     $BODY$ language sql;

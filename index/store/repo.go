@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-	"github.com/huandu/go-sqlbuilder"
 	"strings"
 
 	"github.com/treeverse/lakefs/db"
@@ -195,7 +194,6 @@ func (o *DBRepoOperations) ReadCommit(addr string) (*model.Commit, error) {
 }
 
 func (o *DBRepoOperations) ListTreeWithPrefix(rootAddr, path, after string, amount int, descend bool) ([]*model.Entry, bool, error) {
-	sqlbuilder.NewSelectBuilder()
 	var entries []*model.Entry
 	var additionalCondition, limitStatement string
 	argIdx := 3
