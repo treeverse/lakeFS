@@ -70,10 +70,12 @@ func UIHandler(authService auth.Service) http.Handler {
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
-			Name:    JWTCookieName,
-			Value:   tokenString,
-			Path:    "/",
-			Expires: expires,
+			Name:     JWTCookieName,
+			Value:    tokenString,
+			Path:     "/",
+			Expires:  expires,
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
 		})
 	})
 	mux.HandleFunc("/auth/logout", func(w http.ResponseWriter, r *http.Request) {
@@ -82,9 +84,11 @@ func UIHandler(authService auth.Service) http.Handler {
 			return
 		}
 		http.SetCookie(w, &http.Cookie{
-			Name:  JWTCookieName,
-			Value: "",
-			Path:  "/",
+			Name:     JWTCookieName,
+			Value:    "",
+			Path:     "/",
+			HttpOnly: true,
+			SameSite: http.SameSiteStrictMode,
 		})
 	})
 	mux.Handle("/", HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/"))
