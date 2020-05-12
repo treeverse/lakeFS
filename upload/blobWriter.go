@@ -14,7 +14,7 @@ type DedupHandler interface {
 
 func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64) (string, string, int64, error) {
 	// handle the upload itself
-	hashReader := block.NewHashingReader(body, block.MD5, block.SHA256)
+	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
 	UUIDbytes := ([16]byte(uuid.New()))
 	objName := hex.EncodeToString(UUIDbytes[:])
 	err := adapter.Put(bucketName, objName, contentLength, hashReader)
