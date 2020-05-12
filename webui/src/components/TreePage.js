@@ -8,7 +8,7 @@ import Badge from "react-bootstrap/Badge";
 
 import Octicon, {GitCommit, Plus, X} from "@primer/octicons-react";
 
-import {deleteObject, deleteObjectDone, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
+import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
@@ -215,42 +215,20 @@ const CommitButton = connect(
 });
 
 
-const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteObjectDone, deleteState }) => {
+const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState}) => {
     const history = useHistory();
     const location = useLocation();
 
     useEffect(() => {
         listTree(repo.id, refId.id, path);
-    }, [repo.id, refId.id, path, listTree, uploadState.done]);
-
-    useEffect(() => {
-        if (deleteState.done) {
-            listTree(repo.id, refId.id, path);
-            deleteObjectDone();
-        }
-    }, [repo.id, refId.id, path, listTree, deleteObjectDone, deleteState.done]);
-
-    useEffect(() => {
         if (refId.type === 'branch') {
             diff(repo.id, refId.id, refId.id);
         } else {
             resetDiff();
         }
-    },[repo.id, refId, listTree, diff, resetDiff]);
+    }, [repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done]);
 
-    let paginator = (<span/>);
-    if (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more) {
-        paginator = (
-            <p className="tree-paginator">
-                <Button variant="outline-primary" onClick={() => {
-                    listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset);
-                }}>
-                    Load More
-                </Button>
-            </p>
-        );
-    }
-
+    const paginator = (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const changes = diffResults.payload ? diffResults.payload.results.length : 0;
     return (
         <div className="mt-3">
@@ -296,17 +274,26 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                 list={list}
                 path={path}/>
 
-            {paginator}
+            {paginator &&
+            <p className="tree-paginator">
+                <Button variant="outline-primary" onClick={() => {
+                    listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset);
+                }}>
+                    Load More
+                </Button>
+            </p>
+            }
         </div>
     );
 };
 
 export default connect(
-    ({ objects, refs }) => ({
+    ({ objects, refs, commits }) => ({
         list: objects.list,
         diffResults: refs.diff,
         uploadState: objects.upload,
         deleteState: objects.delete,
+        commitState: commits.commit,
     }),
-    ({ listTree, listTreePaginate, diff, resetDiff, deleteObject, deleteObjectDone })
+    ({ listTree, listTreePaginate, diff, resetDiff, deleteObject })
 )(TreePage);
