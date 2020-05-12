@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	MD5 = iota
-	SHA256
+	HashFunctionMD5 = iota
+	HashFunctionSHA256
 )
 
 type HashingReader struct {
@@ -38,9 +38,9 @@ func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
 	s := new(HashingReader)
 	s.originalReader = body
 	for hashType := range hashTypes {
-		if hashType == MD5 {
+		if hashType == HashFunctionMD5 {
 			s.Md5 = md5.New()
-		} else if hashType == SHA256 {
+		} else if hashType == HashFunctionSHA256 {
 			s.Sha256 = sha256.New()
 		} else {
 			panic("wrong hash type number " + strconv.Itoa(hashType))

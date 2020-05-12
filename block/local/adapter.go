@@ -140,7 +140,7 @@ func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 }
 
 func (l *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
-	md5Read := block.NewHashingReader(reader, block.MD5)
+	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
 	err := l.Put("", fName, -1, md5Read)
 	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
