@@ -182,8 +182,8 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 		cfg := &aws.Config{
 			Region: aws.String(aws_region),
 		}
-		aws_key, key_ok := os.LookupEnv(AWS_KEY)
 		aws_secret, secret_ok := os.LookupEnv(AWS_SECRET)
+		aws_key, key_ok := os.LookupEnv(AWS_KEY)
 		if key_ok && secret_ok {
 			cfg.Credentials = credentials.NewStaticCredentials(aws_key, aws_secret, "")
 		} else {
