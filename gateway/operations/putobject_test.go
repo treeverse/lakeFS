@@ -7,7 +7,6 @@ import (
 	"crypto/rand"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -73,7 +72,7 @@ func (s *mockAdapter) AbortMultiPartUpload(repo string, identifier string, uploa
 	panic("try to abort multipart in mock adaptor ")
 
 }
-func (s *mockAdapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error) {
+func (s *mockAdapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	panic("try to complete multipart in mock adaptor ")
 }
 
