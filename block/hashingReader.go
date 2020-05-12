@@ -11,11 +11,9 @@ import (
 const (
 	MD5 = iota
 	SHA256
-	BOTH
 )
 
 type HashingReader struct {
-	hashType       int
 	Md5            hash.Hash
 	Sha256         hash.Hash
 	originalReader io.Reader
@@ -26,34 +24,27 @@ func (s *HashingReader) Read(p []byte) (int, error) {
 	len, err := s.originalReader.Read(p)
 	if len > 0 {
 		s.CopiedSize += int64(len)
-		if s.hashType == MD5 || s.hashType == BOTH {
+		if s.Md5 != nil {
 			s.Md5.Write(p[0:len])
 		}
-		if s.hashType == SHA256 || s.hashType == BOTH {
+		if s.Sha256 != nil {
 			s.Sha256.Write(p[0:len])
 		}
 	}
 	return len, err
 }
 
-func (s *HashingReader) Close() error {
-	return nil
-}
-
-func NewHashingReader(body io.Reader, hashType int) *HashingReader {
+func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
 	s := new(HashingReader)
-	s.hashType = hashType
-	switch hashType {
-	case MD5:
-		s.Md5 = md5.New()
-	case SHA256:
-		s.Sha256 = sha256.New()
-	case BOTH:
-		s.Md5 = md5.New()
-		s.Sha256 = sha256.New()
-	default:
-		panic("wrong hash type number " + strconv.Itoa(hashType))
-	}
 	s.originalReader = body
+	for hashType := range hashTypes {
+		if hashType == MD5 {
+			s.Md5 = md5.New()
+		} else if hashType == SHA256 {
+			s.Sha256 = sha256.New()
+		} else {
+			panic("wrong hash type number " + strconv.Itoa(hashType))
+		}
+	}
 	return s
 }
