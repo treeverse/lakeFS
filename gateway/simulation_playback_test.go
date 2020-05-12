@@ -231,16 +231,16 @@ func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPat
 	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
 		playByte, err := ioutil.ReadFile(playbackFileName)
 		if err != nil {
-			t.Fatal("Couldn't read playback file: " + playbackFileName)
+			t.Error("Couldn't read playback file: " + playbackFileName)
+			return false
 		}
-		playStr := string(playByte)
 		recByte, err := ioutil.ReadFile(recordingFileName)
 		if err != nil {
-			t.Fatal("Couldn't read recording file: " + recordingFileName)
+			t.Error("Couldn't read recording file: " + recordingFileName)
+			return false
 		}
-		recStr := string(recByte)
-		playStr = normalizeResponse(playStr, tagRemoveList)
-		recStr = normalizeResponse(recStr, tagRemoveList)
+		playStr := normalizeResponse(playByte, tagRemoveList)
+		recStr := normalizeResponse(recByte, tagRemoveList)
 		return recStr == playStr
 	} else {
 		f1, err1 := os.Open(playbackFileName)
@@ -272,7 +272,8 @@ func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPat
 	}
 }
 
-func normalizeResponse(resp string, tagRemoveList []*tagPatternType) string {
+func normalizeResponse(respByte []byte, tagRemoveList []*tagPatternType) string {
+	resp := string(respByte)
 	for _, tagPattern := range tagRemoveList {
 		resp = tagPattern.regex.ReplaceAllString(resp, "<"+tagPattern.base+"/>")
 	}
