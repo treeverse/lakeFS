@@ -36,9 +36,9 @@ type Client interface {
 	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
 	GetCommitLog(ctx context.Context, repoId, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error)
 
-	StatObject(ctx context.Context, repoId, ref, path string) (*models.ObjectStats, error)
-	ListObjects(ctx context.Context, repoId, ref, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
-	GetObject(ctx context.Context, repoId, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
+	StatObject(ctx context.Context, repoId, ref, path string, readUncommitted bool) (*models.ObjectStats, error)
+	ListObjects(ctx context.Context, repoId, ref, tree, from string, amount int, readUncommitted bool) ([]*models.ObjectStats, *models.Pagination, error)
+	GetObject(ctx context.Context, repoId, ref, path string, readUncommitted bool, w io.Writer) (*objects.GetObjectOK, error)
 	UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error)
 	DeleteObject(ctx context.Context, repoId, branchId, path string) error
 
@@ -137,6 +137,7 @@ func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) erro
 	}, c.auth)
 	return err
 }
+
 func (c *client) RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error {
 	_, err := c.remote.Branches.RevertBranch(&branches.RevertBranchParams{
 		BranchID:     branchId,
@@ -233,12 +234,13 @@ func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*mode
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) StatObject(ctx context.Context, repoId, ref, path string) (*models.ObjectStats, error) {
+func (c *client) StatObject(ctx context.Context, repoId, ref, path string, readUncommitted bool) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
-		Ref:          ref,
-		Path:         path,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Ref:             ref,
+		Path:            path,
+		RepositoryID:    repoId,
+		Context:         ctx,
+		ReadUncommitted: swag.Bool(readUncommitted),
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -246,14 +248,15 @@ func (c *client) StatObject(ctx context.Context, repoId, ref, path string) (*mod
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListObjects(ctx context.Context, repoId, ref, tree, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
+func (c *client) ListObjects(ctx context.Context, repoId, ref, tree, after string, amount int, readUncommitted bool) ([]*models.ObjectStats, *models.Pagination, error) {
 	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
-		After:        swag.String(after),
-		Amount:       swag.Int64(int64(amount)),
-		Ref:          ref,
-		RepositoryID: repoId,
-		Tree:         swag.String(tree),
-		Context:      ctx,
+		After:           swag.String(after),
+		Amount:          swag.Int64(int64(amount)),
+		Ref:             ref,
+		RepositoryID:    repoId,
+		Tree:            swag.String(tree),
+		Context:         ctx,
+		ReadUncommitted: swag.Bool(readUncommitted),
 	}, c.auth)
 	if err != nil {
 		return nil, nil, err
@@ -261,12 +264,13 @@ func (c *client) ListObjects(ctx context.Context, repoId, ref, tree, after strin
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) GetObject(ctx context.Context, repoId, ref, path string, writer io.Writer) (*objects.GetObjectOK, error) {
+func (c *client) GetObject(ctx context.Context, repoId, ref, path string, readUncommitted bool, writer io.Writer) (*objects.GetObjectOK, error) {
 	params := &objects.GetObjectParams{
-		Ref:          ref,
-		Path:         path,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Ref:             ref,
+		Path:            path,
+		RepositoryID:    repoId,
+		Context:         ctx,
+		ReadUncommitted: swag.Bool(readUncommitted),
 	}
 	resp, err := c.remote.Objects.GetObject(params, c.auth, writer)
 	if err != nil {
