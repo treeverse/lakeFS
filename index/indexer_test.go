@@ -664,10 +664,18 @@ func TestTimeStampConsistency(t *testing.T) {
 				if err != nil {
 					t.Fatal(err)
 				}
+				_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test commit", "", nil)
+				if err != nil {
+					t.Fatal(err)
+				}
 			}
 			for _, obj := range tc.deleteObjects {
 				currentTime = now.Add(obj.seconds * time.Second)
 				err := kvIndex.DeleteObject(repo.Id, repo.DefaultBranch, obj.path)
+				if err != nil {
+					t.Fatal(err)
+				}
+				_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test commit", "", nil)
 				if err != nil {
 					t.Fatal(err)
 				}

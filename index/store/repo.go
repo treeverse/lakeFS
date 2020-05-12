@@ -28,7 +28,7 @@ type RepoOperations interface {
 	ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error)
 	ListMultipartUploads() ([]*model.MultipartUpload, error)
 	GetObjectDedup(DedupId string) (*model.ObjectDedup, error)
-	DeleteWorkspacePath(branch, path string) error
+	DeleteWorkspacePath(branch, path, typ string) error
 	WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
@@ -67,6 +67,9 @@ func (o *DBRepoOperations) ReadFromWorkspace(branch, path string) (*model.Worksp
 	ent := &model.WorkspaceEntry{}
 	err := o.tx.Get(ent, `SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
 		o.repoId, branch, path)
+	if err != nil {
+		return nil, err
+	}
 	return ent, err
 }
 
@@ -212,9 +215,24 @@ func (o *DBRepoOperations) ListMultipartUploads() ([]*model.MultipartUpload, err
 	return mpus, err
 }
 
-func (o *DBRepoOperations) DeleteWorkspacePath(branch, path string) error {
-	_, err := o.tx.Exec(`DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`,
-		o.repoId, branch, path)
+func (o *DBRepoOperations) DeleteWorkspacePath(branch, path, typ string) error {
+	var query string
+	if typ == model.EntryTypeObject {
+		query = `DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path = $3`
+	} else {
+		query = `DELETE FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%'`
+	}
+	result, err := o.tx.Exec(query, o.repoId, branch, path)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return db.ErrNotFound
+	}
 	return err
 }
 

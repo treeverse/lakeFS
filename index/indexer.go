@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 1 // 1 writes before a partial commit
+	DefaultPartialCommitRatio = 0 // 1 writes before a partial commit
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -583,7 +583,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			if wsEntry.Tombstone {
 				return nil, db.ErrNotFound
 			}
-			err = tx.DeleteWorkspacePath(branch, path)
+			err = tx.DeleteWorkspacePath(branch, path, model.EntryTypeObject)
 			if err != nil {
 				return nil, err
 			}
@@ -1025,79 +1025,9 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 		"path":   path,
 	})
 	_, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		p := pth.New(path, typ)
-		if p.IsRoot() {
-			return nil, index.ResetBranch(repoId, branch)
-		}
-
-		err := partialCommit(tx, branch)
+		err := tx.DeleteWorkspacePath(branch, path, typ)
 		if err != nil {
-			log.WithError(err).Error("could not partially commit")
-			return nil, err
-		}
-		branchData, err := tx.ReadBranch(branch)
-		if err != nil {
-			return nil, err
-		}
-		workspaceMerkle := merkle.New(branchData.WorkspaceRoot)
-		commitMerkle := merkle.New(branchData.CommitRoot)
-		var workspaceEntry *model.WorkspaceEntry
-		commitEntry, err := commitMerkle.GetEntry(tx, path, typ)
-		if err != nil {
-			if errors.Is(err, db.ErrNotFound) {
-				// remove all changes under path
-				pathEntry, err := workspaceMerkle.GetEntry(tx, path, typ)
-				if err != nil {
-					return nil, err
-				}
-				workspaceEntry = &model.WorkspaceEntry{
-					RepositoryId:      repoId,
-					BranchId:          branch,
-					ParentPath:        p.ParentPath(),
-					Path:              path,
-					EntryName:         &pathEntry.Name,
-					EntryAddress:      &pathEntry.Address,
-					EntryType:         &pathEntry.EntryType,
-					EntryCreationDate: &pathEntry.CreationDate,
-					EntrySize:         &pathEntry.Size,
-					EntryChecksum:     &pathEntry.Checksum,
-					Tombstone:         true,
-				}
-			} else {
-				log.WithError(err).Error("could not get entry")
-				return nil, err
-			}
-		} else {
-			workspaceEntry = &model.WorkspaceEntry{
-				RepositoryId:      repoId,
-				BranchId:          branch,
-				ParentPath:        p.ParentPath(),
-				Path:              path,
-				EntryName:         &commitEntry.Name,
-				EntryAddress:      &commitEntry.Address,
-				EntryType:         &commitEntry.EntryType,
-				EntryCreationDate: &commitEntry.CreationDate,
-				EntrySize:         &commitEntry.Size,
-				EntryChecksum:     &commitEntry.Checksum,
-			}
-		}
-		commitEntries := []*model.WorkspaceEntry{workspaceEntry}
-		workspaceMerkle, err = workspaceMerkle.Update(tx, commitEntries)
-		if err != nil {
-			log.WithError(err).Error("could not update Merkle tree")
-			return nil, err
-		}
-
-		// update branch workspace pointer to point at new workspace
-		err = tx.WriteBranch(branch, &model.Branch{
-			Id:            branch,
-			CommitId:      branchData.CommitId,
-			CommitRoot:    branchData.CommitRoot,
-			WorkspaceRoot: workspaceMerkle.Root(),
-		})
-
-		if err != nil {
-			log.WithError(err).Error("could not write branch")
+			log.WithError(err).Error("could not revert path")
 		}
 		return nil, err
 	})
