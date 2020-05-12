@@ -234,9 +234,9 @@ func (s *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	return err
 }
 
-func (s *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error) {
-	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Parts}
-
+func (s *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Part}
+	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(repo),
 		Key:             aws.String(identifier),

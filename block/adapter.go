@@ -7,6 +7,8 @@ import (
 	"net/http"
 )
 
+type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
+
 type Adapter interface {
 	WithContext(ctx context.Context) Adapter
 	Put(repo string, identifier string, sizeBytes int64, reader io.Reader) error
@@ -16,7 +18,7 @@ type Adapter interface {
 	CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error)
 	UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
 	AbortMultiPartUpload(repo string, identifier string, uploadId string) error
-	CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *struct{ Parts []*s3.CompletedPart }) (*string, int64, error)
+	CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *MultipartUploadCompletion) (*string, int64, error)
 }
 
 type UploadIdTranslator interface {
