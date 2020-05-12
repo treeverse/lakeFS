@@ -157,6 +157,8 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 		event.statusCode = 200
 	}
 	if respWrite.StatusCode != event.statusCode {
+		eventNumber := event.baseName[len(event.baseName)-5:]
+		logging.Default().Warnf("unexpected status %d on event  %s ", respWrite.StatusCode, eventNumber)
 		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
 		statusEqual = false
