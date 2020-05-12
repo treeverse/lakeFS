@@ -37,6 +37,7 @@ const (
 	S3BlockAdapterEnvVar      = "USE_S3_BLOCK_ADAPTER"
 	AWS_KEY                   = "AWS_ACCESS_KEY_ID"
 	AWS_SECRET                = "AWS_SECRET_ACCESS_KEY"
+	AWS_REGION                = "AWS_DEFAULT_REGION"
 )
 
 func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
@@ -174,8 +175,12 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 		})
 		return adapter
 	} else {
+		aws_region, region_ok := os.LookupEnv(AWS_REGION)
+		if !region_ok {
+			aws_region = "us-east-1"
+		}
 		cfg := &aws.Config{
-			Region: aws.String("us-east-1"),
+			Region: aws.String(aws_region),
 		}
 		aws_key, key_ok := os.LookupEnv(AWS_KEY)
 		aws_secret, secret_ok := os.LookupEnv(AWS_SECRET)
