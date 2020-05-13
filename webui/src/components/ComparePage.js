@@ -1,11 +1,11 @@
-import React, {useEffect, useState} from "react";
+import React, {useEffect, useState, useCallback} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 
-import Octicon, {GitMerge} from "@primer/octicons-react";
+import Octicon, {Sync as SyncIcon, GitMerge} from "@primer/octicons-react";
 
 import {PAGINATION_AMOUNT, listTree, listTreePaginate} from "../actions/objects";
 import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
@@ -88,11 +88,12 @@ const MergeButton = connect(
     );
 });
 
-const CompareToolbar = ({repo, refId, compare}) => {
+const CompareToolbar = ({repo, refId, compare, refresh}) => {
     const history = useHistory();
     const location = useLocation();
 
     return  (
+        <>
         <ButtonToolbar className="float-left mb-2">
 
             <RefDropdown
@@ -137,10 +138,12 @@ const CompareToolbar = ({repo, refId, compare}) => {
                     }
                     history.push({...location, search: params.toString()})
                 }}/>
-
-            <MergeButton repo={repo} refId={refId} compare={compare} />
-
         </ButtonToolbar>
+        <ButtonToolbar className="float-right mb-2">
+            <Button variant="light" onClick={refresh}><Octicon icon={SyncIcon}/> Refresh</Button>
+            <MergeButton repo={repo} refId={refId} compare={compare} />
+        </ButtonToolbar>
+        </>
     );
 };
 
@@ -148,40 +151,30 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
     const history = useHistory();
     const location = useLocation();
 
-    useEffect(() => {
+    const refreshData = useCallback(() => {
         listTree(repo.id, refId.id, path, PAGINATION_AMOUNT, readUncommitted);
-    }, [repo.id, refId.id, path, listTree]);
-
-    useEffect(() => {
         if (compareRef) {
             diff(repo.id, refId.id, compareRef.id);
         } else {
             resetDiff();
         }
-    }, [repo.id, refId, diff, resetDiff, compareRef]);
+    }, [repo.id, refId.id, path, listTree, diff, resetDiff, compareRef]);
 
-    let paginator = (<span/>);
-    if (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more) {
-        paginator = (
-            <p className="tree-paginator">
-                <Button variant="outline-primary" onClick={() => {
-                    listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset, PAGINATION_AMOUNT, readUncommitted);
-                }}>
-                    Load More
-                </Button>
-            </p>
-        );
-    }
+    useEffect(() => {
+        refreshData();
+    }, [refreshData, repo.id, refId.id, path, listTree, diff, resetDiff, compareRef]);
 
+    const paginator =(!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     return (
         <div className="mt-3">
+            <div className="action-bar">
+                <CompareToolbar refId={refId} repo={repo} compare={compareRef} refresh={refreshData}/>
+            </div>
+
             <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
                 Merge completed
             </Alert>
-            <div className="action-bar">
-                <CompareToolbar refId={refId} repo={repo} compare={compareRef}/>
-            </div>
 
             <Tree
                 repo={repo}
@@ -196,7 +189,15 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
                 list={list}
                 path={path}/>
 
-            {paginator}
+            {paginator &&
+            <p className="tree-paginator">
+                <Button variant="outline-primary" onClick={() => {
+                    listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset, PAGINATION_AMOUNT, readUncommitted);
+                }}>
+                    Load More
+                </Button>
+            </p>
+            }
         </div>
     );
 };

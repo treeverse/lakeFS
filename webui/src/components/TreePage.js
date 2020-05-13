@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef} from "react";
+import React, {useEffect, useState, useCallback, useRef} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 
@@ -6,7 +6,7 @@ import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 import Badge from "react-bootstrap/Badge";
 
-import Octicon, {GitCommit, Plus, X} from "@primer/octicons-react";
+import Octicon, {Sync as SyncIcon, GitCommit, Plus, X} from "@primer/octicons-react";
 
 import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
@@ -219,14 +219,18 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
     const history = useHistory();
     const location = useLocation();
 
-    useEffect(() => {
+    const refreshData = useCallback(() => {
         listTree(repo.id, refId.id, path);
         if (refId.type === 'branch') {
             diff(repo.id, refId.id, refId.id);
         } else {
             resetDiff();
         }
-    }, [repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done]);
+    }, [repo.id, refId, path, listTree, diff, resetDiff]);
+
+    useEffect(() => {
+        refreshData();
+    }, [refreshData, repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done]);
 
     const paginator = (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const changes = diffResults.payload ? diffResults.payload.results.length : 0;
@@ -252,7 +256,9 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                     }}/>
 
                 </ButtonToolbar>
+
                 <ButtonToolbar className="float-right mb-2">
+                    <Button variant="light" disabled={list.loading} onClick={refreshData}><Octicon icon={SyncIcon}/> Refresh</Button>
                     <UploadButton refId={refId} repo={repo} path={path}/>
                     <CommitButton refId={refId} repo={repo} changes={changes}/>
                 </ButtonToolbar>
