@@ -176,7 +176,8 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			prefix.Path,
 			from.Path,
 			maxKeys,
-			descend)
+			descend,
+			true)
 		if errors.Is(err, db.ErrNotFound) {
 			if errors.Is(err, indexerrors.ErrBranchNotFound) {
 				o.Log().WithError(err).WithFields(logging.Fields{
@@ -318,6 +319,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			marker.Path,
 			maxKeys,
 			descend,
+			true,
 		)
 		if errors.Is(err, db.ErrNotFound) {
 			results = make([]*model.Entry, 0) // no results found

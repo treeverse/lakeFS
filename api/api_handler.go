@@ -602,10 +602,10 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		a.incrStat("stat_object")
-		index := a.ForRequest(params.HTTPRequest).Index
+		idx := a.ForRequest(params.HTTPRequest).Index
 
 		// read metadata
-		entry, err := index.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
+		entry, err := idx.ReadEntryObject(params.RepositoryID, params.Ref, params.Path, swag.BoolValue(params.ReadUncommitted))
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -632,10 +632,10 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 		a.incrStat("get_object")
 		ctx := a.ForRequest(params.HTTPRequest)
-		index := ctx.Index
+		idx := ctx.Index
 
 		// read repo
-		repo, err := index.GetRepo(params.RepositoryID)
+		repo, err := idx.GetRepo(params.RepositoryID)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -644,7 +644,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := index.ReadEntryObject(params.RepositoryID, params.Ref, params.Path)
+		entry, err := idx.ReadEntryObject(params.RepositoryID, params.Ref, params.Path, swag.BoolValue(params.ReadUncommitted))
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -658,7 +658,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		res.ContentDisposition = fmt.Sprintf("filename=\"%s\"", entry.GetName())
 
 		// get object for its blocks
-		obj, err := index.ReadObject(params.RepositoryID, params.Ref, params.Path)
+		obj, err := idx.ReadObject(params.RepositoryID, params.Ref, params.Path, swag.BoolValue(params.ReadUncommitted))
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -683,11 +683,19 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		a.incrStat("list_objects")
-		index := a.ForRequest(params.HTTPRequest).Index
+		idx := a.ForRequest(params.HTTPRequest).Index
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		res, hasMore, err := index.ListObjectsByPrefix(params.RepositoryID, params.Ref, swag.StringValue(params.Tree), after, amount, false)
+		res, hasMore, err := idx.ListObjectsByPrefix(
+			params.RepositoryID,
+			params.Ref,
+			swag.StringValue(params.Tree),
+			after,
+			amount,
+			false,
+			swag.BoolValue(params.ReadUncommitted),
+		)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
 		}
