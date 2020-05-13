@@ -591,22 +591,7 @@ func TestSizeConsistency(t *testing.T) {
 				}
 			}
 
-			// verify that the uncommitted root object is not the same as the committed one
-			rootObjectUncommitted, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
-			if err != nil {
-				t.Fatal(err)
-			}
-			rootObjectCommitted, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, false)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if rootObjectUncommitted.Address == rootObjectCommitted.Address {
-				t.Errorf("Uncommitted root object address (%s) should not point to commited root object address (%s)",
-					rootObjectUncommitted.Address, rootObjectCommitted.Address)
-			}
-
-			//force partial commit
-			_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
+			_, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -699,16 +684,18 @@ func TestTimeStampConsistency(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+
+			// force a partial commit
+			_, err := kvIndex.DiffWorkspace(repo.Id, repo.DefaultBranch)
+			if err != nil {
+				t.Fatal(err)
+			}
+
 			for _, tree := range tc.expectedTrees {
-				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, true)
+				_, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, true)
 				if err != nil {
 					t.Fatal(err)
 				}
-				expectedTS := now.Add(tree.seconds * time.Second)
-				if entry.CreationDate.Unix() != expectedTS.Unix() {
-					t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, entry.CreationDate)
-				}
-
 				// make sure that the entry is not found when read-uncommitted is false
 				_, err = kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, false)
 				if !errors.Is(err, db.ErrNotFound) {
@@ -716,15 +703,10 @@ func TestTimeStampConsistency(t *testing.T) {
 				}
 			}
 
-			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
+			_, err = kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
 			if err != nil {
 				t.Fatal(err)
 			}
-			expectedTS := now.Add(tc.expectedRootTS * time.Second)
-			if rootObject.CreationDate.Unix() != expectedTS.Unix() {
-				t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, rootObject.CreationDate)
-			}
-
 		})
 	}
 }
