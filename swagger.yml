@@ -723,6 +723,10 @@ paths:
         name: path
         required: true
         type: string
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
     get:
       tags:
         - objects
@@ -831,6 +835,10 @@ paths:
         name: path
         required: true
         type: string
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
     get:
       tags:
         - objects
@@ -873,6 +881,10 @@ paths:
       - in: query
         name: amount
         type: integer
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
     get:
       tags:
         - objects
