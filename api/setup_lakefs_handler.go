@@ -29,7 +29,7 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			return
 		}
 
-		err := migrator.Migrate()
+		err := migrator.Migrate(r.Context())
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
