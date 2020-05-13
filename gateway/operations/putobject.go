@@ -2,8 +2,6 @@ package operations
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/upload"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -13,7 +11,9 @@ import (
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/permissions"
+	"github.com/treeverse/lakefs/upload"
 )
 
 const (
@@ -50,7 +50,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntryObject(o.Repo.Id, p.Ref, p.Path)
+	src, err := o.Index.ReadEntryObject(o.Repo.Id, p.Ref, p.Path, true)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))

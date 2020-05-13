@@ -128,7 +128,7 @@ const PathLink = ({ repoId, refId, path, children, as = null }) => {
 
 const Na = () => (<span>&mdash;</span>);
 
-const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
+const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions }) => {
 
     const [isDropdownOpen, setDropdownOpen] = useState(false);
 
@@ -147,7 +147,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
     if (entry.diff_type === 'REMOVED') {
         button = (<span>{buttonText}</span>);
     } else if (entry.path_type === 'TREE') {
-        button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }}>{buttonText}</Link>);
+        button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
     } else {
         button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
@@ -204,7 +204,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete }) => {
     }
 
     let objectDropdown = (<span/>);
-    if (entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
+    if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
         objectDropdown = (
             <Dropdown alignRight onToggle={setDropdownOpen}>
                 <Dropdown.Toggle
@@ -289,12 +289,11 @@ const merge = (path, entriesAtPath, diffResults) => {
     });
 };
 
-export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete }) => {
-
+export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions }) => {
     let body;
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
-    } else if (!!list.error) {
+    } else if (list.error) {
         body = <Alert variant="danger" className="tree-error">{list.error}</Alert>
     } else {
         const results = merge(path, list.payload.results, diffResults);
@@ -302,7 +301,7 @@ export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete }) 
             <Table borderless size="sm">
                 <tbody>
                 {results.map(entry => (
-                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repo={repo} refId={refId} onDelete={onDelete}/>
+                    <EntryRow key={entry.path} entry={entry} onNavigate={onNavigate} path={path} repo={repo} refId={refId} onDelete={onDelete} showActions={showActions}/>
                 ))}
                 </tbody>
             </Table>
