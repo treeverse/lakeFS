@@ -65,28 +65,41 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 }
 func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
 	var entries []*model.WorkspaceEntry
-
-	err := o.tx.Select(&entries,
+	limitStatement := ""
+	if amount > 0 {
+		limitStatement = fmt.Sprintf("LIMIT %d", amount+1)
+	}
+	args := []interface{}{o.repoId, branch, dir}
+	additionalCondition := ""
+	if len(from) > 0 {
+		additionalCondition = "AND path > $4"
+		args = append(args, from)
+	}
+	err := o.tx.Select(&entries, fmt.Sprintf(
 		`SELECT * FROM (
 					(SELECT entry_name, parent_path, path, entry_type, entry_size, entry_creation_date, entry_checksum, CASE WHEN tombstone THEN 1 ELSE 0 END AS tombstone_count
 					FROM workspace_entries
-    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3
-					ORDER BY 3)
+    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 %s
+					ORDER BY 3 %s)
 						UNION ALL
 					(SELECT $3 as parent_path,
-					   (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) + 1] || -' AS entry_name,
+					   (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) + 1] || '/' AS entry_name,
 					   $3 || (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) +1] || '/' path,
 					   'tree' as entry_type, 0 AS entry_size, NULL::timestamptz AS entry_creation_date, '' AS entry_checksum,
 					   CASE WHEN bool_and(tombstone) THEN COUNT(*) ELSE -1 END AS tombstone_count 
 					FROM workspace_entries
-					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%' AND parent_path <> $3
-					GROUP BY 1,2,3,4,5,6,7 ORDER BY 3)
-				) t ORDER BY path`, o.repoId, branch, dir)
-
+					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%%' AND parent_path <> $3 %s 
+					GROUP BY 1,2,3,4,5,6,7 ORDER BY 3 %s)
+				) t ORDER BY path %s`, additionalCondition, limitStatement, additionalCondition, limitStatement, limitStatement), args...)
 	if err != nil {
 		return nil, false, err
 	}
-	return entries, false, nil // TODO implement hasmore
+	hasMore := false
+	if amount > 0 && len(entries) > amount {
+		hasMore = true
+		entries = entries[:amount]
+	}
+	return entries, hasMore, nil
 }
 
 func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
@@ -330,10 +343,10 @@ func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) err
 
 func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
 	_, err := o.tx.Exec(`
-		INSERT INTO roots (repository_id, address, creation_date, size) VALUES ($1, $2, $3, $4)
+		INSERT INTO roots (repository_id, address, creation_date, size, object_count) VALUES ($1, $2, $3, $4, $5)
 		ON CONFLICT ON CONSTRAINT roots_pkey
 		DO NOTHING`,
-		o.repoId, address, root.CreationDate, root.Size)
+		o.repoId, address, root.CreationDate, root.Size, root.ObjectCount)
 	return err
 }
 

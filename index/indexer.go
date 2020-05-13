@@ -672,10 +672,15 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 
 		tree := merkle.New(reference.commit.Tree)
 		var res, currentRes []*model.Entry
-		var wsHasMore, combineHasMore bool
+		var wsHasMore bool
 		treeHasMore := true
-		for len(res) < results+1 && (treeHasMore || wsHasMore) {
-			currentRes, treeHasMore, err = tree.PrefixScan(tx, path, from, results+1, descend)
+		amountForQueries := 0
+		if results > 0 {
+			amountForQueries = results + 1
+		}
+		path = pth.New(path, model.EntryTypeObject).String()
+		for (len(res) < results+1 || results <= 0) && (treeHasMore || wsHasMore) {
+			currentRes, treeHasMore, err = tree.PrefixScan(tx, path, from, amountForQueries, descend)
 			if err != nil && !errors.Is(err, db.ErrNotFound) {
 				log.WithError(err).Error("could not scan tree")
 				return nil, err
@@ -683,7 +688,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			var wsEntries []*model.WorkspaceEntry
 			if reference.isBranch {
 				if descend {
-					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, results+1)
+					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, amountForQueries)
 					if err != nil {
 						log.WithError(
 							err).Error("failed to list workspace")
@@ -691,17 +696,22 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 					}
 
 				} else {
-					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, results+1)
+					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, amountForQueries)
 					if err != nil {
 						log.WithError(err).Error("failed to list workspace")
 						return nil, err
 					}
 				}
-				currentRes = CombineLists(currentRes, wsEntries, results+1-len(res))
+				currentRes = CombineLists(currentRes, wsEntries, amountForQueries-len(res))
 			}
 			res = append(res, currentRes...)
 		}
-		return &result{combineHasMore, res}, nil
+		hasMore := false
+		if results > 0 && len(res) > results {
+			hasMore = true
+			res = res[:results]
+		}
+		return &result{hasMore, res}, nil
 	})
 	if err != nil {
 		return nil, false, err
@@ -717,7 +727,7 @@ func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amo
 	treeIndex := 0
 	wsIndex := 0
 	for treeIndex < len(entries) && wsIndex < len(wsEntries) {
-		if len(result) == amount {
+		if amount > 0 && len(result) == amount {
 			return result
 		}
 		wsEntry := wsEntries[wsIndex]
@@ -737,14 +747,14 @@ func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amo
 		}
 	}
 	for treeIndex < len(entries) {
-		if len(result) == amount {
+		if amount > 0 && len(result) == amount {
 			return result
 		}
 		result = append(result, entries[treeIndex])
 		treeIndex++
 	}
 	for wsIndex < len(wsEntries) {
-		if len(result) == amount {
+		if amount > 0 && len(result) == amount {
 			return result
 		}
 		result = append(result, wsEntries[wsIndex].EntryWithPathAsName())

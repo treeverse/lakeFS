@@ -35,7 +35,7 @@ CREATE TABLE roots
     address       varchar(64)                              NOT NULL,
     creation_date timestamptz                              NOT NULL,
     size          bigint                                   NOT NULL CHECK (size >= 0),
-
+    object_count  integer,
     PRIMARY KEY (repository_id, address)
 );
 
@@ -50,7 +50,7 @@ CREATE TABLE entries
     creation_date timestamptz NOT NULL,
     size bigint NOT NULL CHECK(size >= 0),
     checksum varchar(64) NOT NULL,
-    object_count integer
+    object_count integer,
 
     PRIMARY KEY (repository_id, parent_address, name)
 );
