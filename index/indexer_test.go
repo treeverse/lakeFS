@@ -91,7 +91,11 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// test read entry not exist when read-uncommitted is false
+	_, err = kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "/bar", false)
+	if !errors.Is(err, db.ErrNotFound) {
+		t.Fatalf("missing data from requested commit")
+	}
 	commit, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -119,6 +123,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	_, err = kvIndex.Commit(repo.Id, testBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -586,8 +591,22 @@ func TestSizeConsistency(t *testing.T) {
 				}
 			}
 
+			// verify that the uncommitted root object is not the same as the committed one
+			rootObjectUncommitted, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
+			if err != nil {
+				t.Fatal(err)
+			}
+			rootObjectCommitted, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, false)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if rootObjectUncommitted.Address == rootObjectCommitted.Address {
+				t.Errorf("Uncommitted root object address (%s) should not point to commited root object address (%s)",
+					rootObjectUncommitted.Address, rootObjectCommitted.Address)
+			}
+
 			//force partial commit
-			_, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
+			_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -688,6 +707,12 @@ func TestTimeStampConsistency(t *testing.T) {
 				expectedTS := now.Add(tree.seconds * time.Second)
 				if entry.CreationDate.Unix() != expectedTS.Unix() {
 					t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, entry.CreationDate)
+				}
+
+				// make sure that the entry is not found when read-uncommitted is false
+				_, err = kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, false)
+				if !errors.Is(err, db.ErrNotFound) {
+					t.Errorf("Entry was not expected to be found when we do not read uncommmitted - %v", err)
 				}
 			}
 
