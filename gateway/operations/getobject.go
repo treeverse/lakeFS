@@ -31,6 +31,11 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		return
 	}
 
+	if _, exists := query["tagging"]; exists {
+		o.EncodeResponse(serde.Tagging{}, http.StatusOK)
+		return
+	}
+
 	beforeMeta := time.Now()
 	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path, true)
 	metaTook := time.Since(beforeMeta)
