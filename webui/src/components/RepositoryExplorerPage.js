@@ -128,7 +128,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
             <Switch>
                 <Redirect exact from="/repositories/:repoId" to="/repositories/:repoId/tree"/>
                 <Route path="/repositories/:repoId/tree">
-                    <TreePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
+                    <TreePage repo={repo.payload} refId={refId} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/commits">
                     <CommitsPage repo={repo.payload} refId={refId}/>
