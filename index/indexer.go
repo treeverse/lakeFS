@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 1 // 1 writes before a partial commit
+	DefaultPartialCommitRatio = 0.01
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -84,6 +84,10 @@ func shouldPartiallyCommit(repo *model.Repo) bool {
 
 func partialCommit(tx store.RepoOperations, branch string) error {
 	// see if we have any changes that weren't applied
+	err := tx.LockWorkspace()
+	if err != nil {
+		return err
+	}
 	wsEntries, err := tx.ListWorkspace(branch)
 	if err != nil {
 		return err
