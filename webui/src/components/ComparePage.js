@@ -74,7 +74,7 @@ const MergeButton = connect(
     return (
         <>
         <ConfirmationModal show={show} onHide={onHide} msg={mergeText} onConfirm={onSubmit} />
-        <OverlayTrigger placement="bottom" overlay={<Tooltip>{mergeText}</Tooltip>}>
+        <OverlayTrigger placement="bottom" overlay={<Tooltip id="mergeTextTooltip">{mergeText}</Tooltip>}>
             <span>
                 <Button variant={mergeVariant}
                     disabled={mergeDisabled}
@@ -144,7 +144,7 @@ const CompareToolbar = ({repo, refId, compare}) => {
     );
 };
 
-const TreePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, resetMerge, mergeResults }) => {
+const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, resetMerge, mergeResults }) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -208,4 +208,4 @@ export default connect(
         mergeResults: refs.merge,
     }),
     ({ listTree, listTreePaginate, diff, resetDiff, resetMerge })
-)(TreePage);
+)(ComparePage);
