@@ -78,10 +78,10 @@ func LoggingMiddleWare(requestIdHeaderName string, fields logging.Fields, next h
 			requestFields[k] = v
 		}
 		r = r.WithContext(logging.AddFields(r.Context(), requestFields))
+		writer.Header().Set(requestIdHeaderName, reqId)
 
 		next.ServeHTTP(writer, r) // handle the request
 
-		writer.Header().Set(requestIdHeaderName, reqId)
 		logging.FromContext(r.Context()).WithFields(logging.Fields{
 			"took":        time.Since(before),
 			"status_code": writer.StatusCode,
