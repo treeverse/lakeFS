@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -28,7 +29,7 @@ VALUES ($1, $2)
 `
 
 type Migrator interface {
-	Migrate() error
+	Migrate(ctx context.Context) error
 }
 
 type DatabaseMigrator struct {
@@ -46,11 +47,11 @@ func (d *DatabaseMigrator) AddDB(schema string, db Database) *DatabaseMigrator {
 	return d
 }
 
-func (d *DatabaseMigrator) Migrate() error {
+func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	for schema, db := range d.databases {
 		_, err := db.Transact(func(tx Tx) (interface{}, error) {
 			return nil, MigrateSchemaAll(tx, schema)
-		}, WithLogger(logging.Dummy()))
+		}, WithLogger(logging.FromContext(ctx)))
 		if err != nil {
 			return err
 		}
@@ -119,6 +120,11 @@ func ListVersions(schemaName string) ([]string, error) {
 }
 
 func MigrateSchemaAll(tx Tx, schemaName string) error {
+	// make sure we have schema
+	_, err := tx.Exec("CREATE SCHEMA IF NOT EXISTS " + schemaName)
+	if err != nil {
+		return fmt.Errorf("failed to create schema '%s' if not exists: %w", schemaName, err)
+	}
 	versions, err := ListVersions(schemaName)
 	if err != nil {
 		return err

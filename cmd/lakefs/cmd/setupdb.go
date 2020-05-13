@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"os"
 
@@ -14,10 +15,11 @@ var setupdbCmd = &cobra.Command{
 	Use:   "setupdb",
 	Short: "Run schema and data migrations on a fresh database",
 	Run: func(cmd *cobra.Command, args []string) {
+		ctx := context.Background()
 		migrator := db.NewDatabaseMigrator().
 			AddDB(config.SchemaMetadata, cfg.ConnectMetadataDatabase()).
 			AddDB(config.SchemaAuth, cfg.ConnectAuthDatabase())
-		err := migrator.Migrate()
+		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
