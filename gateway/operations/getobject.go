@@ -32,7 +32,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path)
+	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path, true)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -55,7 +55,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// now we might need the object itself
-	obj, err := o.Index.ReadObject(o.Repo.Id, o.Ref, o.Path)
+	obj, err := o.Index.ReadObject(o.Repo.Id, o.Ref, o.Path, true)
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return

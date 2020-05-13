@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import {useParams, useLocation, Switch, Route, useRouteMatch, Link, generatePath, Redirect} from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import Octicon, {GitCommit, Database, GitBranch} from "@primer/octicons-react";
+import Octicon, {GitCommit, Database, GitBranch, GitCompare} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import CommitsPage from './CommitsPage';
@@ -11,6 +11,7 @@ import {getRepository} from "../actions/repositories";
 import Nav from "react-bootstrap/Nav";
 import Alert from "react-bootstrap/Alert";
 import BranchesPage from "./BranchesPage";
+import ComparePage from "./ComparePage";
 
 
 function useQuery() {
@@ -54,6 +55,9 @@ const RepositoryTabs = () => {
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/branches"><Octicon icon={GitBranch}/>  Branches</RoutedTab>
+            </Nav.Item>
+            <Nav.Item>
+                <RoutedTab url="/repositories/:repoId/compare"><Octicon icon={GitCompare}/>  Compare</RoutedTab>
             </Nav.Item>
         </Nav>
     );
@@ -124,13 +128,16 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
             <Switch>
                 <Redirect exact from="/repositories/:repoId" to="/repositories/:repoId/tree"/>
                 <Route path="/repositories/:repoId/tree">
-                    <TreePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
+                    <TreePage repo={repo.payload} refId={refId} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/commits">
                     <CommitsPage repo={repo.payload} refId={refId}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/branches">
                     <BranchesPage repo={repo.payload}/>
+                </Route>
+                <Route exact path="/repositories/:repoId/compare">
+                    <ComparePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
                 </Route>
             </Switch>
         </div>
