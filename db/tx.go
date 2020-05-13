@@ -11,6 +11,11 @@ import (
 	"github.com/jmoiron/sqlx"
 )
 
+const (
+	SerializationRetryMaxAttempts   = 10
+	SerializationRetryStartInterval = time.Millisecond * 2
+)
+
 type Tx interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
@@ -97,10 +102,16 @@ func NewDatabase(db *sqlx.DB) Database {
 type TxFunc func(tx Tx) (interface{}, error)
 type TxOpt func(*TxOptions)
 
+type txRetry struct {
+	wait    time.Duration
+	attempt int64
+}
+
 type TxOptions struct {
 	logger         logging.Logger
 	ctx            context.Context
 	isolationLevel sql.IsolationLevel
+	retry          txRetry
 	readOnly       bool
 }
 
@@ -109,6 +120,7 @@ func DefaultTxOptions() *TxOptions {
 		logger:         logging.Default(),
 		ctx:            context.Background(),
 		isolationLevel: sql.LevelSerializable,
+		retry:          txRetry{},
 		readOnly:       false,
 	}
 }
@@ -137,11 +149,22 @@ func WithIsolationLevel(level sql.IsolationLevel) TxOpt {
 	}
 }
 
+func withRetry(retry txRetry) TxOpt {
+	return func(o *TxOptions) {
+		o.retry = retry
+	}
+}
+
 func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	options := DefaultTxOptions()
 	for _, opt := range opts {
 		opt(options)
 	}
+
+	if options.retry.wait > 0 {
+		time.Sleep(options.retry.wait) // exponential backoff
+	}
+
 	tx, err := d.db.BeginTxx(options.ctx, &sql.TxOptions{
 		Isolation: options.isolationLevel,
 		ReadOnly:  options.readOnly,
@@ -155,10 +178,37 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 		if rollbackErr != nil {
 			return nil, rollbackErr
 		}
+		if isSerializationError(err) {
+			// retry
+			attempt := options.retry.attempt + 1
+			options.logger.WithField("attempt", attempt).Warn("retrying transaction due to serialization error")
+			if attempt > SerializationRetryMaxAttempts {
+				return nil, err
+			}
+			opts = append(opts, withRetry(txRetry{
+				wait:    time.Duration(int64(SerializationRetryStartInterval) * attempt),
+				attempt: attempt,
+			}))
+			return d.Transact(fn, opts...)
+		}
 		return nil, err
 	} else {
 		err = tx.Commit()
 		if err != nil {
+			// if this is a serialization error, retry with exp. backoff
+			if isSerializationError(err) {
+				// retry
+				attempt := options.retry.attempt + 1
+				options.logger.WithField("attempt", attempt).Warn("retrying transaction due to serialization error")
+				if attempt > SerializationRetryMaxAttempts {
+					return nil, err
+				}
+				opts = append(opts, withRetry(txRetry{
+					wait:    time.Duration(int64(SerializationRetryStartInterval) * attempt),
+					attempt: attempt,
+				}))
+				return d.Transact(fn, opts...)
+			}
 			return nil, err
 		}
 	}
