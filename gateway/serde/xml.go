@@ -149,3 +149,18 @@ type CompleteMultipartUploadResult struct {
 type VersioningConfiguration struct {
 	Enabled bool `xml:"Enabled,omitempty"`
 }
+
+type Tag struct {
+	Key   string `xml:"Key"`
+	Value string `xml:"Value"`
+}
+
+type TagSet struct {
+	Tag []Tag `xml:"Tag"`
+}
+
+type Tagging struct {
+	XMLName xml.Name `xml:"http://s3.amazonaws.com/doc/2006-03-01/ Tagging"`
+	Xmlns   string   `xml:"xmlns,attr"`
+	TagSet  TagSet   `xml:"TagSet"`
+}
