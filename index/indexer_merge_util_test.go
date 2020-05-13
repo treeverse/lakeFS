@@ -80,7 +80,7 @@ func uploadObject(t *testing.T, deps *dependencies, path, branch string, content
 }
 
 func getObject(t *testing.T, idx index.Index, repo, branch, path string, expectedErr bool, message string) {
-	_, err := idx.ReadEntryObject(repo, branch, path)
+	_, err := idx.ReadEntryObject(repo, branch, path, true)
 	if expectedErr != (err == nil) {
 		t.Error(message, err)
 	}

@@ -708,6 +708,17 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		if resp.Payload.SizeBytes != 666 {
 			t.Fatalf("expected correct size, got %d", resp.Payload.SizeBytes)
 		}
+
+		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
+			Ref:             "master",
+			Path:            "foo/bar",
+			RepositoryID:    "repo1",
+			ReadUncommitted: swag.Bool(false),
+		}, bauth)
+
+		if _, ok := err.(*objects.StatObjectNotFound); !ok {
+			t.Fatalf("did expect object not found for stat, got %v", err)
+		}
 	})
 }
 
@@ -773,6 +784,19 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 		if len(resp.Payload.Results) != 3 {
 			t.Fatalf("expected 3 entries, got back %d", len(resp.Payload.Results))
+		}
+
+		resp, err = clt.Objects.ListObjects(&objects.ListObjectsParams{
+			Ref:             "master",
+			RepositoryID:    "repo1",
+			Tree:            swag.String("/"),
+			ReadUncommitted: swag.Bool(false),
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if len(resp.Payload.Results) != 0 {
+			t.Fatalf("expected no entries, got back %d", len(resp.Payload.Results))
 		}
 	})
 
@@ -860,6 +884,15 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 			t.Fatalf("got unexpected body: '%s'", body)
 		}
 
+		_, err = clt.Objects.GetObject(&objects.GetObjectParams{
+			Ref:             "master",
+			Path:            "foo/bar",
+			RepositoryID:    "repo1",
+			ReadUncommitted: swag.Bool(false),
+		}, bauth, buf)
+		if _, ok := err.(*objects.GetObjectNotFound); !ok {
+			t.Fatalf("expected object not found error, got %v", err)
+		}
 	})
 }
 
