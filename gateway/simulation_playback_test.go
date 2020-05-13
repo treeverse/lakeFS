@@ -34,7 +34,7 @@ type simulationEvent struct {
 
 func setGlobalPlaybackParams(testDir string) {
 	utils.PlaybackParams.IsPlayback = true
-	utils.PlaybackParams.RecordingDir = filepath.Join("testdata", "recordings", testDir)
+	utils.PlaybackParams.RecordingDir = filepath.Join(os.TempDir(), "lakeFS", "sourceRecordings", testDir)
 	utils.PlaybackParams.PlaybackDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05.000"))
 }
 
