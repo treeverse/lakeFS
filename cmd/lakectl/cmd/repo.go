@@ -122,7 +122,7 @@ var repoDeleteCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		Fmt("Repository '%s' deleted:\n", u.Repository)
+		Fmt("Repository '%s' deleted", u.Repository)
 	},
 }
 
