@@ -684,7 +684,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			if reference.isBranch {
 				if descend {
 					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, results+1)
-					if err != nil && !errors.Is(err, db.ErrNotFound) {
+					if err != nil {
 						log.WithError(
 							err).Error("failed to list workspace")
 						return nil, err
@@ -692,7 +692,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 
 				} else {
 					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, results+1)
-					if err != nil && !errors.Is(err, db.ErrNotFound) {
+					if err != nil {
 						log.WithError(err).Error("failed to list workspace")
 						return nil, err
 					}
@@ -700,9 +700,6 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 				currentRes = CombineLists(currentRes, wsEntries, results+1-len(res))
 			}
 			res = append(res, currentRes...)
-			if len(res) == 0 {
-				return nil, db.ErrNotFound
-			}
 		}
 		return &result{combineHasMore, res}, nil
 	})

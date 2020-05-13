@@ -74,10 +74,10 @@ func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, from string, amou
 					ORDER BY 3)
 						UNION ALL
 					(SELECT $3 as parent_path,
-					   (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) + 1] || '/' AS entry_name,
+					   (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) + 1] || -' AS entry_name,
 					   $3 || (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) +1] || '/' path,
 					   'tree' as entry_type, 0 AS entry_size, NULL::timestamptz AS entry_creation_date, '' AS entry_checksum,
-					   CASE WHEN bool_and(tombstone) THEN SUM(CASE WHEN tombstone THEN 1 ELSE 0 END) ELSE -1 END AS tombstone_count 
+					   CASE WHEN bool_and(tombstone) THEN COUNT(*) ELSE -1 END AS tombstone_count 
 					FROM workspace_entries
 					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%' AND parent_path <> $3
 					GROUP BY 1,2,3,4,5,6,7 ORDER BY 3)
