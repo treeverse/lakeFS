@@ -1,21 +1,12 @@
 import React, {useEffect, useState, useCallback, useRef} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
-
-import ButtonToolbar from "react-bootstrap/ButtonToolbar";
-import Button from "react-bootstrap/Button";
-import Badge from "react-bootstrap/Badge";
-
+import {Tooltip, OverlayTrigger, ButtonToolbar, Button, Badge, Form, Row, Col, Modal} from "react-bootstrap";
 import Octicon, {Sync as SyncIcon, GitCommit, Plus, X} from "@primer/octicons-react";
-
 import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
-import Modal from "react-bootstrap/Modal";
-import Form from "react-bootstrap/Form";
-import Row from "react-bootstrap/Row";
-import Col from "react-bootstrap/Col";
 import {doCommit, resetCommit} from "../actions/commits";
 import Alert from "react-bootstrap/Alert";
 
@@ -258,7 +249,9 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                 </ButtonToolbar>
 
                 <ButtonToolbar className="float-right mb-2">
-                    <Button variant="light" disabled={list.loading} onClick={refreshData}><Octicon icon={SyncIcon}/> Refresh</Button>
+                    <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
+                        <Button variant="light" disabled={list.loading} onClick={refreshData}><Octicon icon={SyncIcon}/></Button>
+                    </OverlayTrigger>
                     <UploadButton refId={refId} repo={repo} path={path}/>
                     <CommitButton refId={refId} repo={repo} changes={changes}/>
                 </ButtonToolbar>

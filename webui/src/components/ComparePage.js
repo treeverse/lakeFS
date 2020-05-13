@@ -1,20 +1,13 @@
 import React, {useEffect, useState, useCallback} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
-
-import ButtonToolbar from "react-bootstrap/ButtonToolbar";
-import Button from "react-bootstrap/Button";
-
+import {Alert, ButtonToolbar, Button, OverlayTrigger, Tooltip} from "react-bootstrap";
 import Octicon, {Sync as SyncIcon, GitMerge} from "@primer/octicons-react";
-
 import {PAGINATION_AMOUNT, listTree, listTreePaginate} from "../actions/objects";
 import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import ConfirmationModal from "./ConfirmationModal";
-import Alert from "react-bootstrap/Alert";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
 
 const readUncommitted = false;
 
@@ -140,7 +133,9 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
                 }}/>
         </ButtonToolbar>
         <ButtonToolbar className="float-right mb-2">
-            <Button variant="light" onClick={refresh}><Octicon icon={SyncIcon}/> Refresh</Button>
+            <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
+                <Button variant="light" onClick={refresh}><Octicon icon={SyncIcon}/></Button>
+            </OverlayTrigger>
             <MergeButton repo={repo} refId={refId} compare={compare} />
         </ButtonToolbar>
         </>
