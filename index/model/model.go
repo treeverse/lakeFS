@@ -80,6 +80,7 @@ type Root struct {
 	Address      string    `db:"address"`
 	CreationDate time.Time `db:"creation_date"`
 	Size         int64     `db:"size"`
+	ObjectCount  int       `db:"object_count"`
 }
 
 const (
@@ -96,6 +97,7 @@ type Entry struct {
 	CreationDate  time.Time `db:"creation_date"`
 	Size          int64     `db:"size"`
 	Checksum      string    `db:"checksum"`
+	ObjectCount   int       `db:"object_count"`
 }
 
 func (e *Entry) GetName() string {
@@ -158,8 +160,9 @@ type WorkspaceEntry struct {
 	EntryCreationDate *time.Time `db:"entry_creation_date"`
 	EntrySize         *int64     `db:"entry_size"`
 	EntryChecksum     *string    `db:"entry_checksum"`
-
-	Tombstone bool `db:"tombstone"`
+	TombstoneCount    int        `db:"tombstone_count"`
+	Tombstone         bool       `db:"tombstone"`
+	ObjectCount       int
 }
 
 func (ws *WorkspaceEntry) GetName() string {
@@ -195,6 +198,11 @@ func dtime(p *time.Time) time.Time {
 	}
 	return *p
 }
+func (ws *WorkspaceEntry) EntryWithPathAsName() *Entry {
+	res := ws.Entry()
+	res.Name = ws.Path
+	return res
+}
 
 func (ws *WorkspaceEntry) Entry() *Entry {
 	return &Entry{
@@ -205,6 +213,7 @@ func (ws *WorkspaceEntry) Entry() *Entry {
 		CreationDate: dtime(ws.EntryCreationDate),
 		Size:         dint64(ws.EntrySize),
 		Checksum:     dstr(ws.EntryChecksum),
+		ObjectCount:  ws.ObjectCount,
 	}
 }
 

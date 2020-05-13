@@ -73,16 +73,18 @@ func (m *Merkle) GetObject(tx store.RepoOperations, pth string) (*model.Object, 
 	return tx.ReadObject(entry.Address)
 }
 
-func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, int64, error) {
+func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, int64, int, error) {
 	entryHashes := make([]string, len(entries))
 	var size int64
+	var objectCount int
 	for i, entry := range entries {
 		entryHashes[i] = ident.Hash(entry)
 		size += entry.Size
+		objectCount += entry.ObjectCount
 	}
 	id := ident.MultiHash(entryHashes...)
 	err := tx.WriteTree(id, entries)
-	return id, size, err
+	return id, size, objectCount, err
 }
 
 type col struct {
@@ -246,7 +248,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 
 			if pth.IsRoot() {
 				// this is the root node, write it no matter what and return
-				addr, size, err := m.writeTree(tx, mergedEntries)
+				addr, size, objectCount, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
 					return nil, err
 				}
@@ -254,6 +256,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					Address:      addr,
 					CreationDate: timestamp,
 					Size:         size,
+					ObjectCount:  objectCount,
 				})
 				if err != nil {
 					return nil, err
@@ -282,7 +285,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 				})
 			} else {
 				// write tree
-				addr, size, err := m.writeTree(tx, mergedEntries)
+				addr, size, objectCount, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
 					return nil, err
 				}
@@ -297,6 +300,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					EntrySize:         &size,
 					EntryCreationDate: &timestamp,
 					Tombstone:         false,
+					ObjectCount:       objectCount,
 				})
 			}
 		}

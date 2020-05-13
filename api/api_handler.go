@@ -778,6 +778,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			CreationDate: writeTime,
 			Size:         size,
 			Checksum:     checksum,
+			ObjectCount:  1,
 		}
 		err = index.WriteFile(repo.Id, params.BranchID, params.Path, entry, obj)
 		if err != nil {

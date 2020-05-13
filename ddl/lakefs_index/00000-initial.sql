@@ -50,6 +50,7 @@ CREATE TABLE entries
     creation_date timestamptz NOT NULL,
     size bigint NOT NULL CHECK(size >= 0),
     checksum varchar(64) NOT NULL,
+    object_count integer
 
     PRIMARY KEY (repository_id, parent_address, name)
 );

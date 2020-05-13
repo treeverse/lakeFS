@@ -591,12 +591,14 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 
 		if merkleEntry != nil {
 			typ := model.EntryTypeObject
-			bname := pth.New(path, typ).BaseName()
+			pathObj := pth.New(path, typ)
+			bname := pathObj.BaseName()
 			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 				Path:              path,
 				EntryName:         &bname,
 				EntryCreationDate: &ts,
 				EntryType:         &typ,
+				ParentPath:        pathObj.ParentPath(),
 				Tombstone:         true,
 			})
 			if err != nil {
@@ -668,33 +670,90 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			return nil, err
 		}
 
-		var root string
-		if reference.isBranch {
-			err := partialCommit(tx, reference.branch.Id) // block on this since we traverse the tree immediately after
-			if err != nil {
+		tree := merkle.New(reference.commit.Tree)
+		var res, currentRes []*model.Entry
+		var wsHasMore, combineHasMore bool
+		treeHasMore := true
+		for len(res) < results+1 && (treeHasMore || wsHasMore) {
+			currentRes, treeHasMore, err = tree.PrefixScan(tx, path, from, results+1, descend)
+			if err != nil && !errors.Is(err, db.ErrNotFound) {
+				log.WithError(err).Error("could not scan tree")
 				return nil, err
 			}
-			reference.branch, err = tx.ReadBranch(reference.branch.Id)
-			if err != nil {
-				return nil, err
-			}
-			root = reference.branch.WorkspaceRoot
-		} else {
-			root = reference.commit.Tree
-		}
+			var wsEntries []*model.WorkspaceEntry
+			if reference.isBranch {
+				if descend {
+					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, results+1)
+					if err != nil && !errors.Is(err, db.ErrNotFound) {
+						log.WithError(
+							err).Error("failed to list workspace")
+						return nil, err
+					}
 
-		tree := merkle.New(root)
-		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
-		if err != nil {
-			log.WithError(err).Error("could not scan tree")
-			return nil, err
+				} else {
+					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, results+1)
+					if err != nil && !errors.Is(err, db.ErrNotFound) {
+						log.WithError(err).Error("failed to list workspace")
+						return nil, err
+					}
+				}
+				currentRes = CombineLists(currentRes, wsEntries, results+1-len(res))
+			}
+			res = append(res, currentRes...)
+			if len(res) == 0 {
+				return nil, db.ErrNotFound
+			}
 		}
-		return &result{hasMore, res}, nil
+		return &result{combineHasMore, res}, nil
 	})
 	if err != nil {
 		return nil, false, err
 	}
 	return entries.(*result).results, entries.(*result).hasMore, nil
+}
+func CompareEntries(entry *model.Entry, wsEntry *model.WorkspaceEntry) int {
+	return strings.Compare(entry.Name, wsEntry.Path)
+}
+
+func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amount int) []*model.Entry {
+	var result []*model.Entry
+	treeIndex := 0
+	wsIndex := 0
+	for treeIndex < len(entries) && wsIndex < len(wsEntries) {
+		if len(result) == amount {
+			return result
+		}
+		wsEntry := wsEntries[wsIndex]
+		treeEntry := entries[treeIndex]
+		if CompareEntries(treeEntry, wsEntry) < 0 {
+			result = append(result, treeEntry)
+			treeIndex++
+		} else if CompareEntries(treeEntry, wsEntry) > 0 {
+			result = append(result, wsEntry.EntryWithPathAsName())
+			wsIndex++
+		} else {
+			treeIndex++
+			wsIndex++
+			if treeEntry.ObjectCount-wsEntry.TombstoneCount > 0 {
+				result = append(result, wsEntry.EntryWithPathAsName())
+			}
+		}
+	}
+	for treeIndex < len(entries) {
+		if len(result) == amount {
+			return result
+		}
+		result = append(result, entries[treeIndex])
+		treeIndex++
+	}
+	for wsIndex < len(wsEntries) {
+		if len(result) == amount {
+			return result
+		}
+		result = append(result, wsEntries[wsIndex].EntryWithPathAsName())
+		wsIndex++
+	}
+	return result
 }
 
 func (index *DBIndex) ResetBranch(repoId, branch string) error {
@@ -902,7 +961,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
+		//err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
 		if err != nil {
 			return nil, err
 		}

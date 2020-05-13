@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 	indexerrors "github.com/treeverse/lakefs/index/errors"
@@ -14,6 +13,8 @@ import (
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
+	ListWorkspaceDirectory(branch, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error)
+	ListWorkspaceWithPrefix(branch, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
@@ -58,9 +59,58 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 	var entries []*model.WorkspaceEntry
 	err := o.tx.Select(
 		&entries,
-		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
+		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 ORDER BY path`,
 		o.repoId, branch)
 	return entries, err
+}
+func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
+	var entries []*model.WorkspaceEntry
+
+	err := o.tx.Select(&entries,
+		`SELECT * FROM (
+					(SELECT entry_name, parent_path, path, entry_type, entry_size, entry_creation_date, entry_checksum, CASE WHEN tombstone THEN 1 ELSE 0 END AS tombstone_count
+					FROM workspace_entries
+    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3
+					ORDER BY 3)
+						UNION ALL
+					(SELECT $3 as parent_path,
+					   (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) + 1] || '/' AS entry_name,
+					   $3 || (string_to_array(path, '/'))[length($3) - length(REPLACE($3, '/', '')) +1] || '/' path,
+					   'tree' as entry_type, 0 AS entry_size, NULL::timestamptz AS entry_creation_date, '' AS entry_checksum,
+					   CASE WHEN bool_and(tombstone) THEN SUM(CASE WHEN tombstone THEN 1 ELSE 0 END) ELSE -1 END AS tombstone_count 
+					FROM workspace_entries
+					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%' AND parent_path <> $3
+					GROUP BY 1,2,3,4,5,6,7 ORDER BY 3)
+				) t ORDER BY path`, o.repoId, branch, dir)
+
+	if err != nil {
+		return nil, false, err
+	}
+	return entries, false, nil // TODO implement hasmore
+}
+
+func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
+	var entries []*model.WorkspaceEntry
+	additionalCondition := ""
+	args := []interface{}{o.repoId, branch, prefix}
+	if len(from) > 0 {
+		additionalCondition = " AND path > $4"
+		args = append(args, from)
+	}
+	limitClause := ""
+	if amount > 0 {
+		limitClause = fmt.Sprintf("LIMIT %d", amount+1)
+	}
+	err := o.tx.Select(&entries,
+		fmt.Sprintf(`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND PATH LIKE $3 || '%%' %s ORDER BY path %s`,
+			additionalCondition, limitClause),
+		args...)
+	hasMore := false
+	if len(entries) >= amount+1 {
+		hasMore = true
+		entries = entries[:amount]
+	}
+	return entries, hasMore, err
 }
 
 func (o *DBRepoOperations) ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error) {
@@ -195,10 +245,10 @@ func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry
 	return entry, err
 }
 
-func (s *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, error) {
+func (o *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, error) {
 	m := &model.ObjectDedup{}
-	err := s.tx.Get(m, `SELECT repository_id,encode(dedup_id,'hex') as dedup_id,physical_address FROM object_dedup WHERE repository_id = $1 AND dedup_id = decode($2,'hex')`,
-		s.repoId, dedupId)
+	err := o.tx.Get(m, `SELECT repository_id,encode(dedup_id,'hex') as dedup_id,physical_address FROM object_dedup WHERE repository_id = $1 AND dedup_id = decode($2,'hex')`,
+		o.repoId, dedupId)
 	return m, err
 }
 
@@ -250,10 +300,10 @@ func (o *DBRepoOperations) WriteToWorkspacePath(branch, parentPath, path string,
 	return err
 }
 
-func (s *DBRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
+func (o *DBRepoOperations) WriteObjectDedup(dedup *model.ObjectDedup) error {
 
-	_, err := s.tx.Exec(`INSERT INTO object_dedup  (repository_id, dedup_id,physical_address) values ($1,decode($2,'hex'),$3)`,
-		s.repoId, dedup.DedupId, dedup.PhysicalAddress)
+	_, err := o.tx.Exec(`INSERT INTO object_dedup  (repository_id, dedup_id,physical_address) values ($1,decode($2,'hex'),$3)`,
+		o.repoId, dedup.DedupId, dedup.PhysicalAddress)
 	return err
 }
 
@@ -266,11 +316,11 @@ func (o *DBRepoOperations) ClearWorkspace(branch string) error {
 func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) error {
 	for _, entry := range entries {
 		_, err := o.tx.Exec(`
-			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum)
-			VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+			INSERT INTO entries (repository_id, parent_address, name, address, type, creation_date, size, checksum, object_count)
+			VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
 			ON CONFLICT ON CONSTRAINT entries_pkey
 			DO NOTHING`,
-			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum)
+			o.repoId, address, entry.Name, entry.Address, entry.EntryType, entry.CreationDate, entry.Size, entry.Checksum, entry.ObjectCount)
 		if err != nil {
 			return err
 		}
