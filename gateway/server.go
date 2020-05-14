@@ -71,8 +71,10 @@ func NewServer(
 		ServerErrorHandler: nil,
 	}
 	handler = utils.RegisterRecorder(
-		httputil.LoggingMiddleWare(
-			"X-Amz-Request-UploadId", logging.Fields{"service_name": "s3_gateway"}, handler,
+		httputil.LoggingMiddleware(
+			"X-Amz-Request-Id",
+			logging.Fields{"service_name": "s3_gateway"},
+			handler,
 		),
 	)
 
