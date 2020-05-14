@@ -168,7 +168,7 @@ func (s *Server) setupServer() error {
 
 	s.setupHandler(
 		// api handler
-		httputil.LoggingMiddleWare(
+		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			cookieToAPIHeader(s.apiServer.GetHandler()),
@@ -178,7 +178,7 @@ func (s *Server) setupServer() error {
 		UIHandler(s.authService),
 
 		// setup handler
-		httputil.LoggingMiddleWare(
+		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			setupLakeFSHandler(s.authService, s.migrator),
