@@ -58,6 +58,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 	// write this object to workspace
 	src.CreationDate = time.Now() // TODO: move this logic into the Index impl.
+	src.Name = o.Path
 	err = o.Index.WriteEntry(o.Repo.Id, o.Ref, o.Path, src)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
