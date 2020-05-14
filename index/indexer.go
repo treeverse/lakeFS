@@ -674,12 +674,12 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 		var res, currentRes []*model.Entry
 		var wsHasMore bool
 		treeHasMore := true
-		amountForQueries := 0
-		if results > 0 {
+		amountForQueries := -1
+		if results > -1 {
 			amountForQueries = results + 1
 		}
 		path = pth.New(path, model.EntryTypeObject).String()
-		for (len(res) < results+1 || results <= 0) && (treeHasMore || wsHasMore) {
+		for (len(res) < amountForQueries || results <= 0) && (treeHasMore || wsHasMore) {
 			currentRes, treeHasMore, err = tree.PrefixScan(tx, path, from, amountForQueries, descend)
 			if err != nil && !errors.Is(err, db.ErrNotFound) {
 				log.WithError(err).Error("could not scan tree")
@@ -705,6 +705,9 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 				currentRes = CombineLists(currentRes, wsEntries, amountForQueries-len(res))
 			}
 			res = append(res, currentRes...)
+			if len(res) > 0 {
+				from = res[len(res)-1].Name
+			}
 		}
 		hasMore := false
 		if results > 0 && len(res) > results {
@@ -723,6 +726,9 @@ func CompareEntries(entry *model.Entry, wsEntry *model.WorkspaceEntry) int {
 }
 
 func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amount int) []*model.Entry {
+	if amount < -1 {
+		amount = -1
+	}
 	var result []*model.Entry
 	treeIndex := 0
 	wsIndex := 0
