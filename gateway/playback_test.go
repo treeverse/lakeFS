@@ -13,24 +13,12 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/utils"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
 )
-
-type playBackMockConf struct {
-	ListenAddress   string `json:"listen_address"`
-	BareDomain      string `json:"bare_domain"`
-	AccessKeyId     string `json:"access_key_id"`
-	AccessSecretKey string `json:"access_secret_Key"`
-	CredentialType  string `json:"credential_type"`
-	UserId          int    `json:"user_id"`
-	Region          string `json:"Region"`
-}
 
 type dependencies struct {
 	blocks block.Adapter
@@ -117,9 +105,9 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	}
 }
 
-func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
-	m := new(playBackMockConf)
-	fName := filepath.Join(directory, "simulation_config.json")
+func newGatewayAuth(t *testing.T, directory string) *utils.PlayBackMockConf {
+	m := new(utils.PlayBackMockConf)
+	fName := filepath.Join(directory, utils.SimulationConfig)
 	confStr, err := ioutil.ReadFile(fName)
 	if err != nil {
 		t.Fatal(fName + " not found\n")
@@ -129,23 +117,6 @@ func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
 		t.Fatal("Failed to unmarshal configuration\n ")
 	}
 	return m
-}
-
-func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.Credential, error) {
-	if accessKey != m.AccessKeyId {
-		logging.Default().Fatal("access key in recording different than configuration")
-	}
-	aCred := new(model.Credential)
-	aCred.AccessKeyId = accessKey
-	aCred.AccessSecretKey = m.AccessSecretKey
-	aCred.Type = m.CredentialType
-	aCred.UserId = &m.UserId
-	return aCred, nil
-
-}
-
-func (m *playBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
-	return &auth.AuthorizationResponse{true, nil}, nil
 }
 
 func deCompressRecordings(archive, dir string) {
