@@ -1,6 +1,7 @@
 package merkle
 
 import (
+	"encoding/json"
 	"strings"
 	"time"
 
@@ -29,6 +30,30 @@ func max(a, b time.Time) time.Time {
 		return a
 	}
 	return b
+}
+
+func prettyEntryNames(entries []*model.Entry) string {
+	names := make([]string, len(entries))
+	for i, entry := range entries {
+		names[i] = entry.GetName()
+	}
+	data, err := json.Marshal(names)
+	if err != nil {
+		return "unknown"
+	}
+	return string(data)
+}
+
+func prettyWorkspaceNames(changes []*model.WorkspaceEntry) string {
+	names := make([]string, len(changes))
+	for i, change := range changes {
+		names[i] = change.Entry().GetName()
+	}
+	data, err := json.Marshal(names)
+	if err != nil {
+		return "unknown"
+	}
+	return string(data)
 }
 
 func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, time.Time, error) {
@@ -62,7 +87,12 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 				nextChange++
 				// changed entry comes first
 				if currChange.Tombstone {
-					logger.WithField("name", currChange.GetName()).Debug("trying to remove an entry that does not exist")
+					logger.
+						WithField("current_change_name", currChange.GetName()).
+						WithField("current_entry_name", currEntry.GetName()).
+						WithField("changes", prettyWorkspaceNames(changes)).
+						WithField("entries", prettyEntryNames(current)).
+						Error("trying to remove an entry that does not exist")
 				} else {
 					merged = append(merged, currChange.Entry())
 				}
@@ -72,7 +102,11 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*m
 			currChange := changes[nextChange]
 			timeStamp = max(timeStamp, *currChange.EntryCreationDate)
 			if currChange.Tombstone {
-				logger.WithField("name", currChange.GetName()).Debug("trying to remove an entry that does not exist")
+				logger.
+					WithField("current_change_name", currChange.GetName()).
+					WithField("changes", prettyWorkspaceNames(changes)).
+					WithField("entries", prettyEntryNames(current)).
+					Error("trying to remove an entry that does not exist, no entries are left")
 			} else {
 				merged = append(merged, currChange.Entry())
 			}
