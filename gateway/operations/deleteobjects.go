@@ -39,9 +39,10 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			})
 			continue
 		}
+		lg := o.Log().WithField("key", obj.Key)
 		err = o.Index.DeleteObject(o.Repo.Id, resolvedPath.Ref, resolvedPath.Path)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
-			o.Log().WithError(err).WithField("key", obj.Key).Error("failed deleting object")
+			lg.WithError(err).Error("failed deleting object")
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",
 				Key:     obj.Key,
@@ -49,7 +50,9 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			})
 			continue
 		} else if errors.Is(err, db.ErrNotFound) {
-			o.Log().WithField("key", obj.Key).Debug("tried to delete a non-existent object")
+			lg.Debug("tried to delete a non-existent object")
+		} else if err == nil {
+			lg.Debug("object set for deletion")
 		}
 		if !req.Quiet {
 			responses = append(responses, serde.Deleted{Key: obj.Key})
