@@ -2,8 +2,10 @@ package config
 
 import (
 	"fmt"
-	"github.com/treeverse/lakefs/block/local"
 	"time"
+
+	"github.com/treeverse/lakefs/block/local"
+	"github.com/treeverse/lakefs/block/mem"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/stats"
@@ -148,8 +150,10 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 		return c.buildLocalAdapter()
 	case "s3":
 		return c.buildS3Adapter()
+	case "mem", "memory":
+		return mem.New()
 	default:
-		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\" or \"local\"",
+		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\", \"local\" or \"mem\"",
 			viper.GetString("blockstore.type")))
 	}
 }
