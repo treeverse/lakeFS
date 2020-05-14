@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 0.01
+	DefaultPartialCommitRatio = 0.00001
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -692,7 +692,9 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 		tree := merkle.New(root)
 		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
 		if err != nil {
-			log.WithError(err).Error("could not scan tree")
+			if !errors.Is(err, db.ErrNotFound) {
+				log.WithError(err).Error("could not scan tree")
+			}
 			return nil, err
 		}
 		return &result{hasMore, res}, nil
