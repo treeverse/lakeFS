@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 0.00001
+	DefaultPartialCommitRatio = 0.01
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
