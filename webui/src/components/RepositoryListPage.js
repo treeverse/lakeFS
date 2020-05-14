@@ -81,15 +81,18 @@ export const RepositoryListPage = connect(
     ({ listRepositories, listRepositoriesPaginate,  filterRepositories, createRepository, createRepositoryDone })
 )(({listRepositories, listRepositoriesPaginate, filterRepositories, createRepository, createRepositoryDone, list, create, createIndex }) => {
 
-    useEffect(()=> {
-        listRepositories();
-    }, [listRepositories, createRepository, createIndex]);
-
     const [showingCreateModal, setShowCreateModal] = useState(false);
     const closeCreateModal = () => setShowCreateModal(false);
     const showCreateModal = () => setShowCreateModal(true);
 
     const filterField = useRef(null);
+
+    useEffect(()=> {
+        listRepositories();
+        if (create.done) {
+            setShowCreateModal(false);
+        }
+    }, [listRepositories, create.done]);
 
     return (
         <div className="mt-3">
