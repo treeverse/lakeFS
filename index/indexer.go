@@ -696,7 +696,8 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 					}
 
 				} else {
-					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, path, from, amountForQueries)
+					pathObj := pth.New(path, model.EntryTypeObject)
+					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, pathObj.ParentPath(), pathObj.BaseName(), from, amountForQueries)
 					if err != nil {
 						log.WithError(err).Error("failed to list workspace")
 						return nil, err

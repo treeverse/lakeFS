@@ -13,7 +13,7 @@ import (
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
-	ListWorkspaceDirectory(branch, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error)
+	ListWorkspaceDirectory(branch, path, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error)
 	ListWorkspaceWithPrefix(branch, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
@@ -63,25 +63,25 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 		o.repoId, branch)
 	return entries, err
 }
-func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
+func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
 	var entries []*model.WorkspaceEntry
 	limitStatement := ""
 	if amount >= 0 {
 		limitStatement = fmt.Sprintf("LIMIT %d", amount+1)
 	}
-	args := []interface{}{o.repoId, branch, dir}
+	args := []interface{}{o.repoId, branch, dir, prefix}
 	additionalCondition := ""
 	additionalConditionDirectories := ""
 	if len(from) > 0 {
-		additionalCondition = "AND path > $4"
-		additionalConditionDirectories = "AND LEFT(path, LENGTH($3) + STRPOS(SUBSTRING(path FROM length($3) + 1), '/')) > $4"
+		additionalCondition = "AND path > $5"
+		additionalConditionDirectories = "AND LEFT(path, LENGTH($3) + STRPOS(SUBSTRING(path FROM length($3) + 1), '/')) > $5"
 		args = append(args, from)
 	}
 	err := o.tx.Select(&entries, fmt.Sprintf(
 		`SELECT * FROM (
 					(SELECT parent_path, path, entry_name, entry_type, entry_size, entry_creation_date, entry_checksum, CASE WHEN tombstone THEN 1 ELSE 0 END AS tombstone_count
 					FROM workspace_entries
-    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 %s
+    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 AND entry_name LIKE $4 || '%%' %s
 					ORDER BY 3 %s)
 						UNION ALL
 					(SELECT $3 as parent_path,
@@ -90,7 +90,7 @@ func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, from string, amou
 					   'tree' as entry_type, 0 AS entry_size, NULL::timestamptz AS entry_creation_date, '' AS entry_checksum,
 					   CASE WHEN bool_and(tombstone) THEN COUNT(*) ELSE -1 END AS tombstone_count 
 					FROM workspace_entries
-					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%%' AND parent_path <> $3 %s 
+					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%%' AND parent_path <> $3 AND entry_name LIKE $4 || '%%' %s  
 					GROUP BY 1,2,3,4,5,6,7 ORDER BY 3 %s)
 				) t ORDER BY path %s`, additionalCondition, limitStatement, additionalConditionDirectories, limitStatement, limitStatement), args...)
 	if err != nil {

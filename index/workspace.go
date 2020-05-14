@@ -52,7 +52,7 @@ func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.Worksp
 		if wsEntry != nil {
 			wsPath = wsEntry.Path
 		}
-		wsEntriesInDir, _, err := tx.ListWorkspaceDirectory(branch, wsPath, "", -1)
+		wsEntriesInDir, _, err := tx.ListWorkspaceDirectory(branch, wsPath, "", "", -1)
 
 		if err != nil {
 			return false, err
