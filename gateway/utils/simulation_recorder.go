@@ -1,6 +1,7 @@
 package utils
 
 import (
+	"archive/zip"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -53,18 +54,23 @@ func (r *recordingBodyReader) Close() error {
 
 var uniquenessCounter int32 // persistent request counter during run. used only below,
 
-func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain, listenAddr string) http.Handler {
+func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain, listenAddr string, server *http.Server) http.Handler {
 	logger := logging.Default()
 	testDir, exist := os.LookupEnv("RECORD")
 	if !exist {
 		return next
 	}
-	recordingDir := filepath.Join("gateway/testdata/recordings", testDir)
+	recordingDir := filepath.Join(RecordingRoot, testDir)
 	err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
 	if err != nil {
 		logger.WithError(err).Fatal("FAILED creat directory for recordings \n")
 	}
 	uploadIdRegexp := regexp.MustCompile("<UploadId>([\\dA-Za-z_.+/]+)</UploadId>")
+
+	server.RegisterOnShutdown(func() {
+		compressRecordings(testDir, recordingDir)
+	})
+	//compressRecordings(testDir,recordingDir )
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -97,6 +103,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			next.ServeHTTP(respWriter, r)
 			logRequest(r, respWriter.uploadId, nameBase, respWriter.StatusCode, recordingDir)
 		})
+
 }
 
 func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int, recordingDir string) {
@@ -166,4 +173,54 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 			Fatal("couldn't marshal configuration")
 	}
 	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0755)
+}
+
+func compressRecordings(testName, recordingDir string) {
+	logger := logging.Default()
+	zipFileName := filepath.Join(RecordingRoot, testName+".zip")
+	zWriter, err := os.Create(zipFileName)
+	defer zWriter.Close()
+	if err != nil {
+		logger.WithError(err).Error("Failed creating zip archive file")
+		return
+	}
+	// Create a new zip archive.
+	w := zip.NewWriter(zWriter)
+	dirList, err := ioutil.ReadDir(recordingDir)
+	if err != nil {
+		logger.WithError(err).Error("Failed reading directory ")
+		return
+	}
+	for _, file := range dirList {
+		fName := file.Name()
+		fullName := filepath.Join(recordingDir, fName)
+		inputFile, err := os.Open(fullName)
+		if err != nil {
+			logger.WithError(err).Error("Failed opening recording file " + fName)
+			return
+		}
+		outZip, err := w.Create(fName)
+		if err != nil {
+			logger.WithError(err).Error("Failed creating to zip file " + fName)
+			return
+		}
+		_, err = io.Copy(outZip, inputFile)
+		if err != nil {
+			logger.WithError(err).Error("Failed copying to zip file " + fName)
+			return
+		}
+	}
+
+	// Make sure to check the error on Close.
+	err = w.Close()
+	if err != nil {
+		logger.WithError(err).Error("Failed closing archive")
+		return
+	}
+	zWriter.Close()
+	os.RemoveAll(recordingDir)
+	logger.Warn("******* BEFORE SLEEP ****")
+	time.Sleep(120 * time.Second)
+	logger.Warn("******* AFTER SLEEP ****")
+
 }

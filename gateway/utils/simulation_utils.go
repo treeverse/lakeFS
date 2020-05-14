@@ -36,6 +36,7 @@ const (
 	ResponseHeaderExtension = ".response_headers"
 	RequestBodyExtension    = ".request_body"
 	SimulationConfig        = "simulation_config.json"
+	RecordingRoot           = "gateway/testdata/recordings"
 )
 
 type LazyOutput struct {
