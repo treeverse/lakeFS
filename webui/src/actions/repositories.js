@@ -16,6 +16,8 @@ export const createRepository = (repo) => {
     });
 };
 
+export const createRepositoryDone = () => REPOSITORY_CREATE.resetAction();
+
 export const deleteRepository = (repoId) => {
     return REPOSITORY_DELETE.execute(async () => {
         return await api.repositories.delete(repoId);
