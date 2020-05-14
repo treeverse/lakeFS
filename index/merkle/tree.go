@@ -2,26 +2,43 @@ package merkle
 
 import (
 	"errors"
-	"fmt"
-	"os"
 	"strings"
-	"text/template"
-	"time"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/ident"
 	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/index/store"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type Merkle struct {
-	root string
-	path string
+	root   string
+	path   string
+	logger logging.Logger
 }
 
-func New(root string) *Merkle {
-	return &Merkle{root: root}
+func WithLogger(l logging.Logger) func(*Merkle) {
+	return func(m *Merkle) {
+		m.logger = l
+	}
+}
+
+func WithPath(path string) func(*Merkle) {
+	return func(m *Merkle) {
+		m.path = path
+	}
+}
+
+func New(root string, opts ...func(*Merkle)) *Merkle {
+	m := &Merkle{
+		root:   root,
+		logger: logging.Default(),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
 }
 
 type TreeReader interface {
@@ -195,7 +212,7 @@ func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, 
 			if depth > 0 {
 				dirPath = path.Join([]string{m.path, entry.Name})
 			}
-			t := Merkle{root: entry.Address, path: dirPath}
+			t := New(entry.Address, WithLogger(m.logger), WithPath(dirPath))
 			_, hadMore, err := t.walk(tx, prefix, from, amount, c, depth+1)
 			if err != nil {
 				return nil, false, err
@@ -237,7 +254,11 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 			if err != nil {
 				return nil, err
 			}
-			mergedEntries, timestamp, err := mergeChanges(currentEntries, changes)
+			lg := m.logger.WithFields(logging.Fields{
+				"merge_depth": i,
+				"merge_path":  treePath,
+			})
+			mergedEntries, timestamp, err := mergeChanges(currentEntries, changes, lg)
 			if err != nil {
 				return nil, err
 			}
@@ -301,64 +322,9 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 			}
 		}
 	}
-	return &Merkle{root: rootAddr}, nil
+	return New(rootAddr, WithLogger(m.logger)), nil
 }
 
 func (m *Merkle) Root() string {
 	return m.root
-}
-
-type WalkFn func(path, name, typ string) bool
-
-var format, _ = template.New("treeFormat").Parse("{{.Indent}}{{.Hash}} {{.Type}} {{.Time}} {{.Size}} {{.Name}}\n")
-
-func (m *Merkle) WalkAll(tx TreeReader) {
-	_ = format.Execute(os.Stdout, struct {
-		Indent string
-		Hash   string
-		Type   string
-		Time   string
-		Size   string
-		Name   string
-	}{
-		strings.Repeat("  ", 0),
-		m.root[:8],
-		model.EntryTypeTree,
-		time.Now().Format(time.RFC3339),
-		fmt.Sprintf("%.10d", 0),
-		"\"\"",
-	})
-	m.walkall(tx, 1, m.root)
-}
-
-func (m *Merkle) walkall(tx TreeReader, depth int, root string) {
-
-	children, _, err := tx.ListTree(root, "", -1)
-	if err != nil {
-		panic(err) // TODO: properly handle errors
-	}
-	for _, child := range children {
-		name := child.Name
-		if child.EntryType == model.EntryTypeTree {
-			name = fmt.Sprintf("%s", name)
-		}
-		_ = format.Execute(os.Stdout, struct {
-			Indent string
-			Hash   string
-			Type   string
-			Time   string
-			Size   string
-			Name   string
-		}{
-			strings.Repeat(" - ", depth),
-			child.Address[:8],
-			child.EntryType,
-			child.CreationDate.Format(time.RFC3339),
-			fmt.Sprintf("%.10d", child.Size),
-			fmt.Sprintf("\"%s\"", name),
-		})
-		if child.EntryType == model.EntryTypeTree {
-			m.walkall(tx, depth+1, child.Address)
-		}
-	}
 }
