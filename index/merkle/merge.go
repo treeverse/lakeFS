@@ -56,8 +56,7 @@ func prettyWorkspaceNames(changes []*model.WorkspaceEntry) string {
 	return string(data)
 }
 
-func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry) ([]*model.Entry, time.Time, error) {
-	logger := logging.Default()
+func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry, logger logging.Logger) ([]*model.Entry, time.Time, error) {
 	merged := make([]*model.Entry, 0)
 	var timeStamp time.Time
 	nextCurrent := 0
