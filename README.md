@@ -313,7 +313,7 @@ auth:
 
 
 blockstore:
-  type: s3 # or "local"
+  type: s3 # or ["local", "mem"]
   s3:
     region: us-east-1 
     profile: default # optional, implies using a credentials file
@@ -347,7 +347,7 @@ Here's a list of all possible values used in the configuration:
 | `metadata.db.uri`                             | string                                              | `"postgres://localhost:5432/postgres?search_path=lakefs_index"` | Valid PostgreSQL connection string that includes a search_path query parameter (schema name to use. Doesn't have to exist)                                  |
 | `auth.db.uri`                                 | string                                              | `"postgres://localhost:5432/postgres?search_path=lakefs_auth"`  | Valid PostgreSQL connection string that includes a search_path query parameter (schema name to use. Doesn't have to exist)                                  |
 | `auth.encrypt.secret_key`                     | string                                              | N/A                                                             | Required. This key is used as a symmetric encryption key to store sensitive data encrypted. Store in a KMS or somewhere safe!                               |
-| `blockstore.type`                             | one of `["local", "s3"]`                            | `"local"`                                                       | Where to store the actual data files written to the system                                                                                                  |
+| `blockstore.type`                             | one of `["local", "s3", "mem"]`                     | `"local"`                                                       | Where to store the actual data files written to the system                                                                                                  |
 | `blockstore.local.path`                       | string                                              | `" ~/lakefs/data"`                                              | Directory to store data written to the system when using the local blockstore type                                                                          |
 | `blockstore.s3.region`                        | string                                              | `"us-east-1"`                                                   | Region used when writing to Amazon S3                                                                                                                       | 
 | `blockstore.s3.profile`                       | string                                              | N/A                                                             | If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)                   |
