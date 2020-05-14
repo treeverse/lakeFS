@@ -33,7 +33,9 @@ func ConnectDB(driver string, uri string) (Database, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		_ = tx.Rollback()
+	}()
 	// validate collate "C"
 	var collate string
 	row := tx.QueryRow("SELECT datcollate AS collation FROM pg_database WHERE datname = current_database()")
