@@ -1,5 +1,10 @@
 name: Node
-on: [push]
+on:
+  push:
+    paths:
+      - 'webui/**'
+    tags-ignore:
+      - '**'  # Don't run when doing a release
 jobs:
   test:
     name: Test React App
