@@ -14,12 +14,14 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 		path    string
 	}
 	testTable := []struct {
-		Name       string
-		Actions    []Action
-		ListPath   string
-		ListAfter  string
-		ListAmount int
-		Expected   []model.Entry
+		Name            string
+		Actions         []Action
+		ListPath        string
+		ListAfter       string
+		ListAmount      int
+		Expected        []model.Entry
+		ExpectedHasMore bool
+		Descend         bool
 	}{
 		{
 			Name: "one file from workspace",
@@ -27,8 +29,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 				command: write,
 				path:    "a/foo",
 			}},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "one file from merkle",
@@ -42,8 +45,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"",
 				},
 			},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "file from merkle folder from workspace",
@@ -61,8 +65,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"a/b/bar",
 				},
 			},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/b/", EntryType: model.EntryTypeTree}, {Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/b/", EntryType: model.EntryTypeTree}, {Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "deep delete",
@@ -84,8 +89,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"a/b/c/bar",
 				},
 			},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "override and delete",
@@ -111,8 +117,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"a/b/c/bar",
 				},
 			},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "two layer delete",
@@ -142,8 +149,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"a/b/bar",
 				},
 			},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "deep delete and add",
@@ -169,8 +177,9 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"a/b/c/foo",
 				},
 			},
-			ListPath: "a/",
-			Expected: []model.Entry{{Name: "a/b/", EntryType: model.EntryTypeTree}, {Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			Expected:   []model.Entry{{Name: "a/b/", EntryType: model.EntryTypeTree}, {Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "file from merkle folder from workspace with after",
@@ -188,9 +197,10 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					"a/b/bar",
 				},
 			},
-			ListPath:  "a/",
-			ListAfter: "a/b/",
-			Expected:  []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListPath:   "a/",
+			ListAfter:  "a/b/",
+			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount: -1,
 		},
 		{
 			Name: "delete one get one - delete committed",
@@ -242,6 +252,187 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 			ListAmount: 1,
 			Expected:   []model.Entry{{Name: "a/foo", EntryType: model.EntryTypeObject}},
 		},
+		{
+			Name: "zero amount from workspace",
+			Actions: []Action{{
+				command: write,
+				path:    "a/foo",
+			}},
+			ListPath:        "a/",
+			Expected:        []model.Entry{},
+			ListAmount:      0,
+			ExpectedHasMore: true,
+		},
+		{
+			Name: "zero amount from merkle",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					commit,
+					"",
+				},
+			},
+			ListPath:        "a/",
+			Expected:        []model.Entry{},
+			ListAmount:      0,
+			ExpectedHasMore: true,
+		},
+		{
+			Name: "zero amount from both",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/b/foo",
+				},
+				{
+					commit,
+					"",
+				},
+				{
+					command: write,
+					path:    "a/c/bar",
+				},
+			},
+			ListPath:        "a/",
+			Expected:        []model.Entry{},
+			ListAmount:      0,
+			ExpectedHasMore: true,
+		},
+		{
+			Name: "zero amount when path is empty",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					commit,
+					"",
+				},
+				{
+					command: write,
+					path:    "a/bar",
+				},
+			},
+			ListPath:        "b/",
+			Expected:        []model.Entry{},
+			ListAmount:      0,
+			ExpectedHasMore: false,
+		},
+		{
+			Name: "delete and paging",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "a/bar1",
+				},
+				{
+					command: write,
+					path:    "a/bar3",
+				},
+				{
+					command: deleteEntry,
+					path:    "a/bar1",
+				},
+				{
+					commit,
+					"",
+				},
+				{
+					command: write,
+					path:    "a/b/bar2",
+				},
+				{
+					command: deleteEntry,
+					path:    "a/bar3",
+				},
+			},
+			ListPath:        "a/",
+			Expected:        []model.Entry{{Name: "a/b/", EntryType: model.EntryTypeTree}, {Name: "a/foo", EntryType: model.EntryTypeObject}},
+			ListAmount:      2,
+			ExpectedHasMore: false,
+		},
+		{
+			Name:    "simple descend",
+			Descend: true,
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "c/loo",
+				},
+				{
+					command: write,
+					path:    "a/b/foo",
+				},
+				{
+					commit,
+					"",
+				},
+			},
+			ListPath:        "a/",
+			Expected:        []model.Entry{{Name: "a/b/foo"}, {Name: "a/foo"}},
+			ListAmount:      3,
+			ExpectedHasMore: false,
+		},
+		{
+			Name:    "descend workspace",
+			Descend: true,
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "c/loo",
+				},
+				{
+					command: write,
+					path:    "a/b/foo",
+				},
+			},
+			ListPath:        "a/",
+			Expected:        []model.Entry{{Name: "a/b/foo"}, {Name: "a/foo"}},
+			ListAmount:      3,
+			ExpectedHasMore: false,
+		},
+		{
+			Name:    "descend with paging",
+			Descend: true,
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "c/loo",
+				},
+				{
+					command: write,
+					path:    "a/b/foo",
+				},
+				{
+					command: write,
+					path:    "a/goo",
+				},
+			},
+			ListPath:        "a/",
+			Expected:        []model.Entry{{Name: "a/b/foo"}, {Name: "a/foo"}},
+			ListAmount:      2,
+			ExpectedHasMore: true,
+		},
 	}
 
 	for _, tc := range testTable {
@@ -256,11 +447,7 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			amount := tc.ListAmount
-			if amount == 0 { //TODO: remove this workaround once 0 and -1 works
-				amount = -1
-			}
-			entries, _, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, amount, false)
+			entries, hasMore, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, tc.ListAmount, tc.Descend)
 
 			//compare entries
 			if len(entries) != len(tc.Expected) {
@@ -269,11 +456,16 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 
 			for n, entry := range entries {
 				expected := tc.Expected[n]
+				if expected.EntryType == "" {
+					expected.EntryType = model.EntryTypeObject
+				}
 				if expected.Name != entry.Name || expected.EntryType != entry.EntryType {
 					t.Errorf("file mismatch expected name:%s got:%s, expected type:%s got:%s", expected.Name, entry.Name, expected.EntryType, entry.EntryType)
 				}
 			}
-
+			if tc.ExpectedHasMore != hasMore {
+				t.Fatalf("expected hasMore value: %v, got: %v", tc.ExpectedHasMore, hasMore)
+			}
 		})
 	}
 }
