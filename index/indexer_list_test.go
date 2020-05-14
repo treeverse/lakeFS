@@ -258,7 +258,7 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 			}
 			amount := tc.ListAmount
 			if amount == 0 { //TODO: remove this workaround once 0 and -1 works
-				amount = 100
+				amount = -1
 			}
 			entries, _, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, amount, false)
 

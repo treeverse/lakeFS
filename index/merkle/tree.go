@@ -130,7 +130,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 		relativePrefix = pfx[len(pfx)-1]
 	}
 	if len(from) > 0 {
-		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount+1)
+		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount)
 		if err != nil {
 			return nil, false, err
 		}

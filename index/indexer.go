@@ -679,7 +679,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			amountForQueries = results + 1
 		}
 		path = pth.New(path, model.EntryTypeObject).String()
-		for (len(res) < amountForQueries || results <= 0) && (treeHasMore || wsHasMore) {
+		for (len(res) < amountForQueries || results < 0) && (treeHasMore || wsHasMore) {
 			currentRes, treeHasMore, err = tree.PrefixScan(tx, path, from, amountForQueries, descend)
 			if err != nil && !errors.Is(err, db.ErrNotFound) {
 				log.WithError(err).Error("could not scan tree")
@@ -702,7 +702,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 						return nil, err
 					}
 				}
-				currentRes = CombineLists(currentRes, wsEntries, amountForQueries-len(res))
+				currentRes, from = CombineLists(currentRes, wsEntries, amountForQueries-len(res))
 			}
 			res = append(res, currentRes...)
 			if len(res) > 0 {
@@ -710,7 +710,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			}
 		}
 		hasMore := false
-		if results > 0 && len(res) > results {
+		if results >= 0 && len(res) > results {
 			hasMore = true
 			res = res[:results]
 		}
@@ -725,16 +725,17 @@ func CompareEntries(entry *model.Entry, wsEntry *model.WorkspaceEntry) int {
 	return strings.Compare(entry.Name, wsEntry.Path)
 }
 
-func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amount int) []*model.Entry {
+func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amount int) ([]*model.Entry, string) {
 	if amount < -1 {
 		amount = -1
 	}
 	var result []*model.Entry
 	treeIndex := 0
 	wsIndex := 0
+	lastHandled := ""
 	for treeIndex < len(entries) && wsIndex < len(wsEntries) {
 		if amount > 0 && len(result) == amount {
-			return result
+			break
 		}
 		wsEntry := wsEntries[wsIndex]
 		treeEntry := entries[treeIndex]
@@ -749,24 +750,30 @@ func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amo
 			wsIndex++
 			if treeEntry.ObjectCount-wsEntry.TombstoneCount > 0 {
 				result = append(result, wsEntry.EntryWithPathAsName())
+			} else {
+				lastHandled = wsEntry.Path
 			}
 		}
 	}
 	for treeIndex < len(entries) {
 		if amount > 0 && len(result) == amount {
-			return result
+			break
 		}
 		result = append(result, entries[treeIndex])
 		treeIndex++
 	}
 	for wsIndex < len(wsEntries) {
 		if amount > 0 && len(result) == amount {
-			return result
+			break
 		}
 		result = append(result, wsEntries[wsIndex].EntryWithPathAsName())
 		wsIndex++
 	}
-	return result
+	newFrom := lastHandled
+	if newFrom == "" && len(result) > 0 {
+		newFrom = result[len(result)-1].Name
+	}
+	return result, newFrom
 }
 
 func (index *DBIndex) ResetBranch(repoId, branch string) error {
@@ -967,32 +974,11 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 }
 
 func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
-	err := ValidateAll(
-		ValidateRepoId(repoId),
-		ValidateRef(branch))
-	if err != nil {
-		return nil, err
-	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		//err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
-		if err != nil {
-			return nil, err
-		}
-		branch, err := tx.ReadBranch(branch)
-		if err != nil {
-			return nil, err
-		}
-
-		diff, err := merkle.Diff(tx,
-			merkle.New(branch.WorkspaceRoot),
-			merkle.New(branch.CommitRoot),
-			merkle.New(branch.CommitRoot))
-		if err != nil {
-			index.log().WithError(err).WithField("branch", branch).Error("diff workspace failed")
-		}
-		return diff, err
+		return WorkspaceDiff(tx, branch)
 	})
 	if err != nil {
+		index.log().WithError(err).WithField("branch", branch).Error("could not do workspace diff")
 		return nil, err
 	}
 	return res.(merkle.Differences), nil
