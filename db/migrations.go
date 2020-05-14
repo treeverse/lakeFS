@@ -12,7 +12,6 @@ import (
 
 	"github.com/rakyll/statik/fs"
 	"github.com/treeverse/lakefs/ddl"
-	_ "github.com/treeverse/lakefs/ddl"
 	"github.com/treeverse/lakefs/logging"
 )
 
