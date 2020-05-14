@@ -70,19 +70,20 @@ func NewServer(
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
-	handler = utils.RegisterRecorder(
+	initialServer := &http.Server{
+		Handler: nil,
+		Addr:    listenAddr,
+	}
+	initialServer.Handler = utils.RegisterRecorder(
 		httputil.LoggingMiddleWare(
 			"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
-		), authService, region, bareDomain, listenAddr)
+		), authService, region, bareDomain, listenAddr, initialServer)
 
 	// assemble Server
 	return &Server{
 		ctx:        ctx,
 		bareDomain: bareDomain,
-		Server: &http.Server{
-			Handler: handler,
-			Addr:    listenAddr,
-		},
+		Server:     initialServer,
 	}
 }
 
