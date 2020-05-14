@@ -53,7 +53,7 @@ func (r *recordingBodyReader) Close() error {
 
 var uniquenessCounter int32 // persistent request counter during run. used only below,
 
-func RegisterRecorder(next http.Handler) http.Handler {
+func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain, listenAddr string) http.Handler {
 	logger := logging.Default()
 	testDir, exist := os.LookupEnv("RECORD")
 	if !exist {
@@ -68,25 +68,30 @@ func RegisterRecorder(next http.Handler) http.Handler {
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+
 			uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
-			timeStr := time.Now().Format("01-02-15-04-05")
-			nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
+			if uniqueCount == 1 { //first activation. Now we can store the simulation configuration, since we have
+				// user details
+				createConfFile(r, authService, region, bareDomain, listenAddr, recordingDir)
+			}
+			timeStr := time.Now().Format("15-04-05")
+			nameBase := timeStr + fmt.Sprintf(
+				"-%05d", (uniqueCount%100000))
 			respWriter := new(ResponseWriter)
 			respWriter.OriginalWriter = w
-			respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, "R"+nameBase+".resp"))
+			respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, nameBase+ResponseExtension))
 			respWriter.Regexp = uploadIdRegexp
 			respWriter.Headers = make(http.Header)
-			t := r.URL.RawQuery
-			if (t == "uploads=") || (t == "uploads") { // initial post for s3 multipart upload
+			rawQuery := r.URL.RawQuery
+			if (rawQuery == "uploads=") || (rawQuery == "uploads") { // initial post for s3 multipart upload
 				respWriter.lookForUploadId = true
 			}
-			newBody := new(recordingBodyReader)
-			newBody.recorder = NewLazyOutput(recordingDir + "/" + "B" + nameBase + ".body")
-			newBody.originalBody = r.Body
+			newBody := &recordingBodyReader{recorder: NewLazyOutput(filepath.Join(recordingDir, nameBase+RequestBodyExtension)),
+				originalBody: r.Body}
 			r.Body = newBody
 			defer func() {
 				_ = respWriter.ResponseLog.Close()
-				respWriter.SaveHeaders(recordingDir + "/" + "H" + nameBase + ".hdr")
+				respWriter.SaveHeaders(filepath.Join(recordingDir, nameBase+ResponseHeaderExtension))
 				_ = newBody.recorder.Close()
 			}()
 			next.ServeHTTP(respWriter, r)
@@ -95,15 +100,15 @@ func RegisterRecorder(next http.Handler) http.Handler {
 }
 
 func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int, recordingDir string) {
-	t, err := httputil.DumpRequest(r, false)
-	if err != nil || len(t) == 0 {
+	request, err := httputil.DumpRequest(r, false)
+	if err != nil || len(request) == 0 {
 		logging.Default().
 			WithError(err).
-			WithFields(logging.Fields{"request": string(t)}).
+			WithFields(logging.Fields{"request": string(request)}).
 			Fatal("request dumping failed")
 	}
 	event := StoredEvent{
-		Request:  string(t),
+		Request:  string(request),
 		UploadID: string(uploadId),
 		Status:   statusCode,
 	}
@@ -116,7 +121,7 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 			WithError(err).
 			Fatal("marshal event as json")
 	}
-	fName := filepath.Join(recordingDir, "L"+nameBase+".log")
+	fName := filepath.Join(recordingDir, nameBase+RequestExtension)
 	err = ioutil.WriteFile(fName, jsonEvent, 0600)
 	if err != nil {
 		logging.Default().
@@ -124,4 +129,41 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 			WithFields(logging.Fields{"fileName": fName, "request": string(jsonEvent)}).
 			Fatal("writing request file failed")
 	}
+}
+
+func createConfFile(r *http.Request, authService GatewayAuthService, region, bareDomain, listenAddr, recordingDir string) {
+	var accessKeyId string
+	credentialRegexp := regexp.MustCompile("Credential=([\\dA-Z]+)/")
+	authHeader := r.Header["Authorization"][0]
+	rx := credentialRegexp.FindSubmatch([]byte(authHeader))
+	if len(rx) > 1 {
+		accessKeyId = string(rx[1])
+	} else {
+		logging.Default().
+			WithFields(logging.Fields{"Auth Heder": authHeader}).
+			Fatal("failed to extract accessKeyId")
+	}
+	creds, err := authService.GetAPICredentials(accessKeyId)
+	if err != nil {
+		logging.Default().
+			WithError(err).
+			WithFields(logging.Fields{"Access Key": accessKeyId}).
+			Fatal("failed getting credentials")
+	}
+	conf := &PlayBackMockConf{
+		ListenAddress:   listenAddr,
+		BareDomain:      bareDomain,
+		AccessKeyId:     accessKeyId,
+		AccessSecretKey: creds.AccessSecretKey,
+		CredentialType:  creds.Type,
+		UserId:          *creds.UserId,
+		Region:          region,
+	}
+	confByte, err := json.Marshal(conf)
+	if err != nil {
+		logging.Default().
+			WithError(err).
+			Fatal("couldn't marshal configuration")
+	}
+	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0755)
 }
