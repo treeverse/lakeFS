@@ -6,7 +6,7 @@ import Card from "react-bootstrap/Card";
 import {Link} from "react-router-dom";
 import * as moment from "moment";
 import {connect} from "react-redux";
-import {createRepository, filterRepositories, listRepositories, listRepositoriesPaginate} from "../actions/repositories";
+import {createRepository, createRepositoryDone, filterRepositories, listRepositories, listRepositoriesPaginate} from "../actions/repositories";
 import React, {useEffect, useRef, useState} from "react";
 import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
@@ -15,7 +15,6 @@ import {DebouncedFormControl} from "./DebouncedInput";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
 import Alert from "react-bootstrap/Alert";
-
 
 const CreateRepositoryModal = ({show, error, onSubmit, onCancel}) => {
     return (
@@ -79,18 +78,21 @@ export const RepositoryListPage = connect(
         const {list, create, createIndex} = repositories;
         return {list, create, createIndex};
     },
-    ({ listRepositories, listRepositoriesPaginate,  filterRepositories, createRepository })
-)(({listRepositories, listRepositoriesPaginate, filterRepositories, createRepository, list, create, createIndex }) => {
-
-    useEffect(()=> {
-        listRepositories();
-    }, [listRepositories, createRepository, createIndex]);
+    ({ listRepositories, listRepositoriesPaginate,  filterRepositories, createRepository, createRepositoryDone })
+)(({listRepositories, listRepositoriesPaginate, filterRepositories, createRepository, createRepositoryDone, list, create, createIndex }) => {
 
     const [showingCreateModal, setShowCreateModal] = useState(false);
     const closeCreateModal = () => setShowCreateModal(false);
     const showCreateModal = () => setShowCreateModal(true);
 
     const filterField = useRef(null);
+
+    useEffect(()=> {
+        listRepositories();
+        if (create.done) {
+            setShowCreateModal(false);
+        }
+    }, [listRepositories, create.done]);
 
     return (
         <div className="mt-3">
@@ -113,6 +115,7 @@ export const RepositoryListPage = connect(
                 </Form>
                 <ButtonToolbar className="justify-content-end mb-2">
                     <Button variant="success" onClick={() => {
+                        createRepositoryDone();
                         showCreateModal();
                     }}>
                         <Octicon icon={Repo}/> Create Repository
@@ -124,10 +127,7 @@ export const RepositoryListPage = connect(
                 onCancel={closeCreateModal}
                 show={showingCreateModal}
                 error={create.error}
-                onSubmit={(repo) => {
-                    createRepository(repo);
-                    closeCreateModal();
-                }}/>
+                onSubmit={(repo) => createRepository(repo)}/>
         </div>
     );
 });
