@@ -139,6 +139,43 @@ func TestKVIndex_Diff(t *testing.T) {
 				{Direction: merkle.DifferenceDirectionLeft, Type: merkle.DifferenceTypeRemoved, Path: "a/", PathType: "tree"},
 			},
 		},
+		{
+			Name: "remove folder with folders and files",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/b/foo",
+				}, {
+					command: write,
+					path:    "a/b/bar",
+				}, {
+					command: write,
+					path:    "a/c/foo",
+				},
+				{
+					command: write,
+					path:    "a/c/bar",
+				},
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "a/b/c/foo",
+				},
+				{
+					commit,
+					"",
+				},
+				{
+					command: write,
+					path:    "a/b/c/foo",
+				},
+			},
+			ListPath: "a/",
+			Expected: []merkle.Difference{},
+		},
 	}
 
 	for _, tc := range testTable {

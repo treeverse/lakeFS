@@ -28,29 +28,26 @@ func WorkspaceDiff(tx store.RepoOperations, branch string) (merkle.Differences, 
 	return result, nil
 }
 
-func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.WorkspaceEntry, entry *model.Entry, tree merkle.Merkle, diff *merkle.Differences) (string, error) {
+// diffRecursive scans the workspace recursively and compares it to entries in the tree.
+// It starts with the given WorkspaceEntry, and accumulates the diff in the result array.
+// It backpropogates whether or not the given entry was deleted, and adds the uppermost deleted entry to the result.
+func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.WorkspaceEntry, entry *model.Entry, tree merkle.Merkle, result *merkle.Differences) (bool, error) {
 	if entry == nil {
-		*diff = append(*diff, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: *wsEntry.EntryType})
-		return "ADDED", nil
+		// Entry doesn't exist in tree - it was added
+		*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: *wsEntry.EntryType})
+		return false, nil
 	}
-	//entry, err := tx.ReadTreeEntry(addr, *wsEntry.EntryName)
-	//if err != nil {
-	//	if errors.Is(err, db.ErrNotFound) && !wsEntry.Tombstone {
-	//
-	//	}
-	//	return "", err
-	//}
 	if wsEntry != nil && *wsEntry.EntryType == model.EntryTypeObject {
 		// OBJECT
-		if entry.Checksum != *wsEntry.EntryChecksum {
-			*diff = append(*diff, merkle.Difference{Type: merkle.DifferenceTypeChanged, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: model.EntryTypeObject})
-			return "CHANGED", nil
+		if wsEntry.TombstoneCount == 0 && entry.Checksum != *wsEntry.EntryChecksum {
+			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeChanged, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: model.EntryTypeObject})
+			return false, nil
 		}
-		if wsEntry.Tombstone {
-			return "DELETED", nil
+		if wsEntry.TombstoneCount >= 1 {
+			return true, nil
 		}
-		// NO CHANGE -- return
 	} else {
+		// DIRECTORY
 		wsPath := ""
 		if wsEntry != nil {
 			wsPath = wsEntry.Path
@@ -58,32 +55,32 @@ func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.Worksp
 		wsEntriesInDir, _, err := tx.ListWorkspaceDirectory(branch, wsPath, "", -1)
 
 		if err != nil {
-			return "", err
+			return false, err
 		}
-		allDeleted := true
-		var deleted []*model.WorkspaceEntry
+		var deletedEntries []*model.WorkspaceEntry
 		for _, currentWsEntry := range wsEntriesInDir {
 			currentEntry, err := tx.ReadTreeEntry(entry.Address, *currentWsEntry.EntryName)
 			if errors.Is(err, db.ErrNotFound) {
+				// entry doesn't exist in tree
 				currentEntry = nil
 			} else if err != nil {
-				return "", nil
+				return false, nil
 			}
-			diffType, err := diffRecursive(tx, branch, currentWsEntry, currentEntry, tree, diff)
+			isDeleted, err := diffRecursive(tx, branch, currentWsEntry, currentEntry, tree, result)
 			if err != nil {
-				return "", err
+				return false, err
 			}
-			if diffType != "DELETED" {
-				allDeleted = false
-			} else {
-				deleted = append(deleted, currentWsEntry)
+			if isDeleted {
+				deletedEntries = append(deletedEntries, currentWsEntry)
 			}
 		}
-		if allDeleted && wsEntry != nil && entry.ObjectCount == wsEntry.TombstoneCount {
-			return "DELETED", nil
+		if len(deletedEntries) == len(wsEntriesInDir) && wsEntry != nil && entry.ObjectCount == wsEntry.TombstoneCount {
+			// All entries under this directory were deleted, mark as deleted
+			return true, nil
 		} else {
-			for _, deletedEntry := range deleted {
-				*diff = append(*diff, merkle.Difference{
+			// This directory was not deleted, add its deleted children to result
+			for _, deletedEntry := range deletedEntries {
+				*result = append(*result, merkle.Difference{
 					Type:      merkle.DifferenceTypeRemoved,
 					Direction: merkle.DifferenceDirectionLeft,
 					Path:      deletedEntry.Path,
@@ -92,5 +89,5 @@ func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.Worksp
 			}
 		}
 	}
-	return "", nil
+	return false, nil
 }
