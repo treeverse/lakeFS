@@ -2,17 +2,17 @@ package testutil
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/aws"
 	"log"
 	"os"
-	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
+
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/treeverse/lakefs/block/local"
+	"github.com/treeverse/lakefs/block/mem"
 
 	"github.com/jmoiron/sqlx"
 
@@ -158,22 +158,7 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 	_, useS3 := os.LookupEnv(S3BlockAdapterEnvVar)
 	isLocal := !useS3
 	if isLocal {
-		dir := filepath.Join(os.TempDir(), FixtureRoot, fmt.Sprintf("blocks-%s", uuid.Must(uuid.NewUUID()).String()))
-		err := os.MkdirAll(dir, 0777)
-		if err != nil {
-			t.Fatal(err)
-		}
-		adapter, err := local.NewAdapter(dir, local.WithTranslator(translator))
-		if err != nil {
-			t.Fatal(err)
-		}
-		t.Cleanup(func() {
-			err := os.RemoveAll(dir)
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-		return adapter
+		return mem.New(mem.WithTranslator(translator))
 	} else {
 		aws_region, region_ok := os.LookupEnv(AWS_REGION)
 		if !region_ok {
