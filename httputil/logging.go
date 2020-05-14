@@ -62,16 +62,16 @@ func GetRequestIdFromCtx(ctx context.Context) string {
 
 func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Do stuff here
 		startTime := time.Now()
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
 		r, reqID := RequestId(r)
 
 		// add default fields to context
 		requestFields := logging.Fields{
-			"path":   r.RequestURI,
-			"method": r.Method,
-			"host":   r.Host,
+			"path":       r.RequestURI,
+			"method":     r.Method,
+			"host":       r.Host,
+			"request_id": reqID,
 		}
 		for k, v := range fields {
 			requestFields[k] = v
