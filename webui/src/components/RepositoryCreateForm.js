@@ -58,12 +58,12 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
                 </Col>
             </Form.Group>
 
-            {!!error ?
+            {error &&
                 <Row>
                     <Col md={{span: sm, offset: fieldNameOffset}} >
                         <Alert variant={"danger"}>{error}</Alert>
                     </Col>
-                </Row>: <span/>}
+                </Row>}
 
             <Row>
                 <Col md={{span: sm, offset: fieldNameOffset}} >
