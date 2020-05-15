@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"io"
@@ -223,55 +224,37 @@ func playbackDirCompare(t *testing.T, playbackDir string) {
 }
 
 func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPatternType) bool {
-	var buf1, buf2 [1024]byte
 	_, fileName := filepath.Split(playbackFileName)
 	recordingFileName := filepath.Join(utils.PlaybackParams.RecordingDir, fileName)
-	playbackInfo, _ := os.Stat(playbackFileName)
-	recordingInfo, _ := os.Stat(recordingFileName)
+
+	playbackInfo, err := os.Stat(playbackFileName)
+	if err != nil {
+		t.Error("can't stat playback file", playbackFileName, err)
+		return false
+	}
+	recordingInfo, err := os.Stat(recordingFileName)
+	if err != nil {
+		t.Error("can't stat recording file", recordingFileName, err)
+		return false
+	}
 	playbackSize := playbackInfo.Size()
 	recordingSize := recordingInfo.Size()
-	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
-		playByte, err := ioutil.ReadFile(playbackFileName)
-		if err != nil {
-			t.Error("Couldn't read playback file: " + playbackFileName)
-			return false
-		}
-		recByte, err := ioutil.ReadFile(recordingFileName)
-		if err != nil {
-			t.Error("Couldn't read recording file: " + recordingFileName)
-			return false
-		}
-		playStr := normalizeResponse(playByte, tagRemoveList)
-		recStr := normalizeResponse(recByte, tagRemoveList)
-		return recStr == playStr
-	} else {
-		f1, err1 := os.Open(playbackFileName)
-		defer f1.Close()
-
-		f2, err2 := os.Open(recordingFileName)
-		defer f2.Close()
-		if err1 != nil || err2 != nil {
-			t.Fatal("file " + playbackFileName + " did not open\n")
-		}
-		for {
-			b1 := buf1[:]
-			b2 := buf2[:]
-			n1, err1 := f1.Read(b1)
-			n2, err2 := f2.Read(b2)
-			if n1 != n2 || err1 != err2 {
-				return false
-			} else {
-				b1 := buf1[:n1]
-				b2 := buf2[:n1]
-				if bytes.Compare(b1, b2) != 0 {
-					return false
-				}
-			}
-			if err1 == io.EOF {
-				return true
-			}
-		}
+	playBytes, err := ioutil.ReadFile(playbackFileName)
+	if err != nil {
+		t.Error("Couldn't read playback file", playbackFileName)
+		return false
 	}
+	recBytes, err := ioutil.ReadFile(recordingFileName)
+	if err != nil {
+		t.Error("Couldn't read recording file", recordingFileName)
+		return false
+	}
+	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
+		playStr := normalizeResponse(playBytes, tagRemoveList)
+		recStr := normalizeResponse(recBytes, tagRemoveList)
+		return recStr == playStr
+	}
+	return bytes.Equal(recBytes, playBytes)
 }
 
 func normalizeResponse(respByte []byte, tagRemoveList []*tagPatternType) string {
