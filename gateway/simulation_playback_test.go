@@ -58,7 +58,7 @@ func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 	} else {
 		_, toKeep := os.LookupEnv("KEEP_RESULTS")
 		if !toKeep {
-			os.RemoveAll(utils.PlaybackParams.PlaybackDir)
+			_ = os.RemoveAll(utils.PlaybackParams.PlaybackDir)
 		}
 	}
 
@@ -152,14 +152,14 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	respWrite.Headers = make(http.Header)
 	handler.ServeHTTP(respWrite, r)
 	if respWrite.StatusCode == 0 {
-		respWrite.StatusCode = 200
+		respWrite.StatusCode = http.StatusOK
 	}
 	if event.statusCode == 0 {
-		event.statusCode = 200
+		event.statusCode = http.StatusOK
 	}
 	if respWrite.StatusCode != event.statusCode {
 		eventNumber := event.baseName[len(event.baseName)-5:]
-		logging.Default().Warnf("unexpected status %d on event  %s ", respWrite.StatusCode, eventNumber)
+		logging.Default().Warnf("unexpected status %d on event  %s", respWrite.StatusCode, eventNumber)
 		fmt.Fprintf(simulationMisses, "different status event %s recorded \t %d current \t %d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
 		statusEqual = false
@@ -171,7 +171,8 @@ func (r *simulationEvent) Read(b []byte) (int, error) {
 	if r.bodyReader == nil {
 		fName := filepath.Join(utils.PlaybackParams.RecordingDir, "B"+r.baseName+".body")
 		f, err := os.Open(fName)
-		if err != nil { // couldnt find recording file
+		if err != nil {
+			// couldn't find recording file
 			return 0, io.EOF
 		}
 		r.bodyReader = f
