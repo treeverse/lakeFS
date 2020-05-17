@@ -116,7 +116,7 @@ CREATE TABLE multipart_uploads
     upload_id        varchar(128)                             NOT NULL,
     path             varchar                                  NOT NULL,
     creation_date    timestamptz                              NOT NULL,
-    physical_address bytea                                    NOT NULL,
+    physical_address varchar                                  NOT NULL,
     PRIMARY KEY (repository_id, upload_id)
 );
 
