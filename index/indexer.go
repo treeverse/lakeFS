@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -20,9 +19,6 @@ import (
 )
 
 const (
-	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 0.01
-
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
 )
@@ -31,8 +27,7 @@ type Index interface {
 	WithContext(ctx context.Context) Index
 	ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error)
 	ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
-	ReadEntryTree(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
-	ReadRootObject(repoId, ref string, readUncommitted bool) (*model.Root, error)
+	ReadRootObject(repoId, ref string) (*model.Root, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
@@ -67,18 +62,7 @@ func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model
 	if err != nil {
 		return err
 	}
-	if index.shouldPartiallyCommit(repo) {
-		err = index.partialCommit(tx, branch)
-		if err != nil {
-			return err
-		}
-	}
 	return nil
-}
-
-func (index *DBIndex) shouldPartiallyCommit(repo *model.Repo) bool {
-	chosen := rand.Float32()
-	return chosen < DefaultPartialCommitRatio
 }
 
 func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) error {
@@ -265,26 +249,19 @@ func (index *DBIndex) ReadObject(repoId, ref, path string, readUncommitted bool)
 
 		if reference.isBranch && readUncommitted {
 			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
-			if errors.Is(err, db.ErrNotFound) {
-				// not in workspace, let's try reading it from branch tree
-				m := merkle.New(reference.branch.WorkspaceRoot, merkle.WithLogger(index.log()))
-				obj, err = m.GetObject(tx, path)
-				if err != nil {
-					return nil, err
+			if err == nil {
+				if we.Tombstone {
+					// object was deleted deleted
+					return nil, db.ErrNotFound
 				}
-				return obj, nil
-			} else if err != nil {
+				return tx.ReadObject(*we.EntryAddress)
+			} else if !errors.Is(err, db.ErrNotFound) {
 				// an actual error has occurred, return it.
 				index.log().WithError(err).Error("could not read from workspace")
 				return nil, err
 			}
-			if we.Tombstone {
-				// object was deleted deleted
-				return nil, db.ErrNotFound
-			}
-			return tx.ReadObject(*we.EntryAddress)
+			// entry not found in workspace, read from commit
 		}
-		// otherwise, read from commit
 		m := merkle.New(reference.commit.Tree, merkle.WithLogger(index.log()))
 		obj, err = m.GetObject(tx, path)
 		if err != nil {
@@ -335,7 +312,6 @@ func (index *DBIndex) readEntry(tx store.RepoOperations, ref, path, typ string, 
 				Checksum:     *we.EntryChecksum,
 			}, nil
 		}
-		root = reference.branch.WorkspaceRoot
 	}
 
 	m := merkle.New(root, merkle.WithLogger(index.log()))
@@ -364,7 +340,7 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string, readUncommitte
 	return entry.(*model.Entry), nil
 }
 
-func (index *DBIndex) ReadRootObject(repoId, ref string, readUncommitted bool) (*model.Root, error) {
+func (index *DBIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
@@ -381,27 +357,12 @@ func (index *DBIndex) ReadRootObject(repoId, ref string, readUncommitted bool) (
 		if err != nil {
 			return nil, err
 		}
-		if reference.isBranch && readUncommitted {
-			return tx.ReadRoot(reference.branch.WorkspaceRoot)
-		}
 		return tx.ReadRoot(reference.commit.Tree)
 	})
 	if err != nil {
 		return nil, err
 	}
 	return root.(*model.Root), nil
-}
-
-func (index *DBIndex) ReadEntryTree(repoId, ref, path string, readUncommitted bool) (*model.Entry, error) {
-	err := ValidateAll(
-		ValidateRepoId(repoId),
-		ValidateRef(ref),
-		ValidatePath(path),
-	)
-	if err != nil {
-		return nil, err
-	}
-	return index.ReadEntry(repoId, ref, path, model.EntryTypeTree, readUncommitted)
 }
 
 func (index *DBIndex) ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error) {
@@ -693,7 +654,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 				return nil, err
 			}
 			var wsEntries []*model.WorkspaceEntry
-			if reference.isBranch  && readUncommitted {
+			if reference.isBranch && readUncommitted {
 				if descend {
 					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, amountForQueries)
 					if err != nil {
@@ -962,7 +923,7 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 		return err
 	}
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		branchData, err := tx.ReadBranch(branch)
+		_, err := tx.ReadBranch(branch)
 		if err != nil {
 			return nil, err
 		}
@@ -971,7 +932,6 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 			index.log().WithError(err).Error("could not clear workspace")
 			return nil, err
 		}
-		gc(tx, branchData.WorkspaceRoot) // changes are destroyed here
 		err = tx.DeleteBranch(branch)
 		if err != nil {
 			index.log().WithError(err).Error("could not delete branch")
@@ -992,7 +952,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge bool, index *DBIndex) (merkle.Differences, error) {
+func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, index *DBIndex) (merkle.Differences, error) {
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
@@ -1016,9 +976,6 @@ func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge b
 	}
 
 	leftTree := lRef.commit.Tree
-	if lRef.isBranch && !isMerge {
-		leftTree = lRef.branch.WorkspaceRoot
-	}
 	rightTree := rRef.commit.Tree
 
 	diff, err := merkle.Diff(tx,
@@ -1042,7 +999,7 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		return doDiff(tx, repoId, leftRef, rightRef, false, index)
+		return doDiff(tx, repoId, leftRef, rightRef, index)
 	})
 
 	return res.(merkle.Differences), nil
@@ -1074,7 +1031,6 @@ func (index *DBIndex) RevertCommit(repoId, branch, commit string) error {
 		if err != nil {
 			return nil, err
 		}
-		gc(tx, branchData.WorkspaceRoot)
 		branchData.CommitId = commit
 		branchData.CommitRoot = commitData.Tree
 		branchData.WorkspaceRoot = commitData.Tree
@@ -1147,11 +1103,11 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " workspace not found")
 			return nil, err
 		}
-		if destinationBranch.CommitRoot != destinationBranch.WorkspaceRoot || len(l) > 0 {
+		if len(l) > 0 {
 			return nil, indexerrors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		df, err := doDiff(tx, repoId, source, destination, true, index)
+		df, err := doDiff(tx, repoId, source, destination, index)
 		if err != nil {
 			return nil, err
 		}
@@ -1197,7 +1153,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			w.EntryCreationDate = &e.CreationDate
 			w.EntrySize = &e.Size
 			w.Path = dif.Path
-			w.Tombstone = (dif.Type == merkle.DifferenceTypeRemoved)
+			w.Tombstone = dif.Type == merkle.DifferenceTypeRemoved
 			wsEntries = append(wsEntries, w)
 		}
 

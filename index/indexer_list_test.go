@@ -447,7 +447,7 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			entries, hasMore, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, tc.ListAmount, tc.Descend)
+			entries, hasMore, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, tc.ListAmount, tc.Descend, true)
 
 			//compare entries
 			if len(entries) != len(tc.Expected) {
