@@ -3,8 +3,6 @@ package gateway_test
 import (
 	"archive/zip"
 	"encoding/json"
-	"github.com/ory/dockertest/v3"
-	"github.com/treeverse/lakefs/logging"
 	"io"
 	"io/ioutil"
 	"log"
@@ -12,6 +10,9 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	"github.com/ory/dockertest/v3"
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
@@ -26,7 +27,7 @@ type dependencies struct {
 	meta   index.Index
 }
 
-const RecordingsDir = "testdata/recordings"
+const RecordingsDir = "gateway/testdata/recordings"
 
 func TestGatewayRecording(t *testing.T) {
 	dirList, err := ioutil.ReadDir(RecordingsDir)
