@@ -15,6 +15,10 @@ const (
 	LogFieldsContextKey = "log_fields"
 )
 
+func Level() string {
+	return logrus.GetLevel().String()
+}
+
 type Fields map[string]interface{}
 
 type Logger interface {
