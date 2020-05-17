@@ -62,8 +62,9 @@ func NewServer(
 		stats:       stats,
 	}
 
-	// setup requests handler
-	handler := http.Handler(&Handler{
+	// setup routes
+	var handler http.Handler
+	handler = &Handler{
 		BareDomain:         bareDomain,
 		ctx:                ctx,
 		NotFoundHandler:    http.HandlerFunc(notFound),
@@ -85,6 +86,9 @@ func NewServer(
 }
 
 func (s *Server) Listen() error {
+	logging.Default().WithFields(logging.Fields{
+		"listen_address": s.Server.Addr,
+	}).Info("started S3 Gateway server")
 	return s.Server.ListenAndServe()
 }
 

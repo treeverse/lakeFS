@@ -13,6 +13,7 @@ import (
 
 type RepoOperations interface {
 	ReadRepo() (*model.Repo, error)
+	LockWorkspace() error
 	ListWorkspace(branch string) ([]*model.WorkspaceEntry, error)
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
@@ -52,6 +53,11 @@ func (o *DBRepoOperations) ReadRepo() (*model.Repo, error) {
 	repo := &model.Repo{}
 	err := o.tx.Get(repo, `SELECT * FROM repositories WHERE id = $1`, o.repoId)
 	return repo, err
+}
+
+func (o *DBRepoOperations) LockWorkspace() error {
+	_, err := o.tx.Exec(`LOCK TABLE workspace_entries IN ACCESS EXCLUSIVE MODE`)
+	return err
 }
 
 func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry, error) {

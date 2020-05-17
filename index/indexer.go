@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 1 // 1 writes before a partial commit
+	DefaultPartialCommitRatio = 0.01
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -29,7 +29,6 @@ const (
 
 type Index interface {
 	WithContext(ctx context.Context) Index
-	Tree(repoId, branch string) error
 	ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error)
 	ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
 	ReadEntryTree(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
@@ -63,13 +62,13 @@ type Index interface {
 	DeleteMultiPartUpload(repoId, uploadId string) error
 }
 
-func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
+func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
 	err := tx.WriteToWorkspacePath(branch, entry.ParentPath, path, entry)
 	if err != nil {
 		return err
 	}
-	if shouldPartiallyCommit(repo) {
-		err = partialCommit(tx, branch)
+	if index.shouldPartiallyCommit() {
+		err = index.partialCommit(tx, branch)
 		if err != nil {
 			return err
 		}
@@ -77,13 +76,17 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 	return nil
 }
 
-func shouldPartiallyCommit(repo *model.Repo) bool {
-	chosen := rand.Float32()
-	return chosen < DefaultPartialCommitRatio
+func (index *DBIndex) shouldPartiallyCommit() bool {
+	chosen := rand.Float64()
+	return chosen < index.partialCommitRatio
 }
 
-func partialCommit(tx store.RepoOperations, branch string) error {
+func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) error {
 	// see if we have any changes that weren't applied
+	err := tx.LockWorkspace()
+	if err != nil {
+		return err
+	}
 	wsEntries, err := tx.ListWorkspace(branch)
 	if err != nil {
 		return err
@@ -101,7 +104,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	}
 
 	// update the immutable Merkle tree, getting back a new tree
-	tree := merkle.New(branchData.WorkspaceRoot)
+	tree := merkle.New(branchData.WorkspaceRoot, merkle.WithLogger(index.log()))
 	tree, err = tree.Update(tx, wsEntries)
 	if err != nil {
 		return err
@@ -137,7 +140,8 @@ type DBIndex struct {
 	store       store.Store
 	tsGenerator TimeGenerator
 
-	ctx context.Context
+	partialCommitRatio float64
+	ctx                context.Context
 }
 
 type Option func(index *DBIndex)
@@ -148,26 +152,36 @@ type TimeGenerator func() time.Time
 // when using this option timestamps will generate using the given time generator
 // used for mocking and testing timestamps
 func WithTimeGenerator(generator TimeGenerator) Option {
-	return func(kvi *DBIndex) {
-		kvi.tsGenerator = generator
+	return func(dbi *DBIndex) {
+		dbi.tsGenerator = generator
 	}
 }
 
 func WithContext(ctx context.Context) Option {
-	return func(kvi *DBIndex) {
-		kvi.ctx = ctx
+	return func(dbi *DBIndex) {
+		dbi.ctx = ctx
+	}
+}
+
+func WithPartialCommitRatio(ratio float64) Option {
+	return func(dbi *DBIndex) {
+		dbi.partialCommitRatio = ratio
 	}
 }
 
 func NewDBIndex(db db.Database, opts ...Option) *DBIndex {
 	kvi := &DBIndex{
-		store:       store.NewDBStore(db),
-		tsGenerator: time.Now,
-		ctx:         context.Background(),
+		store:              store.NewDBStore(db),
+		tsGenerator:        time.Now,
+		partialCommitRatio: DefaultPartialCommitRatio,
+		ctx:                context.Background(),
 	}
 	for _, opt := range opts {
 		opt(kvi)
 	}
+	kvi.log().WithFields(logging.Fields{
+		"partial_commit_ratio": kvi.partialCommitRatio,
+	}).Info("initialized Metadata index")
 	return kvi
 }
 
@@ -182,9 +196,10 @@ func (index *DBIndex) log() logging.Logger {
 // Business logic
 func (index *DBIndex) WithContext(ctx context.Context) Index {
 	return &DBIndex{
-		store:       store.WithLogger(index.store, indexLogger(ctx)),
-		tsGenerator: index.tsGenerator,
-		ctx:         ctx,
+		store:              store.WithLogger(index.store, indexLogger(ctx)),
+		tsGenerator:        index.tsGenerator,
+		ctx:                ctx,
+		partialCommitRatio: index.partialCommitRatio,
 	}
 }
 
@@ -264,7 +279,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string, readUncommitted bool)
 			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
 			if errors.Is(err, db.ErrNotFound) {
 				// not in workspace, let's try reading it from branch tree
-				m := merkle.New(reference.branch.WorkspaceRoot)
+				m := merkle.New(reference.branch.WorkspaceRoot, merkle.WithLogger(index.log()))
 				obj, err = m.GetObject(tx, path)
 				if err != nil {
 					return nil, err
@@ -282,7 +297,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string, readUncommitted bool)
 			return tx.ReadObject(*we.EntryAddress)
 		}
 		// otherwise, read from commit
-		m := merkle.New(reference.commit.Tree)
+		m := merkle.New(reference.commit.Tree, merkle.WithLogger(index.log()))
 		obj, err = m.GetObject(tx, path)
 		if err != nil {
 			return nil, err
@@ -295,7 +310,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string, readUncommitted bool)
 	return obj.(*model.Object), nil
 }
 
-func readEntry(tx store.RepoOperations, ref, path, typ string, readUncommitted bool) (*model.Entry, error) {
+func (index *DBIndex) readEntry(tx store.RepoOperations, ref, path, typ string, readUncommitted bool) (*model.Entry, error) {
 	var entry *model.Entry
 
 	_, err := tx.ReadRepo()
@@ -335,7 +350,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string, readUncommitted b
 		root = reference.branch.WorkspaceRoot
 	}
 
-	m := merkle.New(root)
+	m := merkle.New(root, merkle.WithLogger(index.log()))
 	entry, err = m.GetEntry(tx, path, typ)
 	if err != nil {
 		return nil, err
@@ -353,7 +368,7 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string, readUncommitte
 		return nil, err
 	}
 	entry, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		return readEntry(tx, branch, path, typ, readUncommitted)
+		return index.readEntry(tx, branch, path, typ, readUncommitted)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -433,7 +448,7 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 			index.log().WithError(err).Error("could not write object")
 			return nil, err
 		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -467,7 +482,7 @@ func (index *DBIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 		if err != nil {
 			return nil, err
 		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -510,7 +525,7 @@ func (index *DBIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		typ := model.EntryTypeObject
 		p := pth.New(path, typ)
 		entryName := pth.New(path, typ).BaseName()
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			Path:              p.String(),
 			ParentPath:        p.ParentPath(),
@@ -568,7 +583,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 		root := br.WorkspaceRoot
-		m := merkle.New(root)
+		m := merkle.New(root, merkle.WithLogger(index.log()))
 		merkleEntry, err := m.GetEntry(tx, path, model.EntryTypeObject)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
@@ -595,7 +610,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		if merkleEntry != nil {
 			typ := model.EntryTypeObject
 			bname := pth.New(path, typ).BaseName()
-			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 				Path:              path,
 				EntryName:         &bname,
 				EntryCreationDate: &ts,
@@ -674,7 +689,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 
 		root := reference.commit.Tree
 		if reference.isBranch && readUncommitted {
-			err := partialCommit(tx, reference.branch.Id) // block on this since we traverse the tree immediately after
+			err := index.partialCommit(tx, reference.branch.Id) // block on this since we traverse the tree immediately after
 			if err != nil {
 				return nil, err
 			}
@@ -685,10 +700,12 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			root = reference.branch.WorkspaceRoot
 		}
 
-		tree := merkle.New(root)
+		tree := merkle.New(root, merkle.WithLogger(index.log()))
 		res, hasMore, err := tree.PrefixScan(tx, path, from, results, descend)
 		if err != nil {
-			log.WithError(err).Error("could not scan tree")
+			if !errors.Is(err, db.ErrNotFound) {
+				log.WithError(err).Error("could not scan tree")
+			}
 			return nil, err
 		}
 		return &result{hasMore, res}, nil
@@ -813,7 +830,7 @@ func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata
 	}
 	ts := index.tsGenerator()
 	commit, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
+		err := index.partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -904,7 +921,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		err = partialCommit(tx, branch) // ensure all changes are reflected in the tree
+		err = index.partialCommit(tx, branch) // ensure all changes are reflected in the tree
 		if err != nil {
 			return nil, err
 		}
@@ -914,9 +931,10 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 		}
 
 		diff, err := merkle.Diff(tx,
-			merkle.New(branch.WorkspaceRoot),
-			merkle.New(branch.CommitRoot),
-			merkle.New(branch.CommitRoot))
+			merkle.New(branch.WorkspaceRoot, merkle.WithLogger(index.log())),
+			merkle.New(branch.CommitRoot, merkle.WithLogger(index.log())),
+			merkle.New(branch.CommitRoot, merkle.WithLogger(index.log())),
+		)
 		if err != nil {
 			index.log().WithError(err).WithField("branch", branch).Error("diff workspace failed")
 		}
@@ -958,9 +976,10 @@ func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge b
 	rightTree := rRef.commit.Tree
 
 	diff, err := merkle.Diff(tx,
-		merkle.New(leftTree),
-		merkle.New(rightTree),
-		merkle.New(commonCommits.Tree))
+		merkle.New(leftTree, merkle.WithLogger(index.log())),
+		merkle.New(rightTree, merkle.WithLogger(index.log())),
+		merkle.New(commonCommits.Tree, merkle.WithLogger(index.log())),
+	)
 	if err != nil {
 		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
 	}
@@ -1033,7 +1052,7 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 			return nil, index.ResetBranch(repoId, branch)
 		}
 
-		err := partialCommit(tx, branch)
+		err := index.partialCommit(tx, branch)
 		if err != nil {
 			log.WithError(err).Error("could not partially commit")
 			return nil, err
@@ -1042,8 +1061,8 @@ func (index *DBIndex) revertPath(repoId, branch, path, typ string) error {
 		if err != nil {
 			return nil, err
 		}
-		workspaceMerkle := merkle.New(branchData.WorkspaceRoot)
-		commitMerkle := merkle.New(branchData.CommitRoot)
+		workspaceMerkle := merkle.New(branchData.WorkspaceRoot, merkle.WithLogger(index.log()))
+		commitMerkle := merkle.New(branchData.CommitRoot, merkle.WithLogger(index.log()))
 		var workspaceEntry *model.WorkspaceEntry
 		commitEntry, err := commitMerkle.GetEntry(tx, path, typ)
 		if err != nil {
@@ -1181,7 +1200,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		for _, dif := range mergeOperations {
 			var e *model.Entry
-			m := merkle.New(sourceBranch.WorkspaceRoot)
+			m := merkle.New(sourceBranch.WorkspaceRoot, merkle.WithLogger(index.log()))
 			if dif.Type != merkle.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
@@ -1206,7 +1225,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			wsEntries = append(wsEntries, w)
 		}
 
-		destinationRoot := merkle.New(destinationBranch.CommitRoot)
+		destinationRoot := merkle.New(destinationBranch.CommitRoot, merkle.WithLogger(index.log()))
 		newRoot, err := destinationRoot.Update(tx, wsEntries)
 		if err != nil {
 			index.log().WithError(err).Fatal("failed updating merge destination")
@@ -1394,33 +1413,6 @@ func (index *DBIndex) DeleteRepo(repoId string) error {
 		}
 		return nil, nil
 	})
-	return err
-}
-
-func (index *DBIndex) Tree(repoId, branch string) error {
-	err := ValidateAll(
-		ValidateRepoId(repoId),
-		ValidateRef(branch))
-	if err != nil {
-		return err
-	}
-	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
-		if err != nil {
-			return nil, err
-		}
-		_, err = tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-		r, err := tx.ReadBranch(branch)
-		if err != nil {
-			return nil, err
-		}
-		m := merkle.New(r.WorkspaceRoot)
-		m.WalkAll(tx)
-		return nil, nil
-	}, db.ReadOnly())
 	return err
 }
 
