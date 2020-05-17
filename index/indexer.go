@@ -123,8 +123,7 @@ func gc(tx store.RepoOperations, addr string) {
 type DBIndex struct {
 	store       store.Store
 	tsGenerator TimeGenerator
-
-	ctx context.Context
+	ctx         context.Context
 }
 
 type Option func(index *DBIndex)
@@ -135,14 +134,14 @@ type TimeGenerator func() time.Time
 // when using this option timestamps will generate using the given time generator
 // used for mocking and testing timestamps
 func WithTimeGenerator(generator TimeGenerator) Option {
-	return func(kvi *DBIndex) {
-		kvi.tsGenerator = generator
+	return func(dbi *DBIndex) {
+		dbi.tsGenerator = generator
 	}
 }
 
 func WithContext(ctx context.Context) Option {
-	return func(kvi *DBIndex) {
-		kvi.ctx = ctx
+	return func(dbi *DBIndex) {
+		dbi.ctx = ctx
 	}
 }
 
@@ -155,6 +154,7 @@ func NewDBIndex(db db.Database, opts ...Option) *DBIndex {
 	for _, opt := range opts {
 		opt(kvi)
 	}
+	kvi.log().Info("initialized Metadata index")
 	return kvi
 }
 

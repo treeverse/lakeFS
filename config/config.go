@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
 
@@ -151,6 +153,9 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 	case "s3":
 		return c.buildS3Adapter()
 	case "mem", "memory":
+		logging.Default().
+			WithField("type", "mem").
+			Info("initialized blockstore adapter")
 		return mem.New()
 	default:
 		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\", \"local\" or \"mem\"",

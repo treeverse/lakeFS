@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -55,7 +57,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, os.Interrupt)
 
 		go func() {
-			if err := apiServer.Serve(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
+			if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
 				fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
 				os.Exit(1)
 			}
@@ -99,9 +101,9 @@ func getInstallationID(authService auth.Service) string {
 }
 
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
-	fmt.Println("Control-C to shutdown")
+	logging.Default().Info("control-C to shutdown")
 	<-quit
-	fmt.Println("Shutting down...")
+	logging.Default().Warn("shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
