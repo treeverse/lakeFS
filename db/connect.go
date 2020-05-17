@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"net/url"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/jmoiron/sqlx"
 )
 
@@ -54,5 +56,9 @@ func ConnectDB(driver string, uri string) (Database, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
+	logging.Default().WithFields(logging.Fields{
+		"driver": driver,
+		"uri":    uri,
+	}).Info("initialized DB connection")
 	return NewDatabase(conn), nil
 }

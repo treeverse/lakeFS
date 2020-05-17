@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
@@ -65,6 +67,7 @@ type DBAuthService struct {
 }
 
 func NewDBAuthService(db db.Database, secretStore crypt.SecretStore) *DBAuthService {
+	logging.Default().Info("initialized Auth service")
 	return &DBAuthService{db: db, secretStore: secretStore}
 }
 
