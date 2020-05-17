@@ -27,7 +27,7 @@ type dependencies struct {
 	meta   index.Index
 }
 
-const RecordingsDir = "gateway/testdata/recordings"
+const RecordingsDir = "testdata/recordings"
 
 func TestGatewayRecording(t *testing.T) {
 	dirList, err := ioutil.ReadDir(RecordingsDir)
