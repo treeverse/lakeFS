@@ -52,6 +52,7 @@ func NewServer(
 	stats stats.Collector,
 	migrator db.Migrator,
 ) *Server {
+	logging.Default().Info("initialized OpenAPI server")
 	return &Server{
 		meta:        meta,
 		blockStore:  blockStore,
@@ -168,7 +169,7 @@ func (s *Server) setupServer() error {
 
 	s.setupHandler(
 		// api handler
-		httputil.LoggingMiddleWare(
+		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			cookieToAPIHeader(s.apiServer.GetHandler()),
@@ -178,7 +179,7 @@ func (s *Server) setupServer() error {
 		UIHandler(s.authService),
 
 		// setup handler
-		httputil.LoggingMiddleWare(
+		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			setupLakeFSHandler(s.authService, s.migrator),
@@ -202,8 +203,8 @@ func cookieToAPIHeader(next http.Handler) http.Handler {
 	})
 }
 
-// Serve starts an HTTP server at the given host and port
-func (s *Server) Serve(listenAddr string) error {
+// Listen starts an HTTP server at the given host and port
+func (s *Server) Listen(listenAddr string) error {
 	handler, err := s.Handler()
 	if err != nil {
 		return err
@@ -212,6 +213,9 @@ func (s *Server) Serve(listenAddr string) error {
 		Addr:    listenAddr,
 		Handler: handler,
 	}
+	logging.Default().
+		WithField("listen_address", listenAddr).
+		Info("started OpenAPI server")
 	return s.server.ListenAndServe()
 }
 

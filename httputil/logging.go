@@ -60,30 +60,28 @@ func GetRequestIdFromCtx(ctx context.Context) string {
 	return resp.(string)
 }
 
-func LoggingMiddleWare(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// Do stuff here
-		before := time.Now()
+		startTime := time.Now()
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
-		r, reqId := RequestId(r)
+		r, reqID := RequestId(r)
 
 		// add default fields to context
 		requestFields := logging.Fields{
 			"path":       r.RequestURI,
 			"method":     r.Method,
 			"host":       r.Host,
-			"request_id": reqId,
+			"request_id": reqID,
 		}
 		for k, v := range fields {
 			requestFields[k] = v
 		}
 		r = r.WithContext(logging.AddFields(r.Context(), requestFields))
-
+		writer.Header().Set(requestIdHeaderName, reqID)
 		next.ServeHTTP(writer, r) // handle the request
 
-		writer.Header().Set(requestIdHeaderName, reqId)
 		logging.FromContext(r.Context()).WithFields(logging.Fields{
-			"took":        time.Since(before),
+			"took":        time.Since(startTime),
 			"status_code": writer.StatusCode,
 			"sent_bytes":  writer.ResponseSize,
 		}).Debug("HTTP call ended")
