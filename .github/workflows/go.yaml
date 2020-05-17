@@ -1,8 +1,5 @@
 name: Go
-on:
-  push:
-    tags-ignore:
-      - '**'  # Don't run when doing a release
+on: [push]
 jobs:
   validator:
     name: Run Linters and Checkers
