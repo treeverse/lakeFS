@@ -27,7 +27,6 @@ type Index interface {
 	WithContext(ctx context.Context) Index
 	ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error)
 	ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
-	ReadRootObject(repoId, ref string) (*model.Root, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
@@ -57,7 +56,7 @@ type Index interface {
 	DeleteMultiPartUpload(repoId, uploadId string) error
 }
 
-func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
+func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, branch, path string, entry *model.WorkspaceEntry) error {
 	err := tx.WriteToWorkspacePath(branch, entry.ParentPath, path, entry)
 	if err != nil {
 		return err
@@ -116,10 +115,6 @@ func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) erro
 	return nil
 }
 
-func gc(tx store.RepoOperations, addr string) {
-	// TODO: impl? here?
-}
-
 type DBIndex struct {
 	store       store.Store
 	tsGenerator TimeGenerator
@@ -136,12 +131,6 @@ type TimeGenerator func() time.Time
 func WithTimeGenerator(generator TimeGenerator) Option {
 	return func(dbi *DBIndex) {
 		dbi.tsGenerator = generator
-	}
-}
-
-func WithContext(ctx context.Context) Option {
-	return func(dbi *DBIndex) {
-		dbi.ctx = ctx
 	}
 }
 
@@ -340,31 +329,6 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string, readUncommitte
 	return entry.(*model.Entry), nil
 }
 
-func (index *DBIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
-	err := ValidateAll(
-		ValidateRepoId(repoId),
-		ValidateRef(ref),
-	)
-	if err != nil {
-		return nil, err
-	}
-	root, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		_, err = tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-		reference, err := resolveRef(tx, ref)
-		if err != nil {
-			return nil, err
-		}
-		return tx.ReadRoot(reference.commit.Tree)
-	})
-	if err != nil {
-		return nil, err
-	}
-	return root.(*model.Root), nil
-}
-
 func (index *DBIndex) ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
@@ -387,17 +351,12 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 		return err
 	}
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-
 		err = tx.WriteObject(ident.Hash(obj), obj)
 		if err != nil {
 			index.log().WithError(err).Error("could not write object")
 			return nil, err
 		}
-		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -427,11 +386,7 @@ func (index *DBIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 		return err
 	}
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -467,14 +422,10 @@ func (index *DBIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		if err != nil {
 			return nil, err
 		}
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
 		typ := model.EntryTypeObject
 		p := pth.New(path, typ)
 		entryName := pth.New(path, typ).BaseName()
-		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			Path:              p.String(),
 			ParentPath:        p.ParentPath(),
@@ -505,10 +456,6 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 	}
 	ts := index.tsGenerator()
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		repo, err := tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
 		/**
 		handling 5 possible cases:
 		* 1 object does not exist  - return error
@@ -560,7 +507,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			typ := model.EntryTypeObject
 			pathObj := pth.New(path, typ)
 			bname := pathObj.BaseName()
-			err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			err = index.writeEntryToWorkspace(tx, branch, path, &model.WorkspaceEntry{
 				Path:              path,
 				EntryName:         &bname,
 				EntryCreationDate: &ts,
@@ -762,7 +709,6 @@ func (index *DBIndex) ResetBranch(repoId, branch string) error {
 		if err != nil {
 			return nil, err
 		}
-		gc(tx, branchData.WorkspaceRoot)
 		branchData.WorkspaceRoot = branchData.CommitRoot
 		return nil, tx.WriteBranch(branch, branchData)
 	})
@@ -952,7 +898,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 	return res.(merkle.Differences), nil
 }
 
-func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, index *DBIndex) (merkle.Differences, error) {
+func doDiff(tx store.RepoOperations, leftRef, rightRef string, index *DBIndex) (merkle.Differences, error) {
 	lRef, err := resolveRef(tx, leftRef)
 	if err != nil {
 		index.log().WithError(err).WithField("ref", leftRef).Error("could not resolve left ref")
@@ -999,7 +945,7 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 		return nil, err
 	}
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		return doDiff(tx, repoId, leftRef, rightRef, index)
+		return doDiff(tx, leftRef, rightRef, index)
 	})
 
 	return res.(merkle.Differences), nil
@@ -1107,7 +1053,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			return nil, indexerrors.ErrDestinationNotCommitted
 		}
 		// compute difference
-		df, err := doDiff(tx, repoId, source, destination, index)
+		df, err := doDiff(tx, source, destination, index)
 		if err != nil {
 			return nil, err
 		}
