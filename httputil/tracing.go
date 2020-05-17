@@ -39,28 +39,37 @@ func (c *CappedBuffer) Write(p []byte) (n int, err error) {
 	return len(p), nil
 }
 
-type ResponseTracingWriter struct {
+type responseTracingWriter struct {
 	StatusCode   int
 	ResponseSize int64
 	BodyRecorder *CappedBuffer
 
-	Writer http.ResponseWriter
+	Writer      http.ResponseWriter
+	multiWriter io.Writer
 }
 
-func (w *ResponseTracingWriter) Header() http.Header {
+func newResponseTracingWriter(w http.ResponseWriter, sizeInBytes int) *responseTracingWriter {
+	buf := &CappedBuffer{
+		SizeBytes: sizeInBytes,
+	}
+	mw := io.MultiWriter(w, buf)
+	return &responseTracingWriter{
+		StatusCode:   http.StatusOK,
+		BodyRecorder: buf,
+		Writer:       w,
+		multiWriter:  mw,
+	}
+}
+
+func (w *responseTracingWriter) Header() http.Header {
 	return w.Writer.Header()
 }
 
-func (w *ResponseTracingWriter) Write(data []byte) (int, error) {
-	mw := io.MultiWriter(w.Writer, w.BodyRecorder)
-	written, err := mw.Write(data)
-	if err == nil {
-		w.ResponseSize += int64(written)
-	}
-	return written, err
+func (w *responseTracingWriter) Write(data []byte) (int, error) {
+	return w.multiWriter.Write(data)
 }
 
-func (w *ResponseTracingWriter) WriteHeader(statusCode int) {
+func (w *responseTracingWriter) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
 	w.Writer.WriteHeader(statusCode)
 }
@@ -68,26 +77,32 @@ func (w *ResponseTracingWriter) WriteHeader(statusCode int) {
 type requestBodyTracer struct {
 	body         io.ReadCloser
 	bodyRecorder *CappedBuffer
+	tee          io.Reader
 }
 
-func (r requestBodyTracer) Read(p []byte) (n int, err error) {
-	n, err = r.body.Read(p)
-	_, _ = r.bodyRecorder.Write(p[0:n])
-	return n, err
+func newRequestBodyTracer(body io.ReadCloser, sizeInBytes int) *requestBodyTracer {
+	w := &CappedBuffer{
+		SizeBytes: sizeInBytes,
+	}
+	return &requestBodyTracer{
+		body:         body,
+		bodyRecorder: w,
+		tee:          io.TeeReader(body, w),
+	}
 }
 
-func (r requestBodyTracer) Close() error {
+func (r *requestBodyTracer) Read(p []byte) (n int, err error) {
+	return r.tee.Read(p)
+}
+
+func (r *requestBodyTracer) Close() error {
 	return r.body.Close()
 }
 
 func TracingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
-		responseWriter := &ResponseTracingWriter{
-			StatusCode:   http.StatusOK,
-			BodyRecorder: &CappedBuffer{SizeBytes: RequestTracingMaxResponseBodySize},
-			Writer:       w,
-		}
+		responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
 		r, reqID := RequestId(r)
 
 		// add default fields to context
@@ -104,10 +119,7 @@ func TracingMiddleware(requestIdHeaderName string, fields logging.Fields, next h
 		responseWriter.Header().Set(requestIdHeaderName, reqID)
 
 		// record request body as well
-		requestBodyTracer := &requestBodyTracer{
-			body:         r.Body,
-			bodyRecorder: &CappedBuffer{SizeBytes: RequestTracingMaxRequestBodySize},
-		}
+		requestBodyTracer := newRequestBodyTracer(r.Body, RequestTracingMaxRequestBodySize)
 		r.Body = requestBodyTracer
 
 		next.ServeHTTP(responseWriter, r) // handle the request
