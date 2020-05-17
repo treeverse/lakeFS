@@ -4,6 +4,10 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
+	"github.com/treeverse/lakefs/index"
+
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
 
@@ -24,9 +28,10 @@ import (
 )
 
 const (
-	DefaultDatabaseDriver = "pgx"
-	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
-	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
+	DefaultDatabaseDriver          = "pgx"
+	DefaultMetadataDBUri           = "postgres://localhost:5432/postgres?search_path=lakefs_index"
+	DefaultAuthDBUri               = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
+	DefaultIndexPartialCommitRatio = index.DefaultPartialCommitRatio
 
 	DefaultBlockStoreType      = "local"
 	DefaultBlockStoreLocalPath = "~/lakefs/data"
@@ -65,6 +70,7 @@ func setDefaults() {
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
 	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
+	viper.SetDefault("metadata.index.partial_commit_ratio", DefaultIndexPartialCommitRatio)
 
 	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
 
@@ -81,6 +87,10 @@ func setDefaults() {
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
+}
+
+func (c *Config) GetIndexPartialCommitRatio() float64 {
+	return viper.GetFloat64("metadata.index.partial_commit_ratio")
 }
 
 func (c *Config) ConnectMetadataDatabase() db.Database {
@@ -151,6 +161,9 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 	case "s3":
 		return c.buildS3Adapter()
 	case "mem", "memory":
+		logging.Default().
+			WithField("type", "mem").
+			Info("initialized blockstore adapter")
 		return mem.New()
 	default:
 		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\", \"local\" or \"mem\"",
