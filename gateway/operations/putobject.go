@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
+	ipath "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -57,7 +58,9 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 		return
 	}
 	// write this object to workspace
-	src.CreationDate = time.Now() // TODO: move this logic into the Index impl.
+	// TODO: move this logic into the Index impl.
+	src.CreationDate = time.Now()
+	src.Name = ipath.New(o.Path, src.EntryType).BaseName()
 	err = o.Index.WriteEntry(o.Repo.Id, o.Ref, o.Path, src)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
