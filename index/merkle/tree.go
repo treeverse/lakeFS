@@ -147,7 +147,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 		relativePrefix = pfx[len(pfx)-1]
 	}
 	if len(from) > 0 {
-		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount)
+		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount, false)
 		if err != nil {
 			return nil, false, err
 		}
@@ -161,7 +161,7 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 			}
 		}
 	} else {
-		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount)
+		entries, hasMore, err = tx.ListTreeWithPrefix(subtreeAddr, relativePrefix, relativeFrom, amount, false)
 		if err != nil {
 			return nil, false, err
 		}
@@ -179,11 +179,13 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 
 func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, c *col, depth int) ([]*model.Entry, bool, error) {
 	currentFrom := ""
+	afterInclusive := true
 	if len(from) > 0 {
 		fromParts := path.New(from, model.EntryTypeObject).SplitParts()
 		if depth < len(fromParts) {
 			currentFrom = fromParts[depth]
 		}
+		afterInclusive = depth < len(fromParts)-1
 	}
 
 	// do the same with prefix
@@ -197,11 +199,10 @@ func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, 
 
 	// scan from the root of the tree, every time passing the relevant "from" key that's relevant for the current depth
 	// we add 1 to amount since if we received a marker, we explicitly skip it.
-	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)+1) // need no more than that
+	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)+1, afterInclusive) // need no more than that
 	if err != nil {
 		return nil, false, err
 	}
-
 	collectedHasMore := false
 	if hasMore {
 		collectedHasMore = true // there's more matches that we pulled from storage
@@ -215,7 +216,11 @@ func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, 
 				dirPath = path.Join([]string{m.path, entry.Name})
 			}
 			t := New(entry.Address, WithLogger(m.logger), WithPath(dirPath))
-			_, hadMore, err := t.walk(tx, prefix, from, amount, c, depth+1)
+			recursionFrom := from
+			if entry.Name >= from {
+				recursionFrom = ""
+			}
+			_, hadMore, err := t.walk(tx, prefix, recursionFrom, amount, c, depth+1)
 			if err != nil {
 				return nil, false, err
 			}

@@ -23,7 +23,7 @@ type RepoOperations interface {
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
-	ListTreeWithPrefix(addr, prefix, after string, results int) ([]*model.Entry, bool, error)
+	ListTreeWithPrefix(addr, prefix, after string, results int, afterInclusive bool) ([]*model.Entry, bool, error)
 	ReadTreeEntry(treeAddress, name string) (*model.Entry, error)
 
 	// Multipart uploads
@@ -219,7 +219,7 @@ func (o *DBRepoOperations) ReadCommit(addr string) (*model.Commit, error) {
 	return commits[0], err
 }
 
-func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount int) ([]*model.Entry, bool, error) {
+func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount int, afterInclusive bool) ([]*model.Entry, bool, error) {
 	var err error
 	var hasMore bool
 	var entries []*model.Entry
@@ -233,11 +233,15 @@ func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount
 				o.repoId, addr, db.Prefix(prefix))
 		}
 	} else {
+		nameOperator := ">"
+		if afterInclusive {
+			nameOperator = ">="
+		}
 		if amount >= 0 {
-			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC LIMIT $5`,
-				o.repoId, addr, db.Prefix(prefix), after, amount+1)
+			err = o.tx.Select(&entries, fmt.Sprintf(`SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name %s $4 ORDER BY name ASC LIMIT $5`,
+				nameOperator), o.repoId, addr, db.Prefix(prefix), after, amount+1)
 		} else {
-			err = o.tx.Select(&entries, `SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name > $4 ORDER BY name ASC`,
+			err = o.tx.Select(&entries, fmt.Sprintf(`SELECT * FROM entries WHERE repository_id = $1 AND parent_address = $2 AND name LIKE $3 AND name %s $4 ORDER BY name ASC`, nameOperator),
 				o.repoId, addr, db.Prefix(prefix), after)
 		}
 	}
@@ -255,7 +259,7 @@ func (o *DBRepoOperations) ListTreeWithPrefix(addr, prefix, after string, amount
 }
 
 func (o *DBRepoOperations) ListTree(addr, after string, results int) ([]*model.Entry, bool, error) {
-	return o.ListTreeWithPrefix(addr, "", after, results)
+	return o.ListTreeWithPrefix(addr, "", after, results, false)
 }
 
 func (o *DBRepoOperations) ReadTreeEntry(treeAddress, name string) (*model.Entry, error) {

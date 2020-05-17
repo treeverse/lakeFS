@@ -638,6 +638,8 @@ func CompareEntries(entry *model.Entry, wsEntry *model.WorkspaceEntry) int {
 	return strings.Compare(entry.Name, wsEntry.Path)
 }
 
+// CombineLists takes a sorted array of WorkspaceEntry and sorted a array of Entry, and combines them into one sorted array, omitting deleted files.
+// The returned array will be no longer than the given amount.
 func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, treeHasMore bool, wsHasMore bool, amount int) ([]*model.Entry, string, bool, bool) {
 	if amount < -1 {
 		amount = -1
