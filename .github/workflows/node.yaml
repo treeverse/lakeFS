@@ -1,8 +1,6 @@
 name: Node
 on:
   push:
-    paths:
-      - 'webui/**'
     tags-ignore:
       - '**'  # Don't run when doing a release
 jobs:
