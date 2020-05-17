@@ -11,7 +11,10 @@ import (
 	"github.com/ory/dockertest/v3"
 )
 
-const dbContainerTimeoutSeconds = 10 * 60 // 10 min
+const (
+	dbContainerTimeoutSeconds = 10 * 60 // 10 min
+	dbName                    = "lakefs_db"
+)
 
 var (
 	pool        *dockertest.Pool
@@ -23,6 +26,7 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
 		"POSTGRES_DB=lakefs_db",
+		"LC_COLLATE=C",
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)
@@ -44,7 +48,7 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 
 	// create connection
 	var conn *sqlx.DB
-	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable", resource.GetPort("5432/tcp"))
+	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/"+dbName+"?sslmode=disable", resource.GetPort("5432/tcp"))
 	err = pool.Retry(func() error {
 		var err error
 		conn, err = sqlx.Connect("pgx", uri)
