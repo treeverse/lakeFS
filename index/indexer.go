@@ -618,12 +618,9 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 						return nil, err
 					}
 				}
-				currentRes, from = CombineLists(currentRes, wsEntries, amountForQueries-len(res))
+				currentRes, from, treeHasMore, wsHasMore = CombineLists(currentRes, wsEntries, treeHasMore, wsHasMore, amountForQueries-len(res))
 			}
 			res = append(res, currentRes...)
-			if len(res) > 0 {
-				from = res[len(res)-1].Name
-			}
 		}
 		hasMore := false
 		if results >= 0 && len(res) > results {
@@ -641,7 +638,7 @@ func CompareEntries(entry *model.Entry, wsEntry *model.WorkspaceEntry) int {
 	return strings.Compare(entry.Name, wsEntry.Path)
 }
 
-func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amount int) ([]*model.Entry, string) {
+func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, treeHasMore bool, wsHasMore bool, amount int) ([]*model.Entry, string, bool, bool) {
 	if amount < -1 {
 		amount = -1
 	}
@@ -671,14 +668,14 @@ func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amo
 			}
 		}
 	}
-	for treeIndex < len(entries) {
+	for treeIndex < len(entries) && !wsHasMore {
 		if amount > 0 && len(result) == amount {
 			break
 		}
 		result = append(result, entries[treeIndex])
 		treeIndex++
 	}
-	for wsIndex < len(wsEntries) {
+	for wsIndex < len(wsEntries) && !treeHasMore {
 		if amount > 0 && len(result) == amount {
 			break
 		}
@@ -689,7 +686,13 @@ func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, amo
 	if newFrom == "" && len(result) > 0 {
 		newFrom = result[len(result)-1].Name
 	}
-	return result, newFrom
+	if wsIndex < len(wsEntries) {
+		wsHasMore = true
+	}
+	if treeIndex < len(entries) {
+		treeHasMore = true
+	}
+	return result, newFrom, treeHasMore, wsHasMore
 }
 
 func (index *DBIndex) ResetBranch(repoId, branch string) error {

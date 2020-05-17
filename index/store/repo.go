@@ -122,10 +122,9 @@ func (o *DBRepoOperations) ListWorkspaceWithPrefix(branch, prefix, from string, 
 	if amount >= 0 {
 		limitClause = fmt.Sprintf("LIMIT %d", amount+1)
 	}
-	err := o.tx.Select(&entries,
-		fmt.Sprintf(`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND PATH LIKE $3 || '%%' %s ORDER BY path %s`,
-			additionalCondition, limitClause),
-		args...)
+	query := fmt.Sprintf(`SELECT *, CASE tombstone WHEN true THEN 1 ELSE 0 END AS tombstone_count FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 AND path LIKE $3 || '%%' %s ORDER BY path %s`,
+		additionalCondition, limitClause)
+	err := o.tx.Select(&entries, query, args...)
 	hasMore := false
 	if amount >= 0 && len(entries) > amount {
 		hasMore = true

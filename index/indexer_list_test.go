@@ -433,6 +433,139 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 			ListAmount:      2,
 			ExpectedHasMore: true,
 		},
+		{
+			Name: "tombstone comes in later batch",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/loo",
+				},
+				{
+					command: write,
+					path:    "b/shoo",
+				},
+				{
+					command: commit,
+				},
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: deleteEntry,
+					path:    "a/loo",
+				},
+				{
+					command: deleteEntry,
+					path:    "b/shoo",
+				},
+			},
+			Descend:    true,
+			ListPath:   "",
+			Expected:   []model.Entry{{Name: "a/foo"}},
+			ListAmount: 1,
+		},
+		{
+			Name: "tombstone comes before file itself",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "b/loo",
+				},
+				{
+					command: write,
+					path:    "a/moo",
+				},
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "a/zoo",
+				},
+				{
+					command: commit,
+				},
+				{
+					command: deleteEntry,
+					path:    "b/loo",
+				},
+				{
+					command: deleteEntry,
+					path:    "a/zoo",
+				},
+			},
+			Descend:    true,
+			ListPath:   "",
+			Expected:   []model.Entry{{Name: "a/foo"}, {Name: "a/moo"}},
+			ListAmount: 2,
+		},
+		{
+			Name: "tombstone comes before file itself with after",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/1",
+				},
+				{
+					command: write,
+					path:    "a/2",
+				},
+				{
+					command: write,
+					path:    "a/3",
+				},
+				{
+					command: commit,
+				},
+				{
+					command: deleteEntry,
+					path:    "a/3",
+				},
+			},
+			Descend:    true,
+			ListPath:   "",
+			ListAfter:  "a/1",
+			Expected:   []model.Entry{{Name: "a/2"}},
+			ListAmount: 1,
+		},
+		{
+			Name: "tombstone comes before file itself - amount bigger",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "b/loo",
+				},
+				{
+					command: write,
+					path:    "a/moo",
+				},
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "a/zoo",
+				},
+				{
+					command: commit,
+				},
+				{
+					command: deleteEntry,
+					path:    "b/loo",
+				},
+				{
+					command: deleteEntry,
+					path:    "a/zoo",
+				},
+			},
+			Descend:    true,
+			ListPath:   "",
+			Expected:   []model.Entry{{Name: "a/foo"}, {Name: "a/moo"}},
+			ListAmount: 3,
+		},
 	}
 
 	for _, tc := range testTable {
@@ -447,6 +580,7 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
+
 			entries, hasMore, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, tc.ListAmount, tc.Descend, true)
 
 			//compare entries
