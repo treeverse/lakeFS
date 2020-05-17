@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ListBucketResult><Name>example</Name><IsTruncated>false</IsTruncated><Prefix>master/imdb/</Prefix><Delimiter>/</Delimiter><KeyCount>1</KeyCount><MaxKeys>1</MaxKeys><Marker></Marker><Contents><Key>master/imdb/title.basics.tsv.gz</Key><LastModified>2020-03-10T12:13:04.000Z</LastModified><ETag>&#34;b70daa178b623432c3426abb0df91f57c764a22b632ad9dda4a9ef92cfd10deb&#34;</ETag><Size>90249315</Size><StorageClass>STANDARD</StorageClass></Contents></ListBucketResult>

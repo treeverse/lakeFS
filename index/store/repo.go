@@ -207,14 +207,14 @@ func (s *DBRepoOperations) GetObjectDedup(dedupId string) (*model.ObjectDedup, e
 
 func (o *DBRepoOperations) ReadMultipartUpload(uploadId string) (*model.MultipartUpload, error) {
 	m := &model.MultipartUpload{}
-	err := o.tx.Get(m, `SELECT  repository_id,upload_id,path,creation_date,encode(physical_address,'hex') as physical_address FROM multipart_uploads WHERE repository_id = $1 AND upload_id = $2`,
+	err := o.tx.Get(m, `SELECT  repository_id,upload_id,path,creation_date,physical_address FROM multipart_uploads WHERE repository_id = $1 AND upload_id = $2`,
 		o.repoId, uploadId)
 	return m, err
 }
 
 func (o *DBRepoOperations) ListMultipartUploads() ([]*model.MultipartUpload, error) {
 	var mpus []*model.MultipartUpload
-	err := o.tx.Select(&mpus, `SELECT repository_id,upload_id,path,creation_date,encode(physical_address,'hex') as physical_address FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
+	err := o.tx.Select(&mpus, `SELECT repository_id,upload_id,path,creation_date,physical_address FROM multipart_uploads WHERE repository_id = $1`, o.repoId)
 	return mpus, err
 }
 
@@ -315,7 +315,7 @@ func (o *DBRepoOperations) DeleteBranch(name string) error {
 func (o *DBRepoOperations) WriteMultipartUpload(upload *model.MultipartUpload) error {
 	_, err := o.tx.Exec(`
 		INSERT INTO multipart_uploads (repository_id, upload_id, path, creation_date,physical_address)
-		VALUES ($1, $2, $3, $4, decode($5,'hex'))`,
+		VALUES ($1, $2, $3, $4, $5)`,
 		o.repoId, upload.UploadId, upload.Path, upload.CreationDate, upload.PhysicalAddress)
 	return err
 }
