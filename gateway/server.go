@@ -78,6 +78,11 @@ func NewServer(
 		),
 	)
 
+	logging.Default().WithFields(logging.Fields{
+		"s3_bare_domain": bareDomain,
+		"s3_region":      region,
+	}).Info("initialized S3 Gateway server")
+
 	// assemble Server
 	return &Server{
 		ctx:        ctx,
@@ -90,6 +95,9 @@ func NewServer(
 }
 
 func (s *Server) Listen() error {
+	logging.Default().WithFields(logging.Fields{
+		"listen_address": s.Server.Addr,
+	}).Info("started S3 Gateway server")
 	return s.Server.ListenAndServe()
 }
 

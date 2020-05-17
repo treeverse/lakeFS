@@ -67,7 +67,7 @@ func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model
 	if err != nil {
 		return err
 	}
-	if index.shouldPartiallyCommit(repo) {
+	if index.shouldPartiallyCommit() {
 		err = index.partialCommit(tx, branch)
 		if err != nil {
 			return err
@@ -76,9 +76,9 @@ func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model
 	return nil
 }
 
-func (index *DBIndex) shouldPartiallyCommit(repo *model.Repo) bool {
-	chosen := rand.Float32()
-	return chosen < DefaultPartialCommitRatio
+func (index *DBIndex) shouldPartiallyCommit() bool {
+	chosen := rand.Float64()
+	return chosen < index.partialCommitRatio
 }
 
 func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) error {
@@ -140,7 +140,8 @@ type DBIndex struct {
 	store       store.Store
 	tsGenerator TimeGenerator
 
-	ctx context.Context
+	partialCommitRatio float64
+	ctx                context.Context
 }
 
 type Option func(index *DBIndex)
@@ -151,26 +152,36 @@ type TimeGenerator func() time.Time
 // when using this option timestamps will generate using the given time generator
 // used for mocking and testing timestamps
 func WithTimeGenerator(generator TimeGenerator) Option {
-	return func(kvi *DBIndex) {
-		kvi.tsGenerator = generator
+	return func(dbi *DBIndex) {
+		dbi.tsGenerator = generator
 	}
 }
 
 func WithContext(ctx context.Context) Option {
-	return func(kvi *DBIndex) {
-		kvi.ctx = ctx
+	return func(dbi *DBIndex) {
+		dbi.ctx = ctx
+	}
+}
+
+func WithPartialCommitRatio(ratio float64) Option {
+	return func(dbi *DBIndex) {
+		dbi.partialCommitRatio = ratio
 	}
 }
 
 func NewDBIndex(db db.Database, opts ...Option) *DBIndex {
 	kvi := &DBIndex{
-		store:       store.NewDBStore(db),
-		tsGenerator: time.Now,
-		ctx:         context.Background(),
+		store:              store.NewDBStore(db),
+		tsGenerator:        time.Now,
+		partialCommitRatio: DefaultPartialCommitRatio,
+		ctx:                context.Background(),
 	}
 	for _, opt := range opts {
 		opt(kvi)
 	}
+	kvi.log().WithFields(logging.Fields{
+		"partial_commit_ratio": kvi.partialCommitRatio,
+	}).Info("initialized Metadata index")
 	return kvi
 }
 
@@ -185,9 +196,10 @@ func (index *DBIndex) log() logging.Logger {
 // Business logic
 func (index *DBIndex) WithContext(ctx context.Context) Index {
 	return &DBIndex{
-		store:       store.WithLogger(index.store, indexLogger(ctx)),
-		tsGenerator: index.tsGenerator,
-		ctx:         ctx,
+		store:              store.WithLogger(index.store, indexLogger(ctx)),
+		tsGenerator:        index.tsGenerator,
+		ctx:                ctx,
+		partialCommitRatio: index.partialCommitRatio,
 	}
 }
 
