@@ -62,28 +62,25 @@ func NewServer(
 		stats:       stats,
 	}
 
-	// setup routes
-	var handler http.Handler
-	handler = &Handler{
+	// setup requests handler
+	handler := http.Handler(&Handler{
 		BareDomain:         bareDomain,
 		ctx:                ctx,
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
-	}
-	initialServer := &http.Server{
-		Handler: nil,
-		Addr:    listenAddr,
-	}
-	initialServer.Handler = utils.RegisterRecorder(
-		httputil.LoggingMiddleWare(
-			"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
-		), authService, region, bareDomain, listenAddr, initialServer)
+	})
+	handler = utils.RegisterRecorder(httputil.LoggingMiddleWare(
+		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
+	), authService, region, bareDomain, listenAddr)
 
 	// assemble Server
 	return &Server{
 		ctx:        ctx,
 		bareDomain: bareDomain,
-		Server:     initialServer,
+		Server: &http.Server{
+			Handler: handler,
+			Addr:    listenAddr,
+		},
 	}
 }
 
@@ -92,6 +89,7 @@ func (s *Server) Listen() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	utils.ShutdownRecorder()
 	s.Server.SetKeepAlivesEnabled(false)
 	return s.Server.Shutdown(ctx)
 }
