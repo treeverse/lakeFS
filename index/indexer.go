@@ -889,7 +889,7 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 
 func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
 	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		return WorkspaceDiff(tx, branch)
+		return DiffWorkspace(tx, branch)
 	})
 	if err != nil {
 		index.log().WithError(err).WithField("branch", branch).Error("could not do workspace diff")

@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/index/store"
 )
 
-func WorkspaceDiff(tx store.RepoOperations, branch string) (merkle.Differences, error) {
+func DiffWorkspace(tx store.RepoOperations, branch string) (merkle.Differences, error) {
 	var result merkle.Differences
 	branchData, err := tx.ReadBranch(branch)
 	if err != nil {
