@@ -9,15 +9,15 @@ export const
     OBJECTS_DELETE = new AsyncActionType('OBJECTS_DELETE');
 
 
-export const listTree = (repoId, branchId, tree, amount = PAGINATION_AMOUNT) => {
+export const listTree = (repoId, branchId, tree, amount = PAGINATION_AMOUNT, readUncommitted = true) => {
     return OBJECTS_LIST_TREE.execute(async () => {
-        return await api.objects.list(repoId, branchId, tree, "", amount);
+        return await api.objects.list(repoId, branchId, tree, "", amount, readUncommitted);
     });
 };
 
-export const listTreePaginate = (repoId, branchId, tree, after, amount = PAGINATION_AMOUNT) => {
+export const listTreePaginate = (repoId, branchId, tree, after, amount = PAGINATION_AMOUNT, readUncommitted = true) => {
     return OBJECTS_LIST_TREE_PAGINATE.execute(async () => {
-        return await api.objects.list(repoId, branchId, tree, after, amount);
+        return await api.objects.list(repoId, branchId, tree, after, amount, readUncommitted);
     });
 };
 

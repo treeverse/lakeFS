@@ -18,7 +18,7 @@ export default  (state = initialState, action) => {
     state = {
         ...state,
         list: async.reduce(REPOSITORY_LIST, state.list, action),
-        create: async.reduce(REPOSITORY_CREATE, state.create, action),
+        create: async.actionReduce(REPOSITORY_CREATE, state.create, action),
         repo: async.reduce(REPOSITORY_GET, state.repo, action),
     };
 

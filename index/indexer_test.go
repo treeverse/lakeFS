@@ -92,7 +92,11 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
+	// test read entry not exist when read-uncommitted is false
+	_, err = kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "/bar", false)
+	if !errors.Is(err, db.ErrNotFound) {
+		t.Fatalf("missing data from requested commit")
+	}
 	commit, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -120,6 +124,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+
 	_, err = kvIndex.Commit(repo.Id, testBranch, "test msg", "committer", nil)
 	if err != nil {
 		t.Fatal(err)
@@ -131,7 +136,7 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 	}
 
 	// test entry1 exists
-	te, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "bar")
+	te, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "bar", true)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -139,13 +144,13 @@ func TestKVIndex_RevertCommit(t *testing.T) {
 		t.Fatalf("missing data from requested commit")
 	}
 	// test secondEntry does not exist
-	_, err = kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "foo")
+	_, err = kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, "foo", true)
 	if !errors.Is(err, db.ErrNotFound) {
 		t.Fatalf("missing data from requested commit")
 	}
 
 	// test secondEntry exists on test branch
-	_, err = kvIndex.ReadEntryObject(repo.Id, testBranch, "foo")
+	_, err = kvIndex.ReadEntryObject(repo.Id, testBranch, "foo", true)
 	if err != nil {
 		if errors.Is(err, db.ErrNotFound) {
 			t.Fatalf("errased data from test branch after revert from defult branch")
@@ -269,7 +274,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				t.Fatalf("expected to get error but did not get any")
 			}
 			for _, entryPath := range tc.ExpectExisting {
-				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath, true)
 				if err != nil {
 					if errors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
@@ -279,7 +284,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 				}
 			}
 			for _, entryPath := range tc.ExpectMissing {
-				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath, true)
 				if !errors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
@@ -307,6 +312,38 @@ func TestKVIndex_DiffWorkspace(t *testing.T) {
 	}
 	if len(diff) == 0 {
 		t.Errorf("expected diff size to be 1, got 0")
+	}
+}
+
+func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
+	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
+
+	err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "foo/bar", &model.Entry{
+		Name:         "bar",
+		Address:      "123456789",
+		CreationDate: time.Now(),
+		EntryType:    model.EntryTypeObject,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	entries, _, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, "/", "", -1, false, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) == 0 {
+		t.Errorf("expected entries size to be 1, got 0")
+	}
+
+	// listing the uncommitted objects should not find 'bar'
+	entries, _, err = kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, "/", "", -1, false, false)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(entries) != 0 {
+		t.Errorf("expected entries size to be 0, got %d", len(entries))
 	}
 }
 
@@ -438,7 +475,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 				t.Fatalf("expected to get error but did not get any")
 			}
 			for _, entryPath := range tc.ExpectExisting {
-				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath, true)
 				if err != nil {
 					if errors.Is(err, db.ErrNotFound) {
 						t.Fatalf("files added before commit should be available after revert")
@@ -448,7 +485,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 				}
 			}
 			for _, entryPath := range tc.ExpectMissing {
-				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath)
+				_, err := kvIndex.ReadEntryObject(repo.Id, repo.DefaultBranch, entryPath, true)
 				if !errors.Is(err, db.ErrNotFound) {
 					t.Fatalf("files added after commit should be removed after revert")
 				}
@@ -554,13 +591,12 @@ func TestSizeConsistency(t *testing.T) {
 				}
 			}
 
-			//force partial commit
 			_, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
 			if err != nil {
 				t.Fatal(err)
 			}
 			for _, tree := range tc.wantedTrees {
-				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.name)
+				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.name, true)
 				if err != nil {
 					t.Fatal(err)
 				}
@@ -571,7 +607,7 @@ func TestSizeConsistency(t *testing.T) {
 				}
 			}
 
-			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch)
+			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -656,26 +692,29 @@ func TestTimeStampConsistency(t *testing.T) {
 					t.Fatal(err)
 				}
 			}
-			for _, tree := range tc.expectedTrees {
-				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path)
-				if err != nil {
-					t.Fatal(err)
-				}
-				expectedTS := now.Add(tree.seconds * time.Second)
-				if entry.CreationDate.Unix() != expectedTS.Unix() {
-					t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, entry.CreationDate)
-				}
-			}
 
-			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch)
+			// force a partial commit
+			_, err := kvIndex.DiffWorkspace(repo.Id, repo.DefaultBranch)
 			if err != nil {
 				t.Fatal(err)
 			}
-			expectedTS := now.Add(tc.expectedRootTS * time.Second)
-			if rootObject.CreationDate.Unix() != expectedTS.Unix() {
-				t.Errorf("unexpected times stamp for tree, expected: %v , got: %v", expectedTS, rootObject.CreationDate)
+
+			for _, tree := range tc.expectedTrees {
+				_, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, true)
+				if err != nil {
+					t.Fatal(err)
+				}
+				// make sure that the entry is not found when read-uncommitted is false
+				_, err = kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, false)
+				if !errors.Is(err, db.ErrNotFound) {
+					t.Errorf("Entry was not expected to be found when we do not read uncommmitted - %v", err)
+				}
 			}
 
+			_, err = kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
+			if err != nil {
+				t.Fatal(err)
+			}
 		})
 	}
 }

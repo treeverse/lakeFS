@@ -21,7 +21,7 @@ import (
 
 const (
 	// DefaultPartialCommitRatio is the ratio (1/?) of writes that will trigger a partial commit (number between 0-1)
-	DefaultPartialCommitRatio = 0 // 1 writes before a partial commit
+	DefaultPartialCommitRatio = 0.01
 
 	// DefaultBranch is the branch to be automatically created when a repo is born
 	DefaultBranch = "master"
@@ -29,16 +29,15 @@ const (
 
 type Index interface {
 	WithContext(ctx context.Context) Index
-	Tree(repoId, branch string) error
-	ReadObject(repoId, ref, path string) (*model.Object, error)
-	ReadEntryObject(repoId, ref, path string) (*model.Entry, error)
-	ReadEntryTree(repoId, ref, path string) (*model.Entry, error)
-	ReadRootObject(repoId, ref string) (*model.Root, error)
+	ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error)
+	ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
+	ReadEntryTree(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
+	ReadRootObject(repoId, ref string, readUncommitted bool) (*model.Root, error)
 	WriteObject(repoId, branch, path string, object *model.Object) error
 	WriteEntry(repoId, branch, path string, entry *model.Entry) error
 	WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 	DeleteObject(repoId, branch, path string) error
-	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend bool) ([]*model.Entry, bool, error)
+	ListObjectsByPrefix(repoId, ref, path, after string, results int, descend, readUncommitted bool) ([]*model.Entry, bool, error)
 	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ResetBranch(repoId, branch string) error
 	CreateBranch(repoId, branch, ref string) (*model.Branch, error)
@@ -63,13 +62,13 @@ type Index interface {
 	DeleteMultiPartUpload(repoId, uploadId string) error
 }
 
-func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
+func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, path string, entry *model.WorkspaceEntry) error {
 	err := tx.WriteToWorkspacePath(branch, entry.ParentPath, path, entry)
 	if err != nil {
 		return err
 	}
-	if shouldPartiallyCommit(repo) {
-		err = partialCommit(tx, branch)
+	if index.shouldPartiallyCommit(repo) {
+		err = index.partialCommit(tx, branch)
 		if err != nil {
 			return err
 		}
@@ -77,13 +76,17 @@ func writeEntryToWorkspace(tx store.RepoOperations, repo *model.Repo, branch, pa
 	return nil
 }
 
-func shouldPartiallyCommit(repo *model.Repo) bool {
+func (index *DBIndex) shouldPartiallyCommit(repo *model.Repo) bool {
 	chosen := rand.Float32()
 	return chosen < DefaultPartialCommitRatio
 }
 
-func partialCommit(tx store.RepoOperations, branch string) error {
+func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) error {
 	// see if we have any changes that weren't applied
+	err := tx.LockWorkspace()
+	if err != nil {
+		return err
+	}
 	wsEntries, err := tx.ListWorkspace(branch)
 	if err != nil {
 		return err
@@ -101,7 +104,7 @@ func partialCommit(tx store.RepoOperations, branch string) error {
 	}
 
 	// update the immutable Merkle tree, getting back a new tree
-	tree := merkle.New(branchData.WorkspaceRoot)
+	tree := merkle.New(branchData.WorkspaceRoot, merkle.WithLogger(index.log()))
 	tree, err = tree.Update(tx, wsEntries)
 	if err != nil {
 		return err
@@ -238,7 +241,7 @@ func resolveRef(tx store.RepoOperations, ref string) (*reference, error) {
 	}, nil
 }
 
-func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error) {
+func (index *DBIndex) ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
@@ -260,11 +263,11 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 		}
 		var obj *model.Object
 
-		if reference.isBranch {
+		if reference.isBranch && readUncommitted {
 			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
 			if errors.Is(err, db.ErrNotFound) {
 				// not in workspace, let's try reading it from branch tree
-				m := merkle.New(reference.branch.WorkspaceRoot)
+				m := merkle.New(reference.branch.WorkspaceRoot, merkle.WithLogger(index.log()))
 				obj, err = m.GetObject(tx, path)
 				if err != nil {
 					return nil, err
@@ -282,7 +285,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 			return tx.ReadObject(*we.EntryAddress)
 		}
 		// otherwise, read from commit
-		m := merkle.New(reference.commit.Tree)
+		m := merkle.New(reference.commit.Tree, merkle.WithLogger(index.log()))
 		obj, err = m.GetObject(tx, path)
 		if err != nil {
 			return nil, err
@@ -295,7 +298,7 @@ func (index *DBIndex) ReadObject(repoId, ref, path string) (*model.Object, error
 	return obj.(*model.Object), nil
 }
 
-func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, error) {
+func (index *DBIndex) readEntry(tx store.RepoOperations, ref, path, typ string, readUncommitted bool) (*model.Entry, error) {
 	var entry *model.Entry
 
 	_, err := tx.ReadRepo()
@@ -308,7 +311,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 		return nil, err
 	}
 	root := reference.commit.Tree
-	if reference.isBranch {
+	if reference.isBranch && readUncommitted {
 		// try reading from workspace
 		we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
 
@@ -335,7 +338,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 		root = reference.branch.WorkspaceRoot
 	}
 
-	m := merkle.New(root)
+	m := merkle.New(root, merkle.WithLogger(index.log()))
 	entry, err = m.GetEntry(tx, path, typ)
 	if err != nil {
 		return nil, err
@@ -343,7 +346,7 @@ func readEntry(tx store.RepoOperations, ref, path, typ string) (*model.Entry, er
 	return entry, nil
 }
 
-func (index *DBIndex) ReadEntry(repoId, branch, path, typ string) (*model.Entry, error) {
+func (index *DBIndex) ReadEntry(repoId, branch, path, typ string, readUncommitted bool) (*model.Entry, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(branch),
@@ -353,7 +356,7 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string) (*model.Entry,
 		return nil, err
 	}
 	entry, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		return readEntry(tx, branch, path, typ)
+		return index.readEntry(tx, branch, path, typ, readUncommitted)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -361,10 +364,11 @@ func (index *DBIndex) ReadEntry(repoId, branch, path, typ string) (*model.Entry,
 	return entry.(*model.Entry), nil
 }
 
-func (index *DBIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
+func (index *DBIndex) ReadRootObject(repoId, ref string, readUncommitted bool) (*model.Root, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
-		ValidateRef(ref))
+		ValidateRef(ref),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -377,7 +381,7 @@ func (index *DBIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
 		if err != nil {
 			return nil, err
 		}
-		if reference.isBranch {
+		if reference.isBranch && readUncommitted {
 			return tx.ReadRoot(reference.branch.WorkspaceRoot)
 		}
 		return tx.ReadRoot(reference.commit.Tree)
@@ -388,26 +392,28 @@ func (index *DBIndex) ReadRootObject(repoId, ref string) (*model.Root, error) {
 	return root.(*model.Root), nil
 }
 
-func (index *DBIndex) ReadEntryTree(repoId, branch, path string) (*model.Entry, error) {
+func (index *DBIndex) ReadEntryTree(repoId, ref, path string, readUncommitted bool) (*model.Entry, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
-		ValidateRef(branch),
-		ValidatePath(path))
+		ValidateRef(ref),
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return index.ReadEntry(repoId, branch, path, model.EntryTypeTree)
+	return index.ReadEntry(repoId, ref, path, model.EntryTypeTree, readUncommitted)
 }
 
-func (index *DBIndex) ReadEntryObject(repoId, branch, path string) (*model.Entry, error) {
+func (index *DBIndex) ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error) {
 	err := ValidateAll(
 		ValidateRepoId(repoId),
-		ValidateRef(branch),
-		ValidatePath(path))
+		ValidateRef(ref),
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, err
 	}
-	return index.ReadEntry(repoId, branch, path, model.EntryTypeObject)
+	return index.ReadEntry(repoId, ref, path, model.EntryTypeObject, readUncommitted)
 }
 
 func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error {
@@ -430,7 +436,7 @@ func (index *DBIndex) WriteFile(repoId, branch, path string, entry *model.Entry,
 			index.log().WithError(err).Error("could not write object")
 			return nil, err
 		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -464,7 +470,7 @@ func (index *DBIndex) WriteEntry(repoId, branch, path string, entry *model.Entry
 		if err != nil {
 			return nil, err
 		}
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			BranchId:          branch,
 			ParentPath:        pth.New(path, entry.EntryType).ParentPath(),
@@ -507,7 +513,7 @@ func (index *DBIndex) WriteObject(repoId, branch, path string, object *model.Obj
 		typ := model.EntryTypeObject
 		p := pth.New(path, typ)
 		entryName := pth.New(path, typ).BaseName()
-		err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+		err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 			RepositoryId:      repoId,
 			Path:              p.String(),
 			ParentPath:        p.ParentPath(),
@@ -565,7 +571,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			return nil, err
 		}
 		root := br.WorkspaceRoot
-		m := merkle.New(root)
+		m := merkle.New(root, merkle.WithLogger(index.log()))
 		merkleEntry, err := m.GetEntry(tx, path, model.EntryTypeObject)
 		if err != nil {
 			if errors.Is(err, db.ErrNotFound) {
@@ -593,7 +599,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 			typ := model.EntryTypeObject
 			pathObj := pth.New(path, typ)
 			bname := pathObj.BaseName()
-			err = writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
+			err = index.writeEntryToWorkspace(tx, repo, branch, path, &model.WorkspaceEntry{
 				Path:              path,
 				EntryName:         &bname,
 				EntryCreationDate: &ts,
@@ -642,7 +648,7 @@ func (index *DBIndex) ListBranchesByPrefix(repoId string, prefix string, amount 
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
 
-func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend bool) ([]*model.Entry, bool, error) {
+func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, results int, descend, readUncommitted bool) ([]*model.Entry, bool, error) {
 	log := index.log().WithFields(logging.Fields{
 		"from":    from,
 		"descend": descend,
@@ -651,7 +657,8 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(ref),
-		ValidatePath(path))
+		ValidatePath(path),
+	)
 	if err != nil {
 		return nil, false, err
 	}
@@ -670,7 +677,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 			return nil, err
 		}
 
-		tree := merkle.New(reference.commit.Tree)
+		tree := merkle.New(reference.commit.Tree, merkle.WithLogger(index.log()))
 		var res, currentRes []*model.Entry
 		var wsHasMore bool
 		treeHasMore := true
@@ -686,7 +693,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 				return nil, err
 			}
 			var wsEntries []*model.WorkspaceEntry
-			if reference.isBranch {
+			if reference.isBranch  && readUncommitted {
 				if descend {
 					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, amountForQueries)
 					if err != nil {
@@ -891,7 +898,7 @@ func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata
 	}
 	ts := index.tsGenerator()
 	commit, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
+		err := index.partialCommit(tx, branch)
 		if err != nil {
 			return nil, err
 		}
@@ -1015,9 +1022,10 @@ func doDiff(tx store.RepoOperations, repoId, leftRef, rightRef string, isMerge b
 	rightTree := rRef.commit.Tree
 
 	diff, err := merkle.Diff(tx,
-		merkle.New(leftTree),
-		merkle.New(rightTree),
-		merkle.New(commonCommits.Tree))
+		merkle.New(leftTree, merkle.WithLogger(index.log())),
+		merkle.New(rightTree, merkle.WithLogger(index.log())),
+		merkle.New(commonCommits.Tree, merkle.WithLogger(index.log())),
+	)
 	if err != nil {
 		index.log().WithField("left", lRef).WithField("right", rRef).WithError(err).Error("could not calculate diff")
 	}
@@ -1028,7 +1036,8 @@ func (index *DBIndex) Diff(repoId, leftRef, rightRef string) (merkle.Differences
 	err := ValidateAll(
 		ValidateRepoId(repoId),
 		ValidateRef(leftRef),
-		ValidateRef(rightRef))
+		ValidateRef(rightRef),
+	)
 	if err != nil {
 		return nil, err
 	}
@@ -1167,7 +1176,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		for _, dif := range mergeOperations {
 			var e *model.Entry
-			m := merkle.New(sourceBranch.WorkspaceRoot)
+			m := merkle.New(sourceBranch.WorkspaceRoot, merkle.WithLogger(index.log()))
 			if dif.Type != merkle.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
@@ -1192,7 +1201,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			wsEntries = append(wsEntries, w)
 		}
 
-		destinationRoot := merkle.New(destinationBranch.CommitRoot)
+		destinationRoot := merkle.New(destinationBranch.CommitRoot, merkle.WithLogger(index.log()))
 		newRoot, err := destinationRoot.Update(tx, wsEntries)
 		if err != nil {
 			index.log().WithError(err).Fatal("failed updating merge destination")
@@ -1380,33 +1389,6 @@ func (index *DBIndex) DeleteRepo(repoId string) error {
 		}
 		return nil, nil
 	})
-	return err
-}
-
-func (index *DBIndex) Tree(repoId, branch string) error {
-	err := ValidateAll(
-		ValidateRepoId(repoId),
-		ValidateRef(branch))
-	if err != nil {
-		return err
-	}
-	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := partialCommit(tx, branch)
-		if err != nil {
-			return nil, err
-		}
-		_, err = tx.ReadRepo()
-		if err != nil {
-			return nil, err
-		}
-		r, err := tx.ReadBranch(branch)
-		if err != nil {
-			return nil, err
-		}
-		m := merkle.New(r.WorkspaceRoot)
-		m.WalkAll(tx)
-		return nil, nil
-	}, db.ReadOnly())
 	return err
 }
 
