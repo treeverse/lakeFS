@@ -14,6 +14,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/treeverse/lakefs/gateway/sig"
+
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -142,17 +144,15 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 }
 
 func createConfFile(r *http.Request, authService GatewayAuthService, region, bareDomain, listenAddr, recordingDir string) {
-	credentialRegexp := regexp.MustCompile("Credential=([\\dA-Z]+)/")
-	authHeader := r.Header.Get("Authorization")
-	matchList := credentialRegexp.FindStringSubmatch(authHeader)
-	var accessKeyId string
-	if len(matchList) > 1 {
-		accessKeyId = matchList[1]
-	} else {
-		logging.Default().
-			WithFields(logging.Fields{"Auth Header": authHeader}).
-			Fatal("failed to extract accessKeyId")
+	authenticator := sig.ChainedAuthenticator(
+		sig.NewV4Authenticator(r),
+		sig.NewV2SigAuthenticator(r))
+	authContext, err := authenticator.Parse()
+	if err != nil {
+		logging.Default().WithError(err).
+			Fatal("failed getting access key using authenticator ")
 	}
+	accessKeyId := authContext.GetAccessKeyId()
 	creds, err := authService.GetAPICredentials(accessKeyId)
 	if err != nil {
 		logging.Default().
