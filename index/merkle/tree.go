@@ -54,7 +54,7 @@ type TreeReaderWriter interface {
 
 func (m *Merkle) GetEntry(tx TreeReader, pth, typ string) (*model.Entry, error) {
 	currentAddress := m.root
-	if len(pth) == 0 {
+	if len(pth) == 0 && typ == model.EntryTypeTree {
 		return &model.Entry{Address: currentAddress}, nil
 	}
 	parsed := path.New(pth, typ)

@@ -657,7 +657,7 @@ func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, tre
 		if CompareEntries(treeEntry, wsEntry) < 0 {
 			result = append(result, treeEntry)
 			treeIndex++
-		} else if CompareEntries(treeEntry, wsEntry) > 0 {
+		} else if CompareEntries(treeEntry, wsEntry) > 0 && !wsEntry.Tombstone {
 			result = append(result, wsEntry.EntryWithPathAsName())
 			wsIndex++
 		} else {
