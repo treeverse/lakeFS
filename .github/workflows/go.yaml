@@ -1,11 +1,6 @@
 name: Go
 on:
   push:
-    paths:
-      - '**.go'
-      - 'swagger.yml'
-      - '**/testdata/**'
-      - '**.sql'
     tags-ignore:
       - '**'  # Don't run when doing a release
 jobs:
