@@ -1,8 +1,5 @@
 name: Node
-on:
-  push:
-    tags-ignore:
-      - '**'  # Don't run when doing a release
+on: [push]
 jobs:
   test:
     name: Test React App
