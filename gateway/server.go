@@ -74,6 +74,11 @@ func NewServer(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
 	), authService, region, bareDomain, listenAddr)
 
+	logging.Default().WithFields(logging.Fields{
+		"s3_bare_domain": bareDomain,
+		"s3_region":      region,
+	}).Info("initialized S3 Gateway server")
+
 	// assemble Server
 	return &Server{
 		ctx:        ctx,
