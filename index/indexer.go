@@ -67,7 +67,7 @@ func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model
 	if err != nil {
 		return err
 	}
-	if index.shouldPartiallyCommit(repo) {
+	if index.shouldPartiallyCommit() {
 		err = index.partialCommit(tx, branch)
 		if err != nil {
 			return err
@@ -76,9 +76,9 @@ func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, repo *model
 	return nil
 }
 
-func (index *DBIndex) shouldPartiallyCommit(repo *model.Repo) bool {
-	chosen := rand.Float32()
-	return chosen < DefaultPartialCommitRatio
+func (index *DBIndex) shouldPartiallyCommit() bool {
+	chosen := rand.Float64()
+	return chosen < index.partialCommitRatio
 }
 
 func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) error {
