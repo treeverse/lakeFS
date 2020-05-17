@@ -54,7 +54,7 @@ func (r *recordingBodyReader) Close() error {
 
 var uniquenessCounter int32 // persistent request counter during run. used only below,
 
-func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain, listenAddr string, server *http.Server) http.Handler {
+func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain, listenAddr string) http.Handler {
 	logger := logging.Default()
 	testDir, exist := os.LookupEnv("RECORD")
 	if !exist {
@@ -66,11 +66,6 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 		logger.WithError(err).Fatal("FAILED creat directory for recordings \n")
 	}
 	uploadIdRegexp := regexp.MustCompile("<UploadId>([\\dA-Za-z_.+/]+)</UploadId>")
-
-	server.RegisterOnShutdown(func() {
-		compressRecordings(testDir, recordingDir)
-	})
-	//compressRecordings(testDir,recordingDir )
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -103,7 +98,15 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			next.ServeHTTP(respWriter, r)
 			logRequest(r, respWriter.uploadId, nameBase, respWriter.StatusCode, recordingDir)
 		})
-
+}
+func ShutdownRecorder() {
+	testDir, exist := os.LookupEnv("RECORD")
+	if !exist {
+		return
+	}
+	logging.Default().Debug("Shutdown recorder")
+	recordingDir := filepath.Join(RecordingRoot, testDir)
+	compressRecordings(testDir, recordingDir)
 }
 
 func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int, recordingDir string) {
@@ -139,15 +142,15 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 }
 
 func createConfFile(r *http.Request, authService GatewayAuthService, region, bareDomain, listenAddr, recordingDir string) {
-	var accessKeyId string
 	credentialRegexp := regexp.MustCompile("Credential=([\\dA-Z]+)/")
-	authHeader := r.Header["Authorization"][0]
-	rx := credentialRegexp.FindSubmatch([]byte(authHeader))
-	if len(rx) > 1 {
-		accessKeyId = string(rx[1])
+	authHeader := r.Header.Get("Authorization")
+	matchList := credentialRegexp.FindStringSubmatch(authHeader)
+	var accessKeyId string
+	if len(matchList) > 1 {
+		accessKeyId = matchList[1]
 	} else {
 		logging.Default().
-			WithFields(logging.Fields{"Auth Heder": authHeader}).
+			WithFields(logging.Fields{"Auth Header": authHeader}).
 			Fatal("failed to extract accessKeyId")
 	}
 	creds, err := authService.GetAPICredentials(accessKeyId)
@@ -219,8 +222,5 @@ func compressRecordings(testName, recordingDir string) {
 	}
 	zWriter.Close()
 	os.RemoveAll(recordingDir)
-	logger.Warn("******* BEFORE SLEEP ****")
-	time.Sleep(120 * time.Second)
-	logger.Warn("******* AFTER SLEEP ****")
 
 }
