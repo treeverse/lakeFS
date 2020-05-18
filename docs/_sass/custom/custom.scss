@@ -1,0 +1,21 @@
+$link-color: #36B5BE;
+
+.site-footer {
+  display: none;
+}
+
+
+// notes
+
+$note-color: #ffdf7e;
+
+.note {
+  padding: 10px;
+  background-color: $note-color;
+  border: 1px solid darken($note-color, 30%);
+  border-radius: 3px;
+}
+
+.note strong {
+  color: darken($note-color, 50%);
+}
