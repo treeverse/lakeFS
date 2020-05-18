@@ -634,66 +634,60 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 	}
 	return entries.(*result).results, entries.(*result).hasMore, nil
 }
-func CompareEntries(entry *model.Entry, wsEntry *model.WorkspaceEntry) int {
-	return strings.Compare(entry.Name, wsEntry.Path)
+func CompareEntries(entries []*model.Entry, treeIndex int, treeHasMore bool, wsEntries []*model.WorkspaceEntry, wsIndex int, wsHasMore bool) (int, bool) {
+	var treeEntry *model.Entry
+	var wsEntry *model.WorkspaceEntry
+	if treeIndex < len(entries) {
+		treeEntry = entries[treeIndex]
+	}
+	if wsIndex < len(wsEntries) {
+		wsEntry = wsEntries[wsIndex]
+	}
+	if wsEntry != nil && treeEntry != nil {
+		return strings.Compare(treeEntry.Name, wsEntry.Path), true
+	}
+	if !wsHasMore && treeEntry != nil {
+		return -1, true
+	}
+	if !treeHasMore && wsEntry != nil {
+		return 1, true
+	}
+	return 0, false
 }
 
 // CombineLists takes a sorted array of WorkspaceEntry and sorted a array of Entry, and combines them into one sorted array, omitting deleted files.
 // The returned array will be no longer than the given amount.
 func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, treeHasMore bool, wsHasMore bool, amount int) ([]*model.Entry, string, bool, bool) {
-	if amount < -1 {
-		amount = -1
-	}
 	var result []*model.Entry
-	treeIndex := 0
-	wsIndex := 0
-	lastHandled := ""
-	for treeIndex < len(entries) && wsIndex < len(wsEntries) {
+	var treeIndex, wsIndex int
+	var newFrom string
+Loop:
+	for treeIndex < len(entries) || wsIndex < len(wsEntries) {
 		if amount > 0 && len(result) == amount {
 			break
 		}
-		wsEntry := wsEntries[wsIndex]
-		treeEntry := entries[treeIndex]
-		if CompareEntries(treeEntry, wsEntry) < 0 {
-			result = append(result, treeEntry)
+		switch compareResult, shouldContinue := CompareEntries(entries, treeIndex, treeHasMore, wsEntries, wsIndex, wsHasMore); {
+		case !shouldContinue:
+			break Loop
+		case compareResult < 0:
+			result = append(result, entries[treeIndex])
 			treeIndex++
-		} else if CompareEntries(treeEntry, wsEntry) > 0 && !wsEntry.Tombstone {
-			result = append(result, wsEntry.EntryWithPathAsName())
-			wsIndex++
-		} else {
+		case compareResult == 0:
 			treeIndex++
-			wsIndex++
-			if treeEntry.ObjectCount-wsEntry.TombstoneCount > 0 {
-				result = append(result, wsEntry.EntryWithPathAsName())
-			} else {
-				lastHandled = wsEntry.Path
+			fallthrough
+		case compareResult > 0:
+			if (compareResult > 0 || entries[treeIndex-1].ObjectCount-wsEntries[wsIndex].TombstoneCount > 0) && !wsEntries[wsIndex].Tombstone {
+				result = append(result, wsEntries[wsIndex].EntryWithPathAsName())
 			}
+			newFrom = wsEntries[wsIndex].Path
+			wsIndex++
 		}
 	}
-	for treeIndex < len(entries) && !wsHasMore {
-		if amount > 0 && len(result) == amount {
-			break
-		}
-		result = append(result, entries[treeIndex])
-		treeIndex++
-	}
-	for wsIndex < len(wsEntries) && !treeHasMore {
-		if amount > 0 && len(result) == amount {
-			break
-		}
-		result = append(result, wsEntries[wsIndex].EntryWithPathAsName())
-		wsIndex++
-	}
-	newFrom := lastHandled
 	if newFrom == "" && len(result) > 0 {
 		newFrom = result[len(result)-1].Name
 	}
-	if wsIndex < len(wsEntries) {
-		wsHasMore = true
-	}
-	if treeIndex < len(entries) {
-		treeHasMore = true
-	}
+	wsHasMore = wsHasMore || wsIndex < len(wsEntries)
+	treeHasMore = treeHasMore || treeIndex < len(entries)
 	return result, newFrom, treeHasMore, wsHasMore
 }
 
