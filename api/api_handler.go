@@ -711,10 +711,13 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			if entry.GetType() == model.EntryTypeObject {
 				typ = models.ObjectStatsPathTypeOBJECT
 			}
-
+			mtime := entry.CreationDate.Unix()
+			if entry.CreationDate.IsZero() {
+				mtime = 0
+			}
 			objList[i] = &models.ObjectStats{
 				Checksum:  entry.Checksum,
-				Mtime:     entry.CreationDate.Unix(),
+				Mtime:     mtime,
 				Path:      entry.GetName(),
 				PathType:  typ,
 				SizeBytes: entry.Size,
@@ -786,6 +789,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			CreationDate: writeTime,
 			Size:         size,
 			Checksum:     checksum,
+			ObjectCount:  1,
 		}
 		err = index.WriteFile(repo.Id, params.BranchID, params.Path, entry, obj)
 		if err != nil {
