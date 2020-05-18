@@ -34,7 +34,7 @@ server:
 `);
         return (
             <Card className="setup-widget">
-                <Card.Header>Congradulation</Card.Header>
+                <Card.Header>Congratulations</Card.Header>
                 <Card.Body>
                     <Card.Text>
                         Database was initialized and admin user was created.<br/>
