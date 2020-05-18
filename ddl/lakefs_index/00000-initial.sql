@@ -107,7 +107,7 @@ CREATE TABLE multipart_uploads (
 
 CREATE TABLE multipart_upload_parts (
     repository_id varchar(64) REFERENCES repositories(id) NOT NULL,
-    upload_id varchar(128)  NOT NULL,
+    upload_id varchar NOT NULL,
     part_number integer NOT NULL,
     checksum varchar(64)  NOT NULL,
     creation_date timestamptz NOT NULL,
