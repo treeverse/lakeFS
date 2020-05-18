@@ -141,11 +141,10 @@ func (c *Commit) Identity() []byte {
 }
 
 type Branch struct {
-	RepositoryId  string `db:"repository_id"`
-	Id            string `db:"id"`
-	CommitId      string `db:"commit_id"`
-	CommitRoot    string `db:"commit_root"`
-	WorkspaceRoot string `db:"workspace_root"`
+	RepositoryId string `db:"repository_id"`
+	Id           string `db:"id"`
+	CommitId     string `db:"commit_id"`
+	CommitRoot   string `db:"commit_root"`
 }
 
 type WorkspaceEntry struct {

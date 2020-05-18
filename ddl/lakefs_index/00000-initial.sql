@@ -78,9 +78,6 @@ CREATE TABLE branches
     id             varchar                                  NOT NULL,
     commit_id      varchar(64)                              NOT NULL,
     commit_root    varchar(64)                              NOT NULL,
-
-    workspace_root varchar(64)                              NOT NULL, -- will be removed as it doesn't really fit the postgres model
-
     FOREIGN KEY (repository_id, commit_id) REFERENCES commits (repository_id, address),
     PRIMARY KEY (repository_id, id)
 );

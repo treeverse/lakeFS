@@ -64,57 +64,6 @@ func (index *DBIndex) writeEntryToWorkspace(tx store.RepoOperations, branch, pat
 	return nil
 }
 
-func (index *DBIndex) partialCommit(tx store.RepoOperations, branch string) error {
-	// see if we have any changes that weren't applied
-	err := tx.LockWorkspace()
-	if err != nil {
-		return err
-	}
-	wsEntries, err := tx.ListWorkspace(branch)
-	if err != nil {
-		return err
-	}
-	if len(wsEntries) == 0 {
-		return nil
-	}
-
-	// get branch info (including current workspace root)
-	branchData, err := tx.ReadBranch(branch)
-	if errors.Is(err, db.ErrNotFound) {
-		return nil
-	} else if err != nil {
-		return err // unexpected error
-	}
-
-	// update the immutable Merkle tree, getting back a new tree
-	tree := merkle.New(branchData.WorkspaceRoot, merkle.WithLogger(index.log()))
-	tree, err = tree.Update(tx, wsEntries)
-	if err != nil {
-		return err
-	}
-
-	// clear workspace entries
-	err = tx.ClearWorkspace(branch)
-	if err != nil {
-		return err
-	}
-
-	// update branch pointer to point at new workspace
-	err = tx.WriteBranch(branch, &model.Branch{
-		RepositoryId:  branchData.RepositoryId,
-		Id:            branchData.Id,
-		CommitId:      branchData.CommitId,
-		CommitRoot:    branchData.CommitRoot,
-		WorkspaceRoot: tree.Root(), // does this happen properly?
-	})
-	if err != nil {
-		return err
-	}
-
-	// done!
-	return nil
-}
-
 type DBIndex struct {
 	store       store.Store
 	tsGenerator TimeGenerator
@@ -478,7 +427,7 @@ func (index *DBIndex) DeleteObject(repoId, branch, path string) error {
 		if err != nil {
 			return nil, err
 		}
-		root := br.WorkspaceRoot
+		root := br.CommitRoot
 		m := merkle.New(root, merkle.WithLogger(index.log()))
 		merkleEntry, err := m.GetEntry(tx, path, model.EntryTypeObject)
 		if err != nil {
@@ -694,16 +643,7 @@ func (index *DBIndex) ResetBranch(repoId, branch string) error {
 	}
 	// clear workspace, set branch workspace root back to commit root
 	_, err = index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := tx.ClearWorkspace(branch)
-		if err != nil {
-			return nil, err
-		}
-		branchData, err := tx.ReadBranch(branch)
-		if err != nil {
-			return nil, err
-		}
-		branchData.WorkspaceRoot = branchData.CommitRoot
-		return nil, tx.WriteBranch(branch, branchData)
+		return nil, tx.ClearWorkspace(branch)
 	})
 	if err != nil {
 		index.log().WithError(err).Error("could not reset branch")
@@ -735,10 +675,9 @@ func (index *DBIndex) CreateBranch(repoId, branch, ref string) (*model.Branch, e
 			return nil, fmt.Errorf("could not read ref: %w", err)
 		}
 		branchData := &model.Branch{
-			Id:            branch,
-			CommitId:      reference.commit.Address,
-			CommitRoot:    reference.commit.Tree,
-			WorkspaceRoot: reference.commit.Tree,
+			Id:         branch,
+			CommitId:   reference.commit.Address,
+			CommitRoot: reference.commit.Tree,
 		}
 		return branchData, tx.WriteBranch(branch, branchData)
 	})
@@ -767,7 +706,7 @@ func (index *DBIndex) GetBranch(repoId, branch string) (*model.Branch, error) {
 
 func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committer, message string, parents []string, metadata map[string]string, ts time.Time, index *DBIndex) (*model.Commit, error) {
 	commit := &model.Commit{
-		Tree:         branchData.WorkspaceRoot,
+		Tree:         branchData.CommitRoot,
 		Parents:      parents,
 		Committer:    committer,
 		Message:      message,
@@ -783,7 +722,6 @@ func doCommitUpdates(tx store.RepoOperations, branchData *model.Branch, committe
 	}
 	branchData.CommitId = commitAddr
 	branchData.CommitRoot = commit.Tree
-	branchData.WorkspaceRoot = commit.Tree
 
 	return commit, tx.WriteBranch(branchData.Id, branchData)
 }
@@ -798,15 +736,34 @@ func (index *DBIndex) Commit(repoId, branch, message, committer string, metadata
 	}
 	ts := index.tsGenerator()
 	commit, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (interface{}, error) {
-		err := index.partialCommit(tx, branch)
+		// see if we have any changes that weren't applied
+		err := tx.LockWorkspace()
+		if err != nil {
+			return nil, err
+		}
+		wsEntries, err := tx.ListWorkspace(branch)
 		if err != nil {
 			return nil, err
 		}
 		branchData, err := tx.ReadBranch(branch)
 		if err != nil {
+			return nil, err // unexpected error
+		}
+
+		// update the immutable Merkle tree, getting back a new tree
+		tree := merkle.New(branchData.CommitRoot, merkle.WithLogger(index.log()))
+		tree, err = tree.Update(tx, wsEntries)
+		if err != nil {
 			return nil, err
 		}
+		// clear workspace entries
+		err = tx.ClearWorkspace(branch)
+		if err != nil {
+			return nil, err
+		}
+		branchData.CommitRoot = tree.Root()
 		return doCommitUpdates(tx, branchData, committer, message, []string{branchData.CommitId}, metadata, ts, index)
+
 	})
 	if err != nil {
 		return nil, err
@@ -972,7 +929,6 @@ func (index *DBIndex) RevertCommit(repoId, branch, commit string) error {
 		}
 		branchData.CommitId = commit
 		branchData.CommitRoot = commitData.Tree
-		branchData.WorkspaceRoot = commitData.Tree
 		err = tx.WriteBranch(branch, branchData)
 		if err != nil {
 			log.WithError(err).Error("could not write branch")
@@ -1071,7 +1027,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 		}
 		for _, dif := range mergeOperations {
 			var e *model.Entry
-			m := merkle.New(sourceBranch.WorkspaceRoot, merkle.WithLogger(index.log()))
+			m := merkle.New(sourceBranch.CommitRoot, merkle.WithLogger(index.log()))
 			if dif.Type != merkle.DifferenceTypeRemoved {
 				e, err = m.GetEntry(tx, dif.Path, dif.PathType)
 				if err != nil {
@@ -1103,7 +1059,6 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			return nil, indexerrors.ErrMergeUpdateFailed
 		}
 		destinationBranch.CommitRoot = newRoot.Root()
-		destinationBranch.WorkspaceRoot = newRoot.Root()
 
 		// read commits for each branch in our merge.
 		// check which parents is older by searching the other parents using our DAG
@@ -1219,10 +1174,9 @@ func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 			return nil, err
 		}
 		err = tx.WriteBranch(repo.DefaultBranch, &model.Branch{
-			Id:            repo.DefaultBranch,
-			CommitId:      commitId,
-			CommitRoot:    commit.Tree,
-			WorkspaceRoot: commit.Tree,
+			Id:         repo.DefaultBranch,
+			CommitId:   commitId,
+			CommitRoot: commit.Tree,
 		})
 		if err != nil {
 			index.log().WithError(err).Error("could not write branch")

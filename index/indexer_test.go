@@ -1,7 +1,6 @@
 package index_test
 
 import (
-	"crypto/rand"
 	"errors"
 	"log"
 	"os"
@@ -459,8 +458,6 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 
 	switch command {
 	case write:
-		b := make([]byte, 8)
-		_, _ = rand.Read(b)
 		err = kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, actionPath, &model.Entry{
 			Name:         path.New(actionPath, model.EntryTypeObject).BaseName(),
 			Address:      "123456789",

@@ -384,11 +384,11 @@ func (o *DBRepoOperations) WriteCommit(addr string, commit *model.Commit) error 
 
 func (o *DBRepoOperations) WriteBranch(name string, branch *model.Branch) error {
 	_, err := o.tx.Exec(`
-		INSERT INTO branches (repository_id, id, commit_id, commit_root, workspace_root)
-		VALUES ($1, $2, $3, $4, $5)
+		INSERT INTO branches (repository_id, id, commit_id, commit_root)
+		VALUES ($1, $2, $3, $4)
 		ON CONFLICT ON CONSTRAINT branches_pkey
-		DO UPDATE SET commit_id = $3, commit_root = $4, workspace_root = $5`,
-		o.repoId, name, branch.CommitId, branch.CommitRoot, branch.WorkspaceRoot)
+		DO UPDATE SET commit_id = $3, commit_root = $4`,
+		o.repoId, name, branch.CommitId, branch.CommitRoot)
 	return err
 }
 
