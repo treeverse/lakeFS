@@ -182,6 +182,16 @@ class Branches {
         return await response.json();
     }
 
+    async revert(repoId, branchId, options) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`, {
+            method: 'PUT',
+            body: json(options),
+        });
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
     async list(repoId, after, amount) {
         const query = qs({after, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches?${query}`);
