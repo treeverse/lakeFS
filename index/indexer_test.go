@@ -261,7 +261,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 
 			var err error
 			for _, action := range tc.Actions {
-				err = runCommand(kvIndex, repo, action.command, action.path)
+				_, err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
 					if errors.Is(err, tc.ExpectedError) {
 						return
@@ -422,7 +422,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 			var err error
 			for _, action := range tc.Actions {
-				err = runCommand(kvIndex, repo, action.command, action.path)
+				_, err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
 					if errors.Is(err, tc.ExpectedError) {
 						return
@@ -453,9 +453,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 	}
 }
 
-func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPath string) error {
-	var err error
-
+func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPath string) (retVal string, err error) {
 	switch command {
 	case write:
 		err = kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, actionPath, &model.Entry{
@@ -466,7 +464,11 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 		})
 
 	case commit:
-		_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
+		var commit *model.Commit
+		commit, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
+		if err == nil && commit != nil {
+			retVal = commit.Address
+		}
 
 	case revertTree:
 		err = kvIndex.RevertPath(repo.Id, repo.DefaultBranch, actionPath)
@@ -480,5 +482,5 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 	default:
 		err = errors.New("unknown command")
 	}
-	return err
+	return
 }

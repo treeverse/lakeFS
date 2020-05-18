@@ -176,13 +176,13 @@ func (m *Merkle) PrefixScan(tx store.RepoOperations, prefix, from string, amount
 
 func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, c *col, depth int) ([]*model.Entry, bool, error) {
 	currentFrom := ""
-	afterInclusive := true
+	fromInclusive := true
 	if len(from) > 0 {
 		fromParts := path.New(from, model.EntryTypeObject).SplitParts()
 		if depth < len(fromParts) {
 			currentFrom = fromParts[depth]
 		}
-		afterInclusive = depth < len(fromParts)-1
+		fromInclusive = depth < len(fromParts)-1 // until we reach the deepest path, we need to include the part in the result
 	}
 
 	// do the same with prefix
@@ -196,7 +196,7 @@ func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, 
 
 	// scan from the root of the tree, every time passing the relevant "from" key that's relevant for the current depth
 	// we add 1 to amount since if we received a marker, we explicitly skip it.
-	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)+1, afterInclusive) // need no more than that
+	entries, hasMore, err := tx.ListTreeWithPrefix(m.root, currentPrefix, currentFrom, amount-len(c.data)+1, fromInclusive) // need no more than that
 	if err != nil {
 		return nil, false, err
 	}

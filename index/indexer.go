@@ -187,12 +187,11 @@ func (index *DBIndex) ReadObject(repoId, ref, path string, readUncommitted bool)
 
 		if reference.isBranch && readUncommitted {
 			we, err := tx.ReadFromWorkspace(reference.branch.Id, path)
-			if err == nil {
-				if we.Tombstone {
-					// object was deleted deleted
-					return nil, db.ErrNotFound
-				}
+			if err == nil && !we.Tombstone {
 				return tx.ReadObject(*we.EntryAddress)
+			} else if err == nil && we.Tombstone {
+				// object was deleted
+				return nil, db.ErrNotFound
 			} else if !errors.Is(err, db.ErrNotFound) {
 				// an actual error has occurred, return it.
 				index.log().WithError(err).Error("could not read from workspace")
@@ -237,7 +236,7 @@ func (index *DBIndex) readEntry(tx store.RepoOperations, ref, path, typ string, 
 			}
 		} else {
 			if we.Tombstone {
-				// object was deleted deleted
+				// object was deleted
 				return nil, db.ErrNotFound
 			}
 			return &model.Entry{
@@ -835,17 +834,6 @@ func (index *DBIndex) DeleteBranch(repoId, branch string) error {
 		return nil, err
 	})
 	return err
-}
-
-func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, error) {
-	res, err := index.store.RepoTransact(repoId, func(tx store.RepoOperations) (i interface{}, err error) {
-		return DiffWorkspace(tx, branch)
-	})
-	if err != nil {
-		index.log().WithError(err).WithField("branch", branch).Error("could not do workspace diff")
-		return nil, err
-	}
-	return res.(merkle.Differences), nil
 }
 
 func doDiff(tx store.RepoOperations, leftRef, rightRef string, index *DBIndex) (merkle.Differences, error) {

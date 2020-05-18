@@ -14,14 +14,15 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 		path    string
 	}
 	testTable := []struct {
-		Name            string
-		Actions         []Action
-		ListPath        string
-		ListAfter       string
-		ListAmount      int
-		Expected        []model.Entry
-		ExpectedHasMore bool
-		Descend         bool
+		Name                 string
+		Actions              []Action
+		ListPath             string
+		ListAfter            string
+		ListAmount           int
+		Expected             []model.Entry
+		ExpectedHasMore      bool
+		Descend              bool
+		UseLatestCommitAsRef bool
 	}{
 		{
 			Name: "one file from workspace",
@@ -566,6 +567,70 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 			Expected:   []model.Entry{{Name: "a/foo"}, {Name: "a/moo"}},
 			ListAmount: 3,
 		},
+		{
+			Name: "use ref instead of branch",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/moo",
+				},
+				{
+					command: write,
+					path:    "a/foo",
+				},
+				{
+					command: write,
+					path:    "a/zoo",
+				},
+				{
+					command: commit,
+				},
+				{
+					command: deleteEntry,
+					path:    "a/moo",
+				},
+			},
+			Descend:              true,
+			ListPath:             "",
+			Expected:             []model.Entry{{Name: "a/foo"}, {Name: "a/moo"}},
+			ListAmount:           2,
+			UseLatestCommitAsRef: true,
+			ExpectedHasMore:      true,
+		},
+		{
+			Name: "use ref instead of branch with after",
+			Actions: []Action{
+				{
+					command: write,
+					path:    "a/1",
+				},
+				{
+					command: write,
+					path:    "a/2",
+				},
+				{
+					command: write,
+					path:    "a/3",
+				},
+				{
+					command: write,
+					path:    "a/4",
+				},
+				{
+					command: commit,
+				},
+				{
+					command: deleteEntry,
+					path:    "a/2",
+				},
+			},
+			Descend:              true,
+			ListPath:             "",
+			ListAfter:            "a/3",
+			Expected:             []model.Entry{{Name: "a/4"}},
+			ListAmount:           2,
+			UseLatestCommitAsRef: true,
+		},
 	}
 
 	for _, tc := range testTable {
@@ -574,14 +639,21 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 			var err error
+			var retVal, commitId string
 			for _, action := range tc.Actions {
-				err = runCommand(kvIndex, repo, action.command, action.path)
+				retVal, err = runCommand(kvIndex, repo, action.command, action.path)
+				if action.command == commit {
+					commitId = retVal
+				}
 				if err != nil {
 					t.Fatal(err)
 				}
 			}
-
-			entries, hasMore, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, tc.ListPath, tc.ListAfter, tc.ListAmount, tc.Descend, true)
+			ref := repo.DefaultBranch
+			if tc.UseLatestCommitAsRef {
+				ref = commitId
+			}
+			entries, hasMore, err := kvIndex.ListObjectsByPrefix(repo.Id, ref, tc.ListPath, tc.ListAfter, tc.ListAmount, tc.Descend, true)
 
 			//compare entries
 			if len(entries) != len(tc.Expected) {

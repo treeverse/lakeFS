@@ -185,7 +185,7 @@ func TestKVIndex_Diff(t *testing.T) {
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 			var err error
 			for _, action := range tc.Actions {
-				err = runCommand(kvIndex, repo, action.command, action.path)
+				_, err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
 					t.Fatal(err)
 				}
