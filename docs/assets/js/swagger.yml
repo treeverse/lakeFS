@@ -1,0 +1,914 @@
+swagger: "2.0"
+
+consumes:
+- application/json
+info:
+  description: lakeFS HTTP API
+  title: lakeFS API
+  version: 0.1.0
+produces:
+- application/json
+schemes:
+- http
+basePath: /api/v1
+
+
+securityDefinitions:
+  basic_auth:
+    type: basic
+  jwt_token:
+    type: apiKey
+    in: header
+    name: X-JWT-Authorization
+
+
+security:
+  - basic_auth: []
+  - jwt_token: []
+
+responses:
+  Unauthorized:
+    description: Unauthorized
+    schema:
+      $ref: "#/definitions/error"
+
+definitions:
+
+  user:
+    type: object
+    properties:
+      id:
+        type: integer
+      email:
+        type: string
+      full_name:
+        type: string
+
+  pagination:
+    type: object
+    required:
+      - has_more
+    properties:
+      has_more:
+        type: boolean
+      next_offset:
+        type: string
+      results:
+        type: integer
+        minimum: 0
+      max_per_page:
+        type: integer
+        minimum: 0
+
+  repository:
+    type: object
+    properties:
+      id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+      default_branch:
+        example: "master"
+        type: string
+      bucket_name:
+        type: string
+
+  mergeResult:
+    type: object
+    properties:
+      type:
+        type: string
+        enum: [ADDED, REMOVED, CHANGED]
+      direction:
+        type: string
+        enum: [LEFT, RIGHT, CONFLICT]
+      path:
+        type: string
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
+
+  repository_creation:
+    type: object
+    required:
+      - id
+      - bucket_name
+    properties:
+      id:
+        type: string
+      bucket_name:
+        type: string
+      default_branch:
+        example: "master"
+        type: string
+
+  object_stats:
+    type: object
+    properties:
+      path:
+        type: string
+      checksum:
+        type: string
+      mtime:
+        type: integer
+        format: int64
+      size_bytes:
+        type: integer
+        format: int64
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
+
+  ref:
+    type: object
+    required:
+      - id
+      - commit_id
+    properties:
+      id:
+        type: string
+      commit_id:
+        type: string
+
+  diff:
+    type: object
+    properties:
+      type:
+        type: string
+        enum: [ADDED, REMOVED, CHANGED]
+      direction:
+        type: string
+        enum: [LEFT, RIGHT, CONFLICT]
+      path:
+        type: string
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
+
+  revert_creation:
+    type: object
+    required:
+      - type
+    properties:
+      type:
+        type: string
+        enum: [OBJECT, TREE, COMMIT, RESET]
+      commit:
+        type: string
+      path:
+        type: string
+
+  commit:
+    type: object
+    properties:
+      id:
+        type: string
+      parents:
+        type: array
+        items:
+          type: string
+      committer:
+        type: string
+      message:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
+  commit_creation:
+    type: object
+    required:
+      - message
+    properties:
+      message:
+        type: string
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
+  branch_creation:
+    type: object
+    required:
+      - id
+      - sourceRefId
+    properties:
+      id:
+        type: string
+      sourceRefId:
+        type: string
+
+  error:
+    type: object
+    properties:
+      message:
+        description: short message explaining the error
+        type: string
+
+paths:
+
+  /user:
+    get:
+      tags:
+        - authentication
+      operationId: get user
+      summary: get current user
+      responses:
+        200:
+          description: user
+          schema:
+            type: object
+            properties:
+              user:
+                $ref: "#/definitions/user"
+
+  /repositories:
+    get:
+      tags:
+        - repositories
+      parameters:
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
+      operationId: listRepositories
+      summary: list repositories
+      responses:
+        200:
+          description: repository list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/repository"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - repositories
+      operationId: createRepository
+      summary: create repository
+      parameters:
+        - in: body
+          name: repository
+          schema:
+            $ref: "#/definitions/repository_creation"
+      responses:
+        201:
+          description: repository
+          schema:
+            $ref: "#/definitions/repository"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+    get:
+      tags:
+        - repositories
+      operationId: getRepository
+      summary: get repository
+      responses:
+        200:
+          description: repository
+          schema:
+            $ref: "#/definitions/repository"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - repositories
+      operationId: deleteRepository
+      summary: delete repository
+      responses:
+        204:
+          description: repository deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+    get:
+      tags:
+        - branches
+      operationId: listBranches
+      summary: list branches
+      parameters:
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
+      responses:
+        200:
+          description: branch list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - branches
+      operationId: createBranch
+      summary: create branch
+      parameters:
+        - in: body
+          name: branch
+          schema:
+            $ref: "#/definitions/branch_creation"
+      responses:
+        201:
+          description: branch
+          schema:
+            $ref: "#/definitions/ref"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/commits:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
+    get:
+      tags:
+        - commits
+      operationId: getBranchCommitLog
+      summary: get commit log for branch
+      responses:
+        200:
+          description: commit log
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/commit"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - commits
+      operationId: commit
+      summary: create commit
+      parameters:
+        - in: body
+          name: commit
+          schema:
+            $ref: "#/definitions/commit_creation"
+      responses:
+        201:
+          description: commit
+          schema:
+            $ref: "#/definitions/commit"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+    get:
+      tags:
+        - branches
+      operationId: getBranch
+      summary: get branch
+      responses:
+        200:
+          description: branch
+          schema:
+            $ref: "#/definitions/ref"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - branches
+      operationId: deleteBranch
+      summary: delete branch
+      responses:
+        204:
+          description: branch deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags:
+        - branches
+      operationId: revertBranch
+      summary: revert branch
+      parameters:
+        - in: body
+          name: revert
+          description: "revert parameters"
+          schema:
+            $ref: "#/definitions/revert_creation"
+      responses:
+        204:
+          description: reverted
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit/branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+
+
+
+  /repositories/{repositoryId}/refs/{sourceRef}/merge/{destinationRef}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: sourceRef
+        required: true
+        type: string
+        description: source branch name
+      - in: path
+        name: destinationRef
+        required: true
+        type: string
+        description: destination branch name
+
+
+    post:
+      tags:
+        - refs
+      operationId: mergeIntoBranch
+      summary: merge references
+      responses:
+        200:
+          description: merge completed
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/mergeResult"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: ref not found
+          schema:
+            $ref: "#/definitions/error"
+        409:
+          description: conflict
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/mergeResult"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/diff:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+    get:
+      tags:
+        - branches
+      operationId: diffBranch
+      summary: diff branch
+      responses:
+        200:
+          description: diff of branch uncommitted changes
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/diff"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: leftRef
+        required: true
+        type: string
+        description: a reference (could be either a branch ID or a commit ID)
+      - in: path
+        name: rightRef
+        required: true
+        type: string
+        description: a reference (could be either a branch ID or a commit ID) to compare against
+    get:
+      tags:
+        - refs
+      operationId: diffRefs
+      summary: diff references
+      responses:
+        200:
+          description: diff between refs
+          schema:
+            type: object
+            properties:
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/diff"
+        401:
+          description: Unauthorized
+          schema:
+            $ref: "#/responses/Unauthorized"
+        404:
+          description: branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/commits/{commitId}:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: commitId
+        required: true
+        type: string
+    get:
+      tags:
+        - commits
+      operationId: getCommit
+      summary: get commit
+      responses:
+        200:
+          description: commit
+          schema:
+            $ref: "#/definitions/commit"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: commit not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/refs/{ref}/objects:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: ref
+        required: true
+        type: string
+        description: a reference (could be either a branch ID or a commit ID)
+      - in: query
+        name: path
+        required: true
+        type: string
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
+    get:
+      tags:
+        - objects
+      operationId: getObject
+      summary: get object content
+      produces:
+        - application/octet-stream
+      responses:
+        200:
+          description: object content
+          schema:
+            type: file
+          headers:
+            Content-Length:
+              type: integer
+              format: int64
+            Last-Modified:
+              type: string
+            ETag:
+              type: string
+            Content-Disposition:
+              type: string
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or ref not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/branches/{branchId}/objects:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: branchId
+        required: true
+        type: string
+      - in: query
+        name: path
+        required: true
+        type: string
+    post:
+      tags:
+        - objects
+      operationId: uploadObject
+      summary: upload object content
+      parameters:
+        - in: formData
+          name: content
+          type: file
+          description: Object content to upload
+      consumes:
+        - multipart/form-data
+      responses:
+        201:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: repository or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - objects
+      operationId: deleteObject
+      summary: delete object
+      responses:
+        204:
+          description: object deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/refs/{ref}/objects/stat:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: ref
+        required: true
+        type: string
+        description: a reference (could be either a branch ID or a commit ID)
+      - in: query
+        name: path
+        required: true
+        type: string
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
+    get:
+      tags:
+        - objects
+      operationId: statObject
+      summary: get object metadata
+      responses:
+        200:
+          description: object metadata
+          schema:
+            $ref: "#/definitions/object_stats"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/refs/{ref}/objects/ls:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: ref
+        required: true
+        type: string
+        description: a reference (could be either a branch ID or a commit ID)
+      - in: query
+        name: tree
+        required: false
+        type: string
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
+    get:
+      tags:
+        - objects
+      operationId: listObjects
+      summary: list objects under a given tree
+      responses:
+        200:
+          description: entry list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/object_stats"
+        404:
+          description: tree or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
