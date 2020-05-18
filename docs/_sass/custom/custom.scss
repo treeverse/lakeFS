@@ -1,3 +1,8 @@
+
+@import "pygments.css";
+
+.highlight {}
+
 $link-color: #36B5BE;
 
 .site-footer {
@@ -18,4 +23,11 @@ $note-color: #ffdf7e;
 
 .note strong {
   color: darken($note-color, 50%);
+}
+
+.highlighter-rouge code {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
 }
