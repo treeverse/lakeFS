@@ -42,3 +42,6 @@
 /statik
 /ddl/statik.go
 .DS_Store
+
+# Docs
+/docs/_site/
