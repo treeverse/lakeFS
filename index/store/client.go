@@ -49,7 +49,6 @@ func (c *DBClientOperations) DeleteRepo(repoId string) error {
 		`DELETE FROM branches WHERE repository_id = $1`,
 		`DELETE FROM commits WHERE repository_id = $1`,
 		`DELETE FROM entries WHERE repository_id = $1`,
-		`DELETE FROM roots WHERE repository_id = $1`,
 		`DELETE FROM objects WHERE repository_id = $1`,
 		`DELETE FROM object_dedup WHERE repository_id = $1`,
 		`DELETE FROM repositories WHERE id = $1`,

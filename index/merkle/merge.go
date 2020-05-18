@@ -2,10 +2,8 @@ package merkle
 
 import (
 	"encoding/json"
-	"strings"
-	"time"
-
 	"github.com/treeverse/lakefs/logging"
+	"strings"
 
 	"github.com/treeverse/lakefs/index/model"
 )
@@ -24,12 +22,6 @@ func CompareEntries(a, b *model.Entry) (eqs int) {
 		}
 	}
 	return
-}
-func max(a, b time.Time) time.Time {
-	if a.After(b) {
-		return a
-	}
-	return b
 }
 
 func prettyEntryNames(entries []*model.Entry) string {
@@ -56,9 +48,8 @@ func prettyWorkspaceNames(changes []*model.WorkspaceEntry) string {
 	return string(data)
 }
 
-func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry, logger logging.Logger) ([]*model.Entry, time.Time, error) {
+func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry, logger logging.Logger) ([]*model.Entry, error) {
 	merged := make([]*model.Entry, 0)
-	var timeStamp time.Time
 	nextCurrent := 0
 	nextChange := 0
 	for {
@@ -66,7 +57,6 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry, logge
 		if nextChange < len(changes) && nextCurrent < len(current) {
 			currEntry := current[nextCurrent]
 			currChange := changes[nextChange]
-			timeStamp = max(timeStamp, *currChange.EntryCreationDate)
 			comparison := CompareEntries(currEntry, currChange.Entry())
 			if comparison == 0 {
 				// this is an override or deletion - do nothing
@@ -99,7 +89,6 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry, logge
 		} else if nextChange < len(changes) {
 			// only changes left
 			currChange := changes[nextChange]
-			timeStamp = max(timeStamp, *currChange.EntryCreationDate)
 			if currChange.Tombstone {
 				logger.
 					WithField("current_change_name", currChange.GetName()).
@@ -120,5 +109,5 @@ func mergeChanges(current []*model.Entry, changes []*model.WorkspaceEntry, logge
 			break
 		}
 	}
-	return merged, timeStamp, nil
+	return merged, nil
 }

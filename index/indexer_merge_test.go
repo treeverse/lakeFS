@@ -65,7 +65,7 @@ func TestMerge(t *testing.T) {
 		diff, err := index.Diff(TestRepo, "master", "br-1")
 		testutil.Must(t, err)
 		if len(diff) != 1 {
-			t.Fatalf("Diff should show %d change, expected 1", len(diff))
+			t.Fatalf("Diff showed %d changes, expected 1", len(diff))
 		}
 		diffChange := diff[0].String()
 		expectedDiffChange := "<-D t/v1/"
