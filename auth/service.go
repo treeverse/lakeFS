@@ -213,7 +213,7 @@ func (s *DBAuthService) GetFirstUser() (*model.User, error) {
 		user := &model.User{}
 		err := tx.Get(user, `SELECT * FROM users ORDER BY id ASC LIMIT 1`)
 		return user, err
-	}, db.ReadOnly())
+	}, db.ReadOnly(), db.WithLogger(logging.Dummy()))
 	if err != nil {
 		return nil, err
 	}

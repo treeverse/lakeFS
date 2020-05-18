@@ -31,6 +31,8 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a LakeFS instance",
 	Run: func(cmd *cobra.Command, args []string) {
+		logging.Default().WithField("version", config.Version).Info("lakeFS run")
+
 		mdb := cfg.ConnectMetadataDatabase()
 		adb := cfg.ConnectAuthDatabase()
 		migrator := db.NewDatabaseMigrator().
@@ -86,6 +88,8 @@ var runCmd = &cobra.Command{
 
 		go gracefulShutdown(apiServer, gatewayServer, quit, done)
 
+		logging.Default().WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
+
 		<-done
 		cancelFn()
 		<-stats.Done()
@@ -101,7 +105,6 @@ func getInstallationID(authService auth.Service) string {
 }
 
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
-	logging.Default().Info("control-C to shutdown")
 	<-quit
 	logging.Default().Warn("shutting down...")
 
