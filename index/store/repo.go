@@ -65,7 +65,7 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 	var entries []*model.WorkspaceEntry
 	err := o.tx.Select(
 		&entries,
-		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2 ORDER BY path`,
+		`SELECT * FROM workspace_entries WHERE repository_id = $1 AND branch_id = $2`,
 		o.repoId, branch)
 	return entries, err
 }

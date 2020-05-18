@@ -1037,12 +1037,12 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " not found")
 			return nil, indexerrors.ErrBranchNotFound
 		}
-		l, err := tx.ListWorkspace(destination)
+		_, hasMore, err := tx.ListWorkspaceWithPrefix(destination, "", "", 0) // check if there are uncommitted changes
 		if err != nil {
 			index.log().WithError(err).WithField("destination", destination).Warn(" branch " + destination + " workspace not found")
 			return nil, err
 		}
-		if len(l) > 0 {
+		if hasMore {
 			return nil, indexerrors.ErrDestinationNotCommitted
 		}
 		// compute difference
