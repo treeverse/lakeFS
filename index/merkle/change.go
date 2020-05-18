@@ -18,6 +18,7 @@ func newChangeTree(entries []*model.WorkspaceEntry) *changeTree {
 	}
 	for _, entry := range entries {
 		p := path.New(entry.Path, *entry.EntryType)
+		entry.ObjectCount = 1
 		container := p.ParentPath()
 		depth := len(p.SplitParts())
 		changes.Add(depth, container, entry)

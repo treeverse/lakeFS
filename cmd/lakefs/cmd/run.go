@@ -40,8 +40,7 @@ var runCmd = &cobra.Command{
 			AddDB(config.SchemaAuth, adb)
 
 		// init index
-		meta := index.NewDBIndex(mdb,
-			index.WithPartialCommitRatio(cfg.GetIndexPartialCommitRatio()))
+		meta := index.NewDBIndex(mdb)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
