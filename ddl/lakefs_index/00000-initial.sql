@@ -98,7 +98,7 @@ CREATE INDEX idx_workspace_entries_parent_path ON workspace_entries (repository_
 CREATE TABLE multipart_uploads
 (
     repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
-    upload_id        varchar(128)                             NOT NULL,
+    upload_id        varchar                                  NOT NULL,
     path             varchar                                  NOT NULL,
     creation_date    timestamptz                              NOT NULL,
     physical_address varchar                                  NOT NULL,
