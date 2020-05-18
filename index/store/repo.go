@@ -1,6 +1,7 @@
 package store
 
 import (
+	"bytes"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -8,6 +9,8 @@ import (
 	"github.com/treeverse/lakefs/ident"
 	indexerrors "github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/index/path"
+	"text/template"
 )
 
 type RepoOperations interface {
@@ -69,34 +72,47 @@ func (o *DBRepoOperations) ListWorkspace(branch string) ([]*model.WorkspaceEntry
 }
 func (o *DBRepoOperations) ListWorkspaceDirectory(branch, dir, prefix, from string, amount int) ([]*model.WorkspaceEntry, bool, error) {
 	var entries []*model.WorkspaceEntry
-	limitStatement := ""
+	values := struct {
+		AdditionalCondition    string
+		AdditionalConditionDir string
+		LimitStatement         string
+		Sep                    string
+	}{
+		Sep: path.Separator,
+	}
 	if amount >= 0 {
-		limitStatement = fmt.Sprintf("LIMIT %d", amount+1)
+		values.LimitStatement = fmt.Sprintf("LIMIT %d", amount+1)
 	}
 	args := []interface{}{o.repoId, branch, dir, prefix}
-	additionalCondition := ""
-	additionalConditionDirectories := ""
 	if len(from) > 0 {
-		additionalCondition = "AND path > $5"
-		additionalConditionDirectories = "AND LEFT(path, LENGTH($3) + STRPOS(SUBSTRING(path FROM length($3) + 1), '/')) > $5"
+		values.AdditionalCondition = "AND path > $5"
+		values.AdditionalConditionDir = fmt.Sprintf("AND LEFT(path, LENGTH($3) + STRPOS(SUBSTRING(path FROM LENGTH($3) + 1), '%s')) > $5", path.Separator)
 		args = append(args, from)
 	}
-	err := o.tx.Select(&entries, fmt.Sprintf(
-		`SELECT * FROM (
+	buf := &bytes.Buffer{}
+	tmpl, err := template.New("query").Parse(`SELECT * FROM (
 					(SELECT parent_path, path, entry_name, entry_type, entry_size, entry_creation_date, entry_checksum, CASE WHEN tombstone THEN 1 ELSE 0 END AS tombstone_count
 					FROM workspace_entries
-    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 AND entry_name LIKE $4 || '%%' %s
-					ORDER BY 3 %s)
+    				WHERE repository_id = $1 AND branch_id = $2 AND parent_path = $3 AND entry_name LIKE $4 || '%' {{.AdditionalCondition}}
+					ORDER BY 3 {{.LimitStatement}})
 						UNION ALL
 					(SELECT $3 as parent_path,
-					   LEFT(path, LENGTH($3) + STRPOS(SUBSTRING(path FROM length($3) + 1), '/')) AS path,
-					   SUBSTRING(path FROM LENGTH($3) + 1 FOR STRPOS(SUBSTRING(path FROM length($3) + 1), '/')) AS entry_name,
-					   'tree' as entry_type, 0 AS entry_size, NULL::timestamptz AS entry_creation_date, '' AS entry_checksum,
+					   LEFT(path, LENGTH($3) + STRPOS(SUBSTRING(path FROM LENGTH($3) + 1), '{{.Sep}}')) AS path,
+					   SUBSTRING(path FROM LENGTH($3) + 1 FOR STRPOS(SUBSTRING(path FROM length($3) + 1), '{{.Sep}}')) AS entry_name,
+					   'tree' as entry_type, NULL, NULL, NULL,
 					   CASE WHEN bool_and(tombstone) THEN COUNT(*) ELSE -1 END AS tombstone_count 
 					FROM workspace_entries
-					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%%' AND parent_path <> $3 AND entry_name LIKE $4 || '%%' %s  
-					GROUP BY 1,2,3,4,5,6,7 ORDER BY 3 %s)
-				) t ORDER BY path %s`, additionalCondition, limitStatement, additionalConditionDirectories, limitStatement, limitStatement), args...)
+					WHERE repository_id = $1 AND branch_id = $2 AND parent_path LIKE $3 || '%' AND parent_path <> $3 AND entry_name LIKE $4 || '%' {{.AdditionalConditionDir}}  
+					GROUP BY 1,2,3,4 ORDER BY 3 {{.LimitStatement}})
+				) t ORDER BY path {{.LimitStatement}}`)
+	if err != nil {
+		return nil, false, err
+	}
+	err = tmpl.ExecuteTemplate(buf, "query", values)
+	if err != nil {
+		return nil, false, err
+	}
+	err = o.tx.Select(&entries, buf.String(), args...)
 	if err != nil {
 		return nil, false, err
 	}
