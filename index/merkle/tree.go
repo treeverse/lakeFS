@@ -49,7 +49,6 @@ type TreeReader interface {
 type TreeReaderWriter interface {
 	TreeReader
 	WriteTree(address string, entries []*model.Entry) error
-	WriteRoot(address string, root *model.Root) error
 }
 
 func (m *Merkle) GetEntry(tx TreeReader, pth, typ string) (*model.Entry, error) {
@@ -90,18 +89,16 @@ func (m *Merkle) GetObject(tx store.RepoOperations, pth string) (*model.Object, 
 	return tx.ReadObject(entry.Address)
 }
 
-func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, int64, int, error) {
+func (m *Merkle) writeTree(tx TreeReaderWriter, entries []*model.Entry) (string, int, error) {
 	entryHashes := make([]string, len(entries))
-	var size int64
 	var objectCount int
 	for i, entry := range entries {
 		entryHashes[i] = ident.Hash(entry)
-		size += entry.Size
 		objectCount += entry.ObjectCount
 	}
 	id := ident.MultiHash(entryHashes...)
 	err := tx.WriteTree(id, entries)
-	return id, size, objectCount, err
+	return id, objectCount, err
 }
 
 type col struct {
@@ -265,7 +262,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 				"merge_depth": i,
 				"merge_path":  treePath,
 			})
-			mergedEntries, timestamp, err := mergeChanges(currentEntries, changes, lg)
+			mergedEntries, err := mergeChanges(currentEntries, changes, lg)
 			if err != nil {
 				return nil, err
 			}
@@ -274,16 +271,7 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 
 			if pth.IsRoot() {
 				// this is the root node, write it no matter what and return
-				addr, size, objectCount, err := m.writeTree(tx, mergedEntries)
-				if err != nil {
-					return nil, err
-				}
-				err = tx.WriteRoot(addr, &model.Root{
-					Address:      addr,
-					CreationDate: timestamp,
-					Size:         size,
-					ObjectCount:  objectCount,
-				})
+				addr, _, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
 					return nil, err
 				}
@@ -306,12 +294,12 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					Path:              treePath,
 					EntryName:         &dirName,
 					EntryType:         &typ,
-					EntryCreationDate: &timestamp,
+					EntryCreationDate: nil,
 					Tombstone:         true,
 				})
 			} else {
 				// write tree
-				addr, size, objectCount, err := m.writeTree(tx, mergedEntries)
+				addr, objectCount, err := m.writeTree(tx, mergedEntries)
 				if err != nil {
 					return nil, err
 				}
@@ -323,8 +311,8 @@ func (m *Merkle) Update(tx TreeReaderWriter, entries []*model.WorkspaceEntry) (*
 					EntryName:         &dirName,
 					EntryAddress:      &addr,
 					EntryType:         &typ,
-					EntrySize:         &size,
-					EntryCreationDate: &timestamp,
+					EntrySize:         nil,
+					EntryCreationDate: nil,
 					Tombstone:         false,
 					ObjectCount:       objectCount,
 				})

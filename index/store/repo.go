@@ -19,7 +19,6 @@ type RepoOperations interface {
 	ReadFromWorkspace(branch, path string) (*model.WorkspaceEntry, error)
 	ListBranches(prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	ReadBranch(branch string) (*model.Branch, error)
-	ReadRoot(addr string) (*model.Root, error)
 	ReadObject(addr string) (*model.Object, error)
 	ReadCommit(addr string) (*model.Commit, error)
 	ListTree(addr, after string, results int) ([]*model.Entry, bool, error)
@@ -34,7 +33,6 @@ type RepoOperations interface {
 	WriteToWorkspacePath(branch, parentPath, path string, entry *model.WorkspaceEntry) error
 	ClearWorkspace(branch string) error
 	WriteTree(address string, entries []*model.Entry) error
-	WriteRoot(address string, root *model.Root) error
 	WriteObject(addr string, object *model.Object) error
 	WriteCommit(addr string, commit *model.Commit) error
 	WriteBranch(name string, branch *model.Branch) error
@@ -176,12 +174,6 @@ func (o *DBRepoOperations) ReadBranch(branch string) (*model.Branch, error) {
 		err = indexerrors.ErrBranchNotFound
 	}
 	return b, err
-}
-
-func (o *DBRepoOperations) ReadRoot(address string) (*model.Root, error) {
-	r := &model.Root{}
-	err := o.tx.Get(r, `SELECT * FROM roots WHERE repository_id = $1 AND address = $2`, o.repoId, address)
-	return r, err
 }
 
 func (o *DBRepoOperations) ReadObject(addr string) (*model.Object, error) {
@@ -350,15 +342,6 @@ func (o *DBRepoOperations) WriteTree(address string, entries []*model.Entry) err
 		}
 	}
 	return nil
-}
-
-func (o *DBRepoOperations) WriteRoot(address string, root *model.Root) error {
-	_, err := o.tx.Exec(`
-		INSERT INTO roots (repository_id, address, creation_date, size, object_count) VALUES ($1, $2, $3, $4, $5)
-		ON CONFLICT ON CONSTRAINT roots_pkey
-		DO NOTHING`,
-		o.repoId, address, root.CreationDate, root.Size, root.ObjectCount)
-	return err
 }
 
 func (o *DBRepoOperations) WriteObject(addr string, object *model.Object) error {

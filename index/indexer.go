@@ -1147,16 +1147,6 @@ func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 		}
 
 		// write empty tree
-		err = tx.WriteRoot(ident.Empty(), &model.Root{
-			RepositoryId: repoId,
-			Address:      ident.Empty(),
-			CreationDate: creationDate,
-			Size:         0,
-		})
-		if err != nil {
-			return nil, err
-		}
-
 		commit := &model.Commit{
 			RepositoryId: repoId,
 			Tree:         ident.Empty(),

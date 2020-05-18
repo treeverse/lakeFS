@@ -28,18 +28,6 @@ CREATE TABLE object_dedup
     PRIMARY KEY (repository_id, dedup_id)
 );
 
-
-CREATE TABLE roots
-(
-    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
-    address       varchar(64)                              NOT NULL,
-    creation_date timestamptz                              NOT NULL,
-    size          bigint                                   NOT NULL CHECK (size >= 0),
-    object_count  integer,
-    PRIMARY KEY (repository_id, address)
-);
-
-
 CREATE TABLE entries
 (
     repository_id  varchar(64) REFERENCES repositories (id) NOT NULL,
@@ -67,7 +55,6 @@ CREATE TABLE commits
     parents       json                                     NOT NULL,
     metadata      json,
 
-    FOREIGN KEY (repository_id, tree) REFERENCES roots (repository_id, address),
     PRIMARY KEY (repository_id, address)
 );
 

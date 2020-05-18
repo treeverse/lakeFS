@@ -153,7 +153,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let size;
-    if (entry.diff_type === 'REMOVED') {
+    if (entry.diff_type === 'REMOVED' || entry.path_type === 'TREE') {
         size = (<Na/>);
     } else {
         size = (
@@ -164,7 +164,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let modified;
-    if (entry.diff_type === 'REMOVED') {
+    if (entry.diff_type === 'REMOVED' || entry.path_type === 'TREE') {
         modified = (<Na/>);
     } else {
         modified = (
