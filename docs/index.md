@@ -34,15 +34,18 @@ lakeFS sits between the data itself (i.e. an S3 bucket) and the applications and
 
    
 
-2. **Lack of rollback/revert:** By working at the single object level, mistakes become costly. If a retention job accidentally deletes a huge number of objects, reverting such a change is very hard: common object-level versioning makes this theoretically possible, but very costly in both tim and. It makes the feedback loop much longer since there's no real way to experiment with the data without fearing data loss or breaking changes for others.
+2. **Consistency:** Object Stores (S3 in particular) are eventually consistent for some operations. This requires workarounds such as EMRFS or s3Guard that help mitigate this to an extent, but don't provide the primitives to allow real, cross-collection consistency: changing many objects together as an atomic operation.
+   
+
+3. **Lack of rollback/revert:** By working at the single object level, mistakes become costly. If a retention job accidentally deletes a huge number of objects, reverting such a change is very hard: common object-level versioning makes this theoretically possible, but very costly in both tim and. It makes the feedback loop much longer since there's no real way to experiment with the data without fearing data loss or breaking changes for others.
 
    
 
-3. **Hard to manage and control:** Teams managing large Data Lakes usually have some conventions and policies around the data they contain. For example, enforcing the use of a certain format, rules around breaking schema changes and automated tests for job output. The mutable nature of Data Lakes means you can run these tests after the data has already been written. 
+4. **Hard to manage and control:** Teams managing large Data Lakes usually have some conventions and policies around the data they contain. For example, enforcing the use of a certain format, rules around breaking schema changes and automated tests for job output. The mutable nature of Data Lakes means you can run these tests after the data has already been written. 
 
    
 
-4. **Lack of reproducibility:** There's no way to view the data as it existed at a certain point in the past. Say I want to make a backwards-compatible change to my code: I'd like to validate this by running the new code on last week's data while making sure I'm getting last week's output. However, since last week others may have made changes to that input. If I get a different result - how can I tell if I broke something, or the data has changed?
+5. **Lack of reproducibility:** There's no way to view the data as it existed at a certain point in the past. Say I want to make a backwards-compatible change to my code: I'd like to validate this by running the new code on last week's data while making sure I'm getting last week's output. However, since last week others may have made changes to that input. If I get a different result - how can I tell if I broke something, or the data has changed?
 
 
 ## Concepts
