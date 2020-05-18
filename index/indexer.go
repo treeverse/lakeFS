@@ -605,11 +605,9 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 				if descend {
 					wsEntries, wsHasMore, err = tx.ListWorkspaceWithPrefix(reference.branch.Id, path, from, amountForQueries)
 					if err != nil {
-						log.WithError(
-							err).Error("failed to list workspace")
+						log.WithError(err).Error("failed to list workspace")
 						return nil, err
 					}
-
 				} else {
 					pathObj := pth.New(path, model.EntryTypeObject)
 					wsEntries, wsHasMore, err = tx.ListWorkspaceDirectory(reference.branch.Id, pathObj.ParentPath(), pathObj.BaseName(), from, amountForQueries)
@@ -618,7 +616,7 @@ func (index *DBIndex) ListObjectsByPrefix(repoId, ref, path, from string, result
 						return nil, err
 					}
 				}
-				currentRes, from, treeHasMore, wsHasMore = CombineLists(currentRes, wsEntries, treeHasMore, wsHasMore, amountForQueries-len(res))
+				currentRes, from = CombineLists(currentRes, wsEntries, treeHasMore, wsHasMore, amountForQueries-len(res))
 			}
 			res = append(res, currentRes...)
 		}
@@ -657,7 +655,7 @@ func CompareEntries(entries []*model.Entry, treeIndex int, treeHasMore bool, wsE
 
 // CombineLists takes a sorted array of WorkspaceEntry and sorted a array of Entry, and combines them into one sorted array, omitting deleted files.
 // The returned array will be no longer than the given amount.
-func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, treeHasMore bool, wsHasMore bool, amount int) ([]*model.Entry, string, bool, bool) {
+func CombineLists(entries []*model.Entry, wsEntries []*model.WorkspaceEntry, treeHasMore bool, wsHasMore bool, amount int) ([]*model.Entry, string) {
 	var result []*model.Entry
 	var treeIndex, wsIndex int
 	var newFrom string
@@ -671,6 +669,7 @@ Loop:
 			break Loop
 		case compareResult < 0:
 			result = append(result, entries[treeIndex])
+			newFrom = entries[treeIndex].Name
 			treeIndex++
 		case compareResult == 0:
 			treeIndex++
@@ -683,12 +682,7 @@ Loop:
 			wsIndex++
 		}
 	}
-	if newFrom == "" && len(result) > 0 {
-		newFrom = result[len(result)-1].Name
-	}
-	wsHasMore = wsHasMore || wsIndex < len(wsEntries)
-	treeHasMore = treeHasMore || treeIndex < len(entries)
-	return result, newFrom, treeHasMore, wsHasMore
+	return result, newFrom
 }
 
 func (index *DBIndex) ResetBranch(repoId, branch string) error {
