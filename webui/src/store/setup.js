@@ -8,6 +8,6 @@ const initialState = {
 export default (state = initialState, action) => {
     return {
         ...state,
-        setupLakeFS: async.actionReduce(SETUP_LAKEFS, state.setupLakeFS, action),
+        setupLakeFS: async.reduce(SETUP_LAKEFS, state.setupLakeFS, action),
     };
 };

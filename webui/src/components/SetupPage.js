@@ -18,7 +18,7 @@ const SetupPage = ({ doSetupLakeFS, setupState }) => {
     const fullNameRef = useRef(null);
 
 
-    const disabled = setupState.inProgress;
+    const disabled = setupState.loading;
 
     const onSubmit = (event) => {
         if (disabled) return;
