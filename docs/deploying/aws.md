@@ -23,7 +23,7 @@ has_children: false
 ##### On RDS
 ##### Creating an initial Database
 ### Setting up an S3 bucket with an IAM role
-### Running LakeFS
+### Running lakeFS
 ##### On Kubernetes
 ##### Using Docker (Fargate, ECS or EC2)
 ##### On a Linux EC2 server
