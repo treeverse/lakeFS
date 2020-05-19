@@ -214,7 +214,7 @@ func (m *Merkle) walk(tx store.RepoOperations, prefix, from string, amount int, 
 			}
 			t := New(entry.Address, WithLogger(m.logger), WithPath(dirPath))
 			recursionFrom := from
-			if entry.Name >= from {
+			if dirPath >= from {
 				recursionFrom = ""
 			}
 			_, hadMore, err := t.walk(tx, prefix, recursionFrom, amount, c, depth+1)
