@@ -80,13 +80,6 @@ func (r *MockTree) WriteRoot(address string, root *model.Root) error {
 	return nil
 }
 
-func (r *MockTree) ReadRoot(address string) (*model.Root, error) {
-	if val, ok := r.roots[address]; ok {
-		return val, nil
-	}
-	return nil, db.ErrNotFound
-}
-
 func ConstructTree(kv map[string][]*model.Entry) *MockTree {
 	roots := make(map[string]*model.Root)
 	return &MockTree{kv: kv, roots: roots}

@@ -28,18 +28,6 @@ CREATE TABLE object_dedup
     PRIMARY KEY (repository_id, dedup_id)
 );
 
-
-CREATE TABLE roots
-(
-    repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
-    address       varchar(64)                              NOT NULL,
-    creation_date timestamptz                              NOT NULL,
-    size          bigint                                   NOT NULL CHECK (size >= 0),
-
-    PRIMARY KEY (repository_id, address)
-);
-
-
 CREATE TABLE entries
 (
     repository_id  varchar(64) REFERENCES repositories (id) NOT NULL,
@@ -50,6 +38,7 @@ CREATE TABLE entries
     creation_date timestamptz NOT NULL,
     size bigint NOT NULL CHECK(size >= 0),
     checksum varchar(64) NOT NULL,
+    object_count integer,
 
     PRIMARY KEY (repository_id, parent_address, name)
 );
@@ -66,7 +55,6 @@ CREATE TABLE commits
     parents       json                                     NOT NULL,
     metadata      json,
 
-    FOREIGN KEY (repository_id, tree) REFERENCES roots (repository_id, address),
     PRIMARY KEY (repository_id, address)
 );
 
@@ -77,9 +65,6 @@ CREATE TABLE branches
     id             varchar                                  NOT NULL,
     commit_id      varchar(64)                              NOT NULL,
     commit_root    varchar(64)                              NOT NULL,
-
-    workspace_root varchar(64)                              NOT NULL, -- will be removed as it doesn't really fit the postgres model
-
     FOREIGN KEY (repository_id, commit_id) REFERENCES commits (repository_id, address),
     PRIMARY KEY (repository_id, id)
 );
@@ -113,10 +98,10 @@ CREATE INDEX idx_workspace_entries_parent_path ON workspace_entries (repository_
 CREATE TABLE multipart_uploads
 (
     repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
-    upload_id        varchar(128)                             NOT NULL,
+    upload_id        varchar                                  NOT NULL,
     path             varchar                                  NOT NULL,
     creation_date    timestamptz                              NOT NULL,
-    physical_address bytea                                    NOT NULL,
+    physical_address varchar                                  NOT NULL,
     PRIMARY KEY (repository_id, upload_id)
 );
 
