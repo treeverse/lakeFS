@@ -37,7 +37,6 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 
 // diffRecursive scans the workspace recursively and compares it to entries in the tree.
 // It starts with the given WorkspaceEntry, and accumulates the diff in the result array.
-// It backpropogates whether or not the given entry was deleted, and adds the uppermost deleted entry to the result.
 func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.WorkspaceEntry, entry *model.Entry, tree merkle.Merkle, result *merkle.Differences) error {
 	if entry == nil {
 		// Entry doesn't exist in tree - it was added
