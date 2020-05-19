@@ -45,6 +45,13 @@ This reference uses `.` to denote the nesting of values.
 * `api.listen_address` `(string : "0.0.0.0:8001")` - A `<host>:<port>` structured string representing the address to listen on
 {: .ref-list }
 
+## Using Environment Variables
+
+All configuration variables can be set or overridden using environment variables.  
+To set an environment variable, prepend `LAKEFS_` to its name, convert it to upper case, and replace `.` with `_`:
+
+For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
+
 
 ## Example: Local Development
 

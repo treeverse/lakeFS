@@ -37,5 +37,4 @@ WORKDIR /home/treeverse
 # Configuration location
 VOLUME /etc/lakefs.yaml
 
-ENTRYPOINT ["/app/lakefs", "run"]
-CMD ["--config", "/etc/lakefs.yaml"]
+ENTRYPOINT ["/app/lakefs"]
