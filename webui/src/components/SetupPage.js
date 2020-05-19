@@ -13,11 +13,15 @@ import {connect} from "react-redux";
 import {doSetupLakeFS} from "../actions/setup";
 import {API_ENDPOINT} from "../actions/api";
 
-const SetupForm = ({ doSetupLakeFS, setupState }) => {
+const SetupPage = ({ doSetupLakeFS, setupState }) => {
     const emailRef = useRef(null);
     const fullNameRef = useRef(null);
 
+
+    const disabled = setupState.loading;
+
     const onSubmit = (event) => {
+        if (disabled) return;
         doSetupLakeFS(emailRef.current.value, fullNameRef.current.value);
         event.preventDefault();
     };
@@ -34,7 +38,7 @@ server:
 `);
         return (
             <Card className="setup-widget">
-                <Card.Header>Congradulation</Card.Header>
+                <Card.Header>Congratulations</Card.Header>
                 <Card.Body>
                     <Card.Text>
                         Database was initialized and admin user was created.<br/>
@@ -87,7 +91,7 @@ server:
                                 <Form.Control type="text" placeholder="Full Name" ref={fullNameRef}/>
                             </Form.Group>
                             {setupState.error && <Alert variant={"danger"}>{setupState.error}</Alert>}
-                            <Button variant="primary" type="submit">Setup</Button>
+                            <Button variant="primary" disabled={disabled} type="submit">Setup</Button>
                         </Form>
                     </Card.Body>
                 </Card>
@@ -99,4 +103,4 @@ server:
 export default connect(
     ({ setup }) => ({ setupState: setup.setupLakeFS }),
     ({ doSetupLakeFS })
-)(SetupForm);
+)(SetupPage);

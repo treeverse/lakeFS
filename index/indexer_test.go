@@ -261,7 +261,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 
 			var err error
 			for _, action := range tc.Actions {
-				err = runCommand(kvIndex, repo, action.command, action.path)
+				_, err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
 					if errors.Is(err, tc.ExpectedError) {
 						return
@@ -314,54 +314,20 @@ func TestKVIndex_DiffWorkspace(t *testing.T) {
 	}
 }
 
-func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
-	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
-	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
-
-	err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "foo/bar", &model.Entry{
-		Name:         "bar",
-		Address:      "123456789",
-		CreationDate: time.Now(),
-		EntryType:    model.EntryTypeObject,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	entries, _, err := kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, "/", "", -1, false, true)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) == 0 {
-		t.Errorf("expected entries size to be 1, got 0")
-	}
-
-	// listing the uncommitted objects should not find 'bar'
-	entries, _, err = kvIndex.ListObjectsByPrefix(repo.Id, repo.DefaultBranch, "/", "", -1, false, false)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if len(entries) != 0 {
-		t.Errorf("expected entries size to be 0, got %d", len(entries))
-	}
-}
-
 func TestKVIndex_DeleteObject(t *testing.T) {
 	type Action struct {
 		command Command
 		path    string
 	}
 	testData := []struct {
-		Name               string
-		partialCommitRatio float32
-		Actions            []Action
-		ExpectExisting     []string
-		ExpectMissing      []string
-		ExpectedError      error
+		Name           string
+		Actions        []Action
+		ExpectExisting []string
+		ExpectMissing  []string
+		ExpectedError  error
 	}{
 		{
 			"add and delete",
-			1,
 			[]Action{
 				{write, "a/foo"},
 				{deleteEntry, "a/foo"},
@@ -373,7 +339,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"delete non existing",
-			1,
 			[]Action{
 				{write, "a/bar"},
 				{deleteEntry, "a/foo"},
@@ -385,7 +350,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"rewrite deleted",
-			1,
 			[]Action{
 				{write, "a/foo"},
 				{deleteEntry, "a/foo"},
@@ -398,7 +362,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"included",
-			1,
 			[]Action{
 				{write, "a/foo/bar"},
 				{write, "a/foo"},
@@ -412,7 +375,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"remove from workspace",
-			0,
 			[]Action{
 				{write, "a/foo"},
 				{write, "a/foo/bar"},
@@ -425,7 +387,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"remove from workspace and from merkle",
-			0,
 			[]Action{
 				{write, "a/foo"},
 				{commit, ""},
@@ -440,7 +401,6 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		},
 		{
 			"remove from twice from merkle before partial commit",
-			0,
 			[]Action{
 				{write, "a/foo"},
 				{commit, ""},
@@ -460,10 +420,9 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 		t.Run(tc.Name, func(t *testing.T) {
 			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
-
 			var err error
 			for _, action := range tc.Actions {
-				err = runCommand(kvIndex, repo, action.command, action.path)
+				_, err = runCommand(kvIndex, repo, action.command, action.path)
 				if err != nil {
 					if errors.Is(err, tc.ExpectedError) {
 						return
@@ -494,225 +453,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 	}
 }
 
-func TestSizeConsistency(t *testing.T) {
-	type Object struct {
-		name string
-		path string
-		size int64
-	}
-	type Tree struct {
-		name       string
-		wantedSize int64
-	}
-	testData := []struct {
-		name           string
-		objectList     []Object
-		wantedTrees    []Tree
-		wantedRootSize int64
-	}{
-		{
-			name: "simple case",
-			objectList: []Object{
-				{"file1", "a/file1", 100},
-				{"file2", "a/file2", 100},
-				{"file3", "a/file3", 100},
-				{"file4", "a/file4", 100},
-				{"file5", "a/file5", 100},
-			},
-			wantedTrees: []Tree{
-				{"a/", 500},
-			},
-			wantedRootSize: 500,
-		},
-		{
-			name: "two separate trees",
-			objectList: []Object{
-				{"file1", "a/file1", 100},
-				{"file2", "a/file2", 100},
-				{"file3", "b/file3", 100},
-				{"file4", "b/file4", 100},
-				{"file5", "b/file5", 100},
-			},
-			wantedTrees: []Tree{
-				{"a/", 200},
-				{"b/", 300},
-			},
-			wantedRootSize: 500,
-		},
-		{
-			name: "two sub trees",
-			objectList: []Object{
-				{"file1", "parent/a/file1", 100},
-				{"file2", "parent/a/file2", 100},
-				{"file3", "parent/b/file3", 100},
-				{"file4", "parent/b/file4", 100},
-				{"file5", "parent/b/file5", 100},
-			},
-			wantedTrees: []Tree{
-				{"parent/a/", 200},
-				{"parent/b/", 300},
-				{"parent/", 500},
-			},
-			wantedRootSize: 500,
-		},
-		{
-			name: "deep sub trees",
-			objectList: []Object{
-				{"file1", "a/file1", 100},
-				{"file2", "a/b/file2", 100},
-				{"file3", "a/b/c/file3", 100},
-				{"file4", "a/b/c/d/file4", 100},
-				{"file5", "a/b/c/d/e/file5", 100},
-			},
-			wantedTrees: []Tree{
-				{"a/", 500},
-				{"a/b/", 400},
-				{"a/b/c/", 300},
-				{"a/b/c/d/", 200},
-				{"a/b/c/d/e/", 100},
-			},
-			wantedRootSize: 500,
-		},
-	}
-
-	for _, tc := range testData {
-		t.Run(tc.name, func(t *testing.T) {
-			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
-			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
-
-			for _, object := range tc.objectList {
-				err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, object.path, &model.Entry{
-					Name:      object.name,
-					Size:      object.size,
-					EntryType: model.EntryTypeObject,
-				})
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			_, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "message", "committer", nil)
-			if err != nil {
-				t.Fatal(err)
-			}
-			for _, tree := range tc.wantedTrees {
-				entry, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.name, true)
-				if err != nil {
-					t.Fatal(err)
-				}
-
-				// test entry size
-				if entry.Size != tree.wantedSize {
-					t.Errorf("did not get the expected size for directory %s want: %d, got: %d", tree.name, tree.wantedSize, entry.Size)
-				}
-			}
-
-			rootObject, err := kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if rootObject.Size != tc.wantedRootSize {
-				t.Errorf("did not get the expected size for root want: %d, got: %d", tc.wantedRootSize, rootObject.Size)
-			}
-		})
-	}
-}
-
-func TestTimeStampConsistency(t *testing.T) {
-	type timedObject struct {
-		path    string
-		name    string
-		seconds time.Duration
-	}
-	type expectedTree struct {
-		path    string
-		seconds time.Duration
-	}
-	testData := []struct {
-		name           string
-		timedObjects   []timedObject
-		deleteObjects  []timedObject
-		expectedTrees  []expectedTree
-		expectedRootTS time.Duration
-	}{
-		{
-			timedObjects:   []timedObject{{"a/foo", "foo", 10}, {"a/bar", "bar", 20}},
-			expectedTrees:  []expectedTree{{"a/", 20}},
-			expectedRootTS: 20,
-		},
-		{
-			timedObjects:   []timedObject{{"a/wow", "wow", 5}, {"a/c/bar", "bar", 10}, {"a/b/bar", "bar", 20}},
-			expectedTrees:  []expectedTree{{"a/", 20}, {"a/c/", 10}, {"a/b/", 20}},
-			expectedRootTS: 20,
-		},
-		{
-			name:           "delete file",
-			timedObjects:   []timedObject{{"a/wow", "wow", 5}, {"a/c/bar", "bar", 10}, {"a/c/foo", "foo", 15}, {"a/b/bar", "bar", 20}},
-			deleteObjects:  []timedObject{{"a/c/bar", "bar", 25}},
-			expectedTrees:  []expectedTree{{"a/", 25}, {"a/c/", 25}, {"a/b/", 20}},
-			expectedRootTS: 25,
-		},
-	}
-
-	for _, tc := range testData {
-		t.Run(tc.name, func(t *testing.T) {
-			mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
-			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
-
-			now := time.Now()
-			currentTime := now
-			mockTime := func() time.Time {
-				return currentTime
-			}
-			kvIndex = index.NewDBIndex(mdb, index.WithTimeGenerator(mockTime))
-			for _, obj := range tc.timedObjects {
-				ts := now.Add(obj.seconds * time.Second)
-				err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, obj.path, &model.Entry{
-					Name:         obj.name,
-					Address:      "12345678",
-					EntryType:    model.EntryTypeObject,
-					CreationDate: ts,
-				})
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-			for _, obj := range tc.deleteObjects {
-				currentTime = now.Add(obj.seconds * time.Second)
-				err := kvIndex.DeleteObject(repo.Id, repo.DefaultBranch, obj.path)
-				if err != nil {
-					t.Fatal(err)
-				}
-			}
-
-			// force a partial commit
-			_, err := kvIndex.DiffWorkspace(repo.Id, repo.DefaultBranch)
-			if err != nil {
-				t.Fatal(err)
-			}
-
-			for _, tree := range tc.expectedTrees {
-				_, err := kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, true)
-				if err != nil {
-					t.Fatal(err)
-				}
-				// make sure that the entry is not found when read-uncommitted is false
-				_, err = kvIndex.ReadEntryTree(repo.Id, repo.DefaultBranch, tree.path, false)
-				if !errors.Is(err, db.ErrNotFound) {
-					t.Errorf("Entry was not expected to be found when we do not read uncommmitted - %v", err)
-				}
-			}
-
-			_, err = kvIndex.ReadRootObject(repo.Id, repo.DefaultBranch, true)
-			if err != nil {
-				t.Fatal(err)
-			}
-		})
-	}
-}
-
-func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPath string) error {
-	var err error
+func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPath string) (retVal string, err error) {
 	switch command {
 	case write:
 		err = kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, actionPath, &model.Entry{
@@ -723,7 +464,11 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 		})
 
 	case commit:
-		_, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
+		var commit *model.Commit
+		commit, err = kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
+		if err == nil && commit != nil {
+			retVal = commit.Address
+		}
 
 	case revertTree:
 		err = kvIndex.RevertPath(repo.Id, repo.DefaultBranch, actionPath)
@@ -737,5 +482,5 @@ func runCommand(kvIndex index.Index, repo *model.Repo, command Command, actionPa
 	default:
 		err = errors.New("unknown command")
 	}
-	return err
+	return
 }
