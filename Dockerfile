@@ -15,8 +15,18 @@ COPY . ./
 RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakefs ./cmd/lakefs
 RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakectl ./cmd/lakectl
 
-# Actual image we push
-FROM alpine:3.11.5 AS run
+# lakectl image
+FROM alpine:3.11.5 AS lakectl
+WORKDIR /app
+ENV PATH /app:$PATH
+COPY --from=build /build/lakectl ./
+RUN addgroup -S treeverse && adduser -S treeverse -G treeverse
+USER treeverse
+WORKDIR /home/treeverse
+ENTRYPOINT ["/app/lakectl"]
+
+# lakefs image
+FROM alpine:3.11.5 AS lakefs
 
 # Be Docker compose friendly (i.e. support wait-for)
 RUN apk add netcat-openbsd
