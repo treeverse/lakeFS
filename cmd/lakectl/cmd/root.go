@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	homedir "github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
@@ -99,7 +100,9 @@ func initConfig() {
 		viper.SetConfigName(".lakectl")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("LAKECTL")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
+	viper.AutomaticEnv()                                   // read in environment variables that match
 
 	cfgFileErr = viper.ReadInConfig()
 }
