@@ -10,3 +10,5 @@ search_tokenizer_separator: /[\s/]+/
 footer_content: ""
 
 logo: "/assets/logo.png"
+
+ga_tracking: UA-167126751-1
