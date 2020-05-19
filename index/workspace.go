@@ -49,12 +49,7 @@ func diffRecursive(tx store.RepoOperations, branch, parentPath, parentAddress st
 			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: currentWsEntry.Path, PathType: *currentWsEntry.EntryType})
 		} else if currentWsEntry.TombstoneCount == currentEntry.ObjectCount {
 			// deleted
-			*result = append(*result, merkle.Difference{
-				Type:      merkle.DifferenceTypeRemoved,
-				Direction: merkle.DifferenceDirectionLeft,
-				Path:      currentWsEntry.Path,
-				PathType:  *currentWsEntry.EntryType,
-			})
+			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeRemoved, Direction: merkle.DifferenceDirectionLeft, Path: currentWsEntry.Path, PathType: *currentWsEntry.EntryType})
 		} else if *currentWsEntry.EntryType == model.EntryTypeObject {
 			// object: check if was changed
 			if currentWsEntry.TombstoneCount == 0 && currentEntry.Checksum != *currentWsEntry.EntryChecksum {
