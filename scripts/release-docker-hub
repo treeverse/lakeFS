@@ -1,0 +1,23 @@
+#!/bin/bash -e
+
+echo "Build and publish docker images for lakefs and lakectl based on our published docker image"
+
+if [[ $# -eq 0 ]]; then
+    echo "$0 <image docker tag>"
+    exit 0
+fi
+
+VERSION=$1
+REGISTRY=977611293394.dkr.ecr.us-east-1.amazonaws.com
+
+echo "==> Docker login using your ECR"
+aws ecr get-login-password | docker login -u AWS --password-stdin https://977611293394.dkr.ecr.us-east-1.amazonaws.com
+
+echo "==> Pull out release docker image"
+AWS_IMG=${REGISTRY}/lakefs:${VERSION}
+docker pull ${AWS_IMG}
+
+echo "==> Re-tag and push to Docker hub"
+DOCKER_HUB_IMG=treeverse/lakefs:${VERSION}
+docker tag ${AWS_IMG} ${DOCKER_HUB_IMG}
+docker push ${DOCKER_HUB_IMG}
