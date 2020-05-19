@@ -161,37 +161,48 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
 
     const paginator =(!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
+
+    const compareWithSelf = (compareRef && refId.type === compareRef.type && refId.id === compareRef.id);
     return (
         <div className="mt-3">
             <div className="action-bar">
                 <CompareToolbar refId={refId} repo={repo} compare={compareRef} refresh={refreshData}/>
             </div>
 
+            <Alert variant="warning" show={compareWithSelf}>
+                <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
+                You’ll need to use two different sources to get a valid comparison.
+            </Alert>
+
             <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
                 Merge completed
             </Alert>
 
-            <Tree
-                repo={repo}
-                refId={refId}
-                showActions={false}
-                onNavigate={(path) => {
-                    const params = new URLSearchParams(location.search);
-                    params.set('path', path);
-                    history.push({...location, search: params.toString()});
-                }}
-                diffResults={diffResults}
-                list={list}
-                path={path}/>
+            {!compareWithSelf &&
+                <>
+                <Tree
+                    repo={repo}
+                    refId={refId}
+                    showActions={false}
+                    onNavigate={(path) => {
+                        const params = new URLSearchParams(location.search);
+                        params.set('path', path);
+                        history.push({...location, search: params.toString()});
+                    }}
+                    diffResults={diffResults}
+                    list={list}
+                    path={path}/>
 
-            {paginator &&
-            <p className="tree-paginator">
-                <Button variant="outline-primary" onClick={() => {
-                    listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset, PAGINATION_AMOUNT, readUncommitted);
-                }}>
-                    Load More
-                </Button>
-            </p>
+                {paginator &&
+                <p className="tree-paginator">
+                    <Button variant="outline-primary" onClick={() => {
+                        listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset, PAGINATION_AMOUNT, readUncommitted);
+                    }}>
+                        Load More
+                    </Button>
+                </p>
+                }
+                </>
             }
         </div>
     );
