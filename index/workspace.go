@@ -22,7 +22,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 			EntryType: model.EntryTypeTree,
 			Checksum:  "",
 		}
-		_, err = diffRecursive(tx, branch, nil, root, *tree, &result)
+		err = diffRecursive(tx, branch, nil, root, *tree, &result)
 		if err != nil {
 			return nil, err
 		}
@@ -37,21 +37,20 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 
 // diffRecursive scans the workspace recursively and compares it to entries in the tree.
 // It starts with the given WorkspaceEntry, and accumulates the diff in the result array.
-// It backpropogates whether or not the given entry was deleted, and adds the uppermost deleted entry to the result.
-func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.WorkspaceEntry, entry *model.Entry, tree merkle.Merkle, result *merkle.Differences) (isDeleted bool, err error) {
+func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.WorkspaceEntry, entry *model.Entry, tree merkle.Merkle, result *merkle.Differences) error {
 	if entry == nil {
 		// Entry doesn't exist in tree - it was added
 		*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: *wsEntry.EntryType})
-		return false, nil
+		return nil
 	}
 	if wsEntry != nil && *wsEntry.EntryType == model.EntryTypeObject {
 		// OBJECT
 		if wsEntry.TombstoneCount == 0 && entry.Checksum != *wsEntry.EntryChecksum {
 			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeChanged, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: model.EntryTypeObject})
-			return false, nil
+			return nil
 		}
 		if wsEntry.TombstoneCount >= 1 {
-			return true, nil
+			return nil
 		}
 	}
 	// DIRECTORY
@@ -62,38 +61,30 @@ func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.Worksp
 	wsEntriesInDir, _, err := tx.ListWorkspaceDirectory(branch, wsPath, "", "", -1)
 
 	if err != nil {
-		return false, err
+		return err
 	}
-	var deletedEntries []*model.WorkspaceEntry
 	for _, currentWsEntry := range wsEntriesInDir {
 		currentEntry, err := tx.ReadTreeEntry(entry.Address, *currentWsEntry.EntryName)
 		if errors.Is(err, db.ErrNotFound) {
 			// entry doesn't exist in tree
 			currentEntry = nil
 		} else if err != nil {
-			return false, nil
+			return err
 		}
-		isDeleted, err := diffRecursive(tx, branch, currentWsEntry, currentEntry, tree, result)
-		if err != nil {
-			return false, err
-		}
-		if isDeleted {
-			deletedEntries = append(deletedEntries, currentWsEntry)
-		}
-	}
-	if len(deletedEntries) == len(wsEntriesInDir) && wsEntry != nil && entry.ObjectCount == wsEntry.TombstoneCount {
-		// All entries under this directory were deleted, mark as deleted
-		return true, nil
-	} else {
-		// This directory was not deleted, add its deleted children to result
-		for _, deletedEntry := range deletedEntries {
+		if currentEntry != nil && currentWsEntry.TombstoneCount == currentEntry.ObjectCount {
 			*result = append(*result, merkle.Difference{
 				Type:      merkle.DifferenceTypeRemoved,
 				Direction: merkle.DifferenceDirectionLeft,
-				Path:      deletedEntry.Path,
-				PathType:  *deletedEntry.EntryType,
+				Path:      currentWsEntry.Path,
+				PathType:  *currentWsEntry.EntryType,
 			})
+			continue
+		}
+
+		err = diffRecursive(tx, branch, currentWsEntry, currentEntry, tree, result)
+		if err != nil {
+			return err
 		}
 	}
-	return false, nil
+	return nil
 }
