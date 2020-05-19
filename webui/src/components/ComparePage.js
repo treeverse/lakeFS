@@ -171,7 +171,7 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
 
             <Alert variant="warning" show={compareWithSelf}>
                 <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
-                You’ll need to use two different branch names to get a valid comparison.
+                You’ll need to use two different sources to get a valid comparison.
             </Alert>
 
             <Alert variant="success" show={showMergeCompleted} onClick={() => resetMerge()} dismissible>
