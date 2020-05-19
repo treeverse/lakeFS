@@ -15,18 +15,18 @@ has_children: false
 
 ## Overview
 
-LakeFS is distributed as a single binary encapsulating several logical services:
+lakeFS is distributed as a single binary encapsulating several logical services:
 
 The server itself is stateless, meaning you can easily add more instances to handle bigger load
-LakeFS stores data in an underlying [S3 bucket](https://aws.amazon.com/s3/){:target="_blank"} and metadata in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}.
+lakeFS stores data in an underlying [S3 bucket](https://aws.amazon.com/s3/){:target="_blank"} and metadata in [PostgreSQL](https://www.postgresql.org/){:target="_blank"}.
 
 ![Architecture](assets/img/arch.png)
 
-## LakeFS Components
+## lakeFS Components
 
 ### S3 Gateway
 
-The API Gateway implements LakeFS' compatibility with S3. It implements a compatible subset of the S3 API to ensure most data systems can use LakeFS as a drop-in replacement for S3.
+The API Gateway implements lakeFS' compatibility with S3. It implements a compatible subset of the S3 API to ensure most data systems can use lakeFS as a drop-in replacement for S3.
 
 To achieve this, the gateway exposes an HTTP listener on a dedicated host and port.
 
@@ -34,7 +34,7 @@ See the [S3 API Reference](reference/s3.md) section for information on supported
 
 ### OpenAPI Server
 
-The Swagger ([OpenAPI](https://swagger.io/docs/specification/2-0/basic-structure/){:target="_blank"}) Server exposes the full set of LakeFS operations (see [Reference](reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing and reverting changes to data.
+The Swagger ([OpenAPI](https://swagger.io/docs/specification/2-0/basic-structure/){:target="_blank"}) Server exposes the full set of lakeFS operations (see [Reference](reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing and reverting changes to data.
 
 ### S3 Storage Adapter
 
@@ -44,11 +44,11 @@ See the [roadmap](roadmap.md) for information on future plans for storage compat
 
 ### Metadata Index
 
-The Metadata index contains the versioning logic used inside LakeFS. It maps logical entities such as branches, commits and object paths to the relevant underlying storage.
+The Metadata index contains the versioning logic used inside lakeFS. It maps logical entities such as branches, commits and object paths to the relevant underlying storage.
 
 The metadata itself is managed in PostgreSQL. This makes it relatively easy to maintain, is offered as a managed service by many providers and has a rock solid foundation.
 
-Additionally, using the consistency and durability guarantees provided by Postgres, LakeFS ensures its metadata is [strongly consistent](https://en.wikipedia.org/wiki/Strong_consistency){:target="_blank"} and doesn't suffer from [S3's eventual consistency woes](https://docs.aws.amazon.com/AmazonS3/latest/dev/Introduction.html#ConsistencyModel){:target="_blank"}.
+Additionally, using the consistency and durability guarantees provided by Postgres, lakeFS ensures its metadata is [strongly consistent](https://en.wikipedia.org/wiki/Strong_consistency){:target="_blank"} and doesn't suffer from [S3's eventual consistency woes](https://docs.aws.amazon.com/AmazonS3/latest/dev/Introduction.html#ConsistencyModel){:target="_blank"}.
 
 ### Authentication & Authorization Service
 
