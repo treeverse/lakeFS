@@ -79,6 +79,7 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 		httpClient:         s.httpClient,
 		ctx:                ctx,
 		uploadIdTranslator: s.uploadIdTranslator,
+		streamingChunkSize: s.streamingChunkSize,
 	}
 }
 
@@ -147,7 +148,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			sigSeed,
 			sdkRequest.Config.Credentials,
 		),
-		ChunkSize: StreamingDefaultChunkSize,
+		ChunkSize: s.streamingChunkSize,
 	})
 
 	resp, err := s.httpClient.Do(req)
