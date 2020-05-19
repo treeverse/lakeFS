@@ -30,9 +30,10 @@ const (
 	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
 	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
 
-	DefaultBlockStoreType      = "local"
-	DefaultBlockStoreLocalPath = "~/lakefs/data"
-	DefaultBlockStoreS3Region  = "us-east-1"
+	DefaultBlockStoreType                 = "local"
+	DefaultBlockStoreLocalPath            = "~/lakefs/data"
+	DefaultBlockStoreS3Region             = "us-east-1"
+	DefaultBlockStoreS3StreamingChunkSize = 2 << 19 // 1MiB by default per chunk
 
 	DefaultS3GatewayListenAddr = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
@@ -73,6 +74,7 @@ func setDefaults() {
 	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
 	viper.SetDefault("blockstore.local.path", DefaultBlockStoreLocalPath)
 	viper.SetDefault("blockstore.s3.region", DefaultBlockStoreS3Region)
+	viper.SetDefault("blockstore.s3.streaming_chunk_size", DefaultBlockStoreS3StreamingChunkSize)
 
 	viper.SetDefault("gateways.s3.listen_address", DefaultS3GatewayListenAddr)
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
@@ -121,7 +123,7 @@ func (c *Config) buildS3Adapter() block.Adapter {
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig(s3.ServiceName)
 	svc := s3.New(sess)
-	adapter := s3a.NewAdapter(svc)
+	adapter := s3a.NewAdapter(svc, s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")))
 	log.WithFields(log.Fields{
 		"type": "s3",
 	}).Info("initialized blockstore adapter")
