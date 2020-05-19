@@ -70,13 +70,9 @@ func NewServer(
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
-	handler = utils.RegisterRecorder(
-		httputil.LoggingMiddleware(
-			"X-Amz-Request-Id",
-			logging.Fields{"service_name": "s3_gateway"},
-			handler,
-		),
-	)
+	handler = utils.RegisterRecorder(httputil.LoggingMiddleware(
+		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
+	), authService, region, bareDomain, listenAddr)
 
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
@@ -102,6 +98,7 @@ func (s *Server) Listen() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	utils.ShutdownRecorder()
 	s.Server.SetKeepAlivesEnabled(false)
 	return s.Server.Shutdown(ctx)
 }
