@@ -44,9 +44,12 @@ jobs:
       - name: Build, tag and push image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY: lakefs
+          ECR_REPOSITORY_LAKEFS: lakefs
+          ECR_REPOSITORY_LAKECTL: lakectl
         run: |
           VERSION=$(echo ${GITHUB_REF##*/} | sed  s/^v//g)
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:${VERSION} --build-arg VERSION=${VERSION} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY:${VERSION}
+          docker build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${VERSION} --build-arg VERSION=${VERSION} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${VERSION}
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${VERSION} --build-arg VERSION=${VERSION} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${VERSION}
 
