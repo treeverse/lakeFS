@@ -86,8 +86,8 @@ func TestKVIndex_Diff(t *testing.T) {
 			},
 			ListPath: "a/",
 			Expected: []merkle.Difference{
-				{Direction: merkle.DifferenceDirectionLeft, Type: merkle.DifferenceTypeAdded, Path: "a/c/", PathType: "tree"},
 				{Direction: merkle.DifferenceDirectionLeft, Type: merkle.DifferenceTypeRemoved, Path: "a/b/", PathType: "tree"},
+				{Direction: merkle.DifferenceDirectionLeft, Type: merkle.DifferenceTypeAdded, Path: "a/c/", PathType: "tree"},
 			},
 		},
 		{
