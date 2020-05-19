@@ -7,6 +7,17 @@ has_children: false
 ---
 
 # Deploying on AWS
+{: .no_toc }
+
+**Warning:** lakeFS is still in pre-alpha and is not suitable for production use.
+{: .note }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
 
 ### Running PostgreSQL
 ##### On RDS

@@ -5,6 +5,15 @@ nav_order: 7
 has_children: false
 ---
 # Architecture
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+## Overview
 
 LakeFS is distributed as a single binary encapsulating several logical services:
 
