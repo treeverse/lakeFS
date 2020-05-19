@@ -2,7 +2,5 @@
 layout: default
 title: Contributing
 nav_order: 8
-has_children: false
+has_children: true
 ---
-
-# Contributing
