@@ -25,73 +25,64 @@ It is only intended for testing purposes
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
-```yaml
----
-version: '3'
-services:
-  lakefs:
-    image: "lakefs:latest"
-    ports:
-      - "8000:8000"
-      - "8001:8001"
-    volumes:
-      - "./lakefs_config.yaml:/etc/lakefs.yaml"
-    links:
-      - postgres
-    command: []
-    entrypoint: [
-      "/app/wait-for", "postgres:5432", "--", 
-      "/app/lakefs", "--config", "/etc/lakefs.yaml", "run"
-    ]
-  postgres:
-    image: "postgres:11"
-    environment:
-      POSTGRES_USER: lakefs
-      POSTGRES_PASSWORD: lakefs
-      POSTGRES_DB: lakefsdb
-      LC_COLLATE: C
-```
+1. Ensure you have Docker installed on your computer. The MacOS and Windows installations include [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} by default.
 
-With a corresponding configuration file (should be in the same directory as the `docker-compose.yaml` file), named `lakefs_config.yaml`:
+2. Create a `docker-compose.yaml` file, containing the following configuration:
 
-```yaml
----
-metadata:
-  db:
-    uri: "postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_index"
+   ```yaml
+   ---
+   version: '3'
+   services:
+     lakefs:
+       image: "treeverse/lakefs:latest"
+       ports:
+         - "8000:8000"
+         - "8001:8001"
+       links:
+         - postgres
+       environment:
+         LAKEFS_AUTH_DB_URI: postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_auth
+         LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+         LAKEFS_METADATA_DB_URI: postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_index
+         LAKEFS_BLOCKSTORE_TYPE: mem
+       entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+     postgres:
+       image: "postgres:11"
+       environment:
+         POSTGRES_USER: lakefs
+         POSTGRES_PASSWORD: lakefs
+         POSTGRES_DB: lakefsdb
+         LC_COLLATE: C
+   ```
 
-blockstore: 
-  type: "mem"
+3. From the directory that contains our new `docker-compose.yaml` file, run the following command:
 
-auth:
-  encrypt:
-    secret_key: "a random string that should be kept secret"
-  db:
-    uri: "postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_auth"
-``` 
+   ```bash
+   $ docker-compose up
+   ```
 
-Once we have this configuration in place, we can run the application:
-
-```bash
-$ docker-compose up
-```
-
-And open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
+4. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
 
 ### Manual Installation 
 
 Alternatively, you may opt to run the lakefs binary directly on your computer.
 
-1. [Download](https://github.com){:target="_blank"} the lakeFS binary suitable for your platform
+1. Download the lakeFS binary for your operating system:
+
+   [Download lakefs](https://github.com){: .btn .btn-green target="_blank"}
 
 2. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
 3. Create a PostgreSQL database:
 
+   ```sh
+   $ psql postgres
+   ``` 
+
    ```sql
    CREATE DATABASE lakefsdb LC_COLLATE='C' TEMPLATE template0;
-   ``` 
+   ```
 
 4. Create a configuration file:
     
@@ -121,7 +112,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 6. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
-## Setting up our first repository
+## Setting up a Repository
 
 A [repository](what_is_lakefs.html#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
 Let's create one using the UI:
@@ -133,7 +124,7 @@ Let's create one using the UI:
 
 3. We should now have a new repository called `example`. Time to load some data into it!
 
-## Using the AWS CLI to copy files into our local installation
+## Copying files into our local installation using the AWS CLI
 
 1. If you don't have the AWS CLI installed, follow the [instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html){:target="_blank"}.
 2. Configure a new connection profile using the credentials we generated earlier:
@@ -175,7 +166,11 @@ The CLI is a great way to get started with lakeFS since it is a complete impleme
 
 Here's how to get started with the CLI:
 
-1. Download the CLI [here](https://github.com){:target="_blank"}
+1. Download the CLI binary:
+
+   [Download lakectl](https://github.com){: .btn .btn-green target="_blank"}
+
+
 2. It's recommended that you place it somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet).
 3. configure the CLI to use the credentials you've created earlier:
 
