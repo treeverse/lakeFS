@@ -1,8 +1,9 @@
 package gateway_test
 
 import (
+	"archive/zip"
 	"encoding/json"
-	"github.com/ory/dockertest/v3"
+	"io"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -10,10 +11,9 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/logging"
 
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/utils"
@@ -21,35 +21,33 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-type playBackMockConf struct {
-	ListenAddress   string `json:"listen_address"`
-	BareDomain      string `json:"bare_domain"`
-	AccessKeyId     string `json:"access_key_id"`
-	AccessSecretKey string `json:"access_secret_Key"`
-	CredentialType  string `json:"credential_type"`
-	UserId          int    `json:"user_id"`
-	Region          string `json:"Region"`
-}
-
 type dependencies struct {
 	blocks block.Adapter
 	auth   utils.GatewayAuthService
 	meta   index.Index
 }
 
+const RecordingsDir = "testdata/recordings"
+
 func TestGatewayRecording(t *testing.T) {
-	dirList, err := ioutil.ReadDir("testdata/recordings")
+	dirList, err := ioutil.ReadDir(RecordingsDir)
 	if err != nil {
 		t.Fatalf("Failed reading recording directories: %v", err)
 	}
 	for _, dir := range dirList {
-		if !dir.IsDir() {
+		zipName := dir.Name()
+		if filepath.Ext(dir.Name()) != ".zip" {
 			continue
 		}
-		dirName := dir.Name()
+		dirName := zipName[:len(zipName)-4]
 		t.Run(dirName+" recording", func(t *testing.T) {
+
 			setGlobalPlaybackParams(dirName)
-			handler, _ := getBasicHandler(t, dirName)
+			os.RemoveAll(utils.PlaybackParams.RecordingDir)
+			os.MkdirAll(utils.PlaybackParams.RecordingDir, 0775)
+			archive := filepath.Join(RecordingsDir, zipName)
+			deCompressRecordings(archive, utils.PlaybackParams.RecordingDir)
+			handler, _ := getBasicHandler(t, zipName)
 			DoTestRun(handler, false, 1.0, t)
 		})
 	}
@@ -86,14 +84,13 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		ExpectedId: "",
 		T:          t,
 	}
-	directory := filepath.Join("testdata", "recordings", testDir)
 
 	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
 
 	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
 
-	authService := newGatewayAuth(t, directory)
+	authService := newGatewayAuth(t, utils.PlaybackParams.RecordingDir)
 
 	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
 	server := gateway.NewServer(authService.Region,
@@ -109,9 +106,9 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	}
 }
 
-func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
-	m := new(playBackMockConf)
-	fName := filepath.Join(directory, "simulation_config.json")
+func newGatewayAuth(t *testing.T, directory string) *utils.PlayBackMockConf {
+	m := new(utils.PlayBackMockConf)
+	fName := filepath.Join(directory, utils.SimulationConfig)
 	confStr, err := ioutil.ReadFile(fName)
 	if err != nil {
 		t.Fatal(fName + " not found\n")
@@ -123,19 +120,33 @@ func newGatewayAuth(t *testing.T, directory string) *playBackMockConf {
 	return m
 }
 
-func (m *playBackMockConf) GetAPICredentials(accessKey string) (*model.Credential, error) {
-	if accessKey != m.AccessKeyId {
-		logging.Default().Fatal("access key in recording different than configuration")
+func deCompressRecordings(archive, dir string) {
+	// Open a zip archive for reading.
+	r, err := zip.OpenReader(archive)
+	if err != nil {
+		logging.Default().WithError(err).Fatal("could not decompress archive " + archive)
 	}
-	aCred := new(model.Credential)
-	aCred.AccessKeyId = accessKey
-	aCred.AccessSecretKey = m.AccessSecretKey
-	aCred.Type = m.CredentialType
-	aCred.UserId = &m.UserId
-	return aCred, nil
+	defer r.Close()
 
-}
-
-func (m *playBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
-	return &auth.AuthorizationResponse{true, nil}, nil
+	// Iterate through the files in the archive,
+	// copy to temporary recordings directory
+	for _, f := range r.File {
+		if f.Name[len(f.Name)-1:] == "/" { // It is a directory
+			continue
+		}
+		compressedFile, err := f.Open()
+		if err != nil {
+			logging.Default().WithError(err).Fatal("Couldn't read from archive file " + f.Name)
+		}
+		fileName := filepath.Join(utils.PlaybackParams.RecordingDir, filepath.Base(f.Name))
+		DeCompressedFile, err := os.Create(fileName)
+		if err != nil {
+			logging.Default().WithError(err).Fatal("failed creating file " + f.Name)
+		}
+		_, err = io.Copy(DeCompressedFile, compressedFile)
+		if err != nil {
+			logging.Default().WithError(err).Fatal("failed copying file " + f.Name)
+		}
+		compressedFile.Close()
+	}
 }

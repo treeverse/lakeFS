@@ -14,7 +14,7 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger:v0.23.0
+SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) treeverse/go-swagger:v0.23.0
 
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl

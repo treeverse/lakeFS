@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<InitiateMultipartUploadResult><Bucket>example</Bucket><Key>imdb/title.basics.tsv.gz</Key><UploadId>3fb90340996943d799135a2a2090db53bfe2f6da0d7342f1948204eef2646b38</UploadId></InitiateMultipartUploadResult>
