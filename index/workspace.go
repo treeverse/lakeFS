@@ -43,7 +43,8 @@ func diffRecursive(tx store.RepoOperations, branch, parentPath, parentAddress st
 			currentEntry = nil
 		} else if err != nil {
 			return err
-		} else if currentEntry == nil {
+		}
+		if currentEntry == nil {
 			// added
 			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: currentWsEntry.Path, PathType: *currentWsEntry.EntryType})
 		} else if currentWsEntry.TombstoneCount == currentEntry.ObjectCount {
