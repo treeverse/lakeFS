@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -e
 
 echo "Build and publish docker images for lakefs and lakectl based on our published docker image"
 
