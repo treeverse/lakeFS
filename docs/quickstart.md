@@ -114,7 +114,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 ## Setting up a Repository
 
-A [repository](what_is_lakefs.html#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
+A [repository](index.md#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
 Let's create one using the UI:
 
 1. Open [http://localhost:8001/login](http://localhost:8001/login){:target="_blank"} in your web browser. Login using the credentials you've created during the installation.
