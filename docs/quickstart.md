@@ -6,6 +6,13 @@ has_children: false
 ---
 
 # Quick Start
+{: .no_toc }
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
 
 
 ## Running a local server for testing
@@ -41,7 +48,7 @@ services:
     environment:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
-      POSTGRES_DB: lakefs
+      POSTGRES_DB: lakefsdb
       LC_COLLATE: C
 ```
 
@@ -51,7 +58,7 @@ With a corresponding configuration file (should be in the same directory as the 
 ---
 metadata:
   db:
-    uri: "postgres://lakefs:lakefs@postgres/lakefs?search_path=lakefs_index"
+    uri: "postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_index"
 
 blockstore: 
   type: "mem"
@@ -60,7 +67,7 @@ auth:
   encrypt:
     secret_key: "a random string that should be kept secret"
   db:
-    uri: "postgres://lakefs:lakefs@postgres/lakefs?search_path=lakefs_auth"
+    uri: "postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_auth"
 ``` 
 
 Once we have this configuration in place, we can run the application:
@@ -116,7 +123,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 ## Setting up our first repository
 
-A [repository]() is lakeFS's basic namespace, akin S3's Bucket.
+A [repository](what_is_lakefs.html#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
 Let's create one using the UI:
 
 1. Open [http://localhost:8001/login](http://localhost:8001/login){:target="_blank"} in your web browser. Login using the credentials you've created during the installation.
@@ -139,11 +146,15 @@ Let's create one using the UI:
    Default output format [None]:
    ```
 3. Let's test to see that it works. We'll do that by calling `s3 ls` which should list our repositories for us:
-
+   
    ```bash
    $ aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 ls
      2020-05-18 17:47:03 example
    ```
+   
+   **Note:** We're using `s3.local.lakefs.io` - a special DNS record which always resolves to localhost, subdomains included.  
+   Since S3's API uses [subdomains for bucket addressing](https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/){: target="_blank"}, simply using `localhost:8000` as an endpoint URL will not work.
+   {: .note .note-info }
 
 4. Great, now let's copy some files. We'll write to the master branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
 
@@ -170,7 +181,7 @@ Here's how to get started with the CLI:
 
    ```bash
    $ lakectl config
-   Config file /Users/ozkatz/.lakectl.yaml will be used
+   Config file /home/janedoe/.lakectl.yaml will be used
    Access key ID: AKIAJNYOQZSWBSSXURPQ
    Secret access key: ****************************************
    Server endpoint URL: http://localhost:8001/api/v1
