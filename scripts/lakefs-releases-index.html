@@ -14,7 +14,7 @@
             const v = version.startsWith('v') ? version.substr(1) : version;
             const d = document.createElement('div');
 
-            const headerText = document.createTextNode('Release ' + version);
+            const headerText = document.createTextNode(version);
             const header = document.createElement('h3');
             header.appendChild(headerText);
 
@@ -34,13 +34,11 @@
             d.appendChild(ul);
             return d;
         }
-
+        
     (async () => {
         try {
             const response = await fetch("https://releases-lakefs.s3.amazonaws.com/?delimiter=/&prefix=lakeFS/&list-type=2", {
-                headers: {
-                    "Content-Type": "text/xml"
-                }
+                headers: { "Content-Type": "text/xml" }
             });
             const body = await response.text();
             const parser = new DOMParser();
@@ -53,8 +51,7 @@
                     versions.push(v);
                 }
             }
-            // semver sort
-            versions = versions.sort((a, b) => a.split('.').map(n => +n+100000).join('.') < b.split('.').map(n => +n+100000).join('.'));
+            versions = versions.sort((a, b) => b.localeCompare(a, undefined, { numeric: true }));
             for (let version of versions) {
                 releases.appendChild(buildReleaseHTML(version));
             }

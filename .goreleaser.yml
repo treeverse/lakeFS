@@ -2,6 +2,8 @@ project_name: lakeFS
 before:
   hooks:
     - make all
+release:
+  prerelease: true
 builds:
 - id: lakefs
   main: ./cmd/lakefs
