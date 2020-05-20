@@ -70,7 +70,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 1. Download the lakeFS binary for your operating system:
 
-   [Download lakefs](https://github.com){: .btn .btn-green target="_blank"}
+   [Download lakefs](downloads.md){: .btn .btn-green target="_blank"}
 
 2. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
@@ -168,7 +168,7 @@ Here's how to get started with the CLI:
 
 1. Download the CLI binary:
 
-   [Download lakectl](https://github.com){: .btn .btn-green target="_blank"}
+   [Download lakectl](downloads.md){: .btn .btn-green target="_blank"}
 
 
 2. It's recommended that you place it somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet).
