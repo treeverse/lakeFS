@@ -16,13 +16,7 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 			return nil, err
 		}
 		tree := merkle.New(branchData.CommitRoot)
-		root := &model.Entry{
-			Name:      "",
-			Address:   branchData.CommitRoot,
-			EntryType: model.EntryTypeTree,
-			Checksum:  "",
-		}
-		err = diffRecursive(tx, branch, nil, root, *tree, &result)
+		err = diffRecursive(tx, branch, "", branchData.CommitRoot, *tree, &result)
 		if err != nil {
 			return nil, err
 		}
@@ -37,53 +31,36 @@ func (index *DBIndex) DiffWorkspace(repoId, branch string) (merkle.Differences, 
 
 // diffRecursive scans the workspace recursively and compares it to entries in the tree.
 // It starts with the given WorkspaceEntry, and accumulates the diff in the result array.
-func diffRecursive(tx store.RepoOperations, branch string, wsEntry *model.WorkspaceEntry, entry *model.Entry, tree merkle.Merkle, result *merkle.Differences) error {
-	if entry == nil {
-		// Entry doesn't exist in tree - it was added
-		*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: *wsEntry.EntryType})
-		return nil
-	}
-	if wsEntry != nil && *wsEntry.EntryType == model.EntryTypeObject {
-		// OBJECT
-		if wsEntry.TombstoneCount == 0 && entry.Checksum != *wsEntry.EntryChecksum {
-			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeChanged, Direction: merkle.DifferenceDirectionLeft, Path: wsEntry.Path, PathType: model.EntryTypeObject})
-			return nil
-		}
-		if wsEntry.TombstoneCount >= 1 {
-			return nil
-		}
-	}
-	// DIRECTORY
-	wsPath := ""
-	if wsEntry != nil {
-		wsPath = wsEntry.Path
-	}
-	wsEntriesInDir, _, err := tx.ListWorkspaceDirectory(branch, wsPath, "", "", -1)
-
+func diffRecursive(tx store.RepoOperations, branch, parentPath, parentAddress string, tree merkle.Merkle, result *merkle.Differences) error {
+	wsEntriesInDir, _, err := tx.ListWorkspaceDirectory(branch, parentPath, "", "", -1)
 	if err != nil {
 		return err
 	}
 	for _, currentWsEntry := range wsEntriesInDir {
-		currentEntry, err := tx.ReadTreeEntry(entry.Address, *currentWsEntry.EntryName)
+		currentEntry, err := tx.ReadTreeEntry(parentAddress, *currentWsEntry.EntryName)
 		if errors.Is(err, db.ErrNotFound) {
 			// entry doesn't exist in tree
 			currentEntry = nil
 		} else if err != nil {
 			return err
 		}
-		if currentEntry != nil && currentWsEntry.TombstoneCount == currentEntry.ObjectCount {
-			*result = append(*result, merkle.Difference{
-				Type:      merkle.DifferenceTypeRemoved,
-				Direction: merkle.DifferenceDirectionLeft,
-				Path:      currentWsEntry.Path,
-				PathType:  *currentWsEntry.EntryType,
-			})
-			continue
-		}
-
-		err = diffRecursive(tx, branch, currentWsEntry, currentEntry, tree, result)
-		if err != nil {
-			return err
+		if currentEntry == nil {
+			// added
+			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeAdded, Direction: merkle.DifferenceDirectionLeft, Path: currentWsEntry.Path, PathType: *currentWsEntry.EntryType})
+		} else if currentWsEntry.TombstoneCount == currentEntry.ObjectCount {
+			// deleted
+			*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeRemoved, Direction: merkle.DifferenceDirectionLeft, Path: currentWsEntry.Path, PathType: *currentWsEntry.EntryType})
+		} else if *currentWsEntry.EntryType == model.EntryTypeObject {
+			// object: check if was changed
+			if currentWsEntry.TombstoneCount == 0 && currentEntry.Checksum != *currentWsEntry.EntryChecksum {
+				*result = append(*result, merkle.Difference{Type: merkle.DifferenceTypeChanged, Direction: merkle.DifferenceDirectionLeft, Path: currentWsEntry.Path, PathType: model.EntryTypeObject})
+			}
+		} else {
+			// directory: dive in
+			err = diffRecursive(tx, branch, currentWsEntry.Path, currentEntry.Address, tree, result)
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
