@@ -1,22 +1,20 @@
 ---
 layout: default
-title: Home
+title: What is lakeFS
 nav_order: 0
 ---
 
-# lakeFS Documentation
+# What is lakeFS
 {: .no_toc }
+
+lakeFS is a Data Lake Management platform that enables ACID guarantees using Git-like operations on conventional Object Stores (e.g. S3).
+{: .pb-5 }
 
 ## Table of contents
 {: .no_toc .text-delta }
 
 1. TOC
-{:toc}
-
-
-## About
-
-lakeFS is a Data Lake Management platform that enables ACID guarantees using Git-like operations on conventional Object Stores (i.e. S3).
+{:toc .pb-5 }
 
 
 ## Why? What are Object Stores missing when used as a Data Lake?
