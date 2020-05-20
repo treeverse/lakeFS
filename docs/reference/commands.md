@@ -19,7 +19,7 @@ has_children: false
 
 The `lakectl` command is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
 
-[Download lakectl](https://github.com){: .btn .btn-green target="_blank"}
+[Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
 
 
 ### Configuring credentials and API endpoint
