@@ -7,10 +7,18 @@ has_children: false
 
 # Community
 
-### Slack Channel
-
-### on Discord
-
 ### DockerHub
 
+lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/r/treeverse/){: target="_blank" }.
+
 ### Support
+
+Feedback and questions are welcome at [hello@treeverse.io](mailto:hello@treeverse.io){: target="_blank" }
+
+### Slack Channel
+
+Coming soon
+
+### Forum
+
+Coming soon
