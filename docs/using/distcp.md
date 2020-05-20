@@ -7,7 +7,14 @@ has_children: false
 ---
 
 # Copying Data to/from lakeFS with DistCp
+{: .no_toc }
+
 Apache Hadoop [DistCp](https://hadoop.apache.org/docs/current/hadoop-distcp/DistCp.html){:target="_blank"} (distributed copy) is a tool used for large inter/intra-cluster copying. You can easily use it with your lakeFS repositories.
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
 
 **Note** 
 In the following examples we set AWS credentials on the command line, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
