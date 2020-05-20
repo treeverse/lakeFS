@@ -1,7 +1,8 @@
 project_name: lakeFS
 before:
   hooks:
-    - make all
+    - go mod download
+    - make gen
 release:
   prerelease: true
 builds:
