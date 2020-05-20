@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync/atomic"
 	"time"
 
@@ -63,14 +64,17 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 		return next
 	}
 	recordingDir := filepath.Join(RecordingRoot, testDir)
-	err := os.MkdirAll(recordingDir, 0777) // if needed - create recording directory
+	err := os.MkdirAll(recordingDir, 0644) // if needed - create recording directory
 	if err != nil {
-		logger.WithError(err).Fatal("FAILED creat directory for recordings \n")
+		logger.WithError(err).Fatal("FAILED create directory for recordings")
 	}
 	uploadIdRegexp := regexp.MustCompile("<UploadId>([\\dA-Za-z_.+/]+)</UploadId>")
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
+			if r.URL.Path == "/_health" || strings.HasPrefix(r.URL.Path, "/debug/pprof/") {
+				return
+			}
 
 			uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
 			if uniqueCount == 1 { //first activation. Now we can store the simulation configuration, since we have
@@ -182,11 +186,11 @@ func compressRecordings(testName, recordingDir string) {
 	logger := logging.Default()
 	zipFileName := filepath.Join(RecordingRoot, testName+".zip")
 	zWriter, err := os.Create(zipFileName)
-	defer zWriter.Close()
 	if err != nil {
 		logger.WithError(err).Error("Failed creating zip archive file")
 		return
 	}
+	defer zWriter.Close()
 	// Create a new zip archive.
 	w := zip.NewWriter(zWriter)
 	dirList, err := ioutil.ReadDir(recordingDir)
@@ -194,6 +198,7 @@ func compressRecordings(testName, recordingDir string) {
 		logger.WithError(err).Error("Failed reading directory ")
 		return
 	}
+	defer w.Close()
 	for _, file := range dirList {
 		fName := file.Name()
 		fullName := filepath.Join(recordingDir, fName)
@@ -220,7 +225,5 @@ func compressRecordings(testName, recordingDir string) {
 		logger.WithError(err).Error("Failed closing archive")
 		return
 	}
-	zWriter.Close()
 	os.RemoveAll(recordingDir)
-
 }
