@@ -1,8 +1,7 @@
-# lakefs project releaser
-#before:
-  #hooks:
-    #- go mod download
-    #- go generate ./...
+project_name: lakeFS
+before:
+  hooks:
+    - make all
 builds:
 - id: lakefs
   main: ./cmd/lakefs
@@ -39,10 +38,7 @@ archives:
 checksum:
   name_template: 'checksums.txt'
 blobs:
-  - ids:
-    - lakefs
-    - lakectl
-    provider: s3
+  - provider: s3
     region: us-east-1
     bucket: releases-lakefs
 snapshot:
