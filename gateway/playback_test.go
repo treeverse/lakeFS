@@ -44,7 +44,7 @@ func TestGatewayRecording(t *testing.T) {
 
 			setGlobalPlaybackParams(dirName)
 			os.RemoveAll(utils.PlaybackParams.RecordingDir)
-			os.MkdirAll(utils.PlaybackParams.RecordingDir, 0775)
+			os.MkdirAll(utils.PlaybackParams.RecordingDir, 0755)
 			archive := filepath.Join(RecordingsDir, zipName)
 			deCompressRecordings(archive, utils.PlaybackParams.RecordingDir)
 			handler, _ := getBasicHandler(t, zipName)

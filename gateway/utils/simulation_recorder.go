@@ -48,7 +48,7 @@ func (r *recordingBodyReader) Read(b []byte) (int, error) {
 
 func (r *recordingBodyReader) Close() error {
 	err := r.originalBody.Close()
-	r.recorder.Close()
+	_ = r.recorder.Close()
 	r.recorder = nil
 	return err
 }
@@ -64,7 +64,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 		return next
 	}
 	recordingDir := filepath.Join(RecordingRoot, testDir)
-	err := os.MkdirAll(recordingDir, 0644) // if needed - create recording directory
+	err := os.MkdirAll(recordingDir, 0755) // if needed - create recording directory
 	if err != nil {
 		logger.WithError(err).Fatal("FAILED create directory for recordings")
 	}
@@ -82,16 +82,14 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 				createConfFile(r, authService, region, bareDomain, listenAddr, recordingDir)
 			}
 			timeStr := time.Now().Format("15-04-05")
-			nameBase := timeStr + fmt.Sprintf(
-				"-%05d", (uniqueCount%100000))
+			nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
 			respWriter := new(ResponseWriter)
 			respWriter.OriginalWriter = w
 			respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, nameBase+ResponseExtension))
-			respWriter.Regexp = uploadIdRegexp
 			respWriter.Headers = make(http.Header)
 			rawQuery := r.URL.RawQuery
 			if (rawQuery == "uploads=") || (rawQuery == "uploads") { // initial post for s3 multipart upload
-				respWriter.lookForUploadId = true
+				respWriter.UploadIdRegexp = uploadIdRegexp
 			}
 			newBody := &recordingBodyReader{recorder: NewLazyOutput(filepath.Join(recordingDir, nameBase+RequestBodyExtension)),
 				originalBody: r.Body}
@@ -179,7 +177,12 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 			WithError(err).
 			Fatal("couldn't marshal configuration")
 	}
-	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0755)
+	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0644)
+	if err != nil {
+		logging.Default().
+			WithError(err).
+			Fatal("failed to write record configuration")
+	}
 }
 
 func compressRecordings(testName, recordingDir string) {
@@ -190,7 +193,9 @@ func compressRecordings(testName, recordingDir string) {
 		logger.WithError(err).Error("Failed creating zip archive file")
 		return
 	}
-	defer zWriter.Close()
+	defer func() {
+		_ = zWriter.Close()
+	}()
 	// Create a new zip archive.
 	w := zip.NewWriter(zWriter)
 	dirList, err := ioutil.ReadDir(recordingDir)
@@ -198,7 +203,9 @@ func compressRecordings(testName, recordingDir string) {
 		logger.WithError(err).Error("Failed reading directory ")
 		return
 	}
-	defer w.Close()
+	defer func() {
+		_ = w.Close()
+	}()
 	for _, file := range dirList {
 		fName := file.Name()
 		fullName := filepath.Join(recordingDir, fName)
@@ -209,14 +216,17 @@ func compressRecordings(testName, recordingDir string) {
 		}
 		outZip, err := w.Create(fName)
 		if err != nil {
+			_ = inputFile.Close()
 			logger.WithError(err).Error("Failed creating to zip file " + fName)
 			return
 		}
 		_, err = io.Copy(outZip, inputFile)
 		if err != nil {
+			_ = inputFile.Close()
 			logger.WithError(err).Error("Failed copying to zip file " + fName)
 			return
 		}
+		_ = inputFile.Close()
 	}
 
 	// Make sure to check the error on Close.
@@ -225,5 +235,5 @@ func compressRecordings(testName, recordingDir string) {
 		logger.WithError(err).Error("Failed closing archive")
 		return
 	}
-	os.RemoveAll(recordingDir)
+	_ = os.RemoveAll(recordingDir)
 }

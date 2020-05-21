@@ -44,7 +44,7 @@ func setGlobalPlaybackParams(testDir string) {
 }
 
 func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
-	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0777)
+	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0755)
 	if err != nil {
 		t.Fatal("\n could not create directory: " + utils.PlaybackParams.PlaybackDir + "\n")
 	}
@@ -226,6 +226,45 @@ func playbackDirCompare(t *testing.T, playbackDir string) {
 	}
 	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
 }
+func deepCompare(t *testing.T, file1, file2 string) bool {
+	f1, err := os.Open(file1)
+	if err != nil {
+		t.Fatal("file deep compare, failed to open", file1, err)
+	}
+	defer func() {
+		_ = f1.Close()
+	}()
+
+	f2, err := os.Open(file2)
+	if err != nil {
+		t.Fatal("file deep compare, failed to open", file2, err)
+	}
+	defer func() {
+		_ = f2.Close()
+	}()
+
+	const chunkSize = 32 * 1024
+	b1 := make([]byte, chunkSize)
+	b2 := make([]byte, chunkSize)
+	for {
+		n1, err1 := f1.Read(b1)
+		n2, err2 := f2.Read(b2)
+
+		if err1 != nil || err2 != nil {
+			if err1 == io.EOF && err2 == io.EOF {
+				return true
+			}
+			if err1 == io.EOF || err2 == io.EOF {
+				return false
+			}
+			t.Fatal("file deep compare failed to reader", err1, err2)
+		}
+
+		if n1 != n2 || !bytes.Equal(b1, b2) {
+			return false
+		}
+	}
+}
 
 func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPatternType) bool {
 	_, fileName := filepath.Split(playbackFileName)
@@ -238,22 +277,23 @@ func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPat
 	}
 	playbackSize := playbackInfo.Size()
 	recordingSize := recordingInfo.Size()
-	playBytes, err := ioutil.ReadFile(playbackFileName)
-	if err != nil {
-		t.Error("Couldn't read playback file", playbackFileName)
-		return false
-	}
-	recBytes, err := ioutil.ReadFile(recordingFileName)
-	if err != nil {
-		t.Error("Couldn't read recording file", recordingFileName)
-		return false
-	}
+
 	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
+		playBytes, err := ioutil.ReadFile(playbackFileName)
+		if err != nil {
+			t.Error("Couldn't read playback file", playbackFileName)
+			return false
+		}
+		recBytes, err := ioutil.ReadFile(recordingFileName)
+		if err != nil {
+			t.Error("Couldn't read recording file", recordingFileName)
+			return false
+		}
 		playStr := normalizeResponse(playBytes, tagRemoveList)
 		recStr := normalizeResponse(recBytes, tagRemoveList)
 		return recStr == playStr
 	}
-	return bytes.Equal(recBytes, playBytes)
+	return deepCompare(t, recordingFileName, playbackFileName)
 }
 
 func normalizeResponse(respByte []byte, tagRemoveList []*tagPatternType) string {
