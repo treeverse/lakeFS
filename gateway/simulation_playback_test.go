@@ -197,7 +197,6 @@ type tagPatternType struct {
 }
 
 func buildTagRemover(tags []string) (ret []*tagPatternType) {
-
 	for _, tag := range tags {
 		pattern := "<" + tag + ">([\\dA-Za-z_\\+/&#;\\-:\\.]+)</" + tag + ">"
 		re := regexp.MustCompile(pattern)
@@ -226,6 +225,7 @@ func playbackDirCompare(t *testing.T, playbackDir string) {
 	}
 	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
 }
+
 func deepCompare(t *testing.T, file1, file2 string) bool {
 	f1, err := os.Open(file1)
 	if err != nil {
@@ -267,17 +267,18 @@ func deepCompare(t *testing.T, file1, file2 string) bool {
 }
 
 func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPatternType) bool {
+	playbackInfo, err := os.Stat(playbackFileName)
+	if err != nil || playbackInfo == nil {
+		return false
+	}
 	_, fileName := filepath.Split(playbackFileName)
 	recordingFileName := filepath.Join(utils.PlaybackParams.RecordingDir, fileName)
-	playbackInfo, err := os.Stat(playbackFileName)
-	recordingInfo, err1 := os.Stat(recordingFileName)
-	if err != nil || playbackInfo == nil || err1 != nil || recordingInfo == nil {
-
+	recordingInfo, err := os.Stat(recordingFileName)
+	if err != nil || recordingInfo == nil {
 		return false
 	}
 	playbackSize := playbackInfo.Size()
 	recordingSize := recordingInfo.Size()
-
 	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
 		playBytes, err := ioutil.ReadFile(playbackFileName)
 		if err != nil {
@@ -289,9 +290,9 @@ func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPat
 			t.Error("Couldn't read recording file", recordingFileName)
 			return false
 		}
-		playStr := normalizeResponse(playBytes, tagRemoveList)
-		recStr := normalizeResponse(recBytes, tagRemoveList)
-		return recStr == playStr
+		playNorm := normalizeResponse(playBytes, tagRemoveList)
+		recNorm := normalizeResponse(recBytes, tagRemoveList)
+		return recNorm == playNorm
 	}
 	return deepCompare(t, recordingFileName, playbackFileName)
 }

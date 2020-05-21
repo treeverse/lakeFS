@@ -103,6 +103,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			logRequest(r, respWriter.uploadId, nameBase, respWriter.StatusCode, recordingDir)
 		})
 }
+
 func ShutdownRecorder() {
 	testDir, exist := os.LookupEnv("RECORD")
 	if !exist {
@@ -207,26 +208,9 @@ func compressRecordings(testName, recordingDir string) {
 		_ = w.Close()
 	}()
 	for _, file := range dirList {
-		fName := file.Name()
-		fullName := filepath.Join(recordingDir, fName)
-		inputFile, err := os.Open(fullName)
-		if err != nil {
-			logger.WithError(err).Error("Failed opening recording file " + fName)
+		if compressRecordingsAddFile(recordingDir, file.Name(), w) {
 			return
 		}
-		outZip, err := w.Create(fName)
-		if err != nil {
-			_ = inputFile.Close()
-			logger.WithError(err).Error("Failed creating to zip file " + fName)
-			return
-		}
-		_, err = io.Copy(outZip, inputFile)
-		if err != nil {
-			_ = inputFile.Close()
-			logger.WithError(err).Error("Failed copying to zip file " + fName)
-			return
-		}
-		_ = inputFile.Close()
 	}
 
 	// Make sure to check the error on Close.
@@ -236,4 +220,27 @@ func compressRecordings(testName, recordingDir string) {
 		return
 	}
 	_ = os.RemoveAll(recordingDir)
+}
+
+func compressRecordingsAddFile(recordingDir string, fName string, w *zip.Writer) bool {
+	fullName := filepath.Join(recordingDir, fName)
+	inputFile, err := os.Open(fullName)
+	if err != nil {
+		logging.Default().WithError(err).WithField("filename", fName).Error("Failed opening recording file")
+		return true
+	}
+	defer func() {
+		_ = inputFile.Close()
+	}()
+	outZip, err := w.Create(fName)
+	if err != nil {
+		logging.Default().WithError(err).WithField("filename", fName).Error("Failed creating to zip file")
+		return true
+	}
+	_, err = io.Copy(outZip, inputFile)
+	if err != nil {
+		logging.Default().WithError(err).WithField("filename", fName).Error("Failed copying to zip file")
+		return true
+	}
+	return false
 }
