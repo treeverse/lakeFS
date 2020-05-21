@@ -44,26 +44,24 @@ func setGlobalPlaybackParams(testDir string) {
 }
 
 func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
-	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0777)
+	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0755)
 	if err != nil {
-		t.Fatal("\n could not create directory: " + utils.PlaybackParams.PlaybackDir + "\n")
+		t.Fatal("could not create playback directory:", utils.PlaybackParams.PlaybackDir)
 	}
 	simulationEvents := buildEventList(t)
 	if len(simulationEvents) == 0 {
-		t.Fatal("no events found \n")
+		t.Fatal("no events found")
 	}
 	allStatusEqual := runEvents(simulationEvents, handler, timed, speed, t)
 	playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
 	if !allStatusEqual {
-		t.Fatal("Some statuses where not the same, see " + utils.PlaybackParams.PlaybackDir + statusMismatchReport + "\n")
-	} else {
-		_, toKeep := os.LookupEnv("KEEP_RESULTS")
-		if !toKeep {
-			os.RemoveAll(utils.PlaybackParams.PlaybackDir)
-			os.RemoveAll(utils.PlaybackParams.RecordingDir)
-		}
+		t.Fatal("Some statuses where not the same, see", filepath.Join(utils.PlaybackParams.PlaybackDir, statusMismatchReport))
 	}
-
+	_, toKeep := os.LookupEnv("KEEP_RESULTS")
+	if !toKeep {
+		os.RemoveAll(utils.PlaybackParams.PlaybackDir)
+		os.RemoveAll(utils.PlaybackParams.RecordingDir)
+	}
 }
 
 func regexpGlob(directory string, pattern *regexp.Regexp) []string {
@@ -197,63 +195,104 @@ type tagPatternType struct {
 }
 
 func buildTagRemover(tags []string) (ret []*tagPatternType) {
-
 	for _, tag := range tags {
 		pattern := "<" + tag + ">([\\dA-Za-z_\\+/&#;\\-:\\.]+)</" + tag + ">"
 		re := regexp.MustCompile(pattern)
-		tagPattrn := &tagPatternType{base: tag, regex: re}
-		ret = append(ret, tagPattrn)
+		tagPattern := &tagPatternType{base: tag, regex: re}
+		ret = append(ret, tagPattern)
 	}
 	return
 }
 
 func playbackDirCompare(t *testing.T, playbackDir string) {
-	var notSame, areSame int
 	globPattern := filepath.Join(playbackDir, "*"+utils.ResponseExtension)
 	names, err := filepath.Glob(globPattern)
 	if err != nil {
-		t.Fatal("failed Globe on " + globPattern + "\n")
+		t.Fatal("failed Glob on", globPattern)
 	}
+	var notSame, areSame int
 	tagRemoveList := buildTagRemover([]string{"RequestId", "HostId", "LastModified", "ETag"})
 	for _, fName := range names {
 		res := compareFiles(t, fName, tagRemoveList)
 		if !res {
 			notSame++
+			t.Log("diff found on", fName)
 		} else {
 			areSame++
-			_ = os.Remove(fName)
 		}
 	}
-	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
+	t.Log(len(names), "files compared:", notSame, "files different,", areSame, "files same")
+}
+
+func deepCompare(t *testing.T, file1, file2 string) bool {
+	f1, err := os.Open(file1)
+	if err != nil {
+		t.Fatal("file deep compare, failed to open", file1, err)
+	}
+	defer func() {
+		_ = f1.Close()
+	}()
+
+	f2, err := os.Open(file2)
+	if err != nil {
+		t.Fatal("file deep compare, failed to open", file2, err)
+	}
+	defer func() {
+		_ = f2.Close()
+	}()
+
+	const chunkSize = 32 * 1024
+	b1 := make([]byte, chunkSize)
+	b2 := make([]byte, chunkSize)
+	for {
+		n1, err1 := f1.Read(b1)
+		n2, err2 := f2.Read(b2)
+
+		if err1 != nil || err2 != nil {
+			if err1 == io.EOF && err2 == io.EOF {
+				return true
+			}
+			if err1 == io.EOF || err2 == io.EOF {
+				return false
+			}
+			t.Fatal("file deep compare failed to reader", err1, err2)
+		}
+
+		if n1 != n2 || !bytes.Equal(b1[:n1], b2[:n2]) {
+			return false
+		}
+	}
 }
 
 func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPatternType) bool {
+	playbackInfo, err := os.Stat(playbackFileName)
+	if err != nil || playbackInfo == nil {
+		return false
+	}
 	_, fileName := filepath.Split(playbackFileName)
 	recordingFileName := filepath.Join(utils.PlaybackParams.RecordingDir, fileName)
-	playbackInfo, err := os.Stat(playbackFileName)
-	recordingInfo, err1 := os.Stat(recordingFileName)
-	if err != nil || playbackInfo == nil || err1 != nil || recordingInfo == nil {
-
+	recordingInfo, err := os.Stat(recordingFileName)
+	if err != nil || recordingInfo == nil {
 		return false
 	}
 	playbackSize := playbackInfo.Size()
 	recordingSize := recordingInfo.Size()
-	playBytes, err := ioutil.ReadFile(playbackFileName)
-	if err != nil {
-		t.Error("Couldn't read playback file", playbackFileName)
-		return false
-	}
-	recBytes, err := ioutil.ReadFile(recordingFileName)
-	if err != nil {
-		t.Error("Couldn't read recording file", recordingFileName)
-		return false
-	}
 	if recordingSize < MaxTextResponse && playbackSize < MaxTextResponse {
-		playStr := normalizeResponse(playBytes, tagRemoveList)
-		recStr := normalizeResponse(recBytes, tagRemoveList)
-		return recStr == playStr
+		playBytes, err := ioutil.ReadFile(playbackFileName)
+		if err != nil {
+			t.Error("Couldn't read playback file", playbackFileName)
+			return false
+		}
+		recBytes, err := ioutil.ReadFile(recordingFileName)
+		if err != nil {
+			t.Error("Couldn't read recording file", recordingFileName)
+			return false
+		}
+		playNorm := normalizeResponse(playBytes, tagRemoveList)
+		recNorm := normalizeResponse(recBytes, tagRemoveList)
+		return recNorm == playNorm
 	}
-	return bytes.Equal(recBytes, playBytes)
+	return deepCompare(t, recordingFileName, playbackFileName)
 }
 
 func normalizeResponse(respByte []byte, tagRemoveList []*tagPatternType) string {
