@@ -1,9 +1,77 @@
 ---
 layout: default
-title: Copying data with rclone
+title: Copying data with Rclone
 parent: Using lakeFS with...
 nav_order: 1
 has_children: false
 ---
-
 # Copying data with rclone
+{: .no_toc }
+[Rclone](https://rclone.org/){:target="_blank"} is a command line program to sync files and directories between cloud providers.
+To use it with lakeFS, just create an Rclone remote as describe below, and then use it as you would any other Rclone remote.                                                                                                  
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+## Creating a remote for lakeFS in Rclone
+To add the remote to Rclone, choose one of the following options:
+### Option 1: add an entry in your Rclone configuration file
+*   Find the path to your Rclone configuration file and copy it for the next step.
+    
+    ```
+    $ rclone config file
+    Configuration file is stored at:
+    /home/myuser/.config/rclone/rclone.conf
+    ```
+    
+*   If your lakeFS access key pair is already set in an AWS profile or environment variables, just run the following commmand, replacing the endpoint property with your lakeFS enpoint:
+
+    ```
+    cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
+    [lakefs]
+    type = s3
+    provider = AWS
+    endpoint = http://s3.local.lakefs.io:8000
+    
+    EOT
+    ```
+
+*   Otherwise, also include your lakeFS access key pair in the Rclone configuration file:
+
+    ```
+    cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
+    [lakefs]
+    type = s3
+    provider = AWS
+    env_auth = false
+    access_key_id = AKIAJF2VSETNW3RTP3ZQ
+    secret_access_key = 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
+    endpoint = http://s3.local.lakefs.io:8000
+    EOT
+    ```
+
+### Option 2: use Rclone interactive config command
+
+Run this command and follow the instructions:
+```bash
+$ rclone config
+```
+Choose AWS S3 as your type of storage, and enter your lakeFS endpoint as your S3 endpoint.
+You will have to choose whether you use your environment for authentication (recommended),
+or to enter the lakeFS access key pair into the Rclone configuration.
+
+## Examples
+
+### Syncing your data from S3 to lakeFS
+
+``` bash
+$ rclone sync mys3remote://mybucket/path/ lakefs:my-lakefs-repo/master/path
+```
+
+### Syncing a local directory to lakeFS
+
+```bash
+$ rclone sync /home/myuser/path/ lakefs:yoni-repo/master/path
+```
