@@ -181,7 +181,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 	if err != nil {
 		logging.Default().
 			WithError(err).
-			Fatal("failed to write record configuration")
+			Fatal("failed to write configuration record file")
 	}
 }
 
