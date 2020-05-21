@@ -122,7 +122,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	ctx.SignedHeadersString = query.Get("X-Amz-SignedHeaders")
 	headers := splitHeaders(ctx.SignedHeadersString)
 	ctx.SignedHeaders = headers
-	ctx.Signature = query.Get("X-Amz-Signature=")
+	ctx.Signature = query.Get("X-Amz-Signature")
 	return ctx, nil
 }
 
@@ -174,11 +174,12 @@ func (ctx *verificationCtx) queryEscape(str string) string {
 }
 
 func (ctx *verificationCtx) canonicalizeQueryString() string {
-	queryNames := make([]string, len(ctx.Query))
-	index := 0
+	queryNames := make([]string, 0, len(ctx.Query))
 	for k := range ctx.Query {
-		queryNames[index] = k
-		index++
+		if k == "X-Amz-Signature" {
+			continue
+		}
+		queryNames = append(queryNames, k)
 	}
 	sort.Strings(queryNames)
 	buf := make([]string, len(queryNames))
@@ -236,7 +237,11 @@ func getInsensitiveHeader(r *http.Request, headerName string) string {
 }
 
 func (ctx *verificationCtx) payloadHash() string {
-	return getInsensitiveHeader(ctx.Request, v4authHeaderPayload)
+	payloadHash := getInsensitiveHeader(ctx.Request, v4authHeaderPayload)
+	if payloadHash == "" {
+		return v4UnsignedPayload
+	}
+	return payloadHash
 }
 
 func (ctx *verificationCtx) buildCanonicalRequest() string {
@@ -260,7 +265,7 @@ func (ctx *verificationCtx) buildCanonicalRequest() string {
 
 func (ctx *verificationCtx) getAmzDate() (string, error) {
 	// https://docs.aws.amazon.com/general/latest/gr/sigv4-date-handling.html
-	amzDate := ctx.Request.URL.Query().Get("x-amz-date")
+	amzDate := ctx.Request.URL.Query().Get("X-Amz-Date")
 	if len(amzDate) == 0 {
 		amzDate = ctx.Request.Header.Get("x-amz-date")
 		if len(amzDate) == 0 {
