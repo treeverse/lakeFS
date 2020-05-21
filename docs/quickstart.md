@@ -8,6 +8,9 @@ has_children: false
 # Quick Start
 {: .no_toc }
 
+**Warning:** lakeFS is currently in POC - this is a pre-alpha version that *should not be used in production*. The API and data model are likely to change.
+{: .note .pb-3 }
+
 ## Table of contents
 {: .no_toc .text-delta }
 
@@ -21,7 +24,7 @@ has_children: false
 
 **Note** This configuration stores data in-memory.
 It is only intended for testing purposes
-{: .note}
+{: .note .note-danger }
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
