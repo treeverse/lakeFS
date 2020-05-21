@@ -44,7 +44,7 @@ func TestGatewayRecording(t *testing.T) {
 
 			setGlobalPlaybackParams(dirName)
 			os.RemoveAll(utils.PlaybackParams.RecordingDir)
-			os.MkdirAll(utils.PlaybackParams.RecordingDir, 0775)
+			os.MkdirAll(utils.PlaybackParams.RecordingDir, 0755)
 			archive := filepath.Join(RecordingsDir, zipName)
 			deCompressRecordings(archive, utils.PlaybackParams.RecordingDir)
 			handler, _ := getBasicHandler(t, zipName)
@@ -126,27 +126,39 @@ func deCompressRecordings(archive, dir string) {
 	if err != nil {
 		logging.Default().WithError(err).Fatal("could not decompress archive " + archive)
 	}
-	defer r.Close()
+	defer func() {
+		_ = r.Close()
+	}()
 
 	// Iterate through the files in the archive,
 	// copy to temporary recordings directory
 	for _, f := range r.File {
-		if f.Name[len(f.Name)-1:] == "/" { // It is a directory
+		// skip directories
+		if f.FileInfo().IsDir() {
 			continue
 		}
-		compressedFile, err := f.Open()
-		if err != nil {
-			logging.Default().WithError(err).Fatal("Couldn't read from archive file " + f.Name)
-		}
-		fileName := filepath.Join(utils.PlaybackParams.RecordingDir, filepath.Base(f.Name))
-		DeCompressedFile, err := os.Create(fileName)
-		if err != nil {
-			logging.Default().WithError(err).Fatal("failed creating file " + f.Name)
-		}
-		_, err = io.Copy(DeCompressedFile, compressedFile)
-		if err != nil {
-			logging.Default().WithError(err).Fatal("failed copying file " + f.Name)
-		}
-		compressedFile.Close()
+		decompressRecordingsFile(f)
+	}
+}
+
+func decompressRecordingsFile(f *zip.File) {
+	compressedFile, err := f.Open()
+	if err != nil {
+		logging.Default().WithError(err).Fatal("Couldn't read from archive file " + f.Name)
+	}
+	defer func() {
+		_ = compressedFile.Close()
+	}()
+	fileName := filepath.Join(utils.PlaybackParams.RecordingDir, filepath.Base(f.Name))
+	decompressedFile, err := os.Create(fileName)
+	if err != nil {
+		logging.Default().WithError(err).Fatal("failed creating file " + f.Name)
+	}
+	defer func() {
+		_ = decompressedFile.Close()
+	}()
+	_, err = io.Copy(decompressedFile, compressedFile)
+	if err != nil {
+		logging.Default().WithError(err).Fatal("failed copying file " + f.Name)
 	}
 }
