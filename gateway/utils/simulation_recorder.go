@@ -36,11 +36,10 @@ type recordingBodyReader struct {
 func (r *recordingBodyReader) Read(b []byte) (int, error) {
 	size, err := r.originalBody.Read(b)
 	if size > 0 {
-		var err1 error
 		readSlice := b[:size]
-		_, err1 = r.recorder.Write(readSlice)
+		_, err1 := r.recorder.Write(readSlice)
 		if err1 != nil {
-			panic(" can not write to recorder file")
+			panic("can not write to recorder file")
 		}
 	}
 	return size, err

@@ -46,24 +46,22 @@ func setGlobalPlaybackParams(testDir string) {
 func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0755)
 	if err != nil {
-		t.Fatal("\n could not create directory: " + utils.PlaybackParams.PlaybackDir + "\n")
+		t.Fatal("could not create playback directory:", utils.PlaybackParams.PlaybackDir)
 	}
 	simulationEvents := buildEventList(t)
 	if len(simulationEvents) == 0 {
-		t.Fatal("no events found \n")
+		t.Fatal("no events found")
 	}
 	allStatusEqual := runEvents(simulationEvents, handler, timed, speed, t)
 	playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
 	if !allStatusEqual {
-		t.Fatal("Some statuses where not the same, see " + utils.PlaybackParams.PlaybackDir + statusMismatchReport + "\n")
-	} else {
-		_, toKeep := os.LookupEnv("KEEP_RESULTS")
-		if !toKeep {
-			os.RemoveAll(utils.PlaybackParams.PlaybackDir)
-			os.RemoveAll(utils.PlaybackParams.RecordingDir)
-		}
+		t.Fatal("Some statuses where not the same, see", filepath.Join(utils.PlaybackParams.PlaybackDir, statusMismatchReport))
 	}
-
+	_, toKeep := os.LookupEnv("KEEP_RESULTS")
+	if !toKeep {
+		os.RemoveAll(utils.PlaybackParams.PlaybackDir)
+		os.RemoveAll(utils.PlaybackParams.RecordingDir)
+	}
 }
 
 func regexpGlob(directory string, pattern *regexp.Regexp) []string {
@@ -200,30 +198,30 @@ func buildTagRemover(tags []string) (ret []*tagPatternType) {
 	for _, tag := range tags {
 		pattern := "<" + tag + ">([\\dA-Za-z_\\+/&#;\\-:\\.]+)</" + tag + ">"
 		re := regexp.MustCompile(pattern)
-		tagPattrn := &tagPatternType{base: tag, regex: re}
-		ret = append(ret, tagPattrn)
+		tagPattern := &tagPatternType{base: tag, regex: re}
+		ret = append(ret, tagPattern)
 	}
 	return
 }
 
 func playbackDirCompare(t *testing.T, playbackDir string) {
-	var notSame, areSame int
 	globPattern := filepath.Join(playbackDir, "*"+utils.ResponseExtension)
 	names, err := filepath.Glob(globPattern)
 	if err != nil {
-		t.Fatal("failed Globe on " + globPattern + "\n")
+		t.Fatal("failed Glob on", globPattern)
 	}
+	var notSame, areSame int
 	tagRemoveList := buildTagRemover([]string{"RequestId", "HostId", "LastModified", "ETag"})
 	for _, fName := range names {
 		res := compareFiles(t, fName, tagRemoveList)
 		if !res {
 			notSame++
+			t.Log("diff found on", fName)
 		} else {
 			areSame++
-			_ = os.Remove(fName)
 		}
 	}
-	t.Log(len(names), " files compared: ", notSame, " files different ", areSame, " files same", "\n")
+	t.Log(len(names), "files compared:", notSame, "files different,", areSame, "files same")
 }
 
 func deepCompare(t *testing.T, file1, file2 string) bool {
@@ -260,7 +258,7 @@ func deepCompare(t *testing.T, file1, file2 string) bool {
 			t.Fatal("file deep compare failed to reader", err1, err2)
 		}
 
-		if n1 != n2 || !bytes.Equal(b1, b2) {
+		if n1 != n2 || !bytes.Equal(b1[:n1], b2[:n2]) {
 			return false
 		}
 	}
