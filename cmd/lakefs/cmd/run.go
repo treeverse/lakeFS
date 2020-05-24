@@ -35,6 +35,10 @@ var runCmd = &cobra.Command{
 
 		mdb := cfg.ConnectMetadataDatabase()
 		adb := cfg.ConnectAuthDatabase()
+		defer func() {
+			_ = adb.Close()
+			_ = mdb.Close()
+		}()
 		migrator := db.NewDatabaseMigrator().
 			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
 			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())

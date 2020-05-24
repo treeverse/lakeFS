@@ -34,6 +34,9 @@ func TestConnectDB(t *testing.T) {
 			if (err == nil) && got == nil {
 				t.Errorf("ConnectDB() got no database instance when expected")
 			}
+			if err != nil && got != nil {
+				_ = got.Close()
+			}
 		})
 	}
 
@@ -50,9 +53,12 @@ func TestConnectDB(t *testing.T) {
 			t.Fatal("Failed to create non C collate database", err)
 		}
 		testDBURI := strings.Replace(databaseURI, dbName, testDBName, 1)
-		_, err = db.ConnectDB("pgx", testDBURI+"&search_path=lakefs_index")
+		idxDB, err := db.ConnectDB("pgx", testDBURI+"&search_path=lakefs_index")
 		if err == nil {
 			t.Error("Connect to database with unexpected collate should fail")
+		}
+		if idxDB != nil {
+			_ = idxDB.Close()
 		}
 	})
 }

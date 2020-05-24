@@ -142,7 +142,7 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) (db.Databa
 		}
 	}
 
-	database := db.NewDatabase(conn)
+	database := db.NewSqlxDatabase(conn)
 	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
 	})

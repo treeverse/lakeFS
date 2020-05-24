@@ -45,10 +45,13 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 
 func MigrateSchema(schema, url string) error {
 	// make sure we have schema by calling connect
-	_, err := ConnectDB("pgx", url)
+	mdb, err := ConnectDB("pgx", url)
 	if err != nil {
 		return err
 	}
+	defer func() {
+		_ = mdb.Close()
+	}()
 
 	// statik fs to our migrate source
 	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
