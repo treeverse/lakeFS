@@ -1,4 +1,5 @@
 DROP TABLE IF EXISTS multipart_uploads;
+DROP INDEX IF EXISTS idx_workspace_entries_parent_path;
 DROP TABLE IF EXISTS workspace_entries;
 DROP TABLE IF EXISTS branches;
 DROP TABLE IF EXISTS commits;

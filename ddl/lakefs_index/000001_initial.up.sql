@@ -92,7 +92,7 @@ CREATE TABLE IF NOT EXISTS workspace_entries
     PRIMARY KEY (repository_id, branch_id, path)
 );
 
-CREATE INDEX idx_workspace_entries_parent_path ON workspace_entries (repository_id, branch_id, parent_path);
+CREATE INDEX IF NOT EXISTS idx_workspace_entries_parent_path ON workspace_entries (repository_id, branch_id, parent_path);
 
 
 CREATE TABLE IF NOT EXISTS multipart_uploads
