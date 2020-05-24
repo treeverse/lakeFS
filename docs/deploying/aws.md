@@ -103,7 +103,7 @@ You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.a
 See the full [configuration reference](../reference/configuration.md){: target="_blank" } for all configurable settings.
 {: .note .note-info }
 
-A minimal example of a conifugration file for the setup we've created above would look like this:
+A minimal example of a configuration file for the setup we've created above would look like this:
 
 ```yaml
 ---
@@ -145,25 +145,70 @@ See below on how to configure a load balancer to forward requests to our lakeFS 
 ### Running lakeFS
 ##### Option #1: Using Docker (Fargate, ECS or EC2)
 
-Depending on your runtime enviroment, running lakeFS using docker would look like this:
+Depending on your runtime environment, running lakeFS using docker would look like this:
 
 ```sh
 $ docker run \
     --name lakefs \
     -p 8000:8000 \
     -p 8001:8001 \
-    -v <PATH_TO_CONFIG_FILE>:/home
+    -v <PATH_TO_CONFIG_FILE>:/home/lakefs/.lakefs.yaml \
+     treeverse/lakefs:latest run
 ```
 
 ##### Option #2: On a Linux EC2 server
 
-###### Downloading and running the lakefs binary
+Alternatively, you can run lakeFS directly on an EC2 machine:
 
-###### Load balancing with Amazon Application Load Balancer
+1. [Download the binary for your operating system](../downloads.md)
+2. `lakefs` is a single binary, you can run it directly, but preferably run it as a service using systemd or your operating system's facilities.
 
-###### Setting up DNS names for the OpenAPI Server and the S3 Gateway
+   ```bash
+   $ lakefs --config <PATH_TO_CONFIG_FILE> run
+   ``` 
 
 ##### Option #3: On Kubernetes
 
+[Helm chart](https://helm.sh/docs/topics/charts/){: target="_blank" } and documentation coming soon.
 
 
+### Load balancing with Amazon Application Load Balancer
+
+1. Make sure you configure your security group to allow the load balancer to talk to both the [S3 Gateway](../architecture.md#s3-gateway) and the [OpenAPI Server](../architecture.md#openapi-server)
+2. Create a new load balancer using the AWS console.
+3. Create a listener for port 8001 - this will be used for the OpenAPI Server.
+4. Create a listener for port 8000 - this will be used for the S3 Gateway
+5. Setup TLS termination using the domain names you wish to use for both endpoints (i.e. `s3.lakefs.example.com` and `api.lakefs.example.com`).
+
+### Setting up DNS names for the OpenAPI Server and the S3 Gateway
+
+1. Copy the load balancer's endpoint URL
+2. Configure this address in Route53 as an ALIAS record for both endpoints
+3. If you're using a DNS provider other than Route53, refer to its documentation on how to add CNAME records. In this case, it's recommended to use a short TTL value.
+
+### Automatically setup an environment using Terraform
+
+*Terraform module coming soon*
+
+### Setting up our environment
+
+Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOINT>/setup` (e.g. [https://api.lakefs.example.com](https://api.lakefs.example.com){: target="_blank" }).
+
+1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
+
+   ![Setup](../assets/img/setup_done.png)
+
+2. Follow the link and go to the login screen
+
+   ![Login Screen](../assets/img/login.png)
+
+3. Use the credentials from step #1 to login as an administrator
+4. Click `Create Repository`
+    
+   ![Create Repository](../assets/img/repo_create.png)
+
+   Under `Storage Namespace`, be sure to use the name of the bucket you've created in [Setting up an S3 bucket for data storage](#setting-up-an-s3-bucket-for-data-storage) above.
+   
+### Next steps
+
+Check out the usage guides under [using lakeFS with...](../using) to start using lakeFS with your existing systems!
