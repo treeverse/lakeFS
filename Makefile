@@ -38,6 +38,9 @@ docs/assets/js/swagger.yml: swagger.yml
 
 docs: docs/assets/js/swagger.yml
 
+docs-serve: ### Serve local docs
+	cd docs; bundle exec jekyll serve
+
 gen-api: docs ## Run the go-swagger code generator (Docker required)
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
