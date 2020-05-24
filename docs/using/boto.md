@@ -17,7 +17,7 @@ has_children: false
 
 ## Creating a Boto client
 
-Create a Boto3 s3 client with your lakeFS endpoint and key-pair:
+Create a Boto3 S3 client with your lakeFS endpoint and key-pair:
 ```python
 import boto3
 s3 = boto3.client('s3',
