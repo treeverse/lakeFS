@@ -15,30 +15,10 @@ has_children: false
 {:toc}
 
 
-## Download latest version (0.1.20)
+## Binary Releases
 
+Binary packages are available for Linux/macOS/Windows at [https://releases.lakefs.io/](https://releases.lakefs.io){: target="_blank" }
 
-### MacOS
-
-[Download lakefs](https://releases.lakefs.io/0.1.20/darwin_amd64/lakefs){: .btn .btn-blue }
-[Download lakectl](https://releases.lakefs.io/0.1.20/darwin_amd64/lakectl){: .btn .btn-blue }
-
-### Linux
-
-[Download lakefs](https://releases.lakefs.io/0.1.20/linux_amd64/lakefs){: .btn .btn-blue }
-[Download lakectl](https://releases.lakefs.io/0.1.20/linux_amd64/lakectl){: .btn .btn-blue }
-
-
-### Windows
-
-[Download lakefs](https://releases.lakefs.io/0.1.20/win_amd64/lakefs.exe){: .btn .btn-blue }
-[Download lakectl](https://releases.lakefs.io/0.1.20/win_amd64/lakectl.exe){: .btn .btn-blue }
-
-
-## Docker images
+## Docker Images
 
 Official Docker images are available at [https://hub.docker.com/r/treeverse/lakefs](https://hub.docker.com/r/treeverse/lakefs){: target="_blank" }
-
-## Older versions
-
-Previous lakeFS versions are available at [https://releases.lakefs.io/](https://releases.lakefs.io/){: target="_blank" }
