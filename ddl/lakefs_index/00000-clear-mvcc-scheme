@@ -1,0 +1,9 @@
+drop table if exists repositories cascade;
+drop table if exists branches cascade;
+drop table if exists entries;
+drop table if exists lineage;
+drop table if exists multipart_uploads;
+drop table if exists object_dedup;
+drop table if exists commits;
+drop sequence if exists branches_id_seq;
+drop sequence if exists repositories_id_seq;
