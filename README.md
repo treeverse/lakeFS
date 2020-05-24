@@ -5,9 +5,9 @@
 This is a draft for a design document describing the capabilities and 
 implementation of lakeFS 0.1
 
-## Full Documentation (Including in-depth architecture, design, API reference and deployment)
+## Full Documentation
 
-See [https://docs.lakefs.io](https://docs.lakefs.io/?utm_source=github)
+For full documentation, including in-depth architecture, design, API reference and deployment see [https://docs.lakefs.io](https://docs.lakefs.io/?utm_source=github)
 
 ## Goals
 
