@@ -31,6 +31,7 @@ const (
 	v4scopeTerminator       = "aws4_request"
 	v4timeFormat            = "20060102T150405Z"
 	v4shortTimeFormat       = "20060102"
+	v4SignatureHeader       = "X-Amz-Signature"
 )
 
 var (
@@ -122,7 +123,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 	ctx.SignedHeadersString = query.Get("X-Amz-SignedHeaders")
 	headers := splitHeaders(ctx.SignedHeadersString)
 	ctx.SignedHeaders = headers
-	ctx.Signature = query.Get("X-Amz-Signature")
+	ctx.Signature = query.Get(v4SignatureHeader)
 	return ctx, nil
 }
 
@@ -176,7 +177,7 @@ func (ctx *verificationCtx) queryEscape(str string) string {
 func (ctx *verificationCtx) canonicalizeQueryString() string {
 	queryNames := make([]string, 0, len(ctx.Query))
 	for k := range ctx.Query {
-		if k == "X-Amz-Signature" {
+		if k == v4SignatureHeader {
 			continue
 		}
 		queryNames = append(queryNames, k)
