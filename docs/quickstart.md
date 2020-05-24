@@ -113,19 +113,33 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    $ ./lakefs --config /path/to/config.yaml run
    ```
 
-6. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
+6. 
 
 ## Setting up a Repository
 
-A [repository](index.md#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
-Let's create one using the UI:
+1. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
-1. Open [http://localhost:8001/login](http://localhost:8001/login){:target="_blank"} in your web browser. Login using the credentials you've created during the installation.
-2. Click `Create Repository`. Let's call our new repository `example`. Since we haven't configured an underlying S3 bucket, setting the storage namespace has no effect (when using an S3 block adapter, this value will be used to control the underlying bucket name to use). Let's set this to `example` as well.
+   ![Setup](assets/img/setup.png)
+
+2. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
+
+   ![Setup Done](assets/img/setup_done.png)
+
+3. Follow the link and go to the login screen
+
+   ![Login Screen](assets/img/login.png)
+
+4. Use the credentials from step #2 to login as an administrator
+5. Click `Create Repository`
     
-   ![Create Repository](assets/img/create_repo.png)
+   ![Create Repository](assets/img/repo_create.png)
 
-3. We should now have a new repository called `example`. Time to load some data into it!
+   A [repository](index.md#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
+   Since we're using the in-memory block adapter, the value used for `Storage Namespace` is meaningless.
+   For a real deployment that uses S3 as a block adapter, this would be a bucket name. 
+   {: .note .note-info }
+
+
 
 ## Copying files into our local installation using the AWS CLI
 
