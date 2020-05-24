@@ -102,15 +102,17 @@ type mockCollector struct{}
 func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	mdb := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
+	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
 	meta := index.NewDBIndex(mdb)
 
-	adb := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
+	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 
-	migrator := db.NewDatabaseMigrator()
+	migrator := db.NewDatabaseMigrator().
+		AddDB(config.SchemaMetadata, mdbURI).
+		AddDB(config.SchemaAuth, adbURI)
 
 	server := api.NewServer(
 		meta,

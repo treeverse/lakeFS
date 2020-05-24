@@ -111,7 +111,7 @@ func WithGetDBApplyDDL(apply bool) GetDBOption {
 	}
 }
 
-func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Database {
+func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) (db.Database, string) {
 	options := &GetDBOptions{
 		ApplyDDL: true,
 	}
@@ -134,26 +134,24 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 		_ = conn.Close()
 	})
 
-	database := db.NewDatabase(conn)
-
-	// apply DDL
-	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec("CREATE SCHEMA " + generatedSchema)
+	if options.ApplyDDL {
+		// do the actual migration
+		err := db.MigrateSchema(schemaName, connURI)
 		if err != nil {
-			return nil, err
+			t.Fatal("could not create schema:", err)
 		}
-		if options.ApplyDDL {
-			// do the actual migration
-			return nil, db.MigrateSchema(schemaName, connURI)
-		}
-		return nil, nil
+	}
+
+	database := db.NewDatabase(conn)
+	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
+		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
 	})
 	if err != nil {
 		t.Fatalf("could not create schema: %v", err)
 	}
 
 	// return DB
-	return database
+	return database, connURI
 }
 
 func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Adapter {

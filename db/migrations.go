@@ -60,6 +60,8 @@ func MigrateSchema(schema, url string) error {
 	if err != nil {
 		return err
 	}
+	defer src.Close()
+
 	m, err := migrate.NewWithSourceInstance("httpfs", src, url)
 	if err != nil {
 		return err
@@ -67,6 +69,13 @@ func MigrateSchema(schema, url string) error {
 	err = m.Up()
 	if err != nil && err != migrate.ErrNoChange {
 		return err
+	}
+	srcErr, dbErr := m.Close()
+	if srcErr != nil {
+		logging.Default().WithError(srcErr).Error("Migrate source error")
+	}
+	if dbErr != nil {
+		logging.Default().WithError(dbErr).Error("Migrate database error")
 	}
 	return nil
 }
