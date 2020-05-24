@@ -6,3 +6,5 @@ has_children: false
 ---
 
 # FAQ
+
+Coming soon
