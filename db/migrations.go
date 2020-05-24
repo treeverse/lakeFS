@@ -75,10 +75,10 @@ func MigrateSchema(schema, url string) error {
 	}
 	srcErr, dbErr := m.Close()
 	if srcErr != nil {
-		logging.Default().WithError(srcErr).Error("Migrate source error")
+		logging.Default().WithError(srcErr).Error("Migrate close source driver")
 	}
 	if dbErr != nil {
-		logging.Default().WithError(dbErr).Error("Migrate database error")
+		logging.Default().WithError(dbErr).Error("Migrate close database connection")
 	}
 	return nil
 }
