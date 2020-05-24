@@ -1,0 +1,55 @@
+project_name: lakeFS
+before:
+  hooks:
+    - go mod download
+    - make gen
+release:
+  disable: false
+  prerelease: true
+builds:
+- id: lakefs
+  main: ./cmd/lakefs
+  binary: lakefs
+  env:
+  - CGO_ENABLED=0
+  ldflags:
+  - -s -w -X github.com/treeverse/lakefs/config.Version={{.Version}} -X github.com/treeverse/lakefs/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/config.Date={{.Date}}
+  goarch:
+  - amd64
+  goos:
+  - darwin
+  - linux
+  - windows
+- id: lakectl
+  main: ./cmd/lakectl
+  binary: lakectl
+  env:
+  - CGO_ENABLED=0
+  ldflags:
+  - -s -w -X github.com/treeverse/lakefs/config.Version={{.Version}} -X github.com/treeverse/lakefs/config.Commit={{.Commit}} -X github.com/treeverse/lakefs/config.Date={{.Date}}
+  goarch:
+  - amd64
+  goos:
+  - darwin
+  - linux
+  - windows
+archives:
+- replacements:
+    darwin: Darwin
+    linux: Linux
+    windows: Windows
+    amd64: x86_64
+checksum:
+  name_template: 'checksums.txt'
+blobs:
+  - provider: s3
+    region: us-east-1
+    bucket: releases-lakefs
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+    - '^docs:'
+    - '^test:'
