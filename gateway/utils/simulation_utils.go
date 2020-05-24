@@ -21,7 +21,7 @@ type PlayBackMockConf struct {
 	AccessSecretKey string `json:"access_secret_Key"`
 	CredentialType  string `json:"credential_type"`
 	UserId          int    `json:"user_id"`
-	Region          string `json:"Region"`
+	Region          string `json:"region"`
 }
 
 // a limited service interface for the gateway, used by simulation playback
@@ -56,7 +56,7 @@ func (l *LazyOutput) Write(d []byte) (int, error) {
 	if !l.IsOpen {
 		l.IsOpen = true
 		var err error
-		l.F, err = os.OpenFile(l.Name, os.O_CREATE|os.O_WRONLY, 0777)
+		l.F, err = os.Create(l.Name)
 		if err != nil {
 			logger.WithError(err).Fatal("file " + l.Name + " failed opened")
 		}
@@ -102,13 +102,12 @@ func GetUploadId() string {
 }
 
 type ResponseWriter struct {
-	uploadId        []byte
-	OriginalWriter  http.ResponseWriter
-	lookForUploadId bool
-	ResponseLog     *LazyOutput
-	StatusCode      int
-	Headers         http.Header
-	Regexp          *regexp.Regexp
+	uploadId       []byte
+	OriginalWriter http.ResponseWriter
+	ResponseLog    *LazyOutput
+	StatusCode     int
+	Headers        http.Header
+	UploadIdRegexp *regexp.Regexp
 }
 
 func (w *ResponseWriter) Header() http.Header {
@@ -133,8 +132,8 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 func (w *ResponseWriter) Write(data []byte) (int, error) {
 	written, err := w.OriginalWriter.Write(data)
 	if err == nil {
-		if w.lookForUploadId && len(w.uploadId) == 0 {
-			rx := w.Regexp.FindSubmatch(data)
+		if w.UploadIdRegexp != nil && len(w.uploadId) == 0 {
+			rx := w.UploadIdRegexp.FindSubmatch(data)
 			if len(rx) > 1 {
 				w.uploadId = rx[1]
 			}
