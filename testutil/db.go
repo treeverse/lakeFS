@@ -123,7 +123,8 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 		strings.ReplaceAll(uuid.New().String(), "-", ""))
 
 	// create connection
-	conn, err := sqlx.Connect("pgx", fmt.Sprintf("%s&search_path=%s", uri, generatedSchema))
+	connURI := fmt.Sprintf("%s&search_path=%s", uri, generatedSchema)
+	conn, err := sqlx.Connect("pgx", connURI)
 	if err != nil {
 		t.Fatalf("could not connect to PostgreSQL: %s", err)
 	}
@@ -142,7 +143,7 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) db.Databas
 		}
 		if options.ApplyDDL {
 			// do the actual migration
-			return nil, db.MigrateSchemaAll(tx, schemaName)
+			return nil, db.MigrateSchema(schemaName, connURI)
 		}
 		return nil, nil
 	})
