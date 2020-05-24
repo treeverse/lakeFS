@@ -28,7 +28,7 @@ You can use DistCP to copy between two different lakeFS repositories. Replace th
 ```bash
 hadoop distcp \
   -Dfs.s3a.access.key="AKIAJF2VSETNW3RTP3ZQ" \
-  -Dfs.s3a.secret.key="pQRw1MEPspmZeng5XEXMSvKiPxxQBdXbziXtVjq2" \This configuration stores
+  -Dfs.s3a.secret.key="pQRw1MEPspmZeng5XEXMSvKiPxxQBdXbziXtVjq2" \
   -Dfs.s3a.endpoint="http://s3.local.lakefs.io:8000" \
   "s3a://my-first-repo/branch1/myfile" \
   "s3a://my-second-repo/branch2/myfile"
