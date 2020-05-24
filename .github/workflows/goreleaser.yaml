@@ -35,4 +35,3 @@ jobs:
           args: release --rm-dist
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          UPLOAD_BINTRAY_SECRET: ${{ secrets.UPLOAD_BINTRAY_SECRET }}

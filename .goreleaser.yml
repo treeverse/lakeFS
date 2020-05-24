@@ -45,13 +45,6 @@ blobs:
   - provider: s3
     region: us-east-1
     bucket: releases-lakefs
-uploads:
-  - name: bintray
-    mode: archive
-    method: PUT
-    custom_artifact_name: true
-    target: https://api.bintray.com/content/treeverse/lakeFS/{{ .ProjectName }}/{{ .Version }}/{{ .ArtifactName }}?publish=1&override=1
-    username: barakamar2
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
