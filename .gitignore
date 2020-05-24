@@ -33,6 +33,7 @@
 /main
 /cmd/lakefs/lakefs
 /cmd/lakectl/lakectl
+/dist
 
 # client excludes
 /webui/node_modules
