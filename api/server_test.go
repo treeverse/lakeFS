@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/db"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -107,6 +109,8 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 
 	adb := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
+
+	migrator := db.NewDatabaseMigrator()
 
 	server := api.NewServer(
 		meta,
