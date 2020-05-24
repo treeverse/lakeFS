@@ -17,8 +17,8 @@ var setupdbCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		migrator := db.NewDatabaseMigrator().
-			AddDB(config.SchemaMetadata, cfg.ConnectMetadataDatabase()).
-			AddDB(config.SchemaAuth, cfg.ConnectAuthDatabase())
+			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
+			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())
 		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
