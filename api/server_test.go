@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -20,7 +20,7 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/testutil"
@@ -102,17 +102,17 @@ type mockCollector struct{}
 func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	mdb := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
+	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
 	meta := index.NewDBIndex(mdb)
 
-	adb := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
+	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 
 	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaMetadata, mdb).
-		AddDB(config.SchemaAuth, adb)
+		AddDB(config.SchemaMetadata, mdbURI).
+		AddDB(config.SchemaAuth, adbURI)
 
 	server := api.NewServer(
 		meta,

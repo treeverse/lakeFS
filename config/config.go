@@ -87,20 +87,28 @@ func setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
+func (c *Config) MetadataDatabaseURI() string {
+	return viper.GetString("metadata.db.uri")
+}
+
 func (c *Config) ConnectMetadataDatabase() db.Database {
-	db, err := db.ConnectDB(DefaultDatabaseDriver, viper.GetString("metadata.db.uri"))
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.MetadataDatabaseURI())
 	if err != nil {
 		panic(err)
 	}
-	return db
+	return database
+}
+
+func (c *Config) AuthDatabaseURI() string {
+	return viper.GetString("auth.db.uri")
 }
 
 func (c *Config) ConnectAuthDatabase() db.Database {
-	db, err := db.ConnectDB(DefaultDatabaseDriver, viper.GetString("auth.db.uri"))
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.AuthDatabaseURI())
 	if err != nil {
 		panic(err)
 	}
-	return db
+	return database
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {
