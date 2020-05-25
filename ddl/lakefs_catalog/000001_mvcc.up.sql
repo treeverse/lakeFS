@@ -1,13 +1,13 @@
-create extension if not exists btree_gist;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
 
-create sequence if not exists branches_id_seq
+CREATE SEQUENCE IF NOT EXISTS branches_id_seq
     as integer;
 
-create sequence if not exists repositories_id_seq
+CREATE SEQUENCE IF NOT EXISTS repositories_id_seq
     as integer;
 
 
-create table repositories
+CREATE TABLE IF NOT EXISTS repositories
 (
     id                integer                  default nextval('repositories_id_seq'::regclass) not null
         constraint repositories_pk
@@ -19,10 +19,10 @@ create table repositories
 );
 
 
-create unique index repositories_name_uindex
+CREATE UNIQUE INDEX IF NOT EXISTS repositories_name_uindex
     on repositories (name);
 
-create table branches
+CREATE TABLE IF NOT EXISTS branches
 (
     repository_id integer                                              not null
         constraint branches_repository_id_fkey
@@ -34,10 +34,10 @@ create table branches
     next_commit   integer default 1                                    not null
 );
 
-create unique index branches_repository_name_uindex
+CREATE UNIQUE INDEX IF NOT EXISTS branches_repository_name_uindex
     on branches (name, repository_id);
 
-create table commits
+CREATE TABLE IF NOT EXISTS commits
 (
     branch_id     integer                                not null
         constraint commits_branches_repository_id_fk
@@ -52,7 +52,7 @@ create table commits
         primary key (branch_id, commit_number)
 );
 
-create table entries
+CREATE TABLE IF NOT EXISTS entries
 (
     branch_id        integer                                not null
         constraint entries_branches_id_fk
@@ -68,10 +68,10 @@ create table entries
         USING gist (key WITH =,branch_id WITH =, commits WITH &&)
 );
 
-create index entries_branch_index
+CREATE INDEX entries_branch_index
     on entries (branch_id);
 
-create table object_dedup
+CREATE TABLE IF NOT EXISTS object_dedup
 (
     repository_id    integer     not null
         constraint object_dedup_repository_id_fkey
@@ -85,7 +85,7 @@ create table object_dedup
         primary key (repository_id, dedup_id)
 );
 
-create table multipart_uploads
+CREATE TABLE IF NOT EXISTS multipart_uploads
 (
     repository_id    integer                                not null
         constraint multipart_uploads_repository_id_fkey
@@ -101,7 +101,7 @@ create table multipart_uploads
 );
 
 
-create table lineage
+CREATE TABLE IF NOT EXISTS lineage
 (
     branch_id        integer not null
         constraint lineage_branches_repository_id_fk
@@ -121,7 +121,7 @@ create table lineage
 );
 
 
-create view lineage_v (branch_id, precedence, ancestor_branch, effective_commit, branch_commits) as
+CREATE OR REPLACE VIEW lineage_v (branch_id, precedence, ancestor_branch, effective_commit, branch_commits) as
 SELECT lineage.branch_id,
        lineage.precedence,
        lineage.ancestor_branch,
@@ -136,7 +136,7 @@ SELECT branches.id          AS branch_id,
        '[1,)'::int4range    AS branch_commits
 FROM branches;
 
-create view entries_lineage_v
+CREATE OR REPLACE VIEW entries_lineage_v
             (displayed_branch, source_branch, key, commits, physical_address, creation_date, size, checksum, precedence,
              rank)
 as
