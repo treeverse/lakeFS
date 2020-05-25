@@ -54,24 +54,22 @@ For example:
 Lets assume we want to read the parquet file: 
    ``` title.basics.parquet ```
 
-from repository: ```example```
+from repository: ```example-repo```
 branch: ```master```
-in the path: ```collection/shows```
+in the path: ```example-path```
       
 ```scala
-val repo = "example"
+val repo = "example-repo"
 val branch = "master"
-val workDir = s"s3a://${repo}/${branch}/collection/shows"
-val dataPath = s"$workDir/title.basics.parquet"
+val dataPath = s"s3a://${repo}/${branch}/example-path/example-file.parquet"
 ...
 ...
-
 val basics = spark.read.option("header", "true").parquet(dataPath)
 ```
 
 ## Creating Objects
 
-If we would like to create new parquet files partitioned by titleType
+If we would like to create new parquet files partitioned by column `example-column`
 ```scala
-basics.toDF().write.partitionBy("titleType").parquet(outputPathByType)
+basics.toDF().write.partitionBy("example-column").parquet(outputPath)
 ```
