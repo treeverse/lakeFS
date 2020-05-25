@@ -2,7 +2,6 @@ SET client_encoding = 'UTF8';
 
 -- CREATE DATABASE mvcc_test WITH TEMPLATE = template0 ENCODING = 'UTF8' LC_COLLATE = 'C' LC_CTYPE = 'en_US.UTF-8';
 
-
 -- \connect mvcc_test
 
 
