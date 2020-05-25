@@ -1,2 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<ListBucketResult><Name>example</Name><IsTruncated>false</IsTruncated><Prefix>master/imdb/titles_by_year/startYear=2027/</Prefix><Delimiter>/</Delimiter><KeyCount>0</KeyCount><MaxKeys>1</MaxKeys><Marker></Marker></ListBucketResult>

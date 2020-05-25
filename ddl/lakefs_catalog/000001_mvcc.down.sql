@@ -1,0 +1,9 @@
+DROP TABLE IF EXISTS repositories CASCADE;
+DROP TABLE IF EXISTS branches CASCADE;
+DROP TABLE IF EXISTS entries;
+DROP TABLE IF EXISTS lineage;
+DROP TABLE IF EXISTS multipart_uploads;
+DROP TABLE IF EXISTS object_dedup;
+DROP TABLE IF EXISTS commits;
+DROP SEQUENCE IF EXISTS branches_id_seq;
+DROP SEQUENCE IF EXISTS repositories_id_seq;

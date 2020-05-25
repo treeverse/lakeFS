@@ -22,10 +22,6 @@ type Tx interface {
 	Exec(query string, args ...interface{}) (sql.Result, error)
 }
 
-type Database interface {
-	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
-}
-
 type dbTx struct {
 	tx     *sqlx.Tx
 	logger logging.Logger
@@ -91,15 +87,6 @@ func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
 	return res, err
 }
 
-type SqlxDatabase struct {
-	db *sqlx.DB
-}
-
-func NewDatabase(db *sqlx.DB) Database {
-	return &SqlxDatabase{db: db}
-}
-
-type TxFunc func(tx Tx) (interface{}, error)
 type TxOpt func(*TxOptions)
 
 type TxOptions struct {
@@ -140,60 +127,4 @@ func WithIsolationLevel(level sql.IsolationLevel) TxOpt {
 	return func(o *TxOptions) {
 		o.isolationLevel = level
 	}
-}
-
-func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
-	options := DefaultTxOptions()
-	for _, opt := range opts {
-		opt(options)
-	}
-	var attempt int
-	var ret interface{}
-	for attempt < SerializationRetryMaxAttempts {
-		if attempt > 0 {
-			duration := time.Duration(int(SerializationRetryStartInterval) * attempt)
-			options.logger.
-				WithField("attempt", attempt).
-				WithField("sleep_interval", duration).
-				Warn("retrying transaction due to serialization error")
-			time.Sleep(duration)
-		}
-
-		tx, err := d.db.BeginTxx(options.ctx, &sql.TxOptions{
-			Isolation: options.isolationLevel,
-			ReadOnly:  options.readOnly,
-		})
-		if err != nil {
-			return nil, err
-		}
-		ret, err = fn(&dbTx{tx: tx, logger: options.logger})
-		if err != nil {
-			rollbackErr := tx.Rollback()
-			if rollbackErr != nil {
-				return nil, rollbackErr
-			}
-			// retry on serialization error
-			if isSerializationError(err) {
-				// retry
-				attempt++
-				continue
-			}
-			return nil, err
-		} else {
-			err = tx.Commit()
-			if err != nil {
-				// retry on serialization error
-				if isSerializationError(err) {
-					attempt++
-					continue
-				}
-				// other commit error
-				return nil, err
-			}
-			// committed successfully, we're done
-			return ret, nil
-		}
-	}
-
-	return nil, ErrSerialization
 }

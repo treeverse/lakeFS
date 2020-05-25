@@ -70,13 +70,14 @@ func NewServer(
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
-	handler = utils.RegisterRecorder(
-		httputil.LoggingMiddleware(
-			"X-Amz-Request-Id",
-			logging.Fields{"service_name": "s3_gateway"},
-			handler,
-		),
-	)
+	handler = utils.RegisterRecorder(httputil.LoggingMiddleware(
+		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
+	), authService, region, bareDomain, listenAddr)
+
+	logging.Default().WithFields(logging.Fields{
+		"s3_bare_domain": bareDomain,
+		"s3_region":      region,
+	}).Info("initialized S3 Gateway server")
 
 	// assemble Server
 	return &Server{
@@ -90,10 +91,14 @@ func NewServer(
 }
 
 func (s *Server) Listen() error {
+	logging.Default().WithFields(logging.Fields{
+		"listen_address": s.Server.Addr,
+	}).Info("started S3 Gateway server")
 	return s.Server.ListenAndServe()
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	utils.ShutdownRecorder()
 	s.Server.SetKeepAlivesEnabled(false)
 	return s.Server.Shutdown(ctx)
 }

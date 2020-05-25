@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -29,11 +31,18 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run a LakeFS instance",
 	Run: func(cmd *cobra.Command, args []string) {
+		logging.Default().WithField("version", config.Version).Info("lakeFS run")
+
 		mdb := cfg.ConnectMetadataDatabase()
 		adb := cfg.ConnectAuthDatabase()
+		defer func() {
+			_ = adb.Close()
+			_ = mdb.Close()
+		}()
 		migrator := db.NewDatabaseMigrator().
-			AddDB(config.SchemaMetadata, mdb).
-			AddDB(config.SchemaAuth, adb)
+			AddDB(config.SchemaCatalog, cfg.CatalogDatabaseURI()).
+			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
+			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())
 
 		// init index
 		meta := index.NewDBIndex(mdb)
@@ -55,7 +64,7 @@ var runCmd = &cobra.Command{
 		signal.Notify(quit, os.Interrupt)
 
 		go func() {
-			if err := apiServer.Serve(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
+			if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
 				fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
 				os.Exit(1)
 			}
@@ -84,6 +93,8 @@ var runCmd = &cobra.Command{
 
 		go gracefulShutdown(apiServer, gatewayServer, quit, done)
 
+		logging.Default().WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
+
 		<-done
 		cancelFn()
 		<-stats.Done()
@@ -99,9 +110,8 @@ func getInstallationID(authService auth.Service) string {
 }
 
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
-	fmt.Println("Control-C to shutdown")
 	<-quit
-	fmt.Println("Shutting down...")
+	logging.Default().Warn("shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()

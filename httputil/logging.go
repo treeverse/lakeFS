@@ -52,15 +52,7 @@ func RequestId(r *http.Request) (*http.Request, string) {
 	return r, reqId
 }
 
-func GetRequestIdFromCtx(ctx context.Context) string {
-	resp := ctx.Value(RequestIdContextKey)
-	if resp == nil {
-		return ""
-	}
-	return resp.(string)
-}
-
-func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
@@ -86,4 +78,11 @@ func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next h
 			"sent_bytes":  writer.ResponseSize,
 		}).Debug("HTTP call ended")
 	})
+}
+
+func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+	if logging.Level() == "trace" {
+		return TracingMiddleware(requestIdHeaderName, fields, next)
+	}
+	return DebugLoggingMiddleware(requestIdHeaderName, fields, next)
 }

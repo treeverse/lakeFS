@@ -1,14 +1,57 @@
 import React, {useEffect, useState, useCallback, useRef} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
-import {Tooltip, OverlayTrigger, ButtonToolbar, Button, Badge, Form, Row, Col, Modal} from "react-bootstrap";
+import {Tooltip, OverlayTrigger, ButtonToolbar, Button, Form, Row, Col, Modal} from "react-bootstrap";
 import Octicon, {Sync as SyncIcon, GitCommit, Plus, X} from "@primer/octicons-react";
 import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import {doCommit, resetCommit} from "../actions/commits";
+import {revertBranch, resetRevertBranch} from "../actions/branches";
 import Alert from "react-bootstrap/Alert";
+import ConfirmationModal from "./ConfirmationModal";
+
+const RevertButton = connect(
+    ({ branches }) => ({ status: branches.revert }),
+    ({ revertBranch, resetRevertBranch })
+)(({ repo, refId, changes, status, revertBranch, resetRevertBranch }) => {
+    if (!refId || refId.type !== 'branch') {
+        return null;
+    }
+    const [show, setShow] = useState(false);
+    const disabled = status.inProgress || changes === 0;
+
+    const onHide = () => {
+        if (disabled) return;
+        setShow(false);
+    };
+
+    useEffect(() => {
+        if (status.error) {
+            window.alert(status.error);
+            resetRevertBranch();
+        } else if (status.done) {
+            setShow(false);
+            resetRevertBranch();
+        }
+    }, [status, resetRevertBranch]);
+
+    const onSubmit = () => {
+        if (disabled) return;
+        revertBranch(repo.id, refId.id, {type: "RESET"});
+        setShow(false);
+    };
+
+    return (
+        <>
+        <ConfirmationModal show={show} onHide={onHide} msg="Are you sure you want to revert all uncommitted changes?" onConfirm={onSubmit} />
+        <Button variant="light" disabled={disabled} onClick={() => { setShow(true) }}>
+            <Octicon icon={GitCommit}/> Revert
+        </Button>
+        </>
+    );
+});
 
 const UploadButton = connect(
     ({ objects }) => ({ uploadState: objects.upload }),
@@ -194,19 +237,13 @@ const CommitButton = connect(
             </Modal>
             <Button disabled={commitDisabled} variant={commitVariant} onClick={() => { setShow(true); }}>
                 <Octicon icon={GitCommit}/> Commit Changes{' '}
-                {!commitDisabled &&
-                <>
-                    <Badge variant="light">{changes}</Badge>
-                    <span className="sr-only">uncommited changes</span>
-                </>
-                }
             </Button>
         </>
     );
 });
 
 
-const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState}) => {
+const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState}) => {
     const history = useHistory();
     const location = useLocation();
 
@@ -221,7 +258,7 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
 
     useEffect(() => {
         refreshData();
-    }, [refreshData, repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done]);
+    }, [refreshData, repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done, revertState.done]);
 
     const paginator = (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const changes = diffResults.payload ? diffResults.payload.results.length : 0;
@@ -252,6 +289,8 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                     <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
                         <Button variant="light" disabled={list.loading} onClick={refreshData}><Octicon icon={SyncIcon}/></Button>
                     </OverlayTrigger>
+
+                    <RevertButton refId={refId} repo={repo} changes={changes}/>
                     <UploadButton refId={refId} repo={repo} path={path}/>
                     <CommitButton refId={refId} repo={repo} changes={changes}/>
                 </ButtonToolbar>
@@ -287,12 +326,13 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
 };
 
 export default connect(
-    ({ objects, refs, commits }) => ({
+    ({ objects, refs, commits, branches }) => ({
         list: objects.list,
         diffResults: refs.diff,
         uploadState: objects.upload,
         deleteState: objects.delete,
         commitState: commits.commit,
+        revertState: branches.revert,
     }),
     ({ listTree, listTreePaginate, diff, resetDiff, deleteObject })
 )(TreePage);
