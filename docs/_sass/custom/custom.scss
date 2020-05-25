@@ -1,0 +1,64 @@
+
+@import "pygments.css";
+
+.highlight {}
+
+$link-color: #36B5BE;
+
+.site-footer {
+  display: none;
+}
+
+
+// notes
+
+$note-color: #ffdf7e;
+$note-info-color: #cce5ff;
+$note-danger-color: #ea8685;
+
+.note {
+  padding: 10px;
+  background-color: $note-color;
+  border: 1px solid darken($note-color, 30%);
+  border-radius: 3px;
+  strong {
+    color: darken($note-color, 50%);
+  }
+}
+
+
+.note.note-info {
+  background-color: $note-info-color;
+  border: 1px solid darken($note-info-color, 30%);
+  strong {
+    color: darken($note-info-color, 40%);
+  }
+}
+
+.note.note-danger {
+  background-color: $note-danger-color;
+  border: 1px solid darken($note-danger-color, 30%);
+  strong {
+    color: darken($note-danger-color, 40%);
+  }
+}
+
+
+.highlighter-rouge code {
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 0;
+}
+
+.cta {
+  margin-top: 30px;
+  .btn {
+    font-size: 1.25em;
+    margin-right: 10px;
+  }
+}
+
+.ref-list li {
+  margin-bottom: 25px;
+}

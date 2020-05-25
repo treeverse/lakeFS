@@ -32,11 +32,18 @@ type Adapter struct {
 	httpClient         *http.Client
 	ctx                context.Context
 	uploadIdTranslator block.UploadIdTranslator
+	streamingChunkSize int
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.httpClient = c
+	}
+}
+
+func WithStreamingChunkSize(sz int) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.streamingChunkSize = sz
 	}
 }
 
@@ -58,6 +65,7 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
 		httpClient:         http.DefaultClient,
 		ctx:                context.Background(),
 		uploadIdTranslator: &block.NoOpTranslator{},
+		streamingChunkSize: StreamingDefaultChunkSize,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -71,6 +79,7 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 		httpClient:         s.httpClient,
 		ctx:                ctx,
 		uploadIdTranslator: s.uploadIdTranslator,
+		streamingChunkSize: s.streamingChunkSize,
 	}
 }
 
@@ -113,7 +122,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	req.Header.Set("x-amz-content-sha256", StreamingSha256)
 	req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", sizeBytes))
 	req.Header.Set("Expect", "100-Continue")
-	req.ContentLength = int64(CalculateStreamSizeForPayload(sizeBytes, StreamingDefaultChunkSize))
+	req.ContentLength = int64(CalculateStreamSizeForPayload(sizeBytes, s.streamingChunkSize))
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
 
@@ -139,7 +148,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			sigSeed,
 			sdkRequest.Config.Credentials,
 		),
-		ChunkSize: StreamingDefaultChunkSize,
+		ChunkSize: s.streamingChunkSize,
 	})
 
 	resp, err := s.httpClient.Do(req)

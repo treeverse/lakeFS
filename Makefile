@@ -14,7 +14,7 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger:v0.23.0
+SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) treeverse/go-swagger:v0.23.0
 
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
@@ -33,7 +33,15 @@ all: build
 clean:
 	@rm -rf $(API_BUILD_DIR) $(UI_BUILD_DIR) ddl/statik.go statik $(LAKEFS_BINARY_NAME) $(LAKECTL_BINARY_NAME)
 
-gen-api:  ## Run the go-swagger code generator (Docker required)
+docs/assets/js/swagger.yml: swagger.yml
+	@cp swagger.yml docs/assets/js/swagger.yml
+
+docs: docs/assets/js/swagger.yml
+
+docs-serve: ### Serve local docs
+	cd docs; bundle exec jekyll serve
+
+gen-api: docs ## Run the go-swagger code generator (Docker required)
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
 	$(SWAGGER) generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)

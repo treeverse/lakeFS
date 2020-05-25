@@ -14,11 +14,30 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 )
 
+type PlayBackMockConf struct {
+	ListenAddress   string `json:"listen_address"`
+	BareDomain      string `json:"bare_domain"`
+	AccessKeyId     string `json:"access_key_id"`
+	AccessSecretKey string `json:"access_secret_Key"`
+	CredentialType  string `json:"credential_type"`
+	UserId          int    `json:"user_id"`
+	Region          string `json:"region"`
+}
+
 // a limited service interface for the gateway, used by simulation playback
 type GatewayAuthService interface {
 	GetAPICredentials(accessKey string) (*model.Credential, error)
 	Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
 }
+
+const (
+	RequestExtension        = ".request"
+	ResponseExtension       = ".response"
+	ResponseHeaderExtension = ".response_headers"
+	RequestBodyExtension    = ".request_body"
+	SimulationConfig        = "simulation_config.json"
+	RecordingRoot           = "gateway/testdata/recordings"
+)
 
 type LazyOutput struct {
 	Name   string
@@ -37,7 +56,7 @@ func (l *LazyOutput) Write(d []byte) (int, error) {
 	if !l.IsOpen {
 		l.IsOpen = true
 		var err error
-		l.F, err = os.OpenFile(l.Name, os.O_CREATE|os.O_WRONLY, 0777)
+		l.F, err = os.Create(l.Name)
 		if err != nil {
 			logger.WithError(err).Fatal("file " + l.Name + " failed opened")
 		}
@@ -83,13 +102,12 @@ func GetUploadId() string {
 }
 
 type ResponseWriter struct {
-	uploadId        []byte
-	OriginalWriter  http.ResponseWriter
-	lookForUploadId bool
-	ResponseLog     *LazyOutput
-	StatusCode      int
-	Headers         http.Header
-	Regexp          *regexp.Regexp
+	uploadId       []byte
+	OriginalWriter http.ResponseWriter
+	ResponseLog    *LazyOutput
+	StatusCode     int
+	Headers        http.Header
+	UploadIdRegexp *regexp.Regexp
 }
 
 func (w *ResponseWriter) Header() http.Header {
@@ -114,8 +132,8 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 func (w *ResponseWriter) Write(data []byte) (int, error) {
 	written, err := w.OriginalWriter.Write(data)
 	if err == nil {
-		if w.lookForUploadId && len(w.uploadId) == 0 {
-			rx := w.Regexp.FindSubmatch(data)
+		if w.UploadIdRegexp != nil && len(w.uploadId) == 0 {
+			rx := w.UploadIdRegexp.FindSubmatch(data)
 			if len(rx) > 1 {
 				w.uploadId = rx[1]
 			}
@@ -132,4 +150,21 @@ func (w *ResponseWriter) Write(data []byte) (int, error) {
 func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.StatusCode = statusCode
 	w.OriginalWriter.WriteHeader(statusCode)
+}
+
+func (m *PlayBackMockConf) GetAPICredentials(accessKey string) (*model.Credential, error) {
+	if accessKey != m.AccessKeyId {
+		logging.Default().Fatal("access key in recording different than configuration")
+	}
+	aCred := new(model.Credential)
+	aCred.AccessKeyId = accessKey
+	aCred.AccessSecretKey = m.AccessSecretKey
+	aCred.Type = m.CredentialType
+	aCred.UserId = &m.UserId
+	return aCred, nil
+
+}
+
+func (m *PlayBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
+	return &auth.AuthorizationResponse{true, nil}, nil
 }

@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"os"
+	"strings"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/config"
@@ -65,11 +66,16 @@ func initConfig() {
 		viper.SetConfigName(".lakefs")
 	}
 
-	viper.AutomaticEnv() // read in environment variables that match
+	viper.SetEnvPrefix("LAKEFS")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
+	// read in environment variables
+	viper.AutomaticEnv()
 
 	// If a config file is found, read it in.
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		fmt.Println("Error while reading config file:", viper.ConfigFileUsed(), "-", err)
 	}
 
 	// setup config used by the executed command
