@@ -18,7 +18,6 @@ has_children: false
 {:toc .pb-5 }
 
 Querying data in lakeFS from Presto is the same as querying data in S3 from Presto.
-
 It is done using the [Hive connector](https://prestodb.io/docs/current/connector/hive.html).
 
  **Note** 
@@ -27,13 +26,13 @@ It is done using the [Hive connector](https://prestodb.io/docs/current/connector
 ## Configuration
 
 ### Configure Hive connector
-Create ```etc/catalog/hive.properties``` with the following contents to mount the ```hive-hadoop2``` connector as the ```hive``` catalog, replacing ```example.net:9083``` with the correct host and port for your Hive metastore Thrift service:
+Create ```/etc/catalog/hive.properties``` with the following contents to mount the ```hive-hadoop2``` connector as the ```hive``` catalog, replacing ```example.net:9083``` with the correct host and port for your Hive metastore Thrift service:
 ```
 connector.name=hive-hadoop2
 hive.metastore.uri=thrift://example.net:9083
 ```
 
-Add to ```etc/catalog/hive.properties``` the lakeFS configurations in the corresponding S3 configuration properties
+Add to ```/etc/catalog/hive.properties``` the lakeFS configurations in the corresponding S3 configuration properties:
 ```
 hive.s3.aws-access-key=AKIAIOSFODNN7EXAMPLE
 hive.s3.aws-secret-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
@@ -42,10 +41,8 @@ hive.s3.endpoint=https://example.lakefs.io
 
 ### Configure Hive
 Presto uses Hive to write data to S3.
-
 If we want to be able to write data to lakeFS we will need to configure hive as well.
-
-In file ``` hdfs-site.xml``` add to the configurations
+In file ``` hdfs-site.xml``` add to the configuration:
 ```xml
 <configuration>
 ...
@@ -63,7 +60,7 @@ In file ``` hdfs-site.xml``` add to the configurations
 Here are some examples based on examples from the [Presto Hive connector documentation](https://prestodb.io/docs/current/connector/hive.html#examples)
 
 ### Example with schema
-Create a new Hive schema named web that will store tables in an lakeFS Repository named ```example``` branch: ```master```:
+Create a new Hive schema named ```web``` that will store tables in an lakeFS Repository named ```example``` branch: ```master```:
 ```sql
 CREATE SCHEMA hive.web
 WITH (location = 's3a://example/master')
