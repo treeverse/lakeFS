@@ -17,27 +17,27 @@ ReadEntry(branchId int, path string, inVersion int, readUncommitted bool) (*mode
 // - not neede ??? ReadRootObject(repoId, ref string, readUncommitted bool) (*model.Root, error)
 // - not neede ??? WriteObject(repoId, branch, path string, object *model.Object) error
 //WriteEntry(repoId, branch, path string, entry *model.Entry) error
-WriteEntry(branchId int, path string, isVersioned bool, entry *model.Entry) error
+WriteEntry(branchId int, path string, isStaged bool, entry *model.Entry) error
 // - not needed ??? WriteFile(repoId, branch, path string, entry *model.Entry, obj *model.Object) error
 // not needed ?? DeleteObject(repoId, branch, path string) error
 // ListObjectsByPrefix(repoId, ref, path, after string, results int, descend, readUncommitted bool) ([]*model.Entry, bool, error)
 ListObjectsByPrefix(branchId int, path, after string, results int, descend, readUncommitted bool) ([]*model.Entry, bool, error)
 ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
-	// ResetBranch(repoId, branch string) error
-	ResetBranch(branchId int) error
-	//CreateBranch(repoId, branch, ref string) (*model.Branch, error)
-	CreateBranch(repoId int, branch string, sourceBranchId int) (*model.Branch, error)
-	//GetBranch(repoId, branch string) (*model.Branch, error)
-	GetBranch(branchId string) (*model.Branch, error)
-	//Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
-	Commit(branchId int, message, committer string, metadata map[string]string) (*model.Commit, error)
-	// ?????? GetCommit(repoId, commitId string) (*model.Commit, error)
-	//GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
-	GetRepoCommitLog(repoId int, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
-	GetBranchCommitLog(branchId int, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
-	//DeleteBranch(repoId, branch string) error
-	DeleteBranch(branchId int) error
-	//Diff(repoId, leftRef, rightRef string) (merkle.Differences, error)
+// ResetBranch(repoId, branch string) error
+ResetBranch(branchId int) error
+//CreateBranch(repoId, branch, ref string) (*model.Branch, error)
+CreateBranch(repoId int, branch string, sourceBranchId int) (*model.Branch, error)
+//GetBranch(repoId, branch string) (*model.Branch, error)
+GetBranch(branchId string) (*model.Branch, error)
+//Commit(repoId, branch, message, committer string, metadata map[string]string) (*model.Commit, error)
+Commit(branchId int, message, committer string, metadata map[string]string) (*model.Commit, error)
+// ?????? GetCommit(repoId, commitId string) (*model.Commit, error)
+//GetCommitLog(repoId, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
+GetRepoCommitLog(repoId int, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
+GetBranchCommitLog(branchId int, fromCommitId string, results int, after string) ([]*model.Commit, bool, error)
+//DeleteBranch(repoId, branch string) error
+DeleteBranch(branchId int) error
+//Diff(repoId, leftRef, rightRef string) (merkle.Differences, error)
 	Diff(leftBranchId, rightBranchId int) (merkle.Differences, error)
 // ???? DiffWorkspace(repoId, branch string) (merkle.Differences, error)
 
