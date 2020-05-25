@@ -10,8 +10,9 @@ type Catalog interface {
 
 //?Tree(repoId, branch string) error
 //ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error)
-?    ReadObject(branchId int, path string, readUncommitted bool) (*model.Object, error)
+?//    ReadObject(branchId int, path string, readUncommitted bool) (*model.Object, error)
 //- not needed - ReadEntryObject(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
+ReadEntry(branchId int, path string, inVersion int, readUncommitted bool) (*model.Entry, error)
 //? ReadEntryTree(repoId, ref, path string, readUncommitted bool) (*model.Entry, error)
 // - not neede ??? ReadRootObject(repoId, ref string, readUncommitted bool) (*model.Root, error)
 // - not neede ??? WriteObject(repoId, branch, path string, object *model.Object) error
@@ -21,7 +22,7 @@ WriteEntry(branchId int, path string, isVersioned bool, entry *model.Entry) erro
 // not needed ?? DeleteObject(repoId, branch, path string) error
 // ListObjectsByPrefix(repoId, ref, path, after string, results int, descend, readUncommitted bool) ([]*model.Entry, bool, error)
 ListObjectsByPrefix(branchId int, path, after string, results int, descend, readUncommitted bool) ([]*model.Entry, bool, error)
-	ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
+ListBranchesByPrefix(repoId string, prefix string, amount int, after string) ([]*model.Branch, bool, error)
 	// ResetBranch(repoId, branch string) error
 	ResetBranch(branchId int) error
 	//CreateBranch(repoId, branch, ref string) (*model.Branch, error)
