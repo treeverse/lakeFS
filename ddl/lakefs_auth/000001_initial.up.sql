@@ -1,30 +1,30 @@
 -- auth schema, containing information about lakeFS authentication and authorization
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id serial NOT NULL PRIMARY KEY,
     email varchar(256) NOT NULL,
     full_name varchar(256) NOT NULL
 );
 
 
-CREATE TABLE applications (
+CREATE TABLE IF NOT EXISTS applications (
     id serial NOT NULL PRIMARY KEY,
     display_name varchar(256) NOT NULL
 );
 
 
-CREATE TABLE groups (
+CREATE TABLE IF NOT EXISTS groups (
     id serial NOT NULL PRIMARY KEY,
     display_name varchar(256) NOT NULL
 );
 
 
-CREATE TABLE roles (
+CREATE TABLE IF NOT EXISTS roles (
     id serial NOT NULL PRIMARY KEY,
     display_name varchar(256) NOT NULL
 );
 
 
-CREATE TABLE user_groups (
+CREATE TABLE IF NOT EXISTS user_groups (
     user_id integer REFERENCES users (id) NOT NULL,
     group_id integer REFERENCES groups (id) NOT NULL,
 
@@ -32,7 +32,7 @@ CREATE TABLE user_groups (
 );
 
 
-CREATE TABLE user_roles (
+CREATE TABLE IF NOT EXISTS user_roles (
     user_id integer REFERENCES users (id) NOT NULL,
     role_id integer REFERENCES roles (id) NOT NULL,
 
@@ -40,7 +40,7 @@ CREATE TABLE user_roles (
 );
 
 
-CREATE TABLE application_groups (
+CREATE TABLE IF NOT EXISTS application_groups (
     application_id integer REFERENCES applications (id) NOT NULL,
     group_id integer REFERENCES groups (id) NOT NULL,
 
@@ -48,7 +48,7 @@ CREATE TABLE application_groups (
 );
 
 
-CREATE TABLE application_roles (
+CREATE TABLE IF NOT EXISTS application_roles (
     application_id integer REFERENCES applications (id) NOT NULL,
     role_id integer REFERENCES roles (id) NOT NULL,
 
@@ -56,7 +56,7 @@ CREATE TABLE application_roles (
 );
 
 
-CREATE TABLE group_roles (
+CREATE TABLE IF NOT EXISTS group_roles (
     group_id integer REFERENCES groups (id) NOT NULL,
     role_id integer REFERENCES roles (id) NOT NULL,
 
@@ -64,14 +64,14 @@ CREATE TABLE group_roles (
 );
 
 
-CREATE TABLE policies (
+CREATE TABLE IF NOT EXISTS policies (
     id serial NOT NULL PRIMARY KEY,
     permission varchar(256) NOT NULL,
     arn varchar(256) NOT NULL
 );
 
 
-CREATE TABLE role_policies (
+CREATE TABLE IF NOT EXISTS role_policies (
     role_id integer REFERENCES roles (id) NOT NULL,
     policy_id integer NOT NULL REFERENCES policies (id),
 
@@ -79,7 +79,7 @@ CREATE TABLE role_policies (
 );
 
 
-CREATE TABLE credentials (
+CREATE TABLE IF NOT EXISTS credentials (
     access_key_id varchar(20) NOT NULL PRIMARY KEY,
     access_secret_key bytea NOT NULL,
     credentials_type varchar(20) NOT NULL CHECK (credentials_type in ('user', 'application')),

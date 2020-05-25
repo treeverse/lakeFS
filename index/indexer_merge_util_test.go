@@ -25,7 +25,7 @@ type dependencies struct {
 }
 
 func getDependencies(t *testing.T) *dependencies {
-	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
 	meta := index.NewDBIndex(mdb)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 	testutil.Must(t, meta.CreateRepo(TestRepo, "s3://"+TestRepo, "master"))

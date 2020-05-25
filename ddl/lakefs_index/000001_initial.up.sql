@@ -1,5 +1,5 @@
 -- index schema, containing information about lakeFS filesystem data
-CREATE TABLE repositories(
+CREATE TABLE IF NOT EXISTS repositories(
                              id                varchar(64) NOT NULL PRIMARY KEY,
                              storage_namespace varchar     NOT NULL,
                              creation_date     timestamptz NOT NULL,
@@ -7,7 +7,7 @@ CREATE TABLE repositories(
 );
 
 
-CREATE TABLE objects
+CREATE TABLE IF NOT EXISTS objects
 (
     repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
     object_address   varchar(64)                              NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE objects
     PRIMARY KEY (repository_id, object_address)
 );
 
-CREATE TABLE object_dedup
+CREATE TABLE IF NOT EXISTS object_dedup
 (
     repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
     dedup_id         bytea                                    NOT NULL,
@@ -28,7 +28,7 @@ CREATE TABLE object_dedup
     PRIMARY KEY (repository_id, dedup_id)
 );
 
-CREATE TABLE entries
+CREATE TABLE IF NOT EXISTS entries
 (
     repository_id  varchar(64) REFERENCES repositories (id) NOT NULL,
     parent_address varchar(64)                              NOT NULL,
@@ -44,7 +44,7 @@ CREATE TABLE entries
 );
 
 
-CREATE TABLE commits
+CREATE TABLE IF NOT EXISTS commits
 (
     repository_id varchar(64) REFERENCES repositories (id) NOT NULL,
     address       varchar(64)                              NOT NULL,
@@ -59,7 +59,7 @@ CREATE TABLE commits
 );
 
 
-CREATE TABLE branches
+CREATE TABLE IF NOT EXISTS branches
 (
     repository_id  varchar(64) REFERENCES repositories (id) NOT NULL,
     id             varchar                                  NOT NULL,
@@ -70,7 +70,7 @@ CREATE TABLE branches
 );
 
 
-CREATE TABLE workspace_entries
+CREATE TABLE IF NOT EXISTS workspace_entries
 (
     repository_id       varchar(64) REFERENCES repositories (id),
     branch_id           varchar NOT NULL,
@@ -92,10 +92,10 @@ CREATE TABLE workspace_entries
     PRIMARY KEY (repository_id, branch_id, path)
 );
 
-CREATE INDEX idx_workspace_entries_parent_path ON workspace_entries (repository_id, branch_id, parent_path);
+CREATE INDEX IF NOT EXISTS idx_workspace_entries_parent_path ON workspace_entries (repository_id, branch_id, parent_path);
 
 
-CREATE TABLE multipart_uploads
+CREATE TABLE IF NOT EXISTS multipart_uploads
 (
     repository_id    varchar(64) REFERENCES repositories (id) NOT NULL,
     upload_id        varchar                                  NOT NULL,
