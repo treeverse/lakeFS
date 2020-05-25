@@ -1,15 +1,17 @@
-package index
+package catalog
 
 import (
 	"context"
 	"time"
+
+	"github.com/treeverse/lakefs/index"
 
 	"github.com/treeverse/lakefs/index/merkle"
 	"github.com/treeverse/lakefs/index/model"
 )
 
 type Catalog interface {
-	WithContext(ctx context.Context) Index
+	WithContext(ctx context.Context) index.Index
 	//?Tree(repoId, branch string) error
 	//ReadObject(repoId, ref, path string, readUncommitted bool) (*model.Object, error)
 	ReadObject(branchId int, path string, readUncommitted bool) (*model.Object, error)
