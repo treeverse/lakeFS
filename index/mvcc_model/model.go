@@ -23,16 +23,15 @@ type ObjectDedup struct {
 }
 
 type Entry struct {
-	BranchId        int    `db:"branch_id"`
-	Key             string `db:"key"`
-	Commits_start   int
-	Commits_end     int
-	commits         pgtype.Int4range `db:"commits"`
-	PhysicalAddress string           `db:"physical_address"`
-	CreationDate    time.Time        `db:"creation_date"`
-	Size            int64            `db:"size"`
-	Checksum        string           `db:"checksum"`
-	Metadata        JSONMetadata     `db:"metadata"`
+	BranchId        int          `db:"branch_id"`
+	Key             string       `db:"key"`
+	minCommit       int          `db:"min_commit"`
+	maxCommit       int          `db:"max_commit"`
+	PhysicalAddress string       `db:"physical_address"`
+	CreationDate    time.Time    `db:"creation_date"`
+	Size            int64        `db:"size"`
+	Checksum        string       `db:"checksum"`
+	Metadata        JSONMetadata `db:"metadata"`
 }
 
 type Commit struct {
@@ -42,7 +41,7 @@ type Commit struct {
 	Message      string       `db:"message"`
 	CreationDate time.Time    `db:"creation_date"`
 	Metadata     JSONMetadata `db:"metadata"`
-	//todo: How to treat a merge? is it a different commit type
+	SourceBranch *int         `db:"source_branch"`
 }
 
 type Branch struct {
