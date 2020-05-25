@@ -60,5 +60,5 @@ func ConnectDB(driver string, uri string) (Database, error) {
 		"driver": driver,
 		"uri":    uri,
 	}).Info("initialized DB connection")
-	return NewDatabase(conn), nil
+	return NewSqlxDatabase(conn), nil
 }

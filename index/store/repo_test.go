@@ -12,7 +12,7 @@ import (
 )
 
 func TestKVRepoReadOnlyOperations_ListBranches(t *testing.T) {
-	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
 	str := store.NewDBStore(mdb)
 	_, repo := testutil.GetIndexWithRepo(t, mdb)
 
@@ -58,7 +58,7 @@ func dstr(d string) *string {
 }
 
 func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
-	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
 	str := store.NewDBStore(mdb)
 	_, repo := testutil.GetIndexWithRepo(t, mdb)
 
@@ -151,7 +151,7 @@ func TestKVRepoOperations_ClearWorkspace(t *testing.T) {
 }
 
 func TestKVRepoReadOnlyOperations_ReadFromWorkspace(t *testing.T) {
-	mdb := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
 	str := store.NewDBStore(mdb)
 	_, repo := testutil.GetIndexWithRepo(t, mdb)
 
