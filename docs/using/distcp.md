@@ -30,10 +30,12 @@ hadoop distcp \
   -Dfs.s3a.access.key="AKIAIOSFODNN7EXAMPLE" \
   -Dfs.s3a.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -Dfs.s3a.endpoint="https://example.lakefs.io" \
-  "s3a://my-first-repo/branch1/myfile" \
-  "s3a://my-second-repo/branch2/myfile"
+  "s3a://example-repo-1/master/example-file.parquet" \
+  "s3a://example-repo-2/master/example-file.parquet"
 ```
 
+val workDir = s"s3a://${repo}/${branch}/collection/shows"
+val dataPath = s"$workDir/title.basics.parquet"
 
 ## Copying between S3 and lakeFS
 In order to copy between an S3 bucket and lakeFS repository, use Hadoop's [per-bucket configuration](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Configuring_different_S3_buckets_with_Per-Bucket_Configuration){:target="_blank"}.
@@ -47,8 +49,8 @@ hadoop distcp \
   -Dfs.s3a.my-lakefs-repo.endpoint="https://example.lakefs.io" \
   -Dfs.s3a.my-s3-bucket.access.key="AKIAIOSFODNS3EXAMPLE" \
   -Dfs.s3a.my-s3-bucket.secret.key="aaalrXUtnFEMI/K7MDENG/bPxRfiS3EXAMPLEKEY" \
-  "s3a://my-s3-bucket/myfile" \
-  "s3a://my-lakefs-repo/master/myfile"
+  "s3a://example-bucket/example-file.parquet" \
+  "s3a://example-repo/master/example-file.parquet"
 ```
 
 ### From lakeFS to S3
@@ -59,6 +61,6 @@ hadoop distcp \
   -Dfs.s3a.my-lakefs-repo.endpoint="https://example.lakefs.io" \
   -Dfs.s3a.my-s3-bucket.access.key="AKIAIOSFODNS3EXAMPLE" \
   -Dfs.s3a.my-s3-bucket.secret.key="aaalrXUtnFEMI/K7MDENG/bPxRfiS3EXAMPLEKEY" \
-  "s3a://my-lakefs-repo/master/myfile" \
-  "s3a://my-s3-bucket/myfile"
+  "s3a://example-repo/master/myfile" \
+  "s3a://example-bucket/myfile"
 ```
