@@ -2,8 +2,6 @@ package mvcc_model
 
 import (
 	"time"
-
-	"github.com/jackc/pgtype"
 )
 
 type JSONMetadata map[string]string
@@ -63,7 +61,6 @@ type Lineage struct {
 	Precedence      int `db:"precedence"`
 	AncestorBranch  int `db:"ancestor_branch"`
 	EffectiveCommit int `db:"effective_commit"`
-	Commits_start   int
-	Commits_end     int
-	branchCommits   pgtype.Int4range `db:"branch_commits"`
+	minCommit       int
+	maxCommit       int
 }
