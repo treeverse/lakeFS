@@ -24,7 +24,7 @@ The only changes we need to consider are:
 
 
 
-## Configurations
+## Configuration
 In order to configure Spark to work with lakeFS we will set the lakeFS credentials in the corresponding S3 credential fields.
     
 lakeFS endpoint: ```fs.s3a.endpoint``` 
