@@ -27,6 +27,7 @@ import (
 
 const (
 	DefaultDatabaseDriver = "pgx"
+	DefaultCatalogDBUri   = "postgres://localhost:5432/postgres?search_path=lakefs_catalog"
 	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
 	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
 
@@ -67,6 +68,7 @@ func setDefaults() {
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
+	viper.SetDefault("catalog.db.uri", DefaultCatalogDBUri)
 	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
 
 	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
@@ -85,6 +87,10 @@ func setDefaults() {
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
+}
+
+func (c *Config) CatalogDatabaseURI() string {
+	return viper.GetString("catalog.db.uri")
 }
 
 func (c *Config) MetadataDatabaseURI() string {

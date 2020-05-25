@@ -40,6 +40,7 @@ var runCmd = &cobra.Command{
 			_ = mdb.Close()
 		}()
 		migrator := db.NewDatabaseMigrator().
+			AddDB(config.SchemaCatalog, cfg.CatalogDatabaseURI()).
 			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
 			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())
 
