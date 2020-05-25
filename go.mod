@@ -4,6 +4,7 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.30.14
+	github.com/benbjohnson/clock v1.0.2
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
@@ -15,10 +16,9 @@ require (
 	github.com/go-openapi/swag v0.19.7
 	github.com/go-openapi/validate v0.19.6
 	github.com/golang-migrate/migrate/v4 v4.11.0
-	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
+	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgconn v1.5.0
-	github.com/jackc/pgtype v1.3.0
 	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible

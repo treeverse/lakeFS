@@ -40,6 +40,10 @@ type loggingStore struct {
 	logger logging.Logger
 }
 
+func NewLoggingStore(store Store, logger logging.Logger) Store {
+	return &loggingStore{store, logger}
+}
+
 func (l *loggingStore) Transact(fn func(ops ClientOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
 	opts = append(opts, db.WithLogger(l.logger))
 	return l.store.Transact(fn, opts...)
@@ -48,8 +52,4 @@ func (l *loggingStore) Transact(fn func(ops ClientOperations) (interface{}, erro
 func (l *loggingStore) RepoTransact(repoId string, fn func(ops RepoOperations) (interface{}, error), opts ...db.TxOpt) (interface{}, error) {
 	opts = append(opts, db.WithLogger(l.logger))
 	return l.store.RepoTransact(repoId, fn, opts...)
-}
-
-func WithLogger(store Store, logger logging.Logger) Store {
-	return &loggingStore{store, logger}
 }

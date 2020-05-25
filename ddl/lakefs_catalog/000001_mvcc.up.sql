@@ -1,155 +1,198 @@
-CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION pg_trgm;
 
-CREATE SEQUENCE IF NOT EXISTS branches_id_seq
-    as integer;
+CREATE SEQUENCE branches_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
 
-CREATE SEQUENCE IF NOT EXISTS repositories_id_seq
-    as integer;
-
-
-CREATE TABLE IF NOT EXISTS repositories
+CREATE TABLE branches
 (
-    id                integer                  default nextval('repositories_id_seq'::regclass) not null
-        constraint repositories_pk
-            primary key,
-    name              varchar(64)                                                               not null,
-    storage_namespace varchar                                                                   not null,
-    creation_date     timestamp with time zone default now()                                    not null,
-    default_branch    integer                  default 1                                        not null
+    repository_id integer                                              NOT NULL,
+    id            integer DEFAULT nextval('branches_id_seq'::regclass) NOT NULL,
+    name          character varying(64)                                NOT NULL,
+    next_commit   integer DEFAULT 1                                    NOT NULL
 );
 
-
-CREATE UNIQUE INDEX IF NOT EXISTS repositories_name_uindex
-    on repositories (name);
-
-CREATE TABLE IF NOT EXISTS branches
+CREATE TABLE commits
 (
-    repository_id integer                                              not null
-        constraint branches_repository_id_fkey
-            references repositories,
-    id            integer default nextval('branches_id_seq'::regclass) not null
-        constraint branches_pk
-            primary key,
-    name          varchar(64)                                          not null,
-    next_commit   integer default 1                                    not null
-);
-
-CREATE UNIQUE INDEX IF NOT EXISTS branches_repository_name_uindex
-    on branches (name, repository_id);
-
-CREATE TABLE IF NOT EXISTS commits
-(
-    branch_id     integer                                not null
-        constraint commits_branches_repository_id_fk
-            references branches
-            on delete cascade,
-    commit_number integer                                not null,
-    committer     varchar,
-    message       varchar,
-    creation_date timestamp with time zone default now() not null,
+    branch_id     integer                                NOT NULL,
+    commit_number integer                                NOT NULL,
+    committer     character varying,
+    message       character varying,
+    creation_date timestamp with time zone DEFAULT now() NOT NULL,
     metadata      json,
-    constraint commits_pkey
-        primary key (branch_id, commit_number)
+    source_branch integer
 );
 
-CREATE TABLE IF NOT EXISTS entries
+CREATE TABLE entries
 (
-    branch_id        integer                                not null
-        constraint entries_branches_id_fk
-            references branches,
-    key              varchar                                not null,
-    commits          int4range                              not null,
-    physical_address varchar(64),
-    creation_date    timestamp with time zone default now() not null,
-    size             bigint                                 not null,
-    checksum         varchar(64)                            not null,
+    branch_id        integer                                NOT NULL,
+    key              character varying                      NOT NULL,
+    physical_address character varying                      not null,
+    creation_date    timestamp with time zone DEFAULT now() NOT NULL,
+    size             bigint                                 NOT NULL,
+    checksum         character varying(64)                  NOT NULL,
     metadata         json,
-    CONSTRAINT entries_commit_overlap EXCLUDE
-        USING gist (key WITH =,branch_id WITH =, commits WITH &&)
+    is_staged        boolean                  DEFAULT false,
+    min_commit       integer,
+    max_commit       integer
 );
 
-CREATE INDEX entries_branch_index
-    on entries (branch_id);
-
-CREATE TABLE IF NOT EXISTS object_dedup
+CREATE TABLE lineage
 (
-    repository_id    integer     not null
-        constraint object_dedup_repository_id_fkey
-            references repositories
-            on delete cascade,
-    dedup_id         bytea       not null,
-    physical_address varchar(64) not null,
-    size             integer     not null,
-    number_of_parts  smallint default 1,
-    constraint object_dedup_pkey
-        primary key (repository_id, dedup_id)
+    branch_id        integer NOT NULL,
+    precedence       integer NOT NULL,
+    ancestor_branch  integer NOT NULL,
+    effective_commit integer NOT NULL,
+    min_commit       integer,
+    max_commit       integer
 );
 
-CREATE TABLE IF NOT EXISTS multipart_uploads
-(
-    repository_id    integer                                not null
-        constraint multipart_uploads_repository_id_fkey
-            references repositories
-            on delete cascade,
-    upload_id        varchar                                not null
-        constraint multipart_uploads_pkey
-            primary key,
-    path             varchar                                not null,
-    creation_date    timestamp with time zone default now() not null,
-    object_name      bytea,
-    physical_address varchar
-);
-
-
-CREATE TABLE IF NOT EXISTS lineage
-(
-    branch_id        integer not null
-        constraint lineage_branches_repository_id_fk
-            references branches
-            on delete cascade,
-    precedence       integer not null,
-    ancestor_branch  integer not null
-        constraint lineage_branches_repository_id_fk_2
-            references branches
-            on delete cascade,
-    effective_commit integer not null,
-    branch_commits   int4range default '[1,)'::int4range,
-    CONSTRAINT lineage_pk UNIQUE (branch_id, ancestor_branch, branch_commits),
-    CONSTRAINT lineage_commit_overlap EXCLUDE
-        USING gist (branch_id WITH =, ancestor_branch WITH =, branch_commits WITH &&)
-
-);
-
-
-CREATE OR REPLACE VIEW lineage_v (branch_id, precedence, ancestor_branch, effective_commit, branch_commits) as
+CREATE VIEW lineage_v AS
 SELECT lineage.branch_id,
+       false AS main_branch,
        lineage.precedence,
        lineage.ancestor_branch,
        lineage.effective_commit,
-       lineage.branch_commits
+       lineage.min_commit,
+       lineage.max_commit
 FROM lineage
 UNION ALL
-SELECT branches.id          AS branch_id,
-       0                    AS precedence,
-       branches.id          AS ancestor_branch,
-       branches.next_commit AS effective_commit,
-       '[1,)'::int4range    AS branch_commits
+SELECT branches.id AS branch_id,
+       true        AS main_branch,
+       0           AS precedence,
+       branches.id AS ancestor_branch,
+       1000000000  AS effective_commit,
+       0           AS min_commit,
+       1000000000  AS max_commit
 FROM branches;
 
-CREATE OR REPLACE VIEW entries_lineage_v
-            (displayed_branch, source_branch, key, commits, physical_address, creation_date, size, checksum, precedence,
-             rank)
-as
-SELECT l.branch_id                                                                                AS displayed_branch,
-       e.branch_id                                                                                AS source_branch,
-       e.key,
-       e.commits,
-       e.physical_address,
-       e.creation_date,
-       e.size,
-       e.checksum,
-       l.precedence,
-       rank() OVER (PARTITION BY l.branch_id, e.key ORDER BY l.precedence, lower(e.commits) DESC) AS rank
-FROM entries e
-         JOIN lineage_v l ON l.ancestor_branch = e.branch_id
-WHERE lower(e.commits) <= l.effective_commit;
+CREATE VIEW entries_lineage_v AS
+SELECT t.displayed_branch,
+       t.source_branch,
+       t.key,
+       t.min_commit,
+       t.max_commit,
+       t.precedence,
+       t.rank,
+       t.branch_min_commit,
+       t.branch_max_commit
+FROM (SELECT l.branch_id       AS displayed_branch,
+             e.branch_id       AS source_branch,
+             e.key,
+             e.min_commit,
+             e.max_commit,
+             l.precedence,
+             rank() OVER (PARTITION BY l.branch_id, e.key ORDER BY l.precedence,
+                 CASE
+                     WHEN (l.main_branch AND (e.min_commit IS NULL)) THEN 1000000000
+                     ELSE COALESCE(e.min_commit, 0)
+                     END DESC) AS rank,
+             l.min_commit      AS branch_min_commit,
+             l.max_commit      AS branch_max_commit
+      FROM (entries e
+               JOIN lineage_v l ON ((l.ancestor_branch = e.branch_id)))
+      WHERE ((l.main_branch OR (e.min_commit <= l.effective_commit)) AND (l.max_commit IS NULL))) t
+WHERE (t.rank = 1);
+
+CREATE VIEW entries_lineage_active_v AS
+SELECT entries_lineage_v.displayed_branch,
+       entries_lineage_v.source_branch,
+       entries_lineage_v.key,
+       entries_lineage_v.min_commit,
+       entries_lineage_v.max_commit,
+       entries_lineage_v.precedence,
+       entries_lineage_v.rank,
+       entries_lineage_v.branch_min_commit,
+       entries_lineage_v.branch_max_commit
+FROM entries_lineage_v
+WHERE ((entries_lineage_v.max_commit IS NULL) AND (entries_lineage_v.branch_max_commit IS NULL));
+
+CREATE TABLE multipart_uploads
+(
+    repository_id    integer                                NOT NULL,
+    upload_id        character varying                      NOT NULL,
+    path             character varying                      NOT NULL,
+    creation_date    timestamp with time zone DEFAULT now() NOT NULL,
+    object_name      character varying,
+    physical_address character varying
+);
+
+CREATE TABLE object_dedup
+(
+    repository_id    integer           NOT NULL,
+    dedup_id         bytea             NOT NULL,
+    physical_address character varying NOT NULL,
+    size             integer           NOT NULL,
+    number_of_parts  smallint DEFAULT 1
+);
+
+CREATE SEQUENCE repositories_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+CREATE TABLE repositories
+(
+    id                integer                  DEFAULT nextval('repositories_id_seq'::regclass) NOT NULL,
+    name              character varying(64)                                                     NOT NULL,
+    storage_namespace character varying                                                         NOT NULL,
+    creation_date     timestamp with time zone DEFAULT now()                                    NOT NULL,
+    default_branch    integer                                                                   NOT NULL
+);
+
+ALTER TABLE ONLY branches
+    ADD CONSTRAINT branches_pk PRIMARY KEY (id);
+
+ALTER TABLE entries
+    ADD CONSTRAINT commit_check CHECK ((max_commit IS NULL) OR (min_commit < max_commit)) NOT VALID;
+
+ALTER TABLE ONLY commits
+    ADD CONSTRAINT commits_pkey PRIMARY KEY (branch_id, commit_number);
+
+ALTER TABLE ONLY multipart_uploads
+    ADD CONSTRAINT multipart_uploads_pkey PRIMARY KEY (upload_id);
+
+ALTER TABLE ONLY object_dedup
+    ADD CONSTRAINT object_dedup_pkey PRIMARY KEY (repository_id, dedup_id);
+
+ALTER TABLE ONLY repositories
+    ADD CONSTRAINT repositories_pk PRIMARY KEY (id);
+
+ALTER TABLE entries
+    ADD CONSTRAINT stage_check CHECK ((((is_staged IS NOT NULL) AND (min_commit IS NULL) AND (max_commit IS NULL)) OR
+                                       ((is_staged IS NULL) AND (min_commit IS NOT NULL)))) NOT VALID;
+
+CREATE UNIQUE INDEX branches_repository_name_uindex ON branches USING btree (name, repository_id);
+
+CREATE INDEX entries_key_index ON entries USING btree (branch_id, key) INCLUDE (min_commit, max_commit);
+
+CREATE INDEX entries_key_trgm ON entries USING gin (key gin_trgm_ops);
+
+CREATE INDEX entries_size_index ON entries USING btree (size);
+
+CREATE UNIQUE INDEX repositories_name_uindex ON repositories USING btree (name);
+
+ALTER TABLE ONLY branches
+    ADD CONSTRAINT branches_repository_id_fkey FOREIGN KEY (repository_id) REFERENCES repositories (id);
+
+ALTER TABLE ONLY commits
+    ADD CONSTRAINT commits_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches (id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY lineage
+    ADD CONSTRAINT lineage_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches (id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY lineage
+    ADD CONSTRAINT lineage_branches_repository_id_fk_2 FOREIGN KEY (ancestor_branch) REFERENCES branches (id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY multipart_uploads
+    ADD CONSTRAINT multipart_uploads_repository_id_fkey FOREIGN KEY (repository_id) REFERENCES repositories (id) ON DELETE CASCADE;
+
+ALTER TABLE ONLY object_dedup
+    ADD CONSTRAINT object_dedup_repository_id_fkey FOREIGN KEY (repository_id) REFERENCES repositories (id) ON DELETE CASCADE;

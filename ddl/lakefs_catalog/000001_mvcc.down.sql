@@ -7,3 +7,4 @@ DROP TABLE IF EXISTS object_dedup;
 DROP TABLE IF EXISTS commits;
 DROP SEQUENCE IF EXISTS branches_id_seq;
 DROP SEQUENCE IF EXISTS repositories_id_seq;
+DROP EXTENSION IF EXISTS pg_trgm;
