@@ -4,6 +4,8 @@ import (
 	"io/ioutil"
 	"os"
 
+	"github.com/aws/aws-sdk-go/aws/credentials"
+
 	"github.com/aws/aws-sdk-go/aws/session"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -21,7 +23,8 @@ type externalRecordDownloader struct {
 func NewExternalRecordDownloader(region string) *externalRecordDownloader {
 	// The session the S3 Downloader will use
 	sess := session.Must(session.NewSession(&aws.Config{
-		Region: aws.String(region),
+		Region:      aws.String(region),
+		Credentials: credentials.AnonymousCredentials,
 	}))
 
 	// Create a downloader with the session and default options
