@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -16,39 +17,51 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 type dependencies struct {
 	blocks block.Adapter
-	auth   utils.GatewayAuthService
+	auth   simulator.GatewayAuthService
 	meta   index.Index
 }
 
-const RecordingsDir = "testdata/recordings"
+const (
+	RecordingsDir = "testdata/recordings"
+)
 
 func TestGatewayRecording(t *testing.T) {
-	dirList, err := ioutil.ReadDir(RecordingsDir)
-	if err != nil {
-		t.Fatalf("Failed reading recording directories: %v", err)
+	testData := []string{
+		"s3://lakefs-recordings/presto.zip",
+		"s3://lakefs-recordings/aws.zip",
+		"s3://lakefs-recordings/emr-spark.zip",
 	}
-	for _, dir := range dirList {
-		zipName := dir.Name()
-		if filepath.Ext(dir.Name()) != ".zip" {
-			continue
-		}
-		dirName := zipName[:len(zipName)-4]
-		t.Run(dirName+" recording", func(t *testing.T) {
 
-			setGlobalPlaybackParams(dirName)
-			os.RemoveAll(utils.PlaybackParams.RecordingDir)
-			os.MkdirAll(utils.PlaybackParams.RecordingDir, 0755)
-			archive := filepath.Join(RecordingsDir, zipName)
-			deCompressRecordings(archive, utils.PlaybackParams.RecordingDir)
-			handler, _ := getBasicHandler(t, zipName)
+	downloader := simulator.NewExternalRecordDownloader("us-east-1")
+
+	for _, recording := range testData {
+		s3Url, err := url.Parse(recording)
+		if err != nil {
+			t.Fatal(err)
+		}
+		basename := filepath.Base(s3Url.Path)
+		filename := filepath.Join(RecordingsDir, basename)
+		t.Run(basename, func(t *testing.T) {
+			// download record
+			err := downloader.DownloadRecording(s3Url.Host, basename, filename)
+			if err != nil {
+				t.Fatal(err)
+			}
+
+			setGlobalPlaybackParams(basename)
+			os.RemoveAll(simulator.PlaybackParams.RecordingDir)
+			os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
+			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
+			handler, _ := getBasicHandler(t, basename)
 			DoTestRun(handler, false, 1.0, t)
+
 		})
 	}
 }
@@ -90,7 +103,7 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 
 	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
 
-	authService := newGatewayAuth(t, utils.PlaybackParams.RecordingDir)
+	authService := newGatewayAuth(t, simulator.PlaybackParams.RecordingDir)
 
 	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
 	server := gateway.NewServer(authService.Region,
@@ -106,9 +119,9 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	}
 }
 
-func newGatewayAuth(t *testing.T, directory string) *utils.PlayBackMockConf {
-	m := new(utils.PlayBackMockConf)
-	fName := filepath.Join(directory, utils.SimulationConfig)
+func newGatewayAuth(t *testing.T, directory string) *simulator.PlayBackMockConf {
+	m := new(simulator.PlayBackMockConf)
+	fName := filepath.Join(directory, simulator.SimulationConfig)
 	confStr, err := ioutil.ReadFile(fName)
 	if err != nil {
 		t.Fatal(fName + " not found\n")
@@ -149,7 +162,7 @@ func decompressRecordingsFile(f *zip.File) {
 	defer func() {
 		_ = compressedFile.Close()
 	}()
-	fileName := filepath.Join(utils.PlaybackParams.RecordingDir, filepath.Base(f.Name))
+	fileName := filepath.Join(simulator.PlaybackParams.RecordingDir, filepath.Base(f.Name))
 	decompressedFile, err := os.Create(fileName)
 	if err != nil {
 		logging.Default().WithError(err).Fatal("failed creating file " + f.Name)
