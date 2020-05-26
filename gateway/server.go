@@ -11,7 +11,7 @@ import (
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/sig"
-	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
@@ -24,7 +24,7 @@ type ServerContext struct {
 	bareDomain  string
 	meta        index.Index
 	blockStore  block.Adapter
-	authService utils.GatewayAuthService
+	authService simulator.GatewayAuthService
 	stats       stats.Collector
 }
 
@@ -49,7 +49,7 @@ func NewServer(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
-	authService utils.GatewayAuthService,
+	authService simulator.GatewayAuthService,
 	listenAddr, bareDomain string,
 	stats stats.Collector,
 ) *Server {
@@ -70,7 +70,7 @@ func NewServer(
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
-	handler = utils.RegisterRecorder(httputil.LoggingMiddleware(
+	handler = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
 	), authService, region, bareDomain, listenAddr)
 
@@ -98,7 +98,7 @@ func (s *Server) Listen() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	utils.ShutdownRecorder()
+	simulator.ShutdownRecorder()
 	s.Server.SetKeepAlivesEnabled(false)
 	return s.Server.Shutdown(ctx)
 }
