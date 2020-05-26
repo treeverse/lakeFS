@@ -53,7 +53,7 @@ func TestGatewayRecording(t *testing.T) {
 			true,
 		},
 		{
-			"spark emr",
+			"emr spark",
 			"emr-spark.zip",
 			"emr-spark.zip",
 			true,
