@@ -26,7 +26,7 @@ type Cataloger interface {
 	WithContext(context.Context) Cataloger
 
 	// repository level
-	CreateRepo(name string, bucket string, branchID int) (int, error)
+	CreateRepo(name string, bucket string, branch string) (int, error)
 	ListRepos(amount int, after string) ([]*Repo, bool, error)
 	GetRepo(repoID int) (*Repo, error)
 	GetRepoByName(repoName string) (*Repo, error)

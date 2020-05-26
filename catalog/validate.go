@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 )
 
 var (
@@ -19,7 +20,8 @@ var (
 	validBranchNameRE = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
 	validRepoIDRE     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 	validCommitIDRE   = regexp.MustCompile(`[a-fA-F0-9]{6,40}`)
-	validBucketNameRE = regexp.MustCompile(`(?=^.{3,63}$)(?!^(\d+\.)+\d+$)(^(([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])\.)*([a-z0-9]|[a-z0-9][a-z0-9\-]*[a-z0-9])$)`)
+	validBucketNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]+[a-z0-9]$`)
+	validIPv4RE       = regexp.MustCompile(`/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/`)
 )
 
 type ValidateFunc func() error
@@ -72,7 +74,25 @@ func ValidateCommitMessage(msg string) ValidateFunc {
 }
 
 func ValidateBucketName(bucket string) ValidateFunc {
-	return ValidateRegexp(bucket, validBucketNameRE, ErrInvalidBucketName)
+	return func() error {
+		if len(bucket) < 3 || len(bucket) > 63 {
+			return ErrInvalidBucketName
+		}
+		// bucket with successive periods is invalid.
+		if strings.Contains(bucket, "..") {
+			return ErrInvalidBucketName
+		}
+		// bucket cannot have ip address style.
+		if validIPv4RE.MatchString(bucket) {
+			return ErrInvalidBucketName
+		}
+		// bucket should begin with alphabet/number and end with alphabet/number,
+		// with alphabet/number/.- in the middle.
+		if !validBucketNameRE.MatchString(bucket) {
+			return ErrInvalidBucketName
+		}
+		return nil
+	}
 }
 
 func ValidateBranchID(id int) ValidateFunc {
