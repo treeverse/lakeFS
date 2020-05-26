@@ -20,8 +20,8 @@ type LoadTester struct {
 func main() {
 	var tester LoadTester
 	tester.Buffer = new(bytes.Buffer)
-	rate := vegeta.Rate{Freq: 30, Per: time.Second}
-	duration := 5 * time.Second
+	rate := vegeta.Rate{Freq: 10, Per: time.Second}
+	duration := 6 * time.Second
 	out := make(chan vegeta.Target)
 	errs := make(chan error)
 	go tester.playScenario(out)
@@ -30,7 +30,7 @@ func main() {
 		http.Header{http.CanonicalHeaderKey("Authorization"): []string{"Basic " + getAuth()}})
 	attacker := vegeta.NewAttacker()
 	var metrics vegeta.Metrics
-	for res := range attacker.Attack(targeter, rate, duration, "Big Bang!") {
+	for res := range attacker.Attack(targeter, rate, duration, "lakeFS load test") {
 		if len(res.Error) > 0 {
 			fmt.Println(fmt.Sprintf("Error in request %s", tester.RequestHistory[res.Seq]))
 		}
@@ -60,7 +60,7 @@ func (t *LoadTester) playScenario(out chan<- vegeta.Target) {
 			http.CanonicalHeaderKey("Content-Type"): []string{"application/json"},
 		},
 	}
-	for i := 0; i <= 20; i++ {
+	for i := 0; true; i++ {
 		for tgt := range generateFiles("example-repo3", "master", 20) {
 			out <- tgt
 		}
