@@ -17,7 +17,7 @@ import (
 const EtagExtension = "etag"
 
 type externalRecordDownloader struct {
-	downloader s3manager.Downloader
+	downloader *s3manager.Downloader
 }
 
 func NewExternalRecordDownloader(region string) *externalRecordDownloader {
@@ -30,7 +30,7 @@ func NewExternalRecordDownloader(region string) *externalRecordDownloader {
 	// Create a downloader with the session and default options
 	downloader := s3manager.NewDownloader(sess)
 
-	return &externalRecordDownloader{*downloader}
+	return &externalRecordDownloader{downloader}
 }
 
 func getEtagFileName(path string) string {
