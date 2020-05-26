@@ -1,27 +1,15 @@
 package catalog
 
 import (
-	"context"
+	"errors"
 	"testing"
 
-	"github.com/cloudfoundry/clock"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func Test_cataloger_CreateRepo(t *testing.T) {
-	testClock := clock.NewClock()
-	ctx := context.Background()
-	log := logging.Dummy()
+func TestCataloger_CreateRepo(t *testing.T) {
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-
-	type fields struct {
-		Clock clock.Clock
-		ctx   context.Context
-		log   logging.Logger
-		db    db.Database
-	}
+	c := NewCataloger(cdb)
 	type args struct {
 		name   string
 		bucket string
@@ -29,41 +17,39 @@ func Test_cataloger_CreateRepo(t *testing.T) {
 	}
 	tests := []struct {
 		name    string
-		fields  fields
 		args    args
 		wantErr bool
+		asErr   error
 	}{
 		{
 			name:    "basic",
-			fields:  fields{Clock: testClock, ctx: ctx, log: log, db: cdb},
 			args:    args{name: "repo1", bucket: "bucket1", branch: "master"},
 			wantErr: false,
+			asErr:   nil,
 		},
 		{
 			name:    "invalid bucket",
-			fields:  fields{Clock: testClock, ctx: ctx, log: log, db: cdb},
 			args:    args{name: "repo2", bucket: "b", branch: "master"},
 			wantErr: true,
+			asErr:   ErrInvalidBucketName,
 		},
 		{
 			name:    "missing branch",
-			fields:  fields{Clock: testClock, ctx: ctx, log: log, db: cdb},
 			args:    args{name: "repo3", bucket: "bucket3", branch: ""},
 			wantErr: true,
+			asErr:   ErrInvalidBranchName,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			c := &cataloger{
-				Clock: tt.fields.Clock,
-				ctx:   tt.fields.ctx,
-				log:   tt.fields.log,
-				db:    tt.fields.db,
-			}
 			got, err := c.CreateRepo(tt.args.name, tt.args.bucket, tt.args.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateRepo() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if err != nil && tt.asErr != nil && !errors.As(err, &tt.asErr) {
+				t.Errorf("CreateRepo() error = %v, expected as %v", err, tt.asErr)
 				return
 			}
 			if err == nil && got < 1 {
