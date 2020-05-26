@@ -14,51 +14,19 @@ import (
 
 type LoadTester struct {
 	RequestHistory []vegeta.Target
-	Buffer         bytes.Buffer
+	Buffer         *bytes.Buffer
 }
 
 func main() {
 	var tester LoadTester
+	tester.Buffer = new(bytes.Buffer)
 	rate := vegeta.Rate{Freq: 30, Per: time.Second}
 	duration := 5 * time.Second
-
-	tgt := vegeta.Target{
-		Method: "DELETE",
-		URL:    "http://localhost:3000/api/v1/repositories/example-repo3",
-		Body:   []byte("{}"),
-		Header: http.Header{
-			http.CanonicalHeaderKey("Accept"):       []string{"application/json"},
-			http.CanonicalHeaderKey("Content-Type"): []string{"application/json"},
-		},
-	}
-	streamRequest(tgt, tester)
-
-	tgt = vegeta.Target{
-		Method: "POST",
-		URL:    "http://localhost:3000/api/v1/repositories",
-		Body:   []byte("{\"id\":\"example-repo3\",\"bucket_name\":\"example-bucket\",\"default_branch\":\"master\"}"),
-		Header: http.Header{
-			http.CanonicalHeaderKey("Accept"):       []string{"application/json"},
-			http.CanonicalHeaderKey("Content-Type"): []string{"application/json"},
-		},
-	}
-	streamRequest(tgt, tester)
-
-	go func() {
-		for i := 0; i <= 20; i++ {
-			for msg := range generateFiles("example-repo3", "master", 20) {
-				streamRequest(msg, tester)
-			}
-			streamRequest(generateCommit("example-repo3", fmt.Sprintf("commit%d", i)), tester)
-			streamRequest(generateBranch("example-repo3", fmt.Sprintf("branch%d", i)), tester)
-
-			for msg := range generateFiles("example-repo3", fmt.Sprintf("branch%d", i), 20) {
-				streamRequest(msg, tester)
-			}
-			streamRequest(generateMergeToMaster("example-repo3", fmt.Sprintf("branch%d", i)), tester)
-		}
-	}()
-	targeter := vegeta.NewJSONTargeter(*tester.Buffer, nil,
+	out := make(chan vegeta.Target)
+	errs := make(chan error)
+	go tester.playScenario(out)
+	go tester.streamRequests(out, errs)
+	targeter := vegeta.NewJSONTargeter(tester.Buffer, nil,
 		http.Header{http.CanonicalHeaderKey("Authorization"): []string{"Basic " + getAuth()}})
 	attacker := vegeta.NewAttacker()
 	var metrics vegeta.Metrics
@@ -72,17 +40,52 @@ func main() {
 	fmt.Printf("99th percentile: %s\n", metrics.Latencies.P99)
 	fmt.Printf("errors: %s\n", metrics.Errors)
 }
-
-func streamRequest(tgt vegeta.Target, tester LoadTester) {
-	target, err := json.Marshal(tgt)
-	if err != nil {
-		//TODO handle err
-		return
+func (t *LoadTester) playScenario(out chan<- vegeta.Target) {
+	defer close(out)
+	out <- vegeta.Target{
+		Method: "DELETE",
+		URL:    "http://localhost:3000/api/v1/repositories/example-repo3",
+		Body:   []byte("{}"),
+		Header: http.Header{
+			http.CanonicalHeaderKey("Accept"):       []string{"application/json"},
+			http.CanonicalHeaderKey("Content-Type"): []string{"application/json"},
+		},
 	}
-	tester.Buffer.Write(target)
-	tester.Buffer.WriteString("\n")
-	tester.RequestHistory = append(tester.RequestHistory, tgt)
+	out <- vegeta.Target{
+		Method: "POST",
+		URL:    "http://localhost:3000/api/v1/repositories",
+		Body:   []byte("{\"id\":\"example-repo3\",\"bucket_name\":\"example-bucket\",\"default_branch\":\"master\"}"),
+		Header: http.Header{
+			http.CanonicalHeaderKey("Accept"):       []string{"application/json"},
+			http.CanonicalHeaderKey("Content-Type"): []string{"application/json"},
+		},
+	}
+	for i := 0; i <= 20; i++ {
+		for tgt := range generateFiles("example-repo3", "master", 20) {
+			out <- tgt
+		}
+		out <- generateCommit("example-repo3", fmt.Sprintf("commit%d", i))
+		out <- generateBranch("example-repo3", fmt.Sprintf("branch%d", i))
+
+		for tgt := range generateFiles("example-repo3", fmt.Sprintf("branch%d", i), 20) {
+			out <- tgt
+		}
+		out <- generateMergeToMaster("example-repo3", fmt.Sprintf("branch%d", i))
+	}
 }
+func (t *LoadTester) streamRequests(in <-chan vegeta.Target, errs chan<- error) {
+	defer close(errs)
+	for tgt := range in {
+		t.RequestHistory = append(t.RequestHistory, tgt)
+		target, err := json.Marshal(tgt)
+		if err != nil {
+			errs <- err
+		}
+		t.Buffer.Write(target)
+		t.Buffer.WriteString("\n")
+	}
+}
+
 func getAuth() string {
 	return base64.StdEncoding.EncodeToString([]byte("AKIAJ5SI5UWYOAXGHOXQ:+/EGbyyQgXPrDgQEpJUcqsrck51W6GnBsZdAFUbA"))
 }
@@ -91,6 +94,7 @@ func generateFiles(repo, branch string, num int) <-chan vegeta.Target {
 	out := make(chan vegeta.Target)
 	now := time.Now().UnixNano()
 	go func() {
+		defer close(out)
 		for i := 1; i <= num; i++ {
 			fileContent := "--noonoo" + "\n" +
 				"Content-Disposition: form-data; name=\"content\"; filename=\"file_981\"\n" +
@@ -109,7 +113,6 @@ func generateFiles(repo, branch string, num int) <-chan vegeta.Target {
 			}
 			out <- tgt
 		}
-		close(out)
 	}()
 	return out
 }
