@@ -27,7 +27,7 @@ type Cataloger interface {
 
 	// repository level
 	CreateRepo(name string, bucket string, branch string) (int, error)
-	ListRepos(amount int, after string) ([]*Repo, bool, error)
+	ListRepos(amount int, after int) ([]*Repo, bool, error)
 	GetRepo(repoID int) (*Repo, error)
 	GetRepoByName(repoName string) (*Repo, error)
 	DeleteRepo(repoID int) error
@@ -92,10 +92,6 @@ func (c *cataloger) transactOpts() []db.TxOpt {
 		db.WithContext(c.ctx),
 		db.WithLogger(c.log),
 	}
-}
-
-func (cataloger) ListRepos(amount int, after string) ([]*Repo, bool, error) {
-	panic("implement me")
 }
 
 func (cataloger) GetRepo(repoID int) (*Repo, error) {
