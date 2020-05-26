@@ -3,6 +3,10 @@ package catalog
 import (
 	"context"
 	"time"
+
+	"github.com/cloudfoundry/clock"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type EntryState int
@@ -14,15 +18,15 @@ const (
 )
 
 type EntryReadOptions struct {
-	EntryState
-	CommitID int
+	EntryState EntryState
+	CommitID   int
 }
 
 type Cataloger interface {
-	WithContext(ctx context.Context) Cataloger
+	WithContext(context.Context) Cataloger
 
 	// repository level
-	CreateRepo(repoID string, bucket string, branch string) (int, error)
+	CreateRepo(name string, bucket string, branchID int) (int, error)
 	ListRepos(amount int, after string) ([]*Repo, bool, error)
 	GetRepo(repoID int) (*Repo, error)
 	GetRepoByName(repoName string) (*Repo, error)
@@ -56,4 +60,132 @@ type Cataloger interface {
 	CreateMultiPartUpload(repoID int, path, physicalAddress string, creationTime time.Time) error
 	ReadMultiPartUpload(repoID int, uploadID string) (*MultipartUpload, error)
 	DeleteMultiPartUpload(repoID int, uploadID string) error
+}
+
+type cataloger struct {
+	Clock clock.Clock
+	ctx   context.Context
+	log   logging.Logger
+	db    db.Database
+}
+
+func NewCataloger(db db.Database) *cataloger {
+	return &cataloger{
+		Clock: clock.NewClock(),
+		ctx:   context.Background(),
+		log:   logging.Default().WithField("service_name", "cataloger"),
+		db:    db,
+	}
+}
+
+func (c *cataloger) WithContext(ctx context.Context) Cataloger {
+	return &cataloger{
+		Clock: c.Clock,
+		ctx:   ctx,
+		log:   logging.FromContext(ctx).WithField("service_name", "cataloger"),
+		db:    c.db,
+	}
+}
+
+func (c *cataloger) transactOpts() []db.TxOpt {
+	return []db.TxOpt{
+		db.WithContext(c.ctx),
+		db.WithLogger(c.log),
+	}
+}
+
+func (cataloger) ListRepos(amount int, after string) ([]*Repo, bool, error) {
+	panic("implement me")
+}
+
+func (cataloger) GetRepo(repoID int) (*Repo, error) {
+	panic("implement me")
+}
+
+func (cataloger) GetRepoByName(repoName string) (*Repo, error) {
+	panic("implement me")
+}
+
+func (cataloger) DeleteRepo(repoID int) error {
+	panic("implement me")
+}
+
+func (cataloger) GetRepoCommitLog(repoID int, fromCommitID string, results int, after string) ([]*Commit, bool, error) {
+	panic("implement me")
+}
+
+func (cataloger) CreateBranch(repoID int, branch string, sourceBranchID int) (*Branch, error) {
+	panic("implement me")
+}
+
+func (cataloger) GetBranch(branchID string) (*Branch, error) {
+	panic("implement me")
+}
+
+func (cataloger) DeleteBranch(branchID int) error {
+	panic("implement me")
+}
+
+func (cataloger) GetBranchCommitLog(branchID int, fromCommitID string, results int, after string) ([]*Commit, bool, error) {
+	panic("implement me")
+}
+
+func (cataloger) ListBranchesByPrefix(repoID string, prefix string, amount int, after string) ([]*Branch, bool, error) {
+	panic("implement me")
+}
+
+func (cataloger) Commit(branchID int, message, committer string, metadata map[string]string) (*Commit, error) {
+	panic("implement me")
+}
+
+func (cataloger) ReadEntry(branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
+	panic("implement me")
+}
+
+func (cataloger) WriteEntry(branchID int, path string, entry *Entry) error {
+	panic("implement me")
+}
+
+func (cataloger) ListEntriesByPrefix(branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
+	panic("implement me")
+}
+
+func (cataloger) Diff(leftBranchID, rightBranchID int) (Differences, error) {
+	panic("implement me")
+}
+
+func (cataloger) Merge(sourceBranchID, destinationBranchID int, userID string) (Differences, error) {
+	panic("implement me")
+}
+
+func (cataloger) RevertBranch(branchID int) error {
+	panic("implement me")
+}
+
+func (cataloger) RevertCommit(branchID int, commit string) error {
+	panic("implement me")
+}
+
+func (cataloger) RevertPath(branchID int, path string) error {
+	panic("implement me")
+}
+
+func (cataloger) RevertEntry(branchID int, path string) error {
+	panic("implement me")
+}
+
+func (cataloger) CreateDedupEntryIfNone(repoID int, dedupID string, physicalAddress string) (string, error) {
+	panic("implement me")
+}
+
+func (cataloger) CreateMultiPartUpload(repoID int, path, physicalAddress string, creationTime time.Time) error {
+	panic("implement me")
+}
+
+func (cataloger) ReadMultiPartUpload(repoID int, uploadID string) (*MultipartUpload, error) {
+	panic("implement me")
+}
+
+func (cataloger) DeleteMultiPartUpload(repoID int, uploadID string) error {
+	panic("implement me")
 }

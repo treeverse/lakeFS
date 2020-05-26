@@ -4,8 +4,8 @@ go 1.12
 
 require (
 	github.com/aws/aws-sdk-go v1.30.14
-	github.com/benbjohnson/clock v1.0.2
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
+	github.com/cloudfoundry/clock v1.0.0
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-openapi/errors v0.19.2

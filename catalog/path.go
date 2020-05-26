@@ -5,6 +5,11 @@ import (
 	"strings"
 )
 
+const (
+	EntryTypeObject = "OBJECT"
+	EntryTypeTree   = "TREE"
+)
+
 const Separator = "/"
 
 type Path struct {
@@ -14,8 +19,8 @@ type Path struct {
 
 var RootPath = NewPath("", EntryTypeTree)
 
-func NewPath(str, entryType string) *Path {
-	return &Path{str, entryType}
+func NewPath(p string, entryType string) *Path {
+	return &Path{p, entryType}
 }
 
 func Join(parts []string) string {

@@ -22,6 +22,7 @@ type SqlxDatabase struct {
 func NewSqlxDatabase(db *sqlx.DB) *SqlxDatabase {
 	return &SqlxDatabase{db: db}
 }
+
 func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
