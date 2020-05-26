@@ -101,7 +101,7 @@ ui-bundle: ui-build ## Bundle static built UI app
 gen-ui: ui-bundle
 
 gen-ddl:  ## Embed data migration files into the resulting binary
-	$(STATIK) -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl
+	$(STATIK) -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
