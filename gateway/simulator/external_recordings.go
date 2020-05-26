@@ -69,7 +69,7 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 		return nil
 	}
 
-	logging.Default().Infof("downloading from bucket %s key %s to file %s ", bucket, key, destination)
+	logging.Default().WithFields(logging.Fields{"bucket": bucket, "key": key, "destination": destination}).Info("download Recording")
 	f, err := os.Create(destination)
 	if err != nil {
 		return err
@@ -83,7 +83,7 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 	if err != nil {
 		return err
 	}
-	logging.Default().Infof("file downloaded, %d bytes\n", n)
+	logging.Default().WithFields(logging.Fields{"file": destination, "bytes": n}).Info("file downloaded")
 
 	//write the etag file
 	etagFileName := getEtagFileName(destination)
