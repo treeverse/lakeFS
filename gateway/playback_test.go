@@ -7,6 +7,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"testing"
@@ -29,61 +30,36 @@ type dependencies struct {
 
 const (
 	RecordingsDir = "testdata/recordings"
-	BucketName    = "lakefs-recordings"
 )
 
 func TestGatewayRecording(t *testing.T) {
-
-	testData := []struct {
-		Name     string
-		Key      string
-		Filename string
-		Enabled  bool
-	}{
-		{
-			"presto",
-			"presto.zip",
-			"presto.zip",
-			true,
-		},
-		{
-			"aws",
-			"aws.zip",
-			"aws.zip",
-			true,
-		},
-		{
-			"emr spark",
-			"emr-spark.zip",
-			"emr-spark.zip",
-			true,
-		},
+	testData := []string{
+		"s3://lakefs-recordings/presto.zip",
+		"s3://lakefs-recordings/aws.zip",
+		"s3://lakefs-recordings/emr-spark.zip",
 	}
 
 	downloader := simulator.NewExternalRecordDownloader("us-east-1")
 
 	for _, recording := range testData {
-
-		if !recording.Enabled {
-			continue
+		s3Url, err := url.Parse(recording)
+		if err != nil {
+			t.Fatal(err)
 		}
-		filename := filepath.Join(RecordingsDir, recording.Filename)
-		t.Run(recording.Name, func(t *testing.T) {
+		basename := filepath.Base(s3Url.Path)
+		filename := filepath.Join(RecordingsDir, basename)
+		t.Run(basename, func(t *testing.T) {
 			// download record
-			err := downloader.DownloadRecording(BucketName, recording.Key, filename)
+			err := downloader.DownloadRecording(s3Url.Host, basename, filename)
 			if err != nil {
 				t.Fatal(err)
 			}
 
-			zipName := recording.Filename
-			if filepath.Ext(recording.Filename) != ".zip" {
-				return
-			}
-			setGlobalPlaybackParams(recording.Filename)
+			setGlobalPlaybackParams(basename)
 			os.RemoveAll(simulator.PlaybackParams.RecordingDir)
 			os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
 			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
-			handler, _ := getBasicHandler(t, zipName)
+			handler, _ := getBasicHandler(t, basename)
 			DoTestRun(handler, false, 1.0, t)
 
 		})
