@@ -1,4 +1,4 @@
-package utils
+package simulator
 
 import (
 	"encoding/json"

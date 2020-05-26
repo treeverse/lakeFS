@@ -46,3 +46,6 @@
 
 # Docs
 /docs/_site/
+
+# Integration tests
+/gateway/testdata/recordings
