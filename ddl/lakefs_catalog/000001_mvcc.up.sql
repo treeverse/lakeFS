@@ -159,7 +159,8 @@ CREATE TABLE IF NOT EXISTS repositories (
                               name character varying(64) NOT NULL,
                               storage_namespace character varying NOT NULL,
                               creation_date timestamp with time zone DEFAULT now() NOT NULL,
-                              default_branch integer DEFAULT 1 NOT NULL
+                              default_branch integer DEFAULT 1 NOT NULL,
+                              deleted boolean DEFAULT FALSE NOT NULL
 );
 
 

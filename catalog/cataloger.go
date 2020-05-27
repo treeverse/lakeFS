@@ -87,10 +87,6 @@ func (c *cataloger) transactOpts(ctx context.Context, opts ...db.TxOpt) []db.TxO
 	return o
 }
 
-func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {
-	panic("implement me")
-}
-
 func (c *cataloger) GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
 	panic("implement me")
 }
