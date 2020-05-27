@@ -52,12 +52,12 @@ When accessing objects in s3 we will need to use the lakeFS path convention
 After configuring the credentials, This is how a command should look:
 ``` 
 aws s3 --profile lakefs \
---endpoint-url https://example.lakefs.io \
-ls s3://example-repo/master/example-directory
+  --endpoint-url https://example.lakefs.io \
+  ls s3://example-repo/master/example-directory
 ```
 
 Where endpoint-url should be the same value [configured](../reference/configuration.md#reference)
-for ``` gateways.s3.domain_name```.
+for ```gateways.s3.domain_name```.
 
 We could use an [alias](aws_cli.md#lakefs-alias) to make it shorter and more convenient.
 
@@ -66,9 +66,9 @@ We could use an [alias](aws_cli.md#lakefs-alias) to make it shorter and more con
 ### List directory 
 
 ``` 
-aws s3 --profile lakefs \
-  --endpoint-url https://s3.dev.lakefs.io \ 
-  ls s3://example-repo/master/example-directory
+aws --profile lakefs \
+  --endpoint-url https://s3.dev.lakefs.io \
+  s3 ls s3://example-repo/master/example-directory
 ```
 
 ### Copy from lakeFS to lakeFS
@@ -110,10 +110,10 @@ aws --profile lakefs \
 In order to make the command shorter and more convenient we can create an alias:
 
 ```
-alias awslfs='aws --endpoint https://s3.local.lakefs.io --profile lakefs'
+alias awslfs='aws --endpoint https://example.lakefs.io --profile lakefs'
 ```
 
 Now, the ls command using the alias will be:
 ```
-awslfs ls s3://example-repo/master/example-directory
+awslfs s3 ls s3://example-repo/master/example-directory
 ```
