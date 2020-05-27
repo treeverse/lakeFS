@@ -22,7 +22,13 @@ func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {
 		if err != nil {
 			return nil, err
 		}
-		affected, _ := res.RowsAffected()
+		affected, err := res.RowsAffected()
+		if err != nil {
+			return nil, err
+		}
+		if affected != 1 {
+			return nil, ErrRepoNotFound
+		}
 		c.log.WithContext(ctx).
 			WithFields(logging.Fields{
 				"affected": affected,

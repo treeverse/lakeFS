@@ -35,7 +35,7 @@ func TestCataloger_DeleteRepo(t *testing.T) {
 		{
 			name:    "not found",
 			repo:    "repo5",
-			wantErr: false,
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {

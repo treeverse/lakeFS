@@ -16,5 +16,5 @@ var (
 	ErrDestinationNotCommitted    = errors.New("destination branch has uncommitted changes")
 	ErrMergeConflict              = errors.New("merge conflict")
 	ErrMergeUpdateFailed          = errors.New("failed updating merged destination")
-	ErrInvalid                    = errors.New("validation error")
+	ErrRepoNotFound               = errors.New("repo not found")
 )
