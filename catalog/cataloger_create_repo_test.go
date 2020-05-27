@@ -45,7 +45,7 @@ func TestCataloger_CreateRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.CreateRepo(ctx, tt.args.name, tt.args.bucket, tt.args.branch)
+			err := c.CreateRepo(ctx, tt.args.name, tt.args.bucket, tt.args.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateRepo() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -53,9 +53,6 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			if err != nil && tt.asErr != nil && !errors.As(err, &tt.asErr) {
 				t.Errorf("CreateRepo() error = %v, expected as %v", err, tt.asErr)
 				return
-			}
-			if err == nil && got < 1 {
-				t.Errorf("CreateRepo() got = %v, want valid repo id when on no error", got)
 			}
 		})
 	}

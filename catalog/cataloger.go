@@ -24,7 +24,7 @@ type EntryReadOptions struct {
 
 type Cataloger interface {
 	// repository level
-	CreateRepo(ctx context.Context, repo string, bucket string, branch string) (int, error)
+	CreateRepo(ctx context.Context, repo string, bucket string, branch string) error
 	ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
 	GetRepo(ctx context.Context, repo string) (*Repo, error)
 	DeleteRepo(ctx context.Context, repo string) error
@@ -85,10 +85,6 @@ func (c *cataloger) transactOpts(ctx context.Context, opts ...db.TxOpt) []db.TxO
 		o = append(o, opt)
 	}
 	return o
-}
-
-func (c *cataloger) GetRepo(ctx context.Context, repo string) (*Repo, error) {
-	panic("implement me")
 }
 
 func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {

@@ -7,16 +7,16 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, branch string) (int, error) {
+func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, branch string) error {
 	if err := Validate(
 		ValidateRepoName(repo),
 		ValidateBucketName(bucket),
 		ValidateBranchName(branch),
 	); err != nil {
-		return 0, err
+		return err
 	}
 
-	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for branch
 		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
@@ -55,12 +55,11 @@ func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, 
 		c.log.WithContext(ctx).
 			WithFields(logging.Fields{
 				"branch_id": branchID,
+				"branch":    branch,
 				"repo_id":   repoID,
+				"repo":      repo,
 			}).Debug("Repository created")
 		return repoID, nil
 	}, c.transactOpts(ctx)...)
-	if err != nil {
-		return 0, err
-	}
-	return int(res.(int64)), nil
+	return err
 }

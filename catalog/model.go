@@ -6,12 +6,19 @@ import (
 
 type JSONMetadata map[string]string
 
-type Repo struct {
+type RepoDB struct {
 	ID               int       `db:"id"`
 	Name             string    `db:"name"`
 	StorageNamespace string    `db:"storage_namespace"`
 	CreationDate     time.Time `db:"creation_date"`
 	DefaultBranch    int       `db:"default_branch"`
+}
+
+type Repo struct {
+	Name             string    `db:"name"`
+	StorageNamespace string    `db:"storage_namespace"`
+	DefaultBranch    string    `db:"default_branch"`
+	CreationDate     time.Time `db:"creation_date"`
 }
 
 type ObjectDedup struct {

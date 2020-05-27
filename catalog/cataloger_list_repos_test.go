@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 
@@ -14,17 +15,13 @@ func TestCataloger_ListRepos(t *testing.T) {
 	c := NewCataloger(cdb)
 
 	// create test data
-	_, err := c.CreateRepo(ctx, "repo3", "bucket3", "master")
-	if err != nil {
-		t.Fatal("create repo for testing failed", err)
-	}
-	_, err = c.CreateRepo(ctx, "repo2", "bucket2", "master")
-	if err != nil {
-		t.Fatal("create repo for testing failed", err)
-	}
-	_, err = c.CreateRepo(ctx, "repo1", "bucket1", "master")
-	if err != nil {
-		t.Fatal("create repo for testing failed", err)
+	for i := 3; i > 0; i-- {
+		repoName := fmt.Sprintf("repo%d", i)
+		bucketName := fmt.Sprintf("bucket%d", i)
+		err := c.CreateRepo(ctx, repoName, bucketName, "master")
+		if err != nil {
+			t.Fatal("create repo for testing failed", err)
+		}
 	}
 
 	type args struct {
