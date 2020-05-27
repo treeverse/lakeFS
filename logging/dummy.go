@@ -1,6 +1,11 @@
 package logging
 
-type DummyLogger struct {
+import "context"
+
+type DummyLogger struct{}
+
+func (d DummyLogger) WithContext(ctx context.Context) Logger {
+	return d
 }
 
 func (d DummyLogger) WithField(key string, value interface{}) Logger {

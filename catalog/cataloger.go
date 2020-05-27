@@ -15,12 +15,6 @@ const (
 	EntryStateCommitted = iota
 	EntryStateStage
 	EntryStateUnstage
-
-	ListRepoFieldID   = "id"
-	ListRepoFieldName = "name"
-
-	ListRepoDefaultField = ListRepoFieldID
-	ListRepoDefaultLimit = 1000
 )
 
 type EntryReadOptions struct {
@@ -28,98 +22,63 @@ type EntryReadOptions struct {
 	CommitID   int
 }
 
-type ListReposOptions struct {
-	Field string
-	Limit int
-	After interface{}
-}
-
-func WithListReposLimit(limit int) func(options *ListReposOptions) {
-	return func(options *ListReposOptions) {
-		options.Limit = limit
-	}
-}
-
-func WithListReposBy(field string) func(options *ListReposOptions) {
-	return func(options *ListReposOptions) {
-		options.Field = field
-	}
-}
-
-func WithListReposAfter(val interface{}) func(options *ListReposOptions) {
-	return func(options *ListReposOptions) {
-		options.After = val
-	}
-}
-
 type Cataloger interface {
-	WithContext(context.Context) Cataloger
-
 	// repository level
-	CreateRepo(name string, bucket string, branch string) (int, error)
-	ListRepos(opts ...func(*ListReposOptions)) ([]*Repo, bool, error)
-	GetRepo(repoID int) (*Repo, error)
-	GetRepoByName(repoName string) (*Repo, error)
-	DeleteRepo(repoID int) error
-	GetRepoCommitLog(repoID int, fromCommitID string, results int, after string) ([]*Commit, bool, error)
+	CreateRepo(ctx context.Context, repo string, bucket string, branch string) (int, error)
+	ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
+	GetRepo(ctx context.Context, repo string) (*Repo, error)
+	DeleteRepo(ctx context.Context, repo string) error
+	GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
 
 	// branch level
-	CreateBranch(repoID int, branch string, sourceBranchID int) (*Branch, error)
-	GetBranch(branchID string) (*Branch, error)
-	DeleteBranch(branchID int) error
-	GetBranchCommitLog(branchID int, fromCommitID string, results int, after string) ([]*Commit, bool, error)
-	ListBranchesByPrefix(repoID string, prefix string, amount int, after string) ([]*Branch, bool, error)
-	Commit(branchID int, message, committer string, metadata map[string]string) (*Commit, error)
+	CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error)
+	GetBranch(ctx context.Context, branch string) (*Branch, error)
+	DeleteBranch(ctx context.Context, branch string) error
+	GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
+	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, amount int, after string) ([]*Branch, bool, error)
+	Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error)
 
 	// entry level
-	ReadEntry(branchID int, path string, readOptions EntryReadOptions) (*Entry, error)
-	WriteEntry(branchID int, path string, entry *Entry) error
-	ListEntriesByPrefix(branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
+	ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error)
+	WriteEntry(ctx context.Context, branchID int, path string, entry *Entry) error
+	ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
 
 	// diff and merge
-	Diff(leftBranchID, rightBranchID int) (Differences, error)
-	Merge(sourceBranchID, destinationBranchID int, userID string) (Differences, error)
+	Diff(ctx context.Context, leftBranch, rightBranch string) (Differences, error)
+	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
 
 	// revert
-	RevertBranch(branchID int) error
-	RevertCommit(branchID int, commit string) error
-	RevertPath(branchID int, path string) error
-	RevertEntry(branchID int, path string) error
+	RevertBranch(ctx context.Context, branch string) error
+	RevertCommit(ctx context.Context, branch string, commitID int) error
+	RevertPath(ctx context.Context, branch string, path string) error
+	RevertEntry(ctx context.Context, branch string, path string) error
 
-	CreateDedupEntryIfNone(repoID int, dedupID string, physicalAddress string) (string, error)
-	CreateMultiPartUpload(repoID int, path, physicalAddress string, creationTime time.Time) error
-	ReadMultiPartUpload(repoID int, uploadID string) (*MultipartUpload, error)
-	DeleteMultiPartUpload(repoID int, uploadID string) error
+	// dedup
+	CreateDedupEntryIfNone(ctx context.Context, repoID int, dedupID string, physicalAddress string) (string, error)
+
+	// multipart
+	CreateMultiPartUpload(ctx context.Context, repo string, path, physicalAddress string, creationTime time.Time) error
+	ReadMultiPartUpload(ctx context.Context, repo string, uploadID string) (*MultipartUpload, error)
+	DeleteMultiPartUpload(ctx context.Context, repo string, uploadID string) error
 }
 
 type cataloger struct {
 	Clock clock.Clock
-	ctx   context.Context
 	log   logging.Logger
 	db    db.Database
 }
 
-func NewCataloger(db db.Database) *cataloger {
+func NewCataloger(db db.Database) Cataloger {
 	return &cataloger{
 		Clock: clock.NewClock(),
-		ctx:   context.Background(),
 		log:   logging.Default().WithField("service_name", "cataloger"),
 		db:    db,
 	}
 }
 
-func (c *cataloger) WithContext(ctx context.Context) Cataloger {
-	return &cataloger{
-		Clock: c.Clock,
-		ctx:   ctx,
-		log:   logging.FromContext(ctx).WithField("service_name", "cataloger"),
-		db:    c.db,
-	}
-}
-
-func (c *cataloger) transactOpts(opts ...db.TxOpt) []db.TxOpt {
+func (c *cataloger) transactOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 	o := []db.TxOpt{
-		db.WithContext(c.ctx),
+		db.WithContext(ctx),
 		db.WithLogger(c.log),
 	}
 	for _, opt := range opts {
@@ -128,94 +87,90 @@ func (c *cataloger) transactOpts(opts ...db.TxOpt) []db.TxOpt {
 	return o
 }
 
-func (cataloger) GetRepo(repoID int) (*Repo, error) {
+func (c *cataloger) GetRepo(ctx context.Context, repo string) (*Repo, error) {
 	panic("implement me")
 }
 
-func (cataloger) GetRepoByName(repoName string) (*Repo, error) {
+func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {
 	panic("implement me")
 }
 
-func (cataloger) DeleteRepo(repoID int) error {
+func (c *cataloger) GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
 	panic("implement me")
 }
 
-func (cataloger) GetRepoCommitLog(repoID int, fromCommitID string, results int, after string) ([]*Commit, bool, error) {
+func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error) {
 	panic("implement me")
 }
 
-func (cataloger) CreateBranch(repoID int, branch string, sourceBranchID int) (*Branch, error) {
+func (c *cataloger) GetBranch(ctx context.Context, branch string) (*Branch, error) {
 	panic("implement me")
 }
 
-func (cataloger) GetBranch(branchID string) (*Branch, error) {
+func (c *cataloger) DeleteBranch(ctx context.Context, branch string) error {
 	panic("implement me")
 }
 
-func (cataloger) DeleteBranch(branchID int) error {
+func (c *cataloger) GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
 	panic("implement me")
 }
 
-func (cataloger) GetBranchCommitLog(branchID int, fromCommitID string, results int, after string) ([]*Commit, bool, error) {
+func (c *cataloger) ListBranchesByPrefix(ctx context.Context, repo string, prefix string, amount int, after string) ([]*Branch, bool, error) {
 	panic("implement me")
 }
 
-func (cataloger) ListBranchesByPrefix(repoID string, prefix string, amount int, after string) ([]*Branch, bool, error) {
+func (c *cataloger) Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error) {
 	panic("implement me")
 }
 
-func (cataloger) Commit(branchID int, message, committer string, metadata map[string]string) (*Commit, error) {
+func (c *cataloger) ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
 	panic("implement me")
 }
 
-func (cataloger) ReadEntry(branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
+func (c *cataloger) WriteEntry(ctx context.Context, branchID int, path string, entry *Entry) error {
 	panic("implement me")
 }
 
-func (cataloger) WriteEntry(branchID int, path string, entry *Entry) error {
+func (c *cataloger) ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
 	panic("implement me")
 }
 
-func (cataloger) ListEntriesByPrefix(branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
+func (c *cataloger) Diff(ctx context.Context, leftBranch, rightBranch string) (Differences, error) {
 	panic("implement me")
 }
 
-func (cataloger) Diff(leftBranchID, rightBranchID int) (Differences, error) {
+func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error) {
 	panic("implement me")
 }
 
-func (cataloger) Merge(sourceBranchID, destinationBranchID int, userID string) (Differences, error) {
+func (c *cataloger) RevertBranch(ctx context.Context, branch string) error {
 	panic("implement me")
 }
 
-func (cataloger) RevertBranch(branchID int) error {
+func (c *cataloger) RevertCommit(ctx context.Context, branch string, commitID int) error {
 	panic("implement me")
 }
 
-func (cataloger) RevertCommit(branchID int, commit string) error {
+func (c *cataloger) RevertPath(ctx context.Context, branch string, path string) error {
 	panic("implement me")
 }
 
-func (cataloger) RevertPath(branchID int, path string) error {
+func (c *cataloger) RevertEntry(ctx context.Context, branch string, path string) error {
 	panic("implement me")
 }
 
-func (cataloger) RevertEntry(branchID int, path string) error {
+func (c *cataloger) CreateDedupEntryIfNone(ctx context.Context, repoID int, dedupID string, physicalAddress string) (string, error) {
 	panic("implement me")
 }
 
-func (cataloger) CreateDedupEntryIfNone(repoID int, dedupID string, physicalAddress string) (string, error) {
+func (c *cataloger) CreateMultiPartUpload(ctx context.Context, repo string, path, physicalAddress string, creationTime time.Time) error {
 	panic("implement me")
 }
 
-func (cataloger) CreateMultiPartUpload(repoID int, path, physicalAddress string, creationTime time.Time) error {
+func (c *cataloger) ReadMultiPartUpload(ctx context.Context, repo string, uploadID string) (*MultipartUpload, error) {
 	panic("implement me")
 }
 
-func (cataloger) ReadMultiPartUpload(repoID int, uploadID string) (*MultipartUpload, error) {
-	panic("implement me")
-}
-
-func (cataloger) DeleteMultiPartUpload(repoID int, uploadID string) error {
+func (c *cataloger) DeleteMultiPartUpload(ctx context.Context, repo string, uploadID string) error {
 	panic("implement me")
 }

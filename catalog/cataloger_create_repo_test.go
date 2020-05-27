@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"context"
 	"errors"
 	"testing"
 
@@ -8,6 +9,7 @@ import (
 )
 
 func TestCataloger_CreateRepo(t *testing.T) {
+	ctx := context.Background()
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	c := NewCataloger(cdb)
 	type args struct {
@@ -43,7 +45,7 @@ func TestCataloger_CreateRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.CreateRepo(tt.args.name, tt.args.bucket, tt.args.branch)
+			got, err := c.CreateRepo(ctx, tt.args.name, tt.args.bucket, tt.args.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateRepo() error = %v, wantErr %v", err, tt.wantErr)
 				return
