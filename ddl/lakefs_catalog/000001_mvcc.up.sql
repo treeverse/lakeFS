@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public;
 
 CREATE SEQUENCE IF NOT EXISTS branches_id_seq
     AS integer
@@ -197,7 +197,7 @@ CREATE INDEX entries_key_index ON entries USING btree (branch_id, key) INCLUDE (
 
 
 
-CREATE INDEX entries_key_trgm ON entries USING gin (key gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS  entries_key_trgm ON entries USING gin (key public.gin_trgm_ops);
 
 
 

@@ -15,6 +15,12 @@ const (
 	EntryStateCommitted = iota
 	EntryStateStage
 	EntryStateUnstage
+
+	ListRepoFieldID   = "id"
+	ListRepoFieldName = "name"
+
+	ListRepoDefaultField = ListRepoFieldID
+	ListRepoDefaultLimit = 1000
 )
 
 type EntryReadOptions struct {
@@ -22,12 +28,36 @@ type EntryReadOptions struct {
 	CommitID   int
 }
 
+type ListReposOptions struct {
+	Field string
+	Limit int
+	After interface{}
+}
+
+func WithListReposLimit(limit int) func(options *ListReposOptions) {
+	return func(options *ListReposOptions) {
+		options.Limit = limit
+	}
+}
+
+func WithListReposBy(field string) func(options *ListReposOptions) {
+	return func(options *ListReposOptions) {
+		options.Field = field
+	}
+}
+
+func WithListReposAfter(val interface{}) func(options *ListReposOptions) {
+	return func(options *ListReposOptions) {
+		options.After = val
+	}
+}
+
 type Cataloger interface {
 	WithContext(context.Context) Cataloger
 
 	// repository level
 	CreateRepo(name string, bucket string, branch string) (int, error)
-	ListRepos(amount int, after int) ([]*Repo, bool, error)
+	ListRepos(opts ...func(*ListReposOptions)) ([]*Repo, bool, error)
 	GetRepo(repoID int) (*Repo, error)
 	GetRepoByName(repoName string) (*Repo, error)
 	DeleteRepo(repoID int) error
@@ -87,11 +117,15 @@ func (c *cataloger) WithContext(ctx context.Context) Cataloger {
 	}
 }
 
-func (c *cataloger) transactOpts() []db.TxOpt {
-	return []db.TxOpt{
+func (c *cataloger) transactOpts(opts ...db.TxOpt) []db.TxOpt {
+	o := []db.TxOpt{
 		db.WithContext(c.ctx),
 		db.WithLogger(c.log),
 	}
+	for _, opt := range opts {
+		o = append(o, opt)
+	}
+	return o
 }
 
 func (cataloger) GetRepo(repoID int) (*Repo, error) {

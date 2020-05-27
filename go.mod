@@ -17,6 +17,7 @@ require (
 	github.com/go-openapi/validate v0.19.6
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/google/uuid v1.1.1
+	github.com/huandu/go-sqlbuilder v1.7.0
 	github.com/jackc/fake v0.0.0-20150926172116-812a484cc733 // indirect
 	github.com/jackc/pgconn v1.5.0
 	github.com/jackc/pgx v3.6.2+incompatible

@@ -27,18 +27,22 @@ func (c *cataloger) CreateRepo(name string, bucket string, branch string) (int, 
 		}
 
 		creationDate := c.Clock.Now()
-		_, err := tx.Exec(`
-			INSERT INTO repositories (id,name, storage_namespace, creation_date, default_branch)
-			VALUES ($1,$2,$3,$4,$5)`,
-			repoID, name, bucket, creationDate, branchID)
-		if err != nil {
+		sqlRepos, argsRepos := db.Builder.NewInsertBuilder().InsertInto("repositories").
+			Cols("id", "name", "storage_namespace", "creation_date", "default_branch").
+			Values(repoID, name, bucket, creationDate, branchID).
+			Build()
+		if _, err := tx.Exec(sqlRepos, argsRepos...); err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`INSERT INTO branches (repository_id, id, name) VALUES ($1,$2,$3)`,
-			repoID, branchID, branch)
-		if err != nil {
+
+		sqlBranch, argsBranch := db.Builder.NewInsertBuilder().InsertInto("branches").
+			Cols("repository_id", "id", "name").
+			Values(repoID, branchID, branch).
+			Build()
+		if _, err := tx.Exec(sqlBranch, argsBranch...); err != nil {
 			return nil, err
 		}
+
 		log.WithFields(logrus.Fields{
 			"branch_id": branchID,
 			"repo_id":   repoID,
