@@ -59,7 +59,7 @@ aws s3 --profile lakefs \
 Where endpoint-url should be the same value [configured](../reference/configuration.md#reference)
 for ```gateways.s3.domain_name```.
 
-We could use an [alias](aws_cli.md#lakefs-alias) to make it shorter and more convenient.
+We could use an [alias](aws_cli.md#adding-an-alias) to make it shorter and more convenient.
 
 ## Examples
 
@@ -105,7 +105,7 @@ aws --profile lakefs \
   s3 rm s3://example-repo/master/example-directory/ --recursive
 ```
 
-## lakeFS alias
+## Adding an alias
 
 In order to make the command shorter and more convenient we can create an alias:
 
