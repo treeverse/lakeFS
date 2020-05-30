@@ -8,7 +8,9 @@ import (
 )
 
 func (c *cataloger) GetRepo(ctx context.Context, repo string) (*Repo, error) {
-	if err := Validate(ValidateRepoName(repo)); err != nil {
+	if err := Validate(ValidateFields{
+		"repo": ValidateRepoName(repo),
+	}); err != nil {
 		return nil, err
 	}
 

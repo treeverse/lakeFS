@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"github.com/ory/dockertest/v3"
+	"github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -15,6 +16,10 @@ var (
 )
 
 func TestMain(m *testing.M) {
+	// keep the log level calm
+	logrus.SetLevel(logrus.PanicLevel)
+
+	// postgres container
 	var err error
 	pool, err = dockertest.NewPool("")
 	if err != nil {

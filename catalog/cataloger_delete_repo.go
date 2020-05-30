@@ -8,7 +8,9 @@ import (
 )
 
 func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {
-	if err := Validate(ValidateRepoName(repo)); err != nil {
+	if err := Validate(ValidateFields{
+		"repo": ValidateRepoName(repo),
+	}); err != nil {
 		return err
 	}
 

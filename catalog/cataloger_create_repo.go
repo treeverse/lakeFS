@@ -8,11 +8,11 @@ import (
 )
 
 func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, branch string) error {
-	if err := Validate(
-		ValidateRepoName(repo),
-		ValidateBucketName(bucket),
-		ValidateBranchName(branch),
-	); err != nil {
+	if err := Validate(ValidateFields{
+		"repo":   ValidateRepoName(repo),
+		"bucket": ValidateBucketName(bucket),
+		"branch": ValidateBranchName(branch),
+	}); err != nil {
 		return err
 	}
 

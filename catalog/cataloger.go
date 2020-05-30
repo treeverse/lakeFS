@@ -54,12 +54,12 @@ type Cataloger interface {
 	RevertEntry(ctx context.Context, branch string, path string) error
 
 	// dedup
-	CreateDedupEntryIfNone(ctx context.Context, repoID int, dedupID string, physicalAddress string) (string, error)
+	GetOrCreateDedup(ctx context.Context, repo string, dedupID string, physicalAddress string) (string, error)
 
 	// multipart
-	CreateMultiPartUpload(ctx context.Context, repo string, path, physicalAddress string, creationTime time.Time) error
-	ReadMultiPartUpload(ctx context.Context, repo string, uploadID string) (*MultipartUpload, error)
-	DeleteMultiPartUpload(ctx context.Context, repo string, uploadID string) error
+	CreateMultipartUpload(ctx context.Context, repo, uploadID, path, physicalAddress string, creationTime time.Time) error
+	ReadMultipartUpload(ctx context.Context, repo, uploadID string) (*MultipartUpload, error)
+	DeleteMultipartUpload(ctx context.Context, repo, uploadID string) error
 }
 
 type cataloger struct {
@@ -88,10 +88,6 @@ func (c *cataloger) transactOpts(ctx context.Context, opts ...db.TxOpt) []db.TxO
 }
 
 func (c *cataloger) GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error) {
 	panic("implement me")
 }
 
@@ -148,21 +144,5 @@ func (c *cataloger) RevertPath(ctx context.Context, branch string, path string) 
 }
 
 func (c *cataloger) RevertEntry(ctx context.Context, branch string, path string) error {
-	panic("implement me")
-}
-
-func (c *cataloger) CreateDedupEntryIfNone(ctx context.Context, repoID int, dedupID string, physicalAddress string) (string, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) CreateMultiPartUpload(ctx context.Context, repo string, path, physicalAddress string, creationTime time.Time) error {
-	panic("implement me")
-}
-
-func (c *cataloger) ReadMultiPartUpload(ctx context.Context, repo string, uploadID string) (*MultipartUpload, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) DeleteMultiPartUpload(ctx context.Context, repo string, uploadID string) error {
 	panic("implement me")
 }

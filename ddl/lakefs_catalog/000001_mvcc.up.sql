@@ -23,7 +23,7 @@ CREATE TABLE IF NOT EXISTS commits (
                          commit_number integer NOT NULL,
                          committer character varying,
                          message character varying,
-                         creation_date timestamp with time zone DEFAULT now() NOT NULL,
+                         creation_date timestamptz with time zone DEFAULT now() NOT NULL,
                          metadata json,
                          source_branch integer
 );
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS entries (
                          branch_id integer NOT NULL,
                          key character varying NOT NULL,
                          physical_address character varying(64),
-                         creation_date timestamp with time zone DEFAULT now() NOT NULL,
+                         creation_date timestamptz with time zone DEFAULT now() NOT NULL,
                          size bigint NOT NULL,
                          checksum character varying(64) NOT NULL,
                          metadata json,
@@ -127,7 +127,7 @@ CREATE TABLE IF NOT EXISTS multipart_uploads (
                                    repository_id integer NOT NULL,
                                    upload_id character varying NOT NULL,
                                    path character varying NOT NULL,
-                                   creation_date timestamp with time zone DEFAULT now() NOT NULL,
+                                   creation_date timestamptz with time zone DEFAULT now() NOT NULL,
                                    object_name bytea,
                                    physical_address character varying
 );
@@ -158,7 +158,7 @@ CREATE TABLE IF NOT EXISTS repositories (
                               id integer DEFAULT nextval('repositories_id_seq'::regclass) NOT NULL,
                               name character varying(64) NOT NULL,
                               storage_namespace character varying NOT NULL,
-                              creation_date timestamp with time zone DEFAULT now() NOT NULL,
+                              creation_date timestamptz with time zone DEFAULT now() NOT NULL,
                               default_branch integer DEFAULT 1 NOT NULL,
                               deleted boolean DEFAULT FALSE NOT NULL
 );

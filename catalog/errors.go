@@ -17,4 +17,5 @@ var (
 	ErrMergeConflict              = errors.New("merge conflict")
 	ErrMergeUpdateFailed          = errors.New("failed updating merged destination")
 	ErrRepoNotFound               = errors.New("repo not found")
+	ErrMultipartUploadNotFound    = errors.New("multipart upload not found")
 )
