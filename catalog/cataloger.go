@@ -108,9 +108,9 @@ func (c *cataloger) ReadEntry(ctx context.Context, branchID int, path string, re
 	panic("implement me")
 }
 
-func (c *cataloger) WriteEntry(ctx context.Context, branchID int, path string, entry *Entry) error {
-	panic("implement me")
-}
+//func (c *cataloger) WriteEntry(ctx context.Context, branchID int, path string, entry *Entry) error {
+//	panic("implement me")
+//}
 
 func (c *cataloger) ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
 	panic("implement me")
