@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/db"
 
@@ -57,8 +58,8 @@ type dependencies struct {
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
 	// create user
 	user := &authmodel.User{
-		Email:    "admin@example.com",
-		FullName: "admin user",
+		CreatedAt:   time.Now(),
+		DisplayName: "admin",
 	}
 	testutil.Must(t, authService.CreateUser(user))
 
@@ -71,26 +72,34 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	// attach policies
 	policies := []*authmodel.Policy{
 		{
-			Permission: string(permissions.ManageRepos),
-			Arn:        "arn:treeverse:repos:::*",
+
+			CreatedAt:   time.Now(),
+			DisplayName: "AllRepositoriesManage",
+			Permission:  string(permissions.ManageRepos),
+			Arn:         "arn:treeverse:repos:::*",
 		},
 		{
-			Permission: string(permissions.ReadRepo),
-			Arn:        "arn:treeverse:repos:::*",
+			CreatedAt:   time.Now(),
+			DisplayName: "AllRepositoriesRead",
+			Permission:  string(permissions.ReadRepo),
+			Arn:         "arn:treeverse:repos:::*",
 		},
 		{
-			Permission: string(permissions.WriteRepo),
-			Arn:        "arn:treeverse:repos:::*",
+			CreatedAt:   time.Now(),
+			DisplayName: "AllRepositoriesWrite",
+			Permission:  string(permissions.WriteRepo),
+			Arn:         "arn:treeverse:repos:::*",
 		},
 	}
 	for _, policy := range policies {
-		testutil.Must(t, authService.AssignPolicyToRole(role.Id, policy))
+		testutil.Must(t, authService.CreatePolicy(policy))
+		testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
 	}
 
 	// assign user to role
-	testutil.Must(t, authService.AssignRoleToUser(role.Id, user.Id))
+	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
 
-	creds, err := authService.CreateUserCredentials(user)
+	creds, err := authService.CreateCredentials(user.DisplayName)
 	if err != nil {
 		t.Fatal(err)
 	}

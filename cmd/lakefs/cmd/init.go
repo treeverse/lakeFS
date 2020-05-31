@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
@@ -20,13 +21,12 @@ var initCmd = &cobra.Command{
 		adb := cfg.ConnectAuthDatabase()
 		defer func() { _ = adb.Close() }()
 
-		userEmail, _ := cmd.Flags().GetString("email")
-		userFullName, _ := cmd.Flags().GetString("full-name")
+		userName, _ := cmd.Flags().GetString("user-name")
 
 		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
 		user := &model.User{
-			Email:    userEmail,
-			FullName: userFullName,
+			CreatedAt:   time.Now(),
+			DisplayName: userName,
 		}
 		creds, err := api.SetupAdminUser(authService, user)
 		if err != nil {
@@ -35,7 +35,7 @@ var initCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(userEmail)
+		stats := cfg.BuildStats(userName)
 		go stats.Run(ctx)
 		stats.Collect("global", "init")
 
@@ -48,19 +48,6 @@ var initCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(initCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// initCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// initCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
-	initCmd.Flags().String("email", "", "E-mail of the user to generate")
-	initCmd.Flags().String("full-name", "", "Full name of the user to generate")
-	_ = initCmd.MarkFlagRequired("email")
-	_ = initCmd.MarkFlagRequired("full-name")
+	initCmd.Flags().String("user-name", "", "display name for the user (e.g. \"jane.doe\")")
+	_ = initCmd.MarkFlagRequired("user-name")
 }
