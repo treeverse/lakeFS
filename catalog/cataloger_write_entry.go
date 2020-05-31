@@ -32,10 +32,12 @@ func getBranchId(tx db.Tx, repo, branch string, branchLockType int) (int, error)
 }
 
 func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata map[string]string) error {
-	if err := Validate(
-		ValidatePath(path),
-		ValidateBranchName(branchName),
-	); err != nil {
+
+	if err := Validate(ValidateFields{
+		"repo":   ValidateRepoName(repoName),
+		"path":   ValidatePath(path),
+		"branch": ValidateBranchName(branchName),
+	}); err != nil {
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
@@ -63,12 +65,15 @@ func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, 
 		}
 		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,metadata,size,is_staged) values ($1,$2,$3,$4,$5,$6,$7)`,
 			branchId, path, physicalAddress, checksum, metadata, size, isStaged)
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{
-				"branch": branchName,
-				"Path":   path,
-			}).Debug("Entry created")
-		return nil, err
+		if err != nil {
+			c.log.WithContext(ctx).WithError(err).
+				WithFields(logging.Fields{
+					"branch": branchName,
+					"Path":   path,
+				}).Warn("failed entry creation")
+			return nil, err
+		}
+		return nil, nil
 	}
 	return err
 }
