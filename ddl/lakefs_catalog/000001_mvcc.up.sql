@@ -17,7 +17,6 @@ CREATE TABLE IF NOT EXISTS branches (
 );
 
 
-
 CREATE TABLE IF NOT EXISTS commits (
                          branch_id integer NOT NULL,
                          commit_number integer NOT NULL,
