@@ -135,7 +135,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 		return nil
 	}
-	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
+	creds, err := s.authService.GetCredentials(authContext.GetAccessKeyId())
 	if err != nil {
 		if !errors.Is(err, db.ErrNotFound) {
 			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyId()).Warn("error getting access key")
@@ -157,11 +157,20 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		return nil
 	}
 
+	user, err := s.authService.GetUserById(creds.UserId)
+	if err != nil {
+		o.Log().WithError(err).WithFields(logging.Fields{
+			"key":           authContext.GetAccessKeyId(),
+			"authenticator": authenticator,
+		}).Warn("could not get user for credentials key")
+		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+		return nil
+	}
+
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
-		Operation:   o,
-		SubjectId:   *creds.UserId,
-		SubjectType: creds.Type,
+		Operation: o,
+		SubjectId: user.DisplayName,
 	}
 
 	// interpolate arn string
@@ -169,9 +178,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
-		UserID:     op.SubjectId,
-		Permission: action.Permission,
-		SubjectARN: arn,
+		UserDisplayName: op.SubjectId,
+		Permission:      action.Permission,
+		SubjectARN:      arn,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("failed to authorize")
