@@ -38,10 +38,6 @@ definitions:
     type: object
     properties:
       id:
-        type: integer
-      email:
-        type: string
-      full_name:
         type: string
 
   pagination:

@@ -3,6 +3,7 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
@@ -42,13 +43,13 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			return
 
 		}
-		if len(req.Email) == 0 || len(req.FullName) == 0 {
+		if len(req.DisplayName) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
 			return
 		}
 		user := &model.User{
-			Email:    req.Email,
-			FullName: req.FullName,
+			CreatedAt:   time.Now(),
+			DisplayName: req.DisplayName,
 		}
 		cred, err := SetupAdminUser(authService, user)
 		if err != nil {
@@ -71,12 +72,14 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 }
 
 func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
+	now := time.Now()
 	err := authService.CreateUser(user)
 	if err != nil {
 		return nil, err
 	}
 
 	role := &model.Role{
+		CreatedAt:   now,
 		DisplayName: model.RoleAdmin,
 	}
 
@@ -84,31 +87,43 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 	if err != nil {
 		return nil, err
 	}
+
 	policies := []*model.Policy{
 		{
-			Permission: string(permissions.ManageRepos),
-			Arn:        "arn:treeverse:repos:::*",
+			CreatedAt:   now,
+			DisplayName: "AllRepositoriesManagement",
+			Permission:  string(permissions.ManageRepos),
+			Arn:         "arn:treeverse:repos:::*",
 		},
 		{
-			Permission: string(permissions.ReadRepo),
-			Arn:        "arn:treeverse:repos:::*",
+			CreatedAt:   now,
+			DisplayName: "AllRepositoriesRead",
+			Permission:  string(permissions.ReadRepo),
+			Arn:         "arn:treeverse:repos:::*",
 		},
 		{
-			Permission: string(permissions.WriteRepo),
-			Arn:        "arn:treeverse:repos:::*",
+			CreatedAt:   now,
+			DisplayName: "AllRepositoriesWrite",
+			Permission:  string(permissions.WriteRepo),
+			Arn:         "arn:treeverse:repos:::*",
 		},
 	}
+
 	for _, policy := range policies {
-		err = authService.AssignPolicyToRole(role.Id, policy)
+		err = authService.CreatePolicy(policy)
+		if err != nil {
+			return nil, err
+		}
+		err = authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err = authService.AssignRoleToUser(role.Id, user.Id)
+	err = authService.AttachRoleToUser(role.DisplayName, user.DisplayName)
 	if err != nil {
 		return nil, err
 	}
 
-	return authService.CreateUserCredentials(user)
+	return authService.CreateCredentials(user.DisplayName)
 }

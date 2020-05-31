@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth/model"
@@ -20,8 +21,8 @@ func Test_setupLakeFSHandler(t *testing.T) {
 	defer srv.Close()
 
 	user := model.User{
-		Email:    "tester@treeverse.io",
-		FullName: "Test Name",
+		CreatedAt:   time.Now(),
+		DisplayName: "admin",
 	}
 	req, err := json.Marshal(user)
 	if err != nil {
@@ -36,7 +37,9 @@ func Test_setupLakeFSHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal("Post setup request to server", err)
 		}
-		defer res.Body.Close()
+		defer func() {
+			_ = res.Body.Close()
+		}()
 
 		const expectedStatusCode = http.StatusOK
 		if res.StatusCode != expectedStatusCode {
@@ -54,7 +57,7 @@ func Test_setupLakeFSHandler(t *testing.T) {
 			t.Fatal("Credential key id is missing")
 		}
 
-		foundCreds, err := deps.auth.GetAPICredentials(credKeys.AccessKeyId)
+		foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyId)
 		if err != nil {
 			t.Fatal("Get API credentials key id for created access key", err)
 		}
