@@ -15,9 +15,11 @@ func TestCataloger_CreateMultipartUpload(t *testing.T) {
 
 	// setup test data
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repo for testing failed", err)
+		t.Fatal("create repo for testing", err)
 	}
-	_ = c.CreateMultipartUpload(ctx, "repo1", "uploadX", "/pathX", "", time.Now())
+	if err := c.CreateMultipartUpload(ctx, "repo1", "uploadX", "/pathX", "/fileX", time.Now()); err != nil {
+		t.Fatal("create multipart upload for testing", err)
+	}
 
 	type args struct {
 		repo            string
@@ -39,7 +41,7 @@ func TestCataloger_CreateMultipartUpload(t *testing.T) {
 		{
 			name:    "exists",
 			args:    args{repo: "repo1", uploadID: "uploadX", path: "/pathX", physicalAddress: "/fileX", creationTime: time.Now()},
-			wantErr: false,
+			wantErr: true,
 		},
 		{
 			name:    "unknown repo",

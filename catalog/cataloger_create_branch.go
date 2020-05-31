@@ -35,12 +35,16 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 			return nil, err
 		}
 
+		// insert new branch
+		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name) VALUES($1, $2, $3)`, repoID, branchID, branch); err != nil {
+			return nil, err
+		}
+
 		// insert new lineage for the new branch
 		res, err := tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit)
-			SELECT branch_id, precedence + 1, ancestor_branch, effective_commit
+			SELECT $1, precedence + 1, ancestor_branch, effective_commit
 			FROM lineage_v
-			WHERE branch_id = $1
-			LIMIT 1`, sourceBranchID)
+			WHERE branch_id = $2`, branchID, sourceBranchID)
 		if err != nil {
 			return nil, err
 		}
@@ -48,11 +52,6 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 			return nil, err
 		} else if affected != 1 {
 			return nil, fmt.Errorf("lineage not found for source branch id: %d", sourceBranchID)
-		}
-
-		// insert new branch
-		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name) VALUES($1, $2, $3)`, repoID, branchID, branch); err != nil {
-			return nil, err
 		}
 
 		c.log.WithContext(ctx).

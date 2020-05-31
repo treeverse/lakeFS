@@ -10,8 +10,8 @@ import (
 func (c *cataloger) ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		query := `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
-			FROM repositories r, branches b
-			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name > $1
+			FROM repositories r JOIN branches b ON r.default_branch = b.id 
+			WHERE r.name > $1
 			ORDER BY r.name`
 		args := []interface{}{after}
 		if limit >= 0 {

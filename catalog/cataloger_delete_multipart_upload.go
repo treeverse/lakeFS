@@ -25,11 +25,9 @@ func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repo string, uplo
 		if err != nil {
 			return nil, err
 		}
-		affected, err := res.RowsAffected()
-		if err != nil {
+		if affected, err := res.RowsAffected(); err != nil {
 			return nil, err
-		}
-		if affected != 1 {
+		} else if affected != 1 {
 			return nil, ErrMultipartUploadNotFound
 		}
 		return nil, nil
