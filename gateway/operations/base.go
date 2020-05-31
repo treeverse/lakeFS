@@ -115,7 +115,7 @@ func (o *Operation) EncodeError(err errors.APIError) {
 
 type AuthenticatedOperation struct {
 	*Operation
-	SubjectId   int
+	SubjectId   string
 	SubjectType string
 }
 
