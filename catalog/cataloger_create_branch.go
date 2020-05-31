@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error) {
@@ -19,21 +18,20 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// next id for branch
-		var branchID int
-		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
-			return nil, err
-		}
-
-		// get repo id by name
 		repoID, err := repoGetIDByName(tx, repo)
 		if err != nil {
 			return nil, err
 		}
 
-		// get source branch
+		// get source branch id
 		var sourceBranchID int
 		if err := tx.Get(&sourceBranchID, `SELECT id FROM branches WHERE repository_id = $1 AND name = $2`, repoID, sourceBranch); err != nil {
+			return nil, err
+		}
+
+		// next id for branch
+		var branchID int
+		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
 			return nil, err
 		}
 
@@ -46,11 +44,9 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		if err != nil {
 			return nil, err
 		}
-		affected, err := res.RowsAffected()
-		if err != nil {
+		if affected, err := res.RowsAffected(); err != nil {
 			return nil, err
-		}
-		if affected != 1 {
+		} else if affected != 1 {
 			return nil, fmt.Errorf("lineage not found for source branch id: %d", sourceBranchID)
 		}
 
@@ -60,14 +56,8 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		}
 
 		c.log.WithContext(ctx).
-			WithFields(logging.Fields{
-				"repo":             repo,
-				"branch_id":        branchID,
-				"branch":           branch,
-				"repo_id":          repoID,
-				"source_branch":    sourceBranch,
-				"source_branch_id": sourceBranchID,
-			}).Debug("Branch created")
+			WithFields(logging.Fields{"repo": repo, "branch_id": branchID, "branch": branch, "repo_id": repoID, "source_branch": sourceBranch, "source_branch_id": sourceBranchID}).
+			Debug("Branch created")
 		return &Branch{
 			RepositoryID: repoID,
 			ID:           branchID,
