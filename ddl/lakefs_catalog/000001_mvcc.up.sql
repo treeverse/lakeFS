@@ -1,4 +1,4 @@
-CREATE EXTENSION IF NOT EXISTS pg_trgm SCHEMA public;
+CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
 CREATE SEQUENCE IF NOT EXISTS branches_id_seq
     AS integer
@@ -128,7 +128,6 @@ CREATE TABLE IF NOT EXISTS multipart_uploads (
                                    upload_id character varying NOT NULL,
                                    path character varying NOT NULL,
                                    creation_date timestamp with time zone DEFAULT now() NOT NULL,
-                                   object_name bytea,
                                    physical_address character varying
 );
 

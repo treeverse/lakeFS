@@ -22,7 +22,7 @@ type Repo struct {
 }
 
 type ObjectDedup struct {
-	RepositoryID    string `db:"repository_id"`
+	RepositoryID    int    `db:"repository_id"`
 	DedupID         string `db:"dedup_id"`
 	PhysicalAddress string `db:"physical_address"`
 }
@@ -57,10 +57,11 @@ type Branch struct {
 }
 
 type MultipartUpload struct {
-	BranchID     int       `db:"branch_id"`
-	UploadID     string    `db:"upload_id"`
-	Path         string    `db:"path"`
-	CreationDate time.Time `db:"creation_date"`
+	Repository      string    `db:"repository"`
+	UploadID        string    `db:"upload_id"`
+	Path            string    `db:"path"`
+	CreationDate    time.Time `db:"creation_date"`
+	PhysicalAddress string    `db:"physical_address"`
 }
 
 type Lineage struct {

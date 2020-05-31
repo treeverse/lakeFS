@@ -33,13 +33,13 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			name:    "invalid bucket",
 			args:    args{name: "repo2", bucket: "b", branch: "master"},
 			wantErr: true,
-			asErr:   ErrInvalidBucketName,
+			asErr:   ErrInvalidValue,
 		},
 		{
 			name:    "missing branch",
 			args:    args{name: "repo3", bucket: "bucket3", branch: ""},
 			wantErr: true,
-			asErr:   ErrInvalidBranchName,
+			asErr:   ErrInvalidValue,
 		},
 	}
 

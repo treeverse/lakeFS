@@ -9,19 +9,18 @@ import (
 
 func (c *cataloger) ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		sb := db.Builder.NewSelectBuilder()
-		sb.From("repositories r").
-			Select("r.name", "r.storage_namespace", "b.name as default_branch", "r.creation_date").
-			OrderBy("r.name").
-			Where(sb.GreaterThan("r.name", after))
+		query := `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
+			FROM repositories r, branches b
+			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name > $1
+			ORDER BY r.name`
+		args := []interface{}{after}
 		if limit >= 0 {
-			sb.Limit(limit + 1)
+			query += ` LIMIT $2`
+			args = append(args, limit+1)
 		}
-		sb.Join("branches b", "r.id = b.repository_id", "r.default_branch = b.id")
-		sql, args := sb.Build()
+
 		var repos []*Repo
-		err := tx.Select(&repos, sql, args...)
-		if err != nil {
+		if err := tx.Select(&repos, query, args...); err != nil {
 			return nil, err
 		}
 		c.log.WithContext(ctx).
@@ -30,8 +29,8 @@ func (c *cataloger) ListRepos(ctx context.Context, limit int, after string) ([]*
 				"after": after,
 			}).Debug("List repos")
 
-		return repos, err
-	}, c.transactOpts(ctx, db.ReadOnly())...)
+		return repos, nil
+	}, c.txOpts(ctx, db.ReadOnly())...)
 
 	if err != nil {
 		return nil, false, err
