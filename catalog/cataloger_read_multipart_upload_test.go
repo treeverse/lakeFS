@@ -45,6 +45,18 @@ func TestCataloger_ReadMultipartUpload(t *testing.T) {
 			},
 			wantErr: false,
 		},
+		{
+			name:    "not exists",
+			args:    args{repo: "repo1", uploadID: "upload2"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
+			name:    "no repo",
+			args:    args{repo: "repo2", uploadID: "upload1"},
+			want:    nil,
+			wantErr: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

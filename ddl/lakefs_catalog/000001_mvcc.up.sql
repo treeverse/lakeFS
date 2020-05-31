@@ -136,9 +136,7 @@ CREATE TABLE IF NOT EXISTS multipart_uploads (
 CREATE TABLE IF NOT EXISTS object_dedup (
                               repository_id integer NOT NULL,
                               dedup_id bytea NOT NULL,
-                              physical_address character varying(64) NOT NULL,
-                              size integer NOT NULL,
-                              number_of_parts smallint DEFAULT 1
+                              physical_address character varying(64) NOT NULL
 );
 
 
@@ -154,11 +152,11 @@ CREATE SEQUENCE IF NOT EXISTS repositories_id_seq
 
 
 CREATE TABLE IF NOT EXISTS repositories (
-                              id integer DEFAULT nextval('repositories_id_seq'::regclass) NOT NULL,
+                              id integer NOT NULL,
                               name character varying(64) NOT NULL,
                               storage_namespace character varying NOT NULL,
                               creation_date timestamp with time zone DEFAULT now() NOT NULL,
-                              default_branch integer DEFAULT 1 NOT NULL,
+                              default_branch integer NOT NULL,
                               deleted boolean DEFAULT FALSE NOT NULL
 );
 
@@ -207,6 +205,9 @@ CREATE INDEX fki_entries_branch_const ON entries USING btree (branch_id);
 
 CREATE UNIQUE INDEX repositories_name_uindex ON repositories USING btree (name);
 
+
+ALTER TABLE ONLY repositories
+    ADD CONSTRAINT repositories_branches_id_fkey FOREIGN KEY (default_branch) REFERENCES branches(id) DEFERRABLE;
 
 
 ALTER TABLE ONLY branches
