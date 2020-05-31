@@ -96,7 +96,7 @@ FROM ( SELECT l.branch_id AS displayed_branch,
               rank() OVER (PARTITION BY l.branch_id, e.key ORDER BY l.precedence,
                   CASE
                       WHEN (l.main_branch AND (e.min_commit IS NULL)) THEN 1000000000
-                      ELSE COALESCE(e.min_commit, 0)
+                      ELSE e.min_commit
                       END DESC) AS rank,
               l.min_commit AS branch_min_commit,
               l.max_commit AS branch_max_commit
@@ -193,6 +193,7 @@ CREATE UNIQUE INDEX branches_repository_name_uindex ON branches USING btree (nam
 CREATE INDEX entries_key_index ON entries USING btree (branch_id, key) INCLUDE (min_commit, max_commit);
 
 
+-- noinspection SqlResolve
 
 CREATE INDEX IF NOT EXISTS  entries_key_trgm ON entries USING gin (key public.gin_trgm_ops);
 

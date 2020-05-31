@@ -50,7 +50,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		}
 		if affected, err := res.RowsAffected(); err != nil {
 			return nil, err
-		} else if affected != 1 {
+		} else if affected == 0 {
 			return nil, fmt.Errorf("lineage not found for source branch id: %d", sourceBranchID)
 		}
 

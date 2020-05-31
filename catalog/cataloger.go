@@ -33,7 +33,7 @@ type Cataloger interface {
 	// branch level
 	CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error)
 	GetBranch(ctx context.Context, repo string, branch string) (*Branch, error)
-	DeleteBranch(ctx context.Context, branch string) error
+	DeleteBranch(ctx context.Context, repo string, branch string) error
 	GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
 	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, amount int, after string) ([]*Branch, bool, error)
 	Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error)
@@ -85,10 +85,6 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 }
 
 func (c *cataloger) GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) DeleteBranch(ctx context.Context, branch string) error {
 	panic("implement me")
 }
 
