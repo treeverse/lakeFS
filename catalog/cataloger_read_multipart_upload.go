@@ -28,7 +28,7 @@ func (c *cataloger) ReadMultipartUpload(ctx context.Context, repo string, upload
 			return nil, err
 		}
 		return &m, nil
-	}, c.transactOpts(ctx, db.ReadOnly())...)
+	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return nil, err
 	}

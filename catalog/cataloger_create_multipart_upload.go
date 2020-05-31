@@ -26,6 +26,6 @@ func (c *cataloger) CreateMultipartUpload(ctx context.Context, repo string, uplo
 			VALUES ($1, $2, $3, $4, $5)`,
 			repoID, uploadID, path, creationTime, physicalAddress)
 		return nil, err
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	return err
 }

@@ -37,6 +37,6 @@ func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {
 				"repo":     repo,
 			}).Debug("Repository deleted")
 		return nil, nil
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	return err
 }

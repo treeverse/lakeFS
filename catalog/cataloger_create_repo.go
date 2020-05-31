@@ -60,6 +60,6 @@ func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, 
 				"repo":      repo,
 			}).Debug("Repository created")
 		return repoID, nil
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	return err
 }

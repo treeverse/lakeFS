@@ -86,7 +86,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 				"source_branch_id": sourceBranchID,
 			}).Debug("Branch created")
 		return newBranch, nil
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
 	}

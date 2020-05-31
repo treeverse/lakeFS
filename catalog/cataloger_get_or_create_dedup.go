@@ -40,7 +40,7 @@ func (c *cataloger) GetOrCreateDedup(ctx context.Context, repo string, dedupID s
 			repoID, dedupID, physicalAddress)
 
 		return physicalAddress, err
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	if err != nil {
 		return "", err
 	}

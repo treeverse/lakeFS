@@ -31,7 +31,7 @@ func (c *cataloger) GetRepo(ctx context.Context, repo string) (*Repo, error) {
 				"repo": repo,
 			}).Debug("Repository get repo")
 		return &repo, nil
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
 	}

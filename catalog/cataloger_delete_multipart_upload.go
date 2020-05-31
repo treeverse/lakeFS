@@ -33,6 +33,6 @@ func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repo string, uplo
 			return nil, ErrMultipartUploadNotFound
 		}
 		return nil, nil
-	}, c.transactOpts(ctx)...)
+	}, c.txOpts(ctx)...)
 	return err
 }

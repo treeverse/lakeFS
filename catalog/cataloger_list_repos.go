@@ -31,7 +31,7 @@ func (c *cataloger) ListRepos(ctx context.Context, limit int, after string) ([]*
 			}).Debug("List repos")
 
 		return repos, err
-	}, c.transactOpts(ctx, db.ReadOnly())...)
+	}, c.txOpts(ctx, db.ReadOnly())...)
 
 	if err != nil {
 		return nil, false, err
