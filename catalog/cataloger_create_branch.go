@@ -25,7 +25,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		}
 
 		// get repo id by name
-		repoDB, err := repoGetByName(tx, repo)
+		repoID, err := repoGetIDByName(tx, repo)
 		if err != nil {
 			return nil, err
 		}
@@ -34,7 +34,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		b := db.Builder.NewSelectBuilder()
 		sql, args := b.From("branches").
 			Select("id").
-			Where(b.And(b.Equal("repository_id", repoDB.ID), b.Equal("name", sourceBranch))).
+			Where(b.And(b.Equal("repository_id", repoID), b.Equal("name", sourceBranch))).
 			Build()
 		var sourceBranchID int
 		if err := tx.Get(&sourceBranchID, sql, args...); err != nil {
@@ -63,14 +63,14 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 			NewInsertBuilder().
 			InsertInto("branches").
 			Cols("repository_id", "id", "name").
-			Values(repoDB.ID, branchID, branch).
+			Values(repoID, branchID, branch).
 			Build()
 		_, err = tx.Exec(sqlBranch, argsBranch...)
 		if err != nil {
 			return nil, err
 		}
 		newBranch := &Branch{
-			RepositoryID: repoDB.ID,
+			RepositoryID: repoID,
 			ID:           int(branchID),
 			Name:         branch,
 			//NextCommit:
@@ -81,7 +81,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 				"repo":             repo,
 				"branch_id":        branchID,
 				"branch":           branch,
-				"repo_id":          repoDB.ID,
+				"repo_id":          repoID,
 				"source_branch":    sourceBranch,
 				"source_branch_id": sourceBranchID,
 			}).Debug("Branch created")
