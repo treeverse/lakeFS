@@ -29,18 +29,18 @@ CREATE TABLE IF NOT EXISTS commits (
 
 
 
-CREATE TABLE IF NOT EXISTS entries (
-                         branch_id integer NOT NULL,
-                         key character varying NOT NULL,
-                         physical_address character varying(64),
-                         creation_date timestamp with time zone DEFAULT now() NOT NULL,
-                         size bigint NOT NULL,
-                         checksum character varying(64) NOT NULL,
-                         metadata json,
-                         is_staged boolean DEFAULT false,
-                         min_commit integer DEFAULT 0 NOT NULL,
-                         max_commit integer DEFAULT ('01111111111111111111111111111111'::"bit")::integer NOT NULL,
-                         CONSTRAINT entries_staged_constraint CHECK (((is_staged IS NULL) OR (min_commit = 0)))
+CREATE TABLE IF NOT EXISTS entries(
+                                      branch_id        integer                                                                               NOT NULL,
+                                      path             character varying                                                                     NOT NULL,
+                                      physical_address character varying(64),
+                                      creation_date    timestamp with time zone DEFAULT now()                                                NOT NULL,
+                                      size             bigint                                                                                NOT NULL,
+                                      checksum         character varying(64)                                                                 NOT NULL,
+                                      metadata         json,
+                                      is_staged        boolean                  DEFAULT false,
+                                      min_commit       integer                  DEFAULT 0                                                    NOT NULL,
+                                      max_commit       integer                  DEFAULT ('01111111111111111111111111111111'::"bit")::integer NOT NULL,
+                                      CONSTRAINT entries_staged_constraint CHECK (((is_staged IS NULL) OR (min_commit = 0)))
 );
 
 
