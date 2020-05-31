@@ -80,29 +80,29 @@ FROM branches;
 CREATE VIEW entries_lineage_v AS
 SELECT t.displayed_branch,
        t.source_branch,
-       t.key,
+       t.path,
        t.min_commit,
        t.max_commit,
        t.precedence,
        t.rank,
        t.branch_min_commit,
        t.branch_max_commit
-FROM ( SELECT l.branch_id AS displayed_branch,
-              e.branch_id AS source_branch,
-              e.key,
-              e.min_commit,
-              e.max_commit,
-              l.precedence,
-              rank() OVER (PARTITION BY l.branch_id, e.key ORDER BY l.precedence,
-                  CASE
-                      WHEN (l.main_branch AND (e.min_commit IS NULL)) THEN 1000000000
-                      ELSE COALESCE(e.min_commit, 0)
-                      END DESC) AS rank,
-              l.min_commit AS branch_min_commit,
-              l.max_commit AS branch_max_commit
-       FROM (entries e
+FROM (SELECT l.branch_id       AS displayed_branch,
+             e.branch_id       AS source_branch,
+             e.path,
+             e.min_commit,
+             e.max_commit,
+             l.precedence,
+             rank() OVER (PARTITION BY l.branch_id, e.path ORDER BY l.precedence,
+                 CASE
+                     WHEN (l.main_branch AND (e.min_commit IS NULL)) THEN 1000000000
+                     ELSE COALESCE(e.min_commit, 0)
+                     END DESC) AS rank,
+             l.min_commit      AS branch_min_commit,
+             l.max_commit      AS branch_max_commit
+      FROM (entries e
                 JOIN lineage_v l ON ((l.ancestor_branch = e.branch_id)))
-       WHERE ((l.main_branch OR (e.min_commit <= l.effective_commit)) AND (l.max_commit IS NULL))) t
+      WHERE ((l.main_branch OR (e.min_commit <= l.effective_commit)) AND (l.max_commit IS NULL))) t
 WHERE (t.rank = 1);
 
 
@@ -110,7 +110,7 @@ WHERE (t.rank = 1);
 CREATE VIEW entries_lineage_active_v AS
 SELECT entries_lineage_v.displayed_branch,
        entries_lineage_v.source_branch,
-       entries_lineage_v.key,
+       entries_lineage_v.path,
        entries_lineage_v.min_commit,
        entries_lineage_v.max_commit,
        entries_lineage_v.precedence,
@@ -190,11 +190,11 @@ CREATE UNIQUE INDEX branches_repository_name_uindex ON branches USING btree (nam
 
 
 
-CREATE INDEX entries_key_index ON entries USING btree (branch_id, key) INCLUDE (min_commit, max_commit);
+CREATE INDEX entries_path_index ON entries USING btree (branch_id, path) INCLUDE (min_commit, max_commit);
 
 
 
-CREATE INDEX IF NOT EXISTS  entries_key_trgm ON entries USING gin (key public.gin_trgm_ops);
+CREATE INDEX IF NOT EXISTS entries_path_trgm ON entries USING gin (path public.gin_trgm_ops);
 
 
 

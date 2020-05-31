@@ -31,7 +31,7 @@ func getBranchId(tx db.Tx, repo, branch string, branchLockType int) (int, error)
 	return branchId, err
 }
 
-func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata map[string]string) error {
+func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata *map[string]string) error {
 
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repoName),
