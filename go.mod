@@ -17,6 +17,7 @@ require (
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/google/go-cmp v0.4.0 // indirect
 	github.com/google/uuid v1.1.1
+	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.5.0
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
@@ -31,6 +32,7 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.3.2
+	github.com/tsenart/vegeta/v12 v12.8.3
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
