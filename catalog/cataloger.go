@@ -40,7 +40,7 @@ type Cataloger interface {
 
 	// entry level
 	ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error)
-	WriteEntry(ctx context.Context, branchID int, path string, entry *Entry) error
+	WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata map[string]string) error
 	ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
 
 	// diff and merge
@@ -107,10 +107,6 @@ func (c *cataloger) Commit(ctx context.Context, branch string, message, committe
 func (c *cataloger) ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
 	panic("implement me")
 }
-
-//func (c *cataloger) WriteEntry(ctx context.Context, branchID int, path string, entry *Entry) error {
-//	panic("implement me")
-//}
 
 func (c *cataloger) ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
 	panic("implement me")

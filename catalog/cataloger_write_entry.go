@@ -72,8 +72,9 @@ func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, 
 					"Path":   path,
 				}).Warn("failed entry creation")
 			return nil, err
+		} else {
+			return nil, nil
 		}
-		return nil, nil
-	}
+	})
 	return err
 }
