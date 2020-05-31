@@ -81,10 +81,7 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 		db.WithContext(ctx),
 		db.WithLogger(c.log),
 	}
-	for _, opt := range opts {
-		o = append(o, opt)
-	}
-	return o
+	return append(o, opts...)
 }
 
 func (c *cataloger) GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {

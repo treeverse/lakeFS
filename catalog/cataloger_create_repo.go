@@ -31,27 +31,15 @@ func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, 
 
 		// create repository with ref to branch
 		creationDate := c.Clock.Now()
-		sqlRepos, argsRepos := db.Builder.
-			NewInsertBuilder().
-			InsertInto("repositories").
-			Cols("id", "name", "storage_namespace", "creation_date", "default_branch").
-			Values(repoID, repo, bucket, creationDate, branchID).
-			Build()
-		if _, err := tx.Exec(sqlRepos, argsRepos...); err != nil {
+		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
+			VALUES ($1, $2, $3, $4, $5)`, repoID, repo, bucket, creationDate, branchID); err != nil {
 			return nil, err
 		}
-
 		// create branch with ref to repository
-		sqlBranch, argsBranch := db.Builder.
-			NewInsertBuilder().
-			InsertInto("branches").
-			Cols("repository_id", "id", "name").
-			Values(repoID, branchID, branch).
-			Build()
-		if _, err := tx.Exec(sqlBranch, argsBranch...); err != nil {
+		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name)
+			VALUES ($1, $2, $3)`, repoID, branchID, branch); err != nil {
 			return nil, err
 		}
-
 		c.log.WithContext(ctx).
 			WithFields(logging.Fields{
 				"branch_id": branchID,

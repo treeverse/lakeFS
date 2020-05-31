@@ -15,12 +15,7 @@ func (c *cataloger) DeleteRepo(ctx context.Context, repo string) error {
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		b := db.Builder.NewUpdateBuilder()
-		sqlRepos, argsRepos := b.Update("repositories").
-			Set(b.Assign("deleted", true)).
-			Where(b.Equal("name", repo)).
-			Build()
-		res, err := tx.Exec(sqlRepos, argsRepos...)
+		res, err := tx.Exec(`UPDATE repositories SET deleted = TRUE WHERE name=$1`, repo)
 		if err != nil {
 			return nil, err
 		}

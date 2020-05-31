@@ -4,8 +4,9 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+
+	"github.com/treeverse/lakefs/db"
 )
 
 func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error) {
@@ -31,13 +32,8 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		}
 
 		// get source branch
-		b := db.Builder.NewSelectBuilder()
-		sql, args := b.From("branches").
-			Select("id").
-			Where(b.And(b.Equal("repository_id", repoID), b.Equal("name", sourceBranch))).
-			Build()
 		var sourceBranchID int
-		if err := tx.Get(&sourceBranchID, sql, args...); err != nil {
+		if err := tx.Get(&sourceBranchID, `SELECT id FROM branches WHERE repository_id = $1 AND name = $2`, repoID, sourceBranch); err != nil {
 			return nil, err
 		}
 
@@ -59,21 +55,8 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		}
 
 		// insert new branch
-		sqlBranch, argsBranch := db.Builder.
-			NewInsertBuilder().
-			InsertInto("branches").
-			Cols("repository_id", "id", "name").
-			Values(repoID, branchID, branch).
-			Build()
-		_, err = tx.Exec(sqlBranch, argsBranch...)
-		if err != nil {
+		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name) VALUES($1, $2, $3)`, repoID, branchID, branch); err != nil {
 			return nil, err
-		}
-		newBranch := &Branch{
-			RepositoryID: repoID,
-			ID:           int(branchID),
-			Name:         branch,
-			//NextCommit:
 		}
 
 		c.log.WithContext(ctx).
@@ -85,7 +68,12 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 				"source_branch":    sourceBranch,
 				"source_branch_id": sourceBranchID,
 			}).Debug("Branch created")
-		return newBranch, nil
+		return &Branch{
+			RepositoryID: repoID,
+			ID:           branchID,
+			Name:         branch,
+			NextCommit:   1,
+		}, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
