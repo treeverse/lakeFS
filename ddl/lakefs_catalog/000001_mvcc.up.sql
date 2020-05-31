@@ -128,7 +128,6 @@ CREATE TABLE IF NOT EXISTS multipart_uploads (
                                    upload_id character varying NOT NULL,
                                    path character varying NOT NULL,
                                    creation_date timestamp with time zone DEFAULT now() NOT NULL,
-                                   object_name bytea,
                                    physical_address character varying
 );
 
