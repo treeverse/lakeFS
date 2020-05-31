@@ -140,7 +140,7 @@ var branchRevertCmd = &cobra.Command{
 				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
 				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
 				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
-				4. revert uncommited changes for specific object  - revert lakefs://myrepo@master  --object path `,
+				4. revert uncommitted changes for specific object  - revert lakefs://myrepo@master  --object path`,
 	Args: ValidationChain(
 		HasNArgs(1),
 		IsRefURI(0),
