@@ -42,8 +42,8 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 		}
 
 		// insert new lineage for the new branch
-		res, err := tx.Exec(`INSERT INTO lineage
-			SELECT branch_id, precedence, ancestor_branch, effective_commit
+		res, err := tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit)
+			SELECT branch_id, precedence + 1, ancestor_branch, effective_commit
 			FROM lineage_v
 			WHERE branch_id = $1
 			LIMIT 1`, sourceBranchID)
