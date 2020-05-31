@@ -40,7 +40,7 @@ type Cataloger interface {
 
 	// entry level
 	ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error)
-	WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata map[string]string) error
+	WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata *map[string]string) error
 	ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
 
 	// diff and merge

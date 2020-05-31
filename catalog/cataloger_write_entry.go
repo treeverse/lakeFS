@@ -23,7 +23,7 @@ func getBranchId(tx db.Tx, repo, branch string, branchLockType int) (int, error)
 	case UpdateLock:
 		forLock = " FOR UPDATE"
 	}
-	getBranchId := `SELECT branch_id FROM branches b join repositories r 
+	getBranchId := `SELECT b.id FROM branches b join repositories r 
 						on r.id = b.repository_id
 						WHERE r.name = $1 and b.name = $2` + forLock
 	var branchId int
@@ -31,7 +31,7 @@ func getBranchId(tx db.Tx, repo, branch string, branchLockType int) (int, error)
 	return branchId, err
 }
 
-func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata map[string]string) error {
+func (c *cataloger) WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata *map[string]string) error {
 
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repoName),
