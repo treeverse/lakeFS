@@ -18,13 +18,13 @@ func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, 
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for branch
-		var branchID int64
+		var branchID int
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
 			return nil, err
 		}
 
 		// next id for repository
-		var repoID int64
+		var repoID int
 		if err := tx.Get(&repoID, `SELECT nextval('repositories_id_seq');`); err != nil {
 			return nil, err
 		}

@@ -19,7 +19,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for branch
-		var branchID int64
+		var branchID int
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
 			return nil, err
 		}
