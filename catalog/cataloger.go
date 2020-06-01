@@ -12,9 +12,9 @@ import (
 type EntryState int
 
 const (
-	EntryStateCommitted = iota
-	EntryStateStage
-	EntryStateUnstage
+	EntryStateCommitted EntryState = iota
+	EntryStateStaged
+	EntryStateUnstaged
 )
 
 type EntryReadOptions struct {
@@ -35,13 +35,13 @@ type Cataloger interface {
 	GetBranch(ctx context.Context, repo string, branch string) (*Branch, error)
 	DeleteBranch(ctx context.Context, repo string, branch string) error
 	GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
-	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, amount int, after string) ([]*Branch, bool, error)
+	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error)
 	Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error)
 
 	// entry level
 	ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error)
 	WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata *map[string]string) error
-	ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
+	ListEntriesByPrefix(ctx context.Context, repo string, branch string, path, after string, limit int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
 
 	// diff and merge
 	Diff(ctx context.Context, leftBranch, rightBranch string) (Differences, error)
@@ -97,10 +97,6 @@ func (c *cataloger) Commit(ctx context.Context, branch string, message, committe
 }
 
 func (c *cataloger) ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) ListEntriesByPrefix(ctx context.Context, branchID int, path, after string, results int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
 	panic("implement me")
 }
 
