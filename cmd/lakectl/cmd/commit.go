@@ -60,7 +60,7 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	for _, pair := range kvList {
 		parts := strings.SplitN(pair, "=", 2)
 		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid key/value pair - should be seperated by \"=\"")
+			return nil, fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
 		}
 		kv[parts[0]] = parts[1]
 	}

@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"testing"
 
 	"github.com/treeverse/lakefs/testutil"
@@ -57,5 +58,26 @@ func TestCataloger_CreateBranch(t *testing.T) {
 				t.Errorf("CreateBranch() got = %+v, want branch name %s", got, tt.wantBranchName)
 			}
 		})
+	}
+}
+
+func TestCataloger_CreateBranchOfBranch(t *testing.T) {
+	ctx := context.Background()
+	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
+	c := NewCataloger(cdb)
+
+	if err := c.CreateRepo(ctx, "repo", "bucket", "branch0"); err != nil {
+		t.Fatal("create repo for testing", err)
+	}
+	for i := 1; i < 3; i++ {
+		branchName := fmt.Sprintf("branch%d", i)
+		sourceBranchName := fmt.Sprintf("branch%d", i-1)
+		b, err := c.CreateBranch(ctx, "repo", branchName, sourceBranchName)
+		if err != nil {
+			t.Fatal("failed to create branch1 based on master", err)
+		}
+		if b.Name != branchName {
+			t.Errorf("CreateBranch name %s, expected %s", b.Name, branchName)
+		}
 	}
 }

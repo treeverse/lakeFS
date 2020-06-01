@@ -57,7 +57,7 @@ func (s *HTTPSender) Send(ctx context.Context, metrics []Metric) error {
 	}
 
 	if res.StatusCode != http.StatusCreated {
-		return fmt.Errorf("bad status code recieved. status=%d: %w", res.StatusCode, ErrSendError)
+		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
 	}
 	return nil
 }

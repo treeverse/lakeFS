@@ -19,7 +19,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/gateway/simulator"
 )
 
 const (
@@ -38,29 +38,29 @@ type simulationEvent struct {
 }
 
 func setGlobalPlaybackParams(testDir string) {
-	utils.PlaybackParams.IsPlayback = true
-	utils.PlaybackParams.RecordingDir = filepath.Join(os.TempDir(), "lakeFS", "sourceRecordings", testDir)
-	utils.PlaybackParams.PlaybackDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05.000"))
+	simulator.PlaybackParams.IsPlayback = true
+	simulator.PlaybackParams.RecordingDir = filepath.Join(os.TempDir(), "lakeFS", "sourceRecordings", testDir)
+	simulator.PlaybackParams.PlaybackDir = filepath.Join(os.TempDir(), "lakeFS", "gatewayRecordings", time.Now().Format("01-02-15-04-05.000"))
 }
 
 func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
-	err := os.MkdirAll(utils.PlaybackParams.PlaybackDir, 0755)
+	err := os.MkdirAll(simulator.PlaybackParams.PlaybackDir, 0755)
 	if err != nil {
-		t.Fatal("could not create playback directory:", utils.PlaybackParams.PlaybackDir)
+		t.Fatal("could not create playback directory:", simulator.PlaybackParams.PlaybackDir)
 	}
 	simulationEvents := buildEventList(t)
 	if len(simulationEvents) == 0 {
 		t.Fatal("no events found")
 	}
 	allStatusEqual := runEvents(simulationEvents, handler, timed, speed, t)
-	playbackDirCompare(t, utils.PlaybackParams.PlaybackDir)
+	playbackDirCompare(t, simulator.PlaybackParams.PlaybackDir)
 	if !allStatusEqual {
-		t.Fatal("Some statuses where not the same, see", filepath.Join(utils.PlaybackParams.PlaybackDir, statusMismatchReport))
+		t.Fatal("Some statuses where not the same, see", filepath.Join(simulator.PlaybackParams.PlaybackDir, statusMismatchReport))
 	}
 	_, toKeep := os.LookupEnv("KEEP_RESULTS")
 	if !toKeep {
-		os.RemoveAll(utils.PlaybackParams.PlaybackDir)
-		os.RemoveAll(utils.PlaybackParams.RecordingDir)
+		os.RemoveAll(simulator.PlaybackParams.PlaybackDir)
+		os.RemoveAll(simulator.PlaybackParams.RecordingDir)
 	}
 }
 
@@ -81,16 +81,16 @@ func regexpGlob(directory string, pattern *regexp.Regexp) []string {
 
 func buildEventList(t *testing.T) []simulationEvent {
 	var simulationEvents []simulationEvent
-	var se utils.StoredEvent
-	requestPattern := regexp.MustCompile("^\\d{2}-\\d{2}-\\d{2}-\\d{5}\\" + utils.RequestExtension + "$")
-	fileList := regexpGlob(utils.PlaybackParams.RecordingDir, requestPattern)
+	var se simulator.StoredEvent
+	requestPattern := regexp.MustCompile("^\\d{2}-\\d{2}-\\d{2}-\\d{5}\\" + simulator.RequestExtension + "$")
+	fileList := regexpGlob(simulator.PlaybackParams.RecordingDir, requestPattern)
 	for _, file := range fileList {
 		evt := new(simulationEvent)
-		baseNamePosition := strings.Index(file, utils.RequestExtension)
+		baseNamePosition := strings.Index(file, simulator.RequestExtension)
 		evt.baseName = file[:baseNamePosition]
 		eventTimeStr := file[:baseNamePosition-6]               // time part of file name
 		evt.eventTime, _ = time.Parse("15-04-05", eventTimeStr) // add to function
-		fName := filepath.Join(utils.PlaybackParams.RecordingDir, file)
+		fName := filepath.Join(simulator.PlaybackParams.RecordingDir, file)
 		event, err := ioutil.ReadFile(fName)
 		if err != nil {
 			t.Fatal("Recording file not found\n")
@@ -109,7 +109,7 @@ func buildEventList(t *testing.T) []simulationEvent {
 }
 
 func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback bool, playbackSpeed float64, t *testing.T) bool {
-	simulationMisses := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.PlaybackDir, statusMismatchReport))
+	simulationMisses := simulator.NewLazyOutput(filepath.Join(simulator.PlaybackParams.PlaybackDir, statusMismatchReport))
 	defer func() {
 		_ = simulationMisses.Close()
 	}()
@@ -137,14 +137,14 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 	return allStatusEqual
 }
 
-func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *utils.LazyOutput, t *testing.T) bool {
+func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *simulator.LazyOutput, t *testing.T) bool {
 	statusEqual := true
 	event.originalBody = r.Body
 	r.Body = event
 	w := httptest.NewRecorder()
-	respWrite := new(utils.ResponseWriter)
+	respWrite := new(simulator.ResponseWriter)
 	respWrite.OriginalWriter = w
-	l := utils.NewLazyOutput(filepath.Join(utils.PlaybackParams.PlaybackDir, event.baseName+utils.ResponseExtension))
+	l := simulator.NewLazyOutput(filepath.Join(simulator.PlaybackParams.PlaybackDir, event.baseName+simulator.ResponseExtension))
 	defer func() {
 		_ = l.Close()
 		_ = event.Close()
@@ -170,7 +170,7 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 
 func (r *simulationEvent) Read(b []byte) (int, error) {
 	if r.bodyReader == nil {
-		fName := filepath.Join(utils.PlaybackParams.RecordingDir, r.baseName+utils.RequestBodyExtension)
+		fName := filepath.Join(simulator.PlaybackParams.RecordingDir, r.baseName+simulator.RequestBodyExtension)
 		f, err := os.Open(fName)
 		if err != nil {
 			// couldn't find recording file
@@ -205,7 +205,7 @@ func buildTagRemover(tags []string) (ret []*tagPatternType) {
 }
 
 func playbackDirCompare(t *testing.T, playbackDir string) {
-	globPattern := filepath.Join(playbackDir, "*"+utils.ResponseExtension)
+	globPattern := filepath.Join(playbackDir, "*"+simulator.ResponseExtension)
 	names, err := filepath.Glob(globPattern)
 	if err != nil {
 		t.Fatal("failed Glob on", globPattern)
@@ -270,7 +270,7 @@ func compareFiles(t *testing.T, playbackFileName string, tagRemoveList []*tagPat
 		return false
 	}
 	_, fileName := filepath.Split(playbackFileName)
-	recordingFileName := filepath.Join(utils.PlaybackParams.RecordingDir, fileName)
+	recordingFileName := filepath.Join(simulator.PlaybackParams.RecordingDir, fileName)
 	recordingInfo, err := os.Stat(recordingFileName)
 	if err != nil || recordingInfo == nil {
 		return false

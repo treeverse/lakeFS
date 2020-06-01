@@ -18,4 +18,6 @@ var (
 	ErrMergeUpdateFailed          = errors.New("failed updating merged destination")
 	ErrRepoNotFound               = errors.New("repo not found")
 	ErrMultipartUploadNotFound    = errors.New("multipart upload not found")
+	ErrOperationNotPermitted      = errors.New("operation not permitted")
+	ErrResourceUsed               = errors.New("resource used")
 )
