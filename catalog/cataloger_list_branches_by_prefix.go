@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
 func (c *cataloger) ListBranchesByPrefix(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error) {
@@ -35,12 +34,6 @@ func (c *cataloger) ListBranchesByPrefix(ctx context.Context, repo string, prefi
 		if err := tx.Select(&branches, query, args...); err != nil {
 			return nil, err
 		}
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{
-				"limit": limit,
-				"after": after,
-			}).Debug("List repos")
-
 		return branches, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 

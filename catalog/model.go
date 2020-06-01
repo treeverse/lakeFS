@@ -29,7 +29,7 @@ type ObjectDedup struct {
 
 type Entry struct {
 	BranchID        int          `db:"branch_id"`
-	Key             string       `db:"key"`
+	Path            string       `db:"path"`
 	MinCommit       int          `db:"min_commit"`
 	MaxCommit       int          `db:"max_commit"`
 	PhysicalAddress string       `db:"physical_address"`
@@ -37,6 +37,7 @@ type Entry struct {
 	Size            int64        `db:"size"`
 	Checksum        string       `db:"checksum"`
 	Metadata        JSONMetadata `db:"metadata"`
+	IsStaged        *bool        `db:"is_staged"`
 }
 
 type Commit struct {
