@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
+	"github.com/schollz/progressbar/v2"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth/model"
@@ -36,6 +37,7 @@ var rootCmd = &cobra.Command{
 	Short: "Run a load test on a lakeFS instance",
 	Long:  `You can either run the tests on a running lakeFS instance, or choose to start a dedicated lakeFS server as part of the test.`,
 	Run: func(cmd *cobra.Command, args []string) {
+
 		repoName, err := cmd.Flags().GetString(RepoNameFlag)
 		if err != nil {
 			fmt.Println(err)
@@ -44,6 +46,7 @@ var rootCmd = &cobra.Command{
 		durationInSec, _ := cmd.Flags().GetInt(DurationFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		clean, _ := cmd.Flags().GetBool(CleanFlag)
+		progressBar(durationInSec)
 		err = loadtesting.LoadTest(loadtesting.LoadTesterConfig{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      time.Duration(durationInSec) * time.Second,
@@ -61,6 +64,17 @@ var rootCmd = &cobra.Command{
 		}
 	},
 	Version: config.Version,
+}
+
+func progressBar(durationInSec int) {
+	progress := progressbar.NewOptions(durationInSec, progressbar.OptionSetPredictTime(false))
+	go func() {
+		for i := 0; i < durationInSec; i++ {
+			_ = progress.Add(1)
+			time.Sleep(time.Second)
+		}
+		_ = progress.Clear()
+	}()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -81,7 +95,7 @@ func init() {
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.Flags().StringP(RepoNameFlag, "r", "", "Existing lakeFS repo name to use. Leave empty to create a dedicated repo")
 	rootCmd.Flags().Bool(CleanFlag, false, "Delete repo at the end of the test")
-	rootCmd.Flags().IntP(FrequencyFlag, "f", 20, "Number of requests to send per second")
+	rootCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
 	rootCmd.Flags().IntP(DurationFlag, "d", 30, "Duration of test, in seconds")
 }
 
@@ -115,7 +129,7 @@ func initConfig() {
 			os.Exit(1)
 		} else {
 			// other errors while reading the config file
-			fmt.Printf("error reading configuration file: %v", cfgFileErr)
+			fmt.Printf("error reading configuration file: %v\n", cfgFileErr)
 			os.Exit(1)
 		}
 	}

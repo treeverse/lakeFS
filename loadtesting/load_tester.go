@@ -20,30 +20,30 @@ import (
 	"time"
 )
 
-type Buffer struct {
-	buffer bytes.Buffer
-	mutex  sync.Mutex
+type WriteSafeBuffer struct {
+	bytes.Buffer
+	sync.Mutex
 }
 
-func (s *Buffer) Write(p []byte) (n int, err error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	n, err = s.buffer.Write(p)
+func (s *WriteSafeBuffer) Write(p []byte) (n int, err error) {
+	s.Lock()
+	defer s.Unlock()
+	n, err = s.Buffer.Write(p)
 	if err != nil {
 		return n, err
 	}
-	return s.buffer.WriteString("\n")
+	return s.WriteString("\n")
 }
 
-func (s *Buffer) Read(p []byte) (n int, err error) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	return s.buffer.Read(p)
+func (s *WriteSafeBuffer) Read(p []byte) (n int, err error) {
+	s.Lock()
+	defer s.Unlock()
+	return s.Buffer.Read(p)
 }
 
 type LoadTester struct {
 	RequestHistory []Request
-	Buffer         Buffer
+	Buffer         WriteSafeBuffer
 	Config         LoadTesterConfig
 }
 
@@ -100,6 +100,7 @@ func LoadTest(config LoadTesterConfig) error {
 	}
 	return nil
 }
+
 func createRepo(config LoadTesterConfig, apiClient api.Client) (string, error) {
 	if config.RepoName == "" {
 		config.RepoName = uuid.New().String()
@@ -109,11 +110,12 @@ func createRepo(config LoadTesterConfig, apiClient api.Client) (string, error) {
 			BucketName:    &config.RepoName,
 		})
 		if err != nil {
-			return "", errors.New("failed to create lakeFS repository")
+			return "", errors.New(fmt.Sprintf("failed to create lakeFS repository: %v", err))
 		}
 	}
 	return config.RepoName, nil
 }
+
 func getClient(config LoadTesterConfig) (apiClient api.Client, err error) {
 
 	apiClient, err = api.NewClient(config.ServerAddress, config.Credentials.AccessKeyId, config.Credentials.AccessSecretKey)
