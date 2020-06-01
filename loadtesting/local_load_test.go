@@ -102,12 +102,15 @@ func TestLocalLoad(t *testing.T) {
 		t.Fatalf("Failed to create user credentials: %v", err)
 	}
 	testerConfig := LoadTesterConfig{
-		FreqPerSecond: 10,
-		Duration:      15 * time.Second,
+		FreqPerSecond: 6,
+		Duration:      10 * time.Second,
+		DeleteRepo:    false,
+		Credentials:   *credentials,
+		ServerAddress: "http://" + listenAddress,
 	}
 	time.Sleep(1 * time.Second)
-	err = loadTest(testerConfig, listenAddress, credentials)
+	err = LoadTest(testerConfig)
 	if err != nil {
-		t.Fatalf("Got errors on test")
+		t.Fatalf("Got error on test: %v", err)
 	}
 }
