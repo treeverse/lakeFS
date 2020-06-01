@@ -92,10 +92,6 @@ func (c *cataloger) GetBranchCommitLog(ctx context.Context, branch string, fromC
 	panic("implement me")
 }
 
-func (c *cataloger) ListBranchesByPrefix(ctx context.Context, repo string, prefix string, amount int, after string) ([]*Branch, bool, error) {
-	panic("implement me")
-}
-
 func (c *cataloger) Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error) {
 	panic("implement me")
 }
