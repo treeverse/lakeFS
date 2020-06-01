@@ -832,17 +832,18 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		allowed := false
 		for _, p := range policies {
 			policy := p.ToModel()
-			if ArnMatch(policy.Resource, req.SubjectARN) {
-				for _, action := range policy.Action {
-					if action == string(req.Permission) && !policy.Effect {
-						// this is a "Deny" and it takes precedence
-						return &AuthorizationResponse{
-							Allowed: false,
-							Error:   ErrInsufficientPermissions,
-						}, nil
-					} else if action == string(req.Permission) {
-						allowed = true
-					}
+			if !ArnMatch(policy.Resource, req.SubjectARN) {
+				continue
+			}
+			for _, action := range policy.Action {
+				if action == string(req.Permission) && !policy.Effect {
+					// this is a "Deny" and it takes precedence
+					return &AuthorizationResponse{
+						Allowed: false,
+						Error:   ErrInsufficientPermissions,
+					}, nil
+				} else if action == string(req.Permission) {
+					allowed = true
 				}
 			}
 		}
