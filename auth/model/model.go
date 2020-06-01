@@ -2,34 +2,84 @@ package model
 
 import (
 	"time"
+
+	"github.com/jackc/pgtype"
 )
 
 const (
-	CredentialTypeUser        = "user"
-	CredentialTypeApplication = "application"
-
-	RoleAdmin = "Admin"
+	RoleAdmin = "AdminRole"
 )
 
-type User struct {
-	Id       int    `db:"id" json:"id"`
-	Email    string `db:"email" json:"email"`
-	FullName string `db:"full_name" json:"full_name"`
+type PaginationParams struct {
+	PageToken string
+	Amount    int
 }
 
-type Application struct {
-	Id          int    `db:"id"`
-	DisplayName string `db:"display_name"`
+type Paginator struct {
+	Amount        int
+	NextPageToken string
+}
+
+type User struct {
+	Id          int       `db:"id"`
+	CreatedAt   time.Time `db:"created_at"`
+	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
 type Group struct {
-	Id          int    `db:"id"`
-	DisplayName string `db:"display_name"`
+	Id          int       `db:"id"`
+	CreatedAt   time.Time `db:"created_at"`
+	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
 type Role struct {
-	Id          int    `db:"id"`
-	DisplayName string `db:"display_name"`
+	Id          int       `db:"id"`
+	CreatedAt   time.Time `db:"created_at"`
+	DisplayName string    `db:"display_name" json:"display_name"`
+}
+
+type PolicyDBImpl struct {
+	Id          int              `db:"id"`
+	CreatedAt   time.Time        `db:"created_at"`
+	DisplayName string           `db:"display_name" json:"display_name"`
+	Action      pgtype.TextArray `db:"action" json:"action"`
+	Resource    string           `db:"resource" json:"resource"`
+	Effect      bool             `db:"effect" json:"effect"`
+}
+
+func (p *PolicyDBImpl) ToModel() *Policy {
+	var actions []string
+	_ = p.Action.AssignTo(&actions)
+	return &Policy{
+		Id:          p.Id,
+		CreatedAt:   p.CreatedAt,
+		DisplayName: p.DisplayName,
+		Action:      actions,
+		Resource:    p.Resource,
+		Effect:      p.Effect,
+	}
+}
+
+type Policy struct {
+	Id          int
+	CreatedAt   time.Time
+	DisplayName string
+	Action      []string
+	Resource    string
+	Effect      bool
+}
+
+func (p *Policy) ToDBImpl() *PolicyDBImpl {
+	actions := pgtype.TextArray{}
+	_ = actions.Set(p.Action)
+	return &PolicyDBImpl{
+		Id:          p.Id,
+		CreatedAt:   p.CreatedAt,
+		DisplayName: p.DisplayName,
+		Action:      actions,
+		Resource:    p.Resource,
+		Effect:      p.Effect,
+	}
 }
 
 type UserGroups struct {
@@ -37,30 +87,14 @@ type UserGroups struct {
 	GroupId int `db:"group_id"`
 }
 
-type ApplicationGroups struct {
-	ApplicationId int `db:"application_id"`
-	GroupId       int `db:"group_id"`
-}
-
 type UserRoles struct {
 	UserId int `db:"user_id"`
 	RoleId int `db:"role_id"`
 }
 
-type ApplicationRoles struct {
-	ApplicationId int `db:"application_id"`
-	RoleId        int `db:"role_id"`
-}
-
 type GroupRoles struct {
 	GroupId int `db:"group_id"`
 	RoleId  int `db:"role_id"`
-}
-
-type Policy struct {
-	Id         int    `db:"id"`
-	Permission string `db:"permission"`
-	Arn        string `db:"arn"`
 }
 
 type RolePolicies struct {
@@ -69,15 +103,14 @@ type RolePolicies struct {
 }
 
 type Credential struct {
-	AccessKeyId                   string `db:"access_key_id"`
-	AccessSecretKey               string
-	AccessSecretKeyEncryptedBytes []byte    `db:"access_secret_key"`
-	Type                          string    `db:"credentials_type"`
+	AccessKeyId                   string    `db:"access_key_id"`
+	AccessSecretKey               string    `json:"-"`
+	AccessSecretKeyEncryptedBytes []byte    `db:"access_secret_key" json:"-"`
 	IssuedDate                    time.Time `db:"issued_date"`
-	UserId                        *int      `db:"user_id"`
-	ApplicationId                 *int      `db:"application_id"`
+	UserId                        int       `db:"user_id"`
 }
 
+// For JSON serialization:
 type CredentialKeys struct {
 	AccessKeyId     string `json:"access_key_id"`
 	AccessSecretKey string `json:"access_secret_key"`

@@ -11,7 +11,7 @@ import (
 
 func authorize(a auth.Service, user *models.User, action permissions.Action) error {
 	authResp, err := a.Authorize(&auth.AuthorizationRequest{
-		UserID: int(user.ID), Permission: action.Permission, SubjectARN: action.Arn})
+		UserDisplayName: user.ID, Permission: action.Permission, SubjectARN: action.Arn})
 	if err != nil {
 		return fmt.Errorf("authorization error")
 	}

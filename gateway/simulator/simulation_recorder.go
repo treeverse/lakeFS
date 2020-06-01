@@ -155,7 +155,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 			Fatal("failed getting access key using authenticator ")
 	}
 	accessKeyId := authContext.GetAccessKeyId()
-	creds, err := authService.GetAPICredentials(accessKeyId)
+	creds, err := authService.GetCredentials(accessKeyId)
 	if err != nil {
 		logging.Default().
 			WithError(err).
@@ -167,8 +167,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 		BareDomain:      bareDomain,
 		AccessKeyId:     accessKeyId,
 		AccessSecretKey: creds.AccessSecretKey,
-		CredentialType:  creds.Type,
-		UserId:          *creds.UserId,
+		UserId:          creds.UserId,
 		Region:          region,
 	}
 	confByte, err := json.Marshal(conf)
