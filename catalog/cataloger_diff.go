@@ -70,11 +70,11 @@ func FromFatherDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differen
 	// just need to check there are no conflicts
 
 	// check if father lineage was modified since last diff. if not we can skip the view
-	x := `select * from lineage l join lineage r on 
-          l.branch_id=$1 and r.branch_id =$2 and 
+	_ = `select * from lineage l join lineage r on
+	     l.branch_id=$1 and r.branch_id =$2 and
 		  l.ancestor_branch=r.ancestor_branch
-          where
-          l.effective_commit > r.effective_commit`
+	     where
+	     l.effective_commit > r.effective_commit`
 	// from father - select objects that were modified after the lineage was created
 
 	// from son - select objects that were modified since last time lineage was created
