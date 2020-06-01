@@ -7,6 +7,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/db"
 
@@ -18,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/auth/model"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
@@ -57,8 +59,8 @@ type dependencies struct {
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
 	// create user
 	user := &authmodel.User{
-		Email:    "admin@example.com",
-		FullName: "admin user",
+		CreatedAt:   time.Now(),
+		DisplayName: "admin",
 	}
 	testutil.Must(t, authService.CreateUser(user))
 
@@ -69,28 +71,25 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	testutil.Must(t, authService.CreateRole(role))
 
 	// attach policies
-	policies := []*authmodel.Policy{
-		{
-			Permission: string(permissions.ManageRepos),
-			Arn:        "arn:treeverse:repos:::*",
+	policy := &model.Policy{
+		CreatedAt:   time.Now(),
+		DisplayName: "AdminFullAccess",
+		Action: []string{
+			string(permissions.ManageRepos),
+			string(permissions.ReadRepo),
+			string(permissions.WriteRepo),
 		},
-		{
-			Permission: string(permissions.ReadRepo),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-		{
-			Permission: string(permissions.WriteRepo),
-			Arn:        "arn:treeverse:repos:::*",
-		},
+		Resource: "arn:lakefs:repos:::*",
+		Effect:   true,
 	}
-	for _, policy := range policies {
-		testutil.Must(t, authService.AssignPolicyToRole(role.Id, policy))
-	}
+
+	testutil.Must(t, authService.CreatePolicy(policy))
+	testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
 
 	// assign user to role
-	testutil.Must(t, authService.AssignRoleToUser(role.Id, user.Id))
+	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
 
-	creds, err := authService.CreateUserCredentials(user)
+	creds, err := authService.CreateCredentials(user.DisplayName)
 	if err != nil {
 		t.Fatal(err)
 	}

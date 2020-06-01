@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"gopkg.in/dgrijalva/jwt-go.v3"
 
@@ -14,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
@@ -74,7 +72,7 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
 			}
 
-			return []byte(s.authService.SecretStore().SharedSecret()), nil
+			return s.authService.SecretStore().SharedSecret(), nil
 		})
 		if err != nil {
 			return nil, ErrAuthenticationFailed
@@ -83,20 +81,13 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 		if !ok || !token.Valid {
 			return nil, ErrAuthenticationFailed
 		}
-		uid := claims.Subject
-		userId, err := strconv.Atoi(uid)
+		userData, err := s.authService.GetUser(claims.Subject)
 		if err != nil {
-			return nil, ErrAuthenticationFailed
-		}
-		userData, err := s.authService.GetUser(userId)
-		if err != nil {
-			logger.WithField("user_id", uid).Warn("could not find user for key pair")
+			logger.WithField("subject", claims.Subject).Warn("could not find user for token")
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			Email:    userData.Email,
-			FullName: userData.FullName,
-			ID:       int64(userData.Id),
+			ID: userData.DisplayName,
 		}, nil
 	}
 }
@@ -106,7 +97,7 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
-		credentials, err := s.authService.GetAPICredentials(accessKey)
+		credentials, err := s.authService.GetCredentials(accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
 			return nil, ErrAuthenticationFailed
@@ -115,18 +106,13 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
-		if credentials.Type != model.CredentialTypeUser {
-			return nil, ErrAuthenticationFailed // TODO: support application auth
-		}
-		userData, err := s.authService.GetUser(*credentials.UserId)
+		userData, err := s.authService.GetUserById(credentials.UserId)
 		if err != nil {
 			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			Email:    userData.Email,
-			FullName: userData.FullName,
-			ID:       int64(userData.Id),
+			ID: userData.DisplayName,
 		}, nil
 	}
 }

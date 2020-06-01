@@ -239,11 +239,11 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		a.incrStat("create_commit")
-		userModel, err := a.context.Auth.GetUser(int(user.ID))
+		userModel, err := a.context.Auth.GetUser(user.ID)
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
+		committer := userModel.DisplayName
 
 		commit, err := a.ForRequest(params.HTTPRequest).Index.Commit(params.RepositoryID, params.BranchID, *params.Commit.Message, committer, params.Commit.Metadata)
 		if err != nil {
@@ -508,11 +508,11 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		a.incrStat("merge_branches")
-		userModel, err := a.context.Auth.GetUser(int(user.ID))
+		userModel, err := a.context.Auth.GetUser(user.ID)
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		committer := fmt.Sprintf("%s <%s>", userModel.FullName, userModel.Email)
+		committer := userModel.DisplayName
 		mergeOperations, err := a.context.Index.Merge(params.RepositoryID, params.SourceRef, params.DestinationRef, committer)
 		mergeResult := make([]*models.MergeResult, len(mergeOperations))
 
