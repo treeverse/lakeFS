@@ -2,6 +2,8 @@ package model
 
 import (
 	"time"
+
+	"github.com/jackc/pgtype"
 )
 
 const (
@@ -36,12 +38,48 @@ type Role struct {
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
+type PolicyDBImpl struct {
+	Id          int              `db:"id"`
+	CreatedAt   time.Time        `db:"created_at"`
+	DisplayName string           `db:"display_name" json:"display_name"`
+	Action      pgtype.TextArray `db:"action" json:"action"`
+	Resource    string           `db:"resource" json:"resource"`
+	Effect      bool             `db:"effect" json:"effect"`
+}
+
+func (p *PolicyDBImpl) ToModel() *Policy {
+	var actions []string
+	_ = p.Action.AssignTo(&actions)
+	return &Policy{
+		Id:          p.Id,
+		CreatedAt:   p.CreatedAt,
+		DisplayName: p.DisplayName,
+		Action:      actions,
+		Resource:    p.Resource,
+		Effect:      p.Effect,
+	}
+}
+
 type Policy struct {
-	Id          int       `db:"id"`
-	CreatedAt   time.Time `db:"created_at"`
-	DisplayName string    `db:"display_name" json:"display_name"`
-	Permission  string    `db:"permission" json:"permission"`
-	Arn         string    `db:"arn" json:"arn"`
+	Id          int
+	CreatedAt   time.Time
+	DisplayName string
+	Action      []string
+	Resource    string
+	Effect      bool
+}
+
+func (p *Policy) ToDBImpl() *PolicyDBImpl {
+	actions := pgtype.TextArray{}
+	_ = actions.Set(p.Action)
+	return &PolicyDBImpl{
+		Id:          p.Id,
+		CreatedAt:   p.CreatedAt,
+		DisplayName: p.DisplayName,
+		Action:      actions,
+		Resource:    p.Resource,
+		Effect:      p.Effect,
+	}
 }
 
 type UserGroups struct {

@@ -2,7 +2,6 @@ package auth
 
 import (
 	"fmt"
-	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -346,7 +345,7 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		policies := make([]*model.Policy, 0)
+		policies := make([]*model.PolicyDBImpl, 0)
 		err := tx.Select(&policies, `
 			SELECT * FROM policies
 				INNER JOIN role_policies ON (role_policies.policy_id = policies.id)
@@ -361,14 +360,18 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 			return nil, err
 		}
 		p := &model.Paginator{}
+		policyModels := make([]*model.Policy, len(policies))
+		for i, policy := range policies {
+			policyModels[i] = policy.ToModel()
+		}
 		if len(policies) == params.Amount+1 {
 			// we have more pages
 			p.Amount = params.Amount
 			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policies[0:params.Amount], p}, nil
+			return &res{policyModels[0:params.Amount], p}, nil
 		}
 		p.Amount = len(policies)
-		return &res{policies, p}, nil
+		return &res{policyModels, p}, nil
 	})
 
 	if err != nil {
@@ -441,8 +444,8 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 		_, err := tx.Exec(`
 			INSERT INTO user_groups (user_id, group_id)
 			VALUES (
-				(SELECT id FROM users WHERE display_name = $1'),
-				(SELECT id FROM groups WHERE display_name = $2')
+				(SELECT id FROM users WHERE display_name = $1),
+				(SELECT id FROM groups WHERE display_name = $2)
 			)`, userDisplayName, groupDisplayName)
 		return nil, err
 	})
@@ -597,8 +600,9 @@ func (s *DBAuthService) ListRoles(params *model.PaginationParams) ([]*model.Role
 
 func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, tx.Get(policy, `INSERT INTO policies (display_name, created_at, permission, arn) VALUES ($1, $2, $3, $4) RETURNING id`,
-			policy.DisplayName, policy.CreatedAt, policy.Permission, policy.Arn)
+		p := policy.ToDBImpl()
+		return nil, tx.Get(policy, `INSERT INTO policies (display_name, created_at, action, resource, effect) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			p.DisplayName, p.CreatedAt, p.Action, p.Resource, p.Effect)
 	})
 	return err
 }
@@ -616,7 +620,7 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		policies := make([]*model.Policy, 0)
+		policies := make([]*model.PolicyDBImpl, 0)
 		err := tx.Select(&policies, `
 			SELECT *
 			FROM policies
@@ -628,14 +632,18 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 			return nil, err
 		}
 		p := &model.Paginator{}
+		policyModels := make([]*model.Policy, len(policies))
+		for i, policy := range policies {
+			policyModels[i] = policy.ToModel()
+		}
 		if len(policies) == params.Amount+1 {
 			// we have more pages
 			p.Amount = params.Amount
 			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policies[0:params.Amount], p}, nil
+			return &res{policyModels[0:params.Amount], p}, nil
 		}
 		p.Amount = len(policies)
-		return &res{policies, p}, nil
+		return &res{policyModels, p}, nil
 	})
 
 	if err != nil {
@@ -794,58 +802,60 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 	resp, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// resolve all policies attached to roles attached to the user
 		var err error
-		var userPolicies []*model.Policy
-		err = tx.Select(&userPolicies, `
-			SELECT DISTINCT policies.id, policies.arn, policies.permission
-			FROM policies
-				INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
-				INNER JOIN roles ON (roles.id = role_policies.role_id)
-				INNER JOIN user_roles ON (roles.id = user_roles.role_id)
-				INNER JOIN users ON (users.id = user_roles.user_id)
-			WHERE users.display_name = $1`, req.UserDisplayName)
+		var policies []*model.PolicyDBImpl
+
+		// resolve all policies
+		// language=sql
+		var resolvePoliciesStmt = `
+		SELECT policies.id, policies.action, policies.resource, policies.effect
+		FROM policies
+			INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
+			INNER JOIN roles ON (roles.id = role_policies.role_id)
+			INNER JOIN user_roles ON (roles.id = user_roles.role_id)
+			INNER JOIN users ON (users.id = user_roles.user_id)
+		WHERE users.display_name = $1
+		UNION
+		SELECT policies.id, policies.action, policies.resource, policies.effect
+		FROM policies
+			INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
+			INNER JOIN roles ON (roles.id = role_policies.role_id)
+			INNER JOIN group_roles ON (roles.id = group_roles.role_id)
+			INNER JOIN groups ON (groups.id = group_roles.group_id)
+			INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
+			INNER JOIN users ON (users.id = user_groups.user_id)
+		WHERE users.display_name = $1
+		`
+		err = tx.Select(&policies, resolvePoliciesStmt, req.UserDisplayName)
 		if err != nil {
 			return nil, err
 		}
-		for _, p := range userPolicies {
-			// get permissions....
-			if strings.EqualFold(p.Permission, string(req.Permission)) && ArnMatch(p.Arn, req.SubjectARN) {
-				return &AuthorizationResponse{
-					Allowed: true,
-					Error:   nil,
-				}, nil
+		allowed := false
+		for _, p := range policies {
+			policy := p.ToModel()
+			if ArnMatch(policy.Resource, req.SubjectARN) {
+				for _, action := range policy.Action {
+					if action == string(req.Permission) && !policy.Effect {
+						// this is a "Deny" and it takes precedence
+						return &AuthorizationResponse{
+							Allowed: false,
+							Error:   ErrInsufficientPermissions,
+						}, nil
+					} else if action == string(req.Permission) {
+						allowed = true
+					}
+				}
 			}
 		}
 
-		// resolve all policies attached to roles attached to groups attached to the user
-		var groupRoles []*model.Policy
-		err = tx.Select(groupRoles, `
-			SELECT distinct policies.id, policies.arn, policies.permission
-			FROM policies
-				INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
-				INNER JOIN roles ON (roles.id = role_policies.role_id)
-				INNER JOIN group_roles ON (roles.id = group_roles.role_id)
-				INNER JOIN groups ON (groups.id = group_roles.group_id)
-				INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
-				INNER JOIN users ON (users.id = user_groups.user_id)
-			WHERE users.display_name = $1`, req.UserDisplayName)
-		if err != nil {
-			return nil, err
-		}
-		for _, p := range userPolicies {
-			// get permissions....
-			if strings.EqualFold(p.Permission, string(req.Permission)) && ArnMatch(p.Arn, req.SubjectARN) {
-				return &AuthorizationResponse{
-					Allowed: true,
-					Error:   nil,
-				}, nil
-			}
+		if !allowed {
+			return &AuthorizationResponse{
+				Allowed: false,
+				Error:   ErrInsufficientPermissions,
+			}, nil
 		}
 
-		// otherwise, no permission
-		return &AuthorizationResponse{
-			Allowed: false,
-			Error:   ErrInsufficientPermissions,
-		}, nil
+		// we're allowed!
+		return &AuthorizationResponse{Allowed: true}, nil
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
