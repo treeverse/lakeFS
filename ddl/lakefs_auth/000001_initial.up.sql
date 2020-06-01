@@ -30,11 +30,12 @@ CREATE TABLE IF NOT EXISTS policies (
     id serial NOT NULL PRIMARY KEY,
     created_at timestamptz NOT NULL,
     display_name text NOT NULL,
-    permission text NOT NULL,
-    arn text NOT NULL,
-
+    action text[] NOT NULL,
+    resource text NOT NULL,
+    effect boolean NOT NULL,
     CONSTRAINT policies_unique_display_name UNIQUE (display_name)
 );
+CREATE INDEX idx_policy_actions ON policies USING GIN(action);
 
 
 CREATE TABLE IF NOT EXISTS user_groups (
