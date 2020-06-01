@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"os"
 	"path"
@@ -43,13 +42,13 @@ func UIHandler(authService auth.Service) http.Handler {
 		}
 
 		// check login
-		credentials, err := authService.GetAPICredentials(login.AccessKeyId)
+		credentials, err := authService.GetCredentials(login.AccessKeyId)
 		if err != nil || credentials.AccessSecretKey != login.AccessSecretKey {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
 		// get user
-		user, err := authService.GetUser(*credentials.UserId)
+		user, err := authService.GetUserById(credentials.UserId)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -60,7 +59,7 @@ func UIHandler(authService auth.Service) http.Handler {
 		claims := &jwt.StandardClaims{
 			IssuedAt:  loginTime.Unix(),
 			ExpiresAt: expires.Unix(),
-			Subject:   fmt.Sprintf("%d", user.Id),
+			Subject:   user.DisplayName,
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

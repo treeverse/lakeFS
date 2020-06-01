@@ -16,7 +16,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
-	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/index/model"
 )
@@ -31,7 +31,7 @@ type Operation struct {
 
 	Index      index.Index
 	BlockStore block.Adapter
-	Auth       utils.GatewayAuthService
+	Auth       simulator.GatewayAuthService
 	Incr       ActionIncr
 }
 
@@ -115,8 +115,7 @@ func (o *Operation) EncodeError(err errors.APIError) {
 
 type AuthenticatedOperation struct {
 	*Operation
-	SubjectId   int
-	SubjectType string
+	Principal string
 }
 
 type RepoOperation struct {

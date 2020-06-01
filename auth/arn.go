@@ -2,11 +2,20 @@ package auth
 
 import (
 	"strings"
+
+	"github.com/treeverse/lakefs/auth/wildcard"
 )
 
 // arn:${Partition}:s3:::${BucketName}
 // e.g. arn:aws:s3:::myrepo
-// in our case, arn:treeverse:repos:::myrepo
+// in our case, arn:lakefs:repos:::myrepo
+
+const (
+	ArnPartition   = "arn"
+	ArnServiceName = "lakefs"
+	ArnWildcardAll = "*"
+	ArnWildcardOne = "?"
+)
 
 type Arn struct {
 	Partition  string
@@ -23,7 +32,7 @@ func arnParseField(arn *Arn, field string, fieldIndex int) error {
 			return ErrInvalidArn
 		}
 	case 1:
-		if !strings.EqualFold(field, "treeverse") {
+		if !strings.EqualFold(field, "lakefs") {
 			return ErrInvalidArn
 		}
 		arn.Partition = field
@@ -94,7 +103,7 @@ func ArnMatch(src, dst string) bool {
 		return false
 	}
 	// wildcards are allowed for resources only
-	if strings.EqualFold(source.ResourceId, "*") || source.ResourceId == dest.ResourceId {
+	if wildcard.Match(source.ResourceId, dest.ResourceId) {
 		return true
 	}
 	return false

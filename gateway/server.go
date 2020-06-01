@@ -11,7 +11,7 @@ import (
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/sig"
-	"github.com/treeverse/lakefs/gateway/utils"
+	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
@@ -24,7 +24,7 @@ type ServerContext struct {
 	bareDomain  string
 	meta        index.Index
 	blockStore  block.Adapter
-	authService utils.GatewayAuthService
+	authService simulator.GatewayAuthService
 	stats       stats.Collector
 }
 
@@ -49,7 +49,7 @@ func NewServer(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
-	authService utils.GatewayAuthService,
+	authService simulator.GatewayAuthService,
 	listenAddr, bareDomain string,
 	stats stats.Collector,
 ) *Server {
@@ -70,7 +70,7 @@ func NewServer(
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
-	handler = utils.RegisterRecorder(httputil.LoggingMiddleware(
+	handler = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
 	), authService, region, bareDomain, listenAddr)
 
@@ -98,7 +98,7 @@ func (s *Server) Listen() error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
-	utils.ShutdownRecorder()
+	simulator.ShutdownRecorder()
 	s.Server.SetKeepAlivesEnabled(false)
 	return s.Server.Shutdown(ctx)
 }
@@ -135,7 +135,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 		return nil
 	}
-	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
+	creds, err := s.authService.GetCredentials(authContext.GetAccessKeyId())
 	if err != nil {
 		if !errors.Is(err, db.ErrNotFound) {
 			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyId()).Warn("error getting access key")
@@ -157,11 +157,20 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		return nil
 	}
 
+	user, err := s.authService.GetUserById(creds.UserId)
+	if err != nil {
+		o.Log().WithError(err).WithFields(logging.Fields{
+			"key":           authContext.GetAccessKeyId(),
+			"authenticator": authenticator,
+		}).Warn("could not get user for credentials key")
+		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+		return nil
+	}
+
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
-		Operation:   o,
-		SubjectId:   *creds.UserId,
-		SubjectType: creds.Type,
+		Operation: o,
+		Principal: user.DisplayName,
 	}
 
 	// interpolate arn string
@@ -169,9 +178,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
-		UserID:     op.SubjectId,
-		Permission: action.Permission,
-		SubjectARN: arn,
+		UserDisplayName: op.Principal,
+		Permission:      action.Permission,
+		SubjectARN:      arn,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("failed to authorize")

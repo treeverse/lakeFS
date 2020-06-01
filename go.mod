@@ -19,6 +19,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.5.0
+	github.com/jackc/pgtype v1.3.0
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
