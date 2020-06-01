@@ -105,7 +105,7 @@ func getInstallationID(authService auth.Service) string {
 	if err != nil {
 		return defaultInstallationID
 	}
-	return user.Email
+	return user.DisplayName
 }
 
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {

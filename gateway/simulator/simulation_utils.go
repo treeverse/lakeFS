@@ -2,6 +2,7 @@ package simulator
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/treeverse/lakefs/logging"
 
@@ -19,14 +20,14 @@ type PlayBackMockConf struct {
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyId     string `json:"access_key_id"`
 	AccessSecretKey string `json:"access_secret_Key"`
-	CredentialType  string `json:"credential_type"`
 	UserId          int    `json:"user_id"`
 	Region          string `json:"region"`
 }
 
 // a limited service interface for the gateway, used by simulation playback
 type GatewayAuthService interface {
-	GetAPICredentials(accessKey string) (*model.Credential, error)
+	GetCredentials(accessKey string) (*model.Credential, error)
+	GetUserById(userId int) (*model.User, error)
 	Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
 }
 
@@ -152,17 +153,23 @@ func (w *ResponseWriter) WriteHeader(statusCode int) {
 	w.OriginalWriter.WriteHeader(statusCode)
 }
 
-func (m *PlayBackMockConf) GetAPICredentials(accessKey string) (*model.Credential, error) {
+func (m *PlayBackMockConf) GetCredentials(accessKey string) (*model.Credential, error) {
 	if accessKey != m.AccessKeyId {
 		logging.Default().Fatal("access key in recording different than configuration")
 	}
 	aCred := new(model.Credential)
 	aCred.AccessKeyId = accessKey
 	aCred.AccessSecretKey = m.AccessSecretKey
-	aCred.Type = m.CredentialType
-	aCred.UserId = &m.UserId
+	aCred.UserId = m.UserId
 	return aCred, nil
 
+}
+
+func (m *PlayBackMockConf) GetUserById(userId int) (*model.User, error) {
+	return &model.User{
+		CreatedAt:   time.Now(),
+		DisplayName: "user",
+	}, nil
 }
 
 func (m *PlayBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
