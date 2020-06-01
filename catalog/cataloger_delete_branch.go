@@ -47,7 +47,8 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string
 		}
 
 		// delete branch entries
-		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id = (SELECT id FROM branches WHERE name = $1)`, branch)
+		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id = (SELECT id FROM branches WHERE repository_id = $1 AND name = $2)`,
+			r.ID, branch)
 		if err != nil {
 			return nil, err
 		}
