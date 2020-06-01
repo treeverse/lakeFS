@@ -28,7 +28,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 
 	// setup client
 	clt := client.Default
@@ -127,7 +127,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 
 	// setup client
 	clt := client.Default
@@ -169,7 +169,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -222,7 +222,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -271,7 +271,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -318,7 +318,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -366,7 +366,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -432,7 +432,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -512,7 +512,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -558,7 +558,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -621,7 +621,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -670,7 +670,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -726,7 +726,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -828,7 +828,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 	deduper := testutil.NewMockDedup()
 
@@ -900,7 +900,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client
@@ -952,7 +952,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
 
 	// setup client

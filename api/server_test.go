@@ -56,46 +56,6 @@ type dependencies struct {
 	meta   index.Index
 }
 
-func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
-	// create user
-	user := &authmodel.User{
-		CreatedAt:   time.Now(),
-		DisplayName: "admin",
-	}
-	testutil.Must(t, authService.CreateUser(user))
-
-	// create role
-	role := &authmodel.Role{
-		DisplayName: "Admins",
-	}
-	testutil.Must(t, authService.CreateRole(role))
-
-	// attach policies
-	policy := &model.Policy{
-		CreatedAt:   time.Now(),
-		DisplayName: "AdminFullAccess",
-		Action: []string{
-			string(permissions.ManageRepos),
-			string(permissions.ReadRepo),
-			string(permissions.WriteRepo),
-		},
-		Resource: "arn:lakefs:repos:::*",
-		Effect:   true,
-	}
-
-	testutil.Must(t, authService.CreatePolicy(policy))
-	testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
-
-	// assign user to role
-	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
-
-	creds, err := authService.CreateCredentials(user.DisplayName)
-	if err != nil {
-		t.Fatal(err)
-	}
-	return creds
-}
-
 type mockCollector struct{}
 
 func (m *mockCollector) Collect(_, _ string) {}
@@ -158,7 +118,7 @@ func TestServer_BasicAuth(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := createDefaultAdminUser(deps.auth, t)
+	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
 
 	// setup client
 	clt := client.Default

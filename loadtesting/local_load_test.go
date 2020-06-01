@@ -1,18 +1,19 @@
 package loadtesting
 
 import (
+	"context"
+	"errors"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
-	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/testutil"
 	"log"
+	"net/http"
 	"os"
 	"testing"
 	"time"
@@ -51,14 +52,10 @@ func TestLocalLoad(t *testing.T) {
 
 	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-	user := &authmodel.User{
-		Email:    "admin@example.com",
-		FullName: "admin user",
-	}
+	listenAddress := "localhost:8981"
 	migrator := db.NewDatabaseMigrator().
 		AddDB(config.SchemaMetadata, mdbURI).
 		AddDB(config.SchemaAuth, adbURI)
-
 	server := api.NewServer(
 		meta,
 		blockAdapter,
@@ -66,41 +63,15 @@ func TestLocalLoad(t *testing.T) {
 		&mockCollector{},
 		migrator,
 	)
-	listenAddress := "localhost:8981"
-	go server.Listen(listenAddress)
-	//time.Sleep(1 * time.Second)
-	testutil.Must(t, authService.CreateUser(user))
-	// create role
-	role := &authmodel.Role{
-		DisplayName: "Admins",
-	}
-	testutil.Must(t, authService.CreateRole(role))
 
-	// attach policies
-	policies := []*authmodel.Policy{
-		{
-			Permission: string(permissions.ManageRepos),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-		{
-			Permission: string(permissions.ReadRepo),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-		{
-			Permission: string(permissions.WriteRepo),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-	}
-	for _, policy := range policies {
-		testutil.Must(t, authService.AssignPolicyToRole(role.Id, policy))
-	}
+	go func() {
+		err := server.Listen(listenAddress)
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			t.Fatalf("error from lakeFS server: %v", err)
+		}
+	}()
+	credentials := testutil.CreateDefaultAdminUser(authService, t)
 
-	// assign user to role
-	testutil.Must(t, authService.AssignRoleToUser(role.Id, user.Id))
-	credentials, err := authService.CreateUserCredentials(user)
-	if err != nil {
-		t.Fatalf("Failed to create user credentials: %v", err)
-	}
 	testerConfig := LoadTesterConfig{
 		FreqPerSecond: 6,
 		Duration:      10 * time.Second,
@@ -109,8 +80,12 @@ func TestLocalLoad(t *testing.T) {
 		ServerAddress: "http://" + listenAddress,
 	}
 	time.Sleep(1 * time.Second)
-	err = LoadTest(testerConfig)
+	err := LoadTest(testerConfig)
 	if err != nil {
 		t.Fatalf("Got error on test: %v", err)
+	}
+	err = server.Shutdown(context.Background())
+	if err != nil {
+		t.Logf("Error when trying to shutdown lakeFS server: %v", err)
 	}
 }
