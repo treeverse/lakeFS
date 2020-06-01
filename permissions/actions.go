@@ -5,8 +5,8 @@ import (
 )
 
 const (
-	AllReposArn = "arn:treeverse:repos:::*"
-	RepoFmtArn  = "arn:treeverse:repos:::%s"
+	AllReposArn = "arn:lakefs:repos:::*"
+	RepoFmtArn  = "arn:lakefs:repos:::%s"
 )
 
 type Action struct {
