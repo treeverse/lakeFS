@@ -44,7 +44,7 @@ type Cataloger interface {
 	ListEntriesByPrefix(ctx context.Context, repo string, branch string, path, after string, limit int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
 
 	// diff and merge
-	Diff(ctx context.Context, leftBranch, rightBranch string) (Differences, error)
+	Diff(ctx context.Context, repo, leftBranch, rightBranch string) (Differences, error)
 	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
 
 	// revert
@@ -97,10 +97,6 @@ func (c *cataloger) Commit(ctx context.Context, branch string, message, committe
 }
 
 func (c *cataloger) ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) Diff(ctx context.Context, leftBranch, rightBranch string) (Differences, error) {
 	panic("implement me")
 }
 
