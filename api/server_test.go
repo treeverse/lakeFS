@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/auth/model"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
@@ -70,31 +71,20 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	testutil.Must(t, authService.CreateRole(role))
 
 	// attach policies
-	policies := []*authmodel.Policy{
-		{
+	policy := &model.Policy{
+		CreatedAt:   time.Now(),
+		DisplayName: "AdminFullAccess",
+		Action: []string{
+			string(permissions.ManageRepos),
+			string(permissions.ReadRepo),
+			string(permissions.WriteRepo),
+		},
+		Resource: "arn:lakefs:repos:::*",
+		Effect:   true,
+	}
 
-			CreatedAt:   time.Now(),
-			DisplayName: "AllRepositoriesManage",
-			Permission:  string(permissions.ManageRepos),
-			Arn:         "arn:treeverse:repos:::*",
-		},
-		{
-			CreatedAt:   time.Now(),
-			DisplayName: "AllRepositoriesRead",
-			Permission:  string(permissions.ReadRepo),
-			Arn:         "arn:treeverse:repos:::*",
-		},
-		{
-			CreatedAt:   time.Now(),
-			DisplayName: "AllRepositoriesWrite",
-			Permission:  string(permissions.WriteRepo),
-			Arn:         "arn:treeverse:repos:::*",
-		},
-	}
-	for _, policy := range policies {
-		testutil.Must(t, authService.CreatePolicy(policy))
-		testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
-	}
+	testutil.Must(t, authService.CreatePolicy(policy))
+	testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
 
 	// assign user to role
 	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
