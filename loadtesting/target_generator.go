@@ -43,47 +43,51 @@ func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int
 	}
 	return result
 }
-
-func (t *TargetGenerator) GenerateCommitTarget(repo, msg string) Request {
+func (t *TargetGenerator) defaultRequestTarget(method, url, body, requestType string) Request {
 	tgt := vegeta.Target{
-		Method: "POST",
-		URL:    fmt.Sprintf("%s/repositories/%s/branches/master/commits", t.ServerAddress, repo),
-		Body:   []byte(fmt.Sprintf(`{"message":"%s","metadata":{}}`, msg)),
-		Header: getDefaultHeader(),
+		Method: method, URL: url, Body: []byte(body), Header: getDefaultHeader(),
 	}
 	res := Request{
 		Target:      tgt,
-		RequestType: "commit",
+		RequestType: requestType,
 	}
 	return res
+}
+
+func (t *TargetGenerator) GenerateCommitTarget(repo, msg string) Request {
+	return t.defaultRequestTarget("POST",
+		fmt.Sprintf("%s/repositories/%s/branches/master/commits", t.ServerAddress, repo),
+		fmt.Sprintf(`{"message":"%s","metadata":{}}`, msg),
+		"commit")
 }
 
 func (t *TargetGenerator) GenerateBranchTarget(repo, name string) Request {
-	tgt := vegeta.Target{
-		Method: "POST",
-		URL:    fmt.Sprintf("%s/repositories/%s/branches", t.ServerAddress, repo),
-		Body:   []byte(fmt.Sprintf(`{"id":"%s","sourceRefId":"master"}`, name)),
-		Header: getDefaultHeader(),
-	}
-	res := Request{
-		Target:      tgt,
-		RequestType: "createBranch",
-	}
-	return res
+	return t.defaultRequestTarget("POST",
+		fmt.Sprintf("%s/repositories/%s/branches", t.ServerAddress, repo),
+		fmt.Sprintf(`{"id":"%s","sourceRefId":"master"}`, name),
+		"createBranch")
 }
 
 func (t *TargetGenerator) GenerateMergeToMasterTarget(repo, branch string) Request {
-	tgt := vegeta.Target{
-		Method: "POST",
-		URL:    fmt.Sprintf("%s/repositories/%s/refs/%s/merge/master", t.ServerAddress, repo, branch),
-		Body:   []byte("{}"),
-		Header: getDefaultHeader(),
-	}
-	res := Request{
-		Target:      tgt,
-		RequestType: "commit",
-	}
-	return res
+	return t.defaultRequestTarget("POST",
+		fmt.Sprintf("%s/repositories/%s/refs/%s/merge/master", t.ServerAddress, repo, branch),
+		"{}",
+		"merge")
+
+}
+
+func (t *TargetGenerator) GenerateListTarget(repo, branch string, amount int) Request {
+	return t.defaultRequestTarget("GET",
+		fmt.Sprintf("%s/repositories/%s/refs/%s/objects/ls?tree=&amount=%d&after=&", t.ServerAddress, repo, branch, amount),
+		"{}",
+		fmt.Sprintf("list%d", amount))
+}
+
+func (t *TargetGenerator) GenerateDiffTarget(repo, branch string) Request {
+	return t.defaultRequestTarget("GET",
+		fmt.Sprintf("%s/repositories/%s/branches/%s/diff", t.ServerAddress, repo, branch),
+		"{}",
+		"diff")
 }
 
 func getDefaultHeader() http.Header {

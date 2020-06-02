@@ -74,7 +74,7 @@ func TestLocalLoad(t *testing.T) {
 
 	testerConfig := LoadTesterConfig{
 		FreqPerSecond: 6,
-		Duration:      10 * time.Second,
+		Duration:      30 * time.Second,
 		DeleteRepo:    false,
 		Credentials:   *credentials,
 		ServerAddress: "http://" + listenAddress,
