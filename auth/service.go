@@ -807,11 +807,6 @@ func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId strin
 		if err != nil {
 			return nil, err
 		}
-		key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
-		if err != nil {
-			return nil, err
-		}
-		credentials.AccessSecretKey = key
 		return credentials, nil
 	})
 	if err != nil {
