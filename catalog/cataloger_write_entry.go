@@ -7,31 +7,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const (
-	NoLock = iota
-	ShareLock
-	UpdateLock
-)
-
-func getBranchID(tx db.Tx, repo, branch string, branchLockType int) (int, error) {
-	var forLock string
-	switch branchLockType {
-	case NoLock:
-		forLock = ""
-	case ShareLock:
-		forLock = " FOR SHARE"
-	case UpdateLock:
-		forLock = " FOR UPDATE"
-	}
-	getBranchId := `SELECT b.id FROM branches b join repositories r 
-						on r.id = b.repository_id
-						WHERE r.name = $1 and b.name = $2` + forLock
-	var branchID int
-	err := tx.Get(&branchID, getBranchId, repo, branch) // will block merges,commits and diffs on this branch
-	return branchID, err
-}
-
-func (c *cataloger) WriteEntry(ctx context.Context, repo, branch, path, checksum, physicalAddress string, size int, isStaged bool, metadata *map[string]string) error {
+func (c *cataloger) WriteEntry(ctx context.Context, repo, branch, path, checksum, physicalAddress string, size int, metadata *map[string]string) error {
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repo),
 		"path":   ValidatePath(path),
@@ -40,7 +16,7 @@ func (c *cataloger) WriteEntry(ctx context.Context, repo, branch, path, checksum
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repo, branch, ShareLock) // will block merges,commits and diffs on this branch
+		branchID, err := getBranchID(tx, repo, branch, LockTypeShare) // will block merges,commits and diffs on this branch
 		if err != nil {
 			c.log.WithContext(ctx).
 				WithError(err).
@@ -61,13 +37,13 @@ func (c *cataloger) WriteEntry(ctx context.Context, repo, branch, path, checksum
 				}).Warn("Delete uncommitted failed")
 			return nil, err
 		}
-		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,metadata,size,is_staged) values ($1,$2,$3,$4,$5,$6,$7)`,
-			branchID, path, physicalAddress, checksum, metadata, size, isStaged)
+		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,metadata,size) values ($1,$2,$3,$4,$5,$6)`,
+			branchID, path, physicalAddress, checksum, metadata, size)
 		if err != nil {
 			c.log.WithContext(ctx).WithError(err).
 				WithFields(logging.Fields{
 					"branch": branch,
-					"Path":   path,
+					"path":   path,
 				}).Warn("failed entry creation")
 			return nil, err
 		} else {

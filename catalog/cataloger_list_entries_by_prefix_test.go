@@ -26,27 +26,20 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 		fileChecksum := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := n * 10
-		fileStage := false
-		if i%2 == 0 {
-			fileStage = true
-		}
-		err := c.WriteEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, fileStage, nil)
+		err := c.WriteEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil)
 		if err != nil {
 			t.Fatal("failed to write entry", err)
 		}
 	}
 
-	isStagedTrue := true
-	isStagedFalse := false
-
 	type args struct {
-		repo        string
-		branch      string
-		path        string
-		after       string
-		limit       int
-		readOptions EntryReadOptions
-		descend     bool
+		repo            string
+		branch          string
+		path            string
+		after           string
+		limit           int
+		readUncommitted bool
+		descend         bool
 	}
 	tests := []struct {
 		name        string
@@ -56,95 +49,61 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 		wantErr     bool
 	}{
 		{
-			name: "all unstaged",
+			name: "all uncommitted",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				after:       "",
-				limit:       -1,
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
-				descend:     false,
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				after:           "",
+				limit:           -1,
+				readUncommitted: true,
+				descend:         false,
 			},
 			wantEntries: []Entry{
-				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", IsStaged: &isStagedTrue},
-				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63", IsStaged: &isStagedFalse},
-				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3", IsStaged: &isStagedTrue},
-				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff", IsStaged: &isStagedFalse},
-				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d", IsStaged: &isStagedTrue},
+				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
+				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
+				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
+				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
+				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d"},
 			},
 			wantMore: false,
 			wantErr:  false,
 		},
 		{
-			name: "all unstaged desc",
+			name: "all uncommitted desc",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				after:       "",
-				limit:       -1,
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
-				descend:     true,
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				after:           "",
+				limit:           -1,
+				readUncommitted: true,
+				descend:         true,
 			},
 			wantEntries: []Entry{
-				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d", IsStaged: &isStagedTrue},
-				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff", IsStaged: &isStagedFalse},
-				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3", IsStaged: &isStagedTrue},
-				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63", IsStaged: &isStagedFalse},
-				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", IsStaged: &isStagedTrue},
+				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d"},
+				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
+				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
+				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
+				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
 			},
 			wantMore: false,
 			wantErr:  false,
 		},
 		{
-			name: "all staged",
+			name: "first 2 uncommitted",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				after:       "",
-				limit:       -1,
-				readOptions: EntryReadOptions{EntryState: EntryStateStaged},
-				descend:     false,
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				after:           "",
+				limit:           2,
+				readUncommitted: true,
+				descend:         false,
 			},
 			wantEntries: []Entry{
-				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", IsStaged: &isStagedTrue},
-				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3", IsStaged: &isStagedTrue},
-				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d", IsStaged: &isStagedTrue},
-			},
-			wantMore: false,
-			wantErr:  false,
-		},
-		{
-			name: "all committed",
-			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				after:       "",
-				limit:       -1,
-				readOptions: EntryReadOptions{EntryState: EntryStateCommitted},
-				descend:     false,
-			},
-			wantEntries: nil,
-			wantMore:    false,
-			wantErr:     false,
-		},
-		{
-			name: "first 2",
-			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				after:       "",
-				limit:       2,
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
-				descend:     false,
-			},
-			wantEntries: []Entry{
-				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", IsStaged: &isStagedTrue},
-				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63", IsStaged: &isStagedFalse},
+				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
+				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -152,25 +111,40 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 		{
 			name: "last 2",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				after:       "/file3",
-				limit:       2,
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
-				descend:     false,
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				after:           "/file3",
+				limit:           2,
+				readUncommitted: true,
+				descend:         false,
 			},
 			wantEntries: []Entry{
-				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff", IsStaged: &isStagedFalse},
-				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d", IsStaged: &isStagedTrue},
+				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
+				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d"},
 			},
 			wantMore: false,
 			wantErr:  false,
 		},
+		{
+			name: "committed",
+			args: args{
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				after:           "/file3",
+				limit:           -1,
+				readUncommitted: false,
+				descend:         false,
+			},
+			wantEntries: nil,
+			wantMore:    false,
+			wantErr:     false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntriesByPrefix(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.readOptions, tt.args.descend)
+			got, gotMore, err := c.ListEntriesByPrefix(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.descend, tt.args.readUncommitted)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListEntriesByPrefix() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -183,7 +157,6 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 					PhysicalAddress: ent.PhysicalAddress,
 					Size:            ent.Size,
 					Checksum:        ent.Checksum,
-					IsStaged:        ent.IsStaged,
 				})
 			}
 

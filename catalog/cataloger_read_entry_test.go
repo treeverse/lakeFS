@@ -16,20 +16,18 @@ func TestCataloger_ReadEntry(t *testing.T) {
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
 		t.Fatal("create repo for testing", err)
 	}
-	if err := c.WriteEntry(ctx, "repo1", "master", "/file1", "ff", "/addr1", 42, true, nil); err != nil {
+	if err := c.WriteEntry(ctx, "repo1", "master", "/file1", "ff", "/addr1", 42, nil); err != nil {
 		t.Fatal("failed to write entry", err)
 	}
-	if err := c.WriteEntry(ctx, "repo1", "master", "/file2", "ee", "/addr2", 24, false, nil); err != nil {
+	if err := c.WriteEntry(ctx, "repo1", "master", "/file2", "ee", "/addr2", 24, nil); err != nil {
 		t.Fatal("failed to write entry", err)
 	}
 
-	isStagedTrue := true
-	isStagedFalse := false
 	type args struct {
-		repo        string
-		branch      string
-		path        string
-		readOptions EntryReadOptions
+		repo            string
+		branch          string
+		path            string
+		readUncommitted bool
 	}
 	tests := []struct {
 		name    string
@@ -38,45 +36,23 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "read staged - file staged",
+			name: "read uncommitted - uncommitted file",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "/file1",
-				readOptions: EntryReadOptions{EntryState: EntryStateStaged},
+				repo:            "repo1",
+				branch:          "master",
+				path:            "/file1",
+				readUncommitted: true,
 			},
-			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff", IsStaged: &isStagedTrue},
+			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},
 		{
-			name: "read unstaged - file staged",
+			name: "read committed - uncommitted file",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "/file1",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
-			},
-			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff", IsStaged: &isStagedTrue},
-			wantErr: false,
-		},
-		{
-			name: "read unstaged - file unstaged",
-			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "/file2",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
-			},
-			want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee", IsStaged: &isStagedFalse},
-			wantErr: false,
-		},
-		{
-			name: "read staged - file unstaged",
-			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "/file2",
-				readOptions: EntryReadOptions{EntryState: EntryStateStaged},
+				repo:            "repo1",
+				branch:          "master",
+				path:            "/file1",
+				readUncommitted: false,
 			},
 			want:    nil,
 			wantErr: true,
@@ -84,10 +60,10 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		{
 			name: "read unknown file",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "/file3",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				repo:            "repo1",
+				branch:          "master",
+				path:            "/file3",
+				readUncommitted: true,
 			},
 			want:    nil,
 			wantErr: true,
@@ -95,10 +71,10 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		{
 			name: "read unknown repo",
 			args: args{
-				repo:        "repoX",
-				branch:      "master",
-				path:        "/file1",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				repo:            "repoX",
+				branch:          "master",
+				path:            "/file1",
+				readUncommitted: true,
 			},
 			want:    nil,
 			wantErr: true,
@@ -106,10 +82,10 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		{
 			name: "read missing repo",
 			args: args{
-				repo:        "",
-				branch:      "master",
-				path:        "/file1",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				repo:            "",
+				branch:          "master",
+				path:            "/file1",
+				readUncommitted: true,
 			},
 			want:    nil,
 			wantErr: true,
@@ -117,10 +93,10 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		{
 			name: "read missing branch",
 			args: args{
-				repo:        "repo1",
-				branch:      "",
-				path:        "/file1",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				repo:            "repo1",
+				branch:          "",
+				path:            "/file1",
+				readUncommitted: true,
 			},
 			want:    nil,
 			wantErr: true,
@@ -128,10 +104,10 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		{
 			name: "read missing path",
 			args: args{
-				repo:        "repo1",
-				branch:      "master",
-				path:        "",
-				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				readUncommitted: true,
 			},
 			want:    nil,
 			wantErr: true,
@@ -140,7 +116,7 @@ func TestCataloger_ReadEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.ReadEntry(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.readOptions)
+			got, err := c.ReadEntry(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.readUncommitted)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ReadEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -164,13 +140,6 @@ func TestCataloger_ReadEntry(t *testing.T) {
 			}
 			if tt.want.Checksum != got.Checksum {
 				t.Errorf("ReadEntry() got Checksum = %v, want = %v", got.Checksum, tt.want.Checksum)
-			}
-			if tt.want.IsStaged == nil && got.IsStaged != nil {
-				t.Error("ReadEntry() got IsStaged non nil, want nil")
-			} else if tt.want.IsStaged != nil && got.IsStaged == nil {
-				t.Error("ReadEntry() got IsStaged nil, want non nil")
-			} else if tt.want.IsStaged != nil && got.IsStaged != nil && *tt.want.IsStaged != *got.IsStaged {
-				t.Errorf("ReadEntry() got IsStaged %t, want %t", *tt.want.IsStaged, *got.IsStaged)
 			}
 		})
 	}

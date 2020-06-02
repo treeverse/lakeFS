@@ -37,12 +37,11 @@ type Entry struct {
 	Size            int64        `db:"size"`
 	Checksum        string       `db:"checksum"`
 	Metadata        JSONMetadata `db:"metadata"`
-	IsStaged        *bool        `db:"is_staged"`
 }
 
 type Commit struct {
 	BranchID     int          `db:"branch_id"`
-	CommitNumber int          `db:"commit_number"`
+	CommitID     int          `db:"commit_id"`
 	Committer    string       `db:"committer"`
 	Message      string       `db:"message"`
 	CreationDate time.Time    `db:"creation_date"`
