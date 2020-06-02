@@ -8,7 +8,9 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/authentication"
+	authmodel "github.com/treeverse/lakefs/auth/model"
+
+	authentication "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
@@ -79,7 +81,41 @@ func (a *Handler) ForRequest(r *http.Request) *HandlerContext {
 func (a *Handler) Configure(api *operations.LakefsAPI) {
 
 	// Register operations here
-	api.AuthenticationGetUserHandler = a.GetUserHandler()
+	api.AuthGetCurrentUserHandler = a.GetCurrentUserHandler()
+	api.AuthListUsersHandler = a.ListUsersHandler()
+	api.AuthGetUserHandler = a.GetUserHandler()
+	api.AuthCreateUserHandler = a.CreateUserHandler()
+	api.AuthDeleteUserHandler = a.DeleteUserHandler()
+	api.AuthGetGroupHandler = a.GetGroupHandler()
+	api.AuthListGroupsHandler = a.ListGroupsHandler()
+	api.AuthCreateGroupHandler = a.CreateGroupHandler()
+	api.AuthDeleteGroupHandler = a.DeleteGroupHandler()
+	api.AuthListRolesHandler = a.ListRolesHandler()
+	api.AuthCreateRoleHandler = a.CreateRoleHandler()
+	api.AuthGetRoleHandler = a.GetRoleHandler()
+	api.AuthDeleteRoleHandler = a.DeleteRoleHandler()
+	api.AuthListPoliciesHandler = a.ListPoliciesHandler()
+	api.AuthCreatePolicyHandler = a.CreatePolicyHandler()
+	api.AuthGetPolicyHandler = a.GetPolicyHandler()
+	api.AuthDeletePolicyHandler = a.DeletePolicyHandler()
+	api.AuthListGroupMembersHandler = a.ListGroupMembersHandler()
+	api.AuthAddGroupMembershipHandler = a.AddGroupMembershipHandler()
+	api.AuthDeleteGroupMembershipHandler = a.DeleteGroupMembershipHandler()
+	api.AuthListUserCredentialsHandler = a.ListUserCredentialsHandler()
+	api.AuthCreateCredentialsHandler = a.CreateCredentialsHandler()
+	api.AuthDeleteCredentialsHandler = a.DeleteCredentialsHandler()
+	api.AuthGetCredentialsHandler = a.GetCredentialsHandler()
+	api.AuthListUserGroupsHandler = a.ListUserGroupsHandler()
+	api.AuthListUserRolesHandler = a.ListUserRolesHandler()
+	api.AuthAttachRoleToUserHandler = a.AttachRoleToUserHandler()
+	api.AuthDetachRoleFromUserHandler = a.DetachRoleFromUserHandler()
+	api.AuthListGroupRolesHandler = a.ListGroupRolesHandler()
+	api.AuthAttachRoleToGroupHandler = a.AttachRoleToGroupHandler()
+	api.AuthDetachRoleFromGroupHandler = a.DetachRoleFromGroupHandler()
+	api.AuthListRolePoliciesHandler = a.ListRolePoliciesHandler()
+	api.AuthAttachPolicyToRoleHandler = a.AttachPolicyToRoleHandler()
+	api.AuthDetachPolicyFromRoleHandler = a.DetachPolicyFromRoleHandler()
+
 	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
 	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
@@ -114,9 +150,29 @@ func (a *Handler) authorize(user *models.User, action permissions.Action) error 
 	return authorize(a.context.Auth, user, action)
 }
 
-func (a *Handler) GetUserHandler() authentication.GetUserHandler {
-	return authentication.GetUserHandlerFunc(func(params authentication.GetUserParams, user *models.User) middleware.Responder {
-		return authentication.NewGetUserOK().WithPayload(&authentication.GetUserOKBody{
+func createPaginator(nextToken string, amountResults int) *models.Pagination {
+	return &models.Pagination{
+		HasMore:    swag.Bool(nextToken != ""),
+		MaxPerPage: swag.Int64(MaxResultsPerPage),
+		NextOffset: nextToken,
+		Results:    swag.Int64(int64(amountResults)),
+	}
+}
+
+func pageAmount(i *int64) int {
+	inti := int(swag.Int64Value(i))
+	if inti > int(MaxResultsPerPage) {
+		return int(MaxResultsPerPage)
+	}
+	if inti <= 0 {
+		return 100
+	}
+	return inti
+}
+
+func (a *Handler) GetCurrentUserHandler() authentication.GetCurrentUserHandler {
+	return authentication.GetCurrentUserHandlerFunc(func(params authentication.GetCurrentUserParams, user *models.User) middleware.Responder {
+		return authentication.NewGetCurrentUserOK().WithPayload(&authentication.GetCurrentUserOKBody{
 			User: user,
 		})
 	})
@@ -130,7 +186,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		}
 		a.incrStat("list_repos")
 
-		after, amount := getPaginationParams(params.After, params.Amount)
+		after, amount := getPaginationParams(params.Next, params.Amount)
 
 		repos, hasMore, err := a.ForRequest(params.HTTPRequest).Index.ListRepos(amount, after)
 		if err != nil {
@@ -399,7 +455,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		a.incrStat("list_branches")
 		index := a.ForRequest(params.HTTPRequest).Index
 
-		after, amount := getPaginationParams(params.After, params.Amount)
+		after, amount := getPaginationParams(params.Next, params.Amount)
 
 		res, hasMore, err := index.ListBranchesByPrefix(params.RepositoryID, "", amount, after)
 		if err != nil {
@@ -858,5 +914,845 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		}
 
 		return branches.NewRevertBranchNoContent()
+	})
+}
+
+func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
+	return authentication.CreateUserHandlerFunc(func(params authentication.CreateUserParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewCreateUserUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		u := &authmodel.User{
+			CreatedAt:   time.Now(),
+			DisplayName: params.User.ID,
+		}
+		err = a.context.Auth.CreateUser(u)
+		if err != nil {
+			return authentication.NewCreateUserDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewCreateUserCreated().
+			WithPayload(&models.User{
+				CreationDate: u.CreatedAt.Unix(),
+				ID:           u.DisplayName,
+			})
+	})
+}
+
+func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
+	return authentication.ListUsersHandlerFunc(func(params authentication.ListUsersParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListUsersUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		users, paginator, err := a.context.Auth.ListUsers(&authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    pageAmount(params.Amount),
+		})
+		if err != nil {
+			return authentication.NewListUsersDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.User, len(users))
+		for i, u := range users {
+			response[i] = &models.User{
+				CreationDate: u.CreatedAt.Unix(),
+				ID:           u.DisplayName,
+			}
+		}
+
+		return authentication.NewListUsersOK().
+			WithPayload(&authentication.ListUsersOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) GetUserHandler() authentication.GetUserHandler {
+	return authentication.GetUserHandlerFunc(func(params authentication.GetUserParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewGetUserUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		u, err := a.context.Auth.GetUser(params.UserID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewGetUserNotFound().
+				WithPayload(responseError("user not found"))
+		}
+		if err != nil {
+			return authentication.NewGetUserDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewGetUserOK().
+			WithPayload(&models.User{
+				CreationDate: u.CreatedAt.Unix(),
+				ID:           u.DisplayName,
+			})
+	})
+}
+
+func (a *Handler) DeleteUserHandler() authentication.DeleteUserHandler {
+	return authentication.DeleteUserHandlerFunc(func(params authentication.DeleteUserParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDeleteUserUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DeleteUser(params.UserID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewDeleteUserNotFound().
+				WithPayload(responseError("user not found"))
+		}
+		if err != nil {
+			return authentication.NewDeleteUserDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewDeleteUserNoContent()
+	})
+}
+
+func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
+	return authentication.GetGroupHandlerFunc(func(params authentication.GetGroupParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewGetGroupUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		g, err := a.context.Auth.GetGroup(params.GroupID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewGetGroupNotFound().
+				WithPayload(responseError("group not found"))
+		}
+		if err != nil {
+			return authentication.NewGetGroupDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewGetGroupOK().
+			WithPayload(&models.Group{
+				CreationDate: g.CreatedAt.Unix(),
+				ID:           g.DisplayName,
+			})
+	})
+}
+
+func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
+	return authentication.ListGroupsHandlerFunc(func(params authentication.ListGroupsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListGroupsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		groups, paginator, err := a.context.Auth.ListGroups(&authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    pageAmount(params.Amount),
+		})
+
+		if err != nil {
+			return authentication.NewListGroupsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Group, len(groups))
+		for i, g := range groups {
+			response[i] = &models.Group{
+				CreationDate: g.CreatedAt.Unix(),
+				ID:           g.DisplayName,
+			}
+		}
+
+		return authentication.NewListGroupsOK().
+			WithPayload(&authentication.ListGroupsOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
+	return authentication.CreateGroupHandlerFunc(func(params authentication.CreateGroupParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewCreateGroupUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		g := &authmodel.Group{
+			CreatedAt:   time.Now(),
+			DisplayName: params.Group.ID,
+		}
+
+		err = a.context.Auth.CreateGroup(g)
+		if err != nil {
+			return authentication.NewCreateGroupDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewCreateGroupCreated().
+			WithPayload(&models.Group{
+				CreationDate: g.CreatedAt.Unix(),
+				ID:           g.DisplayName,
+			})
+	})
+}
+
+func (a *Handler) DeleteGroupHandler() authentication.DeleteGroupHandler {
+	return authentication.DeleteGroupHandlerFunc(func(params authentication.DeleteGroupParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDeleteGroupUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DeleteGroup(params.GroupID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewDeleteGroupNotFound().
+				WithPayload(responseError("group not found"))
+		}
+		if err != nil {
+			return authentication.NewDeleteGroupDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return authentication.NewDeleteGroupNoContent()
+	})
+}
+
+func (a *Handler) ListRolesHandler() authentication.ListRolesHandler {
+	return authentication.ListRolesHandlerFunc(func(params authentication.ListRolesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListRolesUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		roles, paginator, err := a.context.Auth.ListRoles(&authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListRolesDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Role, len(roles))
+		for i, r := range roles {
+			response[i] = &models.Role{
+				CreationDate: r.CreatedAt.Unix(),
+				ID:           r.DisplayName,
+			}
+		}
+
+		return authentication.NewListRolesOK().
+			WithPayload(&authentication.ListRolesOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) CreateRoleHandler() authentication.CreateRoleHandler {
+	return authentication.CreateRoleHandlerFunc(func(params authentication.CreateRoleParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewCreateRoleUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		r := &authmodel.Role{
+			CreatedAt:   time.Now(),
+			DisplayName: swag.StringValue(params.Role.ID),
+		}
+
+		err = a.context.Auth.CreateRole(r)
+		if err != nil {
+			return authentication.NewCreateRoleDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewCreateRoleCreated().
+			WithPayload(&models.Role{
+				CreationDate: r.CreatedAt.Unix(),
+				ID:           r.DisplayName,
+			})
+	})
+}
+
+func (a *Handler) GetRoleHandler() authentication.GetRoleHandler {
+	return authentication.GetRoleHandlerFunc(func(params authentication.GetRoleParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewGetRoleUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		role, err := a.context.Auth.GetRole(params.RoleID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewGetRoleNotFound().
+				WithPayload(responseError("role not found"))
+		}
+		if err != nil {
+			return authentication.NewGetRoleDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewGetRoleOK().
+			WithPayload(&models.Role{
+				CreationDate: role.CreatedAt.Unix(),
+				ID:           role.DisplayName,
+			})
+	})
+}
+
+func (a *Handler) DeleteRoleHandler() authentication.DeleteRoleHandler {
+	return authentication.DeleteRoleHandlerFunc(func(params authentication.DeleteRoleParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDeleteRoleUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DeleteRole(params.RoleID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewDeleteRoleNotFound().
+				WithPayload(responseError("role not found"))
+		}
+		if err != nil {
+			return authentication.NewDeleteRoleDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return authentication.NewDeleteRoleNoContent()
+	})
+}
+
+func serializePolicy(p *authmodel.Policy) *models.Policy {
+	effect := "Deny"
+	if p.Effect {
+		effect = "Allow"
+	}
+	return &models.Policy{
+		Action:       p.Action,
+		CreationDate: p.CreatedAt.Unix(),
+		Effect:       effect,
+		ID:           p.DisplayName,
+		Resource:     p.Resource,
+	}
+}
+
+func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
+	return authentication.ListPoliciesHandlerFunc(func(params authentication.ListPoliciesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListPoliciesUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		policies, paginator, err := a.context.Auth.ListPolicies(&authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListPoliciesDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Policy, len(policies))
+		for i, p := range policies {
+			response[i] = serializePolicy(p)
+		}
+
+		return authentication.NewListPoliciesOK().
+			WithPayload(&authentication.ListPoliciesOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
+	return authentication.CreatePolicyHandlerFunc(func(params authentication.CreatePolicyParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewCreatePolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		effect := false
+		if swag.StringValue(params.Policy.Effect) == "Allow" {
+			effect = true
+		}
+
+		p := &authmodel.Policy{
+			CreatedAt:   time.Now(),
+			DisplayName: swag.StringValue(params.Policy.ID),
+			Action:      params.Policy.Action,
+			Resource:    swag.StringValue(params.Policy.Resource),
+			Effect:      effect,
+		}
+
+		err = a.context.Auth.CreatePolicy(p)
+		if err != nil {
+			return authentication.NewCreatePolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewCreatePolicyCreated().
+			WithPayload(serializePolicy(p))
+	})
+}
+
+func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
+	return authentication.GetPolicyHandlerFunc(func(params authentication.GetPolicyParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewGetPolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		p, err := a.context.Auth.GetPolicy(params.PolicyID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewGetPolicyNotFound().
+				WithPayload(responseError("policy not found"))
+		}
+		if err != nil {
+			return authentication.NewGetPolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewGetPolicyOK().
+			WithPayload(serializePolicy(p))
+	})
+}
+
+func (a *Handler) DeletePolicyHandler() authentication.DeletePolicyHandler {
+	return authentication.DeletePolicyHandlerFunc(func(params authentication.DeletePolicyParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDeletePolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DeletePolicy(params.PolicyID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewDeletePolicyNotFound().
+				WithPayload(responseError("policy not found"))
+		}
+		if err != nil {
+			return authentication.NewDeletePolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return authentication.NewDeletePolicyNoContent()
+	})
+}
+
+func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandler {
+	return authentication.ListGroupMembersHandlerFunc(func(params authentication.ListGroupMembersParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListGroupMembersUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		users, paginator, err := a.context.Auth.ListGroupUsers(params.GroupID, &authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListGroupMembersDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.User, len(users))
+		for i, u := range users {
+			response[i] = &models.User{
+				CreationDate: u.CreatedAt.Unix(),
+				ID:           u.DisplayName,
+			}
+		}
+
+		return authentication.NewListGroupMembersOK().
+			WithPayload(&authentication.ListGroupMembersOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) AddGroupMembershipHandler() authentication.AddGroupMembershipHandler {
+	return authentication.AddGroupMembershipHandlerFunc(func(params authentication.AddGroupMembershipParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewAddGroupMembershipUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.AddUserToGroup(params.UserID, params.GroupID)
+		if err != nil {
+			return authentication.NewAddGroupMembershipDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewAddGroupMembershipCreated()
+	})
+}
+
+func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembershipHandler {
+	return authentication.DeleteGroupMembershipHandlerFunc(func(params authentication.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDeleteGroupMembershipUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.RemoveUserFromGroup(params.UserID, params.GroupID)
+		if err != nil {
+			return authentication.NewDeleteGroupMembershipDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewDeleteGroupMembershipNoContent()
+	})
+}
+
+func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredentialsHandler {
+	return authentication.ListUserCredentialsHandlerFunc(func(params authentication.ListUserCredentialsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListUserCredentialsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		credentials, paginator, err := a.context.Auth.ListUserCredentials(params.UserID, &authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListUserCredentialsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Credentials, len(credentials))
+		for i, c := range credentials {
+			response[i] = &models.Credentials{
+				AccessKeyID:  c.AccessKeyId,
+				CreationDate: c.IssuedDate.Unix(),
+			}
+		}
+
+		return authentication.NewListUserCredentialsOK().
+			WithPayload(&authentication.ListUserCredentialsOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHandler {
+	return authentication.CreateCredentialsHandlerFunc(func(params authentication.CreateCredentialsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewCreateCredentialsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		credentials, err := a.context.Auth.CreateCredentials(params.UserID)
+		if err != nil {
+			return authentication.NewCreateCredentialsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewCreateCredentialsCreated().
+			WithPayload(&models.CredentialsWithSecret{
+				AccessKeyID:     credentials.AccessKeyId,
+				AccessSecretKey: credentials.AccessSecretKey,
+				CreationDate:    credentials.IssuedDate.Unix(),
+			})
+	})
+}
+
+func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHandler {
+	return authentication.DeleteCredentialsHandlerFunc(func(params authentication.DeleteCredentialsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDeleteCredentialsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DeleteCredentials(params.UserID, params.AccessKeyID)
+		if err != nil {
+			return authentication.NewDeleteCredentialsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewDeleteCredentialsNoContent()
+	})
+}
+
+func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
+	return authentication.GetCredentialsHandlerFunc(func(params authentication.GetCredentialsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewGetCredentialsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+		credentials, err := a.context.Auth.GetCredentialsForUser(params.UserID, params.AccessKeyID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewGetCredentialsNotFound().
+				WithPayload(responseError("credentials not found"))
+		}
+		if err != nil {
+			return authentication.NewGetCredentialsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewGetCredentialsOK().
+			WithPayload(&models.Credentials{
+				AccessKeyID:  credentials.AccessKeyId,
+				CreationDate: credentials.IssuedDate.Unix(),
+			})
+	})
+}
+
+func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
+	return authentication.ListUserGroupsHandlerFunc(func(params authentication.ListUserGroupsParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListUserGroupsUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		groups, paginator, err := a.context.Auth.ListUserGroups(params.UserID, &authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListUserGroupsDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Group, len(groups))
+		for i, g := range groups {
+			response[i] = &models.Group{
+				CreationDate: g.CreatedAt.Unix(),
+				ID:           g.DisplayName,
+			}
+		}
+
+		return authentication.NewListUserGroupsOK().
+			WithPayload(&authentication.ListUserGroupsOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) ListUserRolesHandler() authentication.ListUserRolesHandler {
+	return authentication.ListUserRolesHandlerFunc(func(params authentication.ListUserRolesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListUserRolesUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		roles, paginator, err := a.context.Auth.ListUserRoles(params.UserID, &authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListUserRolesDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Role, len(roles))
+		for i, r := range roles {
+			response[i] = &models.Role{
+				CreationDate: r.CreatedAt.Unix(),
+				ID:           r.DisplayName,
+			}
+		}
+
+		return authentication.NewListUserRolesOK().
+			WithPayload(&authentication.ListUserRolesOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) AttachRoleToUserHandler() authentication.AttachRoleToUserHandler {
+	return authentication.AttachRoleToUserHandlerFunc(func(params authentication.AttachRoleToUserParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewAttachRoleToUserUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.AttachRoleToUser(params.RoleID, params.UserID)
+		if err != nil {
+			return authentication.NewAttachRoleToUserDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewAttachRoleToUserCreated()
+	})
+}
+
+func (a *Handler) DetachRoleFromUserHandler() authentication.DetachRoleFromUserHandler {
+	return authentication.DetachRoleFromUserHandlerFunc(func(params authentication.DetachRoleFromUserParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDetachRoleFromUserUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DetachRoleFromUser(params.RoleID, params.UserID)
+		if err != nil {
+			return authentication.NewDetachRoleFromUserDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewDetachRoleFromUserNoContent()
+	})
+}
+
+func (a *Handler) ListGroupRolesHandler() authentication.ListGroupRolesHandler {
+	return authentication.ListGroupRolesHandlerFunc(func(params authentication.ListGroupRolesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListGroupRolesUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		roles, paginator, err := a.context.Auth.ListGroupRoles(params.GroupID, &authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListGroupRolesDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Role, len(roles))
+		for i, r := range roles {
+			response[i] = &models.Role{
+				CreationDate: r.CreatedAt.Unix(),
+				ID:           r.DisplayName,
+			}
+		}
+
+		return authentication.NewListGroupRolesOK().
+			WithPayload(&authentication.ListGroupRolesOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) AttachRoleToGroupHandler() authentication.AttachRoleToGroupHandler {
+	return authentication.AttachRoleToGroupHandlerFunc(func(params authentication.AttachRoleToGroupParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewAttachRoleToGroupUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.AttachRoleToGroup(params.RoleID, params.GroupID)
+		if err != nil {
+			return authentication.NewAttachRoleToGroupDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewAttachRoleToGroupCreated()
+	})
+}
+
+func (a *Handler) DetachRoleFromGroupHandler() authentication.DetachRoleFromGroupHandler {
+	return authentication.DetachRoleFromGroupHandlerFunc(func(params authentication.DetachRoleFromGroupParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDetachRoleFromGroupUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DetachRoleFromGroup(params.RoleID, params.GroupID)
+		if err != nil {
+			return authentication.NewDetachRoleFromGroupDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewDetachRoleFromGroupNoContent()
+	})
+}
+
+func (a *Handler) ListRolePoliciesHandler() authentication.ListRolePoliciesHandler {
+	return authentication.ListRolePoliciesHandlerFunc(func(params authentication.ListRolePoliciesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewListRolePoliciesUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		policies, paginator, err := a.context.Auth.ListRolePolicies(params.RoleID, &authmodel.PaginationParams{
+			PageToken: swag.StringValue(params.Next),
+			Amount:    int(swag.Int64Value(params.Amount)),
+		})
+		if err != nil {
+			return authentication.NewListRolePoliciesDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		response := make([]*models.Policy, len(policies))
+		for i, p := range policies {
+			response[i] = serializePolicy(p)
+		}
+
+		return authentication.NewListRolePoliciesOK().
+			WithPayload(&authentication.ListRolePoliciesOKBody{
+				Pagination: createPaginator(paginator.NextPageToken, len(response)),
+				Results:    response,
+			})
+	})
+}
+
+func (a *Handler) AttachPolicyToRoleHandler() authentication.AttachPolicyToRoleHandler {
+	return authentication.AttachPolicyToRoleHandlerFunc(func(params authentication.AttachPolicyToRoleParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewAttachPolicyToRoleUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.AttachPolicyToRole(params.RoleID, params.PolicyID)
+		if err != nil {
+			return authentication.NewAttachPolicyToRoleDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewAttachPolicyToRoleCreated()
+	})
+}
+
+func (a *Handler) DetachPolicyFromRoleHandler() authentication.DetachPolicyFromRoleHandler {
+	return authentication.DetachPolicyFromRoleHandlerFunc(func(params authentication.DetachPolicyFromRoleParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, permissions.ManageAuth())
+		if err != nil {
+			return authentication.NewDetachPolicyFromRoleUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = a.context.Auth.DetachPolicyFromRole(params.RoleID, params.PolicyID)
+		if err != nil {
+			return authentication.NewDetachPolicyFromRoleDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewDetachPolicyFromRoleNoContent()
 	})
 }
