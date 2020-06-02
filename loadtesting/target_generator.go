@@ -6,6 +6,7 @@ import (
 	"math/rand"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -14,6 +15,16 @@ type TargetCreator struct {
 
 type TargetGenerator struct {
 	ServerAddress string
+}
+
+func randomFilepath(basename string) string {
+	var sb strings.Builder
+	depth := rand.Intn(10)
+	for i := 0; i < depth; i++ {
+		dirSuffix := rand.Intn(3)
+		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))
+	}
+	return sb.String() + basename
 }
 
 func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int) []Request {
@@ -25,9 +36,10 @@ func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int
 			"Content-Disposition: form-data; name=\"content\"; filename=\"file\"\n" +
 			"Content-Type: text/plain\n\n" +
 			strconv.Itoa(rand.Int()) + "\n" + "--" + boundary + "--\n"
+		filename := randomFilepath(fmt.Sprintf("file_%d_%d", now, i))
 		tgt := vegeta.Target{
 			Method: "POST",
-			URL:    fmt.Sprintf("%s/repositories/%s/branches/%s/objects?path=file_%d_%d", t.ServerAddress, repo, branch, now, i),
+			URL:    fmt.Sprintf("%s/repositories/%s/branches/%s/objects?path=%s", t.ServerAddress, repo, branch, filename),
 			Body:   []byte(fileContent),
 			Header: http.Header{
 				http.CanonicalHeaderKey("Accept"):          []string{"*/*"},
@@ -78,7 +90,7 @@ func (t *TargetGenerator) GenerateMergeToMasterTarget(repo, branch string) Reque
 
 func (t *TargetGenerator) GenerateListTarget(repo, branch string, amount int) Request {
 	return t.defaultRequestTarget("GET",
-		fmt.Sprintf("%s/repositories/%s/refs/%s/objects/ls?tree=&amount=%d&after=&", t.ServerAddress, repo, branch, amount),
+		fmt.Sprintf("%s/repositories/%s/refs/%s/objects/ls?tree=%s&amount=%d&after=&", t.ServerAddress, repo, branch, randomFilepath(""), amount),
 		"{}",
 		fmt.Sprintf("list%d", amount))
 }
