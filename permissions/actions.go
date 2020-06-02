@@ -7,6 +7,7 @@ import (
 const (
 	AllReposArn = "arn:lakefs:repos:::*"
 	RepoFmtArn  = "arn:lakefs:repos:::%s"
+	RbacArn     = "arn:lakefs:rbac:::*"
 )
 
 type Action struct {
@@ -128,5 +129,12 @@ func WriteObject(repoId string) Action {
 	return Action{
 		Permission: WriteRepo,
 		Arn:        repoArn(repoId),
+	}
+}
+
+func ManageAuth() Action {
+	return Action{
+		Permission: ManageRBAC,
+		Arn:        RbacArn,
 	}
 }
