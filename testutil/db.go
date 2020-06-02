@@ -136,7 +136,7 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) (db.Databa
 
 	if options.ApplyDDL {
 		// do the actual migration
-		err := db.MigrateSchema(schemaName, connURI)
+		err := db.MigrateUp(schemaName, connURI)
 		if err != nil {
 			t.Fatal("could not create schema:", err)
 		}
