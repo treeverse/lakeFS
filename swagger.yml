@@ -34,12 +34,6 @@ responses:
 
 definitions:
 
-  user:
-    type: object
-    properties:
-      id:
-        type: string
-
   pagination:
     type: object
     required:
@@ -206,13 +200,118 @@ definitions:
         description: short message explaining the error
         type: string
 
+  user:
+    type: object
+    properties:
+      id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+
+  user_creation:
+    type: object
+    properties:
+      id:
+        type: string
+
+  credentials:
+    type: object
+    properties:
+      access_key_id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+
+  credentials_with_secret:
+    type: object
+    properties:
+      access_key_id:
+        type: string
+      access_secret_key:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+
+  group:
+    type: object
+    properties:
+      id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+
+  group_creation:
+    type: object
+    properties:
+      id:
+        type: string
+
+  role:
+    type: object
+    properties:
+      id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+
+  role_creation:
+    type: object
+    properties:
+      id:
+        type: string
+    required: [id]
+
+  policy:
+    type: object
+    properties:
+      id:
+        type: string
+      creation_date:
+        type: integer
+        format: int64
+      action:
+        type: array
+        items:
+          type: string
+      resource:
+        type: string
+      effect:
+        type: string
+        enum: ["Allow", "Deny"]
+
+  policy_creation:
+    type: object
+    properties:
+      id:
+        type: string
+      action:
+        type: array
+        items:
+          type: string
+        minItems: 1
+      resource:
+        type: string
+      effect:
+        type: string
+        enum: ["Allow", "Deny"]
+    required:
+      - id
+      - action
+      - resource
+      - effect
+
 paths:
 
   /user:
     get:
       tags:
-        - authentication
-      operationId: get user
+        - auth
+      operationId: getCurrentUser
       summary: get current user
       responses:
         200:
@@ -223,17 +322,907 @@ paths:
               user:
                 $ref: "#/definitions/user"
 
+  /auth/users:
+    get:
+      tags:
+        - auth
+      operationId: listUsers
+      summary: list users
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: user list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/user"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - auth
+      operationId: createUser
+      summary: create user
+      parameters:
+        - in: body
+          name: user
+          schema:
+            $ref: "#/definitions/user_creation"
+      responses:
+        201:
+          description: user
+          schema:
+            $ref: "#/definitions/user"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/users/{userId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      operationId: getUser
+      summary: get user
+      responses:
+        200:
+          description: user
+          schema:
+            $ref: "#/definitions/user"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: user not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: deleteUser
+      summary: delete user
+      responses:
+        204:
+          description: user deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: user not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/groups:
+    get:
+      tags:
+        - auth
+      operationId: listGroups
+      summary: list groups
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: group list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/group"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - auth
+      operationId: createGroup
+      summary: create group
+      parameters:
+        - in: body
+          name: group
+          schema:
+            $ref: "#/definitions/group_creation"
+      responses:
+        201:
+          description: group
+          schema:
+            $ref: "#/definitions/group"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/groups/{groupId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      operationId: getGroup
+      summary: get group
+      responses:
+        200:
+          description: group
+          schema:
+            $ref: "#/definitions/group"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: group not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: deleteGroup
+      summary: delete group
+      responses:
+        204:
+          description: group deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: group not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/roles:
+    get:
+      tags:
+        - auth
+      operationId: listRoles
+      summary: list roles
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: role list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/role"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - auth
+      operationId: createRole
+      summary: create role
+      parameters:
+        - in: body
+          name: role
+          schema:
+            $ref: "#/definitions/role_creation"
+      responses:
+        201:
+          description: role
+          schema:
+            $ref: "#/definitions/role"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/roles/{roleId}:
+    parameters:
+      - in: path
+        name: roleId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      operationId: getRole
+      summary: get role
+      responses:
+        200:
+          description: role
+          schema:
+            $ref: "#/definitions/role"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: role not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: deleteRole
+      summary: delete role
+      responses:
+        204:
+          description: role deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: role not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/policies:
+    get:
+      tags:
+        - auth
+      operationId: listPolicies
+      summary: list policies
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: policy list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/policy"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - auth
+      operationId: createPolicy
+      summary: create policy
+      parameters:
+        - in: body
+          name: policy
+          schema:
+            $ref: "#/definitions/policy_creation"
+      responses:
+        201:
+          description: policy
+          schema:
+            $ref: "#/definitions/policy"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/policies/{policyId}:
+    parameters:
+      - in: path
+        name: policyId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      operationId: getPolicy
+      summary: get policy
+      responses:
+        200:
+          description: policy
+          schema:
+            $ref: "#/definitions/policy"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: role not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: deletePolicy
+      summary: delete policy
+      responses:
+        204:
+          description: policy deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: policy not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/groups/{groupId}/members:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      operationId: listGroupMembers
+      summary: list group members
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      responses:
+        200:
+          description: user list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/user"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /auth/groups/{groupId}/members/{userId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        type: string
+      - in: path
+        name: userId
+        required: true
+        type: string
+    put:
+      tags:
+        - auth
+      operationId: addGroupMembership
+      summary: add group membership
+      responses:
+        201:
+          description: membership added successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: deleteGroupMembership
+      summary: delete group membership
+      responses:
+        204:
+          description: membership deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: membership not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/users/{userId}/credentials:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      operationId: listUserCredentials
+      summary: list user credentials
+      responses:
+        200:
+          description: credential list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/credentials"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    post:
+      tags:
+        - auth
+      operationId: createCredentials
+      summary: create credentials
+      responses:
+        201:
+          description: credentials
+          schema:
+            $ref: "#/definitions/credentials_with_secret"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/users/{userId}/credentials/{accessKeyId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        type: string
+      - in: path
+        name: accessKeyId
+        required: true
+        type: string
+    delete:
+      tags:
+        - auth
+      operationId: delete credentials
+      summary: delete credentials
+      responses:
+        204:
+          description: credentials deleted successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: credentials not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    get:
+      tags:
+        - auth
+      operationId: getCredentials
+      summary: get credentials
+      responses:
+        200:
+          description: credentials
+          schema:
+            $ref: "#/definitions/credentials"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: credentials not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/users/{userId}/groups:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      operationId: listUserGroups
+      summary: list user groups
+      responses:
+        200:
+          description: group list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/group"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/users/{userId}/roles:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      operationId: listUserRoles
+      summary: list user roles
+      responses:
+        200:
+          description: role list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/role"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/users/{userId}/roles/{roleId}:
+    parameters:
+      - in: path
+        name: userId
+        required: true
+        type: string
+      - in: path
+        name: roleId
+        required: true
+        type: string
+    put:
+      tags:
+        - auth
+      operationId: attachRoleToUser
+      summary: attach role to user
+      responses:
+        201:
+          description: role attached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: detachRoleFromUser
+      summary: detach role from user
+      responses:
+        204:
+          description: role detached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: role attachment not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/groups/{groupId}/roles:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      operationId: listGroupRoles
+      summary: list group roles
+      responses:
+        200:
+          description: role list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/role"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/groups/{groupId}/roles/{roleId}:
+    parameters:
+      - in: path
+        name: groupId
+        required: true
+        type: string
+      - in: path
+        name: roleId
+        required: true
+        type: string
+    put:
+      tags:
+        - auth
+      operationId: attachRoleToGroup
+      summary: attach role to group
+      responses:
+        201:
+          description: role attached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: detachRoleFromGroup
+      summary: detach role from group
+      responses:
+        204:
+          description: role detached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: role attachment not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/roles/{roleId}/policies:
+    parameters:
+      - in: path
+        name: roleId
+        required: true
+        type: string
+    get:
+      tags:
+        - auth
+      parameters:
+        - in: query
+          name: next
+          type: string
+          default: ""
+        - in: query
+          name: amount
+          type: integer
+          default: 100
+      operationId: listRolePolicies
+      summary: list role policies
+      responses:
+        200:
+          description: policy list
+          schema:
+            type: object
+            properties:
+              pagination:
+                $ref: "#/definitions/pagination"
+              results:
+                type: array
+                items:
+                  $ref: "#/definitions/policy"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /auth/roles/{roleId}/policies/{policyId}:
+    parameters:
+      - in: path
+        name: roleId
+        required: true
+        type: string
+      - in: path
+        name: policyId
+        required: true
+        type: string
+    put:
+      tags:
+        - auth
+      operationId: attachPolicyToRole
+      summary: attach policy to role
+      responses:
+        201:
+          description: policy attached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    delete:
+      tags:
+        - auth
+      operationId: detachPolicyFromRole
+      summary: detach policy from role
+      responses:
+        204:
+          description: policy detached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: policy attachment not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
   /repositories:
     get:
       tags:
         - repositories
       parameters:
         - in: query
-          name: after
+          name: next
           type: string
+          default: ""
         - in: query
           name: amount
           type: integer
+          default: 100
       operationId: listRepositories
       summary: list repositories
       responses:
@@ -338,11 +1327,13 @@ paths:
       summary: list branches
       parameters:
         - in: query
-          name: after
+          name: next
           type: string
+          default: ""
         - in: query
           name: amount
           type: integer
+          default: 100
       responses:
         200:
           description: branch list
@@ -530,10 +1521,6 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
-
-
-
-
 
   /repositories/{repositoryId}/refs/{sourceRef}/merge/{destinationRef}:
     parameters:
