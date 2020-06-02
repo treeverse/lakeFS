@@ -14,24 +14,11 @@ func getBranchIDByName(tx db.Tx, repoID int, branch string) (int, error) {
 	return branchID, err
 }
 
-func getRepoAndBranchByName(tx db.Tx, repo, branch string) (int, int, error) {
+func getBranchIDByRepoBranch(tx db.Tx, repo, branch string) (int, error) {
 	repoID, err := getRepoIDByName(tx, repo)
 	if err != nil {
-		return 0, 0, err
+		return 0, err
 	}
 	branchID, err := getBranchIDByName(tx, repoID, branch)
-	return repoID, branchID, err
-}
-
-func readOptionsAsStagedCondition(o EntryReadOptions) string {
-	switch o.EntryState {
-	case EntryStateCommitted:
-		return "is_staged IS NULL"
-	case EntryStateStaged:
-		return "is_staged = TRUE"
-	case EntryStateUnstaged:
-		return "is_staged IS NOT NULL"
-	default:
-		return "FALSE"
-	}
+	return branchID, err
 }

@@ -15,29 +15,38 @@ func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, branchID, err := getRepoAndBranchByName(tx, repo, branch)
+		branchID, err := getBranchIDByRepoBranch(tx, repo, branch)
 		if err != nil {
 			return nil, err
 		}
 
-		isStagedCond := readOptionsAsStagedCondition(readOptions)
-
 		// TODO(barak): metadata is missing
-		prefixCond := db.Prefix(prefix)
-		query := `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, is_staged, min_commit, max_commit
+		const baseQuery = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, is_staged, min_commit, max_commit
 			FROM entries_lineage_active_v
-			WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND ` + isStagedCond + ` ORDER BY path`
-		args := []interface{}{branchID, prefixCond, after}
+			WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND `
+		var q string
+		switch readOptions.EntryState {
+		case EntryStateCommitted:
+			q = baseQuery + "is_staged IS NULL"
+		case EntryStateStaged:
+			q = baseQuery + "is_staged = TRUE"
+		case EntryStateUnstaged:
+			q = baseQuery + "is_staged IS NOT NULL"
+		default:
+			return nil, ErrInvalidReadState
+		}
+		q += " ORDER BY path"
+		args := []interface{}{branchID, db.Prefix(prefix), after}
 		if descend {
-			query += " DESC"
+			q += " DESC"
 		}
 		if limit >= 0 {
-			query += " LIMIT $4"
+			q += " LIMIT $4"
 			args = append(args, limit+1)
 		}
 
 		var entries []*Entry
-		if err := tx.Select(&entries, query, args...); err != nil {
+		if err := tx.Select(&entries, q, args...); err != nil {
 			return nil, err
 		}
 

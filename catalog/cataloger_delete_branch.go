@@ -28,6 +28,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string
 		if err != nil {
 			return nil, err
 		}
+
 		// fail in case we try to delete default branch
 		if r.DefaultBranch == branch {
 			return nil, ErrOperationNotPermitted
@@ -35,10 +36,8 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string
 
 		// check we don't have branch depends on us by count lineage records we are part of
 		var ancestorCount int
-		err = tx.Get(&ancestorCount, `SELECT count(branch_id)
-			FROM lineage 
-			WHERE ancestor_branch = (SELECT id FROM branches WHERE repository_id = $1 AND name = $2)`,
-			r.ID, branch)
+		err = tx.Get(&ancestorCount, `SELECT count(branch_id) FROM lineage 
+			WHERE ancestor_branch = (SELECT id FROM branches WHERE repository_id = $1 AND name = $2)`, r.ID, branch)
 		if err != nil {
 			return nil, err
 		}

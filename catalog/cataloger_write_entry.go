@@ -13,7 +13,7 @@ const (
 	UpdateLock
 )
 
-func getBranchId(tx db.Tx, repo, branch string, branchLockType int) (int, error) {
+func getBranchID(tx db.Tx, repo, branch string, branchLockType int) (int, error) {
 	var forLock string
 	switch branchLockType {
 	case NoLock:
@@ -40,8 +40,7 @@ func (c *cataloger) WriteEntry(ctx context.Context, repo, branch, path, checksum
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-
-		branchID, err := getBranchId(tx, repo, branch, ShareLock) // will block merges,commits and diffs on this branch
+		branchID, err := getBranchID(tx, repo, branch, ShareLock) // will block merges,commits and diffs on this branch
 		if err != nil {
 			c.log.WithContext(ctx).
 				WithError(err).

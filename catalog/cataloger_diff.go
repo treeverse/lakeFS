@@ -18,7 +18,7 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		log := c.log.WithContext(ctx)
-		leftId, err := getBranchId(tx, repo, leftBranch, NoLock)
+		leftId, err := getBranchID(tx, repo, leftBranch, NoLock)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
@@ -27,7 +27,7 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 				}).Warn("Branch not found")
 			return nil, err
 		}
-		rightId, err := getBranchId(tx, repo, rightBranch, NoLock)
+		rightId, err := getBranchID(tx, repo, rightBranch, NoLock)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{

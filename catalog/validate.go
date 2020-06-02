@@ -8,12 +8,10 @@ import (
 )
 
 var (
-	ErrInvalidValue      = errors.New("invalid value")
-	ErrInvalidBranchName = fmt.Errorf("branch name: %w", ErrInvalidValue)
+	ErrInvalidValue = errors.New("invalid value")
 
 	validBranchNameRE = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
 	validRepoIDRE     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-	validCommitIDRE   = regexp.MustCompile(`[a-fA-F0-9]{6,40}`)
 	validBucketNameRE = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]+[a-z0-9]$`)
 	validIPv4RE       = regexp.MustCompile(`/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/`)
 	validHexRE        = regexp.MustCompile(`^[a-fA-F0-9]+$`)
@@ -66,10 +64,6 @@ func ValidateDedupID(id string) ValidateFunc {
 	return ValidateRegexp(id, validHexRE)
 }
 
-func ValidateCommitID(name string) ValidateFunc {
-	return ValidateRegexp(name, validCommitIDRE)
-}
-
 func ValidatePath(name string) ValidateFunc {
 	return ValidateNonEmptyString(name)
 }
@@ -98,15 +92,6 @@ func ValidateBucketName(bucket string) ValidateFunc {
 		// bucket should begin with alphabet/number and end with alphabet/number,
 		// with alphabet/number/.- in the middle.
 		if !validBucketNameRE.MatchString(bucket) {
-			return ErrInvalidValue
-		}
-		return nil
-	}
-}
-
-func ValidateBranchID(id int) ValidateFunc {
-	return func() error {
-		if id <= 0 {
 			return ErrInvalidValue
 		}
 		return nil
