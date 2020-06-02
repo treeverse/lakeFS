@@ -20,4 +20,5 @@ var (
 	ErrMultipartUploadNotFound    = errors.New("multipart upload not found")
 	ErrOperationNotPermitted      = errors.New("operation not permitted")
 	ErrResourceUsed               = errors.New("resource used")
+	ErrInvalidReadState           = errors.New("invalid entity read state")
 )

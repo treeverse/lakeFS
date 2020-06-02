@@ -15,7 +15,7 @@ func (c *cataloger) GetBranch(ctx context.Context, repo string, branch string) (
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := repoGetIDByName(tx, repo)
+		repoID, err := getRepoIDByName(tx, repo)
 		if err != nil {
 			return nil, err
 		}
