@@ -71,14 +71,22 @@ func FromFatherDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differen
 	// if there is none - then it is  the first merge
 	// the condition on merge_source_branch is redundent. a given branch may have only one father.
 	// it is there in the hope it makes the idea less confusing
-	x := `select coalesc(max(commit_number),0) from commits 
-			where branch_id = $1 and merge_type = 'fromFather' and merge_source_branch = $2`
+
+	var maxSonMerge int
+	err := tx.Get(&maxSonMerge, `select coalesce(max(commit_id),0) from commits
+			where branch_id = $1 and merge_type = 'from_father' and merge_source_branch = $2`, leftId, rightId)
+	if err != nil {
+		log.WithError(err).Error("error reading commits")
+		return nil, err
+	}
 	x = `select * from entries where branch_id = $1`
 	// check if father lineage was modified since last diff. if not we can skip the view
-	x = `select s.effective_commit as min_effective_commit,e.effective_commit as min_effective_commit from lineage s join lineage e on
-	     s.branch_id=$1 and e.branch_id =$2 and
-		  s.ancestor_branch=e.ancestor_branch
-	     `
+	lineageRangeSql := `lineage_range as (select s.ancestor_branch,s.effective_commit as min_effective_commit,
+												 e.effective_commit as max_effective_commit 
+						from lineage s join lineage_v e on
+            			s.branch_id=$1 and e.branch_id =$2 and
+            			s.ancestor_branch=e.ancestor_branch)`
+
 	x = `select * from entries_lineage_v e join lineage_dif l 
 		 on e.source_branch = l.ancestore_branch
 		where
@@ -101,7 +109,16 @@ func FromFatherDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differen
 	// from son - select objects that were modified since last time lineage was created
 	x = `select max(min_commit) from lineage where branch_id = $1` // get highest commit number from son that was synchronized
 
-	x = `son as (select * from entries where branch_id = $1 and min_commit > $2)`
+	x = `select f.path,f.displayed_branch,s.displayed_branch,f.physical_address,s.physical_address,f.source_branch as father_source, f.min_commit as father_min,f.is_deleted as father_deleted,
+       s.source_branch as son_source,s.is_deleted as son_deleted
+from ( select * from entries_lineage_v where displayed_branch = 2 and is_committed)as f
+    left join ( select * from entries_lineage_v where displayed_branch = 3 ) as s
+    on f.path = s.path
+where
+        (f.physical_address != s.physical_address or s.path is null) and
+        not(f.is_deleted and s.is_deleted)
+order by f.path)`
+
 	x = ` select * from father f full outer join son s on f.path=s.path and f.physical_address != s.physical_address
 		order by coalesc(s.path,f.path)`
 	return nil, nil
