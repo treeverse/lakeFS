@@ -77,6 +77,27 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 			wantErr:  false,
 		},
 		{
+			name: "all unstaged desc",
+			args: args{
+				repo:        "repo1",
+				branch:      "master",
+				path:        "",
+				after:       "",
+				limit:       -1,
+				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				descend:     true,
+			},
+			wantEntries: []Entry{
+				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d", IsStaged: &isStagedTrue},
+				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff", IsStaged: &isStagedFalse},
+				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3", IsStaged: &isStagedTrue},
+				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63", IsStaged: &isStagedFalse},
+				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", IsStaged: &isStagedTrue},
+			},
+			wantMore: false,
+			wantErr:  false,
+		},
+		{
 			name: "all staged",
 			args: args{
 				repo:        "repo1",
@@ -126,6 +147,24 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63", IsStaged: &isStagedFalse},
 			},
 			wantMore: true,
+			wantErr:  false,
+		},
+		{
+			name: "last 2",
+			args: args{
+				repo:        "repo1",
+				branch:      "master",
+				path:        "",
+				after:       "/file3",
+				limit:       2,
+				readOptions: EntryReadOptions{EntryState: EntryStateUnstaged},
+				descend:     false,
+			},
+			wantEntries: []Entry{
+				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff", IsStaged: &isStagedFalse},
+				{Path: "/file5", PhysicalAddress: "/addr5", Size: 50, Checksum: "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d", IsStaged: &isStagedTrue},
+			},
+			wantMore: false,
 			wantErr:  false,
 		},
 	}

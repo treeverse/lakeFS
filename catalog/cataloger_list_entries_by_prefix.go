@@ -15,24 +15,12 @@ func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := repoGetIDByName(tx, repo)
+		_, branchID, err := getRepoAndBranchByName(tx, repo, branch)
 		if err != nil {
 			return nil, err
 		}
-		var branchID int
-		if err := tx.Get(&branchID, `SELECT id FROM branches WHERE repository_id = $1 AND name = $2`, repoID, branch); err != nil {
-			return nil, err
-		}
 
-		var isStagedCond string
-		switch readOptions.EntryState {
-		case EntryStateCommitted:
-			isStagedCond = "is_staged IS NULL"
-		case EntryStateStaged:
-			isStagedCond = "is_staged = TRUE"
-		case EntryStateUnstaged:
-			isStagedCond = "is_staged IS NOT NULL"
-		}
+		isStagedCond := readOptionsAsStagedCondition(readOptions)
 
 		// TODO(barak): metadata is missing
 		prefixCond := db.Prefix(prefix)

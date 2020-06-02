@@ -18,7 +18,7 @@ func (c *cataloger) CreateMultipartUpload(ctx context.Context, repo string, uplo
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := repoGetIDByName(tx, repo)
+		repoID, err := getRepoIDByName(tx, repo)
 		if err != nil {
 			return nil, err
 		}

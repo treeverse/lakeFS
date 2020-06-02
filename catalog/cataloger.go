@@ -39,7 +39,7 @@ type Cataloger interface {
 	Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error)
 
 	// entry level
-	ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error)
+	ReadEntry(ctx context.Context, repo, branch, path string, readOptions EntryReadOptions) (*Entry, error)
 	WriteEntry(ctx context.Context, repoName, branchName, path, checksum, physicalAddress string, size int, isStaged bool, metadata *map[string]string) error
 	ListEntriesByPrefix(ctx context.Context, repo string, branch string, path, after string, limit int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error)
 
@@ -93,10 +93,6 @@ func (c *cataloger) GetBranchCommitLog(ctx context.Context, branch string, fromC
 }
 
 func (c *cataloger) Commit(ctx context.Context, branch string, message, committer string, metadata map[string]string) (*Commit, error) {
-	panic("implement me")
-}
-
-func (c *cataloger) ReadEntry(ctx context.Context, branchID int, path string, readOptions EntryReadOptions) (*Entry, error) {
 	panic("implement me")
 }
 
