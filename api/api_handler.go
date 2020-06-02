@@ -1486,6 +1486,10 @@ func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHan
 		}
 
 		err = a.context.Auth.DeleteCredentials(params.UserID, params.AccessKeyID)
+		if errors.Is(err, db.ErrNotFound) {
+			return authentication.NewDeleteCredentialsNotFound().
+				WithPayload(responseError("credentials not found"))
+		}
 		if err != nil {
 			return authentication.NewDeleteCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
