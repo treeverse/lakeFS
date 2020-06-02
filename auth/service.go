@@ -54,12 +54,15 @@ type Service interface {
 
 	// policies
 	CreatePolicy(policy *model.Policy) error
+	GetPolicy(policyDisplayName string) (*model.Policy, error)
 	DeletePolicy(policyDisplayName string) error
 	ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// credentials
 	CreateCredentials(userDisplayName string) (*model.Credential, error)
 	DeleteCredentials(userDisplayName, accessKeyId string) error
+	GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error)
+	GetCredentials(accessKeyId string) (*model.Credential, error)
 	ListUserCredentials(userDisplayName string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
 
 	// role<->user attachments
@@ -78,7 +81,6 @@ type Service interface {
 	ListRolePolicies(roleDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// authorize user for an action
-	GetCredentials(accessKeyId string) (*model.Credential, error)
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
@@ -398,7 +400,7 @@ func (s *DBAuthService) DeleteGroup(groupDisplayName string) error {
 func (s *DBAuthService) GetGroup(groupDisplayName string) (*model.Group, error) {
 	group, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		group := &model.Group{}
-		err := tx.Get(group, `SELECT * FROM group WHERE display_name = $1`, groupDisplayName)
+		err := tx.Get(group, `SELECT * FROM groups WHERE display_name = $1`, groupDisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -557,7 +559,7 @@ func (s *DBAuthService) DeleteRole(roleDisplayName string) error {
 func (s *DBAuthService) GetRole(roleDisplayName string) (*model.Role, error) {
 	role, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		role := &model.Role{}
-		err := tx.Get(role, `SELECT * FROM group WHERE display_name = $1`, roleDisplayName)
+		err := tx.Get(role, `SELECT * FROM roles WHERE display_name = $1`, roleDisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -605,6 +607,21 @@ func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 			p.DisplayName, p.CreatedAt, p.Action, p.Resource, p.Effect)
 	})
 	return err
+}
+
+func (s *DBAuthService) GetPolicy(policyDisplayName string) (*model.Policy, error) {
+	policy, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		policy := &model.PolicyDBImpl{}
+		err := tx.Get(policy, `SELECT * FROM policies WHERE display_name = $1`, policyDisplayName)
+		if err != nil {
+			return nil, err
+		}
+		return policy.ToModel(), nil
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	return policy.(*model.Policy), nil
 }
 
 func (s *DBAuthService) DeletePolicy(policyDisplayName string) error {
@@ -778,10 +795,36 @@ func (s *DBAuthService) DetachPolicyFromRole(roleDisplayName string, policyDispl
 	return err
 }
 
+func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error) {
+	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		credentials := &model.Credential{}
+		err := tx.Get(credentials, `
+			SELECT *
+			FROM credentials
+			INNER JOIN users ON (credentials.user_id = users.id)
+			WHERE credentials.access_key_id = $1
+				AND users.display_name = $2`, accessKeyId, userDisplayName)
+		if err != nil {
+			return nil, err
+		}
+		key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
+		if err != nil {
+			return nil, err
+		}
+		credentials.AccessSecretKey = key
+		return credentials, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return credentials.(*model.Credential), nil
+}
+
 func (s *DBAuthService) GetCredentials(accessKeyId string) (*model.Credential, error) {
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		credentials := &model.Credential{}
-		err := tx.Get(credentials, `SELECT * FROM credentials WHERE access_key_id = $1`, accessKeyId)
+		err := tx.Get(credentials, `
+			SELECT * FROM credentials WHERE credentials.access_key_id = $1`, accessKeyId)
 		if err != nil {
 			return nil, err
 		}
