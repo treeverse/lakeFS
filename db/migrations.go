@@ -2,6 +2,10 @@ package db
 
 import (
 	"context"
+	"errors"
+	"os"
+
+	"github.com/golang-migrate/migrate/v4/source"
 
 	"github.com/golang-migrate/migrate/v4"
 
@@ -34,7 +38,7 @@ func (d *DatabaseMigrator) AddDB(schema string, url string) *DatabaseMigrator {
 func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	log := logging.FromContext(ctx)
 	for schema, url := range d.databases {
-		err := MigrateSchema(schema, url)
+		err := MigrateUp(schema, url)
 		if err != nil {
 			log.WithError(err).WithField("url", url).Error("Failed to migrate")
 			return err
@@ -43,36 +47,56 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	return nil
 }
 
-func MigrateSchema(schema, url string) error {
+func getStatikSrc(schema string) (source.Driver, error) {
+	// statik fs to our migrate source
+	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
+	if err != nil {
+		return nil, err
+	}
+	return httpfs.New(migrationFs, "/"+schema+"/")
+}
+
+func GetLastMigrationAvailable(schema string, from uint) (uint, error) {
+	src, err := getStatikSrc(schema)
+	if err != nil {
+		return 0, err
+	}
+	defer src.Close()
+	var current uint
+	next := from
+	for err == nil {
+		current = next
+		next, err = src.Next(current)
+	}
+	if !errors.Is(err, os.ErrNotExist) {
+		return 0, err
+	}
+	return current, nil
+}
+
+func getMigrate(schema string, url string) (*migrate.Migrate, error) {
 	// make sure we have schema by calling connect
 	mdb, err := ConnectDB("pgx", url)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-
-	// statik fs to our migrate source
-	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
+	src, err := getStatikSrc(schema)
 	if err != nil {
-		return err
-	}
-
-	src, err := httpfs.New(migrationFs, "/"+schema+"/")
-	if err != nil {
-		return err
+		return nil, err
 	}
 	defer src.Close()
 
 	m, err := migrate.NewWithSourceInstance("httpfs", src, url)
 	if err != nil {
-		return err
+		return nil, err
 	}
-	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
-		return err
-	}
+	return m, nil
+}
+
+func closeMigrate(m *migrate.Migrate) {
 	srcErr, dbErr := m.Close()
 	if srcErr != nil {
 		logging.Default().WithError(srcErr).Error("Migrate close source driver")
@@ -80,5 +104,56 @@ func MigrateSchema(schema, url string) error {
 	if dbErr != nil {
 		logging.Default().WithError(dbErr).Error("Migrate close database connection")
 	}
+}
+
+func MigrateUp(schema, url string) error {
+	m, err := getMigrate(schema, url)
+	if err != nil {
+		return err
+	}
+	defer closeMigrate(m)
+	err = m.Up()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
 	return nil
+}
+
+func MigrateDown(schema, url string) error {
+	m, err := getMigrate(schema, url)
+	if err != nil {
+		return err
+	}
+	defer closeMigrate(m)
+	err = m.Down()
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+	return nil
+}
+
+func MigrateTo(schema, url string, version uint) error {
+	m, err := getMigrate(schema, url)
+	if err != nil {
+		return err
+	}
+	defer closeMigrate(m)
+	err = m.Migrate(version)
+	if err != nil && err != migrate.ErrNoChange {
+		return err
+	}
+	return nil
+}
+
+func MigrateVersion(schema, url string) (uint, bool, error) {
+	m, err := getMigrate(schema, url)
+	if err != nil {
+		return 0, false, err
+	}
+	defer closeMigrate(m)
+	version, dirty, err := m.Version()
+	if err != nil && err != migrate.ErrNoChange {
+		return 0, false, err
+	}
+	return version, dirty, err
 }
