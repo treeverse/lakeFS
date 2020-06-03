@@ -9,19 +9,6 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type EntryState int
-
-const (
-	EntryStateCommitted EntryState = iota
-	EntryStateStaged
-	EntryStateUnstaged
-)
-
-type EntryReadOptions struct {
-	EntryState EntryState
-	CommitID   int
-}
-
 type Cataloger interface {
 	// repository level
 	CreateRepo(ctx context.Context, repo string, bucket string, branch string) error
@@ -36,13 +23,13 @@ type Cataloger interface {
 	DeleteBranch(ctx context.Context, repo string, branch string) error
 	GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
 	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error)
-	Commit(ctx context.Context, repo, branch, message, committer string, metadata map[string]string, unstaged bool) (*Commit, error)
+	Commit(ctx context.Context, repo, branch, message, committer string, metadata map[string]string) (int, error)
 
 	// entry level
 	ReadEntry(ctx context.Context, repo, branch, path string, readUncommitted bool) (*Entry, error)
 	WriteEntry(ctx context.Context, repo, branch, path, checksum, physicalAddress string, size int, metadata *map[string]string) error
 	DeleteEntry(ctx context.Context, repo, branch, path string) error
-	ListEntriesByPrefix(ctx context.Context, repo string, branch string, path, after string, limit int, descend bool, readUncommited bool) ([]*Entry, bool, error)
+	ListEntriesByPrefix(ctx context.Context, repo string, branch string, path, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error)
 
 	// diff and merge
 	Diff(ctx context.Context, repo, leftBranch, rightBranch string) (Differences, error)

@@ -23,9 +23,9 @@ func (c *cataloger) ReadEntry(ctx context.Context, repo, branch, path string, re
 
 		const q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit
 			FROM entries_lineage_active_v
-			WHERE displayed_branch = $1 AND path = $2 AND is_committed <> $3`
+			WHERE displayed_branch = $1 AND path = $2 AND is_committed = $3`
 		var ent Entry
-		if err := tx.Get(&ent, q, branchID, path, readUncommitted); err != nil {
+		if err := tx.Get(&ent, q, branchID, path, !readUncommitted); err != nil {
 			return nil, err
 		}
 		return &ent, nil

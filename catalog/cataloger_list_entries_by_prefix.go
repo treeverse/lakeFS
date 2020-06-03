@@ -23,9 +23,9 @@ func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch
 		// TODO(barak): metadata is missing
 		q := `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit
 			FROM entries_lineage_active_v
-			WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND is_committed <> $4`
+			WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND is_committed = $4`
 		q += " ORDER BY path"
-		args := []interface{}{branchID, db.Prefix(prefix), after, readUncommitted}
+		args := []interface{}{branchID, db.Prefix(prefix), after, !readUncommitted}
 		if descend {
 			q += " DESC"
 		}
