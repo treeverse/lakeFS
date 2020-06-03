@@ -93,7 +93,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    ---
    metadata:
      db:
-       uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_index"
+       uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_index&sslmode=disable"
     
    blockstore: 
      type: "local"
@@ -104,7 +104,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
      encrypt:
        secret_key: "a random string that should be kept secret"
      db:
-       uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_auth"
+       uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_auth&sslmode=disable"
    ```
 
 5. Run the server:
