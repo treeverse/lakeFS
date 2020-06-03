@@ -93,6 +93,6 @@ func init() {
 	migrateCmd.AddCommand(gotoCmd)
 	_ = gotoCmd.Flags().String("schema", "", "schema name")
 	_ = gotoCmd.MarkFlagRequired("schema")
-	_ = gotoCmd.Flags().Uint("version", uint(0), "version number")
+	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")
 }
