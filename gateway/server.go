@@ -174,13 +174,13 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	// interpolate arn string
-	arn := action.Arn
+	arn := action.Resource
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserDisplayName: op.Principal,
-		Permission:      action.Action,
-		SubjectARN:      arn,
+		Action:          action.Action,
+		Resource:        arn,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("failed to authorize")
