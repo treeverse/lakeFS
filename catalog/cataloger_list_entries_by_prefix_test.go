@@ -6,14 +6,11 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
-
-	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := setupCatalogerForTesting(t)
 
 	// produce test data
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
