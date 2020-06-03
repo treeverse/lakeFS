@@ -76,6 +76,10 @@ func ValidateCommitMessage(msg string) ValidateFunc {
 	return ValidateNonEmptyString(msg)
 }
 
+func ValidateCommitter(msg string) ValidateFunc {
+	return ValidateNonEmptyString(msg)
+}
+
 func ValidateBucketName(bucket string) ValidateFunc {
 	return func() error {
 		if len(bucket) < 3 || len(bucket) > 63 {

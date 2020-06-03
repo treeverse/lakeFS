@@ -20,5 +20,7 @@ var (
 	ErrMultipartUploadNotFound    = errors.New("multipart upload not found")
 	ErrOperationNotPermitted      = errors.New("operation not permitted")
 	ErrResourceUsed               = errors.New("resource used")
-	ErrInvalidReadState           = errors.New("invalid entity read state")
+	ErrInvalidLockValue           = errors.New("invalid lock value")
+	ErrCommitNotFound             = errors.New("commit not found")
+	ErrNothingToCommit            = errors.New("nothing to commit")
 )

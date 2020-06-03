@@ -20,9 +20,8 @@ func TestCataloger_WriteEntry(t *testing.T) {
 	t.Run("simple write", func(t *testing.T) {
 		Must(c.CreateRepo(ctx, "example", "example-tzahi", "master"), t, "error creating repository")
 		//meta := make(map[string]string)
-		Must(c.WriteEntry(ctx, "example", "master", "aaa/bbb/ccc", "1234", "5678", 100, false, nil), t, "error creating repository")
-		Must(c.WriteEntry(ctx, "example", "master", "aaa/bbb/ccc", "6789", "5678", 100, false, nil), t, "error creating repository")
-
+		Must(c.WriteEntry(ctx, "example", "master", "aaa/bbb/ccc", "1234", "5678", 100, nil), t, "error creating repository")
+		Must(c.WriteEntry(ctx, "example", "master", "aaa/bbb/ccc", "6789", "5678", 100, nil), t, "error creating repository")
 	})
 
 }

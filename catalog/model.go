@@ -37,17 +37,18 @@ type Entry struct {
 	Size            int64        `db:"size"`
 	Checksum        string       `db:"checksum"`
 	Metadata        JSONMetadata `db:"metadata"`
-	IsStaged        *bool        `db:"is_staged"`
 }
 
 type Commit struct {
-	BranchID     int          `db:"branch_id"`
-	CommitNumber int          `db:"commit_number"`
-	Committer    string       `db:"committer"`
-	Message      string       `db:"message"`
-	CreationDate time.Time    `db:"creation_date"`
-	Metadata     JSONMetadata `db:"metadata"`
-	SourceBranch *int         `db:"source_branch"`
+	BranchID          int          `db:"branch_id"`
+	CommitID          int          `db:"commit_id"`
+	Committer         string       `db:"committer"`
+	Message           string       `db:"message"`
+	CreationDate      time.Time    `db:"creation_date"`
+	Metadata          JSONMetadata `db:"metadata"`
+	MergeSourceBranch *int         `db:"merge_source_branch"`
+	MergeSourceCommit *int         `db:"merge_source_commit"`
+	MergeType         string       `db:"merge_type"`
 }
 
 type Branch struct {

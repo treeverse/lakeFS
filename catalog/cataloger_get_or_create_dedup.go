@@ -17,7 +17,7 @@ func (c *cataloger) GetOrCreateDedup(ctx context.Context, repo string, dedupID s
 	}
 
 	addr, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoIDByName(tx, repo)
+		repoID, err := getRepoID(tx, repo)
 		if err != nil {
 			return physicalAddress, err
 		}

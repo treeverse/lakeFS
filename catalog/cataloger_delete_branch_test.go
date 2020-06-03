@@ -31,7 +31,7 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 	if _, err := c.CreateBranch(ctx, "repo1", "b1", "master"); err != nil {
 		t.Fatal("create repo for testing", err)
 	}
-	if err := c.WriteEntry(ctx, "repo1", "b1", "/file1", "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", "/file1abc", 42, true, nil); err != nil {
+	if err := c.WriteEntry(ctx, "repo1", "b1", "/file1", "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", "/file1abc", 42, nil); err != nil {
 		t.Fatal("write entry for testing", err)
 	}
 

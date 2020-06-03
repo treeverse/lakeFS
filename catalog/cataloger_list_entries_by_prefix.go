@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch string, prefix, after string, limit int, readOptions EntryReadOptions, descend bool) ([]*Entry, bool, error) {
+func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch string, prefix, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repo),
 		"branch": ValidateBranchName(branch),
@@ -15,33 +15,22 @@ func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchIDByRepoBranch(tx, repo, branch)
+		branchID, err := getBranchID(tx, repo, branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}
 
 		// TODO(barak): metadata is missing
-		const baseQuery = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, is_staged, min_commit, max_commit
+		q := `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit
 			FROM entries_lineage_active_v
-			WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND `
-		var q string
-		switch readOptions.EntryState {
-		case EntryStateCommitted:
-			q = baseQuery + "is_staged IS NULL"
-		case EntryStateStaged:
-			q = baseQuery + "is_staged = TRUE"
-		case EntryStateUnstaged:
-			q = baseQuery + "is_staged IS NOT NULL"
-		default:
-			return nil, ErrInvalidReadState
-		}
+			WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND is_committed = $4`
 		q += " ORDER BY path"
-		args := []interface{}{branchID, db.Prefix(prefix), after}
+		args := []interface{}{branchID, db.Prefix(prefix), after, !readUncommitted}
 		if descend {
 			q += " DESC"
 		}
 		if limit >= 0 {
-			q += " LIMIT $4"
+			q += " LIMIT $5"
 			args = append(args, limit+1)
 		}
 
