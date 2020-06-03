@@ -88,25 +88,38 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 		return nil, err
 	}
 
-	policy := &model.Policy{
-		CreatedAt:   now,
-		DisplayName: "AdminFullAccess",
-		Action: []string{
-			string(permissions.ManageRepos),
-			string(permissions.ReadRepo),
-			string(permissions.WriteRepo),
+	policies := []*model.Policy{
+		{
+			CreatedAt:   now,
+			DisplayName: "RepoFullAccess",
+			Action: []string{
+				string(permissions.ManageRepos),
+				string(permissions.ReadRepo),
+				string(permissions.WriteRepo),
+			},
+			Resource: permissions.AllReposArn,
+			Effect:   true,
 		},
-		Resource: "arn:lakefs:repos:::*",
-		Effect:   true,
+		{
+			CreatedAt:   now,
+			DisplayName: "AuthFullAccess",
+			Action: []string{
+				string(permissions.ManageRBAC),
+			},
+			Resource: permissions.RbacArn,
+			Effect:   true,
+		},
 	}
 
-	err = authService.CreatePolicy(policy)
-	if err != nil {
-		return nil, err
-	}
-	err = authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName)
-	if err != nil {
-		return nil, err
+	for _, policy := range policies {
+		err = authService.CreatePolicy(policy)
+		if err != nil {
+			return nil, err
+		}
+		err = authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName)
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	err = authService.AttachRoleToUser(role.DisplayName, user.DisplayName)
