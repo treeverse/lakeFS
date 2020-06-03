@@ -27,8 +27,8 @@ import (
 
 const (
 	DefaultDatabaseDriver = "pgx"
-	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
-	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
+	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index&sslmode=disable"
+	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth&sslmode=disable"
 
 	DefaultBlockStoreType                 = "local"
 	DefaultBlockStoreLocalPath            = "~/lakefs/data"
