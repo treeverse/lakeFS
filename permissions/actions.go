@@ -10,10 +10,10 @@ const (
 )
 
 var actionSet = map[Action]struct{}{
-	ReadRepo:    struct{}{},
-	WriteRepo:   struct{}{},
-	ManageRepos: struct{}{},
-	ManageRBAC:  struct{}{},
+	ReadRepo:    {},
+	WriteRepo:   {},
+	ManageRepos: {},
+	ManageRBAC:  {},
 }
 
 func IsAction(action string) bool {
