@@ -61,13 +61,16 @@ func GetLastMigrationAvailable(schema string, from uint) (uint, error) {
 	if err != nil {
 		return 0, err
 	}
-	defer src.Close()
+	defer func() {
+		_ = src.Close()
+	}()
 	current := from
 	for {
 		next, err := src.Next(current)
 		if errors.Is(err, os.ErrNotExist) {
 			return current, nil
-		} else if err != nil {
+		}
+		if err != nil {
 			return 0, err
 		}
 		current = next
@@ -79,7 +82,9 @@ func getMigrate(schema string, url string) (*migrate.Migrate, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer src.Close()
+	defer func() {
+		_ = src.Close()
+	}()
 
 	m, err := migrate.NewWithSourceInstance("httpfs", src, url)
 	if err != nil {
