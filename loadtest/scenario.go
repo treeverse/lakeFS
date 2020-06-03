@@ -13,7 +13,7 @@ type Request struct {
 }
 
 type Scenario interface {
-	Play(loadTester LoadTester, stopCh chan struct{}) <-chan Request
+	Play(loadTester LoadTest, stopCh chan struct{}) <-chan Request
 }
 
 type SimpleScenario struct {

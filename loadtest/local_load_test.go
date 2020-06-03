@@ -72,7 +72,7 @@ func TestLocalLoad(t *testing.T) {
 	}()
 	credentials := testutil.CreateDefaultAdminUser(authService, t)
 
-	testerConfig := LoadTesterConfig{
+	testConfig := Config{
 		FreqPerSecond: 6,
 		Duration:      10 * time.Second,
 		KeepRepo:      false,
@@ -80,7 +80,8 @@ func TestLocalLoad(t *testing.T) {
 		ServerAddress: "http://" + listenAddress,
 	}
 	time.Sleep(1 * time.Second)
-	err := LoadTest(testerConfig)
+	loadTest := NewLoadTest(testConfig)
+	err := loadTest.Run()
 	if err != nil {
 		t.Fatalf("Got error on test: %v", err)
 	}

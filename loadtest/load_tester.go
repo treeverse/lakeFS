@@ -41,13 +41,14 @@ func (s *WriteSafeBuffer) Read(p []byte) (n int, err error) {
 	return s.Buffer.Read(p)
 }
 
-type LoadTester struct {
+type LoadTest struct {
 	RequestHistory []Request
 	Buffer         WriteSafeBuffer
-	Config         LoadTesterConfig
+	Config         Config
+	NewRepoName    string
 }
 
-type LoadTesterConfig struct {
+type Config struct {
 	FreqPerSecond int
 	Duration      time.Duration
 	RepoName      string
@@ -56,33 +57,33 @@ type LoadTesterConfig struct {
 	ServerAddress string
 }
 
-func LoadTest(config LoadTesterConfig) error {
-	var apiClient api.Client
-	var err error
-	apiClient, err = getClient(config)
+func NewLoadTest(config Config) LoadTest {
+	res := LoadTest{
+		Config: config,
+	}
+	if config.RepoName == "" {
+		res.NewRepoName = uuid.New().String()
+	}
+	return res
+}
+
+func (t *LoadTest) Run() error {
+	apiClient, err := t.getClient()
 	if err != nil {
 		return err
 	}
-	existingRepo := true
-	if config.RepoName == "" {
-		existingRepo = false
-		config.RepoName, err = createRepo(config, apiClient)
-		if err != nil {
-			return err
-		}
-	}
-	loadTester := LoadTester{
-		Config: config,
+	repoName, err := t.createRepo(apiClient)
+	if err != nil {
+		return err
 	}
 	stopCh := make(chan struct{})
-
-	out := new(SimpleScenario).Play(config.ServerAddress, config.RepoName, stopCh)
-	errs := loadTester.streamRequests(out)
-	hasErrors, metrics, metricsTotal := loadTester.doAttack()
+	out := new(SimpleScenario).Play(t.Config.ServerAddress, repoName, stopCh)
+	errs := t.streamRequests(out)
+	hasErrors, metrics, metricsTotal := t.doAttack()
 	close(stopCh)
 
-	if !existingRepo && !config.KeepRepo {
-		err = apiClient.DeleteRepository(context.Background(), config.RepoName)
+	if t.Config.RepoName == "" && !t.Config.KeepRepo {
+		err = apiClient.DeleteRepository(context.Background(), t.NewRepoName)
 		if err != nil {
 			return err
 		}
@@ -101,32 +102,35 @@ func LoadTest(config LoadTesterConfig) error {
 	return nil
 }
 
-func createRepo(config LoadTesterConfig, apiClient api.Client) (string, error) {
-	if config.RepoName == "" {
-		config.RepoName = uuid.New().String()
-		err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
-			DefaultBranch: "master",
-			ID:            &config.RepoName,
-			BucketName:    &config.RepoName,
-		})
-		if err != nil {
-			return "", errors.New(fmt.Sprintf("failed to create lakeFS repository: %v", err))
-		}
+func (t *LoadTest) createRepo(apiClient api.Client) (string, error) {
+	if t.Config.RepoName != "" {
+		// using an existing repo, no need to create one
+		return t.Config.RepoName, nil
 	}
-	return config.RepoName, nil
+	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
+		DefaultBranch: "master",
+		ID:            &t.NewRepoName,
+		BucketName:    &t.NewRepoName,
+	})
+	if err != nil {
+		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)
+	}
+	return t.NewRepoName, nil
 }
 
-func getClient(config LoadTesterConfig) (apiClient api.Client, err error) {
-
-	apiClient, err = api.NewClient(config.ServerAddress, config.Credentials.AccessKeyId, config.Credentials.AccessSecretKey)
+func (t *LoadTest) getClient() (apiClient api.Client, err error) {
+	if t.Config.RepoName != "" {
+		// using an existing repo, no need to create a client
+		return nil, nil
+	}
+	apiClient, err = api.NewClient(t.Config.ServerAddress, t.Config.Credentials.AccessKeyId, t.Config.Credentials.AccessSecretKey)
 	if err != nil {
 		return nil, errors.New("failed to create lakeFS client")
 	}
-
 	return apiClient, nil
 }
 
-func (t *LoadTester) doAttack() (hasErrors bool, metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metrics) {
+func (t *LoadTest) doAttack() (hasErrors bool, metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metrics) {
 	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
 		http.Header{http.CanonicalHeaderKey("Authorization"): []string{"Basic " + getAuth(&t.Config.Credentials)}})
 	attacker := vegeta.NewAttacker()
@@ -171,7 +175,7 @@ func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metri
 	return nil
 }
 
-func (t *LoadTester) streamRequests(in <-chan Request) <-chan error {
+func (t *LoadTest) streamRequests(in <-chan Request) <-chan error {
 	errs := make(chan error, 1)
 	go func() {
 		defer close(errs)

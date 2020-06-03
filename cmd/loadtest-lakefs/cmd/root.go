@@ -47,7 +47,7 @@ var rootCmd = &cobra.Command{
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
 		progressBar(durationInSec)
-		err = loadtest.LoadTest(loadtest.LoadTesterConfig{
+		testConfig := loadtest.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      time.Duration(durationInSec) * time.Second,
 			RepoName:      repoName,
@@ -57,7 +57,9 @@ var rootCmd = &cobra.Command{
 				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
 			},
 			ServerAddress: viper.GetString(ConfigServerEndpointUrl),
-		})
+		}
+		loadTest := loadtest.NewLoadTest(testConfig)
+		err = loadTest.Run()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
