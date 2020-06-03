@@ -1,4 +1,4 @@
-package loadtest
+package benchmark
 
 import (
 	"context"
@@ -43,9 +43,9 @@ type mockCollector struct{}
 
 func (m *mockCollector) Collect(_, _ string) {}
 
-func TestLocalLoad(t *testing.T) {
+func TestLocalBenchmark(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping load tests in short mode")
+		t.Skip("Skipping benchmark tests in short mode")
 	}
 	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
@@ -81,8 +81,8 @@ func TestLocalLoad(t *testing.T) {
 		ServerAddress: "http://" + listenAddress,
 	}
 	time.Sleep(1 * time.Second)
-	loadTest := NewLoadTest(testConfig)
-	err := loadTest.Run()
+	benchmark := NewBenchmark(testConfig)
+	err := benchmark.Run()
 	if err != nil {
 		t.Fatalf("Got error on test: %v", err)
 	}

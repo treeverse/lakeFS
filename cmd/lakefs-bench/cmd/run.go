@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/loadtest"
+	"github.com/treeverse/lakefs/benchmark"
 	"os"
 	"time"
 
@@ -33,7 +33,7 @@ var runCmd = &cobra.Command{
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
 		progressBar(duration)
-		testConfig := loadtest.Config{
+		testConfig := benchmark.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      duration,
 			RepoName:      repoName,
@@ -44,8 +44,8 @@ var runCmd = &cobra.Command{
 			},
 			ServerAddress: viper.GetString(ConfigServerEndpointUrl),
 		}
-		loadTest := loadtest.NewLoadTest(testConfig)
-		err = loadTest.Run()
+		benchmark := benchmark.NewBenchmark(testConfig)
+		err = benchmark.Run()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

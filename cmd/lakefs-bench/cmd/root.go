@@ -75,7 +75,7 @@ func initConfig() {
 		viper.SetConfigName(".lakectl")
 	}
 
-	viper.SetEnvPrefix("LOADTEST")
+	viper.SetEnvPrefix("LAKEFS_BENCH")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
 	cfgFileErr := viper.ReadInConfig()

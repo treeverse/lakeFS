@@ -1,4 +1,4 @@
-package loadtest
+package benchmark
 
 import (
 	"fmt"
