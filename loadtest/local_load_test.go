@@ -19,6 +19,8 @@ import (
 	"time"
 )
 
+const listenAddress = "localhost:8981"
+
 var (
 	pool        *dockertest.Pool
 	databaseUri string
@@ -52,7 +54,6 @@ func TestLocalLoad(t *testing.T) {
 
 	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-	listenAddress := "localhost:8981"
 	migrator := db.NewDatabaseMigrator().
 		AddDB(config.SchemaMetadata, mdbURI).
 		AddDB(config.SchemaAuth, adbURI)
