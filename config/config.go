@@ -87,24 +87,27 @@ func setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-func (c *Config) MetadataDatabaseURI() string {
-	return viper.GetString("metadata.db.uri")
+const (
+	DBKeyAuth  = "auth"
+	DBKeyIndex = "metadata"
+)
+
+var SchemaDBKeys = map[string]string{SchemaAuth: DBKeyAuth, SchemaMetadata: DBKeyIndex}
+
+func (c *Config) GetDatabaseURI(key string) string {
+	return viper.GetString(key + ".db.uri")
 }
 
 func (c *Config) ConnectMetadataDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.MetadataDatabaseURI())
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyIndex))
 	if err != nil {
 		panic(err)
 	}
 	return database
 }
 
-func (c *Config) AuthDatabaseURI() string {
-	return viper.GetString("auth.db.uri")
-}
-
 func (c *Config) ConnectAuthDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.AuthDatabaseURI())
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyAuth))
 	if err != nil {
 		panic(err)
 	}
