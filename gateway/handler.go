@@ -109,7 +109,7 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 
 	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
 		// Paths for bare repository
-		repositoryId := strings.TrimSuffix(parts[0], "/")
+		repositoryId := parts[0]
 		if err := index.ValidateAll(
 			index.ValidateRepoId(repositoryId),
 		); err != nil {
@@ -206,8 +206,8 @@ func SplitFirst(pth string, parts int) ([]string, bool) {
 	if len(pathParts) < parts {
 		return []string{}, false
 	}
-	if len(pathParts) <= 2 && len(pathParts[len(pathParts)-1]) == 0 {
-		return pathParts[:len(pathParts)-1], false
+	if len(pathParts) == 1 && len(pathParts[0]) == 0 {
+		return []string{}, false
 	}
 	return pathParts, true
 }
