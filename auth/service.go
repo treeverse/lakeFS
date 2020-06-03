@@ -14,7 +14,7 @@ import (
 
 type AuthorizationRequest struct {
 	UserDisplayName string
-	Permission      permissions.Permission
+	Permission      permissions.Action
 	SubjectARN      string
 }
 
@@ -93,6 +93,33 @@ func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
 	return user, nil
 }
 
+func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
+	group := &model.Group{}
+	err := tx.Get(group, `SELECT * FROM groups WHERE display_name = $1`, groupDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return group, nil
+}
+
+func getRole(tx db.Tx, roleDisplayName string) (*model.Role, error) {
+	role := &model.Role{}
+	err := tx.Get(role, `SELECT * FROM roles WHERE display_name = $1`, roleDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return role, nil
+}
+
+func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
+	policy := &model.PolicyDBImpl{}
+	err := tx.Get(policy, `SELECT * FROM policies WHERE display_name = $1`, policyDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return policy.ToModel(), nil
+}
+
 func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 	res, err := tx.Exec(stmt, args...)
 	if err != nil {
@@ -149,6 +176,9 @@ func (s *DBAuthService) SecretStore() crypt.SecretStore {
 
 func (s *DBAuthService) CreateUser(user *model.User) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if err := model.ValidateRBACEntityId(user.DisplayName); err != nil {
+			return nil, err
+		}
 		err := tx.Get(user, `INSERT INTO users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.DisplayName, user.CreatedAt)
 		return nil, err
 	})
@@ -238,6 +268,9 @@ func (s *DBAuthService) ListUserCredentials(userDisplayName string, params *mode
 		paginator   *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
 		credentials := make([]*model.Credential, 0)
 		err := tx.Select(&credentials, `
 			SELECT credentials.* FROM credentials
@@ -275,6 +308,9 @@ func (s *DBAuthService) ListUserRoles(userDisplayName string, params *model.Pagi
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
 		roles := make([]*model.Role, 0)
 		err := tx.Select(&roles, `
 			SELECT roles.* FROM roles
@@ -313,6 +349,9 @@ func (s *DBAuthService) ListGroupRoles(groupDisplayName string, params *model.Pa
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, err
+		}
 		roles := make([]*model.Role, 0)
 		err := tx.Select(&roles, `
 			SELECT roles.* FROM roles
@@ -351,6 +390,9 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, err
+		}
 		policies := make([]*model.PolicyDBImpl, 0)
 		err := tx.Select(&policies, `
 			SELECT policies.* FROM policies
@@ -389,6 +431,9 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 
 func (s *DBAuthService) CreateGroup(group *model.Group) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if err := model.ValidateRBACEntityId(group.DisplayName); err != nil {
+			return nil, err
+		}
 		return nil, tx.Get(group, `INSERT INTO groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
 			group.DisplayName, group.CreatedAt)
 	})
@@ -404,12 +449,7 @@ func (s *DBAuthService) DeleteGroup(groupDisplayName string) error {
 
 func (s *DBAuthService) GetGroup(groupDisplayName string) (*model.Group, error) {
 	group, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		group := &model.Group{}
-		err := tx.Get(group, `SELECT * FROM groups WHERE display_name = $1`, groupDisplayName)
-		if err != nil {
-			return nil, err
-		}
-		return group, nil
+		return getGroup(tx, groupDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -449,6 +489,15 @@ func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Gro
 
 func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, db.ErrNotFound
+		}
 		_, err := tx.Exec(`
 			INSERT INTO user_groups (user_id, group_id)
 			VALUES (
@@ -462,6 +511,12 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 
 func (s *DBAuthService) RemoveUserFromGroup(userDisplayName, groupDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM user_groups USING users, groups
 			WHERE user_groups.user_id = users.id
@@ -479,6 +534,9 @@ func (s *DBAuthService) ListUserGroups(userDisplayName string, params *model.Pag
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
 		groups := make([]*model.Group, 0)
 		err := tx.Select(&groups, `
 			SELECT groups.* FROM groups
@@ -517,6 +575,9 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, err
+		}
 		users := make([]*model.User, 0)
 		err := tx.Select(&users, `
 			SELECT users.* FROM users
@@ -551,6 +612,9 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 
 func (s *DBAuthService) CreateRole(role *model.Role) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if err := model.ValidateRBACEntityId(role.DisplayName); err != nil {
+			return nil, err
+		}
 		return nil, tx.Get(role, `INSERT INTO roles (display_name, created_at) VALUES ($1, $2) RETURNING id`,
 			role.DisplayName, role.CreatedAt)
 	})
@@ -566,12 +630,7 @@ func (s *DBAuthService) DeleteRole(roleDisplayName string) error {
 
 func (s *DBAuthService) GetRole(roleDisplayName string) (*model.Role, error) {
 	role, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		role := &model.Role{}
-		err := tx.Get(role, `SELECT * FROM roles WHERE display_name = $1`, roleDisplayName)
-		if err != nil {
-			return nil, err
-		}
-		return role, nil
+		return getRole(tx, roleDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -611,6 +670,18 @@ func (s *DBAuthService) ListRoles(params *model.PaginationParams) ([]*model.Role
 
 func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if err := model.ValidateRBACEntityId(policy.DisplayName); err != nil {
+			return nil, err
+		}
+		for _, action := range policy.Action {
+			if err := model.ValidateActionName(action); err != nil {
+				return nil, fmt.Errorf("%s: %w", action, err)
+			}
+		}
+		if err := model.ValidateArn(policy.Resource); err != nil {
+			return nil, err
+		}
+
 		p := policy.ToDBImpl()
 		return nil, tx.Get(policy, `INSERT INTO policies (display_name, created_at, action, resource, effect) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
 			p.DisplayName, p.CreatedAt, p.Action, p.Resource, p.Effect)
@@ -620,12 +691,7 @@ func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 
 func (s *DBAuthService) GetPolicy(policyDisplayName string) (*model.Policy, error) {
 	policy, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		policy := &model.PolicyDBImpl{}
-		err := tx.Get(policy, `SELECT * FROM policies WHERE display_name = $1`, policyDisplayName)
-		if err != nil {
-			return nil, err
-		}
-		return policy.ToModel(), nil
+		return getPolicy(tx, policyDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -729,6 +795,12 @@ func (s *DBAuthService) DeleteCredentials(userDisplayName, accessKeyId string) e
 
 func (s *DBAuthService) AttachRoleToUser(roleDisplayName, userDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", roleDisplayName, err)
+		}
 		_, err := tx.Exec(`
 			INSERT INTO user_roles (user_id, role_id)
 			VALUES (
@@ -742,6 +814,12 @@ func (s *DBAuthService) AttachRoleToUser(roleDisplayName, userDisplayName string
 
 func (s *DBAuthService) DetachRoleFromUser(roleDisplayName, userDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", roleDisplayName, err)
+		}
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM user_roles USING users, roles
 			WHERE user_roles.user_id = users.id
@@ -755,6 +833,12 @@ func (s *DBAuthService) DetachRoleFromUser(roleDisplayName, userDisplayName stri
 
 func (s *DBAuthService) AttachRoleToGroup(roleDisplayName, groupDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", roleDisplayName, err)
+		}
 		_, err := tx.Exec(`
 			INSERT INTO group_roles (group_id, role_id)
 			VALUES (
@@ -768,6 +852,12 @@ func (s *DBAuthService) AttachRoleToGroup(roleDisplayName, groupDisplayName stri
 
 func (s *DBAuthService) DetachRoleFromGroup(roleDisplayName, groupDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", roleDisplayName, err)
+		}
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM group_roles USING groups, roles
 			WHERE group_roles.group_id = groups.id
@@ -781,6 +871,12 @@ func (s *DBAuthService) DetachRoleFromGroup(roleDisplayName, groupDisplayName st
 
 func (s *DBAuthService) AttachPolicyToRole(roleDisplayName string, policyDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getPolicy(tx, policyDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+		}
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", roleDisplayName, err)
+		}
 		_, err := tx.Exec(`
 			INSERT INTO role_policies (policy_id, role_id)
 			VALUES (
@@ -794,6 +890,12 @@ func (s *DBAuthService) AttachPolicyToRole(roleDisplayName string, policyDisplay
 
 func (s *DBAuthService) DetachPolicyFromRole(roleDisplayName string, policyDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getPolicy(tx, policyDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+		}
+		if _, err := getRole(tx, roleDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", roleDisplayName, err)
+		}
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM role_policies USING roles, policies
 			WHERE role_policies.role_id = roles.id
@@ -807,6 +909,9 @@ func (s *DBAuthService) DetachPolicyFromRole(roleDisplayName string, policyDispl
 
 func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error) {
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
 		credentials := &model.Credential{}
 		err := tx.Get(credentials, `
 			SELECT credentials.*
