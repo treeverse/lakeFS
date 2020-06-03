@@ -15,7 +15,7 @@ type Cataloger interface {
 	ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
 	GetRepo(ctx context.Context, repo string) (*Repo, error)
 	DeleteRepo(ctx context.Context, repo string) error
-	GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
+	ListRepoCommits(ctx context.Context, repo string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 
 	// branch level
 	CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error)
@@ -70,10 +70,6 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 		db.WithLogger(c.log),
 	}
 	return append(o, opts...)
-}
-
-func (c *cataloger) GetRepoCommitLog(ctx context.Context, repo string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
-	panic("implement me")
 }
 
 func (c *cataloger) GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {

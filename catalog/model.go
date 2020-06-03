@@ -51,6 +51,15 @@ type Commit struct {
 	MergeType         string       `db:"merge_type"`
 }
 
+type CommitLog struct {
+	Branch       string       `db:"branch"`
+	CommitID     int          `db:"commit_id"`
+	Committer    string       `db:"committer"`
+	Message      string       `db:"message"`
+	CreationDate time.Time    `db:"creation_date"`
+	Metadata     JSONMetadata `db:"metadata"`
+}
+
 type Branch struct {
 	RepositoryID int    `db:"repository_id"`
 	ID           int    `db:"id"`
