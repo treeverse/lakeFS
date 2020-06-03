@@ -146,7 +146,7 @@ func (a *Handler) incrStat(action string) {
 	a.context.Stats.Collect("api_server", action)
 }
 
-func (a *Handler) authorize(user *models.User, action permissions.Action) error {
+func (a *Handler) authorize(user *models.User, action permissions.Permission) error {
 	return authorize(a.context.Auth, user, action)
 }
 

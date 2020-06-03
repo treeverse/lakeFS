@@ -4,15 +4,16 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"io/ioutil"
+	"net/http"
+	"strings"
+	"time"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/permissions"
-	"io/ioutil"
-	"net/http"
-	"strings"
-	"time"
 )
 
 const (
@@ -22,7 +23,7 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) Action(repoId, refId, path string) permissions.Action {
+func (controller *PostObject) Action(repoId, refId, path string) permissions.Permission {
 	return permissions.WriteObject(repoId)
 }
 
