@@ -209,17 +209,18 @@ func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		users := make([]*model.User, 0)
-		err := tx.Select(&users, `SELECT * FROM users ORDER BY display_name WHERE display_name > $1 LIMIT $2`,
-			params.PageToken, params.Amount+1)
+		err := tx.Select(&users, `SELECT * FROM users WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+			params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(users) == params.Amount+1 {
 			// we have more pages
+			users = users[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = users[len(users)-1].DisplayName
-			return &res{users[0:params.Amount], p}, nil
+			return &res{users, p}, nil
 		}
 		p.Amount = len(users)
 		return &res{users, p}, nil
@@ -239,23 +240,24 @@ func (s *DBAuthService) ListUserCredentials(userDisplayName string, params *mode
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		credentials := make([]*model.Credential, 0)
 		err := tx.Select(&credentials, `
-			SELECT * FROM credentials
+			SELECT credentials.* FROM credentials
 				INNER JOIN users ON (credentials.user_id = users.id)
-			ORDER BY credentials.access_key_id
 			WHERE
 				users.display_name = $1
 				AND credentials.access_key_id > $2
+			ORDER BY credentials.access_key_id
 			LIMIT $3`,
-			userDisplayName, params.PageToken, params.Amount+1)
+			userDisplayName, params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(credentials) == params.Amount+1 {
 			// we have more pages
+			credentials = credentials[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = credentials[len(credentials)-1].AccessKeyId
-			return &res{credentials[0:params.Amount], p}, nil
+			return &res{credentials, p}, nil
 		}
 		p.Amount = len(credentials)
 		return &res{credentials, p}, nil
@@ -275,24 +277,25 @@ func (s *DBAuthService) ListUserRoles(userDisplayName string, params *model.Pagi
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		roles := make([]*model.Role, 0)
 		err := tx.Select(&roles, `
-			SELECT * FROM roles
-				INNER JOIN user_roles ON (role.id = user_roles.role_id)
+			SELECT roles.* FROM roles
+				INNER JOIN user_roles ON (roles.id = user_roles.role_id)
 				INNER JOIN users ON (user_roles.user_id = users.id)
-			ORDER BY roles.display_name
 			WHERE
 				users.display_name = $1
 				AND roles.display_name > $2
+			ORDER BY roles.display_name
 			LIMIT $3`,
-			userDisplayName, params.PageToken, params.Amount+1)
+			userDisplayName, params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(roles) == params.Amount+1 {
 			// we have more pages
+			roles = roles[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = roles[len(roles)-1].DisplayName
-			return &res{roles[0:params.Amount], p}, nil
+			return &res{roles, p}, nil
 		}
 		p.Amount = len(roles)
 		return &res{roles, p}, nil
@@ -312,24 +315,25 @@ func (s *DBAuthService) ListGroupRoles(groupDisplayName string, params *model.Pa
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		roles := make([]*model.Role, 0)
 		err := tx.Select(&roles, `
-			SELECT * FROM roles
-				INNER JOIN group_roles ON (role.id = group_roles.role_id)
+			SELECT roles.* FROM roles
+				INNER JOIN group_roles ON (roles.id = group_roles.role_id)
 				INNER JOIN groups ON (group_roles.group_id = groups.id)
-			ORDER BY roles.display_name
 			WHERE
 				groups.display_name = $1
 				AND roles.display_name > $2
+			ORDER BY roles.display_name
 			LIMIT $3`,
-			groupDisplayName, params.PageToken, params.Amount+1)
+			groupDisplayName, params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(roles) == params.Amount+1 {
 			// we have more pages
+			roles = roles[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = roles[len(roles)-1].DisplayName
-			return &res{roles[0:params.Amount], p}, nil
+			return &res{roles, p}, nil
 		}
 		p.Amount = len(roles)
 		return &res{roles, p}, nil
@@ -349,15 +353,15 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		policies := make([]*model.PolicyDBImpl, 0)
 		err := tx.Select(&policies, `
-			SELECT * FROM policies
+			SELECT policies.* FROM policies
 				INNER JOIN role_policies ON (role_policies.policy_id = policies.id)
-				INNER JOIN roles ON (role_policies.role_id = role.id)
-			ORDER BY display_name
+				INNER JOIN roles ON (role_policies.role_id = roles.id)
 			WHERE
-				role.display_name = $1
+				roles.display_name = $1
 				AND policies.display_name > $2
+			ORDER BY display_name
 			LIMIT $3`,
-			roleDisplayName, params.PageToken, params.Amount+1)
+			roleDisplayName, params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
@@ -368,9 +372,10 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 		}
 		if len(policies) == params.Amount+1 {
 			// we have more pages
+			policyModels = policyModels[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policyModels[0:params.Amount], p}, nil
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
 		}
 		p.Amount = len(policies)
 		return &res{policyModels, p}, nil
@@ -419,17 +424,18 @@ func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Gro
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		groups := make([]*model.Group, 0)
-		err := tx.Select(&groups, `SELECT * FROM groups ORDER BY display_name WHERE display_name > $1 LIMIT $2`,
-			params.PageToken, params.Amount+1)
+		err := tx.Select(&groups, `SELECT * FROM groups WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+			params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(groups) == params.Amount+1 {
 			// we have more pages
+			groups = groups[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = groups[len(groups)-1].DisplayName
-			return &res{groups[0:params.Amount], p}, nil
+			return &res{groups, p}, nil
 		}
 		p.Amount = len(groups)
 		return &res{groups, p}, nil
@@ -475,24 +481,25 @@ func (s *DBAuthService) ListUserGroups(userDisplayName string, params *model.Pag
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		groups := make([]*model.Group, 0)
 		err := tx.Select(&groups, `
-			SELECT * FROM groups
+			SELECT groups.* FROM groups
 				INNER JOIN user_groups ON (groups.id = user_groups.group_id)
 				INNER JOIN users ON (user_groups.user_id = users.id)
-			ORDER BY groups.display_name
 			WHERE
 				users.display_name = $1
 				AND groups.display_name > $2
+			ORDER BY groups.display_name
 			LIMIT $3`,
-			userDisplayName, params.PageToken, params.Amount+1)
+			userDisplayName, params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(groups) == params.Amount+1 {
 			// we have more pages
+			groups = groups[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = groups[len(groups)-1].DisplayName
-			return &res{groups[0:params.Amount], p}, nil
+			return &res{groups, p}, nil
 		}
 		p.Amount = len(groups)
 		return &res{groups, p}, nil
@@ -512,24 +519,25 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		users := make([]*model.User, 0)
 		err := tx.Select(&users, `
-			SELECT * FROM users
+			SELECT users.* FROM users
 				INNER JOIN user_groups ON (users.id = user_groups.user_id)
 				INNER JOIN groups ON (user_groups.group_id = groups.id)
-			ORDER BY groups.display_name
 			WHERE
 				groups.display_name = $1
 				AND users.display_name > $2
+			ORDER BY groups.display_name
 			LIMIT $3`,
-			groupDisplayName, params.PageToken, params.Amount+1)
+			groupDisplayName, params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(users) == params.Amount+1 {
 			// we have more pages
+			users = users[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = users[len(users)-1].DisplayName
-			return &res{users[0:params.Amount], p}, nil
+			return &res{users, p}, nil
 		}
 		p.Amount = len(users)
 		return &res{users, p}, nil
@@ -578,17 +586,18 @@ func (s *DBAuthService) ListRoles(params *model.PaginationParams) ([]*model.Role
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		roles := make([]*model.Role, 0)
-		err := tx.Select(&roles, `SELECT * FROM roles ORDER BY display_name WHERE display_name > $1 LIMIT $2`,
-			params.PageToken, params.Amount+1)
+		err := tx.Select(&roles, `SELECT * FROM roles WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+			params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
 		p := &model.Paginator{}
 		if len(roles) == params.Amount+1 {
 			// we have more pages
+			roles = roles[0:params.Amount]
 			p.Amount = params.Amount
 			p.NextPageToken = roles[len(roles)-1].DisplayName
-			return &res{roles[0:params.Amount], p}, nil
+			return &res{roles, p}, nil
 		}
 		p.Amount = len(roles)
 		return &res{roles, p}, nil
@@ -641,10 +650,10 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 		err := tx.Select(&policies, `
 			SELECT *
 			FROM policies
-			ORDER BY display_name
 			WHERE display_name > $1
+			ORDER BY display_name
 			LIMIT $2`,
-			params.PageToken, params.Amount+1)
+			params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
 		}
@@ -655,9 +664,10 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 		}
 		if len(policies) == params.Amount+1 {
 			// we have more pages
+			policyModels = policyModels[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policyModels[0:params.Amount], p}, nil
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
 		}
 		p.Amount = len(policies)
 		return &res{policyModels, p}, nil
@@ -761,7 +771,7 @@ func (s *DBAuthService) DetachRoleFromGroup(roleDisplayName, groupDisplayName st
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM group_roles USING groups, roles
 			WHERE group_roles.group_id = groups.id
-				AND user_roles.role_id = roles.id
+				AND group_roles.role_id = roles.id
 				AND groups.display_name = $1
 				AND roles.display_name = $2`,
 			groupDisplayName, roleDisplayName)
@@ -799,7 +809,7 @@ func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId strin
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		credentials := &model.Credential{}
 		err := tx.Get(credentials, `
-			SELECT *
+			SELECT credentials.*
 			FROM credentials
 			INNER JOIN users ON (credentials.user_id = users.id)
 			WHERE credentials.access_key_id = $1

@@ -330,7 +330,7 @@ paths:
       summary: list users
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -434,7 +434,7 @@ paths:
       summary: list groups
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -538,7 +538,7 @@ paths:
       summary: list roles
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -642,7 +642,7 @@ paths:
       summary: list policies
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -751,7 +751,7 @@ paths:
       summary: list group members
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -832,7 +832,7 @@ paths:
         - auth
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -936,7 +936,7 @@ paths:
         - auth
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -975,7 +975,7 @@ paths:
         - auth
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -1057,7 +1057,7 @@ paths:
         - auth
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -1139,7 +1139,7 @@ paths:
         - auth
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -1216,7 +1216,7 @@ paths:
         - repositories
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
@@ -1327,7 +1327,7 @@ paths:
       summary: list branches
       parameters:
         - in: query
-          name: next
+          name: after
           type: string
           default: ""
         - in: query
