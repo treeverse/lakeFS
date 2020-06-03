@@ -16,9 +16,10 @@ var setupdbCmd = &cobra.Command{
 	Short: "Run schema and data migrations on a fresh database",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
-		migrator := db.NewDatabaseMigrator().
-			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
-			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())
+		migrator := db.NewDatabaseMigrator()
+		for name, key := range config.SchemaDBKeys {
+			migrator.AddDB(name, cfg.GetDatabaseURI(key))
+		}
 		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
@@ -29,15 +30,4 @@ var setupdbCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(setupdbCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// setupdbCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// setupdbCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 }
