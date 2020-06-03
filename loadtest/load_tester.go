@@ -1,7 +1,6 @@
 package loadtest
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -16,36 +15,16 @@ import (
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 	"net/http"
 	"os"
-	"sync"
 	"time"
 )
 
-type WriteSafeBuffer struct {
-	bytes.Buffer
-	sync.Mutex
-}
-
-func (s *WriteSafeBuffer) Write(p []byte) (n int, err error) {
-	s.Lock()
-	defer s.Unlock()
-	n, err = s.Buffer.Write(p)
-	if err != nil {
-		return n, err
-	}
-	return s.WriteString("\n")
-}
-
-func (s *WriteSafeBuffer) Read(p []byte) (n int, err error) {
-	s.Lock()
-	defer s.Unlock()
-	return s.Buffer.Read(p)
-}
-
 type LoadTest struct {
 	RequestHistory []Request
-	Buffer         WriteSafeBuffer
+	Buffer         SafeBuffer
 	Config         Config
 	NewRepoName    string
+	Metrics        map[string]*vegeta.Metrics
+	TotalMetrics   *vegeta.Metrics
 }
 
 type Config struct {
@@ -79,7 +58,7 @@ func (t *LoadTest) Run() error {
 	stopCh := make(chan struct{})
 	out := new(SimpleScenario).Play(t.Config.ServerAddress, repoName, stopCh)
 	errs := t.streamRequests(out)
-	hasErrors, metrics, metricsTotal := t.doAttack()
+	hasErrors := t.doAttack()
 	close(stopCh)
 
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
@@ -92,7 +71,7 @@ func (t *LoadTest) Run() error {
 		log.Errorf("error during request pipeline: %v", err)
 		return err
 	}
-	err = printResults(metrics, metricsTotal)
+	err = printResults(t.Metrics, t.TotalMetrics)
 	if err != nil {
 		return err
 	}
@@ -130,25 +109,25 @@ func (t *LoadTest) getClient() (apiClient api.Client, err error) {
 	return apiClient, nil
 }
 
-func (t *LoadTest) doAttack() (hasErrors bool, metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metrics) {
+func (t *LoadTest) doAttack() (hasErrors bool) {
 	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
 		http.Header{http.CanonicalHeaderKey("Authorization"): []string{"Basic " + getAuth(&t.Config.Credentials)}})
 	attacker := vegeta.NewAttacker()
-	metrics = make(map[string]*vegeta.Metrics)
-	metricsTotal = new(vegeta.Metrics)
+	t.Metrics = make(map[string]*vegeta.Metrics)
+	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS load test") {
 		if len(res.Error) > 0 {
 			log.Debugf("Error in request type %s, error: %s, status: %d", t.RequestHistory[res.Seq].RequestType, res.Error, res.Code)
 			hasErrors = true
 		}
-		typeMetrics := metrics[t.RequestHistory[res.Seq].RequestType]
+		typeMetrics := t.Metrics[t.RequestHistory[res.Seq].RequestType]
 		if typeMetrics == nil {
-			metrics[t.RequestHistory[res.Seq].RequestType] = new(vegeta.Metrics)
-			typeMetrics = metrics[t.RequestHistory[res.Seq].RequestType]
+			t.Metrics[t.RequestHistory[res.Seq].RequestType] = new(vegeta.Metrics)
+			typeMetrics = t.Metrics[t.RequestHistory[res.Seq].RequestType]
 		}
 		typeMetrics.Add(res)
-		metricsTotal.Add(res)
+		t.TotalMetrics.Add(res)
 	}
 	return
 }
