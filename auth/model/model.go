@@ -11,8 +11,8 @@ const (
 )
 
 type PaginationParams struct {
-	PageToken string
-	Amount    int
+	After  string
+	Amount int
 }
 
 type Paginator struct {
