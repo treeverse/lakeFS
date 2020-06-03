@@ -14,8 +14,8 @@ import (
 
 type AuthorizationRequest struct {
 	UserDisplayName string
-	Permission      permissions.Action
-	SubjectARN      string
+	Action          permissions.Action
+	Resource        string
 }
 
 type AuthorizationResponse struct {
@@ -494,9 +494,6 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 		}
 		if _, err := getGroup(tx, groupDisplayName); err != nil {
 			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
-		}
-		if _, err := getUser(tx, userDisplayName); err != nil {
-			return nil, db.ErrNotFound
 		}
 		_, err := tx.Exec(`
 			INSERT INTO user_groups (user_id, group_id)
@@ -985,17 +982,17 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		allowed := false
 		for _, p := range policies {
 			policy := p.ToModel()
-			if !ArnMatch(policy.Resource, req.SubjectARN) {
+			if !ArnMatch(policy.Resource, req.Resource) {
 				continue
 			}
 			for _, action := range policy.Action {
-				if action == string(req.Permission) && !policy.Effect {
+				if action == string(req.Action) && !policy.Effect {
 					// this is a "Deny" and it takes precedence
 					return &AuthorizationResponse{
 						Allowed: false,
 						Error:   ErrInsufficientPermissions,
 					}, nil
-				} else if action == string(req.Permission) {
+				} else if action == string(req.Action) {
 					allowed = true
 				}
 			}

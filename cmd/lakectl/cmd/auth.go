@@ -699,10 +699,10 @@ func init() {
 	authCmd.AddCommand(authUsers)
 
 	// groups
-	authGroupsCreate.Flags().String("id", "", "user identifier")
+	authGroupsCreate.Flags().String("id", "", "group identifier")
 	_ = authGroupsCreate.MarkFlagRequired("id")
 
-	authGroupsDelete.Flags().String("id", "", "user identifier")
+	authGroupsDelete.Flags().String("id", "", "group identifier")
 	_ = authGroupsDelete.MarkFlagRequired("id")
 
 	authGroupsList.Flags().Int("amount", 100, "how many results to return")
@@ -772,7 +772,7 @@ func init() {
 	authCmd.AddCommand(authRoles)
 
 	// policies
-	authPoliciesCreate.Flags().String("id", "", "user identifier")
+	authPoliciesCreate.Flags().String("id", "", "policy identifier")
 	authPoliciesCreate.Flags().String("effect", "Allow", "policy effect (Allow/Deny)")
 	authPoliciesCreate.Flags().String("resource", "", "resource ARN")
 	authPoliciesCreate.Flags().StringSlice("action", []string{}, "actions to attach to the policy")
@@ -780,7 +780,7 @@ func init() {
 	_ = authPoliciesCreate.MarkFlagRequired("resource")
 	_ = authPoliciesCreate.MarkFlagRequired("action")
 
-	authPoliciesDelete.Flags().String("id", "", "user identifier")
+	authPoliciesDelete.Flags().String("id", "", "policy identifier")
 	_ = authPoliciesDelete.MarkFlagRequired("id")
 
 	authPoliciesList.Flags().Int("amount", 100, "how many results to return")
@@ -806,6 +806,8 @@ func init() {
 	authCredentialsDelete.Flags().String("access-key-id", "", "access key ID to be deleted")
 	_ = authCredentialsDelete.MarkFlagRequired("access-key-id")
 	authCredentialsList.Flags().String("id", "", "user ID to list credentials for (default: current user)")
+	authCredentialsList.Flags().Int("amount", 100, "how many results to return")
+	authCredentialsList.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	authCredentials.AddCommand(authCredentialsCreate)
 	authCredentials.AddCommand(authCredentialsDelete)

@@ -11,7 +11,7 @@ import (
 
 var (
 	ErrValidationError = errors.New("validation error")
-	EntityIdRegexp     = regexp.MustCompile(`[a-zA-Z0-9+=.,@_\-]{1,127}`)
+	EntityIdRegexp     = regexp.MustCompile(`^[a-zA-Z0-9+=.,@_\-]{1,127}$`)
 )
 
 func ValidateRBACEntityId(name string) error {
