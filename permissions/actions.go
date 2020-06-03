@@ -1,140 +1,22 @@
 package permissions
 
-import (
-	"fmt"
-)
+type Action string
 
 const (
-	AllReposArn = "arn:lakefs:repos:::*"
-	RepoFmtArn  = "arn:lakefs:repos:::%s"
-	RbacArn     = "arn:lakefs:rbac:::*"
+	ReadRepo    Action = "repos:Read"
+	WriteRepo   Action = "repos:Write"
+	ManageRepos Action = "repos:Manage"
+	ManageRBAC  Action = "rbac:Manage"
 )
 
-type Action struct {
-	Permission Permission
-	Arn        string
+var actionSet = map[Action]struct{}{
+	ReadRepo:    {},
+	WriteRepo:   {},
+	ManageRepos: {},
+	ManageRBAC:  {},
 }
 
-func repoArn(repoId string) string {
-	return fmt.Sprintf(RepoFmtArn, repoId)
-}
-
-// basic registry of actions
-func ListRepos() Action {
-	return Action{
-		Permission: ManageRepos,
-		Arn:        AllReposArn,
-	}
-}
-
-func GetRepo(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        AllReposArn,
-	}
-}
-
-func GetCommit(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func Commit(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func CreateRepo() Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        AllReposArn,
-	}
-}
-
-func DeleteRepo(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func ListBranches(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func DiffBranches(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func GetBranch(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func CreateBranch(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func MergeIntoBranch(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func DeleteBranch(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func GetObject(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func DeleteObject(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func ListObjects(repoId string) Action {
-	return Action{
-		Permission: ReadRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func WriteObject(repoId string) Action {
-	return Action{
-		Permission: WriteRepo,
-		Arn:        repoArn(repoId),
-	}
-}
-
-func ManageAuth() Action {
-	return Action{
-		Permission: ManageRBAC,
-		Arn:        RbacArn,
-	}
+func IsAction(action string) bool {
+	_, ok := actionSet[Action(action)]
+	return ok
 }

@@ -146,7 +146,7 @@ func (a *Handler) incrStat(action string) {
 	a.context.Stats.Collect("api_server", action)
 }
 
-func (a *Handler) authorize(user *models.User, action permissions.Action) error {
+func (a *Handler) authorize(user *models.User, action permissions.Permission) error {
 	return authorize(a.context.Auth, user, action)
 }
 
@@ -186,7 +186,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		}
 		a.incrStat("list_repos")
 
-		after, amount := getPaginationParams(params.Next, params.Amount)
+		after, amount := getPaginationParams(params.After, params.Amount)
 
 		repos, hasMore, err := a.ForRequest(params.HTTPRequest).Index.ListRepos(amount, after)
 		if err != nil {
@@ -455,7 +455,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		a.incrStat("list_branches")
 		index := a.ForRequest(params.HTTPRequest).Index
 
-		after, amount := getPaginationParams(params.Next, params.Amount)
+		after, amount := getPaginationParams(params.After, params.Amount)
 
 		res, hasMore, err := index.ListBranchesByPrefix(params.RepositoryID, "", amount, after)
 		if err != nil {
@@ -951,8 +951,8 @@ func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 		}
 
 		users, paginator, err := a.context.Auth.ListUsers(&authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    pageAmount(params.Amount),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListUsersDefault(http.StatusInternalServerError).
@@ -1056,8 +1056,8 @@ func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 		}
 
 		groups, paginator, err := a.context.Auth.ListGroups(&authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    pageAmount(params.Amount),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 
 		if err != nil {
@@ -1137,8 +1137,8 @@ func (a *Handler) ListRolesHandler() authentication.ListRolesHandler {
 		}
 
 		roles, paginator, err := a.context.Auth.ListRoles(&authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListRolesDefault(http.StatusInternalServerError).
@@ -1256,8 +1256,8 @@ func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 		}
 
 		policies, paginator, err := a.context.Auth.ListPolicies(&authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListPoliciesDefault(http.StatusInternalServerError).
@@ -1361,8 +1361,8 @@ func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandl
 		}
 
 		users, paginator, err := a.context.Auth.ListGroupUsers(params.GroupID, &authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListGroupMembersDefault(http.StatusInternalServerError).
@@ -1430,8 +1430,8 @@ func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredential
 		}
 
 		credentials, paginator, err := a.context.Auth.ListUserCredentials(params.UserID, &authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListUserCredentialsDefault(http.StatusInternalServerError).
@@ -1533,8 +1533,8 @@ func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
 		}
 
 		groups, paginator, err := a.context.Auth.ListUserGroups(params.UserID, &authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListUserGroupsDefault(http.StatusInternalServerError).
@@ -1566,8 +1566,8 @@ func (a *Handler) ListUserRolesHandler() authentication.ListUserRolesHandler {
 		}
 
 		roles, paginator, err := a.context.Auth.ListUserRoles(params.UserID, &authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListUserRolesDefault(http.StatusInternalServerError).
@@ -1635,8 +1635,8 @@ func (a *Handler) ListGroupRolesHandler() authentication.ListGroupRolesHandler {
 		}
 
 		roles, paginator, err := a.context.Auth.ListGroupRoles(params.GroupID, &authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListGroupRolesDefault(http.StatusInternalServerError).
@@ -1704,8 +1704,8 @@ func (a *Handler) ListRolePoliciesHandler() authentication.ListRolePoliciesHandl
 		}
 
 		policies, paginator, err := a.context.Auth.ListRolePolicies(params.RoleID, &authmodel.PaginationParams{
-			PageToken: swag.StringValue(params.Next),
-			Amount:    int(swag.Int64Value(params.Amount)),
+			After:  swag.StringValue(params.After),
+			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
 			return authentication.NewListRolePoliciesDefault(http.StatusInternalServerError).
