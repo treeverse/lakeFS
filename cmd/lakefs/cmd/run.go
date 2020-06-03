@@ -39,9 +39,10 @@ var runCmd = &cobra.Command{
 			_ = adb.Close()
 			_ = mdb.Close()
 		}()
-		migrator := db.NewDatabaseMigrator().
-			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
-			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())
+		migrator := db.NewDatabaseMigrator()
+		for name, key := range config.SchemaDBKeys {
+			migrator.AddDB(name, cfg.GetDatabaseURI(key))
+		}
 
 		// init index
 		meta := index.NewDBIndex(mdb)
