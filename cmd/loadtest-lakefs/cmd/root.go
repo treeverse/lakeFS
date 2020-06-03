@@ -8,7 +8,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/loadtesting"
+	"github.com/treeverse/lakefs/loadtest"
 	"os"
 	"strings"
 	"time"
@@ -24,7 +24,7 @@ const (
 	DurationFlag  = "duration"
 	FrequencyFlag = "freq"
 	RepoNameFlag  = "repo"
-	CleanFlag     = "clean"
+	KeepFlag      = "keep"
 )
 
 var (
@@ -45,13 +45,13 @@ var rootCmd = &cobra.Command{
 		}
 		durationInSec, _ := cmd.Flags().GetInt(DurationFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
-		clean, _ := cmd.Flags().GetBool(CleanFlag)
+		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
 		progressBar(durationInSec)
-		err = loadtesting.LoadTest(loadtesting.LoadTesterConfig{
+		err = loadtest.LoadTest(loadtest.LoadTesterConfig{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      time.Duration(durationInSec) * time.Second,
 			RepoName:      repoName,
-			DeleteRepo:    clean,
+			KeepRepo:      isKeep,
 			Credentials: model.Credential{
 				AccessKeyId:     viper.GetString(ConfigAccessKeyId),
 				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
@@ -94,7 +94,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.Flags().StringP(RepoNameFlag, "r", "", "Existing lakeFS repo name to use. Leave empty to create a dedicated repo")
-	rootCmd.Flags().Bool(CleanFlag, false, "Delete repo at the end of the test")
+	rootCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
 	rootCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
 	rootCmd.Flags().IntP(DurationFlag, "d", 30, "Duration of test, in seconds")
 }
@@ -118,7 +118,7 @@ func initConfig() {
 		viper.SetConfigName(".lakectl")
 	}
 
-	viper.SetEnvPrefix("LAKECTL")
+	viper.SetEnvPrefix("LOADTEST")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
 	cfgFileErr := viper.ReadInConfig()

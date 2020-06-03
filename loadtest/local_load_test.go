@@ -1,4 +1,4 @@
-package loadtesting
+package loadtest
 
 import (
 	"context"
@@ -75,7 +75,7 @@ func TestLocalLoad(t *testing.T) {
 	testerConfig := LoadTesterConfig{
 		FreqPerSecond: 6,
 		Duration:      10 * time.Second,
-		DeleteRepo:    false,
+		KeepRepo:      false,
 		Credentials:   *credentials,
 		ServerAddress: "http://" + listenAddress,
 	}

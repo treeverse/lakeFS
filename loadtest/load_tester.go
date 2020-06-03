@@ -1,4 +1,4 @@
-package loadtesting
+package loadtest
 
 import (
 	"bytes"
@@ -51,7 +51,7 @@ type LoadTesterConfig struct {
 	FreqPerSecond int
 	Duration      time.Duration
 	RepoName      string
-	DeleteRepo    bool
+	KeepRepo      bool
 	Credentials   model.Credential
 	ServerAddress string
 }
@@ -59,13 +59,13 @@ type LoadTesterConfig struct {
 func LoadTest(config LoadTesterConfig) error {
 	var apiClient api.Client
 	var err error
-	if config.RepoName == "" || config.DeleteRepo {
-		apiClient, err = getClient(config)
-		if err != nil {
-			return err
-		}
+	apiClient, err = getClient(config)
+	if err != nil {
+		return err
 	}
+	existingRepo := true
 	if config.RepoName == "" {
+		existingRepo = false
 		config.RepoName, err = createRepo(config, apiClient)
 		if err != nil {
 			return err
@@ -81,7 +81,7 @@ func LoadTest(config LoadTesterConfig) error {
 	hasErrors, metrics, metricsTotal := loadTester.doAttack()
 	close(stopCh)
 
-	if config.DeleteRepo {
+	if !existingRepo && !config.KeepRepo {
 		err = apiClient.DeleteRepository(context.Background(), config.RepoName)
 		if err != nil {
 			return err
