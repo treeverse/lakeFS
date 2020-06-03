@@ -29,7 +29,8 @@ var rootCmd = &cobra.Command{
 	Version: config.Version,
 }
 
-func progressBar(durationInSec int) {
+func progressBar(duration time.Duration) {
+	durationInSec := int(duration.Seconds())
 	progress := progressbar.NewOptions(durationInSec, progressbar.OptionSetPredictTime(false))
 	go func() {
 		for i := 0; i < durationInSec; i++ {

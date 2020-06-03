@@ -29,13 +29,13 @@ var runCmd = &cobra.Command{
 			fmt.Println(err)
 			os.Exit(1)
 		}
-		durationInSec, _ := cmd.Flags().GetInt(DurationFlag)
+		duration, _ := cmd.Flags().GetDuration(DurationFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
-		progressBar(durationInSec)
+		progressBar(duration)
 		testConfig := loadtest.Config{
 			FreqPerSecond: requestsPerSeq,
-			Duration:      time.Duration(durationInSec) * time.Second,
+			Duration:      duration,
 			RepoName:      repoName,
 			KeepRepo:      isKeep,
 			Credentials: model.Credential{
@@ -58,5 +58,5 @@ func init() {
 	runCmd.Flags().StringP(RepoNameFlag, "r", "", "Existing lakeFS repo name to use. Leave empty to create a dedicated repo")
 	runCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
 	runCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
-	runCmd.Flags().IntP(DurationFlag, "d", 30, "Duration of test, in seconds")
+	runCmd.Flags().DurationP(DurationFlag, "d", 30*time.Second, "Duration of test")
 }
