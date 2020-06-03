@@ -9,9 +9,9 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 )
 
-func authorize(a auth.Service, user *models.User, action permissions.Action) error {
+func authorize(a auth.Service, user *models.User, action permissions.Permission) error {
 	authResp, err := a.Authorize(&auth.AuthorizationRequest{
-		UserDisplayName: user.ID, Permission: action.Permission, SubjectARN: action.Arn})
+		UserDisplayName: user.ID, Permission: action.Action, SubjectARN: action.Arn})
 	if err != nil {
 		return fmt.Errorf("authorization error")
 	}
