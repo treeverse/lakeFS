@@ -6,7 +6,6 @@ require (
 	github.com/aws/aws-sdk-go v1.30.14
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
 	github.com/go-openapi/errors v0.19.2
 	github.com/go-openapi/loads v0.19.4
 	github.com/go-openapi/runtime v0.19.11
@@ -25,15 +24,13 @@ require (
 	github.com/jmoiron/sqlx v1.2.0
 	github.com/kr/pretty v0.2.0 // indirect
 	github.com/manifoldco/promptui v0.7.0
-	github.com/mattn/go-isatty v0.0.10 // indirect
-	github.com/mattn/go-runewidth v0.0.8 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/ory/dockertest/v3 v3.6.0
 	github.com/rakyll/statik v0.1.7
-	github.com/schollz/progressbar/v2 v2.15.0
+	github.com/schollz/progressbar/v3 v3.3.3
 	github.com/sirupsen/logrus v1.5.0
-	github.com/spf13/cobra v0.0.5
-	github.com/spf13/viper v1.3.2
+	github.com/spf13/cobra v1.0.0
+	github.com/spf13/viper v1.4.0
 	github.com/tsenart/vegeta/v12 v12.8.3
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e

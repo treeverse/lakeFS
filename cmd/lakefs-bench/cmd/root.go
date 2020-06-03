@@ -3,12 +3,10 @@ package cmd
 import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
-	"github.com/schollz/progressbar/v2"
+	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/loadtest"
 	"os"
 	"strings"
 	"time"
@@ -20,51 +18,14 @@ const (
 	ConfigServerEndpointUrl = "server.endpoint_url"
 )
 
-const (
-	DurationFlag  = "duration"
-	FrequencyFlag = "freq"
-	RepoNameFlag  = "repo"
-	KeepFlag      = "keep"
-)
-
 var (
 	cfgFile string
 )
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
-	Use:   "loadtest-lakefs",
-	Short: "Run a load test on a lakeFS instance",
-	Long:  `You can either run the tests on a running lakeFS instance, or choose to start a dedicated lakeFS server as part of the test.`,
-	Run: func(cmd *cobra.Command, args []string) {
-
-		repoName, err := cmd.Flags().GetString(RepoNameFlag)
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-		durationInSec, _ := cmd.Flags().GetInt(DurationFlag)
-		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
-		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
-		progressBar(durationInSec)
-		testConfig := loadtest.Config{
-			FreqPerSecond: requestsPerSeq,
-			Duration:      time.Duration(durationInSec) * time.Second,
-			RepoName:      repoName,
-			KeepRepo:      isKeep,
-			Credentials: model.Credential{
-				AccessKeyId:     viper.GetString(ConfigAccessKeyId),
-				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
-			},
-			ServerAddress: viper.GetString(ConfigServerEndpointUrl),
-		}
-		loadTest := loadtest.NewLoadTest(testConfig)
-		err = loadTest.Run()
-		if err != nil {
-			fmt.Println(err)
-			os.Exit(1)
-		}
-	},
+	Use:     "lakefs-bench",
+	Short:   "Run a benchmark on a lakeFS instance.",
 	Version: config.Version,
 }
 
@@ -90,15 +51,8 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
 	cobra.OnInitialize(initConfig)
-	rootCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.lakectl.yaml)")
-	rootCmd.Flags().StringP(RepoNameFlag, "r", "", "Existing lakeFS repo name to use. Leave empty to create a dedicated repo")
-	rootCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
-	rootCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
-	rootCmd.Flags().IntP(DurationFlag, "d", 30, "Duration of test, in seconds")
+	runCmd.Flags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.lakectl.yaml)")
 }
 
 // initConfig reads in config file and ENV variables if set.
