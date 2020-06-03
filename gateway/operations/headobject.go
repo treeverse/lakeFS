@@ -13,7 +13,7 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) Action(repoId, refId, path string) permissions.Action {
+func (controller *HeadObject) Action(repoId, refId, path string) permissions.Permission {
 	return permissions.GetObject(repoId)
 }
 

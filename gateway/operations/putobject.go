@@ -25,7 +25,7 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) Action(repoId, refId, path string) permissions.Action {
+func (controller *PutObject) Action(repoId, refId, path string) permissions.Permission {
 	return permissions.WriteObject(repoId)
 }
 

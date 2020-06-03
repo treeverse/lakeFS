@@ -97,7 +97,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 		// write some repos
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
 			Amount: swag.Int64(2),
-			Next:   swag.String("foo2"),
+			After:  swag.String("foo2"),
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
 		if err != nil {
@@ -483,7 +483,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 
 		resp, err = clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:       swag.Int64(2),
-			Next:         swag.String(resp.GetPayload().Pagination.NextOffset),
+			After:        swag.String(resp.GetPayload().Pagination.NextOffset),
 			RepositoryID: "repo1",
 		}, bauth)
 		if err != nil {
