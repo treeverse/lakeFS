@@ -19,12 +19,12 @@ import (
 )
 
 type LoadTest struct {
-	RequestHistory []Request
-	Buffer         SafeBuffer
-	Config         Config
-	NewRepoName    string
-	Metrics        map[string]*vegeta.Metrics
-	TotalMetrics   *vegeta.Metrics
+	History      []Request
+	Buffer       SafeBuffer
+	Config       Config
+	NewRepoName  string
+	Metrics      map[string]*vegeta.Metrics
+	TotalMetrics *vegeta.Metrics
 }
 
 type Config struct {
@@ -118,13 +118,13 @@ func (t *LoadTest) doAttack() (hasErrors bool) {
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS load test") {
 		if len(res.Error) > 0 {
-			log.Debugf("Error in request type %s, error: %s, status: %d", t.RequestHistory[res.Seq].RequestType, res.Error, res.Code)
+			log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
 			hasErrors = true
 		}
-		typeMetrics := t.Metrics[t.RequestHistory[res.Seq].RequestType]
+		typeMetrics := t.Metrics[t.History[res.Seq].Type]
 		if typeMetrics == nil {
-			t.Metrics[t.RequestHistory[res.Seq].RequestType] = new(vegeta.Metrics)
-			typeMetrics = t.Metrics[t.RequestHistory[res.Seq].RequestType]
+			typeMetrics = new(vegeta.Metrics)
+			t.Metrics[t.History[res.Seq].Type] = typeMetrics
 		}
 		typeMetrics.Add(res)
 		t.TotalMetrics.Add(res)
@@ -159,7 +159,7 @@ func (t *LoadTest) streamRequests(in <-chan Request) <-chan error {
 	go func() {
 		defer close(errs)
 		for tgt := range in {
-			t.RequestHistory = append(t.RequestHistory, tgt)
+			t.History = append(t.History, tgt)
 			target, err := json.Marshal(tgt.Target)
 			if err != nil {
 				errs <- err

@@ -2,15 +2,9 @@ package loadtest
 
 import (
 	"fmt"
-	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 const FileCountInCommit = 20
-
-type Request struct {
-	Target      vegeta.Target
-	RequestType string
-}
 
 type Scenario interface {
 	Play(loadTester LoadTest, stopCh chan struct{}) <-chan Request
@@ -21,7 +15,7 @@ type SimpleScenario struct {
 }
 
 func (s *SimpleScenario) Play(serverAddress string, repoName string, stopCh chan struct{}) <-chan Request {
-	targetGenerator := TargetGenerator{ServerAddress: serverAddress}
+	targetGenerator := RequestGenerator{ServerAddress: serverAddress}
 	out := make(chan Request)
 	go func() {
 		defer close(out)
