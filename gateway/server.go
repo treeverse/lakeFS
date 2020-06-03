@@ -112,7 +112,7 @@ func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -174,13 +174,13 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	// interpolate arn string
-	arn := action.Arn
+	arn := action.Resource
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserDisplayName: op.Principal,
-		Permission:      action.Permission,
-		SubjectARN:      arn,
+		Action:          action.Action,
+		Resource:        arn,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("failed to authorize")
