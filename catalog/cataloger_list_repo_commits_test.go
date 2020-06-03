@@ -34,9 +34,12 @@ func TestCataloger_ListRepoCommits(t *testing.T) {
 			name: "all",
 			args: args{repo: repo, fromCommitID: 0, limit: -1},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: nil},
-				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
+				{Branch: "b1", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
+				{Branch: "b1", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: nil},
+				{Branch: "b1", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
+				{Branch: "b2", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
+				{Branch: "b2", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: nil},
+				{Branch: "b2", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -45,16 +48,17 @@ func TestCataloger_ListRepoCommits(t *testing.T) {
 			name: "just one",
 			args: args{repo: repo, fromCommitID: 0, limit: 1},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
+				{Branch: "b1", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
 			},
 			wantMore: true,
 			wantErr:  false,
 		},
 		{
 			name: "last one",
-			args: args{repo: repo, fromCommitID: 2, limit: 1},
+			args: args{repo: repo, fromCommitID: 2, limit: 2},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
+				{Branch: "b1", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
+				{Branch: "b2", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -103,17 +107,24 @@ func TestCataloger_ListRepoCommits(t *testing.T) {
 	}
 }
 
-func setupListRepoCommitsData(t *testing.T, ctx context.Context, c Cataloger, repo string, branch string) {
-	for i := 0; i < 3; i++ {
-		fileName := fmt.Sprintf("/file%d", i)
-		fileAddr := fmt.Sprintf("/addr%d", i)
-		if err := c.WriteEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
-			t.Fatal("Write entry for list repo commits failed", err)
-		}
-		message := "commit" + strconv.Itoa(i+1)
-		_, err := c.Commit(ctx, repo, branch, message, "tester", nil)
+func setupListRepoCommitsData(t *testing.T, ctx context.Context, c Cataloger, repo string, sourceBranch string) {
+	for _, branch := range []string{"b1", "b2"} {
+		_, err := c.CreateBranch(ctx, repo, branch, sourceBranch)
 		if err != nil {
-			t.Fatalf("Commit for list repo commits failed '%s': %s", message, err)
+			t.Fatal("Create branch for list repo commits failed:", err)
+		}
+
+		for i := 0; i < 3; i++ {
+			fileName := fmt.Sprintf("/file%d", i)
+			fileAddr := fmt.Sprintf("/addr%d", i)
+			if err := c.WriteEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
+				t.Fatal("Write entry for list repo commits failed", err)
+			}
+			message := "commit" + strconv.Itoa(i+1)
+			_, err := c.Commit(ctx, repo, branch, message, "tester", nil)
+			if err != nil {
+				t.Fatalf("Commit for list repo commits failed '%s': %s", message, err)
+			}
 		}
 	}
 }

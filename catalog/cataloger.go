@@ -21,9 +21,10 @@ type Cataloger interface {
 	CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error)
 	GetBranch(ctx context.Context, repo string, branch string) (*Branch, error)
 	DeleteBranch(ctx context.Context, repo string, branch string) error
-	GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error)
 	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error)
+
 	Commit(ctx context.Context, repo, branch, message, committer string, metadata map[string]string) (int, error)
+	ListBranchCommits(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 
 	// entry level
 	ReadEntry(ctx context.Context, repo, branch, path string, readUncommitted bool) (*Entry, error)
@@ -70,10 +71,6 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 		db.WithLogger(c.log),
 	}
 	return append(o, opts...)
-}
-
-func (c *cataloger) GetBranchCommitLog(ctx context.Context, branch string, fromCommitID int, results int, after int) ([]*Commit, bool, error) {
-	panic("implement me")
 }
 
 func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error) {

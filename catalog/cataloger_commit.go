@@ -9,7 +9,7 @@ import (
 func (c *cataloger) Commit(ctx context.Context, repo, branch, message, committer string, metadata map[string]string) (int, error) {
 	if err := Validate(ValidateFields{
 		"repo":      ValidateRepoName(repo),
-		"bucket":    ValidateBucketName(branch),
+		"branch":    ValidateBranchName(branch),
 		"message":   ValidateCommitMessage(message),
 		"committer": ValidateCommitter(committer),
 	}); err != nil {
