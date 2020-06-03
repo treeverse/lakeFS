@@ -71,20 +71,33 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	testutil.Must(t, authService.CreateRole(role))
 
 	// attach policies
-	policy := &model.Policy{
-		CreatedAt:   time.Now(),
-		DisplayName: "AdminFullAccess",
-		Action: []string{
-			string(permissions.ManageRepos),
-			string(permissions.ReadRepo),
-			string(permissions.WriteRepo),
+	now := time.Now()
+	policies := []*model.Policy{
+		{
+			CreatedAt:   now,
+			DisplayName: "RepoFullAccess",
+			Action: []string{
+				string(permissions.ManageRepos),
+				string(permissions.ReadRepo),
+				string(permissions.WriteRepo),
+			},
+			Resource: permissions.AllReposArn,
+			Effect:   true,
 		},
-		Resource: "arn:lakefs:repos:::*",
-		Effect:   true,
+		{
+			CreatedAt:   now,
+			DisplayName: "AuthFullAccess",
+			Action: []string{
+				string(permissions.ManageRBAC),
+			},
+			Resource: permissions.RbacArn,
+			Effect:   true,
+		},
 	}
-
-	testutil.Must(t, authService.CreatePolicy(policy))
-	testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
+	for _, policy := range policies {
+		testutil.Must(t, authService.CreatePolicy(policy))
+		testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
+	}
 
 	// assign user to role
 	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
