@@ -62,27 +62,19 @@ func GetLastMigrationAvailable(schema string, from uint) (uint, error) {
 		return 0, err
 	}
 	defer src.Close()
-	var current uint
-	next := from
-	for err == nil {
+	current := from
+	for {
+		next, err := src.Next(current)
+		if errors.Is(err, os.ErrNotExist) {
+			return current, nil
+		} else if err != nil {
+			return 0, err
+		}
 		current = next
-		next, err = src.Next(current)
 	}
-	if !errors.Is(err, os.ErrNotExist) {
-		return 0, err
-	}
-	return current, nil
 }
 
 func getMigrate(schema string, url string) (*migrate.Migrate, error) {
-	// make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", url)
-	if err != nil {
-		return nil, err
-	}
-	defer func() {
-		_ = mdb.Close()
-	}()
 	src, err := getStatikSrc(schema)
 	if err != nil {
 		return nil, err
@@ -107,6 +99,14 @@ func closeMigrate(m *migrate.Migrate) {
 }
 
 func MigrateUp(schema, url string) error {
+	//make sure we have schema by calling connect
+	mdb, err := ConnectDB("pgx", url)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = mdb.Close()
+	}()
 	m, err := getMigrate(schema, url)
 	if err != nil {
 		return err
@@ -133,6 +133,14 @@ func MigrateDown(schema, url string) error {
 }
 
 func MigrateTo(schema, url string, version uint) error {
+	//make sure we have schema by calling connect
+	mdb, err := ConnectDB("pgx", url)
+	if err != nil {
+		return err
+	}
+	defer func() {
+		_ = mdb.Close()
+	}()
 	m, err := getMigrate(schema, url)
 	if err != nil {
 		return err

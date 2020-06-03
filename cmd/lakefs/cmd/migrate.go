@@ -3,9 +3,9 @@ package cmd
 import (
 	"fmt"
 	"os"
-	"strconv"
 
 	"github.com/treeverse/lakefs/config"
+
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/spf13/cobra"
@@ -17,27 +17,20 @@ var migrateCmd = &cobra.Command{
 	Short: "manage migrations",
 }
 
-func getSchemas() map[string]string {
-	return map[string]string{
-		config.SchemaMetadata: cfg.MetadataDatabaseURI(),
-		config.SchemaAuth:     cfg.AuthDatabaseURI(),
-	}
-}
-
-var infoCmd = &cobra.Command{
+var versionCmd = &cobra.Command{
 	Use:   "version",
-	Short: "prints the currently active migration version",
+	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
-		for name, uri := range getSchemas() {
-			version, _, err := db.MigrateVersion(name, uri)
+		for name, key := range config.SchemaDBKeys {
+			version, _, err := db.MigrateVersion(name, cfg.GetDatabaseURI(key))
 			if err != nil {
-				fmt.Printf("Failed to get info for schema: %s.\n %s\n", name, err)
-				os.Exit(1)
+				fmt.Printf("Failed to get info for schema: %s.\n%s\n", name, err)
+				continue
 			}
 			available, err := db.GetLastMigrationAvailable(name, version)
 			if err != nil {
-				fmt.Printf("Failed to get info for schema: %s.\n %s\n", name, err)
-				os.Exit(1)
+				fmt.Printf("Failed to get info for schema: %s.\n%s\n", name, err)
+				continue
 			}
 			fmt.Printf("%s version:%d  available:%d\n", name, version, available)
 		}
@@ -46,11 +39,12 @@ var infoCmd = &cobra.Command{
 
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: "MigrateUp looks at the currently active migration version and will migrate all the way up (applying all up migrations).",
+	Short: " Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		for name, uri := range getSchemas() {
-			err := db.MigrateUp(name, uri)
+		for name, key := range config.SchemaDBKeys {
+			err := db.MigrateUp(name, cfg.GetDatabaseURI(key))
 			if err != nil {
+
 				fmt.Printf("Failed to setup DB: %s\n", err)
 				os.Exit(1)
 			}
@@ -60,10 +54,10 @@ var upCmd = &cobra.Command{
 
 var downCmd = &cobra.Command{
 	Use:   "down",
-	Short: "MigrateDown looks at the currently active migration version and will migrate all the way down (applying all down migrations).",
+	Short: "Apply all down migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		for name, uri := range getSchemas() {
-			err := db.MigrateDown(name, uri)
+		for name, key := range config.SchemaDBKeys {
+			err := db.MigrateDown(name, cfg.GetDatabaseURI(key))
 			if err != nil {
 				fmt.Println(err)
 				os.Exit(1)
@@ -72,34 +66,20 @@ var downCmd = &cobra.Command{
 	},
 }
 
-var toCmd = &cobra.Command{
-	Use:   "goto [version]",
+var gotoCmd = &cobra.Command{
+	Use:   "goto",
 	Short: "Migrate to version V.",
-	Args:  ValidationChain(HasNArgs(1)),
 	Run: func(cmd *cobra.Command, args []string) {
 		schemaName, err := cmd.Flags().GetString("schema")
-		if err != nil {
-			fmt.Printf("Failed to get schema flag: %s.", err)
+		version, err := cmd.Flags().GetUint("version")
+		uri := cfg.GetDatabaseURI(config.SchemaDBKeys[schemaName])
+		if len(uri) == 0 {
+			fmt.Printf("Unknown schema: %s\n", schemaName)
 			os.Exit(1)
 		}
-
-		version, err := strconv.ParseUint(args[0], 10, 32)
+		err = db.MigrateTo(schemaName, uri, version)
 		if err != nil {
-			fmt.Printf("Failed to get parse verison:%s.  %s\n ", args[0], err)
-			os.Exit(1)
-		}
-		if uri, ok := getSchemas()[schemaName]; ok {
-			err = db.MigrateTo(schemaName, uri, uint(version))
-			if err != nil {
-				fmt.Printf("Failed to migrate schema: %s to version %d.\n %s\n", schemaName, uint(version), err)
-				os.Exit(1)
-			}
-		} else {
-			if len(schemaName) > 0 {
-				fmt.Printf("unknown schema: %s \n", schemaName)
-			} else {
-				fmt.Println("please choose a schema (e.g --schema lakefs_index)")
-			}
+			fmt.Printf("Failed to migrate schema: %s to version %d.\n%s\n", schemaName, version, err)
 			os.Exit(1)
 		}
 	},
@@ -107,9 +87,12 @@ var toCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(migrateCmd)
-	migrateCmd.AddCommand(infoCmd)
+	migrateCmd.AddCommand(versionCmd)
 	migrateCmd.AddCommand(upCmd)
 	migrateCmd.AddCommand(downCmd)
-	migrateCmd.AddCommand(toCmd)
-	toCmd.Flags().String("schema", "", "choose schema  (default is all)")
+	migrateCmd.AddCommand(gotoCmd)
+	_ = gotoCmd.Flags().String("schema", "", "schema name")
+	_ = gotoCmd.MarkFlagRequired("schema")
+	_ = gotoCmd.Flags().Uint("version", uint(0), "version number")
+	_ = gotoCmd.MarkFlagRequired("version")
 }
