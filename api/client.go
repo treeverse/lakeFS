@@ -44,7 +44,7 @@ type AuthClient interface {
 	DeleteCredentials(ctx context.Context, userId, accessKeyId string) error
 	GetCredentials(ctx context.Context, userId, accessKeyId string) (*models.Credentials, error)
 	ListUserGroups(ctx context.Context, userId string, after string, amount int) ([]*models.Group, *models.Pagination, error)
-	ListUserPolicies(ctx context.Context, userId string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
+	ListUserPolicies(ctx context.Context, userId string, effective bool, after string, amount int) ([]*models.Policy, *models.Pagination, error)
 	AttachPolicyToUser(ctx context.Context, userId, policyId string) error
 	DetachPolicyFromUser(ctx context.Context, userId, policyId string) error
 	ListGroupPolicies(ctx context.Context, groupId string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
@@ -321,12 +321,13 @@ func (c *client) ListUserGroups(ctx context.Context, userId string, after string
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) ListUserPolicies(ctx context.Context, userId string, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
+func (c *client) ListUserPolicies(ctx context.Context, userId string, effective bool, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListUserPolicies(&auth.ListUserPoliciesParams{
-		Amount:  swag.Int64(int64(amount)),
-		After:   swag.String(after),
-		UserID:  userId,
-		Context: ctx,
+		After:     swag.String(after),
+		Amount:    swag.Int64(int64(amount)),
+		Effective: swag.Bool(effective),
+		UserID:    userId,
+		Context:   ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, nil, err
