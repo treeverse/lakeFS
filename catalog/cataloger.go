@@ -92,7 +92,3 @@ func (c *cataloger) RevertPath(ctx context.Context, branch string, path string) 
 func (c *cataloger) RevertEntry(ctx context.Context, branch string, path string) error {
 	panic("implement me")
 }
-
-func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string, path string) error {
-	panic("implement me")
-}
