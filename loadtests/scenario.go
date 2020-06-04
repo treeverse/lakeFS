@@ -1,4 +1,4 @@
-package benchmark
+package loadtests
 
 import (
 	"fmt"
@@ -7,7 +7,7 @@ import (
 const FileCountInCommit = 20
 
 type Scenario interface {
-	Play(benchmark Benchmark, stopCh chan struct{}) <-chan Request
+	Play(loader Loader, stopCh chan struct{}) <-chan Request
 }
 
 type SimpleScenario struct {

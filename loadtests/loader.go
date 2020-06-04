@@ -1,4 +1,4 @@
-package benchmark
+package loadtests
 
 import (
 	"context"
@@ -18,7 +18,7 @@ import (
 	"time"
 )
 
-type Benchmark struct {
+type Loader struct {
 	History      []Request
 	Buffer       SafeBuffer
 	Config       Config
@@ -36,8 +36,8 @@ type Config struct {
 	ServerAddress string
 }
 
-func NewBenchmark(config Config) *Benchmark {
-	res := &Benchmark{
+func NewLoader(config Config) *Loader {
+	res := &Loader{
 		Config: config,
 	}
 	if config.RepoName == "" {
@@ -46,7 +46,7 @@ func NewBenchmark(config Config) *Benchmark {
 	return res
 }
 
-func (t *Benchmark) Run() error {
+func (t *Loader) Run() error {
 	apiClient, err := t.getClient()
 	if err != nil {
 		return err
@@ -77,12 +77,12 @@ func (t *Benchmark) Run() error {
 		return err
 	}
 	if hasErrors {
-		return errors.New("got errors during benchmark tests, see output for details")
+		return errors.New("got errors during loadtests tests, see output for details")
 	}
 	return nil
 }
 
-func (t *Benchmark) createRepo(apiClient api.Client) (string, error) {
+func (t *Loader) createRepo(apiClient api.Client) (string, error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create one
 		return t.Config.RepoName, nil
@@ -98,7 +98,7 @@ func (t *Benchmark) createRepo(apiClient api.Client) (string, error) {
 	return t.NewRepoName, nil
 }
 
-func (t *Benchmark) getClient() (apiClient api.Client, err error) {
+func (t *Loader) getClient() (apiClient api.Client, err error) {
 	if t.Config.RepoName != "" {
 		// using an existing repo, no need to create a client
 		return nil, nil
@@ -110,14 +110,14 @@ func (t *Benchmark) getClient() (apiClient api.Client, err error) {
 	return apiClient, nil
 }
 
-func (t *Benchmark) doAttack() (hasErrors bool) {
+func (t *Loader) doAttack() (hasErrors bool) {
 	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
 		http.Header{http.CanonicalHeaderKey("Authorization"): []string{"Basic " + getAuth(&t.Config.Credentials)}})
 	attacker := vegeta.NewAttacker()
 	t.Metrics = make(map[string]*vegeta.Metrics)
 	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
-	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS benchmark test") {
+	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtests test") {
 		if len(res.Error) > 0 {
 			log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
 			hasErrors = true
@@ -167,7 +167,7 @@ func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metri
 	return nil
 }
 
-func (t *Benchmark) streamRequests(in <-chan Request) <-chan error {
+func (t *Loader) streamRequests(in <-chan Request) <-chan error {
 	errs := make(chan error, 1)
 	encoder := vegeta.NewJSONTargetEncoder(&t.Buffer)
 	go func() {

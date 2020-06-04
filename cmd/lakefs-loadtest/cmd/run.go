@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/benchmark"
+	"github.com/treeverse/lakefs/loadtests"
 	"os"
 	"time"
 
@@ -21,8 +21,8 @@ const (
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Run a benchmark on a lakeFS instance",
-	Long:  `Run a benchmark on a lakeFS instance. It can either be on a running lakeFS instance, or you can choose to start a dedicated lakeFS server as part of the test.`,
+	Short: "Run a loadtests on a lakeFS instance",
+	Long:  `Run a loadtests on a lakeFS instance. It can either be on a running lakeFS instance, or you can choose to start a dedicated lakeFS server as part of the test.`,
 	Run: func(cmd *cobra.Command, args []string) {
 		repoName, err := cmd.Flags().GetString(RepoNameFlag)
 		if err != nil {
@@ -32,7 +32,7 @@ var runCmd = &cobra.Command{
 		duration, _ := cmd.Flags().GetDuration(DurationFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
-		testConfig := benchmark.Config{
+		testConfig := loadtests.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      duration,
 			RepoName:      repoName,
@@ -43,8 +43,8 @@ var runCmd = &cobra.Command{
 			},
 			ServerAddress: viper.GetString(ConfigServerEndpointUrl),
 		}
-		benchmark := benchmark.NewBenchmark(testConfig)
-		err = benchmark.Run()
+		loader := loadtests.NewLoader(testConfig)
+		err = loader.Run()
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)

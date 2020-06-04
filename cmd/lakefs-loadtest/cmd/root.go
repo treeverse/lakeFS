@@ -22,8 +22,8 @@ var (
 
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
-	Use:     "lakefs-bench",
-	Short:   "Run a benchmark on a lakeFS instance.",
+	Use:     "lakefs-loadtest",
+	Short:   "Run a loadtests on a lakeFS instance.",
 	Version: config.Version,
 }
 
@@ -54,19 +54,20 @@ func initConfig() {
 			fmt.Println(err)
 			os.Exit(1)
 		}
-
-		// Search config in home directory with name ".lakefs" (without extension).
 		viper.AddConfigPath(home)
 		viper.SetConfigType("yaml")
 		viper.SetConfigName(".lakectl")
 	}
 
-	viper.SetEnvPrefix("LAKEFS_BENCH")
+	viper.SetEnvPrefix("LAKEFS_LOADTEST")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
 	if err := viper.ReadInConfig(); err == nil {
 		fmt.Println("Using config file:", viper.ConfigFileUsed())
 	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
 		fmt.Println("Error while reading config file:", viper.ConfigFileUsed(), "-", err)
+	} else {
+		// err is viper.ConfigFileNotFoundError
+		fmt.Println("Config file not found. Will try to use environment variables.")
 	}
 }

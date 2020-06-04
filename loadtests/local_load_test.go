@@ -1,4 +1,4 @@
-package benchmark
+package loadtests
 
 import (
 	"github.com/ory/dockertest/v3"
@@ -39,9 +39,9 @@ type mockCollector struct{}
 
 func (m *mockCollector) Collect(_, _ string) {}
 
-func TestLocalBenchmark(t *testing.T) {
+func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping benchmark tests in short mode")
+		t.Skip("Skipping loadtests tests in short mode")
 	}
 	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
@@ -75,8 +75,8 @@ func TestLocalBenchmark(t *testing.T) {
 		Credentials:   *credentials,
 		ServerAddress: ts.URL,
 	}
-	benchmark := NewBenchmark(testConfig)
-	err = benchmark.Run()
+	loader := NewLoader(testConfig)
+	err = loader.Run()
 	if err != nil {
 		t.Fatalf("Got error on test: %s", err)
 	}
