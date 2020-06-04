@@ -77,9 +77,9 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 			CreatedAt:   now,
 			DisplayName: "RepoFullAccess",
 			Action: []string{
-				string(permissions.ManageRepos),
-				string(permissions.ReadRepo),
-				string(permissions.WriteRepo),
+				string(permissions.ManageReposAction),
+				string(permissions.ReadRepoAction),
+				string(permissions.WriteRepoAction),
 			},
 			Resource: permissions.AllReposArn,
 			Effect:   true,
@@ -88,9 +88,10 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 			CreatedAt:   now,
 			DisplayName: "AuthFullAccess",
 			Action: []string{
-				string(permissions.ManageRBAC),
+				string(permissions.WriteAuthAction),
+				string(permissions.ReadAuthAction),
 			},
-			Resource: permissions.RbacArn,
+			Resource: permissions.AllAuthArn,
 			Effect:   true,
 		},
 	}

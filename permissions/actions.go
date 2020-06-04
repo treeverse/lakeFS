@@ -3,17 +3,19 @@ package permissions
 type Action string
 
 const (
-	ReadRepo    Action = "repos:Read"
-	WriteRepo   Action = "repos:Write"
-	ManageRepos Action = "repos:Manage"
-	ManageRBAC  Action = "rbac:Manage"
+	ReadRepoAction    Action = "repos:Read"
+	WriteRepoAction   Action = "repos:Write"
+	ManageReposAction Action = "repos:Manage"
+	ReadAuthAction    Action = "auth:Read"
+	WriteAuthAction   Action = "auth:Write"
 )
 
 var actionSet = map[Action]struct{}{
-	ReadRepo:    {},
-	WriteRepo:   {},
-	ManageRepos: {},
-	ManageRBAC:  {},
+	ReadRepoAction:    {},
+	WriteRepoAction:   {},
+	ManageReposAction: {},
+	ReadAuthAction:    {},
+	WriteAuthAction:   {},
 }
 
 func IsAction(action string) bool {

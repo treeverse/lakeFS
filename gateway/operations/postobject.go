@@ -23,7 +23,7 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) Action(repoId, refId, path string) permissions.Permission {
+func (controller *PostObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
 	return permissions.WriteObject(repoId)
 }
 
