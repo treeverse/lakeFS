@@ -11,7 +11,6 @@ import (
 func TestCataloger_DeleteEntry(t *testing.T) {
 	ctx := context.Background()
 	c := setupCatalogerForTesting(t)
-
 	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
 
 	t.Run("delete file not exists", func(t *testing.T) {
