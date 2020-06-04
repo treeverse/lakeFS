@@ -64,6 +64,7 @@ type Service interface {
 	AttachPolicyToUser(policyDisplayName, userDisplayName string) error
 	DetachPolicyFromUser(policyDisplayName, userDisplayName string) error
 	ListUserPolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
 
 	// policy<->group attachments
 	AttachPolicyToGroup(policyDisplayName, groupDisplayName string) error
@@ -362,6 +363,73 @@ func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.P
 		return &res{policyModels, p}, nil
 	})
 
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).policies, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	type res struct {
+		policies  []*model.Policy
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// resolve all policies attached to the user and its groups
+		var err error
+		var policies []*model.PolicyDBImpl
+
+		// resolve all policies
+		// language=sql
+		const resolvePoliciesStmt = `
+		SELECT p.id, p.display_name, p.action, p.resource, p.effect
+		FROM (
+			SELECT policies.id, policies.display_name, policies.action, policies.resource, policies.effect
+			FROM policies
+				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
+				INNER JOIN users ON (users.id = user_policies.user_id)
+			WHERE users.display_name = $1
+			UNION
+			SELECT policies.id, policies.display_name, policies.action, policies.resource, policies.effect
+			FROM policies
+				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
+				INNER JOIN groups ON (groups.id = group_policies.group_id)
+				INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
+				INNER JOIN users ON (users.id = user_groups.user_id)
+			WHERE
+				users.display_name = $1
+		) p `
+
+		const resolvePoliciesPaginated = resolvePoliciesStmt + `WHERE p.display_name > $2 ORDER BY p.display_name LIMIT $3`
+		const resolvePoliciesAll = resolvePoliciesStmt + `ORDER BY p.display_name`
+
+		if params.Amount != -1 {
+			err = tx.Select(&policies, resolvePoliciesPaginated, userDisplayName, params.After, params.Amount+1)
+		} else {
+			err = tx.Select(&policies, resolvePoliciesAll, userDisplayName)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		p := &model.Paginator{}
+
+		policyModels := make([]*model.Policy, len(policies))
+		for i, p := range policies {
+			policyModels[i] = p.ToModel()
+		}
+
+		if params.Amount != -1 && len(policyModels) == params.Amount+1 {
+			// we have more pages
+			policyModels = policyModels[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
+		}
+		p.Amount = len(policyModels)
+		return &res{policyModels, p}, nil
+
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, nil, err
 	}
@@ -805,64 +873,39 @@ func interpolateUser(resource string, userDisplayName string) string {
 }
 
 func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	resp, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// resolve all policies attached to the user and its groups
-		var err error
-		var policies []*model.PolicyDBImpl
-
-		// resolve all policies
-		// language=sql
-		var resolvePoliciesStmt = `
-		SELECT policies.id, policies.action, policies.resource, policies.effect
-		FROM policies
-			INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
-			INNER JOIN users ON (users.id = user_policies.user_id)
-		WHERE users.display_name = $1
-		UNION
-		SELECT policies.id, policies.action, policies.resource, policies.effect
-		FROM policies
-			INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
-			INNER JOIN groups ON (groups.id = group_policies.group_id)
-			INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
-			INNER JOIN users ON (users.id = user_groups.user_id)
-		WHERE users.display_name = $1
-		`
-		err = tx.Select(&policies, resolvePoliciesStmt, req.UserDisplayName)
-		if err != nil {
-			return nil, err
-		}
-		allowed := false
-		for _, p := range policies {
-			policy := p.ToModel()
-			resource := interpolateUser(p.Resource, req.UserDisplayName)
-			if !ArnMatch(resource, req.Resource) {
-				continue
-			}
-			for _, action := range policy.Action {
-				if action == string(req.Action) && !policy.Effect {
-					// this is a "Deny" and it takes precedence
-					return &AuthorizationResponse{
-						Allowed: false,
-						Error:   ErrInsufficientPermissions,
-					}, nil
-				} else if action == string(req.Action) {
-					allowed = true
-				}
-			}
-		}
-
-		if !allowed {
-			return &AuthorizationResponse{
-				Allowed: false,
-				Error:   ErrInsufficientPermissions,
-			}, nil
-		}
-
-		// we're allowed!
-		return &AuthorizationResponse{Allowed: true}, nil
-	}, db.ReadOnly())
+	policies, _, err := s.ListEffectivePolicies(req.UserDisplayName, &model.PaginationParams{
+		After:  "",
+		Amount: -1, // all
+	})
 	if err != nil {
 		return nil, err
 	}
-	return resp.(*AuthorizationResponse), nil
+	allowed := false
+	for _, policy := range policies {
+		resource := interpolateUser(policy.Resource, req.UserDisplayName)
+		if !ArnMatch(resource, req.Resource) {
+			continue
+		}
+		for _, action := range policy.Action {
+			if action == string(req.Action) && !policy.Effect {
+				// this is a "Deny" and it takes precedence
+				return &AuthorizationResponse{
+					Allowed: false,
+					Error:   ErrInsufficientPermissions,
+				}, nil
+			} else if action == string(req.Action) {
+				allowed = true
+			}
+		}
+	}
+
+	if !allowed {
+		return &AuthorizationResponse{
+			Allowed: false,
+			Error:   ErrInsufficientPermissions,
+		}, nil
+	}
+
+	// we're allowed!
+	return &AuthorizationResponse{Allowed: true}, nil
 }

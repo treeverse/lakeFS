@@ -145,10 +145,11 @@ var authUsersPoliciesList = &cobra.Command{
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
 		after, _ := cmd.Flags().GetString("after")
+		effective, _ := cmd.Flags().GetBool("effective")
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListUserPolicies(context.Background(), id, after, amount)
+		policies, pagination, err := clt.ListUserPolicies(context.Background(), id, effective, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -568,6 +569,8 @@ func init() {
 	authUsersGroups.AddCommand(authUsersGroupsList)
 
 	addPaginationFlags(authUsersPoliciesList)
+	authUsersPoliciesList.Flags().Bool("effective", false,
+		"list all distinct policies attached to the user, even through group memberships")
 	authUsersPoliciesList.Flags().String("id", "", "user identifier")
 	_ = authUsersPoliciesList.MarkFlagRequired("id")
 
