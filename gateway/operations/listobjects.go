@@ -23,7 +23,7 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) Action(repoId, refId, path string) permissions.Permission {
+func (controller *ListObjects) RequiredPermission(repoId, refId, path string) permissions.Permission {
 	return permissions.ListObjects(repoId)
 }
 
