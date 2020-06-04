@@ -40,7 +40,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string,
 		var ent Entry
 		err = tx.Get(&ent, `SELECT source_branch,physical_address,checksum,size
 			FROM entries_lineage_v
-			WHERE displayed_branch = $1 AND path = $2 AND is_committed`, branchID, path)
+			WHERE displayed_branch = $1 AND path = $2 AND is_committed AND NOT is_deleted`, branchID, path)
 		if errors.Is(err, db.ErrNotFound) {
 			// no previous entry - file not found
 			return nil, ErrEntryNotFound

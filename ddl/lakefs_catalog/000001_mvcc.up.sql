@@ -96,7 +96,7 @@ CREATE VIEW entries_v AS
     entries.min_commit,
     entries.max_commit,
     (entries.min_commit <> 0) AS is_committed,
-    (entries.max_commit <> 2147483647) AS is_deleted,
+    (entries.max_commit <> ('01111111111111111111111111111111'::"bit")::integer) AS is_deleted,
     false AS is_tumbstone,
     ((entries.max_commit < entries.min_commit) OR (entries.max_commit = 0)) AS is_tombstone
    FROM entries;
@@ -118,7 +118,7 @@ CREATE VIEW lineage_v AS
     lineage.effective_commit,
     lineage.min_commit,
     lineage.max_commit,
-    (lineage.max_commit = 2147483647) AS active_lineage
+    (lineage.max_commit = ('01111111111111111111111111111111'::"bit")::integer) AS active_lineage
    FROM lineage
 UNION ALL
  SELECT branches.id AS branch_id,
@@ -127,9 +127,84 @@ UNION ALL
     branches.id AS ancestor_branch,
     branches.next_commit AS effective_commit,
     0 AS min_commit,
-    2147483647 AS max_commit,
+    ('01111111111111111111111111111111'::"bit")::integer AS max_commit,
     true AS active_lineage
    FROM branches;
+
+CREATE VIEW entries_lineage_full_v AS
+ SELECT l.branch_id AS displayed_branch,
+    e.branch_id AS source_branch,
+    e.path,
+    e.min_commit,
+    e.max_commit,
+    e.physical_address,
+    e.creation_date,
+    e.size,
+    e.checksum,
+    e.metadata,
+    l.precedence,
+    row_number() OVER (PARTITION BY l.branch_id, e.path ORDER BY l.precedence,
+        CASE
+            WHEN (l.main_branch AND (e.min_commit = 0)) THEN ('01111111111111111111111111111111'::"bit")::integer
+            ELSE e.min_commit
+        END DESC) AS rank,
+    l.min_commit AS branch_min_commit,
+    l.max_commit AS branch_max_commit,
+    e.is_committed,
+        CASE
+            WHEN l.main_branch THEN e.is_deleted
+            ELSE (e.max_commit <= l.effective_commit)
+        END AS is_deleted,
+    l.active_lineage,
+    l.effective_commit,
+    e.is_tombstone
+   FROM (entries_v e
+     JOIN lineage_v l ON ((l.ancestor_branch = e.branch_id)))
+  WHERE ((l.main_branch OR ((e.min_commit <= l.effective_commit) AND e.is_committed)) AND (l.max_commit = ('01111111111111111111111111111111'::"bit")::integer));
+
+CREATE VIEW entries_lineage_committed_v AS
+ SELECT t.displayed_branch,
+    t.source_branch,
+    t.path,
+    t.min_commit,
+    t.max_commit,
+    t.physical_address,
+    t.creation_date,
+    t.size,
+    t.checksum,
+    t.metadata,
+    t.precedence,
+    t.row_no AS rank,
+    t.branch_min_commit,
+    t.branch_max_commit,
+    t.is_committed,
+    t.is_deleted,
+    t.active_lineage,
+    t.effective_commit,
+    t.is_tombstone
+   FROM ( SELECT entries_lineage_full_v.displayed_branch,
+            entries_lineage_full_v.source_branch,
+            entries_lineage_full_v.path,
+            entries_lineage_full_v.min_commit,
+            entries_lineage_full_v.max_commit,
+            entries_lineage_full_v.physical_address,
+            entries_lineage_full_v.creation_date,
+            entries_lineage_full_v.size,
+            entries_lineage_full_v.checksum,
+            entries_lineage_full_v.metadata,
+            entries_lineage_full_v.precedence,
+            row_number() OVER (PARTITION BY entries_lineage_full_v.precedence, entries_lineage_full_v.path ORDER BY entries_lineage_full_v.rank) AS row_no,
+            entries_lineage_full_v.rank,
+            entries_lineage_full_v.branch_min_commit,
+            entries_lineage_full_v.branch_max_commit,
+            entries_lineage_full_v.is_committed,
+            entries_lineage_full_v.is_deleted,
+            entries_lineage_full_v.active_lineage,
+            entries_lineage_full_v.effective_commit,
+            entries_lineage_full_v.is_tombstone
+           FROM entries_lineage_full_v
+          WHERE entries_lineage_full_v.is_committed) t
+  WHERE (t.rank = 1);
 
 CREATE VIEW entries_lineage_v AS
  SELECT t.displayed_branch,
@@ -151,54 +226,8 @@ CREATE VIEW entries_lineage_v AS
     t.active_lineage,
     t.effective_commit,
     t.is_tombstone
-   FROM ( SELECT l.branch_id AS displayed_branch,
-            e.branch_id AS source_branch,
-            e.path,
-            e.min_commit,
-            e.max_commit,
-            e.physical_address,
-            e.creation_date,
-            e.size,
-            e.checksum,
-            e.metadata,
-            l.precedence,
-            rank() OVER (PARTITION BY l.branch_id, e.path ORDER BY l.precedence,
-                CASE
-                    WHEN (l.main_branch AND (e.min_commit = 0)) THEN 2147483647
-                    ELSE e.min_commit
-                END DESC) AS rank,
-            l.min_commit AS branch_min_commit,
-            l.max_commit AS branch_max_commit,
-            e.is_deleted,
-            e.is_committed,
-            l.active_lineage,
-            l.effective_commit,
-            e.is_tombstone
-           FROM (entries_v e
-             JOIN lineage_v l ON ((l.ancestor_branch = e.branch_id)))
-          WHERE ((l.main_branch OR ((e.min_commit <= l.effective_commit) AND e.is_committed)) AND (l.max_commit = 2147483647))) t
+   FROM entries_lineage_full_v t
   WHERE (t.rank = 1);
-
-CREATE VIEW entries_lineage_active_v AS
- SELECT entries_lineage_v.displayed_branch,
-    entries_lineage_v.source_branch,
-    entries_lineage_v.path,
-    entries_lineage_v.min_commit,
-    entries_lineage_v.max_commit,
-    entries_lineage_v.physical_address,
-    entries_lineage_v.creation_date,
-    entries_lineage_v.size,
-    entries_lineage_v.checksum,
-    entries_lineage_v.metadata,
-    entries_lineage_v.precedence,
-    entries_lineage_v.rank,
-    entries_lineage_v.branch_min_commit,
-    entries_lineage_v.branch_max_commit,
-    entries_lineage_v.is_committed,
-    entries_lineage_v.is_deleted,
-    entries_lineage_v.is_tombstone
-   FROM entries_lineage_v
-  WHERE ((NOT entries_lineage_v.is_deleted) AND entries_lineage_v.active_lineage);
 
 CREATE VIEW merge_join AS
  SELECT f.path,

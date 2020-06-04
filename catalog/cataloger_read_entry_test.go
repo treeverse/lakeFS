@@ -34,24 +34,24 @@ func TestCataloger_ReadEntry(t *testing.T) {
 			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},
-		//{
-		//	name:    "read committed - committed file",
-		//	args:    args{repo: repo, branch: "master", path: "/file2", readUncommitted: false},
-		//	want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
-		//	wantErr: false,
-		//},
+		{
+			name:    "read committed - committed file",
+			args:    args{repo: repo, branch: "master", path: "/file2", readUncommitted: false},
+			want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
+			wantErr: false,
+		},
 		{
 			name:    "read uncommitted - unknown file",
 			args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
-		//{
-		//	name:    "read committed - unknown file",
-		//	args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: false},
-		//	want:    nil,
-		//	wantErr: true,
-		//},
+		{
+			name:    "read committed - unknown file",
+			args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: false},
+			want:    nil,
+			wantErr: true,
+		},
 		{
 			name:    "read unknown repo",
 			args:    args{repo: "repoX", branch: "master", path: "/file1", readUncommitted: true},

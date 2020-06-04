@@ -123,21 +123,21 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 			wantMore: false,
 			wantErr:  false,
 		},
-		//{
-		//	name: "committed",
-		//	args: args{
-		//		repo:            "repo1",
-		//		branch:          "master",
-		//		path:            "",
-		//		after:           "/file3",
-		//		limit:           -1,
-		//		readUncommitted: false,
-		//		descend:         false,
-		//	},
-		//	wantEntries: nil,
-		//	wantMore:    false,
-		//	wantErr:     false,
-		//},
+		{
+			name: "committed",
+			args: args{
+				repo:            "repo1",
+				branch:          "master",
+				path:            "",
+				after:           "/file3",
+				limit:           -1,
+				readUncommitted: false,
+				descend:         false,
+			},
+			wantEntries: nil,
+			wantMore:    false,
+			wantErr:     false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
