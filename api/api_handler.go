@@ -1453,10 +1453,20 @@ func (a *Handler) ListUserPoliciesHandler() authentication.ListUserPoliciesHandl
 				WithPayload(responseErrorFrom(err))
 		}
 
-		policies, paginator, err := a.context.Auth.ListUserPolicies(params.UserID, &authmodel.PaginationParams{
-			After:  swag.StringValue(params.After),
-			Amount: pageAmount(params.Amount),
-		})
+		var policies []*authmodel.Policy
+		var paginator *authmodel.Paginator
+		if swag.BoolValue(params.Effective) {
+			policies, paginator, err = a.context.Auth.ListEffectivePolicies(params.UserID, &authmodel.PaginationParams{
+				After:  swag.StringValue(params.After),
+				Amount: pageAmount(params.Amount),
+			})
+		} else {
+			policies, paginator, err = a.context.Auth.ListUserPolicies(params.UserID, &authmodel.PaginationParams{
+				After:  swag.StringValue(params.After),
+				Amount: pageAmount(params.Amount),
+			})
+		}
+
 		if err != nil {
 			return authentication.NewListUserPoliciesDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
