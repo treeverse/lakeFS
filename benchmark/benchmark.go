@@ -3,7 +3,6 @@ package benchmark
 import (
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
@@ -70,7 +69,7 @@ func (t *Benchmark) Run() error {
 		}
 	}
 	for err := range errs {
-		log.Errorf("error during request pipeline: %v", err)
+		log.Errorf("error during request pipeline: %s", err)
 		return err
 	}
 	err = printResults(t.Metrics, t.TotalMetrics)
@@ -170,16 +169,12 @@ func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metri
 
 func (t *Benchmark) streamRequests(in <-chan Request) <-chan error {
 	errs := make(chan error, 1)
+	encoder := vegeta.NewJSONTargetEncoder(&t.Buffer)
 	go func() {
 		defer close(errs)
 		for tgt := range in {
+			err := encoder.Encode(&tgt.Target)
 			t.History = append(t.History, tgt)
-			target, err := json.Marshal(tgt.Target)
-			if err != nil {
-				errs <- err
-				return
-			}
-			_, err = t.Buffer.Write(target)
 			if err != nil {
 				errs <- err
 				return
