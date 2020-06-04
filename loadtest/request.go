@@ -1,4 +1,4 @@
-package loadtests
+package loadtest
 
 import vegeta "github.com/tsenart/vegeta/v12/lib"
 

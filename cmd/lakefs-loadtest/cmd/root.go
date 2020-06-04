@@ -23,7 +23,7 @@ var (
 // rootCmd represents the base command when called without any sub-commands
 var rootCmd = &cobra.Command{
 	Use:     "lakefs-loadtest",
-	Short:   "Run a loadtests on a lakeFS instance.",
+	Short:   "Run a loadtest on a lakeFS instance.",
 	Version: config.Version,
 }
 

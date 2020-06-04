@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -20,6 +21,7 @@ import (
 	"os"
 	"strings"
 	"testing"
+	"time"
 )
 
 const (
@@ -48,6 +50,16 @@ type dependencies struct {
 	blocks block.Adapter
 	auth   auth.Service
 	meta   index.Index
+}
+
+func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
+	user := &authmodel.User{
+		CreatedAt:   time.Now(),
+		DisplayName: "admin",
+	}
+	creds, err := api.SetupAdminUser(authService, user)
+	testutil.Must(t, err)
+	return creds
 }
 
 type mockCollector struct{}
@@ -112,7 +124,7 @@ func TestServer_BasicAuth(t *testing.T) {
 	handler, deps := getHandler(t)
 
 	// create user
-	creds := testutil.CreateDefaultAdminUser(deps.auth, t)
+	creds := createDefaultAdminUser(deps.auth, t)
 
 	// setup client
 	clt := client.Default

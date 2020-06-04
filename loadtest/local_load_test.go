@@ -1,10 +1,11 @@
-package loadtests
+package loadtest
 
 import (
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -41,7 +42,7 @@ func (m *mockCollector) Collect(_, _ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
-		t.Skip("Skipping loadtests tests in short mode")
+		t.Skip("Skipping loadtest tests in short mode")
 	}
 	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
@@ -66,7 +67,13 @@ func TestLocalLoad(t *testing.T) {
 	}
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
-	credentials := testutil.CreateDefaultAdminUser(authService, t)
+
+	user := &authmodel.User{
+		CreatedAt:   time.Now(),
+		DisplayName: "admin",
+	}
+	credentials, err := api.SetupAdminUser(authService, user)
+	testutil.Must(t, err)
 
 	testConfig := Config{
 		FreqPerSecond: 6,

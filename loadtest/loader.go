@@ -1,4 +1,4 @@
-package loadtests
+package loadtest
 
 import (
 	"context"
@@ -77,7 +77,7 @@ func (t *Loader) Run() error {
 		return err
 	}
 	if hasErrors {
-		return errors.New("got errors during loadtests tests, see output for details")
+		return errors.New("got errors during loadtest, see output for details")
 	}
 	return nil
 }
@@ -117,7 +117,7 @@ func (t *Loader) doAttack() (hasErrors bool) {
 	t.Metrics = make(map[string]*vegeta.Metrics)
 	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
-	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtests test") {
+	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
 		if len(res.Error) > 0 {
 			log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
 			hasErrors = true
