@@ -14,7 +14,7 @@ var (
 	EntityIdRegexp     = regexp.MustCompile(`^[a-zA-Z0-9+=.,@_\-]{1,127}$`)
 )
 
-func ValidateRBACEntityId(name string) error {
+func ValidateAuthEntityId(name string) error {
 	if !EntityIdRegexp.MatchString(name) {
 		return ErrValidationError
 	}
