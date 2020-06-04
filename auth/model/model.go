@@ -6,13 +6,9 @@ import (
 	"github.com/jackc/pgtype"
 )
 
-const (
-	RoleAdmin = "AdminRole"
-)
-
 type PaginationParams struct {
-	PageToken string
-	Amount    int
+	After  string
+	Amount int
 }
 
 type Paginator struct {
