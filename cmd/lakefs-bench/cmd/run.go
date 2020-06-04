@@ -32,7 +32,6 @@ var runCmd = &cobra.Command{
 		duration, _ := cmd.Flags().GetDuration(DurationFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
-		progressBar(duration)
 		testConfig := benchmark.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      duration,

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/text"
+	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -56,6 +57,7 @@ func (t *Benchmark) Run() error {
 		return err
 	}
 	stopCh := make(chan struct{})
+	progressBar(t.Config.Duration)
 	out := new(SimpleScenario).Play(t.Config.ServerAddress, repoName, stopCh)
 	errs := t.streamRequests(out)
 	hasErrors := t.doAttack()
@@ -130,6 +132,18 @@ func (t *Benchmark) doAttack() (hasErrors bool) {
 		t.TotalMetrics.Add(res)
 	}
 	return
+}
+
+func progressBar(duration time.Duration) {
+	durationInSec := int(duration.Seconds())
+	progress := progressbar.NewOptions(durationInSec, progressbar.OptionSetPredictTime(false), progressbar.OptionFullWidth())
+	go func() {
+		for i := 0; i < durationInSec; i++ {
+			_ = progress.Add(1)
+			time.Sleep(time.Second)
+		}
+		_ = progress.Clear()
+	}()
 }
 
 func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metrics) error {

@@ -3,13 +3,11 @@ package cmd
 import (
 	"fmt"
 	"github.com/mitchellh/go-homedir"
-	"github.com/schollz/progressbar/v3"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/config"
 	"os"
 	"strings"
-	"time"
 )
 
 const (
@@ -27,18 +25,6 @@ var rootCmd = &cobra.Command{
 	Use:     "lakefs-bench",
 	Short:   "Run a benchmark on a lakeFS instance.",
 	Version: config.Version,
-}
-
-func progressBar(duration time.Duration) {
-	durationInSec := int(duration.Seconds())
-	progress := progressbar.NewOptions(durationInSec, progressbar.OptionSetPredictTime(false))
-	go func() {
-		for i := 0; i < durationInSec; i++ {
-			_ = progress.Add(1)
-			time.Sleep(time.Second)
-		}
-		_ = progress.Clear()
-	}()
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -78,16 +64,9 @@ func initConfig() {
 	viper.SetEnvPrefix("LAKEFS_BENCH")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
-	cfgFileErr := viper.ReadInConfig()
-	if cfgFileErr != nil {
-		if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
-			// specific message in case the file doesn't not found
-			fmt.Printf("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
-			os.Exit(1)
-		} else {
-			// other errors while reading the config file
-			fmt.Printf("error reading configuration file: %v\n", cfgFileErr)
-			os.Exit(1)
-		}
+	if err := viper.ReadInConfig(); err == nil {
+		fmt.Println("Using config file:", viper.ConfigFileUsed())
+	} else if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+		fmt.Println("Error while reading config file:", viper.ConfigFileUsed(), "-", err)
 	}
 }

@@ -1,8 +1,6 @@
 package benchmark
 
 import (
-	"context"
-	"errors"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -13,13 +11,11 @@ import (
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
 	"log"
-	"net/http"
+	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
 )
-
-const listenAddress = "localhost:8981"
 
 var (
 	pool        *dockertest.Pool
@@ -64,13 +60,12 @@ func TestLocalBenchmark(t *testing.T) {
 		&mockCollector{},
 		migrator,
 	)
-
-	go func() {
-		err := server.Listen(listenAddress)
-		if err != nil && !errors.Is(err, http.ErrServerClosed) {
-			t.Fatalf("error from lakeFS server: %v", err)
-		}
-	}()
+	handler, err := server.Handler()
+	if err != nil {
+		t.Fatalf("failed to get server handler: %s", err)
+	}
+	ts := httptest.NewServer(handler)
+	defer ts.Close()
 	credentials := testutil.CreateDefaultAdminUser(authService, t)
 
 	testConfig := Config{
@@ -78,16 +73,11 @@ func TestLocalBenchmark(t *testing.T) {
 		Duration:      10 * time.Second,
 		KeepRepo:      false,
 		Credentials:   *credentials,
-		ServerAddress: "http://" + listenAddress,
+		ServerAddress: ts.URL,
 	}
-	time.Sleep(1 * time.Second)
 	benchmark := NewBenchmark(testConfig)
-	err := benchmark.Run()
+	err = benchmark.Run()
 	if err != nil {
-		t.Fatalf("Got error on test: %v", err)
-	}
-	err = server.Shutdown(context.Background())
-	if err != nil {
-		t.Logf("Error when trying to shutdown lakeFS server: %v", err)
+		t.Fatalf("Got error on test: %s", err)
 	}
 }
