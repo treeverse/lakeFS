@@ -861,6 +861,11 @@ paths:
           name: amount
           type: integer
           default: 100
+        - in: query
+          name: effective
+          type: boolean
+          default: false
+          description: will return all distinct policies attached to the user or any of its groups
       operationId: listUserPolicies
       summary: list user policies
       responses:
