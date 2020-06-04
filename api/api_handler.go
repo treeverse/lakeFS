@@ -919,7 +919,7 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 
 func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 	return authentication.CreateUserHandlerFunc(func(params authentication.CreateUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewCreateUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -944,7 +944,7 @@ func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 
 func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 	return authentication.ListUsersHandlerFunc(func(params authentication.ListUsersParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListUsersUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -977,7 +977,7 @@ func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 
 func (a *Handler) GetUserHandler() authentication.GetUserHandler {
 	return authentication.GetUserHandlerFunc(func(params authentication.GetUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewGetUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1002,7 +1002,7 @@ func (a *Handler) GetUserHandler() authentication.GetUserHandler {
 
 func (a *Handler) DeleteUserHandler() authentication.DeleteUserHandler {
 	return authentication.DeleteUserHandlerFunc(func(params authentication.DeleteUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDeleteUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1024,7 +1024,7 @@ func (a *Handler) DeleteUserHandler() authentication.DeleteUserHandler {
 
 func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
 	return authentication.GetGroupHandlerFunc(func(params authentication.GetGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewGetGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1049,7 +1049,7 @@ func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
 
 func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 	return authentication.ListGroupsHandlerFunc(func(params authentication.ListGroupsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListGroupsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1083,7 +1083,7 @@ func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 
 func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 	return authentication.CreateGroupHandlerFunc(func(params authentication.CreateGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewCreateGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1109,7 +1109,7 @@ func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 
 func (a *Handler) DeleteGroupHandler() authentication.DeleteGroupHandler {
 	return authentication.DeleteGroupHandlerFunc(func(params authentication.DeleteGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDeleteGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1130,7 +1130,7 @@ func (a *Handler) DeleteGroupHandler() authentication.DeleteGroupHandler {
 
 func (a *Handler) ListRolesHandler() authentication.ListRolesHandler {
 	return authentication.ListRolesHandlerFunc(func(params authentication.ListRolesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListRolesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1163,7 +1163,7 @@ func (a *Handler) ListRolesHandler() authentication.ListRolesHandler {
 
 func (a *Handler) CreateRoleHandler() authentication.CreateRoleHandler {
 	return authentication.CreateRoleHandlerFunc(func(params authentication.CreateRoleParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewCreateRoleUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1189,7 +1189,7 @@ func (a *Handler) CreateRoleHandler() authentication.CreateRoleHandler {
 
 func (a *Handler) GetRoleHandler() authentication.GetRoleHandler {
 	return authentication.GetRoleHandlerFunc(func(params authentication.GetRoleParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewGetRoleUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1214,7 +1214,7 @@ func (a *Handler) GetRoleHandler() authentication.GetRoleHandler {
 
 func (a *Handler) DeleteRoleHandler() authentication.DeleteRoleHandler {
 	return authentication.DeleteRoleHandlerFunc(func(params authentication.DeleteRoleParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDeleteRoleUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1249,7 +1249,7 @@ func serializePolicy(p *authmodel.Policy) *models.Policy {
 
 func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 	return authentication.ListPoliciesHandlerFunc(func(params authentication.ListPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1279,7 +1279,7 @@ func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 
 func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
 	return authentication.CreatePolicyHandlerFunc(func(params authentication.CreatePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewCreatePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1311,7 +1311,7 @@ func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
 
 func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
 	return authentication.GetPolicyHandlerFunc(func(params authentication.GetPolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewGetPolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1333,7 +1333,7 @@ func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
 
 func (a *Handler) DeletePolicyHandler() authentication.DeletePolicyHandler {
 	return authentication.DeletePolicyHandlerFunc(func(params authentication.DeletePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDeletePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1354,7 +1354,7 @@ func (a *Handler) DeletePolicyHandler() authentication.DeletePolicyHandler {
 
 func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandler {
 	return authentication.ListGroupMembersHandlerFunc(func(params authentication.ListGroupMembersParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListGroupMembersUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1387,7 +1387,7 @@ func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandl
 
 func (a *Handler) AddGroupMembershipHandler() authentication.AddGroupMembershipHandler {
 	return authentication.AddGroupMembershipHandlerFunc(func(params authentication.AddGroupMembershipParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewAddGroupMembershipUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1405,7 +1405,7 @@ func (a *Handler) AddGroupMembershipHandler() authentication.AddGroupMembershipH
 
 func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembershipHandler {
 	return authentication.DeleteGroupMembershipHandlerFunc(func(params authentication.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDeleteGroupMembershipUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1423,7 +1423,7 @@ func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembe
 
 func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredentialsHandler {
 	return authentication.ListUserCredentialsHandlerFunc(func(params authentication.ListUserCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuthCredentials(user.ID))
 		if err != nil {
 			return authentication.NewListUserCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1456,7 +1456,7 @@ func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredential
 
 func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHandler {
 	return authentication.CreateCredentialsHandlerFunc(func(params authentication.CreateCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuthCredentials(user.ID))
 		if err != nil {
 			return authentication.NewCreateCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1479,7 +1479,7 @@ func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHan
 
 func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHandler {
 	return authentication.DeleteCredentialsHandlerFunc(func(params authentication.DeleteCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuthCredentials(user.ID))
 		if err != nil {
 			return authentication.NewDeleteCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1501,7 +1501,7 @@ func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHan
 
 func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
 	return authentication.GetCredentialsHandlerFunc(func(params authentication.GetCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuthCredentials(user.ID))
 		if err != nil {
 			return authentication.NewGetCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1526,7 +1526,7 @@ func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
 
 func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
 	return authentication.ListUserGroupsHandlerFunc(func(params authentication.ListUserGroupsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListUserGroupsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1559,7 +1559,7 @@ func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
 
 func (a *Handler) ListUserRolesHandler() authentication.ListUserRolesHandler {
 	return authentication.ListUserRolesHandlerFunc(func(params authentication.ListUserRolesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListUserRolesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1592,7 +1592,7 @@ func (a *Handler) ListUserRolesHandler() authentication.ListUserRolesHandler {
 
 func (a *Handler) AttachRoleToUserHandler() authentication.AttachRoleToUserHandler {
 	return authentication.AttachRoleToUserHandlerFunc(func(params authentication.AttachRoleToUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewAttachRoleToUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1610,7 +1610,7 @@ func (a *Handler) AttachRoleToUserHandler() authentication.AttachRoleToUserHandl
 
 func (a *Handler) DetachRoleFromUserHandler() authentication.DetachRoleFromUserHandler {
 	return authentication.DetachRoleFromUserHandlerFunc(func(params authentication.DetachRoleFromUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDetachRoleFromUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1628,7 +1628,7 @@ func (a *Handler) DetachRoleFromUserHandler() authentication.DetachRoleFromUserH
 
 func (a *Handler) ListGroupRolesHandler() authentication.ListGroupRolesHandler {
 	return authentication.ListGroupRolesHandlerFunc(func(params authentication.ListGroupRolesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListGroupRolesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1661,7 +1661,7 @@ func (a *Handler) ListGroupRolesHandler() authentication.ListGroupRolesHandler {
 
 func (a *Handler) AttachRoleToGroupHandler() authentication.AttachRoleToGroupHandler {
 	return authentication.AttachRoleToGroupHandlerFunc(func(params authentication.AttachRoleToGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewAttachRoleToGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1679,7 +1679,7 @@ func (a *Handler) AttachRoleToGroupHandler() authentication.AttachRoleToGroupHan
 
 func (a *Handler) DetachRoleFromGroupHandler() authentication.DetachRoleFromGroupHandler {
 	return authentication.DetachRoleFromGroupHandlerFunc(func(params authentication.DetachRoleFromGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDetachRoleFromGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1697,7 +1697,7 @@ func (a *Handler) DetachRoleFromGroupHandler() authentication.DetachRoleFromGrou
 
 func (a *Handler) ListRolePoliciesHandler() authentication.ListRolePoliciesHandler {
 	return authentication.ListRolePoliciesHandlerFunc(func(params authentication.ListRolePoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.ReadAuth())
 		if err != nil {
 			return authentication.NewListRolePoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1727,7 +1727,7 @@ func (a *Handler) ListRolePoliciesHandler() authentication.ListRolePoliciesHandl
 
 func (a *Handler) AttachPolicyToRoleHandler() authentication.AttachPolicyToRoleHandler {
 	return authentication.AttachPolicyToRoleHandlerFunc(func(params authentication.AttachPolicyToRoleParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewAttachPolicyToRoleUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1745,7 +1745,7 @@ func (a *Handler) AttachPolicyToRoleHandler() authentication.AttachPolicyToRoleH
 
 func (a *Handler) DetachPolicyFromRoleHandler() authentication.DetachPolicyFromRoleHandler {
 	return authentication.DetachPolicyFromRoleHandlerFunc(func(params authentication.DetachPolicyFromRoleParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ManageAuth())
+		err := a.authorize(user, permissions.WriteAuth())
 		if err != nil {
 			return authentication.NewDetachPolicyFromRoleUnauthorized().
 				WithPayload(responseErrorFrom(err))

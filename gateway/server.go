@@ -112,7 +112,7 @@ func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Permission) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perm permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -174,12 +174,12 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 
 	// interpolate arn string
-	arn := action.Resource
+	arn := perm.Resource
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserDisplayName: op.Principal,
-		Action:          action.Action,
+		Action:          perm.Action,
 		Resource:        arn,
 	})
 	if err != nil {
@@ -201,8 +201,8 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action("", "", "")
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
+		perm := handler.RequiredPermission("", "", "")
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
 		if authOp == nil {
 			return
 		}
@@ -214,8 +214,8 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(repoId, "", "")
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
+		perm := handler.RequiredPermission(repoId, "", "")
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
 		if authOp == nil {
 			return
 		}
@@ -246,8 +246,8 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(repoId, refId, path)
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
+		perm := handler.RequiredPermission(repoId, refId, path)
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
 		if authOp == nil {
 			return
 		}

@@ -19,7 +19,7 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) Action(repoId, refId, path string) permissions.Permission {
+func (controller *GetObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
 	return permissions.GetObject(repoId)
 }
 

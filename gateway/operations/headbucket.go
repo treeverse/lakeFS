@@ -8,7 +8,7 @@ import (
 
 type HeadBucket struct{}
 
-func (controller *HeadBucket) Action(repoId, refId, path string) permissions.Permission {
+func (controller *HeadBucket) RequiredPermission(repoId, refId, path string) permissions.Permission {
 	return permissions.GetRepo(repoId)
 }
 
