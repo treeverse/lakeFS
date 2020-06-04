@@ -34,14 +34,13 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string,
 			return nil, nil
 		}
 
-		// TODO(barak): metadata is missing
-
 		// if we have a committed non-deleted record we should insert a new working record flagged as deleted
 		// TODO(barak): does the tombstone needs to reference the previous entry information?
+		// TODO(barak): metadata is missing
 		var ent Entry
-		err = tx.Get(&ent, `SELECT physical_address,checksum,size 
-			FROM entries_v 
-			WHERE branch_id = $1 AND path = $2 AND is_committed`, branchID, path)
+		err = tx.Get(&ent, `SELECT source_branch,physical_address,checksum,size
+			FROM entries_lineage_v
+			WHERE displayed_branch = $1 AND path = $2 AND is_committed`, branchID, path)
 		if errors.Is(err, db.ErrNotFound) {
 			// no previous entry - file not found
 			return nil, ErrEntryNotFound

@@ -8,17 +8,7 @@ import (
 func TestCataloger_ReadEntry(t *testing.T) {
 	ctx := context.Background()
 	c := setupCatalogerForTesting(t)
-
-	// produce test data
-	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repo for testing", err)
-	}
-	if err := c.WriteEntry(ctx, "repo1", "master", "/file1", "ff", "/addr1", 42, nil); err != nil {
-		t.Fatal("failed to write entry", err)
-	}
-	if err := c.WriteEntry(ctx, "repo1", "master", "/file2", "ee", "/addr2", 24, nil); err != nil {
-		t.Fatal("failed to write entry", err)
-	}
+	repo := setupReadEntryData(t, ctx, c)
 
 	type args struct {
 		repo            string
@@ -33,83 +23,59 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name: "read uncommitted - uncommitted file",
-			args: args{
-				repo:            "repo1",
-				branch:          "master",
-				path:            "/file1",
-				readUncommitted: true,
-			},
-			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
+			name:    "read uncommitted - uncommitted file",
+			args:    args{repo: repo, branch: "master", path: "/file3", readUncommitted: true},
+			want:    &Entry{Path: "/file3", PhysicalAddress: "/addr3", Size: 42, Checksum: "ffff"},
 			wantErr: false,
 		},
 		{
-			name: "read committed - uncommitted file",
-			args: args{
-				repo:            "repo1",
-				branch:          "master",
-				path:            "/file1",
-				readUncommitted: false,
-			},
+			name:    "read uncommitted - committed file",
+			args:    args{repo: repo, branch: "master", path: "/file1", readUncommitted: true},
+			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
+			wantErr: false,
+		},
+		//{
+		//	name:    "read committed - committed file",
+		//	args:    args{repo: repo, branch: "master", path: "/file2", readUncommitted: false},
+		//	want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
+		//	wantErr: false,
+		//},
+		{
+			name:    "read uncommitted - unknown file",
+			args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: true},
+			want:    nil,
+			wantErr: true,
+		},
+		//{
+		//	name:    "read committed - unknown file",
+		//	args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: false},
+		//	want:    nil,
+		//	wantErr: true,
+		//},
+		{
+			name:    "read unknown repo",
+			args:    args{repo: "repoX", branch: "master", path: "/file1", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name: "read unknown file",
-			args: args{
-				repo:            "repo1",
-				branch:          "master",
-				path:            "/file3",
-				readUncommitted: true,
-			},
+			name:    "read missing repo",
+			args:    args{repo: "", branch: "master", path: "/file1", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name: "read unknown repo",
-			args: args{
-				repo:            "repoX",
-				branch:          "master",
-				path:            "/file1",
-				readUncommitted: true,
-			},
+			name:    "read missing branch",
+			args:    args{repo: repo, branch: "", path: "/file1", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name: "read missing repo",
-			args: args{
-				repo:            "",
-				branch:          "master",
-				path:            "/file1",
-				readUncommitted: true,
-			},
+			name:    "read missing path",
+			args:    args{repo: repo, branch: "master", path: "", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
-		{
-			name: "read missing branch",
-			args: args{
-				repo:            "repo1",
-				branch:          "",
-				path:            "/file1",
-				readUncommitted: true,
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name: "read missing path",
-			args: args{
-				repo:            "repo1",
-				branch:          "master",
-				path:            "",
-				readUncommitted: true,
-			},
-			want:    nil,
-			wantErr: true,
-		},
-		// TODO(barak): when we will have commit - add read committed data
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -140,4 +106,24 @@ func TestCataloger_ReadEntry(t *testing.T) {
 			}
 		})
 	}
+}
+
+func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
+	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
+	if err := c.WriteEntry(ctx, repo, "master", "/file1", "ff", "/addr1", 42, nil); err != nil {
+		t.Fatal("failed to write entry", err)
+	}
+	if err := c.WriteEntry(ctx, repo, "master", "/file2", "ee", "/addr2", 24, nil); err != nil {
+		t.Fatal("failed to write entry", err)
+	}
+	if _, err := c.Commit(ctx, repo, "master", "commit file1 and 2", "tester", nil); err != nil {
+		t.Fatal("failed to commit for read entry:", err)
+	}
+	if err := c.WriteEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 42, nil); err != nil {
+		t.Fatal("failed to write entry", err)
+	}
+	if err := c.WriteEntry(ctx, repo, "master", "/file4", "eeee", "/addr4", 24, nil); err != nil {
+		t.Fatal("failed to write entry", err)
+	}
+	return repo
 }

@@ -47,6 +47,16 @@ CREATE TABLE commits (
     CONSTRAINT merge_check CHECK ((((merge_type = 'none'::merge_type) AND (merge_source_branch IS NULL) AND (merge_source_commit IS NULL)) OR ((merge_type <> 'none'::merge_type) AND (merge_source_branch IS NOT NULL) AND (merge_source_commit IS NOT NULL))))
 );
 
+CREATE TABLE diff_intermediate (
+    path character varying,
+    father_source integer,
+    son_source integer,
+    father_min integer,
+    father_deleted boolean,
+    son_deleted boolean,
+    father_effective integer
+);
+
 CREATE TABLE entries (
     branch_id integer NOT NULL,
     path character varying NOT NULL,
@@ -87,7 +97,8 @@ CREATE VIEW entries_v AS
     entries.max_commit,
     (entries.min_commit <> 0) AS is_committed,
     (entries.max_commit <> 2147483647) AS is_deleted,
-    (entries.max_commit < entries.min_commit) AS is_tumbstone
+    false AS is_tumbstone,
+    ((entries.max_commit < entries.min_commit) OR (entries.max_commit = 0)) AS is_tombstone
    FROM entries;
 
 CREATE TABLE lineage (
@@ -114,7 +125,7 @@ UNION ALL
     true AS main_branch,
     0 AS precedence,
     branches.id AS ancestor_branch,
-    2147483647 AS effective_commit,
+    branches.next_commit AS effective_commit,
     0 AS min_commit,
     2147483647 AS max_commit,
     true AS active_lineage
@@ -138,7 +149,8 @@ CREATE VIEW entries_lineage_v AS
     t.is_committed,
     t.is_deleted,
     t.active_lineage,
-    t.is_tumbstone
+    t.effective_commit,
+    t.is_tombstone
    FROM ( SELECT l.branch_id AS displayed_branch,
             e.branch_id AS source_branch,
             e.path,
@@ -159,11 +171,12 @@ CREATE VIEW entries_lineage_v AS
             l.max_commit AS branch_max_commit,
             e.is_deleted,
             e.is_committed,
-            e.is_tumbstone,
-            l.active_lineage
+            l.active_lineage,
+            l.effective_commit,
+            e.is_tombstone
            FROM (entries_v e
              JOIN lineage_v l ON ((l.ancestor_branch = e.branch_id)))
-          WHERE ((l.main_branch OR (e.min_commit <= l.effective_commit)) AND (l.max_commit = 2147483647))) t
+          WHERE ((l.main_branch OR ((e.min_commit <= l.effective_commit) AND e.is_committed)) AND (l.max_commit = 2147483647))) t
   WHERE (t.rank = 1);
 
 CREATE VIEW entries_lineage_active_v AS
@@ -183,9 +196,62 @@ CREATE VIEW entries_lineage_active_v AS
     entries_lineage_v.branch_max_commit,
     entries_lineage_v.is_committed,
     entries_lineage_v.is_deleted,
-    entries_lineage_v.is_tumbstone
+    entries_lineage_v.is_tombstone
    FROM entries_lineage_v
   WHERE ((NOT entries_lineage_v.is_deleted) AND entries_lineage_v.active_lineage);
+
+CREATE VIEW merge_join AS
+ SELECT f.path,
+    f.source_branch AS father_source,
+    f.min_commit AS father_min,
+    f.is_deleted AS father_deleted,
+    s.source_branch AS son_source,
+    s.is_deleted AS son_deleted,
+    f.effective_commit
+   FROM ((( SELECT entries_lineage_v.displayed_branch,
+            entries_lineage_v.source_branch,
+            entries_lineage_v.path,
+            entries_lineage_v.min_commit,
+            entries_lineage_v.max_commit,
+            entries_lineage_v.physical_address,
+            entries_lineage_v.creation_date,
+            entries_lineage_v.size,
+            entries_lineage_v.checksum,
+            entries_lineage_v.metadata,
+            entries_lineage_v.precedence,
+            entries_lineage_v.rank,
+            entries_lineage_v.branch_min_commit,
+            entries_lineage_v.branch_max_commit,
+            entries_lineage_v.is_committed,
+            entries_lineage_v.is_deleted,
+            entries_lineage_v.active_lineage,
+            entries_lineage_v.is_tombstone,
+            entries_lineage_v.effective_commit
+           FROM entries_lineage_v
+          WHERE ((entries_lineage_v.displayed_branch = 2) AND entries_lineage_v.is_committed)) f
+     LEFT JOIN ( SELECT entries_lineage_v.displayed_branch,
+            entries_lineage_v.source_branch,
+            entries_lineage_v.path,
+            entries_lineage_v.min_commit,
+            entries_lineage_v.max_commit,
+            entries_lineage_v.physical_address,
+            entries_lineage_v.creation_date,
+            entries_lineage_v.size,
+            entries_lineage_v.checksum,
+            entries_lineage_v.metadata,
+            entries_lineage_v.precedence,
+            entries_lineage_v.rank,
+            entries_lineage_v.branch_min_commit,
+            entries_lineage_v.branch_max_commit,
+            entries_lineage_v.is_committed,
+            entries_lineage_v.is_deleted,
+            entries_lineage_v.active_lineage,
+            entries_lineage_v.is_tombstone,
+            entries_lineage_v.effective_commit
+           FROM entries_lineage_v
+          WHERE (entries_lineage_v.displayed_branch = 3)) s ON (((f.path)::text = (s.path)::text)))
+     JOIN lineage_v l ON (((f.source_branch = l.ancestor_branch) AND (l.branch_id = 3))))
+  WHERE (NOT ((COALESCE(s.is_deleted, true) AND f.is_deleted) OR (((f.physical_address)::text = (COALESCE(s.physical_address, 'no address'::character varying))::text) AND (f.is_deleted = s.is_deleted))));
 
 CREATE TABLE multipart_uploads (
     repository_id integer NOT NULL,

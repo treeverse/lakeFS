@@ -37,6 +37,7 @@ type Entry struct {
 	Size            int64        `db:"size"`
 	Checksum        string       `db:"checksum"`
 	Metadata        JSONMetadata `db:"metadata"`
+	IsTombstone     bool         `db:"is_tombstone"`
 }
 
 type Commit struct {
