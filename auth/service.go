@@ -2,6 +2,7 @@ package auth
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -176,7 +177,7 @@ func (s *DBAuthService) SecretStore() crypt.SecretStore {
 
 func (s *DBAuthService) CreateUser(user *model.User) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateRBACEntityId(user.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityId(user.DisplayName); err != nil {
 			return nil, err
 		}
 		err := tx.Get(user, `INSERT INTO users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.DisplayName, user.CreatedAt)
@@ -431,7 +432,7 @@ func (s *DBAuthService) ListRolePolicies(roleDisplayName string, params *model.P
 
 func (s *DBAuthService) CreateGroup(group *model.Group) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateRBACEntityId(group.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityId(group.DisplayName); err != nil {
 			return nil, err
 		}
 		return nil, tx.Get(group, `INSERT INTO groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
@@ -609,7 +610,7 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 
 func (s *DBAuthService) CreateRole(role *model.Role) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateRBACEntityId(role.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityId(role.DisplayName); err != nil {
 			return nil, err
 		}
 		return nil, tx.Get(role, `INSERT INTO roles (display_name, created_at) VALUES ($1, $2) RETURNING id`,
@@ -667,7 +668,7 @@ func (s *DBAuthService) ListRoles(params *model.PaginationParams) ([]*model.Role
 
 func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateRBACEntityId(policy.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityId(policy.DisplayName); err != nil {
 			return nil, err
 		}
 		for _, action := range policy.Action {
@@ -948,6 +949,10 @@ func (s *DBAuthService) GetCredentials(accessKeyId string) (*model.Credential, e
 	return credentials.(*model.Credential), nil
 }
 
+func interpolateUser(resource string, userDisplayName string) string {
+	return strings.ReplaceAll(resource, "${user}", userDisplayName)
+}
+
 func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	resp, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// resolve all policies attached to roles attached to the user
@@ -982,7 +987,8 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		allowed := false
 		for _, p := range policies {
 			policy := p.ToModel()
-			if !ArnMatch(policy.Resource, req.Resource) {
+			resource := interpolateUser(p.Resource, req.UserDisplayName)
+			if !ArnMatch(resource, req.Resource) {
 				continue
 			}
 			for _, action := range policy.Action {

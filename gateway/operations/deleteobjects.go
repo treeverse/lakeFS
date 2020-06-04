@@ -15,7 +15,7 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) Action(repoId, refId, path string) permissions.Permission {
+func (controller *DeleteObjects) RequiredPermission(repoId, refId, path string) permissions.Permission {
 	return permissions.DeleteObject(repoId)
 }
 
