@@ -32,10 +32,6 @@ type AuthClient interface {
 	ListGroups(ctx context.Context, after string, amount int) ([]*models.Group, *models.Pagination, error)
 	CreateGroup(ctx context.Context, groupId string) (*models.Group, error)
 	DeleteGroup(ctx context.Context, groupId string) error
-	ListRoles(ctx context.Context, after string, amount int) ([]*models.Role, *models.Pagination, error)
-	CreateRole(ctx context.Context, roleId string) (*models.Role, error)
-	GetRole(ctx context.Context, roleId string) (*models.Role, error)
-	DeleteRole(ctx context.Context, roleId string) error
 	ListPolicies(ctx context.Context, after string, amount int) ([]*models.Policy, *models.Pagination, error)
 	CreatePolicy(ctx context.Context, creation *models.PolicyCreation) (*models.Policy, error)
 	GetPolicy(ctx context.Context, policyId string) (*models.Policy, error)
@@ -48,15 +44,12 @@ type AuthClient interface {
 	DeleteCredentials(ctx context.Context, userId, accessKeyId string) error
 	GetCredentials(ctx context.Context, userId, accessKeyId string) (*models.Credentials, error)
 	ListUserGroups(ctx context.Context, userId string, after string, amount int) ([]*models.Group, *models.Pagination, error)
-	ListUserRoles(ctx context.Context, userId string, after string, amount int) ([]*models.Role, *models.Pagination, error)
-	AttachRoleToUser(ctx context.Context, userId, roleId string) error
-	DetachRoleFromUser(ctx context.Context, userId, roleId string) error
-	ListGroupRoles(ctx context.Context, groupId string, after string, amount int) ([]*models.Role, *models.Pagination, error)
-	AttachRoleToGroup(ctx context.Context, groupId, roleId string) error
-	DetachRoleFromGroup(ctx context.Context, groupId, roleId string) error
-	ListRolePolicies(ctx context.Context, roleId string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
-	AttachPolicyToRole(ctx context.Context, policyId, roleId string) error
-	DetachPolicyFromRole(ctx context.Context, policyId, roleId string) error
+	ListUserPolicies(ctx context.Context, userId string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
+	AttachPolicyToUser(ctx context.Context, userId, policyId string) error
+	DetachPolicyFromUser(ctx context.Context, userId, policyId string) error
+	ListGroupPolicies(ctx context.Context, groupId string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
+	AttachPolicyToGroup(ctx context.Context, groupId, policyId string) error
+	DetachPolicyFromGroup(ctx context.Context, groupId, policyId string) error
 }
 
 type RepositoryClient interface {
@@ -195,50 +188,6 @@ func (c *client) DeleteGroup(ctx context.Context, groupId string) error {
 	return err
 }
 
-func (c *client) ListRoles(ctx context.Context, after string, amount int) ([]*models.Role, *models.Pagination, error) {
-	resp, err := c.remote.Auth.ListRoles(&auth.ListRolesParams{
-		Amount:  swag.Int64(int64(amount)),
-		After:   swag.String(after),
-		Context: ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, nil, err
-	}
-	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
-}
-
-func (c *client) CreateRole(ctx context.Context, roleId string) (*models.Role, error) {
-	resp, err := c.remote.Auth.CreateRole(&auth.CreateRoleParams{
-		Role: &models.RoleCreation{
-			ID: swag.String(roleId),
-		},
-		Context: ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return resp.GetPayload(), err
-}
-
-func (c *client) GetRole(ctx context.Context, roleId string) (*models.Role, error) {
-	resp, err := c.remote.Auth.GetRole(&auth.GetRoleParams{
-		RoleID:  roleId,
-		Context: ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, err
-	}
-	return resp.GetPayload(), nil
-}
-
-func (c *client) DeleteRole(ctx context.Context, roleId string) error {
-	_, err := c.remote.Auth.DeleteRole(&auth.DeleteRoleParams{
-		RoleID:  roleId,
-		Context: ctx,
-	}, c.auth)
-	return err
-}
-
 func (c *client) ListPolicies(ctx context.Context, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListPolicies(&auth.ListPoliciesParams{
 		Amount:  swag.Int64(int64(amount)),
@@ -372,8 +321,8 @@ func (c *client) ListUserGroups(ctx context.Context, userId string, after string
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) ListUserRoles(ctx context.Context, userId string, after string, amount int) ([]*models.Role, *models.Pagination, error) {
-	resp, err := c.remote.Auth.ListUserRoles(&auth.ListUserRolesParams{
+func (c *client) ListUserPolicies(ctx context.Context, userId string, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
+	resp, err := c.remote.Auth.ListUserPolicies(&auth.ListUserPoliciesParams{
 		Amount:  swag.Int64(int64(amount)),
 		After:   swag.String(after),
 		UserID:  userId,
@@ -385,81 +334,50 @@ func (c *client) ListUserRoles(ctx context.Context, userId string, after string,
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) AttachRoleToUser(ctx context.Context, userId, roleId string) error {
-	_, err := c.remote.Auth.AttachRoleToUser(&auth.AttachRoleToUserParams{
-		RoleID:  roleId,
-		UserID:  userId,
-		Context: ctx,
-	}, c.auth)
-	return err
-}
-
-func (c *client) DetachRoleFromUser(ctx context.Context, userId, roleId string) error {
-	_, err := c.remote.Auth.DetachRoleFromUser(&auth.DetachRoleFromUserParams{
-		RoleID:  roleId,
-		UserID:  userId,
-		Context: ctx,
-	}, c.auth)
-	return err
-}
-
-func (c *client) ListGroupRoles(ctx context.Context, groupId string, after string, amount int) ([]*models.Role, *models.Pagination, error) {
-	resp, err := c.remote.Auth.ListGroupRoles(&auth.ListGroupRolesParams{
-		Amount:  swag.Int64(int64(amount)),
-		After:   swag.String(after),
-		GroupID: groupId,
-		Context: ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, nil, err
-	}
-	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
-}
-
-func (c *client) AttachRoleToGroup(ctx context.Context, groupId, roleId string) error {
-	_, err := c.remote.Auth.AttachRoleToGroup(&auth.AttachRoleToGroupParams{
-		RoleID:  roleId,
-		GroupID: groupId,
-		Context: ctx,
-	}, c.auth)
-	return err
-}
-
-func (c *client) DetachRoleFromGroup(ctx context.Context, groupId, roleId string) error {
-	_, err := c.remote.Auth.DetachRoleFromGroup(&auth.DetachRoleFromGroupParams{
-		RoleID:  roleId,
-		GroupID: groupId,
-		Context: ctx,
-	}, c.auth)
-	return err
-}
-
-func (c *client) ListRolePolicies(ctx context.Context, roleId string, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
-	resp, err := c.remote.Auth.ListRolePolicies(&auth.ListRolePoliciesParams{
-		Amount:  swag.Int64(int64(amount)),
-		After:   swag.String(after),
-		RoleID:  roleId,
-		Context: ctx,
-	}, c.auth)
-	if err != nil {
-		return nil, nil, err
-	}
-	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
-}
-
-func (c *client) AttachPolicyToRole(ctx context.Context, policyId, roleId string) error {
-	_, err := c.remote.Auth.AttachPolicyToRole(&auth.AttachPolicyToRoleParams{
-		RoleID:   roleId,
+func (c *client) AttachPolicyToUser(ctx context.Context, userId, policyId string) error {
+	_, err := c.remote.Auth.AttachPolicyToUser(&auth.AttachPolicyToUserParams{
 		PolicyID: policyId,
+		UserID:   userId,
 		Context:  ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) DetachPolicyFromRole(ctx context.Context, policyId, roleId string) error {
-	_, err := c.remote.Auth.DetachPolicyFromRole(&auth.DetachPolicyFromRoleParams{
-		RoleID:   roleId,
+func (c *client) DetachPolicyFromUser(ctx context.Context, userId, policyId string) error {
+	_, err := c.remote.Auth.DetachPolicyFromUser(&auth.DetachPolicyFromUserParams{
 		PolicyID: policyId,
+		UserID:   userId,
+		Context:  ctx,
+	}, c.auth)
+	return err
+}
+
+func (c *client) ListGroupPolicies(ctx context.Context, groupId string, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
+	resp, err := c.remote.Auth.ListGroupPolicies(&auth.ListGroupPoliciesParams{
+		Amount:  swag.Int64(int64(amount)),
+		After:   swag.String(after),
+		GroupID: groupId,
+		Context: ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, nil, err
+	}
+	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
+}
+
+func (c *client) AttachPolicyToGroup(ctx context.Context, groupId, policyId string) error {
+	_, err := c.remote.Auth.AttachPolicyToGroup(&auth.AttachPolicyToGroupParams{
+		PolicyID: policyId,
+		GroupID:  groupId,
+		Context:  ctx,
+	}, c.auth)
+	return err
+}
+
+func (c *client) DetachPolicyFromGroup(ctx context.Context, groupId, policyId string) error {
+	_, err := c.remote.Auth.DetachPolicyFromGroup(&auth.DetachPolicyFromGroupParams{
+		PolicyID: policyId,
+		GroupID:  groupId,
 		Context:  ctx,
 	}, c.auth)
 	return err
