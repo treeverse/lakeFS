@@ -1,16 +1,6 @@
 package api_test
 
 import (
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -19,13 +9,19 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/auth/model"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/testutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
 
 const (
@@ -57,56 +53,12 @@ type dependencies struct {
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
-	// create user
 	user := &authmodel.User{
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
 	}
-	testutil.Must(t, authService.CreateUser(user))
-
-	// create role
-	role := &authmodel.Role{
-		DisplayName: "Admins",
-	}
-	testutil.Must(t, authService.CreateRole(role))
-
-	// attach policies
-	now := time.Now()
-	policies := []*model.Policy{
-		{
-			CreatedAt:   now,
-			DisplayName: "RepoFullAccess",
-			Action: []string{
-				string(permissions.ManageReposAction),
-				string(permissions.ReadRepoAction),
-				string(permissions.WriteRepoAction),
-			},
-			Resource: permissions.AllReposArn,
-			Effect:   true,
-		},
-		{
-			CreatedAt:   now,
-			DisplayName: "AuthFullAccess",
-			Action: []string{
-				string(permissions.WriteAuthAction),
-				string(permissions.ReadAuthAction),
-			},
-			Resource: permissions.AllAuthArn,
-			Effect:   true,
-		},
-	}
-	for _, policy := range policies {
-		testutil.Must(t, authService.CreatePolicy(policy))
-		testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
-	}
-
-	// assign user to role
-	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
-
-	creds, err := authService.CreateCredentials(user.DisplayName)
-	if err != nil {
-		t.Fatal(err)
-	}
+	creds, err := api.SetupAdminUser(authService, user)
+	testutil.Must(t, err)
 	return creds
 }
 
