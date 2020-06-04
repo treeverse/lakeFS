@@ -5,14 +5,11 @@ import (
 	"reflect"
 	"strconv"
 	"testing"
-
-	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_ListBranchesByPrefix(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := setupCatalogerForTesting(t)
 
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
 		t.Fatal("create repo for testing", err)

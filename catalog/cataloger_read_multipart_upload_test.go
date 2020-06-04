@@ -5,14 +5,11 @@ import (
 	"reflect"
 	"testing"
 	"time"
-
-	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_ReadMultipartUpload(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := setupCatalogerForTesting(t)
 
 	creationTime := time.Now().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data

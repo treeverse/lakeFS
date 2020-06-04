@@ -37,6 +37,7 @@ type Entry struct {
 	Size            int64        `db:"size"`
 	Checksum        string       `db:"checksum"`
 	Metadata        JSONMetadata `db:"metadata"`
+	IsTombstone     bool         `db:"is_tombstone"`
 }
 
 type Commit struct {
@@ -49,6 +50,15 @@ type Commit struct {
 	MergeSourceBranch *int         `db:"merge_source_branch"`
 	MergeSourceCommit *int         `db:"merge_source_commit"`
 	MergeType         string       `db:"merge_type"`
+}
+
+type CommitLog struct {
+	Branch       string       `db:"branch"`
+	CommitID     int          `db:"commit_id"`
+	Committer    string       `db:"committer"`
+	Message      string       `db:"message"`
+	CreationDate time.Time    `db:"creation_date"`
+	Metadata     JSONMetadata `db:"metadata"`
 }
 
 type Branch struct {

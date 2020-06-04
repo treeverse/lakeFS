@@ -22,5 +22,7 @@ var (
 	ErrResourceUsed               = errors.New("resource used")
 	ErrInvalidLockValue           = errors.New("invalid lock value")
 	ErrCommitNotFound             = errors.New("commit not found")
+	ErrEntryNotFound              = errors.New("entry not found")
 	ErrNothingToCommit            = errors.New("nothing to commit")
+	ErrEntryUpdateFailed          = errors.New("entry update failed")
 )

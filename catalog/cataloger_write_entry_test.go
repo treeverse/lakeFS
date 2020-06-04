@@ -3,8 +3,6 @@ package catalog
 import (
 	"context"
 	"testing"
-
-	"github.com/treeverse/lakefs/testutil"
 )
 
 func Must(err error, t *testing.T, message string) {
@@ -14,8 +12,7 @@ func Must(err error, t *testing.T, message string) {
 }
 func TestCataloger_WriteEntry(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := setupCatalogerForTesting(t)
 
 	t.Run("simple write", func(t *testing.T) {
 		Must(c.CreateRepo(ctx, "example", "example-tzahi", "master"), t, "error creating repository")

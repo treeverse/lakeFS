@@ -10,8 +10,8 @@ import (
 func (c *cataloger) WriteEntry(ctx context.Context, repo, branch, path, checksum, physicalAddress string, size int, metadata *map[string]string) error {
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repo),
-		"path":   ValidatePath(path),
 		"branch": ValidateBranchName(branch),
+		"path":   ValidatePath(path),
 	}); err != nil {
 		return err
 	}

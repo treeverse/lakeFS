@@ -4,14 +4,11 @@ import (
 	"context"
 	"fmt"
 	"testing"
-
-	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_GetRepo(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := setupCatalogerForTesting(t)
 
 	// create test data
 	for i := 1; i < 3; i++ {
