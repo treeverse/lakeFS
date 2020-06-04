@@ -91,7 +91,7 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	}
 	for _, policy := range policies {
 		testutil.Must(t, authService.CreatePolicy(policy))
-		testutil.Must(t, authService.AttachPolicyToUser(user.DisplayName, policy.DisplayName))
+		testutil.Must(t, authService.AttachPolicyToUser(policy.DisplayName, user.DisplayName))
 	}
 
 	creds, err := authService.CreateCredentials(user.DisplayName)
