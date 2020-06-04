@@ -112,7 +112,7 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 
 func (t *Loader) doAttack() (hasErrors bool) {
 	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
-		http.Header{http.CanonicalHeaderKey("Authorization"): []string{"Basic " + getAuth(&t.Config.Credentials)}})
+		http.Header{"Authorization": []string{"Basic " + getAuth(&t.Config.Credentials)}})
 	attacker := vegeta.NewAttacker()
 	t.Metrics = make(map[string]*vegeta.Metrics)
 	t.TotalMetrics = new(vegeta.Metrics)
