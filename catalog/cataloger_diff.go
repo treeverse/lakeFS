@@ -18,7 +18,7 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		log := c.log.WithContext(ctx)
-		leftId, err := getBranchID(tx, repo, leftBranch, LockTypeNone)
+		leftID, err := getBranchID(tx, repo, leftBranch, LockTypeNone)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
@@ -27,7 +27,7 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 				}).Warn("Branch not found")
 			return nil, err
 		}
-		rightId, err := getBranchID(tx, repo, rightBranch, LockTypeNone)
+		rightID, err := getBranchID(tx, repo, rightBranch, LockTypeNone)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
@@ -36,37 +36,36 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 				}).Warn("Branch not found")
 			return nil, err
 		}
-		return doDiff(tx, leftId, rightId, log)
+		return doDiff(tx, leftID, rightID, log)
 	})
 	return differences.(Differences), err
 }
 
-func doDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences, error) {
+func doDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, error) {
 	// check diff type
 	var directLink int
 	directLinkQuery := `select count(*) from lineage where branch_id = $1 and ancestor_branch = $2 and precedence = 1`
-	err := tx.Get(&directLink, directLinkQuery, leftId, rightId)
+	err := tx.Get(&directLink, directLinkQuery, leftID, rightID)
 	if err != nil {
 		log.WithError(err).Error("error reading lineage table")
 		return nil, err
 	}
 	if directLink > 0 {
-		return FromFatherDiff(tx, leftId, rightId, log)
+		return FromFatherDiff(tx, leftID, rightID, log)
 	}
-	err = tx.Get(&directLink, directLinkQuery, rightId, leftId)
+	err = tx.Get(&directLink, directLinkQuery, rightID, leftID)
 	if err != nil {
 		log.WithError(err).Error("error reading lineage table")
 		return nil, err
 	}
 	if directLink > 0 {
-		return FromSonDiff(tx, leftId, rightId, log)
+		return FromSonDiff(tx, leftID, rightID, log)
 	}
 
-	return nonDirectDiff(tx, leftId, rightId, log)
-
+	return nonDirectDiff(tx, leftID, rightID, log)
 }
 
-func FromFatherDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences, error) {
+func FromFatherDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, error) {
 	// just need to check there are no conflicts
 
 	// check if father lineage was modified since last diff. if not we can skip the view
@@ -82,12 +81,10 @@ func FromFatherDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differen
 	return nil, nil
 }
 
-func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences, error) {
-
+func FromSonDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, error) {
 	return nil, nil
 }
 
-func nonDirectDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences, error) {
-
+func nonDirectDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, error) {
 	return nil, nil
 }
