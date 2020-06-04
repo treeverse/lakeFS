@@ -3,9 +3,10 @@ package permissions
 import "fmt"
 
 const (
-	AllReposArn = "arn:lakefs:repos:::*"
-	RepoFmtArn  = "arn:lakefs:repos:::%s"
-	RbacArn     = "arn:lakefs:rbac:::*"
+	AllReposArn            = "arn:lakefs:repos:::*"
+	RepoFmtArn             = "arn:lakefs:repos:::%s"
+	AllAuthArn             = "arn:lakefs:auth:::*"
+	AuthUserCredentialsArn = "arn:lakefs:auth:::credentials/%s"
 )
 
 type Permission struct {
@@ -20,123 +21,140 @@ func repoArn(repoId string) string {
 // basic registry of actions
 func ListRepos() Permission {
 	return Permission{
-		Action:   ManageRepos,
+		Action:   ManageReposAction,
 		Resource: AllReposArn,
 	}
 }
 
 func GetRepo(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
-		Resource: AllReposArn,
+		Action:   ReadRepoAction,
+		Resource: repoArn(repoId),
 	}
 }
 
 func GetCommit(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
+		Action:   ReadRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func Commit(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   WriteRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func CreateRepo() Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   ManageReposAction,
 		Resource: AllReposArn,
 	}
 }
 
 func DeleteRepo(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   ManageReposAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func ListBranches(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
+		Action:   ReadRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func DiffBranches(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
+		Action:   ReadRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func GetBranch(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
+		Action:   ReadRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func CreateBranch(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   WriteRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func MergeIntoBranch(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   WriteRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func DeleteBranch(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   WriteRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func GetObject(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
+		Action:   ReadRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func DeleteObject(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   WriteRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func ListObjects(repoId string) Permission {
 	return Permission{
-		Action:   ReadRepo,
+		Action:   ReadRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
 func WriteObject(repoId string) Permission {
 	return Permission{
-		Action:   WriteRepo,
+		Action:   WriteRepoAction,
 		Resource: repoArn(repoId),
 	}
 }
 
-func ManageAuth() Permission {
+func ReadAuth() Permission {
 	return Permission{
-		Action:   ManageRBAC,
-		Resource: RbacArn,
+		Action:   ReadAuthAction,
+		Resource: AllAuthArn,
 	}
 }
 
-func ValidateAction() {
+func WriteAuth() Permission {
+	return Permission{
+		Action:   WriteAuthAction,
+		Resource: AllAuthArn,
+	}
+}
 
+func ReadAuthCredentials(user string) Permission {
+	return Permission{
+		Action:   ReadAuthAction,
+		Resource: fmt.Sprintf(AuthUserCredentialsArn, user),
+	}
+}
+
+func WriteAuthCredentials(user string) Permission {
+	return Permission{
+		Action:   WriteAuthAction,
+		Resource: fmt.Sprintf(AuthUserCredentialsArn, user),
+	}
 }

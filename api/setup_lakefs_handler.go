@@ -2,6 +2,7 @@ package api
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -73,59 +74,187 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 
 func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
 	now := time.Now()
-	err := authService.CreateUser(user)
-	if err != nil {
-		return nil, err
-	}
-
-	role := &model.Role{
+	var err error
+	// create groups
+	adminsGroup := &model.Group{
 		CreatedAt:   now,
-		DisplayName: model.RoleAdmin,
+		DisplayName: "Admins",
+	}
+	superUsersGroup := &model.Group{
+		CreatedAt:   now,
+		DisplayName: "SuperUsers",
+	}
+	developersGroup := &model.Group{
+		CreatedAt:   now,
+		DisplayName: "Developers",
+	}
+	viewersGroup := &model.Group{
+		CreatedAt:   now,
+		DisplayName: "Viewers",
+	}
+	for _, group := range []*model.Group{adminsGroup, superUsersGroup, developersGroup, viewersGroup} {
+		err = authService.CreateGroup(group)
+		if err != nil {
+			return nil, err
+		}
 	}
 
-	err = authService.CreateRole(role)
-	if err != nil {
-		return nil, err
+	adminRole := &model.Role{
+		CreatedAt:   now,
+		DisplayName: "FullAccess",
+	}
+	superUserRole := &model.Role{
+		CreatedAt:   now,
+		DisplayName: "RepoFullAccess",
+	}
+	developerRole := &model.Role{
+		CreatedAt:   now,
+		DisplayName: "RepoReaderWriter",
+	}
+	viewerRole := &model.Role{
+		CreatedAt:   now,
+		DisplayName: "RepoReader",
+	}
+	credentialsManagerRole := &model.Role{
+		CreatedAt:   now,
+		DisplayName: "OwnCredentialManager",
 	}
 
-	policies := []*model.Policy{
-		{
-			CreatedAt:   now,
-			DisplayName: "RepoFullAccess",
-			Action: []string{
-				string(permissions.ManageRepos),
-				string(permissions.ReadRepo),
-				string(permissions.WriteRepo),
-			},
-			Resource: permissions.AllReposArn,
-			Effect:   true,
+	for _, role := range []*model.Role{adminRole, superUserRole, developerRole, viewerRole, credentialsManagerRole} {
+		err = authService.CreateRole(role)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	repoFullAccessPolicy := &model.Policy{
+		CreatedAt:   now,
+		DisplayName: "RepoFullAccess",
+		Action: []string{
+			string(permissions.ManageReposAction),
+			string(permissions.ReadRepoAction),
+			string(permissions.WriteRepoAction),
 		},
-		{
-			CreatedAt:   now,
-			DisplayName: "AuthFullAccess",
-			Action: []string{
-				string(permissions.ManageRBAC),
-			},
-			Resource: permissions.RbacArn,
-			Effect:   true,
+		Resource: permissions.AllReposArn,
+		Effect:   true,
+	}
+	repoReaderWriterPolicy := &model.Policy{
+		CreatedAt:   now,
+		DisplayName: "RepoReadWrite",
+		Action: []string{
+			string(permissions.ReadRepoAction),
+			string(permissions.WriteRepoAction),
 		},
+		Resource: permissions.AllReposArn,
+		Effect:   true,
 	}
 
-	for _, policy := range policies {
+	authFullAccessPolicy := &model.Policy{
+		CreatedAt:   now,
+		DisplayName: "AuthFullAccess",
+		Action: []string{
+			string(permissions.WriteAuthAction),
+			string(permissions.ReadAuthAction),
+		},
+		Resource: permissions.AllAuthArn,
+		Effect:   true,
+	}
+	readReposPolicy := &model.Policy{
+		CreatedAt:   now,
+		DisplayName: "RepoRead",
+		Action: []string{
+			string(permissions.ReadRepoAction),
+		},
+		Resource: permissions.AllReposArn,
+		Effect:   true,
+	}
+	credentialsManagePolicy := &model.Policy{
+		CreatedAt:   now,
+		DisplayName: "ManageOwnCredentials",
+		Action: []string{
+			string(permissions.WriteAuthAction),
+			string(permissions.ReadAuthAction),
+		},
+		Resource: fmt.Sprintf(permissions.AuthUserCredentialsArn, "${user}"),
+		Effect:   true,
+	}
+
+	for _, policy := range []*model.Policy{repoFullAccessPolicy, authFullAccessPolicy, readReposPolicy, repoReaderWriterPolicy, credentialsManagePolicy} {
 		err = authService.CreatePolicy(policy)
 		if err != nil {
 			return nil, err
 		}
-		err = authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName)
+	}
+	for _, policy := range []*model.Policy{repoFullAccessPolicy, authFullAccessPolicy} {
+		err = authService.AttachPolicyToRole(adminRole.DisplayName, policy.DisplayName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	err = authService.AttachRoleToUser(role.DisplayName, user.DisplayName)
+	for _, policy := range []*model.Policy{repoFullAccessPolicy} {
+		err = authService.AttachPolicyToRole(superUserRole.DisplayName, policy.DisplayName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, policy := range []*model.Policy{repoReaderWriterPolicy} {
+		err = authService.AttachPolicyToRole(developerRole.DisplayName, policy.DisplayName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	for _, policy := range []*model.Policy{readReposPolicy} {
+		err = authService.AttachPolicyToRole(viewerRole.DisplayName, policy.DisplayName)
+		if err != nil {
+			return nil, err
+		}
+	}
+	for _, policy := range []*model.Policy{credentialsManagePolicy} {
+		err = authService.AttachPolicyToRole(credentialsManagerRole.DisplayName, policy.DisplayName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	// all groups get credentialsManagerRole
+	for _, group := range []*model.Group{viewersGroup, developersGroup, superUsersGroup} {
+		err = authService.AttachRoleToGroup(credentialsManagerRole.DisplayName, group.DisplayName)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	err = authService.AttachRoleToGroup(adminRole.DisplayName, adminsGroup.DisplayName)
 	if err != nil {
 		return nil, err
 	}
 
+	err = authService.AttachRoleToGroup(superUserRole.DisplayName, superUsersGroup.DisplayName)
+	if err != nil {
+		return nil, err
+	}
+
+	err = authService.AttachRoleToGroup(developerRole.DisplayName, developersGroup.DisplayName)
+	if err != nil {
+		return nil, err
+	}
+
+	err = authService.AttachRoleToGroup(viewerRole.DisplayName, viewersGroup.DisplayName)
+	if err != nil {
+		return nil, err
+	}
+
+	// create admin user
+	err = authService.CreateUser(user)
+	if err != nil {
+		return nil, err
+	}
+	err = authService.AddUserToGroup(user.DisplayName, adminsGroup.DisplayName)
+	if err != nil {
+		return nil, err
+	}
 	return authService.CreateCredentials(user.DisplayName)
 }
