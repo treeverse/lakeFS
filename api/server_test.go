@@ -64,12 +64,6 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	}
 	testutil.Must(t, authService.CreateUser(user))
 
-	// create role
-	role := &authmodel.Role{
-		DisplayName: "Admins",
-	}
-	testutil.Must(t, authService.CreateRole(role))
-
 	// attach policies
 	now := time.Now()
 	policies := []*model.Policy{
@@ -97,11 +91,8 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 	}
 	for _, policy := range policies {
 		testutil.Must(t, authService.CreatePolicy(policy))
-		testutil.Must(t, authService.AttachPolicyToRole(role.DisplayName, policy.DisplayName))
+		testutil.Must(t, authService.AttachPolicyToUser(user.DisplayName, policy.DisplayName))
 	}
-
-	// assign user to role
-	testutil.Must(t, authService.AttachRoleToUser(role.DisplayName, user.DisplayName))
 
 	creds, err := authService.CreateCredentials(user.DisplayName)
 	if err != nil {
