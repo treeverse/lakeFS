@@ -1423,7 +1423,7 @@ func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembe
 
 func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredentialsHandler {
 	return authentication.ListUserCredentialsHandlerFunc(func(params authentication.ListUserCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuthCredentials(user.ID))
+		err := a.authorize(user, permissions.ReadAuthCredentials(params.UserID))
 		if err != nil {
 			return authentication.NewListUserCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1456,7 +1456,7 @@ func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredential
 
 func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHandler {
 	return authentication.CreateCredentialsHandlerFunc(func(params authentication.CreateCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuthCredentials(user.ID))
+		err := a.authorize(user, permissions.WriteAuthCredentials(params.UserID))
 		if err != nil {
 			return authentication.NewCreateCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1479,7 +1479,7 @@ func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHan
 
 func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHandler {
 	return authentication.DeleteCredentialsHandlerFunc(func(params authentication.DeleteCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuthCredentials(user.ID))
+		err := a.authorize(user, permissions.WriteAuthCredentials(params.UserID))
 		if err != nil {
 			return authentication.NewDeleteCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1501,7 +1501,7 @@ func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHan
 
 func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
 	return authentication.GetCredentialsHandlerFunc(func(params authentication.GetCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuthCredentials(user.ID))
+		err := a.authorize(user, permissions.ReadAuthCredentials(params.UserID))
 		if err != nil {
 			return authentication.NewGetCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
