@@ -160,7 +160,7 @@ CREATE VIEW entries_lineage_full_v AS
     e.is_tombstone
    FROM (entries_v e
      JOIN lineage_v l ON ((l.ancestor_branch = e.branch_id)))
-  WHERE ((l.main_branch OR ((e.min_commit <= l.effective_commit) AND e.is_committed)) AND (l.max_commit = ('01111111111111111111111111111111'::"bit")::integer));
+  WHERE ((l.main_branch OR ((e.min_commit <= l.effective_commit) AND e.is_committed)) AND l.active_lineage);
 
 CREATE VIEW entries_lineage_committed_v AS
  SELECT t.displayed_branch,
@@ -204,7 +204,7 @@ CREATE VIEW entries_lineage_committed_v AS
             entries_lineage_full_v.is_tombstone
            FROM entries_lineage_full_v
           WHERE entries_lineage_full_v.is_committed) t
-  WHERE (t.rank = 1);
+  WHERE (t.row_no = 1);
 
 CREATE VIEW entries_lineage_v AS
  SELECT t.displayed_branch,

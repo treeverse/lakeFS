@@ -13,7 +13,6 @@ import (
 func TestCataloger_Commit(t *testing.T) {
 	ctx := context.Background()
 	c := setupCatalogerForTesting(t)
-
 	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
 	for i := 0; i < 3; i++ {
 		fileName := "/file" + strconv.Itoa(i)
@@ -81,7 +80,7 @@ func TestCataloger_Commit(t *testing.T) {
 	}
 }
 
-func TestCataloger_Commit_Case(t *testing.T) {
+func TestCataloger_Commit_Scenario(t *testing.T) {
 	ctx := context.Background()
 	c := setupCatalogerForTesting(t)
 
