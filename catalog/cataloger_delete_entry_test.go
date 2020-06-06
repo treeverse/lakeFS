@@ -37,7 +37,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 		}
 	})
 
-	t.Run("delete file committed", func(t *testing.T) {
+	t.Run("delete file committed on branch", func(t *testing.T) {
 		if err := c.WriteEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
 			t.Fatal("write entry for delete entry test:", err)
 		}
@@ -53,6 +53,32 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 		wantErr := db.ErrNotFound
 		if !errors.Is(err, wantErr) {
 			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
+		}
+	})
+
+	t.Run("delete file committed on parent", func(t *testing.T) {
+		if err := c.WriteEntry(ctx, repo, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
+			t.Fatal("write entry for delete entry test:", err)
+		}
+		if _, err := c.Commit(ctx, repo, "master", "commit file4", "tester", nil); err != nil {
+			t.Fatal("commit entry for delete entry test:", err)
+		}
+		if _, err := c.CreateBranch(ctx, repo, "b1", "master"); err != nil {
+			t.Fatal("create branch for delete entry test:", err)
+		}
+		err := c.DeleteEntry(ctx, repo, "b1", "/file4")
+		if err != nil {
+			t.Errorf("DeleteEntry() error = %s, want no error", err)
+			return
+		}
+		_, err = c.ReadEntry(ctx, repo, "b1", "/file4", true)
+		wantErr := db.ErrNotFound
+		if !errors.Is(err, wantErr) {
+			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
+		}
+		_, err = c.ReadEntry(ctx, repo, "b1", "/file4", false)
+		if err != nil {
+			t.Errorf("DeleteEntry() read entry err = %s, want no error", err)
 		}
 	})
 }
