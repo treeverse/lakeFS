@@ -21,11 +21,6 @@ ID: {{ .ID | bold }}
 Creation Date: {{  .CreationDate |date }}
 `
 
-var roleCreatedTemplate = `{{ "Role created successfully." | green }}
-ID: {{ .ID | bold }}
-Creation Date: {{  .CreationDate |date }}
-`
-
 var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
 ID: {{ .ID | bold }}
 Creation Date: {{  .CreationDate |date }}
@@ -44,7 +39,7 @@ var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green
 var authCmd = &cobra.Command{
 	Use:   "auth [sub-command]",
 	Short: "manage authentication and authorization",
-	Long:  "manage authentication and authorization including users, groups, roles and policies",
+	Long:  "manage authentication and authorization including users, groups and policies",
 }
 
 var authUsers = &cobra.Command{
@@ -108,36 +103,6 @@ var authUsersDelete = &cobra.Command{
 	},
 }
 
-var authUsersRoles = &cobra.Command{
-	Use:   "roles",
-	Short: "manage user roles",
-}
-
-var authUsersRolesList = &cobra.Command{
-	Use:   "list",
-	Short: "list roles for the given user",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-
-		clt := getClient()
-
-		roles, pagination, err := clt.ListUserRoles(context.Background(), id, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
-
-		rows := make([][]interface{}, len(roles))
-		for i, role := range roles {
-			ts := time.Unix(role.CreationDate, 0).String()
-			rows[i] = []interface{}{role.ID, ts}
-		}
-
-		PrintTable(rows, []interface{}{"Role ID", "Creation Date"}, pagination, amount)
-	},
-}
-
 var authUsersGroups = &cobra.Command{
 	Use:   "groups",
 	Short: "manage user groups",
@@ -165,6 +130,159 @@ var authUsersGroupsList = &cobra.Command{
 		}
 
 		PrintTable(rows, []interface{}{"Group ID", "Creation Date"}, pagination, amount)
+	},
+}
+
+var authUsersPolicies = &cobra.Command{
+	Use:   "policies",
+	Short: "manage user policies",
+}
+
+var authUsersPoliciesList = &cobra.Command{
+	Use:   "list",
+	Short: "list policies for the given user",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+		effective, _ := cmd.Flags().GetBool("effective")
+
+		clt := getClient()
+
+		policies, pagination, err := clt.ListUserPolicies(context.Background(), id, effective, after, amount)
+		if err != nil {
+			DieErr(err)
+		}
+
+		rows := make([][]interface{}, len(policies))
+		for i, policy := range policies {
+
+			ts := time.Unix(policy.CreationDate, 0).String()
+			rows[i] = []interface{}{policy.ID, ts, policy.Resource, policy.Effect, strings.Join(policy.Action, ", ")}
+		}
+
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Resource", "Effect", "Actions"}, pagination, amount)
+	},
+}
+
+var authUsersPoliciesAttach = &cobra.Command{
+	Use:   "attach",
+	Short: "attach a policy to a user",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		err := clt.AttachPolicyToUser(context.Background(), id, policy)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Fmt("Policy attached successfully\n")
+	},
+}
+
+var authUsersPoliciesDetach = &cobra.Command{
+	Use:   "detach",
+	Short: "detach a policy from a user",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		err := clt.DetachPolicyFromUser(context.Background(), id, policy)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Fmt("Policy detached successfully\n")
+	},
+}
+
+var authUsersCredentials = &cobra.Command{
+	Use:   "credentials",
+	Short: "manage user credentials",
+}
+
+var authUsersCredentialsCreate = &cobra.Command{
+	Use:   "create",
+	Short: "create user credentials",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		clt := getClient()
+
+		if id == "" {
+			user, err := clt.GetCurrentUser(context.Background())
+			if err != nil {
+				DieErr(err)
+			}
+			id = user.ID
+		}
+
+		credentials, err := clt.CreateCredentials(context.Background(), id)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Write(credentialsCreatedTemplate, credentials)
+	},
+}
+
+var authUsersCredentialsDelete = &cobra.Command{
+	Use:   "delete",
+	Short: "delete user credentials",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		accessKeyId, _ := cmd.Flags().GetString("access-key-id")
+		clt := getClient()
+
+		if id == "" {
+			user, err := clt.GetCurrentUser(context.Background())
+			if err != nil {
+				DieErr(err)
+			}
+			id = user.ID
+		}
+
+		err := clt.DeleteCredentials(context.Background(), id, accessKeyId)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Fmt("Credentials deleted successfully\n")
+	},
+}
+
+var authUsersCredentialsList = &cobra.Command{
+	Use:   "list",
+	Short: "list user credentials",
+	Run: func(cmd *cobra.Command, args []string) {
+		amount, _ := cmd.Flags().GetInt("amount")
+		after, _ := cmd.Flags().GetString("after")
+		id, _ := cmd.Flags().GetString("id")
+
+		clt := getClient()
+		if id == "" {
+			user, err := clt.GetCurrentUser(context.Background())
+			if err != nil {
+				DieErr(err)
+			}
+			id = user.ID
+		}
+
+		credentials, pagination, err := clt.ListUserCredentials(context.Background(), id, after, amount)
+		if err != nil {
+			DieErr(err)
+		}
+
+		rows := make([][]interface{}, len(credentials))
+		for i, c := range credentials {
+
+			ts := time.Unix(c.CreationDate, 0).String()
+			rows[i] = []interface{}{c.AccessKeyID, ts}
+		}
+
+		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, pagination, amount)
 	},
 }
 
@@ -293,163 +411,14 @@ var authGroupsRemoveMember = &cobra.Command{
 	},
 }
 
-var authGroupsRoles = &cobra.Command{
-	Use:   "roles",
-	Short: "manage group roles",
-}
-
-var authGroupsRolesList = &cobra.Command{
-	Use:   "list",
-	Short: "list roles for the given group",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-
-		clt := getClient()
-
-		roles, pagination, err := clt.ListGroupRoles(context.Background(), id, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
-
-		rows := make([][]interface{}, len(roles))
-		for i, role := range roles {
-			ts := time.Unix(role.CreationDate, 0).String()
-			rows[i] = []interface{}{role.ID, ts}
-		}
-
-		PrintTable(rows, []interface{}{"Role ID", "Creation Date"}, pagination, amount)
-	},
-}
-
-// roles
-var authRoles = &cobra.Command{
-	Use:   "roles",
-	Short: "manage roles",
-}
-
-var authRolesList = &cobra.Command{
-	Use:   "list",
-	Short: "list roles",
-	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-
-		clt := getClient()
-
-		roles, pagination, err := clt.ListRoles(context.Background(), after, amount)
-		if err != nil {
-			DieErr(err)
-		}
-
-		rows := make([][]interface{}, len(roles))
-		for i, role := range roles {
-			ts := time.Unix(role.CreationDate, 0).String()
-			rows[i] = []interface{}{role.ID, ts}
-		}
-
-		PrintTable(rows, []interface{}{"Role ID", "Creation Date"}, pagination, amount)
-	},
-}
-
-var authRolesCreate = &cobra.Command{
-	Use:   "create",
-	Short: "create a role",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		clt := getClient()
-
-		user, err := clt.CreateRole(context.Background(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Write(roleCreatedTemplate, user)
-	},
-}
-
-var authRolesDelete = &cobra.Command{
-	Use:   "delete",
-	Short: "delete a role",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		clt := getClient()
-
-		err := clt.DeleteRole(context.Background(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("Role deleted successfully\n")
-	},
-}
-
-var authRolesAttach = &cobra.Command{
-	Use:   "attach",
-	Short: "attach a role to a user or group",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		user, _ := cmd.Flags().GetString("user")
-		group, _ := cmd.Flags().GetString("group")
-
-		if (user != "" && group != "") || (user == "" && group == "") {
-			DieFmt("please pass either user ID or group ID")
-		}
-
-		clt := getClient()
-
-		var err error
-		if user != "" {
-			err = clt.AttachRoleToUser(context.Background(), user, id)
-		} else {
-			err = clt.AttachRoleToGroup(context.Background(), group, id)
-		}
-
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("Role attached successfully\n")
-	},
-}
-
-var authRolesDetach = &cobra.Command{
-	Use:   "detach",
-	Short: "detach a role from a user or group",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		user, _ := cmd.Flags().GetString("user")
-		group, _ := cmd.Flags().GetString("group")
-
-		if (user != "" && group != "") || (user == "" && group == "") {
-			DieFmt("please pass either user ID or group ID")
-		}
-
-		clt := getClient()
-
-		var err error
-		if user != "" {
-			err = clt.DetachRoleFromUser(context.Background(), user, id)
-		} else {
-			err = clt.DetachRoleFromGroup(context.Background(), group, id)
-		}
-
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("Role detached successfully\n")
-	},
-}
-var authRolesPolicies = &cobra.Command{
+var authGroupsPolicies = &cobra.Command{
 	Use:   "policies",
-	Short: "manage policies",
+	Short: "manage group policies",
 }
 
-var authRolesPoliciesList = &cobra.Command{
+var authGroupsPoliciesList = &cobra.Command{
 	Use:   "list",
-	Short: "list policies attached to role",
+	Short: "list policies for the given group",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -457,7 +426,7 @@ var authRolesPoliciesList = &cobra.Command{
 
 		clt := getClient()
 
-		policies, pagination, err := clt.ListRolePolicies(context.Background(), id, after, amount)
+		policies, pagination, err := clt.ListGroupPolicies(context.Background(), id, after, amount)
 		if err != nil {
 			DieErr(err)
 		}
@@ -470,6 +439,40 @@ var authRolesPoliciesList = &cobra.Command{
 		}
 
 		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Resource", "Effect", "Actions"}, pagination, amount)
+	},
+}
+
+var authGroupsPoliciesAttach = &cobra.Command{
+	Use:   "attach",
+	Short: "attach a policy to a group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		err := clt.AttachPolicyToGroup(context.Background(), id, policy)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Fmt("Policy attached successfully\n")
+	},
+}
+
+var authGroupsPoliciesDetach = &cobra.Command{
+	Use:   "detach",
+	Short: "detach a policy from a group",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		policy, _ := cmd.Flags().GetString("policy")
+		clt := getClient()
+
+		err := clt.DetachPolicyFromGroup(context.Background(), id, policy)
+		if err != nil {
+			DieErr(err)
+		}
+
+		Fmt("Policy detached successfully\n")
 	},
 }
 
@@ -544,126 +547,9 @@ var authPoliciesDelete = &cobra.Command{
 	},
 }
 
-var authPoliciesAttach = &cobra.Command{
-	Use:   "attach",
-	Short: "attach a policy to a role",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		role, _ := cmd.Flags().GetString("role")
-		clt := getClient()
-
-		err := clt.AttachPolicyToRole(context.Background(), id, role)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("Policy attached successfully\n")
-	},
-}
-
-var authPoliciesDetach = &cobra.Command{
-	Use:   "detach",
-	Short: "detach a policy from a role",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		role, _ := cmd.Flags().GetString("role")
-		clt := getClient()
-
-		err := clt.DetachPolicyFromRole(context.Background(), id, role)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("Policy detached successfully\n")
-	},
-}
-
-// credentials
-var authCredentials = &cobra.Command{
-	Use:   "credentials",
-	Short: "manage user credentials",
-}
-
-var authCredentialsCreate = &cobra.Command{
-	Use:   "create",
-	Short: "create user credentials",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		clt := getClient()
-
-		if id == "" {
-			user, err := clt.GetCurrentUser(context.Background())
-			if err != nil {
-				DieErr(err)
-			}
-			id = user.ID
-		}
-
-		credentials, err := clt.CreateCredentials(context.Background(), id)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Write(credentialsCreatedTemplate, credentials)
-	},
-}
-
-var authCredentialsDelete = &cobra.Command{
-	Use:   "delete",
-	Short: "delete user credentials",
-	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		accessKeyId, _ := cmd.Flags().GetString("access-key-id")
-		clt := getClient()
-
-		if id == "" {
-			user, err := clt.GetCurrentUser(context.Background())
-			if err != nil {
-				DieErr(err)
-			}
-			id = user.ID
-		}
-
-		err := clt.DeleteCredentials(context.Background(), id, accessKeyId)
-		if err != nil {
-			DieErr(err)
-		}
-
-		Fmt("Credentials deleted successfully\n")
-	},
-}
-
-var authCredentialsList = &cobra.Command{
-	Use:   "list",
-	Short: "list user credentials",
-	Run: func(cmd *cobra.Command, args []string) {
-		amount, _ := cmd.Flags().GetInt("amount")
-		after, _ := cmd.Flags().GetString("after")
-		id, _ := cmd.Flags().GetString("id")
-
-		clt := getClient()
-		if id == "" {
-			user, err := clt.GetCurrentUser(context.Background())
-			if err != nil {
-				DieErr(err)
-			}
-			id = user.ID
-		}
-
-		credentials, pagination, err := clt.ListUserCredentials(context.Background(), id, after, amount)
-		if err != nil {
-			DieErr(err)
-		}
-
-		rows := make([][]interface{}, len(credentials))
-		for i, c := range credentials {
-
-			ts := time.Unix(c.CreationDate, 0).String()
-			rows[i] = []interface{}{c.AccessKeyID, ts}
-		}
-
-		PrintTable(rows, []interface{}{"Access Key ID", "Issued Date"}, pagination, amount)
-	},
+func addPaginationFlags(cmd *cobra.Command) {
+	cmd.Flags().Int("amount", 100, "how many results to return")
+	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
 
 func init() {
@@ -674,27 +560,53 @@ func init() {
 	authUsersDelete.Flags().String("id", "", "user identifier")
 	_ = authUsersDelete.MarkFlagRequired("id")
 
-	authUsersList.Flags().Int("amount", 100, "how many results to return")
-	authUsersList.Flags().String("after", "", "show results after this value (used for pagination)")
+	addPaginationFlags(authUsersList)
 
-	authUsersRolesList.Flags().String("id", "", "user identifier")
-	authUsersRolesList.Flags().Int("amount", 100, "how many results to return")
-	authUsersRolesList.Flags().String("after", "", "show results after this value (used for pagination)")
-	_ = authUsersRolesList.MarkFlagRequired("id")
-
+	addPaginationFlags(authUsersGroupsList)
 	authUsersGroupsList.Flags().String("id", "", "user identifier")
-	authUsersGroupsList.Flags().Int("amount", 100, "how many results to return")
-	authUsersGroupsList.Flags().String("after", "", "show results after this value (used for pagination)")
 	_ = authUsersGroupsList.MarkFlagRequired("id")
 
-	authUsersRoles.AddCommand(authUsersRolesList)
 	authUsersGroups.AddCommand(authUsersGroupsList)
 
-	authUsers.AddCommand(authUsersDelete)
+	addPaginationFlags(authUsersPoliciesList)
+	authUsersPoliciesList.Flags().Bool("effective", false,
+		"list all distinct policies attached to the user, even through group memberships")
+	authUsersPoliciesList.Flags().String("id", "", "user identifier")
+	_ = authUsersPoliciesList.MarkFlagRequired("id")
+
+	authUsersPoliciesAttach.Flags().String("id", "", "user identifier")
+	_ = authUsersPoliciesAttach.MarkFlagRequired("id")
+	authUsersPoliciesAttach.Flags().String("policy", "", "policy identifier")
+	_ = authUsersPoliciesAttach.MarkFlagRequired("policy")
+
+	authUsersPoliciesDetach.Flags().String("id", "", "user identifier")
+	_ = authUsersPoliciesDetach.MarkFlagRequired("id")
+	authUsersPoliciesDetach.Flags().String("policy", "", "policy identifier")
+	_ = authUsersPoliciesDetach.MarkFlagRequired("policy")
+
+	authUsersPolicies.AddCommand(authUsersPoliciesList)
+	authUsersPolicies.AddCommand(authUsersPoliciesAttach)
+	authUsersPolicies.AddCommand(authUsersPoliciesDetach)
+
+	authUsersCredentialsList.Flags().String("id", "", "user identifier (default: current user)")
+	addPaginationFlags(authUsersCredentialsList)
+
+	authUsersCredentialsCreate.Flags().String("id", "", "user identifier (default: current user)")
+
+	authUsersCredentialsDelete.Flags().String("id", "", "user identifier (default: current user)")
+	authUsersCredentialsDelete.Flags().String("access-key-id", "", "access key ID to delete")
+	_ = authUsersCredentialsDelete.MarkFlagRequired("access-key-id")
+
+	authUsersCredentials.AddCommand(authUsersCredentialsList)
+	authUsersCredentials.AddCommand(authUsersCredentialsCreate)
+	authUsersCredentials.AddCommand(authUsersCredentialsDelete)
+
 	authUsers.AddCommand(authUsersCreate)
+	authUsers.AddCommand(authUsersDelete)
 	authUsers.AddCommand(authUsersList)
-	authUsers.AddCommand(authUsersRoles)
+	authUsers.AddCommand(authUsersPolicies)
 	authUsers.AddCommand(authUsersGroups)
+	authUsers.AddCommand(authUsersCredentials)
 
 	authCmd.AddCommand(authUsers)
 
@@ -705,8 +617,7 @@ func init() {
 	authGroupsDelete.Flags().String("id", "", "group identifier")
 	_ = authGroupsDelete.MarkFlagRequired("id")
 
-	authGroupsList.Flags().Int("amount", 100, "how many results to return")
-	authGroupsList.Flags().String("after", "", "show results after this value (used for pagination)")
+	addPaginationFlags(authGroupsList)
 
 	authGroupsAddMember.Flags().String("id", "", "group identifier")
 	authGroupsAddMember.Flags().String("user", "", "user identifier to add to the group")
@@ -717,59 +628,37 @@ func init() {
 	_ = authGroupsRemoveMember.MarkFlagRequired("id")
 	_ = authGroupsRemoveMember.MarkFlagRequired("user")
 	authGroupsListMembers.Flags().String("id", "", "group identifier")
-	authGroupsListMembers.Flags().Int("amount", 100, "how many results to return")
-	authGroupsListMembers.Flags().String("after", "", "show results after this value (used for pagination)")
+	addPaginationFlags(authGroupsListMembers)
 	_ = authGroupsListMembers.MarkFlagRequired("id")
-	authGroupsRolesList.Flags().String("id", "", "group identifier")
-	authGroupsRolesList.Flags().Int("amount", 100, "how many results to return")
-	authGroupsRolesList.Flags().String("after", "", "show results after this value (used for pagination)")
-	_ = authGroupsRolesList.MarkFlagRequired("id")
 
 	authGroupsMembers.AddCommand(authGroupsAddMember)
 	authGroupsMembers.AddCommand(authGroupsRemoveMember)
 	authGroupsMembers.AddCommand(authGroupsListMembers)
 
-	authGroupsRoles.AddCommand(authGroupsRolesList)
+	addPaginationFlags(authGroupsPoliciesList)
+	authGroupsPoliciesList.Flags().String("id", "", "group identifier")
+	_ = authGroupsPoliciesList.MarkFlagRequired("id")
+
+	authGroupsPoliciesAttach.Flags().String("id", "", "user identifier")
+	_ = authGroupsPoliciesAttach.MarkFlagRequired("id")
+	authGroupsPoliciesAttach.Flags().String("policy", "", "policy identifier")
+	_ = authGroupsPoliciesAttach.MarkFlagRequired("policy")
+
+	authGroupsPoliciesDetach.Flags().String("id", "", "user identifier")
+	_ = authGroupsPoliciesDetach.MarkFlagRequired("id")
+	authGroupsPoliciesDetach.Flags().String("policy", "", "policy identifier")
+	_ = authGroupsPoliciesDetach.MarkFlagRequired("policy")
+
+	authGroupsPolicies.AddCommand(authGroupsPoliciesList)
+	authGroupsPolicies.AddCommand(authGroupsPoliciesAttach)
+	authGroupsPolicies.AddCommand(authGroupsPoliciesDetach)
 
 	authGroups.AddCommand(authGroupsDelete)
 	authGroups.AddCommand(authGroupsCreate)
 	authGroups.AddCommand(authGroupsList)
 	authGroups.AddCommand(authGroupsMembers)
-	authGroups.AddCommand(authGroupsRoles)
+	authGroups.AddCommand(authGroupsPolicies)
 	authCmd.AddCommand(authGroups)
-
-	// roles
-	authRolesCreate.Flags().String("id", "", "role identifier")
-	_ = authRolesCreate.MarkFlagRequired("id")
-
-	authRolesDelete.Flags().String("id", "", "role identifier")
-	_ = authRolesDelete.MarkFlagRequired("id")
-
-	authRolesList.Flags().Int("amount", 100, "how many results to return")
-	authRolesList.Flags().String("after", "", "show results after this value (used for pagination)")
-
-	authRolesAttach.Flags().String("id", "", "role identifier")
-	authRolesAttach.Flags().String("group", "", "group ID to attach role to")
-	authRolesAttach.Flags().String("user", "", "user ID to attach role to")
-	_ = authRolesAttach.MarkFlagRequired("id")
-	authRolesDetach.Flags().String("id", "", "role identifier")
-	authRolesDetach.Flags().String("group", "", "group ID to attach role to")
-	authRolesDetach.Flags().String("user", "", "user ID to attach role to")
-	_ = authRolesDetach.MarkFlagRequired("id")
-
-	authRolesPoliciesList.Flags().String("id", "", "role identifier")
-	authRolesPoliciesList.Flags().Int("amount", 100, "how many results to return")
-	authRolesPoliciesList.Flags().String("after", "", "show results after this value (used for pagination)")
-
-	authRolesPolicies.AddCommand(authRolesPoliciesList)
-
-	authRoles.AddCommand(authRolesDelete)
-	authRoles.AddCommand(authRolesCreate)
-	authRoles.AddCommand(authRolesList)
-	authRoles.AddCommand(authRolesAttach)
-	authRoles.AddCommand(authRolesDetach)
-	authRoles.AddCommand(authRolesPolicies)
-	authCmd.AddCommand(authRoles)
 
 	// policies
 	authPoliciesCreate.Flags().String("id", "", "policy identifier")
@@ -783,36 +672,12 @@ func init() {
 	authPoliciesDelete.Flags().String("id", "", "policy identifier")
 	_ = authPoliciesDelete.MarkFlagRequired("id")
 
-	authPoliciesList.Flags().Int("amount", 100, "how many results to return")
-	authPoliciesList.Flags().String("after", "", "show results after this value (used for pagination)")
-
-	authPoliciesAttach.Flags().String("id", "", "policy identifier")
-	authPoliciesAttach.Flags().String("role", "", "role identifier to attach to")
-	_ = authPoliciesAttach.MarkFlagRequired("id")
-	authPoliciesDetach.Flags().String("id", "", "policy identifier")
-	authPoliciesDetach.Flags().String("role", "", "role identifier to detach from")
-	_ = authPoliciesDetach.MarkFlagRequired("id")
+	addPaginationFlags(authPoliciesList)
 
 	authPolicies.AddCommand(authPoliciesDelete)
 	authPolicies.AddCommand(authPoliciesCreate)
 	authPolicies.AddCommand(authPoliciesList)
-	authPolicies.AddCommand(authPoliciesAttach)
-	authPolicies.AddCommand(authPoliciesDetach)
 	authCmd.AddCommand(authPolicies)
-
-	// credentials
-	authCredentialsCreate.Flags().String("id", "", "user ID to create credentials for (default: current user)")
-	authCredentialsDelete.Flags().String("id", "", "user ID to list credentials for (default: current user)")
-	authCredentialsDelete.Flags().String("access-key-id", "", "access key ID to be deleted")
-	_ = authCredentialsDelete.MarkFlagRequired("access-key-id")
-	authCredentialsList.Flags().String("id", "", "user ID to list credentials for (default: current user)")
-	authCredentialsList.Flags().Int("amount", 100, "how many results to return")
-	authCredentialsList.Flags().String("after", "", "show results after this value (used for pagination)")
-
-	authCredentials.AddCommand(authCredentialsCreate)
-	authCredentials.AddCommand(authCredentialsDelete)
-	authCredentials.AddCommand(authCredentialsList)
-	authCmd.AddCommand(authCredentials)
 
 	// main auth cmd
 	rootCmd.AddCommand(authCmd)
