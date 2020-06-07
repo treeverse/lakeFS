@@ -12,7 +12,7 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func TestCataloger_ListCommitsByBranch(t *testing.T) {
+func TestCataloger_ListCommits(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -129,9 +129,9 @@ func TestCataloger_ListCommitsByBranch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListCommitsByBranch(ctx, tt.args.repo, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
+			got, gotMore, err := c.ListCommits(ctx, tt.args.repo, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListCommitsByBranch() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListCommits() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			// hack - remove the timestamp in order to compare everything except the time
@@ -141,10 +141,10 @@ func TestCataloger_ListCommitsByBranch(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListCommitsByBranch() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
+				t.Errorf("ListCommits() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListCommitsByBranch() gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf("ListCommits() gotMore = %v, want = %v", gotMore, tt.wantMore)
 			}
 		})
 	}

@@ -25,8 +25,8 @@ type Cataloger interface {
 
 	// commit
 	Commit(ctx context.Context, repo string, branch string, message string, committer string, metadata Metadata) (int, error)
+	ListCommits(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 	ListCommitsByRepo(ctx context.Context, repo string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
-	ListCommitsByBranch(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 	RevertCommit(ctx context.Context, branch string, commitID int) error
 
 	// entry
