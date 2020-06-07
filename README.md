@@ -127,3 +127,7 @@ api:
    ```
 
 5. You should end up with 2 binaries in your work directory: `lakefs` and `lakectl`. See the [docs](https://docs.lakefs.io/quickstart.html) on how to run them.
+
+### Running Load Tests
+ 
+After building as in the previous step, you should have a third binary, `lakefs-loadtest`. Run `lakefs-loadtest --help` for details.
