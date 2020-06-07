@@ -9,7 +9,7 @@ import (
 
 func TestCataloger_ListRepos(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	// create test data
 	for i := 3; i > 0; i-- {

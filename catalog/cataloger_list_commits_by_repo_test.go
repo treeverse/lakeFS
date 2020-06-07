@@ -12,11 +12,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func TestCataloger_ListRepoCommits(t *testing.T) {
+func TestCataloger_ListCommitsByRepo(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
-	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
-	setupListRepoCommitsData(t, ctx, c, repo, "master")
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	setupListCommitsByRepoData(t, ctx, c, repo, "master")
 
 	type args struct {
 		repo         string
@@ -87,9 +87,9 @@ func TestCataloger_ListRepoCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			gotCommits, gotMore, err := c.ListRepoCommits(ctx, tt.args.repo, tt.args.fromCommitID, tt.args.limit)
+			gotCommits, gotMore, err := c.ListCommitsByRepo(ctx, tt.args.repo, tt.args.fromCommitID, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListRepoCommits() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListCommitsByRepo() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			// hack - remove the timestamp in order to compare everything except the time
@@ -98,16 +98,16 @@ func TestCataloger_ListRepoCommits(t *testing.T) {
 				gotCommits[i].CreationDate = time.Time{}
 			}
 			if !reflect.DeepEqual(gotCommits, tt.want) {
-				t.Errorf("ListRepoCommits() got = %s, want = %s", spew.Sdump(gotCommits), spew.Sdump(tt.want))
+				t.Errorf("ListCommitsByRepo() got = %s, want = %s", spew.Sdump(gotCommits), spew.Sdump(tt.want))
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListRepoCommits() gotMore = %v, wantMore = %v", gotMore, tt.wantMore)
+				t.Errorf("ListCommitsByRepo() gotMore = %v, wantMore = %v", gotMore, tt.wantMore)
 			}
 		})
 	}
 }
 
-func setupListRepoCommitsData(t *testing.T, ctx context.Context, c Cataloger, repo string, sourceBranch string) {
+func setupListCommitsByRepoData(t *testing.T, ctx context.Context, c Cataloger, repo string, sourceBranch string) {
 	for _, branch := range []string{"b1", "b2"} {
 		_, err := c.CreateBranch(ctx, repo, branch, sourceBranch)
 		if err != nil {
@@ -117,7 +117,7 @@ func setupListRepoCommitsData(t *testing.T, ctx context.Context, c Cataloger, re
 		for i := 0; i < 3; i++ {
 			fileName := fmt.Sprintf("/file%d", i)
 			fileAddr := fmt.Sprintf("/addr%d", i)
-			if err := c.WriteEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
+			if err := c.CreateEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
 				t.Fatal("Write entry for list repo commits failed", err)
 			}
 			message := "commit" + strconv.Itoa(i+1)

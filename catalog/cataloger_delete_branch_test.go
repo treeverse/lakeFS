@@ -10,7 +10,7 @@ import (
 
 func TestCataloger_DeleteBranch(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
 		t.Fatal("create repo for testing", err)
@@ -23,14 +23,11 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 		} else {
 			sourceBranch = fmt.Sprintf("branch%d", i-1)
 		}
-		if _, err := c.CreateBranch(ctx, "repo1", branchName, sourceBranch); err != nil {
-			t.Fatalf("create branch '%s' for testing failed: %s", branchName, err)
-		}
+		_ = testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranch)
 	}
-	if _, err := c.CreateBranch(ctx, "repo1", "b1", "master"); err != nil {
-		t.Fatal("create repo for testing", err)
-	}
-	if err := c.WriteEntry(ctx, "repo1", "b1", "/file1", "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", "/file1abc", 42, nil); err != nil {
+	_ = testCatalogerBranch(t, ctx, c, "repo1", "b1", "master")
+
+	if err := c.CreateEntry(ctx, "repo1", "b1", "/file1", "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1", "/file1abc", 42, nil); err != nil {
 		t.Fatal("write entry for testing", err)
 	}
 
@@ -92,9 +89,7 @@ func TestCataloger_DeleteBranchTwice(t *testing.T) {
 	for i := 0; i < numBranches; i++ {
 		sourceBranchName := fmt.Sprintf("branch%d", i)
 		branchName := fmt.Sprintf("branch%d", i+1)
-		if _, err := c.CreateBranch(ctx, "repo1", branchName, sourceBranchName); err != nil {
-			t.Fatalf("create branch '%s' based on '%s' for testing failed: %s", branchName, sourceBranchName, err)
-		}
+		_ = testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranchName)
 	}
 	// delete twice (checking double delete) in reverse order
 	for i := numBranches; i > 0; i-- {

@@ -8,7 +8,7 @@ import (
 
 func TestCataloger_DeleteRepo(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	// create test data
 	for i := 1; i < 3; i++ {

@@ -8,7 +8,7 @@ import (
 
 func TestCataloger_CreateRepo(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	type args struct {
 		name   string

@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ReadMultipartUpload(ctx context.Context, repo string, uploadID string) (*MultipartUpload, error) {
+func (c *cataloger) GetMultipartUpload(ctx context.Context, repo string, uploadID string) (*MultipartUpload, error) {
 	if err := Validate(ValidateFields{
 		"repo":     ValidateRepoName(repo),
 		"uploadID": ValidateUploadID(uploadID),

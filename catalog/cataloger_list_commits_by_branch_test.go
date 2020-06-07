@@ -12,11 +12,11 @@ import (
 	"github.com/davecgh/go-spew/spew"
 )
 
-func TestCataloger_ListBranchCommits(t *testing.T) {
+func TestCataloger_ListCommitsByBranch(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
-	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
-	setupListBranchCommitsData(t, ctx, c, repo, "master")
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	setupListCommitsByBranchData(t, ctx, c, repo, "master")
 
 	type args struct {
 		repo         string
@@ -129,9 +129,9 @@ func TestCataloger_ListBranchCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListBranchCommits(ctx, tt.args.repo, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
+			got, gotMore, err := c.ListCommitsByBranch(ctx, tt.args.repo, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListBranchCommits() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListCommitsByBranch() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			// hack - remove the timestamp in order to compare everything except the time
@@ -141,20 +141,20 @@ func TestCataloger_ListBranchCommits(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListBranchCommits() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
+				t.Errorf("ListCommitsByBranch() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListBranchCommits() gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf("ListCommitsByBranch() gotMore = %v, want = %v", gotMore, tt.wantMore)
 			}
 		})
 	}
 }
 
-func setupListBranchCommitsData(t *testing.T, ctx context.Context, c Cataloger, repo string, branch string) {
+func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repo string, branch string) {
 	for i := 0; i < 3; i++ {
 		fileName := fmt.Sprintf("/file%d", i)
 		fileAddr := fmt.Sprintf("/addr%d", i)
-		if err := c.WriteEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
+		if err := c.CreateEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
 			t.Fatal("Write entry for list repo commits failed", err)
 		}
 		message := "commit" + strconv.Itoa(i+1)

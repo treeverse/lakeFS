@@ -7,9 +7,9 @@ import (
 	"testing"
 )
 
-func TestCataloger_ListBranchesByPrefix(t *testing.T) {
+func TestCataloger_ListBranches(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
 		t.Fatal("create repo for testing", err)
@@ -84,9 +84,9 @@ func TestCataloger_ListBranchesByPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListBranchesByPrefix(ctx, tt.args.repo, tt.args.prefix, tt.args.limit, tt.args.after)
+			got, gotMore, err := c.ListBranches(ctx, tt.args.repo, tt.args.prefix, tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListBranchesByPrefix() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			var gotBranches []string
@@ -94,10 +94,10 @@ func TestCataloger_ListBranchesByPrefix(t *testing.T) {
 				gotBranches = append(gotBranches, got[i].Name)
 			}
 			if !reflect.DeepEqual(tt.wantBranches, gotBranches) {
-				t.Errorf("ListBranchesByPrefix() got = %v, want %v", gotBranches, tt.wantBranches)
+				t.Errorf("ListBranches() got = %v, want %v", gotBranches, tt.wantBranches)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListBranchesByPrefix() got1 = %v, want %v", gotMore, tt.wantMore)
+				t.Errorf("ListBranches() got1 = %v, want %v", gotMore, tt.wantMore)
 			}
 		})
 	}

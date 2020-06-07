@@ -7,9 +7,9 @@ import (
 	"time"
 )
 
-func TestCataloger_ReadMultipartUpload(t *testing.T) {
+func TestCataloger_GetMultipartUpload(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	creationTime := time.Now().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data
@@ -57,13 +57,13 @@ func TestCataloger_ReadMultipartUpload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.ReadMultipartUpload(ctx, tt.args.repo, tt.args.uploadID)
+			got, err := c.GetMultipartUpload(ctx, tt.args.repo, tt.args.uploadID)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ReadMultipartUpload() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetMultipartUpload() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ReadMultipartUpload() got = %v, want %v", got, tt.want)
+				t.Errorf("GetMultipartUpload() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

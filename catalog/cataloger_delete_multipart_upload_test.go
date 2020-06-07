@@ -8,7 +8,7 @@ import (
 
 func TestCataloger_DeleteMultipartUpload(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	// setup test data
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {

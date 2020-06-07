@@ -5,9 +5,9 @@ import (
 	"testing"
 )
 
-func TestCataloger_ReadEntry(t *testing.T) {
+func TestCataloger_GetEntry(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 	repo := setupReadEntryData(t, ctx, c)
 
 	type args struct {
@@ -23,55 +23,55 @@ func TestCataloger_ReadEntry(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "read uncommitted - uncommitted file",
+			name:    "uncommitted - uncommitted file",
 			args:    args{repo: repo, branch: "master", path: "/file3", readUncommitted: true},
 			want:    &Entry{Path: "/file3", PhysicalAddress: "/addr3", Size: 42, Checksum: "ffff"},
 			wantErr: false,
 		},
 		{
-			name:    "read uncommitted - committed file",
+			name:    "uncommitted - committed file",
 			args:    args{repo: repo, branch: "master", path: "/file1", readUncommitted: true},
 			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},
 		{
-			name:    "read committed - committed file",
+			name:    "committed - committed file",
 			args:    args{repo: repo, branch: "master", path: "/file2", readUncommitted: false},
 			want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
 			wantErr: false,
 		},
 		{
-			name:    "read uncommitted - unknown file",
+			name:    "uncommitted - unknown file",
 			args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "read committed - unknown file",
+			name:    "committed - unknown file",
 			args:    args{repo: repo, branch: "master", path: "/fileX", readUncommitted: false},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "read unknown repo",
+			name:    "unknown repo",
 			args:    args{repo: "repoX", branch: "master", path: "/file1", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "read missing repo",
+			name:    "missing repo",
 			args:    args{repo: "", branch: "master", path: "/file1", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "read missing branch",
+			name:    "missing branch",
 			args:    args{repo: repo, branch: "", path: "/file1", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "read missing path",
+			name:    "missing path",
 			args:    args{repo: repo, branch: "master", path: "", readUncommitted: true},
 			want:    nil,
 			wantErr: true,
@@ -79,13 +79,13 @@ func TestCataloger_ReadEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.ReadEntry(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.readUncommitted)
+			got, err := c.GetEntry(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.readUncommitted)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ReadEntry() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if (got == nil && tt.want != nil) || (got != nil && tt.want == nil) {
-				t.Errorf("ReadEntry() got = %+v, want = %+v", got, tt.want)
+				t.Errorf("GetEntry() got = %+v, want = %+v", got, tt.want)
 				return
 			}
 			if tt.want == nil || got == nil {
@@ -93,36 +93,36 @@ func TestCataloger_ReadEntry(t *testing.T) {
 			}
 			// compare just specific fields
 			if tt.want.Path != got.Path {
-				t.Errorf("ReadEntry() got Path = %v, want = %v", got.Path, tt.want.Path)
+				t.Errorf("GetEntry() got Path = %v, want = %v", got.Path, tt.want.Path)
 			}
 			if tt.want.PhysicalAddress != got.PhysicalAddress {
-				t.Errorf("ReadEntry() got PhysicalAddress = %v, want = %v", got.PhysicalAddress, tt.want.PhysicalAddress)
+				t.Errorf("GetEntry() got PhysicalAddress = %v, want = %v", got.PhysicalAddress, tt.want.PhysicalAddress)
 			}
 			if tt.want.Size != got.Size {
-				t.Errorf("ReadEntry() got Size = %v, want = %v", got.Size, tt.want.Size)
+				t.Errorf("GetEntry() got Size = %v, want = %v", got.Size, tt.want.Size)
 			}
 			if tt.want.Checksum != got.Checksum {
-				t.Errorf("ReadEntry() got Checksum = %v, want = %v", got.Checksum, tt.want.Checksum)
+				t.Errorf("GetEntry() got Checksum = %v, want = %v", got.Checksum, tt.want.Checksum)
 			}
 		})
 	}
 }
 
 func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
-	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
-	if err := c.WriteEntry(ctx, repo, "master", "/file1", "ff", "/addr1", 42, nil); err != nil {
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	if err := c.CreateEntry(ctx, repo, "master", "/file1", "ff", "/addr1", 42, nil); err != nil {
 		t.Fatal("failed to write entry", err)
 	}
-	if err := c.WriteEntry(ctx, repo, "master", "/file2", "ee", "/addr2", 24, nil); err != nil {
+	if err := c.CreateEntry(ctx, repo, "master", "/file2", "ee", "/addr2", 24, nil); err != nil {
 		t.Fatal("failed to write entry", err)
 	}
 	if _, err := c.Commit(ctx, repo, "master", "commit file1 and 2", "tester", nil); err != nil {
 		t.Fatal("failed to commit for read entry:", err)
 	}
-	if err := c.WriteEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 42, nil); err != nil {
+	if err := c.CreateEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 42, nil); err != nil {
 		t.Fatal("failed to write entry", err)
 	}
-	if err := c.WriteEntry(ctx, repo, "master", "/file4", "eeee", "/addr4", 24, nil); err != nil {
+	if err := c.CreateEntry(ctx, repo, "master", "/file4", "eeee", "/addr4", 24, nil); err != nil {
 		t.Fatal("failed to write entry", err)
 	}
 	return repo

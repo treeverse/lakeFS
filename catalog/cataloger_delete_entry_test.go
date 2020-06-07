@@ -10,8 +10,8 @@ import (
 
 func TestCataloger_DeleteEntry(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
-	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 
 	t.Run("delete file not exists", func(t *testing.T) {
 		err := c.DeleteEntry(ctx, repo, "master", "/file1")
@@ -22,7 +22,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete file uncommitted", func(t *testing.T) {
-		if err := c.WriteEntry(ctx, repo, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
+		if err := c.CreateEntry(ctx, repo, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
 			t.Fatal("write entry for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repo, "master", "/file2")
@@ -30,7 +30,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.ReadEntry(ctx, repo, "master", "/file2", true)
+		_, err = c.GetEntry(ctx, repo, "master", "/file2", true)
 		wantErr := db.ErrNotFound
 		if !errors.Is(err, wantErr) {
 			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
@@ -38,7 +38,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete file committed on branch", func(t *testing.T) {
-		if err := c.WriteEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
+		if err := c.CreateEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
 			t.Fatal("write entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repo, "master", "commit delete test", "tester", nil); err != nil {
@@ -49,7 +49,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.ReadEntry(ctx, repo, "master", "/file3", true)
+		_, err = c.GetEntry(ctx, repo, "master", "/file3", true)
 		wantErr := db.ErrNotFound
 		if !errors.Is(err, wantErr) {
 			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
@@ -57,7 +57,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete file committed on parent", func(t *testing.T) {
-		if err := c.WriteEntry(ctx, repo, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
+		if err := c.CreateEntry(ctx, repo, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
 			t.Fatal("write entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repo, "master", "commit file4", "tester", nil); err != nil {
@@ -71,12 +71,12 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.ReadEntry(ctx, repo, "b1", "/file4", true)
+		_, err = c.GetEntry(ctx, repo, "b1", "/file4", true)
 		wantErr := db.ErrNotFound
 		if !errors.Is(err, wantErr) {
 			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
 		}
-		_, err = c.ReadEntry(ctx, repo, "b1", "/file4", false)
+		_, err = c.GetEntry(ctx, repo, "b1", "/file4", false)
 		if err != nil {
 			t.Errorf("DeleteEntry() read entry err = %s, want no error", err)
 		}

@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetOrCreateDedup(ctx context.Context, repo string, dedupID string, physicalAddress string) (string, error) {
+func (c *cataloger) Dedup(ctx context.Context, repo string, dedupID string, physicalAddress string) (string, error) {
 	if err := Validate(ValidateFields{
 		"repo":            ValidateRepoName(repo),
 		"dedupID":         ValidateDedupID(dedupID),

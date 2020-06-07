@@ -8,9 +8,9 @@ import (
 	"testing"
 )
 
-func TestCataloger_ListEntriesByPrefix(t *testing.T) {
+func TestCataloger_ListEntries(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	// produce test data
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
@@ -23,7 +23,7 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 		fileChecksum := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := n * 10
-		err := c.WriteEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil)
+		err := c.CreateEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil)
 		if err != nil {
 			t.Fatal("failed to write entry", err)
 		}
@@ -141,9 +141,9 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntriesByPrefix(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.descend, tt.args.readUncommitted)
+			got, gotMore, err := c.ListEntries(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.descend, tt.args.readUncommitted)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListEntriesByPrefix() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			// copy the Entry fields we like to compare
@@ -158,10 +158,10 @@ func TestCataloger_ListEntriesByPrefix(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotEntries, tt.wantEntries) {
-				t.Errorf("ListEntriesByPrefix() got = %+v, want = %+v", gotEntries, tt.wantEntries)
+				t.Errorf("ListEntries() got = %+v, want = %+v", gotEntries, tt.wantEntries)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListEntriesByPrefix() gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf("ListEntries() gotMore = %v, want = %v", gotMore, tt.wantMore)
 			}
 		})
 	}

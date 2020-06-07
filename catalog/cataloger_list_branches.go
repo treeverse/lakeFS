@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListBranchesByPrefix(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error) {
+func (c *cataloger) ListBranches(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error) {
 	if err := Validate(ValidateFields{
 		"repo": ValidateRepoName(repo),
 	}); err != nil {

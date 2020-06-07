@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListEntriesByPrefix(ctx context.Context, repo string, branch string, prefix, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error) {
+func (c *cataloger) ListEntries(ctx context.Context, repo string, branch string, prefix, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repo),
 		"branch": ValidateBranchName(branch),

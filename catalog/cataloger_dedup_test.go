@@ -5,15 +5,15 @@ import (
 	"testing"
 )
 
-func TestCataloger_GetOrCreateDedup(t *testing.T) {
+func TestCataloger_Dedup(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	// setup test data
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
 		t.Fatal("create repo for testing failed", err)
 	}
-	_, _ = c.GetOrCreateDedup(ctx, "repo1", "dede", "/file9")
+	_, _ = c.Dedup(ctx, "repo1", "dede", "/file9")
 
 	type args struct {
 		repo            string
@@ -35,13 +35,13 @@ func TestCataloger_GetOrCreateDedup(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetOrCreateDedup(ctx, tt.args.repo, tt.args.dedupID, tt.args.physicalAddress)
+			got, err := c.Dedup(ctx, tt.args.repo, tt.args.dedupID, tt.args.physicalAddress)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("cataloger.GetOrCreateDedup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("cataloger.Dedup() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {
-				t.Errorf("cataloger.GetOrCreateDedup() = %v, want %v", got, tt.want)
+				t.Errorf("cataloger.Dedup() = %v, want %v", got, tt.want)
 			}
 		})
 	}

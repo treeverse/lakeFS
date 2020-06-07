@@ -10,7 +10,7 @@ import (
 
 func TestCataloger_CreateBranch(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
+	c := testCataloger(t)
 
 	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
 		t.Fatal("create repo for testing", err)
