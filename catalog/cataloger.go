@@ -21,21 +21,20 @@ type Cataloger interface {
 	GetBranch(ctx context.Context, repo string, branch string) (*Branch, error)
 	DeleteBranch(ctx context.Context, repo string, branch string) error
 	ListBranches(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error)
-	RevertBranch(ctx context.Context, branch string) error
+	RevertBranch(ctx context.Context, repo string, branch string) error
 
 	// commit
 	Commit(ctx context.Context, repo string, branch string, message string, committer string, metadata Metadata) (int, error)
 	ListCommits(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
-	ListCommitsByRepo(ctx context.Context, repo string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
-	RevertCommit(ctx context.Context, branch string, commitID int) error
+	RevertCommit(ctx context.Context, repo string, branch string, commitID int) error
 
 	// entry
 	GetEntry(ctx context.Context, repo string, branch string, path string, readUncommitted bool) (*Entry, error)
 	CreateEntry(ctx context.Context, repo string, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
 	DeleteEntry(ctx context.Context, repo string, branch string, path string) error
 	ListEntries(ctx context.Context, repo string, branch string, path string, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error)
-	RevertEntry(ctx context.Context, branch string, path string) error
-	RevertPath(ctx context.Context, branch string, path string) error
+	RevertEntry(ctx context.Context, repo string, branch string, path string) error
+	RevertPath(ctx context.Context, repo string, branch string, path string) error
 
 	// diff and merge
 	Diff(ctx context.Context, repo, leftBranch string, rightBranch string) (Differences, error)
@@ -76,18 +75,18 @@ func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch s
 	panic("implement me")
 }
 
-func (c *cataloger) RevertBranch(ctx context.Context, branch string) error {
+func (c *cataloger) RevertBranch(ctx context.Context, repo string, branch string) error {
 	panic("implement me")
 }
 
-func (c *cataloger) RevertCommit(ctx context.Context, branch string, commitID int) error {
+func (c *cataloger) RevertCommit(ctx context.Context, repo string, branch string, commitID int) error {
 	panic("implement me")
 }
 
-func (c *cataloger) RevertPath(ctx context.Context, branch string, path string) error {
+func (c *cataloger) RevertEntry(ctx context.Context, repo string, branch string, path string) error {
 	panic("implement me")
 }
 
-func (c *cataloger) RevertEntry(ctx context.Context, branch string, path string) error {
+func (c *cataloger) RevertPath(ctx context.Context, repo string, branch string, path string) error {
 	panic("implement me")
 }
