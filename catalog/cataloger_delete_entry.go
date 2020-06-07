@@ -48,32 +48,16 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string,
 			return nil, err
 		}
 
-		if ent.BranchID == branchID {
-			// committed entry found is from our branch - close max_commit and delete tombstone entry
-			res, err = tx.Exec(`UPDATE entries_v
-				SET max_commit = ((SELECT next_commit FROM branches WHERE id = $1) - 1)
-				WHERE branch_id = $1 AND path = $2 AND is_committed AND NOT is_deleted`,
-				branchID, path)
-			if err != nil {
-				return nil, err
-			}
-			if affected, err := res.RowsAffected(); err != nil {
-				return nil, err
-			} else if affected != 1 {
-				return nil, ErrEntryUpdateFailed
-			}
-		} else {
-			// committed entry found is not ours - make sure we have tombstone entry
-			res, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit) values ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				branchID, path, ent.PhysicalAddress, ent.Checksum, ent.Size, ent.Metadata, 0, 0)
-			if err != nil {
-				return nil, err
-			}
-			if affected, err := res.RowsAffected(); err != nil {
-				return nil, err
-			} else if affected != 1 {
-				return nil, ErrEntryUpdateFailed
-			}
+		// committed entry found - make sure we have tombstone entry
+		res, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit) values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+			branchID, path, ent.PhysicalAddress, ent.Checksum, ent.Size, ent.Metadata, 0, 0)
+		if err != nil {
+			return nil, err
+		}
+		if affected, err := res.RowsAffected(); err != nil {
+			return nil, err
+		} else if affected != 1 {
+			return nil, ErrEntryUpdateFailed
 		}
 		return nil, nil
 	})

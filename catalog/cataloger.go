@@ -83,10 +83,6 @@ func (c *cataloger) RevertCommit(ctx context.Context, repo string, branch string
 	panic("implement me")
 }
 
-func (c *cataloger) RevertEntry(ctx context.Context, repo string, branch string, path string) error {
-	panic("implement me")
-}
-
 func (c *cataloger) RevertPath(ctx context.Context, repo string, branch string, path string) error {
 	panic("implement me")
 }

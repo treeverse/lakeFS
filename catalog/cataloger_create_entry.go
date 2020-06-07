@@ -49,6 +49,6 @@ func (c *cataloger) CreateEntry(ctx context.Context, repo, branch, path, checksu
 		} else {
 			return nil, nil
 		}
-	})
+	}, c.txOpts(ctx)...)
 	return err
 }

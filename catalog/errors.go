@@ -2,6 +2,9 @@ package catalog
 
 import (
 	"errors"
+	"fmt"
+
+	"github.com/treeverse/lakefs/db"
 )
 
 var (
@@ -10,19 +13,19 @@ var (
 	ErrMultipartInvalidPartNumber = errors.New("invalid part number for multipart upload")
 	ErrMultipartInvalidPartETag   = errors.New("invalid ETag for multipart upload")
 	ErrRepoExists                 = errors.New("repository already exists")
-	ErrBranchNotFound             = errors.New("branch not found")
+	ErrBranchNotFound             = fmt.Errorf("branch %w", db.ErrNotFound)
 	ErrBranchAlreadyExists        = errors.New("branch already exists")
 	ErrNoMergeBase                = errors.New("no common merge base found")
 	ErrDestinationNotCommitted    = errors.New("destination branch has uncommitted changes")
 	ErrMergeConflict              = errors.New("merge conflict")
 	ErrMergeUpdateFailed          = errors.New("failed updating merged destination")
-	ErrRepoNotFound               = errors.New("repo not found")
-	ErrMultipartUploadNotFound    = errors.New("multipart upload not found")
+	ErrRepoNotFound               = fmt.Errorf("repository %w", db.ErrNotFound)
+	ErrMultipartUploadNotFound    = fmt.Errorf("multipart upload %w", db.ErrNotFound)
 	ErrOperationNotPermitted      = errors.New("operation not permitted")
 	ErrResourceUsed               = errors.New("resource used")
 	ErrInvalidLockValue           = errors.New("invalid lock value")
-	ErrCommitNotFound             = errors.New("commit not found")
-	ErrEntryNotFound              = errors.New("entry not found")
+	ErrCommitNotFound             = fmt.Errorf("commit %w", db.ErrNotFound)
+	ErrEntryNotFound              = fmt.Errorf("entry %w", db.ErrNotFound)
 	ErrNothingToCommit            = errors.New("nothing to commit")
 	ErrEntryUpdateFailed          = errors.New("entry update failed")
 )

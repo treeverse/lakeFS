@@ -37,7 +37,7 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 			return nil, err
 		}
 		return doDiff(tx, leftID, rightID, log)
-	})
+	}, c.txOpts(ctx)...)
 	return differences.(Differences), err
 }
 
