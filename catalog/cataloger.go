@@ -75,10 +75,6 @@ func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch s
 	panic("implement me")
 }
 
-func (c *cataloger) RevertBranch(ctx context.Context, repo string, branch string) error {
-	panic("implement me")
-}
-
 func (c *cataloger) RevertCommit(ctx context.Context, repo string, branch string, commitID int) error {
 	panic("implement me")
 }
