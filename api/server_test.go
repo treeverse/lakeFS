@@ -1,16 +1,6 @@
 package api_test
 
 import (
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-	"time"
-
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -22,8 +12,16 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
 
 const (
@@ -55,7 +53,6 @@ type dependencies struct {
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
-	// create user
 	user := &authmodel.User{
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
