@@ -29,7 +29,7 @@ type Cataloger interface {
 	ListCommitsByBranch(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 	RevertCommit(ctx context.Context, branch string, commitID int) error
 
-	// entry level
+	// entry
 	GetEntry(ctx context.Context, repo string, branch string, path string, readUncommitted bool) (*Entry, error)
 	CreateEntry(ctx context.Context, repo string, branch string, path, checksum, physicalAddress string, size int, metadata *map[string]string) error
 	DeleteEntry(ctx context.Context, repo string, branch string, path string) error

@@ -15,9 +15,12 @@ func testCataloger(t *testing.T) Cataloger {
 	return NewCataloger(cdb)
 }
 
+func testCatalogerUniqueID() string {
+	return strings.ReplaceAll(uuid.New().String(), "-", "")
+}
+
 func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix string, branch string) string {
-	uid := uuid.New().String()
-	name := prefix + strings.ReplaceAll(uid, "-", "")
+	name := prefix + testCatalogerUniqueID()
 	if err := c.CreateRepo(ctx, name, "bucket", branch); err != nil {
 		t.Fatalf("create repo %s, branch %s, failed: %s", name, branch, err)
 	}
