@@ -40,9 +40,9 @@ func TestCataloger_ListCommitsByBranch(t *testing.T) {
 				limit:        -1,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: nil},
-				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
+				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -56,8 +56,8 @@ func TestCataloger_ListCommitsByBranch(t *testing.T) {
 				limit:        2,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: nil},
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: nil},
+				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -71,7 +71,7 @@ func TestCataloger_ListCommitsByBranch(t *testing.T) {
 				limit:        1,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: nil},
+				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -85,7 +85,7 @@ func TestCataloger_ListCommitsByBranch(t *testing.T) {
 				limit:        1,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: nil},
+				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,

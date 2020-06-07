@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Commit(ctx context.Context, repo, branch, message, committer string, metadata map[string]string) (int, error) {
+func (c *cataloger) Commit(ctx context.Context, repo, branch, message, committer string, metadata Metadata) (int, error) {
 	if err := Validate(ValidateFields{
 		"repo":      ValidateRepoName(repo),
 		"branch":    ValidateBranchName(branch),
@@ -45,10 +45,9 @@ func (c *cataloger) Commit(ctx context.Context, repo, branch, message, committer
 
 		// add commit record
 		creationDate := c.Clock.Now()
-		// TODO(barak): missing metadata
-		res, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, merge_type)
-							VALUES ($1, $2, $3, $4, $5, $6)`,
-			branchID, commitID, committer, message, creationDate, MergeTypeNone)
+		res, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type)
+							VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+			branchID, commitID, committer, message, creationDate, metadata, MergeTypeNone)
 		if err != nil {
 			return nil, err
 		}

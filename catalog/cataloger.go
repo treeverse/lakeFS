@@ -24,14 +24,14 @@ type Cataloger interface {
 	RevertBranch(ctx context.Context, branch string) error
 
 	// commit
-	Commit(ctx context.Context, repo string, branch string, message string, committer string, metadata map[string]string) (int, error)
+	Commit(ctx context.Context, repo string, branch string, message string, committer string, metadata Metadata) (int, error)
 	ListCommitsByRepo(ctx context.Context, repo string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 	ListCommitsByBranch(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 	RevertCommit(ctx context.Context, branch string, commitID int) error
 
 	// entry
 	GetEntry(ctx context.Context, repo string, branch string, path string, readUncommitted bool) (*Entry, error)
-	CreateEntry(ctx context.Context, repo string, branch string, path, checksum, physicalAddress string, size int, metadata *map[string]string) error
+	CreateEntry(ctx context.Context, repo string, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
 	DeleteEntry(ctx context.Context, repo string, branch string, path string) error
 	ListEntries(ctx context.Context, repo string, branch string, path string, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error)
 	RevertEntry(ctx context.Context, branch string, path string) error

@@ -18,8 +18,7 @@ func (c *cataloger) ListCommitsByRepo(ctx context.Context, repo string, fromComm
 		if err != nil {
 			return nil, err
 		}
-		// TODO(barak): missing metadata
-		query := `SELECT b.name as branch, c.commit_id, c.committer, c.message, c.creation_date 
+		query := `SELECT b.name as branch, c.commit_id, c.committer, c.message, c.creation_date, c.metadata 
 			FROM commits c, branches b, repositories r 
 			WHERE r.id = $1 AND r.id = b.repository_id AND b.id = c.branch_id AND c.commit_id > $2
 			ORDER BY b.id, c.commit_id`

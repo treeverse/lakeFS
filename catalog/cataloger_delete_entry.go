@@ -33,9 +33,8 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string,
 		}
 		// read previously committed entry
 		// TODO(barak): does the tombstone needs to reference the previous entry information?
-		// TODO(barak): metadata is missing
 		var ent Entry
-		err = tx.Get(&ent, `SELECT source_branch as branch_id,physical_address,checksum,size
+		err = tx.Get(&ent, `SELECT source_branch as branch_id,physical_address,checksum,size,metadata
 			FROM entries_lineage_committed_v
 			WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`, branchID, path)
 		if errors.Is(err, db.ErrNotFound) {
@@ -65,9 +64,8 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string,
 			}
 		} else {
 			// committed entry found is not ours - make sure we have tombstone entry
-			// TODO(barak): metadata is missing
-			res, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,min_commit,max_commit) values ($1,$2,$3,$4,$5,$6,$7)`,
-				branchID, path, ent.PhysicalAddress, ent.Checksum, ent.Size, 0, 0)
+			res, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit) values ($1,$2,$3,$4,$5,$6,$7,$8)`,
+				branchID, path, ent.PhysicalAddress, ent.Checksum, ent.Size, ent.Metadata, 0, 0)
 			if err != nil {
 				return nil, err
 			}

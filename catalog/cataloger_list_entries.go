@@ -20,15 +20,14 @@ func (c *cataloger) ListEntries(ctx context.Context, repo string, branch string,
 			return nil, err
 		}
 
-		// TODO(barak): metadata is missing
 		var q string
 		if readUncommitted {
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit
+			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
 					ORDER BY path` // AND active_lineage ?
 		} else {
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit
+			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
 					FROM entries_lineage_committed_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
 					ORDER BY path` // AND active_lineage?
