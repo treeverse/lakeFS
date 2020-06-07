@@ -60,6 +60,6 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repo string, branch string,
 			return nil, ErrEntryUpdateFailed
 		}
 		return nil, nil
-	})
+	}, c.txOpts(ctx)...)
 	return err
 }
