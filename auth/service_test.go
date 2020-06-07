@@ -41,9 +41,9 @@ func setupService(t *testing.T, opts ...testutil.GetDBOption) auth.Service {
 }
 
 func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) string {
-	roleName := uuid.New().String()
-	err := s.CreateRole(&model.Role{
-		DisplayName: roleName,
+	userName := uuid.New().String()
+	err := s.CreateUser(&model.User{
+		DisplayName: userName,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -59,22 +59,12 @@ func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) st
 		if err != nil {
 			t.Fatal(err)
 		}
-		err = s.AttachPolicyToRole(roleName, p.DisplayName)
+		err = s.AttachPolicyToUser(p.DisplayName, userName)
 		if err != nil {
 			t.Fatal(err)
 		}
 	}
-	userName := uuid.New().String()
-	err = s.CreateUser(&model.User{
-		DisplayName: userName,
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = s.AttachRoleToUser(roleName, userName)
-	if err != nil {
-		t.Fatal(err)
-	}
+
 	return userName
 }
 
@@ -90,7 +80,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 		expectedError   error
 	}{
 		{
-			name: "basic_allowed_role",
+			name: "basic_allowed",
 			policies: []*model.Policy{
 				{
 					Action:   []string{"repos:Write"},
@@ -109,7 +99,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			expectedError:   nil,
 		},
 		{
-			name: "basic_disallowed_role",
+			name: "basic_disallowed",
 			policies: []*model.Policy{
 				{
 					Action:   []string{"repos:Write"},

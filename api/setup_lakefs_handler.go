@@ -99,34 +99,6 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 		}
 	}
 
-	adminRole := &model.Role{
-		CreatedAt:   now,
-		DisplayName: "FullAccess",
-	}
-	superUserRole := &model.Role{
-		CreatedAt:   now,
-		DisplayName: "RepoFullAccess",
-	}
-	developerRole := &model.Role{
-		CreatedAt:   now,
-		DisplayName: "RepoReaderWriter",
-	}
-	viewerRole := &model.Role{
-		CreatedAt:   now,
-		DisplayName: "RepoReader",
-	}
-	credentialsManagerRole := &model.Role{
-		CreatedAt:   now,
-		DisplayName: "OwnCredentialManager",
-	}
-
-	for _, role := range []*model.Role{adminRole, superUserRole, developerRole, viewerRole, credentialsManagerRole} {
-		err = authService.CreateRole(role)
-		if err != nil {
-			return nil, err
-		}
-	}
-
 	repoFullAccessPolicy := &model.Policy{
 		CreatedAt:   now,
 		DisplayName: "RepoFullAccess",
@@ -186,65 +158,39 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 		}
 	}
 	for _, policy := range []*model.Policy{repoFullAccessPolicy, authFullAccessPolicy} {
-		err = authService.AttachPolicyToRole(adminRole.DisplayName, policy.DisplayName)
+		err = authService.AttachPolicyToGroup(policy.DisplayName, adminsGroup.DisplayName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	for _, policy := range []*model.Policy{repoFullAccessPolicy} {
-		err = authService.AttachPolicyToRole(superUserRole.DisplayName, policy.DisplayName)
+		err = authService.AttachPolicyToGroup(policy.DisplayName, superUsersGroup.DisplayName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	for _, policy := range []*model.Policy{repoReaderWriterPolicy} {
-		err = authService.AttachPolicyToRole(developerRole.DisplayName, policy.DisplayName)
+		err = authService.AttachPolicyToGroup(policy.DisplayName, developersGroup.DisplayName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	for _, policy := range []*model.Policy{readReposPolicy} {
-		err = authService.AttachPolicyToRole(viewerRole.DisplayName, policy.DisplayName)
-		if err != nil {
-			return nil, err
-		}
-	}
-	for _, policy := range []*model.Policy{credentialsManagePolicy} {
-		err = authService.AttachPolicyToRole(credentialsManagerRole.DisplayName, policy.DisplayName)
+		err = authService.AttachPolicyToGroup(policy.DisplayName, viewersGroup.DisplayName)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	// all groups get credentialsManagerRole
+	// all groups get credentialsManagerPolicy
 	for _, group := range []*model.Group{viewersGroup, developersGroup, superUsersGroup} {
-		err = authService.AttachRoleToGroup(credentialsManagerRole.DisplayName, group.DisplayName)
+		err = authService.AttachPolicyToGroup(credentialsManagePolicy.DisplayName, group.DisplayName)
 		if err != nil {
 			return nil, err
 		}
-	}
-
-	err = authService.AttachRoleToGroup(adminRole.DisplayName, adminsGroup.DisplayName)
-	if err != nil {
-		return nil, err
-	}
-
-	err = authService.AttachRoleToGroup(superUserRole.DisplayName, superUsersGroup.DisplayName)
-	if err != nil {
-		return nil, err
-	}
-
-	err = authService.AttachRoleToGroup(developerRole.DisplayName, developersGroup.DisplayName)
-	if err != nil {
-		return nil, err
-	}
-
-	err = authService.AttachRoleToGroup(viewerRole.DisplayName, viewersGroup.DisplayName)
-	if err != nil {
-		return nil, err
 	}
 
 	// create admin user

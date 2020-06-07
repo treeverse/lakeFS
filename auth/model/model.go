@@ -28,12 +28,6 @@ type Group struct {
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
-type Role struct {
-	Id          int       `db:"id"`
-	CreatedAt   time.Time `db:"created_at"`
-	DisplayName string    `db:"display_name" json:"display_name"`
-}
-
 type PolicyDBImpl struct {
 	Id          int              `db:"id"`
 	CreatedAt   time.Time        `db:"created_at"`
@@ -76,26 +70,6 @@ func (p *Policy) ToDBImpl() *PolicyDBImpl {
 		Resource:    p.Resource,
 		Effect:      p.Effect,
 	}
-}
-
-type UserGroups struct {
-	UserId  int `db:"user_id"`
-	GroupId int `db:"group_id"`
-}
-
-type UserRoles struct {
-	UserId int `db:"user_id"`
-	RoleId int `db:"role_id"`
-}
-
-type GroupRoles struct {
-	GroupId int `db:"group_id"`
-	RoleId  int `db:"role_id"`
-}
-
-type RolePolicies struct {
-	RoleId   int `db:"role_id"`
-	PolicyId int `db:"policy_id"`
 }
 
 type Credential struct {
