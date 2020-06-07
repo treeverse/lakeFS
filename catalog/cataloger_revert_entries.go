@@ -6,11 +6,11 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) RevertEntry(ctx context.Context, repo string, branch string, path string) error {
+func (c *cataloger) RevertEntries(ctx context.Context, repo string, branch string, prefix string) error {
 	if err := Validate(ValidateFields{
 		"repo":   ValidateRepoName(repo),
 		"branch": ValidateBranchName(branch),
-		"path":   ValidatePath(path),
+		"prefix": ValidatePath(prefix),
 	}); err != nil {
 		return err
 	}
@@ -19,16 +19,16 @@ func (c *cataloger) RevertEntry(ctx context.Context, repo string, branch string,
 		if err != nil {
 			return nil, err
 		}
-		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND path = $2 AND min_commit = 0`, branchID, path)
+		prefixCond := db.Prefix(prefix)
+		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND path LIKE $2 AND min_commit = 0`, branchID, prefixCond)
 		if err != nil {
 			return nil, err
 		}
-		if affected, err := res.RowsAffected(); err != nil {
+		affected, err := res.RowsAffected()
+		if err != nil {
 			return nil, err
-		} else if affected != 1 {
-			return nil, ErrEntryNotFound
 		}
-		return nil, nil
+		return affected, nil
 	}, c.txOpts(ctx)...)
 	return err
 }

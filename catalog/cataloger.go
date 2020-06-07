@@ -34,7 +34,7 @@ type Cataloger interface {
 	DeleteEntry(ctx context.Context, repo string, branch string, path string) error
 	ListEntries(ctx context.Context, repo string, branch string, path string, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error)
 	RevertEntry(ctx context.Context, repo string, branch string, path string) error
-	RevertPath(ctx context.Context, repo string, branch string, path string) error
+	RevertEntries(ctx context.Context, repo string, branch string, prefix string) error
 
 	// diff and merge
 	Diff(ctx context.Context, repo, leftBranch string, rightBranch string) (Differences, error)
@@ -76,9 +76,5 @@ func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch s
 }
 
 func (c *cataloger) RevertCommit(ctx context.Context, repo string, branch string, commitID int) error {
-	panic("implement me")
-}
-
-func (c *cataloger) RevertPath(ctx context.Context, repo string, branch string, path string) error {
 	panic("implement me")
 }
