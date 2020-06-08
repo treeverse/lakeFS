@@ -11,8 +11,13 @@ import (
 
 type DeleteObject struct{}
 
-func (controller *DeleteObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.DeleteObject(repoId)
+func (controller *DeleteObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+	return []permissions.Permission{
+		{
+			Action:   permissions.DeleteObjectAction,
+			Resource: permissions.ObjectArn(repoId, path),
+		},
+	}, nil
 }
 
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {

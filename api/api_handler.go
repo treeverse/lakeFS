@@ -139,8 +139,8 @@ func (a *Handler) incrStat(action string) {
 	a.context.Stats.Collect("api_server", action)
 }
 
-func (a *Handler) authorize(user *models.User, action permissions.Permission) error {
-	return authorize(a.context.Auth, user, action)
+func (a *Handler) authorize(user *models.User, permissions []permissions.Permission) error {
+	return authorize(a.context.Auth, user, permissions)
 }
 
 func createPaginator(nextToken string, amountResults int) *models.Pagination {
@@ -173,7 +173,12 @@ func (a *Handler) GetCurrentUserHandler() authentication.GetCurrentUserHandler {
 
 func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
 	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ListRepos())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListRepositoriesAction,
+				Resource: "*",
+			},
+		})
 		if err != nil {
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -231,7 +236,12 @@ func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 
 func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetRepo(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadRepositoryAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -258,7 +268,12 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 
 func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetCommit(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadCommitAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -283,7 +298,12 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 
 func (a *Handler) CommitHandler() commits.CommitHandler {
 	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.Commit(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateCommitAction,
+				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+			},
+		})
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -311,7 +331,12 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 
 func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
 	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetCommit(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadBranchAction,
+				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+			},
+		})
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -384,7 +409,12 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 
 func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
 	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.CreateRepo())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateRepositoryAction,
+				Resource: permissions.RepoArn(swag.StringValue(params.Repository.ID)),
+			},
+		})
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -419,7 +449,12 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 
 func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
 	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.DeleteRepo(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeleteRepositoryAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -441,7 +476,12 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 
 func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ListBranches(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -484,7 +524,12 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 
 func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadBranchAction,
+				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+			},
+		})
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -510,7 +555,12 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 
 func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.CreateBranch(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateBranchAction,
+				Resource: permissions.BranchArn(params.RepositoryID, swag.StringValue(params.Branch.ID)),
+			},
+		})
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -530,7 +580,12 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 
 func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.DeleteBranch(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeleteBranchAction,
+				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+			},
+		})
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -552,7 +607,12 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 
 func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.MergeIntoBranch(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateCommitAction,
+				Resource: permissions.BranchArn(params.RepositoryID, params.DestinationRef),
+			},
+		})
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -601,7 +661,12 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 
 func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListObjectsAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return branches.NewDiffBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -624,7 +689,12 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 
 func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 	return refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.DiffBranches(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListObjectsAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return refs.NewDiffRefsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -646,7 +716,12 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 
 func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadObjectAction,
+				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+			},
+		})
 		if err != nil {
 			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -675,7 +750,12 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 
 func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadObjectAction,
+				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+			},
+		})
 		if err != nil {
 			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -727,7 +807,12 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetObject(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListObjectsAction,
+				Resource: permissions.RepoArn(params.RepositoryID),
+			},
+		})
 		if err != nil {
 			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -791,7 +876,12 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 
 func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteObject(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+			},
+		})
 		if err != nil {
 			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -856,7 +946,12 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 
 func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.DeleteObject(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeleteObjectAction,
+				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+			},
+		})
 		if err != nil {
 			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -876,7 +971,12 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 }
 func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.GetBranch(params.RepositoryID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.RevertBranchAction,
+				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+			},
+		})
 		if err != nil {
 			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -912,7 +1012,12 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 
 func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 	return authentication.CreateUserHandlerFunc(func(params authentication.CreateUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateUserAction,
+				Resource: permissions.UserArn(params.User.ID),
+			},
+		})
 		if err != nil {
 			return authentication.NewCreateUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -937,7 +1042,12 @@ func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 
 func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 	return authentication.ListUsersHandlerFunc(func(params authentication.ListUsersParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListUsersAction,
+				Resource: "*",
+			},
+		})
 		if err != nil {
 			return authentication.NewListUsersUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -970,7 +1080,12 @@ func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 
 func (a *Handler) GetUserHandler() authentication.GetUserHandler {
 	return authentication.GetUserHandlerFunc(func(params authentication.GetUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadUserAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewGetUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -995,7 +1110,12 @@ func (a *Handler) GetUserHandler() authentication.GetUserHandler {
 
 func (a *Handler) DeleteUserHandler() authentication.DeleteUserHandler {
 	return authentication.DeleteUserHandlerFunc(func(params authentication.DeleteUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeleteUserAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDeleteUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1017,7 +1137,12 @@ func (a *Handler) DeleteUserHandler() authentication.DeleteUserHandler {
 
 func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
 	return authentication.GetGroupHandlerFunc(func(params authentication.GetGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadGroupAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewGetGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1042,7 +1167,12 @@ func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
 
 func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 	return authentication.ListGroupsHandlerFunc(func(params authentication.ListGroupsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListGroupsAction,
+				Resource: "*",
+			},
+		})
 		if err != nil {
 			return authentication.NewListGroupsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1076,7 +1206,12 @@ func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 
 func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 	return authentication.CreateGroupHandlerFunc(func(params authentication.CreateGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateGroupAction,
+				Resource: permissions.GroupArn(params.Group.ID),
+			},
+		})
 		if err != nil {
 			return authentication.NewCreateGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1102,7 +1237,12 @@ func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 
 func (a *Handler) DeleteGroupHandler() authentication.DeleteGroupHandler {
 	return authentication.DeleteGroupHandlerFunc(func(params authentication.DeleteGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeleteGroupAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDeleteGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1137,7 +1277,12 @@ func serializePolicy(p *authmodel.Policy) *models.Policy {
 
 func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 	return authentication.ListPoliciesHandlerFunc(func(params authentication.ListPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListPoliciesAction,
+				Resource: "*",
+			},
+		})
 		if err != nil {
 			return authentication.NewListPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1167,7 +1312,12 @@ func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 
 func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
 	return authentication.CreatePolicyHandlerFunc(func(params authentication.CreatePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreatePolicyAction,
+				Resource: permissions.PolicyArn(swag.StringValue(params.Policy.ID)),
+			},
+		})
 		if err != nil {
 			return authentication.NewCreatePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1199,7 +1349,12 @@ func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
 
 func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
 	return authentication.GetPolicyHandlerFunc(func(params authentication.GetPolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadPolicyAction,
+				Resource: permissions.PolicyArn(params.PolicyID),
+			},
+		})
 		if err != nil {
 			return authentication.NewGetPolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1221,7 +1376,12 @@ func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
 
 func (a *Handler) DeletePolicyHandler() authentication.DeletePolicyHandler {
 	return authentication.DeletePolicyHandlerFunc(func(params authentication.DeletePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeletePolicyAction,
+				Resource: permissions.PolicyArn(params.PolicyID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDeletePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1242,7 +1402,12 @@ func (a *Handler) DeletePolicyHandler() authentication.DeletePolicyHandler {
 
 func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandler {
 	return authentication.ListGroupMembersHandlerFunc(func(params authentication.ListGroupMembersParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadGroupAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewListGroupMembersUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1275,7 +1440,12 @@ func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandl
 
 func (a *Handler) AddGroupMembershipHandler() authentication.AddGroupMembershipHandler {
 	return authentication.AddGroupMembershipHandlerFunc(func(params authentication.AddGroupMembershipParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.AddGroupMemberAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewAddGroupMembershipUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1293,7 +1463,12 @@ func (a *Handler) AddGroupMembershipHandler() authentication.AddGroupMembershipH
 
 func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembershipHandler {
 	return authentication.DeleteGroupMembershipHandlerFunc(func(params authentication.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.RemoveGroupMemberAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDeleteGroupMembershipUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1311,7 +1486,12 @@ func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembe
 
 func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredentialsHandler {
 	return authentication.ListUserCredentialsHandlerFunc(func(params authentication.ListUserCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuthCredentials(params.UserID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ListCredentialsAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewListUserCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1344,7 +1524,12 @@ func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredential
 
 func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHandler {
 	return authentication.CreateCredentialsHandlerFunc(func(params authentication.CreateCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuthCredentials(params.UserID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateCredentialsAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewCreateCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1367,7 +1552,12 @@ func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHan
 
 func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHandler {
 	return authentication.DeleteCredentialsHandlerFunc(func(params authentication.DeleteCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuthCredentials(params.UserID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DeleteCredentialsAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDeleteCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1389,7 +1579,12 @@ func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHan
 
 func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
 	return authentication.GetCredentialsHandlerFunc(func(params authentication.GetCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuthCredentials(params.UserID))
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadCredentialsAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewGetCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1414,7 +1609,12 @@ func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
 
 func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
 	return authentication.ListUserGroupsHandlerFunc(func(params authentication.ListUserGroupsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadUserAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewListUserGroupsUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1447,7 +1647,12 @@ func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
 
 func (a *Handler) ListUserPoliciesHandler() authentication.ListUserPoliciesHandler {
 	return authentication.ListUserPoliciesHandlerFunc(func(params authentication.ListUserPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadUserAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewListUserPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1487,7 +1692,12 @@ func (a *Handler) ListUserPoliciesHandler() authentication.ListUserPoliciesHandl
 
 func (a *Handler) AttachPolicyToUserHandler() authentication.AttachPolicyToUserHandler {
 	return authentication.AttachPolicyToUserHandlerFunc(func(params authentication.AttachPolicyToUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.AttachPolicyAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewAttachPolicyToUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1505,7 +1715,12 @@ func (a *Handler) AttachPolicyToUserHandler() authentication.AttachPolicyToUserH
 
 func (a *Handler) DetachPolicyFromUserHandler() authentication.DetachPolicyFromUserHandler {
 	return authentication.DetachPolicyFromUserHandlerFunc(func(params authentication.DetachPolicyFromUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.AttachPolicyAction,
+				Resource: permissions.UserArn(params.UserID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDetachPolicyFromUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1523,7 +1738,12 @@ func (a *Handler) DetachPolicyFromUserHandler() authentication.DetachPolicyFromU
 
 func (a *Handler) ListGroupPoliciesHandler() authentication.ListGroupPoliciesHandler {
 	return authentication.ListGroupPoliciesHandlerFunc(func(params authentication.ListGroupPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.ReadAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadGroupAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewListGroupPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1553,7 +1773,12 @@ func (a *Handler) ListGroupPoliciesHandler() authentication.ListGroupPoliciesHan
 
 func (a *Handler) AttachPolicyToGroupHandler() authentication.AttachPolicyToGroupHandler {
 	return authentication.AttachPolicyToGroupHandlerFunc(func(params authentication.AttachPolicyToGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.AttachPolicyAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewAttachPolicyToGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
@@ -1571,7 +1796,12 @@ func (a *Handler) AttachPolicyToGroupHandler() authentication.AttachPolicyToGrou
 
 func (a *Handler) DetachPolicyFromGroupHandler() authentication.DetachPolicyFromGroupHandler {
 	return authentication.DetachPolicyFromGroupHandlerFunc(func(params authentication.DetachPolicyFromGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, permissions.WriteAuth())
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.DetachPolicyAction,
+				Resource: permissions.GroupArn(params.GroupID),
+			},
+		})
 		if err != nil {
 			return authentication.NewDetachPolicyFromGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
