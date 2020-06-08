@@ -19,8 +19,13 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.GetObject(repoId)
+func (controller *GetObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+	return []permissions.Permission{
+		{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(repoId, path),
+		},
+	}, nil
 }
 
 func (controller *GetObject) Handle(o *PathOperation) {
