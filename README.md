@@ -127,3 +127,8 @@ api:
    ```
 
 5. You should end up with 2 binaries in your work directory: `lakefs` and `lakectl`. See the [docs](https://docs.lakefs.io/quickstart.html) on how to run them.
+
+### Running Load Tests
+ 
+After building as described above, you should have a third binary called `lakefs-loadtest`. Run `lakefs-loadtest --help` for details on how to run load tests on your lakeFS instance.
+Alternatively, there is a unit test in the file `local_load_test.go`, which will run the tests on a dedicated test server.
