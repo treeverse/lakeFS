@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/logging"
 
@@ -130,20 +131,22 @@ func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences
 	}
 	ec := &effectiveCommitsStruct{}
 
-	err := tx.Get(ec, `SELECT  GREATEST(MAX(commit_id),
-											(SELECT MIN(effective_commit) 
-											FROM lineage WHERE branch_id = $2 AND ancestor_branch = $1)) AS father_effective_commit,
-										COALESCE(MAX(merge_source_commit),0) AS son_effective_commit
-										FROM commits
-										WHERE branch_id = $1 AND merge_source_branch = $2 AND merge_type = 'from_son'`, rightId, leftId)
-	if err != nil {
+	err := tx.Get(ec, `SELECT commit_id AS Father_effective_commit,merge_source_commit AS Son_effective_commit 
+	FROM commits WHERE branch_id = $1 AND merge_type = 'from_son' ORDER BY commit_id DESC LIMIT 1`, rightId)
+	if errors.Is(err, db.ErrNotFound) {
+		ec.Son_effective_commit = 1
+		err = tx.Get(&ec.Father_effective_commit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftId, rightId)
+		if err != nil {
+			log.WithError(err).Error("error reading lineage")
+			return nil, err
+		}
+	} else if err != nil {
 		log.WithError(err).Error("error reading commits")
 		return nil, err
 	}
 
-	diffSQL := ` SELECT
-						CASE
-							WHEN father_changed THEN 3
+	diffSQL := ` SELECT CASE
+							WHEN conflict THEN 3
 							WHEN son_deleted THEN 1
 							WHEN father_exist THEN 2
 							ELSE 0
@@ -153,32 +156,32 @@ func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences
 						   FROM ( SELECT s.path,
 									s.is_deleted AS son_deleted,
 									f.path IS NOT NULL AS father_exist,
-								      -- can be ignored -father and sone entries do not exist
+								      -- can be ignored -father and son entries do not exist
 									COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted,
 									-- can be ignored - both point to same object, and have the same deletion status
 									f.path IS NOT NULL AND (f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted) AS same_object,
-									-- father either created or deleted between last merge ans now - conflict
-									f.path IS NOT NULL AND (NOT f.is_committed -- uncommitted were  created after the last commit or merge (????)
-															OR (f.source_branch = $1 and  -- it is the father branch - not lineage
-															( f.min_commit > $3 or -- created after last merge
-															 (s.max_commit > $3 AND s.is_deleted)) -- deleted after last merge
-															OR f.source_branch != 2 and  -- an entry from father lineage
-															exists ( select * from lineage l where
-																	l.branch_id = $1 and l.ancestor_branch = f.source_branch and
-																-- prove that father entry  changed after the merge
-																   $3 between branch_min_commit and branch_max_commit and -- effective lineage on last merge
-																	(l.effective_commit < f.min_commit or
-																	 (l.effective_commit < f.max_commit and f.is_deleted))
+									-- father either created or deleted after last merge  - conflict
+									f.path IS NOT NULL AND ( NOT f.is_committed OR -- uncommitted entries allways new
+															(f.source_branch = $1 AND  -- it is the father branch - not from lineage
+															( f.min_commit > $3 OR -- created after last merge
+															 (f.max_commit > $3 AND f.is_deleted))) -- deleted after last merge
+															OR (f.source_branch != $1 AND  -- an entry from father lineage
+															 NOT EXISTS ( SELECT * FROM lineage l WHERE
+																	l.branch_id = $2 AND l.ancestor_branch = f.source_branch AND
+																-- prove that ancestore entry  was observable by the son
+																  ( $4 BETWEEN l.min_commit AND l.max_commit) AND -- effective lineage on last merge
+																	(l.effective_commit >= f.min_commit AND
+																	 (l.effective_commit >= f.max_commit OR NOT f.is_deleted))
 																   ))) 
-																	AS father_changed
+																	AS conflict -- father changed so it is a conflict
 								   FROM ( SELECT *  -- only entries that were committed after last merge
 										   FROM top_committed_entries_v
-										  WHERE branch_id = $2 and min_commit > $4 or (max_commit > $4 and is_deleted)) s
+										  WHERE branch_id = $2 AND min_commit >= $4 OR (max_commit >= $4 and is_deleted)) s
 									 LEFT JOIN ( SELECT *
 										   FROM entries_lineage_full_v 
-										  WHERE displayed_branch = 2 and rank=1) f 
+										  WHERE displayed_branch =$1 AND rank=1) f 
 								     ON f.path = s.path
-						  ) t WHERE  NOT (same_object or both_deleted)) t1`
+						  ) t WHERE  NOT (same_object OR both_deleted)) t1`
 	result := Differences{}
 	err = tx.Select(&result, diffSQL, rightId, leftId, ec.Father_effective_commit, ec.Son_effective_commit)
 	if err != nil {
