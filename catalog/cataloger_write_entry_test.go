@@ -7,7 +7,7 @@ import (
 
 func Must(err error, t *testing.T, message string) {
 	if err != nil {
-		t.Fatal(message)
+		t.Fatal(message, err)
 	}
 }
 func TestCataloger_WriteEntry(t *testing.T) {
