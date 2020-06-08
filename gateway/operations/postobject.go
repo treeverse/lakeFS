@@ -23,8 +23,13 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.WriteObject(repoId)
+func (controller *PostObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+	return []permissions.Permission{
+		{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repoId, path),
+		},
+	}, nil
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {

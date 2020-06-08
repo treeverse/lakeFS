@@ -22,14 +22,11 @@ func ValidateAuthEntityId(name string) error {
 }
 
 func ValidateActionName(name string) error {
-	if !permissions.IsAction(name) {
-		return ErrValidationError
-	}
-	return nil
+	return permissions.IsValidAction(name)
 }
 
 func ValidateArn(name string) error {
-	if !arn.IsARN(name) {
+	if !arn.IsARN(name) && name != permissions.All {
 		return ErrValidationError
 	}
 	return nil
