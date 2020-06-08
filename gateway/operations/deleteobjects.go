@@ -1,8 +1,10 @@
 package operations
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 
 	"github.com/treeverse/lakefs/db"
@@ -15,14 +17,33 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.DeleteObject(repoId)
+func (controller *DeleteObjects) RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error) {
+	req := &serde.Delete{}
+	body, err := ioutil.ReadAll(request.Body)
+	if err != nil {
+		return nil, err
+	}
+	_ = request.Body.Close()
+	err = DecodeXMLBody(bytes.NewReader(body), req)
+	if err != nil {
+		return nil, err
+	}
+	request.Body = ioutil.NopCloser(bytes.NewReader(body))
+	perms := make([]permissions.Permission, len(req.Object))
+	for i, object := range req.Object {
+		perms[i] = permissions.Permission{
+			Action:   permissions.DeleteObjectAction,
+			Resource: permissions.ObjectArn(repoId, object.Key),
+		}
+	}
+
+	return perms, nil
 }
 
 func (controller *DeleteObjects) Handle(o *RepoOperation) {
 	o.Incr("delete_objects")
 	req := &serde.Delete{}
-	err := o.DecodeXMLBody(req)
+	err := DecodeXMLBody(o.Request.Body, req)
 	if err != nil {
 		o.EncodeError(gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 	}
@@ -67,4 +88,5 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		resp.Deleted = responses
 	}
 	o.EncodeResponse(resp, http.StatusOK)
+
 }

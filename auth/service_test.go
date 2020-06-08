@@ -5,6 +5,8 @@ import (
 	"os"
 	"testing"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/google/uuid"
 
 	"github.com/ory/dockertest/v3"
@@ -83,16 +85,20 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "basic_allowed",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::myrepo",
+					Action:   []string{"fs:WriteObject"},
+					Resource: "arn:lakefs:fs:::repository/foo/object/bar",
 					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					UserDisplayName: userName,
-					Action:          "repos:Write",
-					Resource:        "arn:lakefs:repos:::myrepo",
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "fs:WriteObject",
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+						},
+					},
 				}
 			},
 			expectedAllowed: true,
@@ -102,21 +108,20 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "basic_disallowed",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::myrepo",
+					Action:   []string{"fs:WriteObject"},
+					Resource: "arn:lakefs:fs:::repository/foo/object/bar",
 					Effect:   false,
-				},
-				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::myrepo",
-					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					UserDisplayName: userName,
-					Action:          "repos:Write",
-					Resource:        "arn:lakefs:repos:::myrepo",
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "fs:WriteObject",
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+						},
+					},
 				}
 			},
 			expectedAllowed: false,
@@ -126,16 +131,20 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_wildcard",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::*",
+					Action:   []string{"fs:WriteObject"},
+					Resource: "arn:lakefs:fs:::repository/foo/object/*",
 					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					UserDisplayName: userName,
-					Action:          "repos:Write",
-					Resource:        "arn:lakefs:repos:::myrepo",
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "fs:WriteObject",
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+						},
+					},
 				}
 			},
 			expectedAllowed: true,
@@ -145,15 +154,20 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_invalid_user",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::${user}",
+					Action:   []string{"auth:CreateUser"},
+					Resource: "arn:lakefs:auth:::user/${user}",
 					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					Action:   "repos:Write",
-					Resource: "arn:lakefs:repos:::myrepo",
+					UserDisplayName: userName,
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:CreateUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
+					},
 				}
 			},
 			expectedAllowed: false,
@@ -163,16 +177,20 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_valid_user",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::${user}",
+					Action:   []string{"auth:CreateUser"},
+					Resource: "arn:lakefs:auth:::user/${user}",
 					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					UserDisplayName: userName,
-					Action:          "repos:Write",
-					Resource:        fmt.Sprintf("arn:lakefs:repos:::%s", userName),
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:CreateUser",
+							Resource: fmt.Sprintf("arn:lakefs:auth:::user/%s", userName),
+						},
+					},
 				}
 			},
 			expectedAllowed: true,
@@ -182,16 +200,20 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_other_user",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::${user}",
+					Action:   []string{"auth:CreateUser"},
+					Resource: "arn:lakefs:auth:::user/${user}",
 					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					UserDisplayName: userName,
-					Action:          "repos:Write",
-					Resource:        fmt.Sprintf("arn:lakefs:repos:::%sxxxx", userName),
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:CreateUser",
+							Resource: fmt.Sprintf("arn:lakefs:auth:::user/%sxxxx", userName),
+						},
+					},
 				}
 			},
 			expectedAllowed: false,
@@ -201,20 +223,98 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_wildcard",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"repos:Write"},
-					Resource: "arn:lakefs:repos:::user/*",
+					Action:   []string{"auth:CreateUser"},
+					Resource: "arn:lakefs:auth:::user/*",
 					Effect:   true,
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
 					UserDisplayName: userName,
-					Action:          "repos:Write",
-					Resource:        "arn:lakefs:repos:::user/someUser",
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:CreateUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
+					},
 				}
 			},
 			expectedAllowed: true,
 			expectedError:   nil,
+		},
+		{
+			name: "action_passing_wildcards",
+			policies: []*model.Policy{
+				{
+					Action:   []string{"auth:Create*"},
+					Resource: "arn:lakefs:auth:::user/foobar",
+					Effect:   true,
+				},
+			},
+			request: func(userName string) *auth.AuthorizationRequest {
+				return &auth.AuthorizationRequest{
+					UserDisplayName: userName,
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:CreateUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
+					},
+				}
+			},
+			expectedAllowed: true,
+			expectedError:   nil,
+		},
+		{
+			name: "action_other_wildcards",
+			policies: []*model.Policy{
+				{
+					Action:   []string{"auth:Create*"},
+					Resource: "arn:lakefs:auth:::user/foobar",
+					Effect:   true,
+				},
+			},
+			request: func(userName string) *auth.AuthorizationRequest {
+				return &auth.AuthorizationRequest{
+					UserDisplayName: userName,
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:DeleteUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
+					},
+				}
+			},
+			expectedAllowed: false,
+			expectedError:   auth.ErrInsufficientPermissions,
+		},
+		{
+			name: "action_denying_wildcards",
+			policies: []*model.Policy{
+				{
+					Action:   []string{"auth:DeleteUser"},
+					Resource: "arn:lakefs:auth:::user/foobar",
+					Effect:   true,
+				},
+				{
+					Action:   []string{"auth:*"},
+					Resource: "*",
+					Effect:   false,
+				},
+			},
+			request: func(userName string) *auth.AuthorizationRequest {
+				return &auth.AuthorizationRequest{
+					UserDisplayName: userName,
+					RequiredPermissions: []permissions.Permission{
+						{
+							Action:   "auth:DeleteUser",
+							Resource: "arn:lakefs:auth:::user/foobar",
+						},
+					},
+				}
+			},
+			expectedAllowed: false,
+			expectedError:   auth.ErrInsufficientPermissions,
 		},
 	}
 

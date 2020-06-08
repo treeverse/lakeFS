@@ -5,18 +5,20 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/auth/wildcard"
+
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/permissions"
 )
 
 type AuthorizationRequest struct {
-	UserDisplayName string
-	Action          permissions.Action
-	Resource        string
+	UserDisplayName     string
+	RequiredPermissions []permissions.Permission
 }
 
 type AuthorizationResponse struct {
@@ -668,7 +670,7 @@ func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 		}
 		for _, action := range policy.Action {
 			if err := model.ValidateActionName(action); err != nil {
-				return nil, fmt.Errorf("%s: %w", action, err)
+				return nil, err
 			}
 		}
 		if err := model.ValidateArn(policy.Resource); err != nil {
@@ -874,26 +876,32 @@ func interpolateUser(resource string, userDisplayName string) string {
 
 func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
 	policies, _, err := s.ListEffectivePolicies(req.UserDisplayName, &model.PaginationParams{
-		After:  "",
+		After:  "", // all
 		Amount: -1, // all
 	})
 	if err != nil {
 		return nil, err
 	}
 	allowed := false
-	for _, policy := range policies {
-		resource := interpolateUser(policy.Resource, req.UserDisplayName)
-		if !ArnMatch(resource, req.Resource) {
-			continue
-		}
-		for _, action := range policy.Action {
-			if action == string(req.Action) && !policy.Effect {
-				// this is a "Deny" and it takes precedence
-				return &AuthorizationResponse{
-					Allowed: false,
-					Error:   ErrInsufficientPermissions,
-				}, nil
-			} else if action == string(req.Action) {
+	for _, perm := range req.RequiredPermissions {
+		for _, policy := range policies {
+			resource := interpolateUser(policy.Resource, req.UserDisplayName)
+			if !ArnMatch(resource, perm.Resource) {
+				continue
+			}
+			for _, action := range policy.Action {
+				if !wildcard.Match(action, string(perm.Action)) {
+					continue // not a matching action
+				}
+
+				if !policy.Effect {
+					// this is a "Deny" and it takes precedence
+					return &AuthorizationResponse{
+						Allowed: false,
+						Error:   ErrInsufficientPermissions,
+					}, nil
+				}
+
 				allowed = true
 			}
 		}
