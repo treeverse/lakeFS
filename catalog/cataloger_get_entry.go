@@ -23,11 +23,11 @@ func (c *cataloger) GetEntry(ctx context.Context, repository string, branch stri
 
 		var q string
 		if readUncommitted {
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit, is_tombstone
+			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit, is_tombstone
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
 		} else {
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit, is_tombstone
+			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit, is_tombstone
 					FROM entries_lineage_committed_v
 					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
 		}
