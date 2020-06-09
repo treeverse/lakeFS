@@ -23,7 +23,7 @@ func TestCataloger_Diff(t *testing.T) {
 	c := NewCataloger(cdb)
 
 	t.Run("simple write", func(t *testing.T) {
-		diff, err := c.Diff(ctx, "example", "m2", "m1")
+		diff, err := c.Diff(ctx, "example", "m1", "m2")
 		fmt.Print(err)
 		fmt.Print(diff)
 
