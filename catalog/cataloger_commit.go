@@ -46,7 +46,6 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 			return 0, err
 		}
 
-		// TODO(barak): add test that checks that the tombstone delete works - and fix it
 		// remove tombstones from entries we can set max commit
 		_, err = tx.Exec(`DELETE FROM entries_v
 			WHERE branch_id = $1 AND NOT is_committed AND is_deleted AND path IN (
