@@ -101,23 +101,22 @@ func attachPolicies(authService auth.Service, groupId string, policyIds []string
 	return nil
 }
 
-func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
-	now := time.Now()
+func SetupBaseGroups(authService auth.Service, ts time.Time) error {
 	var err error
 
 	err = createGroups(authService, []*model.Group{
-		{CreatedAt: now, DisplayName: "Admins"},
-		{CreatedAt: now, DisplayName: "SuperUsers"},
-		{CreatedAt: now, DisplayName: "Developers"},
-		{CreatedAt: now, DisplayName: "Viewers"},
+		{CreatedAt: ts, DisplayName: "Admins"},
+		{CreatedAt: ts, DisplayName: "SuperUsers"},
+		{CreatedAt: ts, DisplayName: "Developers"},
+		{CreatedAt: ts, DisplayName: "Viewers"},
 	})
 	if err != nil {
-		return nil, err
+		return err
 	}
 
 	err = createPolicies(authService, []*model.Policy{
 		{
-			CreatedAt:   now,
+			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
 			Action: []string{
 				"fs:*",
@@ -126,7 +125,7 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 			Effect:   true,
 		},
 		{
-			CreatedAt:   now,
+			CreatedAt:   ts,
 			DisplayName: "FSReadAll",
 			Action: []string{
 				"fs:List*",
@@ -136,17 +135,17 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 			Effect:   true,
 		},
 		{
-			CreatedAt:   now,
+			CreatedAt:   ts,
 			DisplayName: "FSDenyAdmin",
 			Action: []string{
-				string(permissions.DeleteRepositoryAction),
-				string(permissions.CreateRepositoryAction),
+				permissions.DeleteRepositoryAction,
+				permissions.CreateRepositoryAction,
 			},
 			Resource: permissions.All,
 			Effect:   false,
 		},
 		{
-			CreatedAt:   now,
+			CreatedAt:   ts,
 			DisplayName: "AuthFullAccess",
 			Action: []string{
 				"auth:*",
@@ -155,32 +154,48 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 			Effect:   true,
 		},
 		{
-			CreatedAt:   now,
+			CreatedAt:   ts,
 			DisplayName: "AuthManageOwnCredentials",
 			Action: []string{
-				string(permissions.CreateCredentialsAction),
-				string(permissions.DeleteCredentialsAction),
-				string(permissions.ListCredentialsAction),
-				string(permissions.ReadCredentialsAction),
+				permissions.CreateCredentialsAction,
+				permissions.DeleteCredentialsAction,
+				permissions.ListCredentialsAction,
+				permissions.ReadCredentialsAction,
 			},
 			Resource: permissions.UserArn("${user}"),
 			Effect:   true,
 		},
 	})
+	if err != nil {
+		return err
+	}
 
 	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess"})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials"})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = attachPolicies(authService, "Developers", []string{"FSFullAccess", "FSDenyAdmin", "AuthManageOwnCredentials"})
 	if err != nil {
-		return nil, err
+		return err
 	}
 	err = attachPolicies(authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
+	now := time.Now()
+	var err error
+
+	// Setup the basic groups and policies
+	err = SetupBaseGroups(authService, now)
 	if err != nil {
 		return nil, err
 	}
@@ -194,5 +209,7 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 	if err != nil {
 		return nil, err
 	}
+
+	// Generate and return a key pair
 	return authService.CreateCredentials(user.DisplayName)
 }
