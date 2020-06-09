@@ -1,3 +1,4 @@
+// TODO(barak): documentation of the new data model
 /*
 
    MVCC using Postgres

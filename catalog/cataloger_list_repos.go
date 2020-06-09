@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error) {
+func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repo, bool, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		query := `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
 			FROM repositories r JOIN branches b ON r.default_branch = b.id 

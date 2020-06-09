@@ -11,13 +11,13 @@ func TestCataloger_GetBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	// setup test data
-	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repo for testing failed", err)
+	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
+		t.Fatal("create repository for testing failed", err)
 	}
 
 	type args struct {
-		repo   string
-		branch string
+		repository string
+		branch     string
 	}
 	tests := []struct {
 		name    string
@@ -27,26 +27,26 @@ func TestCataloger_GetBranch(t *testing.T) {
 	}{
 		{
 			name:    "existing",
-			args:    args{repo: "repo1", branch: "master"},
+			args:    args{repository: "repo1", branch: "master"},
 			want:    &Branch{RepositoryID: 1, ID: 1, Name: "master", NextCommit: 1},
 			wantErr: false,
 		},
 		{
-			name:    "just repo",
-			args:    args{repo: "repo1", branch: "shujin"},
+			name:    "just repository",
+			args:    args{repository: "repo1", branch: "shujin"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "no repo",
-			args:    args{repo: "repoX", branch: "master"},
+			name:    "no repository",
+			args:    args{repository: "repoX", branch: "master"},
 			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetBranch(ctx, tt.args.repo, tt.args.branch)
+			got, err := c.GetBranch(ctx, tt.args.repository, tt.args.branch)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetBranch() error = %v, wantErr %v", err, tt.wantErr)
 				return

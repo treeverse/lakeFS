@@ -7,11 +7,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, branch string) error {
+func (c *cataloger) CreateRepository(ctx context.Context, repository string, bucket string, branch string) error {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"bucket": ValidateBucketName(bucket),
-		"branch": ValidateBranchName(branch),
+		"repository": ValidateRepoName(repository),
+		"bucket":     ValidateBucketName(bucket),
+		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return err
 	}
@@ -34,7 +34,7 @@ func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, 
 		// create repository with ref to branch
 		creationDate := c.Clock.Now()
 		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
-			VALUES ($1, $2, $3, $4, $5)`, repoID, repo, bucket, creationDate, branchID); err != nil {
+			VALUES ($1, $2, $3, $4, $5)`, repoID, repository, bucket, creationDate, branchID); err != nil {
 			return nil, err
 		}
 		// create branch with ref to repository
@@ -44,7 +44,7 @@ func (c *cataloger) CreateRepo(ctx context.Context, repo string, bucket string, 
 		}
 
 		c.log.WithContext(ctx).
-			WithFields(logging.Fields{"branch_id": branchID, "branch": branch, "repo_id": repoID, "repo": repo}).
+			WithFields(logging.Fields{"branch_id": branchID, "branch": branch, "repo_id": repoID, "repository": repository}).
 			Debug("Repository created")
 		return repoID, nil
 	}, c.txOpts(ctx)...)

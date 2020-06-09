@@ -6,16 +6,16 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) RevertEntries(ctx context.Context, repo string, branch string, prefix string) error {
+func (c *cataloger) RevertEntries(ctx context.Context, repository string, branch string, prefix string) error {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
-		"prefix": ValidatePath(prefix),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
+		"prefix":     ValidatePath(prefix),
 	}); err != nil {
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repo, branch, LockTypeShare)
+		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
 		if err != nil {
 			return nil, err
 		}

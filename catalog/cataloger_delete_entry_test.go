@@ -11,74 +11,75 @@ import (
 func TestCataloger_DeleteEntry(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
-	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 
 	t.Run("delete file not exists", func(t *testing.T) {
-		err := c.DeleteEntry(ctx, repo, "master", "/file1")
+		err := c.DeleteEntry(ctx, repository, "master", "/file1")
 		wantErr := ErrEntryNotFound
-		if !errors.Is(err, wantErr) {
+		if !errors.As(err, &wantErr) {
 			t.Errorf("DeleteEntry() error = %s, want = %s", err, wantErr)
 		}
 	})
 
 	t.Run("delete file uncommitted", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repo, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
-			t.Fatal("write entry for delete entry test:", err)
+		if err := c.CreateEntry(ctx, repository, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
+			t.Fatal("create entry for delete entry test:", err)
 		}
-		err := c.DeleteEntry(ctx, repo, "master", "/file2")
+		err := c.DeleteEntry(ctx, repository, "master", "/file2")
 		if err != nil {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.GetEntry(ctx, repo, "master", "/file2", true)
+		_, err = c.GetEntry(ctx, repository, "master", "/file2", true)
 		wantErr := db.ErrNotFound
-		if !errors.Is(err, wantErr) {
-			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
+		if !errors.As(err, &wantErr) {
+			t.Errorf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
 		}
 	})
 
 	t.Run("delete file committed on branch", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
-			t.Fatal("write entry for delete entry test:", err)
+		if err := c.CreateEntry(ctx, repository, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
+			t.Fatal("create entry for delete entry test:", err)
 		}
-		if _, err := c.Commit(ctx, repo, "master", "commit delete test", "tester", nil); err != nil {
+		if _, err := c.Commit(ctx, repository, "master", "commit delete test", "tester", nil); err != nil {
 			t.Fatal("commit entry for delete entry test:", err)
 		}
-		err := c.DeleteEntry(ctx, repo, "master", "/file3")
+		err := c.DeleteEntry(ctx, repository, "master", "/file3")
 		if err != nil {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.GetEntry(ctx, repo, "master", "/file3", true)
+		_, err = c.GetEntry(ctx, repository, "master", "/file3", true)
 		wantErr := db.ErrNotFound
-		if !errors.Is(err, wantErr) {
-			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
+		if !errors.As(err, &wantErr) {
+			t.Errorf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
 		}
 	})
 
 	t.Run("delete file committed on parent", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repo, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
-			t.Fatal("write entry for delete entry test:", err)
+		if err := c.CreateEntry(ctx, repository, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
+			t.Fatal("create entry for delete entry test:", err)
 		}
-		if _, err := c.Commit(ctx, repo, "master", "commit file4", "tester", nil); err != nil {
+		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {
 			t.Fatal("commit entry for delete entry test:", err)
 		}
-		if _, err := c.CreateBranch(ctx, repo, "b1", "master"); err != nil {
+		if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 			t.Fatal("create branch for delete entry test:", err)
 		}
-		err := c.DeleteEntry(ctx, repo, "b1", "/file4")
+		err := c.DeleteEntry(ctx, repository, "b1", "/file4")
 		if err != nil {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.GetEntry(ctx, repo, "b1", "/file4", true)
+		_, err = c.GetEntry(ctx, repository, "b1", "/file4", true)
 		wantErr := db.ErrNotFound
-		if !errors.Is(err, wantErr) {
-			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
+		if !errors.As(err, &wantErr) {
+			t.Errorf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
 		}
-		_, err = c.GetEntry(ctx, repo, "b1", "/file4", false)
+		_, err = c.GetEntry(ctx, repository, "b1", "/file4", false)
 		if err != nil {
-			t.Errorf("DeleteEntry() read entry err = %s, want no error", err)
+			t.Errorf("DeleteEntry() get entry err = %s, want no error", err)
 		}
+		// TODO(barak): call commit and check that the file is deleted
 	})
 }

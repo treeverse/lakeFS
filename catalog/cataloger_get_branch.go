@@ -6,16 +6,17 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetBranch(ctx context.Context, repo string, branch string) (*Branch, error) {
+// TODO(barak): return repository name and not ID
+func (c *cataloger) GetBranch(ctx context.Context, repository string, branch string) (*Branch, error) {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return nil, err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repo)
+		repoID, err := getRepoID(tx, repository)
 		if err != nil {
 			return nil, err
 		}

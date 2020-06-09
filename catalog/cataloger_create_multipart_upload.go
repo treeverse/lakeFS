@@ -7,9 +7,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) CreateMultipartUpload(ctx context.Context, repo string, uploadID, path, physicalAddress string, creationTime time.Time) error {
+func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string, uploadID, path, physicalAddress string, creationTime time.Time) error {
 	if err := Validate(ValidateFields{
-		"repo":            ValidateRepoName(repo),
+		"repository":      ValidateRepoName(repository),
 		"uploadID":        ValidateUploadID(uploadID),
 		"path":            ValidatePath(path),
 		"physicalAddress": ValidatePhysicalAddress(physicalAddress),
@@ -18,7 +18,7 @@ func (c *cataloger) CreateMultipartUpload(ctx context.Context, repo string, uplo
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repo)
+		repoID, err := getRepoID(tx, repository)
 		if err != nil {
 			return nil, err
 		}

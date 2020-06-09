@@ -6,15 +6,15 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListCommits(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error) {
+func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error) {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return nil, false, err
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repo, branch, LockTypeNone)
+		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}

@@ -6,17 +6,17 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetEntry(ctx context.Context, repo, branch, path string, readUncommitted bool) (*Entry, error) {
+func (c *cataloger) GetEntry(ctx context.Context, repository string, branch string, path string, readUncommitted bool) (*Entry, error) {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
-		"path":   ValidatePath(path),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
+		"path":       ValidatePath(path),
 	}); err != nil {
 		return nil, err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repo, branch, LockTypeNone)
+		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}
@@ -26,7 +26,6 @@ func (c *cataloger) GetEntry(ctx context.Context, repo, branch, path string, rea
 			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit, is_tombstone
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
-			// AND active_lineage`
 		} else {
 			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, min_commit, max_commit, is_tombstone
 					FROM entries_lineage_committed_v

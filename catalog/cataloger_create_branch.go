@@ -5,39 +5,38 @@ import (
 	"fmt"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error) {
+func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (int, error) {
 	if err := Validate(ValidateFields{
-		"repo":         ValidateRepoName(repo),
+		"repository":   ValidateRepoName(repository),
 		"branch":       ValidateBranchName(branch),
 		"sourceBranch": ValidateBranchName(sourceBranch),
 	}); err != nil {
-		return nil, err
+		return 0, err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repo)
+		repoID, err := getRepoID(tx, repository)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 
 		// get source branch id
 		var sourceBranchID int
 		if err := tx.Get(&sourceBranchID, `SELECT id FROM branches WHERE repository_id = $1 AND name = $2`, repoID, sourceBranch); err != nil {
-			return nil, err
+			return 0, err
 		}
 
 		// next id for branch
 		var branchID int
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
-			return nil, err
+			return 0, err
 		}
 
 		// insert new branch
 		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name) VALUES($1, $2, $3)`, repoID, branchID, branch); err != nil {
-			return nil, err
+			return 0, err
 		}
 
 		// insert new lineage for the new branch
@@ -46,26 +45,17 @@ func (c *cataloger) CreateBranch(ctx context.Context, repo string, branch string
 			FROM lineage_v
 			WHERE branch_id = $2`, branchID, sourceBranchID)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 		if affected, err := res.RowsAffected(); err != nil {
-			return nil, err
+			return 0, err
 		} else if affected == 0 {
-			return nil, fmt.Errorf("lineage not found for source branch id: %d", sourceBranchID)
+			return 0, fmt.Errorf("lineage not found for source branch id: %d", sourceBranchID)
 		}
-
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{"repo": repo, "branch_id": branchID, "branch": branch, "repo_id": repoID, "source_branch": sourceBranch, "source_branch_id": sourceBranchID}).
-			Debug("Branch created")
-		return &Branch{
-			RepositoryID: repoID,
-			ID:           branchID,
-			Name:         branch,
-			NextCommit:   1,
-		}, nil
+		return branchID, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-	return res.(*Branch), nil
+	return res.(int), nil
 }

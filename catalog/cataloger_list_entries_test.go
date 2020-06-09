@@ -13,8 +13,8 @@ func TestCataloger_ListEntries(t *testing.T) {
 	c := testCataloger(t)
 
 	// produce test data
-	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repo for testing", err)
+	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
+		t.Fatal("create repository for testing", err)
 	}
 	const numEntries = 5
 	for i := 0; i < numEntries; i++ {
@@ -25,12 +25,14 @@ func TestCataloger_ListEntries(t *testing.T) {
 		fileSize := n * 10
 		err := c.CreateEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil)
 		if err != nil {
-			t.Fatal("failed to write entry", err)
+			t.Fatal("failed to create entry", err)
 		}
 	}
 
+	// TODO(barak): remove the desc and check the committed entries
+
 	type args struct {
-		repo            string
+		repository      string
 		branch          string
 		path            string
 		after           string
@@ -48,7 +50,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "all uncommitted",
 			args: args{
-				repo:            "repo1",
+				repository:      "repo1",
 				branch:          "master",
 				path:            "",
 				after:           "",
@@ -69,7 +71,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "all uncommitted desc",
 			args: args{
-				repo:            "repo1",
+				repository:      "repo1",
 				branch:          "master",
 				path:            "",
 				after:           "",
@@ -90,7 +92,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "first 2 uncommitted",
 			args: args{
-				repo:            "repo1",
+				repository:      "repo1",
 				branch:          "master",
 				path:            "",
 				after:           "",
@@ -108,7 +110,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "last 2",
 			args: args{
-				repo:            "repo1",
+				repository:      "repo1",
 				branch:          "master",
 				path:            "",
 				after:           "/file3",
@@ -126,7 +128,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "committed",
 			args: args{
-				repo:            "repo1",
+				repository:      "repo1",
 				branch:          "master",
 				path:            "",
 				after:           "/file3",
@@ -141,7 +143,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntries(ctx, tt.args.repo, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.descend, tt.args.readUncommitted)
+			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.descend, tt.args.readUncommitted)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 				return

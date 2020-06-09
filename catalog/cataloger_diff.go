@@ -8,9 +8,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch string) (Differences, error) {
+func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
 	if err := Validate(ValidateFields{
-		"repo":        ValidateRepoName(repo),
+		"repository":  ValidateRepoName(repository),
 		"leftBranch":  ValidateBranchName(leftBranch),
 		"rightBranch": ValidateBranchName(rightBranch),
 	}); err != nil {
@@ -18,21 +18,21 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		log := c.log.WithContext(ctx)
-		leftID, err := getBranchID(tx, repo, leftBranch, LockTypeNone)
+		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeNone)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
-					"branch": leftBranch,
-					"repo":   repo,
+					"branch":     leftBranch,
+					"repository": repository,
 				}).Warn("Branch not found")
 			return nil, err
 		}
-		rightID, err := getBranchID(tx, repo, rightBranch, LockTypeNone)
+		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeNone)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
-					"branch": rightBranch,
-					"repo":   repo,
+					"branch":     rightBranch,
+					"repository": repository,
 				}).Warn("Branch not found")
 			return nil, err
 		}

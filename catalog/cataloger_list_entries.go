@@ -6,16 +6,19 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListEntries(ctx context.Context, repo string, branch string, prefix, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error) {
+// TODO(barak): remove descend for list entries
+// TODO(barak): add delimiter support - return entry and common prefix entries
+
+func (c *cataloger) ListEntries(ctx context.Context, repository string, branch string, prefix, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return nil, false, err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repo, branch, LockTypeNone)
+		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}
@@ -25,12 +28,12 @@ func (c *cataloger) ListEntries(ctx context.Context, repo string, branch string,
 			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
-					ORDER BY path` // AND active_lineage ?
+					ORDER BY path`
 		} else {
 			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
 					FROM entries_lineage_committed_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
-					ORDER BY path` // AND active_lineage?
+					ORDER BY path`
 		}
 		args := []interface{}{branchID, db.Prefix(prefix), after}
 		if descend {

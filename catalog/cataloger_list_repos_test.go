@@ -15,9 +15,9 @@ func TestCataloger_ListRepos(t *testing.T) {
 	for i := 3; i > 0; i-- {
 		repoName := fmt.Sprintf("repo%d", i)
 		bucketName := fmt.Sprintf("bucket%d", i)
-		err := c.CreateRepo(ctx, repoName, bucketName, "master")
+		err := c.CreateRepository(ctx, repoName, bucketName, "master")
 		if err != nil {
-			t.Fatal("create repo for testing failed", err)
+			t.Fatal("create repository for testing failed", err)
 		}
 	}
 
@@ -53,23 +53,24 @@ func TestCataloger_ListRepos(t *testing.T) {
 			wantMore: false,
 			wantErr:  false,
 		},
+		// TODO(barak): add validation of input values
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListRepos(ctx, tt.args.limit, tt.args.after)
+			got, gotMore, err := c.ListRepositories(ctx, tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListRepos() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("ListRepositories() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			var names []string
-			for _, repo := range got {
-				names = append(names, repo.Name)
+			for _, repository := range got {
+				names = append(names, repository.Name)
 			}
 			if !reflect.DeepEqual(tt.want, names) {
-				t.Errorf("ListRepos() got repos = %v, want %v", names, tt.want)
+				t.Errorf("ListRepositories() got repos = %v, want %v", names, tt.want)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListRepos() got more = %v, want %v", gotMore, tt.wantMore)
+				t.Errorf("ListRepositories() got more = %v, want %v", gotMore, tt.wantMore)
 			}
 		})
 	}

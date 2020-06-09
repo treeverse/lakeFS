@@ -15,11 +15,11 @@ import (
 func TestCataloger_ListCommits(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
-	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
-	setupListCommitsByBranchData(t, ctx, c, repo, "master")
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	setupListCommitsByBranchData(t, ctx, c, repository, "master")
 
 	type args struct {
-		repo         string
+		repository   string
 		branch       string
 		fromCommitID int
 		limit        int
@@ -34,7 +34,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "all",
 			args: args{
-				repo:         repo,
+				repository:   repository,
 				branch:       "master",
 				fromCommitID: 0,
 				limit:        -1,
@@ -50,7 +50,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "just 2",
 			args: args{
-				repo:         repo,
+				repository:   repository,
 				branch:       "master",
 				fromCommitID: 0,
 				limit:        2,
@@ -65,7 +65,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "last 1",
 			args: args{
-				repo:         repo,
+				repository:   repository,
 				branch:       "master",
 				fromCommitID: 2,
 				limit:        1,
@@ -79,7 +79,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "center",
 			args: args{
-				repo:         repo,
+				repository:   repository,
 				branch:       "master",
 				fromCommitID: 1,
 				limit:        1,
@@ -91,9 +91,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 			wantErr:  false,
 		},
 		{
-			name: "unknown repo",
+			name: "unknown repository",
 			args: args{
-				repo:         "no_repo",
+				repository:   "no_repo",
 				branch:       "master",
 				fromCommitID: 0,
 				limit:        -1,
@@ -103,9 +103,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 			wantErr:  true,
 		},
 		{
-			name: "no repo",
+			name: "no repository",
 			args: args{
-				repo:         "",
+				repository:   "",
 				branch:       "master",
 				fromCommitID: 0,
 				limit:        -1,
@@ -117,7 +117,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "no branch",
 			args: args{
-				repo:         repo,
+				repository:   repository,
 				branch:       "",
 				fromCommitID: 0,
 				limit:        -1,
@@ -129,13 +129,13 @@ func TestCataloger_ListCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListCommits(ctx, tt.args.repo, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
+			got, gotMore, err := c.ListCommits(ctx, tt.args.repository, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("ListCommits() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			// hack - remove the timestamp in order to compare everything except the time
-			// consider write entry will control creation time
+			// consider create entry will control creation time
 			for i := range got {
 				got[i].CreationDate = time.Time{}
 			}
@@ -150,17 +150,17 @@ func TestCataloger_ListCommits(t *testing.T) {
 	}
 }
 
-func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repo string, branch string) {
+func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string) {
 	for i := 0; i < 3; i++ {
 		fileName := fmt.Sprintf("/file%d", i)
 		fileAddr := fmt.Sprintf("/addr%d", i)
-		if err := c.CreateEntry(ctx, repo, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
-			t.Fatal("Write entry for list repo commits failed", err)
+		if err := c.CreateEntry(ctx, repository, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
+			t.Fatal("Write entry for list repository commits failed", err)
 		}
 		message := "commit" + strconv.Itoa(i+1)
-		_, err := c.Commit(ctx, repo, branch, message, "tester", nil)
+		_, err := c.Commit(ctx, repository, branch, message, "tester", nil)
 		if err != nil {
-			t.Fatalf("Commit for list repo commits failed '%s': %s", message, err)
+			t.Fatalf("Commit for list repository commits failed '%s': %s", message, err)
 		}
 	}
 }

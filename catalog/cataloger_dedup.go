@@ -7,9 +7,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Dedup(ctx context.Context, repo string, dedupID string, physicalAddress string) (string, error) {
+func (c *cataloger) Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error) {
 	if err := Validate(ValidateFields{
-		"repo":            ValidateRepoName(repo),
+		"repository":      ValidateRepoName(repository),
 		"dedupID":         ValidateDedupID(dedupID),
 		"physicalAddress": ValidateNonEmptyString(physicalAddress),
 	}); err != nil {
@@ -17,7 +17,7 @@ func (c *cataloger) Dedup(ctx context.Context, repo string, dedupID string, phys
 	}
 
 	addr, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repo)
+		repoID, err := getRepoID(tx, repository)
 		if err != nil {
 			return physicalAddress, err
 		}

@@ -114,7 +114,7 @@ UNION ALL
     true AS main_branch,
     0 AS precedence,
     branches.id AS ancestor_branch,
-    branches.next_commit AS effective_commit,
+    (branches.next_commit - 1) AS effective_commit,
     0 AS min_commit,
     ('01111111111111111111111111111111'::"bit")::integer AS max_commit,
     true AS active_lineage
@@ -294,6 +294,9 @@ ALTER TABLE ONLY branches
 ALTER TABLE ONLY commits
     ADD CONSTRAINT commits_pkey PRIMARY KEY (branch_id, commit_id);
 
+ALTER TABLE ONLY entries
+    ADD CONSTRAINT entries_pk PRIMARY KEY (branch_id, path, min_commit) INCLUDE (max_commit);
+
 ALTER TABLE ONLY lineage
     ADD CONSTRAINT lineage_pk PRIMARY KEY (branch_id, ancestor_branch, min_commit);
 
@@ -311,9 +314,9 @@ ALTER TABLE ONLY repositories
 
 CREATE UNIQUE INDEX branches_repository_name_uindex ON branches USING btree (name, repository_id);
 
-CREATE UNIQUE INDEX entries_path_index ON entries USING btree (branch_id, path, min_commit) INCLUDE (max_commit);
-
 CREATE INDEX entries_path_trgm ON entries USING gin (path public.gin_trgm_ops);
+
+CREATE INDEX fki_branch_repository_fk ON branches USING btree (repository_id);
 
 CREATE INDEX fki_entries_branch_const ON entries USING btree (branch_id);
 
@@ -322,13 +325,13 @@ CREATE INDEX fki_repositories_branches_id_fkey ON repositories USING btree (defa
 CREATE UNIQUE INDEX repositories_name_uindex ON repositories USING btree (name);
 
 ALTER TABLE ONLY branches
-    ADD CONSTRAINT branches_repository_id_fkey FOREIGN KEY (repository_id) REFERENCES repositories(id) DEFERRABLE;
+    ADD CONSTRAINT branch_repository_fk FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE NOT VALID;
 
 ALTER TABLE ONLY commits
     ADD CONSTRAINT commits_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY entries
-    ADD CONSTRAINT entries_branch_const FOREIGN KEY (branch_id) REFERENCES branches(id);
+    ADD CONSTRAINT entries_branch_const FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY lineage
     ADD CONSTRAINT lineage_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;

@@ -22,7 +22,7 @@ var (
 	ErrRepoNotFound               = fmt.Errorf("repository %w", db.ErrNotFound)
 	ErrMultipartUploadNotFound    = fmt.Errorf("multipart upload %w", db.ErrNotFound)
 	ErrOperationNotPermitted      = errors.New("operation not permitted")
-	ErrResourceUsed               = errors.New("resource used")
+	ErrBranchHasDependentBranches = errors.New("branch has dependent branches")
 	ErrInvalidLockValue           = errors.New("invalid lock value")
 	ErrCommitNotFound             = fmt.Errorf("commit %w", db.ErrNotFound)
 	ErrEntryNotFound              = fmt.Errorf("entry %w", db.ErrNotFound)

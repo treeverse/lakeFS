@@ -21,16 +21,16 @@ func testCatalogerUniqueID() string {
 
 func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix string, branch string) string {
 	name := prefix + testCatalogerUniqueID()
-	if err := c.CreateRepo(ctx, name, "bucket", branch); err != nil {
-		t.Fatalf("create repo %s, branch %s, failed: %s", name, branch, err)
+	if err := c.CreateRepository(ctx, name, "bucket", branch); err != nil {
+		t.Fatalf("create repository %s, branch %s, failed: %s", name, branch, err)
 	}
 	return name
 }
 
-func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repo, name, source string) *Branch {
-	b, err := c.CreateBranch(ctx, repo, name, source)
+func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repository, name, source string) int {
+	id, err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
-		t.Fatalf("failed to create branch %s (%s) on %s: %s", name, source, repo, err)
+		t.Fatalf("failed to create branch %s (%s) on %s: %s", name, source, repository, err)
 	}
-	return b
+	return id
 }

@@ -7,22 +7,22 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) CreateEntry(ctx context.Context, repo, branch, path, checksum, physicalAddress string, size int, metadata Metadata) error {
+func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, path string, checksum string, physicalAddress string, size int, metadata Metadata) error {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
-		"path":   ValidatePath(path),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
+		"path":       ValidatePath(path),
 	}); err != nil {
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repo, branch, LockTypeShare) // will block merges,commits and diffs on this branch
+		branchID, err := getBranchID(tx, repository, branch, LockTypeShare) // will block merges,commits and diffs on this branch
 		if err != nil {
 			c.log.WithContext(ctx).
 				WithError(err).
 				WithFields(logging.Fields{
-					"branch": branch,
-					"repo":   repo,
+					"branch":     branch,
+					"repository": repository,
 				}).Warn("Branch not found")
 			return nil, err
 		}
@@ -37,6 +37,7 @@ func (c *cataloger) CreateEntry(ctx context.Context, repo, branch, path, checksu
 				}).Warn("Delete uncommitted failed")
 			return nil, err
 		}
+		// TODO(barak): upsert and remove the above DELETE
 		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,metadata,size) values ($1,$2,$3,$4,$5,$6)`,
 			branchID, path, physicalAddress, checksum, metadata, size)
 		if err != nil {

@@ -13,16 +13,16 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 
 	creationTime := time.Now().Round(time.Second) // round in order to remove the monotonic clock
 	// setup test data
-	if err := c.CreateRepo(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repo for testing failed", err)
+	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
+		t.Fatal("create repository for testing failed", err)
 	}
 	if err := c.CreateMultipartUpload(ctx, "repo1", "upload1", "/path1", "/file1", creationTime); err != nil {
 		t.Fatal("create multipart upload for testing", err)
 	}
 
 	type args struct {
-		repo     string
-		uploadID string
+		repository string
+		uploadID   string
 	}
 	tests := []struct {
 		name    string
@@ -32,7 +32,7 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 	}{
 		{
 			name: "exists",
-			args: args{repo: "repo1", uploadID: "upload1"},
+			args: args{repository: "repo1", uploadID: "upload1"},
 			want: &MultipartUpload{
 				Repository:      "repo1",
 				UploadID:        "upload1",
@@ -44,20 +44,20 @@ func TestCataloger_GetMultipartUpload(t *testing.T) {
 		},
 		{
 			name:    "not exists",
-			args:    args{repo: "repo1", uploadID: "upload2"},
+			args:    args{repository: "repo1", uploadID: "upload2"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "no repo",
-			args:    args{repo: "repo2", uploadID: "upload1"},
+			name:    "no repository",
+			args:    args{repository: "repo2", uploadID: "upload1"},
 			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetMultipartUpload(ctx, tt.args.repo, tt.args.uploadID)
+			got, err := c.GetMultipartUpload(ctx, tt.args.repository, tt.args.uploadID)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetMultipartUpload() error = %v, wantErr %v", err, tt.wantErr)
 				return

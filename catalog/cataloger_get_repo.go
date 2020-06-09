@@ -6,9 +6,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetRepo(ctx context.Context, repo string) (*Repo, error) {
+func (c *cataloger) GetRepository(ctx context.Context, repository string) (*Repo, error) {
 	if err := Validate(ValidateFields{
-		"repo": ValidateRepoName(repo),
+		"repository": ValidateRepoName(repository),
 	}); err != nil {
 		return nil, err
 	}
@@ -18,7 +18,7 @@ func (c *cataloger) GetRepo(ctx context.Context, repo string) (*Repo, error) {
 		err := tx.Get(&r, `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
  			FROM repositories r, branches b
 			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name = $1`,
-			repo)
+			repository)
 		if err != nil {
 			return nil, err
 		}
