@@ -6,7 +6,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// TODO(barak): return repository name and not ID
 func (c *cataloger) GetBranch(ctx context.Context, repository string, branch string) (*Branch, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
@@ -21,7 +20,9 @@ func (c *cataloger) GetBranch(ctx context.Context, repository string, branch str
 			return nil, err
 		}
 		var b Branch
-		if err := tx.Get(&b, `SELECT repository_id, id, name, next_commit FROM branches WHERE repository_id = $1 AND name = $2`, repoID, branch); err != nil {
+		if err := tx.Get(&b, `SELECT r.name as repository, b.name
+			FROM repositories r JOIN branches b ON r.id = b.repository_id
+			WHERE r.id=$1 AND b.name=$2`, repoID, branch); err != nil {
 			return nil, err
 		}
 		return &b, nil

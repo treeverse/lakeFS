@@ -20,13 +20,13 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 			return nil, err
 		}
 
-		query := `SELECT repository_id, id, name, next_commit
+		query := `SELECT $2 AS repository, name
 			FROM branches
-			WHERE repository_id = $1 AND name like $2 AND name > $3
+			WHERE repository_id = $1 AND name like $3 AND name > $4
 			ORDER BY name`
-		args := []interface{}{repoID, prefixCond, after}
+		args := []interface{}{repoID, repository, prefixCond, after}
 		if limit >= 0 {
-			query += ` LIMIT $4`
+			query += ` LIMIT $5`
 			args = append(args, limit+1)
 		}
 

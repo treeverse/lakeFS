@@ -41,7 +41,13 @@ func TestCataloger_GetRepo(t *testing.T) {
 			wantBranch: "branch4",
 			wantErr:    true,
 		},
-		// TODO(barak): check invalid input
+		{
+			name:       "missing repository name",
+			repository: "",
+			wantBucket: "bucket4",
+			wantBranch: "branch4",
+			wantErr:    true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

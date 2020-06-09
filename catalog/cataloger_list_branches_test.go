@@ -86,18 +86,20 @@ func TestCataloger_ListBranches(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListBranches(ctx, tt.args.repository, tt.args.prefix, tt.args.limit, tt.args.after)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("ListBranches() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			var gotBranches []string
 			for i := range got {
+				if got[i].Repository != tt.args.repository {
+					t.Fatalf("ListBranches() got repository=%s, expected %s", got[i].Repository, tt.args.repository)
+				}
 				gotBranches = append(gotBranches, got[i].Name)
 			}
 			if !reflect.DeepEqual(tt.wantBranches, gotBranches) {
 				t.Errorf("ListBranches() got = %v, want %v", gotBranches, tt.wantBranches)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListBranches() got1 = %v, want %v", gotMore, tt.wantMore)
+				t.Errorf("ListBranches() wantedMore = %v, want %v", gotMore, tt.wantMore)
 			}
 		})
 	}

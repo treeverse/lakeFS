@@ -65,6 +65,11 @@ type CommitLog struct {
 }
 
 type Branch struct {
+	Repository string `db:"repository"`
+	Name       string `db:"name"`
+}
+
+type BranchDB struct {
 	RepositoryID int    `db:"repository_id"`
 	ID           int    `db:"id"`
 	Name         string `db:"name"`
