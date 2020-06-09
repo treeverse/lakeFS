@@ -1,11 +1,11 @@
 package operations
 
 import (
-	"bytes"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"net/http"
+
+	"github.com/treeverse/lakefs/auth"
 
 	"github.com/treeverse/lakefs/db"
 
@@ -18,26 +18,7 @@ import (
 type DeleteObjects struct{}
 
 func (controller *DeleteObjects) RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error) {
-	req := &serde.Delete{}
-	body, err := ioutil.ReadAll(request.Body)
-	if err != nil {
-		return nil, err
-	}
-	_ = request.Body.Close()
-	err = DecodeXMLBody(bytes.NewReader(body), req)
-	if err != nil {
-		return nil, err
-	}
-	request.Body = ioutil.NopCloser(bytes.NewReader(body))
-	perms := make([]permissions.Permission, len(req.Object))
-	for i, object := range req.Object {
-		perms[i] = permissions.Permission{
-			Action:   permissions.DeleteObjectAction,
-			Resource: permissions.ObjectArn(repoId, object.Key),
-		}
-	}
-
-	return perms, nil
+	return []permissions.Permission{}, nil
 }
 
 func (controller *DeleteObjects) Handle(o *RepoOperation) {
@@ -60,6 +41,24 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			})
 			continue
 		}
+		// authorize this object deletion
+		authResp, err := o.Auth.Authorize(&auth.AuthorizationRequest{
+			UserDisplayName: o.Principal,
+			RequiredPermissions: []permissions.Permission{
+				{
+					Action:   permissions.DeleteObjectAction,
+					Resource: permissions.ObjectArn(o.Repo.Id, resolvedPath.Path),
+				},
+			},
+		})
+		if err != nil || !authResp.Allowed {
+			errs = append(errs, serde.DeleteError{
+				Code:    "AccessDenied",
+				Key:     obj.Key,
+				Message: "Access Denied",
+			})
+		}
+
 		lg := o.Log().WithField("key", obj.Key)
 		err = o.Index.DeleteObject(o.Repo.Id, resolvedPath.Ref, resolvedPath.Path)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
