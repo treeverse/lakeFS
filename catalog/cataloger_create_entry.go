@@ -27,19 +27,10 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch s
 			return nil, err
 		}
 
-		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND path = $2 AND min_commit = 0`, branchID, path)
-		if err != nil {
-			c.log.WithContext(ctx).
-				WithError(err).
-				WithFields(logging.Fields{
-					"branch": branch,
-					"path":   path,
-				}).Warn("Delete uncommitted failed")
-			return nil, err
-		}
-		// TODO(barak): upsert and remove the above DELETE
-		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,metadata,size) values ($1,$2,$3,$4,$5,$6)`,
-			branchID, path, physicalAddress, checksum, metadata, size)
+		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
+			ON CONFLICT (branch_id,path,min_commit)
+			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, max_commit=('01111111111111111111111111111111'::"bit")::integer`,
+			branchID, path, physicalAddress, checksum, size, metadata)
 		if err != nil {
 			c.log.WithContext(ctx).WithError(err).
 				WithFields(logging.Fields{
