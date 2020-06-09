@@ -176,7 +176,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListRepositoriesAction,
-				Resource: "*",
+				Resource: permissions.All,
 			},
 		})
 		if err != nil {
@@ -1045,7 +1045,7 @@ func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListUsersAction,
-				Resource: "*",
+				Resource: permissions.All,
 			},
 		})
 		if err != nil {
@@ -1170,7 +1170,7 @@ func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListGroupsAction,
-				Resource: "*",
+				Resource: permissions.All,
 			},
 		})
 		if err != nil {
@@ -1280,7 +1280,7 @@ func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListPoliciesAction,
-				Resource: "*",
+				Resource: permissions.All,
 			},
 		})
 		if err != nil {
@@ -1717,7 +1717,7 @@ func (a *Handler) DetachPolicyFromUserHandler() authentication.DetachPolicyFromU
 	return authentication.DetachPolicyFromUserHandlerFunc(func(params authentication.DetachPolicyFromUserParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{
 			{
-				Action:   permissions.AttachPolicyAction,
+				Action:   permissions.DetachPolicyAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
