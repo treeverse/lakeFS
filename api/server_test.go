@@ -76,7 +76,10 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 
+	_, catalogURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog, opts...)
+
 	migrator := db.NewDatabaseMigrator().
+		AddDB(config.SchemaCatalog, catalogURI).
 		AddDB(config.SchemaMetadata, mdbURI).
 		AddDB(config.SchemaAuth, adbURI)
 
