@@ -1,34 +1,21 @@
 package catalog
 
-import (
-	"fmt"
-)
-
-type DifferenceDirection int
 type DifferenceType int
 
 const (
-	DifferenceDirectionLeft DifferenceDirection = iota
-	DifferenceDirectionRight
-	DifferenceDirectionConflict
-
 	DifferenceTypeAdded DifferenceType = iota
 	DifferenceTypeRemoved
 	DifferenceTypeChanged
-
-	EntryTypeObject = "object"
-	EntryTypeTree   = "tree"
+	DifferenceTypeConflict
 )
 
 type Difference struct {
-	Type      DifferenceType
-	Direction DifferenceDirection
-	Path      string
-	PathType  string
+	Type DifferenceType `db:"diff_type"`
+	Path string
 }
 
 func (d Difference) String() string {
-	var symbol, direction, pType string
+	var symbol string
 	switch d.Type {
 	case DifferenceTypeAdded:
 		symbol = "+"
@@ -36,25 +23,10 @@ func (d Difference) String() string {
 		symbol = "-"
 	case DifferenceTypeChanged:
 		symbol = "~"
+	case DifferenceTypeConflict:
+		symbol = "x"
 	}
-
-	switch d.Direction {
-	case DifferenceDirectionLeft:
-		direction = "<"
-	case DifferenceDirectionRight:
-		direction = ">"
-	case DifferenceDirectionConflict:
-		direction = "*"
-	}
-
-	switch d.PathType {
-	case EntryTypeTree:
-		pType = "D"
-	case EntryTypeObject:
-		pType = "O"
-	}
-
-	return fmt.Sprintf("%s%s%s %s", direction, symbol, pType, d.Path)
+	return symbol + " " + d.Path
 }
 
 type Differences []Difference
