@@ -53,7 +53,13 @@ func TestCataloger_ListRepos(t *testing.T) {
 			wantMore: false,
 			wantErr:  false,
 		},
-		// TODO(barak): add validation of input values
+		{
+			name:     "nothing to be found",
+			args:     args{limit: 0, after: "repoX"},
+			want:     nil,
+			wantMore: false,
+			wantErr:  false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
