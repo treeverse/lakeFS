@@ -36,7 +36,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 		// if we try to commit we should fail - there was no change
 		_, err = c.Commit(ctx, repository, "master", "commit nothing", "tester", nil)
 		if !errors.Is(err, ErrNothingToCommit) {
-			t.Fatalf("Commit returned err=%s, expected=%s", err, ErrNothingToCommit)
+			t.Fatalf("commit returned err=%s, expected=%s", err, ErrNothingToCommit)
 		}
 	})
 

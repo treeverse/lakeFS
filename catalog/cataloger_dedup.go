@@ -22,13 +22,13 @@ func (c *cataloger) Dedup(ctx context.Context, repository string, dedupID string
 			return physicalAddress, err
 		}
 
-		var od ObjectDedup
-		err = tx.Get(&od, `SELECT repository_id, encode(dedup_id,'hex') as dedup_id, physical_address
+		var dedupAddress string
+		err = tx.Get(&dedupAddress, `SELECT physical_address
 			FROM object_dedup
 			WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
 			repoID, dedupID)
 		if err == nil {
-			return od.PhysicalAddress, nil
+			return dedupAddress, nil
 		}
 		if !errors.Is(err, db.ErrNotFound) {
 			return physicalAddress, err

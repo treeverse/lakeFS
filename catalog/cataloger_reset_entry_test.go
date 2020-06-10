@@ -91,8 +91,8 @@ func TestCataloger_RevertEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := c.RevertEntry(ctx, tt.args.repository, tt.args.branch, tt.args.path); (err != nil) != tt.wantErr {
-				t.Errorf("RevertEntry() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.ResetEntry(ctx, tt.args.repository, tt.args.branch, tt.args.path); (err != nil) != tt.wantErr {
+				t.Errorf("ResetEntry() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
@@ -106,13 +106,13 @@ func TestCataloger_RevertEntry_NewToNone(t *testing.T) {
 	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
 		t.Fatal("create entry for revert entry test:", err)
 	}
-	if err := c.RevertEntry(ctx, repository, "master", "/file1"); err != nil {
-		t.Fatal("RevertEntry should revert new uncommitted file:", err)
+	if err := c.ResetEntry(ctx, repository, "master", "/file1"); err != nil {
+		t.Fatal("ResetEntry should revert new uncommitted file:", err)
 	}
 	_, err := c.GetEntry(ctx, repository, "master", "/file1", true)
 	expectedErr := db.ErrNotFound
 	if !errors.As(err, &expectedErr) {
-		t.Fatalf("RevertEntry expecting the file to be gone with %s, got = %s", expectedErr, err)
+		t.Fatalf("ResetEntry expecting the file to be gone with %s, got = %s", expectedErr, err)
 	}
 }
 
@@ -134,13 +134,13 @@ func TestCataloger_RevertEntry_NewToPrevious(t *testing.T) {
 	}
 	ent, err := c.GetEntry(ctx, repository, "master", "/file1", true)
 	if err != nil {
-		t.Fatal("RevertEntry expecting previous file to be found:", err)
+		t.Fatal("ResetEntry expecting previous file to be found:", err)
 	}
 	if ent.Checksum != newChecksum {
-		t.Errorf("RevertEntry should find previus entry with checksum %s, got %s", newChecksum, ent.Checksum)
+		t.Errorf("ResetEntry should find previus entry with checksum %s, got %s", newChecksum, ent.Checksum)
 	}
 	if ent.PhysicalAddress != newPhysicalAddress {
-		t.Errorf("RevertEntry should find previus entry with checksum %s, got %s", newPhysicalAddress, ent.Checksum)
+		t.Errorf("ResetEntry should find previus entry with checksum %s, got %s", newPhysicalAddress, ent.Checksum)
 	}
 }
 
@@ -155,10 +155,10 @@ func TestCataloger_RevertEntry_Committed(t *testing.T) {
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
 		t.Fatal("commit for revert entry test:", err)
 	}
-	err := c.RevertEntry(ctx, repository, "master", "/file1")
+	err := c.ResetEntry(ctx, repository, "master", "/file1")
 	expectedErr := db.ErrNotFound
 	if !errors.As(err, &expectedErr) {
-		t.Fatal("RevertEntry expected not to find file in case nothing to revert: ", err)
+		t.Fatal("ResetEntry expected not to find file in case nothing to revert: ", err)
 	}
 }
 
@@ -177,10 +177,10 @@ func TestCataloger_RevertEntry_CommittedParentBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("create branch for revert entry test:", err)
 	}
-	err = c.RevertEntry(ctx, repository, "b1", "/file1")
+	err = c.ResetEntry(ctx, repository, "b1", "/file1")
 	expectedErr := db.ErrNotFound
 	if !errors.As(err, &expectedErr) {
-		t.Fatal("RevertEntry expected not to find file in case nothing to revert:", err)
+		t.Fatal("ResetEntry expected not to find file in case nothing to revert:", err)
 	}
 }
 
@@ -199,9 +199,9 @@ func TestCataloger_RevertEntry_UncommittedDeleteSameBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("delete entry for revert entry test:", err)
 	}
-	err = c.RevertEntry(ctx, repository, "master", "/file1")
+	err = c.ResetEntry(ctx, repository, "master", "/file1")
 	if err != nil {
-		t.Fatal("RevertEntry expected successful revert on delete entry:", err)
+		t.Fatal("ResetEntry expected successful revert on delete entry:", err)
 	}
 	ent, err := c.GetEntry(ctx, repository, "master", "/file1", true)
 	if err != nil {
@@ -230,9 +230,9 @@ func TestCataloger_RevertEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("delete entry for revert entry test:", err)
 	}
-	err = c.RevertEntry(ctx, repository, "b1", "/file1")
+	err = c.ResetEntry(ctx, repository, "b1", "/file1")
 	if err != nil {
-		t.Fatal("RevertEntry expected successful revert on delete entry:", err)
+		t.Fatal("ResetEntry expected successful revert on delete entry:", err)
 	}
 	ent, err := c.GetEntry(ctx, repository, "b1", "/file1", true)
 	if err != nil {
