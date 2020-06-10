@@ -27,6 +27,7 @@ import (
 
 const (
 	DefaultDatabaseDriver = "pgx"
+	DefaultCatalogDBUri   = "postgres://localhost:5432/postgres?search_path=lakefs_catalog&sslmode=disable"
 	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index&sslmode=disable"
 	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth&sslmode=disable"
 
@@ -67,6 +68,7 @@ func setDefaults() {
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
+	viper.SetDefault("catalog.db.uri", DefaultCatalogDBUri)
 	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
 
 	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
@@ -88,11 +90,16 @@ func setDefaults() {
 }
 
 const (
-	DBKeyAuth  = "auth"
-	DBKeyIndex = "metadata"
+	DBKeyAuth    = "auth"
+	DBKeyIndex   = "metadata"
+	DBKeyCatalog = "catalog"
 )
 
-var SchemaDBKeys = map[string]string{SchemaAuth: DBKeyAuth, SchemaMetadata: DBKeyIndex}
+var SchemaDBKeys = map[string]string{
+	SchemaAuth:     DBKeyAuth,
+	SchemaMetadata: DBKeyIndex,
+	SchemaCatalog:  DBKeyCatalog,
+}
 
 func (c *Config) GetDatabaseURI(key string) string {
 	return viper.GetString(key + ".db.uri")

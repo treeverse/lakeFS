@@ -1,0 +1,18 @@
+SET CONSTRAINTS repositories_branches_id_fkey DEFERRED;
+DROP TABLE IF EXISTS repositories;
+DROP TABLE IF EXISTS object_dedup;
+DROP TABLE IF EXISTS multipart_uploads;
+DROP TABLE IF EXISTS lineage;
+DROP TABLE IF EXISTS entries;
+DROP TABLE IF EXISTS commits;
+DROP TABLE IF EXISTS branches;
+DROP TYPE IF EXISTS merge_type;
+DROP TYPE IF EXISTS commit_status;
+DROP VIEW IF EXISTS entries_lineage_active_v;
+DROP VIEW IF EXISTS entries_lineage_v;
+DROP VIEW IF EXISTS lineage_v;
+DROP VIEW IF EXISTS entries_v;
+DROP VIEW IF EXISTS dir_list_v;
+DROP SEQUENCE IF EXISTS repositories_id_seq;
+DROP SEQUENCE IF EXISTS branches_id_seq;
+DROP FUNCTION IF EXISTS get_next_marker;

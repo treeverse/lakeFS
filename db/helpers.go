@@ -1,8 +1,11 @@
 package db
 
-import "fmt"
+import (
+	"strings"
+)
 
 func Prefix(prefix string) string {
-	// TODO: we need proper escaping here, at least for "%" but see if there's anything else
-	return fmt.Sprintf("%s%%", prefix)
+	v := strings.ReplaceAll(prefix, "%", "\\%")
+	v = strings.ReplaceAll(v, "_", "\\_")
+	return v + "%"
 }
