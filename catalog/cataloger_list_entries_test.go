@@ -32,12 +32,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 
 	type args struct {
-		repository      string
-		branch          string
-		path            string
-		after           string
-		limit           int
-		readUncommitted bool
+		repository string
+		branch     string
+		commitID   CommitID
+		path       string
+		after      string
+		limit      int
 	}
 	tests := []struct {
 		name        string
@@ -49,12 +49,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "all uncommitted",
 			args: args{
-				repository:      "repo1",
-				branch:          "master",
-				path:            "",
-				after:           "",
-				limit:           -1,
-				readUncommitted: true,
+				repository: "repo1",
+				branch:     "master",
+				commitID:   UncommittedID,
+				path:       "",
+				after:      "",
+				limit:      -1,
 			},
 			wantEntries: []Entry{
 				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
@@ -69,12 +69,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "first 2 uncommitted",
 			args: args{
-				repository:      "repo1",
-				branch:          "master",
-				path:            "",
-				after:           "",
-				limit:           2,
-				readUncommitted: true,
+				repository: "repo1",
+				branch:     "master",
+				commitID:   UncommittedID,
+				path:       "",
+				after:      "",
+				limit:      2,
 			},
 			wantEntries: []Entry{
 				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
@@ -86,12 +86,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "last 2",
 			args: args{
-				repository:      "repo1",
-				branch:          "master",
-				path:            "",
-				after:           "/file3",
-				limit:           2,
-				readUncommitted: true,
+				repository: "repo1",
+				branch:     "master",
+				commitID:   UncommittedID,
+				path:       "",
+				after:      "/file3",
+				limit:      2,
 			},
 			wantEntries: []Entry{
 				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
@@ -103,12 +103,12 @@ func TestCataloger_ListEntries(t *testing.T) {
 		{
 			name: "committed",
 			args: args{
-				repository:      "repo1",
-				branch:          "master",
-				path:            "",
-				after:           "/file1",
-				limit:           -1,
-				readUncommitted: false,
+				repository: "repo1",
+				branch:     "master",
+				commitID:   CommittedID,
+				path:       "",
+				after:      "/file1",
+				limit:      -1,
 			},
 			wantEntries: []Entry{
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
@@ -120,7 +120,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.readUncommitted)
+			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.branch, tt.args.commitID, tt.args.path, tt.args.after, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}

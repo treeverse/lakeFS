@@ -9,6 +9,13 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+type CommitID int
+
+const (
+	CommittedID   CommitID = 0
+	UncommittedID CommitID = -1
+)
+
 type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, bucket string, branch string) error
 	GetRepository(ctx context.Context, repository string) (*Repo, error)
@@ -25,10 +32,10 @@ type BranchCataloger interface {
 }
 
 type EntryCataloger interface {
-	GetEntry(ctx context.Context, repository, branch string, path string, readUncommitted bool) (*Entry, error)
+	GetEntry(ctx context.Context, repository, branch string, commitID CommitID, path string) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
-	ListEntries(ctx context.Context, repository, branch string, path string, after string, limit int, readUncommitted bool) ([]*Entry, bool, error)
+	ListEntries(ctx context.Context, repository, branch string, commitID CommitID, prefix, after string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 }
@@ -45,7 +52,7 @@ type Deduper interface {
 type Committer interface {
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (int, error)
 	ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
-	RollbackCommit(ctx context.Context, repository, branch string, commitID int) error
+	RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error
 }
 
 type Differ interface {
@@ -60,6 +67,7 @@ type Cataloger interface {
 	RepositoryCataloger
 	BranchCataloger
 	EntryCataloger
+	Committer
 	MultipartUpdateCataloger
 	Differ
 	Merger
@@ -93,6 +101,6 @@ func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch s
 	panic("implement me")
 }
 
-func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch string, commitID int) error {
+func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error {
 	panic("implement me")
 }
