@@ -40,7 +40,7 @@ CREATE TABLE commits (
     committer character varying,
     message character varying,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
-    metadata json,
+    metadata jsonb,
     merge_source_branch integer,
     merge_source_commit integer,
     merge_type merge_type DEFAULT 'none'::merge_type NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE entries (
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     size bigint NOT NULL,
     checksum character varying(64) NOT NULL,
-    metadata json,
+    metadata jsonb,
     min_commit integer DEFAULT 0 NOT NULL,
     max_commit integer DEFAULT ('01111111111111111111111111111111'::"bit")::integer NOT NULL
 );
