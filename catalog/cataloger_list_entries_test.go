@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"reflect"
 	"testing"
+
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_ListEntries(t *testing.T) {
@@ -13,23 +15,21 @@ func TestCataloger_ListEntries(t *testing.T) {
 	c := testCataloger(t)
 
 	// produce test data
-	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repository for testing", err)
-	}
-	const numEntries = 5
-	for i := 0; i < numEntries; i++ {
+	testutil.MustDo(t, "create test repo",
+		c.CreateRepository(ctx, "repo1", "bucket1", "master"))
+	for i := 0; i < 5; i++ {
 		n := i + 1
 		filePath := fmt.Sprintf("/file%d", n)
 		fileChecksum := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := n * 10
-		err := c.CreateEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil)
-		if err != nil {
-			t.Fatal("failed to create entry", err)
+		testutil.MustDo(t, "create test entry",
+			c.CreateEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil))
+		if i == 2 {
+			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
+			testutil.MustDo(t, "commit test files", err)
 		}
 	}
-
-	// TODO(barak): remove the desc and check the committed entries
 
 	type args struct {
 		repository      string
@@ -106,21 +106,23 @@ func TestCataloger_ListEntries(t *testing.T) {
 				repository:      "repo1",
 				branch:          "master",
 				path:            "",
-				after:           "/file3",
+				after:           "/file1",
 				limit:           -1,
 				readUncommitted: false,
 			},
-			wantEntries: nil,
-			wantMore:    false,
-			wantErr:     false,
+			wantEntries: []Entry{
+				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
+				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
+			},
+			wantMore: false,
+			wantErr:  false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.branch, tt.args.path, tt.args.after, tt.args.limit, tt.args.readUncommitted)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			// copy the Entry fields we like to compare
 			var gotEntries []Entry

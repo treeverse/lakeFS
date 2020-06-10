@@ -28,7 +28,7 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 			return 0, err
 		}
 
-		// update committed entries found in the commit
+		// update committed entries found on the commit
 		res, err := tx.Exec(`UPDATE entries_v
 			SET max_commit = ($2 - 1)
 			WHERE branch_id = $1 AND is_committed
@@ -48,8 +48,8 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 
 		// remove tombstones from entries we can set max commit
 		_, err = tx.Exec(`DELETE FROM entries_v
-			WHERE branch_id = $1 AND NOT is_committed AND is_deleted AND path IN (
-				SELECT path FROM entries_v WHERE branch_id = $1 AND max_commit = ($2 - 1))`,
+			WHERE branch_id = $1 AND NOT is_committed AND is_tombstone AND path IN (
+				SELECT path FROM entries_v WHERE branch_id = $1 AND is_committed AND max_commit = ($2 - 1))`,
 			branchID, commitID)
 		if err != nil {
 			return 0, err
@@ -70,8 +70,8 @@ func (c *cataloger) Commit(ctx context.Context, repository string, branch string
 
 		// uncommitted to committed entries
 		res, err = tx.Exec(`UPDATE entries_v
-		SET min_commit = $2
-		WHERE branch_id = $1 AND NOT is_committed AND NOT is_deleted`,
+			SET min_commit = $2
+			WHERE branch_id = $1 AND NOT is_committed AND NOT is_deleted`,
 			branchID, commitID)
 		if err != nil {
 			return 0, err
