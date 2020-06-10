@@ -3,6 +3,7 @@ package operations
 import (
 	"errors"
 	"fmt"
+	"net/http"
 
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
@@ -13,8 +14,13 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.GetObject(repoId)
+func (controller *HeadObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+	return []permissions.Permission{
+		{
+			Action:   permissions.ReadObjectAction,
+			Resource: permissions.ObjectArn(repoId, path),
+		},
+	}, nil
 }
 
 func (controller *HeadObject) Handle(o *PathOperation) {
