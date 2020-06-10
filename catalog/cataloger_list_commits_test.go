@@ -160,7 +160,7 @@ func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger
 		message := "commit" + strconv.Itoa(i+1)
 		_, err := c.Commit(ctx, repository, branch, message, "tester", nil)
 		if err != nil {
-			t.Fatalf("commit for list repository commits failed '%s': %s", message, err)
+			t.Fatalf("Commit for list repository commits failed '%s': %s", message, err)
 		}
 	}
 }

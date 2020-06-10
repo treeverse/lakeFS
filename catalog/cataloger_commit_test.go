@@ -73,11 +73,11 @@ func TestCataloger_Commit(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := c.Commit(ctx, tt.args.repository, tt.args.branch, tt.args.message, tt.args.committer, tt.args.metadata)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("commit() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("commit() got = %v, want %v", got, tt.want)
+				t.Errorf("Commit() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
@@ -104,11 +104,11 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			}
 			commitID, err := c.Commit(ctx, repository, "master", "commit"+strconv.Itoa(i+1), "tester", nil)
 			if err != nil {
-				t.Errorf("commit got error on iteration %d: %s", i+1, err)
+				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
 			if commitID != i+1 {
-				t.Errorf("commit got ID %d, expected %d", commitID, i+1)
+				t.Errorf("Commit got ID %d, expected %d", commitID, i+1)
 				return
 			}
 			ent, _, err := c.ListEntries(ctx, repository, "master", CommittedID, "", "", -1)
@@ -137,11 +137,11 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			}
 			commitID, err := c.Commit(ctx, repository, "master", "commit"+strconv.Itoa(i+1), "tester", nil)
 			if err != nil {
-				t.Errorf("commit got error on iteration %d: %s", i+1, err)
+				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
 			if commitID != i+1 {
-				t.Errorf("commit got ID %d, expected %d", commitID, i+1)
+				t.Errorf("Commit got ID %d, expected %d", commitID, i+1)
 				return
 			}
 			ent, _, err := c.ListEntries(ctx, repository, "master", CommittedID, "", "", -1)
@@ -163,7 +163,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 		}
 		_, err := c.Commit(ctx, repository, "master", "commit one file", "tester", nil)
 		if err != nil {
-			t.Fatal("commit expected to succeed error:", err)
+			t.Fatal("Commit expected to succeed error:", err)
 		}
 		// make sure we see one file
 		entries, _, err := c.ListEntries(ctx, repository, "master", UncommittedID, "", "", -1)
@@ -190,7 +190,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 		}
 		_, err = c.Commit(ctx, repository, "master", "delete one file", "tester", nil)
 		if err != nil {
-			t.Fatal("commit expected to succeed error:", err)
+			t.Fatal("Commit expected to succeed error:", err)
 		}
 		// make sure we don't see the file after we commit the change
 		entries, _, err = c.ListEntries(ctx, repository, "master", CommittedID, "", "", -1)

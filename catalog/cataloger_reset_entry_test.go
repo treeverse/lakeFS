@@ -18,7 +18,7 @@ func TestCataloger_RevertEntry(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, branch, "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", "/file2", "eeee", "/addr2", 222, nil); err != nil {
 		t.Fatal("create entry for revert entry test:", err)
@@ -125,7 +125,7 @@ func TestCataloger_RevertEntry_NewToPrevious(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	const newChecksum = "eeee"
 	const newPhysicalAddress = "/addrNew"
@@ -153,7 +153,7 @@ func TestCataloger_RevertEntry_Committed(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	err := c.ResetEntry(ctx, repository, "master", "/file1")
 	expectedErr := db.ErrNotFound
@@ -171,7 +171,7 @@ func TestCataloger_RevertEntry_CommittedParentBranch(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	_, err := c.CreateBranch(ctx, repository, "b1", "master")
 	if err != nil {
@@ -193,7 +193,7 @@ func TestCataloger_RevertEntry_UncommittedDeleteSameBranch(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	err := c.DeleteEntry(ctx, repository, "master", "/file1")
 	if err != nil {
@@ -221,7 +221,7 @@ func TestCataloger_RevertEntry_UncommittedDeleteParentBranch(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 		t.Fatal("create branch for revert entry test:", err)

@@ -36,7 +36,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 		// if we try to commit we should fail - there was no change
 		_, err = c.Commit(ctx, repository, "master", "commit nothing", "tester", nil)
 		if !errors.Is(err, ErrNothingToCommit) {
-			t.Fatalf("commit returned err=%s, expected=%s", err, ErrNothingToCommit)
+			t.Fatalf("Commit returned err=%s, expected=%s", err, ErrNothingToCommit)
 		}
 	})
 
@@ -45,7 +45,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file3", "tester", nil); err != nil {
-			t.Fatal("commit entry for delete entry test:", err)
+			t.Fatal("Commit entry for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repository, "master", "/file3")
 		if err != nil {
@@ -61,7 +61,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {
-			t.Fatal("commit entry for delete entry test:", err)
+			t.Fatal("Commit entry for delete entry test:", err)
 		}
 		if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 			t.Fatal("create branch for delete entry test:", err)

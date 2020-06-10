@@ -19,7 +19,7 @@ func TestCataloger_RevertEntries_Basics(t *testing.T) {
 		t.Fatal("create entry for revert entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, branch, "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", "/file2", "eeee", "/addr2", 222, nil); err != nil {
 		t.Fatal("create entry for revert entry test:", err)
@@ -103,7 +103,7 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		testutil.Must(t, c.CreateEntry(ctx, repository, "master", "/file"+strconv.Itoa(i), strings.Repeat("ff", i+1), "/addr"+strconv.Itoa(i), i+1, nil))
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit changes on master", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 
 	// create b1 branch with 3 entries committed
@@ -115,7 +115,7 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		testutil.Must(t, c.CreateEntry(ctx, repository, "b1", "/file"+strconv.Itoa(i), strings.Repeat("ff", i+1), "/addr"+strconv.Itoa(i), i+1, nil))
 	}
 	if _, err := c.Commit(ctx, repository, "b1", "commit changes on b1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for revert entry test:", err)
 	}
 	testutil.Must(t, c.CreateEntry(ctx, repository, "master", "/file2", "eeee", "/addr2", 222, nil))
 
@@ -136,7 +136,7 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "master", 0, "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, "master", UncommittedID, "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
 			t.Fatal("List entries of reverted master branch should return 3 items, got", len(entries))
@@ -152,7 +152,7 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "b1", 0, "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, "b1", UncommittedID, "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 6 {
 			t.Fatal("List entries of reverted b1 branch should return 3 items, got", len(entries))
