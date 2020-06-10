@@ -23,8 +23,27 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.ListObjects(repoId)
+func (controller *ListObjects) RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error) {
+	// check if we're listing files in a branch, or listing branches
+	params := request.URL.Query()
+	delim := params.Get("delimiter")
+	prefix := params.Get("prefix")
+	if delim == "/" && !strings.Contains(prefix, "/") {
+		return []permissions.Permission{
+			{
+				Action:   permissions.ListBranchesAction,
+				Resource: permissions.RepoArn(repoId),
+			},
+		}, nil
+	}
+
+	// otherwise, we're listing objects within a branch
+	return []permissions.Permission{
+		{
+			Action:   permissions.ListObjectsAction,
+			Resource: permissions.RepoArn(repoId),
+		},
+	}, nil
 }
 
 func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {

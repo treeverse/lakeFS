@@ -4,12 +4,13 @@ import (
 	"bytes"
 	"encoding/xml"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/permissions"
+
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/httputil"
 
@@ -50,33 +51,42 @@ func (o *Operation) Log() logging.Logger {
 	return logging.FromContext(o.Request.Context())
 }
 
-func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
-	o.ResponseWriter.WriteHeader(statusCode)
+func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
+	w.WriteHeader(statusCode)
 	var b bytes.Buffer
 	b.WriteString(xml.Header)
 	b.Write(t)
-	_, err := b.WriteTo(o.ResponseWriter)
+	_, err := b.WriteTo(w)
+	return err
+}
+
+func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
+	err := EncodeXMLBytes(o.ResponseWriter, t, statusCode)
 	if err != nil {
-		// TODO: log error?
-		o.Log().WithError(err).Error("could not write response to HTTP client")
+		o.Log().WithError(err).Error("failed to encode XML to response")
 	}
 }
 
-func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
+func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) error {
 	//payload, err := xml.MarshalIndent(entity, "", "  ")
 	// We don't indent the XML document because of Java.
 	// See: https://github.com/spulec/moto/issues/1870
 	payload, err := xml.Marshal(entity)
 	if err != nil {
-		o.Log().WithError(err).Error("could not marshal response to XML")
-		o.ResponseWriter.WriteHeader(http.StatusInternalServerError)
-		return
+		return err
 	}
-	o.EncodeXMLBytes(payload, statusCode)
+	return EncodeXMLBytes(w, payload, statusCode)
 }
 
-func (o *Operation) DecodeXMLBody(entity interface{}) error {
-	body := o.Request.Body
+func (o *Operation) EncodeResponse(entity interface{}, statusCode int) {
+	err := EncodeResponse(o.ResponseWriter, entity, statusCode)
+	if err != nil {
+		o.Log().WithError(err).Error("encoding response failed")
+	}
+}
+
+func DecodeXMLBody(reader io.Reader, entity interface{}) error {
+	body := reader
 	content, err := ioutil.ReadAll(body)
 	if err != nil {
 		return err
@@ -101,7 +111,7 @@ func (o *Operation) SetHeaders(headers map[string]string) {
 }
 
 func (o *Operation) EncodeError(err errors.APIError) {
-	o.EncodeResponse(errors.APIErrorResponse{
+	werr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: "",
@@ -111,6 +121,9 @@ func (o *Operation) EncodeError(err errors.APIError) {
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8), // just for compatibility, meaningless in our case
 	}, err.HTTPStatusCode)
+	if werr != nil {
+		o.Log().WithError(werr).Error("encoding response failed")
+	}
 }
 
 type AuthenticatedOperation struct {
@@ -124,7 +137,7 @@ type RepoOperation struct {
 }
 
 func (o *RepoOperation) EncodeError(err errors.APIError) {
-	o.EncodeResponse(errors.APIErrorResponse{
+	writeErr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repo.Id,
@@ -134,6 +147,9 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
 	}, err.HTTPStatusCode)
+	if writeErr != nil {
+		o.Log().WithError(writeErr).Error("encoding response failed")
+	}
 }
 
 type RefOperation struct {
@@ -147,7 +163,7 @@ type PathOperation struct {
 }
 
 func (o *PathOperation) EncodeError(err errors.APIError) {
-	o.EncodeResponse(errors.APIErrorResponse{
+	writeErr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
 		BucketName: o.Repo.Id,
@@ -157,32 +173,31 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
 	}, err.HTTPStatusCode)
-}
-
-type BaseOperationHandler interface {
-	RequiredPermission(repoId, refId, path string) permissions.Permission
+	if writeErr != nil {
+		o.Log().WithError(writeErr).Error("encoding response failed")
+	}
 }
 
 type OperationHandler interface {
-	BaseOperationHandler
+	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
 	Handle(op *Operation)
 }
 
 type AuthenticatedOperationHandler interface {
-	BaseOperationHandler
+	RequiredPermissions(request *http.Request) ([]permissions.Permission, error)
 	Handle(op *AuthenticatedOperation)
 }
 
 type RepoOperationHandler interface {
-	BaseOperationHandler
+	RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error)
 	Handle(op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	BaseOperationHandler
+	RequiredPermissions(request *http.Request, repoId, branchId string) ([]permissions.Permission, error)
 	Handle(op *RefOperation)
 }
 type PathOperationHandler interface {
-	BaseOperationHandler
+	RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error)
 	Handle(op *PathOperation)
 }

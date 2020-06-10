@@ -112,7 +112,7 @@ func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perm permissions.Permission) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perms []permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -173,14 +173,10 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Principal: user.DisplayName,
 	}
 
-	// interpolate arn string
-	arn := perm.Resource
-
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
-		UserDisplayName: op.Principal,
-		Action:          perm.Action,
-		Resource:        arn,
+		UserDisplayName:     op.Principal,
+		RequiredPermissions: perms,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("failed to authorize")
@@ -198,11 +194,30 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	return op
 }
 
+func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
+	return &operations.Operation{
+		Request:        request,
+		ResponseWriter: writer,
+		Region:         ctx.region,
+		FQDN:           ctx.bareDomain,
+
+		Index:      ctx.meta,
+		BlockStore: ctx.blockStore,
+		Auth:       ctx.authService,
+		Incr:       func(action string) { ctx.stats.Collect("s3_gateway", action) },
+	}
+}
+
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perm := handler.RequiredPermission("", "", "")
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
+		perms, err := handler.RequiredPermissions(request)
+		if err != nil {
+			o := operation(ctx, writer, request)
+			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			return
+		}
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
@@ -214,8 +229,13 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perm := handler.RequiredPermission(repoId, "", "")
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
+		perms, err := handler.RequiredPermissions(request, repoId)
+		if err != nil {
+			o := operation(ctx, writer, request)
+			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			return
+		}
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
@@ -246,8 +266,13 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perm := handler.RequiredPermission(repoId, refId, path)
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
+		perms, err := handler.RequiredPermissions(request, repoId, refId, path)
+		if err != nil {
+			o := operation(ctx, writer, request)
+			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
+			return
+		}
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}

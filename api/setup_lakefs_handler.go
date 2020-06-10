@@ -2,7 +2,6 @@ package api
 
 import (
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"time"
 
@@ -72,125 +71,133 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 	})
 }
 
+func createGroups(authService auth.Service, groups []*model.Group) error {
+	for _, group := range groups {
+		err := authService.CreateGroup(group)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func createPolicies(authService auth.Service, policies []*model.Policy) error {
+	for _, policy := range policies {
+		err := authService.CreatePolicy(policy)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func attachPolicies(authService auth.Service, groupId string, policyIds []string) error {
+	for _, policyId := range policyIds {
+		err := authService.AttachPolicyToGroup(policyId, groupId)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func SetupBaseGroups(authService auth.Service, ts time.Time) error {
+	var err error
+
+	err = createGroups(authService, []*model.Group{
+		{CreatedAt: ts, DisplayName: "Admins"},
+		{CreatedAt: ts, DisplayName: "SuperUsers"},
+		{CreatedAt: ts, DisplayName: "Developers"},
+		{CreatedAt: ts, DisplayName: "Viewers"},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = createPolicies(authService, []*model.Policy{
+		{
+			CreatedAt:   ts,
+			DisplayName: "FSFullAccess",
+			Action: []string{
+				"fs:*",
+			},
+			Resource: permissions.All,
+			Effect:   true,
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "FSReadAll",
+			Action: []string{
+				"fs:List*",
+				"fs:Read*",
+			},
+			Resource: permissions.All,
+			Effect:   true,
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "FSDenyAdmin",
+			Action: []string{
+				permissions.DeleteRepositoryAction,
+				permissions.CreateRepositoryAction,
+			},
+			Resource: permissions.All,
+			Effect:   false,
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "AuthFullAccess",
+			Action: []string{
+				"auth:*",
+			},
+			Resource: permissions.All,
+			Effect:   true,
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "AuthManageOwnCredentials",
+			Action: []string{
+				permissions.CreateCredentialsAction,
+				permissions.DeleteCredentialsAction,
+				permissions.ListCredentialsAction,
+				permissions.ReadCredentialsAction,
+			},
+			Resource: permissions.UserArn("${user}"),
+			Effect:   true,
+		},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess"})
+	if err != nil {
+		return err
+	}
+	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials"})
+	if err != nil {
+		return err
+	}
+	err = attachPolicies(authService, "Developers", []string{"FSFullAccess", "FSDenyAdmin", "AuthManageOwnCredentials"})
+	if err != nil {
+		return err
+	}
+	err = attachPolicies(authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
 	now := time.Now()
 	var err error
-	// create groups
-	adminsGroup := &model.Group{
-		CreatedAt:   now,
-		DisplayName: "Admins",
-	}
-	superUsersGroup := &model.Group{
-		CreatedAt:   now,
-		DisplayName: "SuperUsers",
-	}
-	developersGroup := &model.Group{
-		CreatedAt:   now,
-		DisplayName: "Developers",
-	}
-	viewersGroup := &model.Group{
-		CreatedAt:   now,
-		DisplayName: "Viewers",
-	}
-	for _, group := range []*model.Group{adminsGroup, superUsersGroup, developersGroup, viewersGroup} {
-		err = authService.CreateGroup(group)
-		if err != nil {
-			return nil, err
-		}
-	}
 
-	repoFullAccessPolicy := &model.Policy{
-		CreatedAt:   now,
-		DisplayName: "RepoFullAccess",
-		Action: []string{
-			string(permissions.ManageReposAction),
-			string(permissions.ReadRepoAction),
-			string(permissions.WriteRepoAction),
-		},
-		Resource: permissions.AllReposArn,
-		Effect:   true,
-	}
-	repoReaderWriterPolicy := &model.Policy{
-		CreatedAt:   now,
-		DisplayName: "RepoReadWrite",
-		Action: []string{
-			string(permissions.ReadRepoAction),
-			string(permissions.WriteRepoAction),
-		},
-		Resource: permissions.AllReposArn,
-		Effect:   true,
-	}
-
-	authFullAccessPolicy := &model.Policy{
-		CreatedAt:   now,
-		DisplayName: "AuthFullAccess",
-		Action: []string{
-			string(permissions.WriteAuthAction),
-			string(permissions.ReadAuthAction),
-		},
-		Resource: permissions.AllAuthArn,
-		Effect:   true,
-	}
-	readReposPolicy := &model.Policy{
-		CreatedAt:   now,
-		DisplayName: "RepoRead",
-		Action: []string{
-			string(permissions.ReadRepoAction),
-		},
-		Resource: permissions.AllReposArn,
-		Effect:   true,
-	}
-	credentialsManagePolicy := &model.Policy{
-		CreatedAt:   now,
-		DisplayName: "ManageOwnCredentials",
-		Action: []string{
-			string(permissions.WriteAuthAction),
-			string(permissions.ReadAuthAction),
-		},
-		Resource: fmt.Sprintf(permissions.AuthUserCredentialsArn, "${user}"),
-		Effect:   true,
-	}
-
-	for _, policy := range []*model.Policy{repoFullAccessPolicy, authFullAccessPolicy, readReposPolicy, repoReaderWriterPolicy, credentialsManagePolicy} {
-		err = authService.CreatePolicy(policy)
-		if err != nil {
-			return nil, err
-		}
-	}
-	for _, policy := range []*model.Policy{repoFullAccessPolicy, authFullAccessPolicy} {
-		err = authService.AttachPolicyToGroup(policy.DisplayName, adminsGroup.DisplayName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, policy := range []*model.Policy{repoFullAccessPolicy} {
-		err = authService.AttachPolicyToGroup(policy.DisplayName, superUsersGroup.DisplayName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, policy := range []*model.Policy{repoReaderWriterPolicy} {
-		err = authService.AttachPolicyToGroup(policy.DisplayName, developersGroup.DisplayName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	for _, policy := range []*model.Policy{readReposPolicy} {
-		err = authService.AttachPolicyToGroup(policy.DisplayName, viewersGroup.DisplayName)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	// all groups get credentialsManagerPolicy
-	for _, group := range []*model.Group{viewersGroup, developersGroup, superUsersGroup} {
-		err = authService.AttachPolicyToGroup(credentialsManagePolicy.DisplayName, group.DisplayName)
-		if err != nil {
-			return nil, err
-		}
+	// Setup the basic groups and policies
+	err = SetupBaseGroups(authService, now)
+	if err != nil {
+		return nil, err
 	}
 
 	// create admin user
@@ -198,9 +205,11 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 	if err != nil {
 		return nil, err
 	}
-	err = authService.AddUserToGroup(user.DisplayName, adminsGroup.DisplayName)
+	err = authService.AddUserToGroup(user.DisplayName, "Admins")
 	if err != nil {
 		return nil, err
 	}
+
+	// Generate and return a key pair
 	return authService.CreateCredentials(user.DisplayName)
 }
