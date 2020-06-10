@@ -1,15 +1,6 @@
 package api_test
 
 import (
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -21,9 +12,16 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/testutil"
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
 )
 
 const (
@@ -55,45 +53,13 @@ type dependencies struct {
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
-	// create user
 	user := &authmodel.User{
-		Email:    "admin@example.com",
-		FullName: "admin user",
-	}
-	testutil.Must(t, authService.CreateUser(user))
-
-	// create role
-	role := &authmodel.Role{
-		DisplayName: "Admins",
-	}
-	testutil.Must(t, authService.CreateRole(role))
-
-	// attach policies
-	policies := []*authmodel.Policy{
-		{
-			Permission: string(permissions.ManageRepos),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-		{
-			Permission: string(permissions.ReadRepo),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-		{
-			Permission: string(permissions.WriteRepo),
-			Arn:        "arn:treeverse:repos:::*",
-		},
-	}
-	for _, policy := range policies {
-		testutil.Must(t, authService.AssignPolicyToRole(role.Id, policy))
+		CreatedAt:   time.Now(),
+		DisplayName: "admin",
 	}
 
-	// assign user to role
-	testutil.Must(t, authService.AssignRoleToUser(role.Id, user.Id))
-
-	creds, err := authService.CreateUserCredentials(user)
-	if err != nil {
-		t.Fatal(err)
-	}
+	creds, err := api.SetupAdminUser(authService, user)
+	testutil.Must(t, err)
 	return creds
 }
 

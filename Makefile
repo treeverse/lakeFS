@@ -14,7 +14,10 @@ GOTESTRACE=$(GOTEST) -race
 GOGET=$(GOCMD) get
 GOFMT=$(GOCMD)fmt
 
-SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) treeverse/go-swagger:v0.23.0
+GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
+
+SWAGGER=swagger
+#SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) treeverse/go-swagger:v0.23.0
 
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
@@ -60,10 +63,10 @@ lint: gen ## Lint code
 test: gen run-test  ## Run tests for the project
 
 run-test:  ## Run tests without generating anything (faster if already generated)
-	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast ./...
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast $(GO_TEST_MODULES)
 
 fast-test:  ## Run tests without race detector (faster)
-	$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast ./...
+	$(GOTEST) -count=1 -coverprofile=cover.out -short -cover -failfast $(GO_TEST_MODULES)
 
 test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out

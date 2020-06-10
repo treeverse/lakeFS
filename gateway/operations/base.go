@@ -115,8 +115,7 @@ func (o *Operation) EncodeError(err errors.APIError) {
 
 type AuthenticatedOperation struct {
 	*Operation
-	SubjectId   int
-	SubjectType string
+	Principal string
 }
 
 type RepoOperation struct {
@@ -161,7 +160,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 }
 
 type BaseOperationHandler interface {
-	Action(repoId, refId, path string) permissions.Action
+	RequiredPermission(repoId, refId, path string) permissions.Permission
 }
 
 type OperationHandler interface {
