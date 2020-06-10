@@ -3,6 +3,8 @@ package auth
 import (
 	"strings"
 
+	"github.com/treeverse/lakefs/permissions"
+
 	"github.com/treeverse/lakefs/auth/wildcard"
 )
 
@@ -85,6 +87,9 @@ func ParseARN(arnString string) (*Arn, error) {
 }
 
 func ArnMatch(src, dst string) bool {
+	if src == permissions.All {
+		return true
+	}
 	source, err := ParseARN(src)
 	if err != nil {
 		return false

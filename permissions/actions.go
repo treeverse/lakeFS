@@ -1,24 +1,67 @@
 package permissions
 
-type Action string
-
-const (
-	ReadRepoAction    Action = "repos:Read"
-	WriteRepoAction   Action = "repos:Write"
-	ManageReposAction Action = "repos:Manage"
-	ReadAuthAction    Action = "auth:Read"
-	WriteAuthAction   Action = "auth:Write"
+import (
+	"errors"
+	"fmt"
+	"strings"
 )
 
-var actionSet = map[Action]struct{}{
-	ReadRepoAction:    {},
-	WriteRepoAction:   {},
-	ManageReposAction: {},
-	ReadAuthAction:    {},
-	WriteAuthAction:   {},
+var (
+	ErrInvalidAction      = errors.New("invalid action")
+	ErrInvalidServiceName = errors.New("invalid service name")
+)
+
+const (
+	ReadRepositoryAction   = "fs:ReadRepository"
+	CreateRepositoryAction = "fs:CreateRepository"
+	DeleteRepositoryAction = "fs:DeleteRepository"
+	ListRepositoriesAction = "fs:ListRepositories"
+	ReadObjectAction       = "fs:ReadObject"
+	WriteObjectAction      = "fs:WriteObject"
+	DeleteObjectAction     = "fs:DeleteObject"
+	ListObjectsAction      = "fs:ListObjects"
+	CreateCommitAction     = "fs:CreateCommit"
+	ReadCommitAction       = "fs:ReadCommit"
+	CreateBranchAction     = "fs:CreateBranch"
+	DeleteBranchAction     = "fs:DeleteBranch"
+	ReadBranchAction       = "fs:ReadBranch"
+	RevertBranchAction     = "fs:RevertBranch"
+	ListBranchesAction     = "fs:ListBranches"
+
+	ReadUserAction          = "auth:ReadUser"
+	CreateUserAction        = "auth:CreateUser"
+	DeleteUserAction        = "auth:DeleteUser"
+	ListUsersAction         = "auth:ListUsers"
+	ReadGroupAction         = "auth:ReadGroup"
+	CreateGroupAction       = "auth:CreateGroup"
+	DeleteGroupAction       = "auth:DeleteGroup"
+	ListGroupsAction        = "auth:ListGroups"
+	AddGroupMemberAction    = "auth:AddGroupMember"
+	RemoveGroupMemberAction = "auth:RemoveGroupMember"
+	ReadPolicyAction        = "auth:ReadPolicy"
+	CreatePolicyAction      = "auth:CreatePolicy"
+	DeletePolicyAction      = "auth:DeletePolicy"
+	ListPoliciesAction      = "auth:ListPolicies"
+	AttachPolicyAction      = "auth:AttachPolicy"
+	DetachPolicyAction      = "auth:DetachPolicy"
+	ReadCredentialsAction   = "auth:ReadCredentials"
+	CreateCredentialsAction = "auth:CreateCredentials"
+	DeleteCredentialsAction = "auth:DeleteCredentials"
+	ListCredentialsAction   = "auth:ListCredentials"
+)
+
+var serviceSet = map[string]struct{}{
+	"fs":   {},
+	"auth": {},
 }
 
-func IsAction(action string) bool {
-	_, ok := actionSet[Action(action)]
-	return ok
+func IsValidAction(name string) error {
+	parts := strings.Split(name, ":")
+	if len(parts) != 2 {
+		return fmt.Errorf("%s: %w", name, ErrInvalidAction)
+	}
+	if _, ok := serviceSet[parts[0]]; !ok {
+		return fmt.Errorf("%s: %w", name, ErrInvalidServiceName)
+	}
+	return nil
 }

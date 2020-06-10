@@ -25,8 +25,13 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.WriteObject(repoId)
+func (controller *PutObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+	return []permissions.Permission{
+		{
+			Action:   permissions.WriteObjectAction,
+			Resource: permissions.ObjectArn(repoId, path),
+		},
+	}, nil
 }
 
 func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {

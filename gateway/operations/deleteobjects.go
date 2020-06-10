@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/treeverse/lakefs/auth"
+
 	"github.com/treeverse/lakefs/db"
 
 	gerrors "github.com/treeverse/lakefs/gateway/errors"
@@ -15,14 +17,14 @@ import (
 
 type DeleteObjects struct{}
 
-func (controller *DeleteObjects) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.DeleteObject(repoId)
+func (controller *DeleteObjects) RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error) {
+	return []permissions.Permission{}, nil
 }
 
 func (controller *DeleteObjects) Handle(o *RepoOperation) {
 	o.Incr("delete_objects")
 	req := &serde.Delete{}
-	err := o.DecodeXMLBody(req)
+	err := DecodeXMLBody(o.Request.Body, req)
 	if err != nil {
 		o.EncodeError(gerrors.Codes.ToAPIErr(gerrors.ErrBadRequest))
 	}
@@ -39,6 +41,24 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			})
 			continue
 		}
+		// authorize this object deletion
+		authResp, err := o.Auth.Authorize(&auth.AuthorizationRequest{
+			UserDisplayName: o.Principal,
+			RequiredPermissions: []permissions.Permission{
+				{
+					Action:   permissions.DeleteObjectAction,
+					Resource: permissions.ObjectArn(o.Repo.Id, resolvedPath.Path),
+				},
+			},
+		})
+		if err != nil || !authResp.Allowed {
+			errs = append(errs, serde.DeleteError{
+				Code:    "AccessDenied",
+				Key:     obj.Key,
+				Message: "Access Denied",
+			})
+		}
+
 		lg := o.Log().WithField("key", obj.Key)
 		err = o.Index.DeleteObject(o.Repo.Id, resolvedPath.Ref, resolvedPath.Path)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
@@ -67,4 +87,5 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		resp.Deleted = responses
 	}
 	o.EncodeResponse(resp, http.StatusOK)
+
 }
