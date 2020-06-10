@@ -4,6 +4,8 @@ import (
 	"context"
 	"testing"
 	"time"
+
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_CreateMultipartUpload(t *testing.T) {
@@ -58,10 +60,24 @@ func TestCataloger_CreateMultipartUpload(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := c.CreateMultipartUpload(ctx, tt.args.repository, tt.args.uploadID, tt.args.path, tt.args.physicalAddress, tt.args.creationTime); (err != nil) != tt.wantErr {
-				t.Errorf("CreateMultipartUpload() error = %v, wantErr %v", err, tt.wantErr)
+			err := c.CreateMultipartUpload(ctx, tt.args.repository, tt.args.uploadID, tt.args.path, tt.args.physicalAddress, tt.args.creationTime)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("CreateMultipartUpload() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			// TODO(barak): add get to validate the creation
+			if err != nil {
+				return
+			}
+			part, err := c.GetMultipartUpload(ctx, tt.args.repository, tt.args.uploadID)
+			testutil.MustDo(t, "Get multipart upload we just created", err)
+			if part.PhysicalAddress != tt.args.physicalAddress {
+				t.Errorf("Multipart upload created physical address=%s, expected=%s", part.PhysicalAddress, tt.args.physicalAddress)
+			}
+			if part.Repository != tt.args.repository {
+				t.Errorf("Multipart upload created repository=%s, expected=%s", part.Repository, tt.args.repository)
+			}
+			if part.UploadID != tt.args.uploadID {
+				t.Errorf("Multipart upload created uploadID=%s, expected=%s", part.UploadID, tt.args.uploadID)
+			}
 		})
 	}
 }

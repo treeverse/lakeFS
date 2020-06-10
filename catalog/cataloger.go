@@ -32,7 +32,7 @@ type Cataloger interface {
 	GetEntry(ctx context.Context, repository string, branch string, path string, readUncommitted bool) (*Entry, error)
 	CreateEntry(ctx context.Context, repository string, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
 	DeleteEntry(ctx context.Context, repository string, branch string, path string) error
-	ListEntries(ctx context.Context, repository string, branch string, path string, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error)
+	ListEntries(ctx context.Context, repository string, branch string, path string, after string, limit int, readUncommitted bool) ([]*Entry, bool, error)
 	RevertEntry(ctx context.Context, repository string, branch string, path string) error
 	RevertEntries(ctx context.Context, repository string, branch string, prefix string) error
 

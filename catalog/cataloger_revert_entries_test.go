@@ -136,7 +136,7 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("RevertEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1, false, true)
+		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1, true)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
 			t.Fatal("List entries of reverted master branch should return 3 items, got", len(entries))
@@ -152,7 +152,7 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("RevertEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "b1", "", "", -1, false, true)
+		entries, _, err := c.ListEntries(ctx, repository, "b1", "", "", -1, true)
 		testutil.Must(t, err)
 		if len(entries) != 6 {
 			t.Fatal("List entries of reverted b1 branch should return 3 items, got", len(entries))

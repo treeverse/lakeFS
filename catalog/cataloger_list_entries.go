@@ -6,10 +6,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// TODO(barak): remove descend for list entries
 // TODO(barak): add delimiter support - return entry and common prefix entries
 
-func (c *cataloger) ListEntries(ctx context.Context, repository string, branch string, prefix, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error) {
+func (c *cataloger) ListEntries(ctx context.Context, repository string, branch string, prefix, after string, limit int, readUncommitted bool) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),
@@ -36,9 +35,6 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, branch s
 					ORDER BY path`
 		}
 		args := []interface{}{branchID, db.Prefix(prefix), after}
-		if descend {
-			q += " DESC"
-		}
 		if limit >= 0 {
 			q += " LIMIT $4"
 			args = append(args, limit+1)

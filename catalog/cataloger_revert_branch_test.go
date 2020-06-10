@@ -46,7 +46,7 @@ func TestCataloger_RevertBranch_ChangesOnBranch(t *testing.T) {
 	if err := c.RevertBranch(ctx, repository, "master"); err != nil {
 		t.Fatal("Revert branch should work on empty branch")
 	}
-	entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1, false, true)
+	entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1, true)
 	if err != nil {
 		t.Fatal("ListEntries for RevertBranch test:", err)
 	}
@@ -90,7 +90,7 @@ func TestCataloger_RevertBranch_ChangesOnParent(t *testing.T) {
 	if err := c.RevertBranch(ctx, repository, "b1"); err != nil {
 		t.Fatal("Revert branch should work on empty branch")
 	}
-	entries, _, err := c.ListEntries(ctx, repository, "b1", "", "", -1, false, true)
+	entries, _, err := c.ListEntries(ctx, repository, "b1", "", "", -1, true)
 	if err != nil {
 		t.Fatal("ListEntries for RevertBranch test:", err)
 	}
