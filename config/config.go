@@ -27,9 +27,9 @@ import (
 
 const (
 	DefaultDatabaseDriver = "pgx"
-	DefaultCatalogDBUri   = "postgres://localhost:5432/postgres?search_path=lakefs_catalog"
-	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index"
-	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth"
+	DefaultCatalogDBUri   = "postgres://localhost:5432/postgres?search_path=lakefs_catalog&sslmode=disable"
+	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index&sslmode=disable"
+	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth&sslmode=disable"
 
 	DefaultBlockStoreType                 = "local"
 	DefaultBlockStoreLocalPath            = "~/lakefs/data"
@@ -89,28 +89,32 @@ func setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-func (c *Config) CatalogDatabaseURI() string {
-	return viper.GetString("catalog.db.uri")
+const (
+	DBKeyAuth    = "auth"
+	DBKeyIndex   = "metadata"
+	DBKeyCatalog = "catalog"
+)
+
+var SchemaDBKeys = map[string]string{
+	SchemaAuth:     DBKeyAuth,
+	SchemaMetadata: DBKeyIndex,
+	SchemaCatalog:  DBKeyCatalog,
 }
 
-func (c *Config) MetadataDatabaseURI() string {
-	return viper.GetString("metadata.db.uri")
+func (c *Config) GetDatabaseURI(key string) string {
+	return viper.GetString(key + ".db.uri")
 }
 
 func (c *Config) ConnectMetadataDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.MetadataDatabaseURI())
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyIndex))
 	if err != nil {
 		panic(err)
 	}
 	return database
 }
 
-func (c *Config) AuthDatabaseURI() string {
-	return viper.GetString("auth.db.uri")
-}
-
 func (c *Config) ConnectAuthDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.AuthDatabaseURI())
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyAuth))
 	if err != nil {
 		panic(err)
 	}

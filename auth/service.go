@@ -13,25 +13,10 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 )
 
-var (
-	ErrClientNotFound = fmt.Errorf("client: %w", db.ErrNotFound)
-	ErrUserNotFound   = fmt.Errorf("user: %w", db.ErrNotFound)
-	ErrGroupNotFound  = fmt.Errorf("group: %w", db.ErrNotFound)
-	ErrRoleNotFound   = fmt.Errorf("role: %w", db.ErrNotFound)
-)
-
-// AuthenticationRequest/AuthenticationResponse are used for user login information
-// This is encapsulated in the auth module to allow password management
-type AuthenticationRequest struct {
-}
-
-type AuthenticationResponse struct {
-}
-
 type AuthorizationRequest struct {
-	UserID     int
-	Permission permissions.Permission
-	SubjectARN string
+	UserDisplayName string
+	Action          permissions.Action
+	Resource        string
 }
 
 type AuthorizationResponse struct {
@@ -42,33 +27,94 @@ type AuthorizationResponse struct {
 type Service interface {
 	SecretStore() crypt.SecretStore
 
+	// users
 	CreateUser(user *model.User) error
-	CreateGroup(group *model.Group) error
-	CreateRole(group *model.Role) error
-
-	AssignRoleToUser(roleId, userId int) error
-	AssignRoleToGroup(roleId, groupId int) error
-	AssignPolicyToRole(roleId int, policy *model.Policy) error
-
-	GetUser(userId int) (*model.User, error)
+	DeleteUser(userDisplayName string) error
+	GetUserById(userId int) (*model.User, error)
+	GetUser(userDisplayName string) (*model.User, error)
 	GetFirstUser() (*model.User, error)
-	GetGroup(groupId int) (*model.Group, error)
-	GetRole(roleId int) (*model.Role, error)
+	ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
-	CreateAppCredentials(application *model.Application) (*model.Credential, error)
-	CreateUserCredentials(user *model.User) (*model.Credential, error)
-	GetAPICredentials(accessKey string) (*model.Credential, error)
+	// groups
+	CreateGroup(group *model.Group) error
+	DeleteGroup(groupDisplayName string) error
+	GetGroup(groupDisplayName string) (*model.Group, error)
+	ListGroups(params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
+
+	// group<->user memberships
+	AddUserToGroup(userDisplayName, groupDisplayName string) error
+	RemoveUserFromGroup(userDisplayName, groupDisplayName string) error
+	ListUserGroups(userDisplayName string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error)
+	ListGroupUsers(groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
+
+	// policies
+	CreatePolicy(policy *model.Policy) error
+	GetPolicy(policyDisplayName string) (*model.Policy, error)
+	DeletePolicy(policyDisplayName string) error
+	ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+
+	// credentials
+	CreateCredentials(userDisplayName string) (*model.Credential, error)
+	DeleteCredentials(userDisplayName, accessKeyId string) error
+	GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error)
+	GetCredentials(accessKeyId string) (*model.Credential, error)
+	ListUserCredentials(userDisplayName string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
+
+	// policy<->user attachments
+	AttachPolicyToUser(policyDisplayName, userDisplayName string) error
+	DetachPolicyFromUser(policyDisplayName, userDisplayName string) error
+	ListUserPolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+	ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+
+	// policy<->group attachments
+	AttachPolicyToGroup(policyDisplayName, groupDisplayName string) error
+	DetachPolicyFromGroup(policyDisplayName, groupDisplayName string) error
+	ListGroupPolicies(groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
+
+	// authorize user for an action
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
 }
 
-type DBAuthService struct {
-	db          db.Database
-	secretStore crypt.SecretStore
+func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
+	user := &model.User{}
+	err := tx.Get(user, `SELECT * FROM users WHERE display_name = $1`, userDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return user, nil
 }
 
-func NewDBAuthService(db db.Database, secretStore crypt.SecretStore) *DBAuthService {
-	logging.Default().Info("initialized Auth service")
-	return &DBAuthService{db: db, secretStore: secretStore}
+func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
+	group := &model.Group{}
+	err := tx.Get(group, `SELECT * FROM groups WHERE display_name = $1`, groupDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return group, nil
+}
+
+func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
+	policy := &model.PolicyDBImpl{}
+	err := tx.Get(policy, `SELECT * FROM policies WHERE display_name = $1`, policyDisplayName)
+	if err != nil {
+		return nil, err
+	}
+	return policy.ToModel(), nil
+}
+
+func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
+	res, err := tx.Exec(stmt, args...)
+	if err != nil {
+		return err
+	}
+	numRows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if numRows == 0 {
+		return db.ErrNotFound
+	}
+	return nil
 }
 
 func genAccessKeyId() string {
@@ -80,8 +126,14 @@ func genAccessSecretKey() string {
 	return Base64StringGenerator(30)
 }
 
-func (s *DBAuthService) SecretStore() crypt.SecretStore {
-	return s.secretStore
+type DBAuthService struct {
+	db          db.Database
+	secretStore crypt.SecretStore
+}
+
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore) *DBAuthService {
+	logging.Default().Info("initialized Auth service")
+	return &DBAuthService{db: db, secretStore: secretStore}
 }
 
 func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
@@ -100,107 +152,46 @@ func (s *DBAuthService) encryptSecret(secretAccessKey string) ([]byte, error) {
 	return encrypted, nil
 }
 
+func (s *DBAuthService) SecretStore() crypt.SecretStore {
+	return s.secretStore
+}
+
 func (s *DBAuthService) CreateUser(user *model.User) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, tx.Get(user, `INSERT INTO users (email, full_name) VALUES ($1, $2) RETURNING id`, user.Email, user.FullName)
-	})
-	return err
-}
-
-func (s *DBAuthService) CreateGroup(group *model.Group) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, tx.Get(group, `INSERT INTO groups (display_name) VALUES ($1) RETURNING id`, group.DisplayName)
-	})
-	return err
-}
-
-func (s *DBAuthService) CreateRole(role *model.Role) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, tx.Get(role, `INSERT INTO roles (display_name) VALUES ($1) RETURNING id`, role.DisplayName)
-	})
-	return err
-}
-
-func (s *DBAuthService) AssignPolicyToRole(roleId int, policy *model.Policy) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// create role
-		err := tx.Get(policy, `INSERT INTO policies (permission, arn) VALUES ($1, $2) RETURNING id`,
-			policy.Permission, policy.Arn)
-		if err != nil {
+		if err := model.ValidateAuthEntityId(user.DisplayName); err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`INSERT INTO role_policies (role_id, policy_id) VALUES ($1, $2)`,
-			roleId, policy.Id)
+		err := tx.Get(user, `INSERT INTO users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.DisplayName, user.CreatedAt)
 		return nil, err
 	})
 	return err
 }
 
-func (s *DBAuthService) CreateAppCredentials(application *model.Application) (*model.Credential, error) {
-	now := time.Now()
-	accessKey := genAccessKeyId()
-	secretKey := genAccessSecretKey() // TODO: Encrypt this?
-	creds, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		c := &model.Credential{
-			AccessKeyId:     accessKey,
-			AccessSecretKey: secretKey,
-			Type:            model.CredentialTypeApplication,
-			IssuedDate:      now,
-			ApplicationId:   &application.Id,
-		}
-		_, err := tx.Exec(
-			`INSERT INTO credentials (access_key_id, access_secret_key, credentials_type, issued_date, application_id)
-					VALUES ($1, $2, $3, $4, $5)`,
-			c.AccessKeyId,
-			c.AccessSecretKey,
-			c.Type,
-			c.IssuedDate,
-			c.ApplicationId,
-		)
-		return c, err
+func (s *DBAuthService) DeleteUser(userDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, deleteOrNotFound(tx, `DELETE FROM users WHERE display_name = $1`, userDisplayName)
 	})
-	return creds.(*model.Credential), err
+	return err
 }
 
-func (s *DBAuthService) CreateUserCredentials(user *model.User) (*model.Credential, error) {
-	now := time.Now()
-	accessKey := genAccessKeyId()
-	secretKey := genAccessSecretKey()
-	encryptedKey, err := s.encryptSecret(secretKey)
+func (s *DBAuthService) GetUser(userDisplayName string) (*model.User, error) {
+	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return getUser(tx, userDisplayName)
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	creds, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		c := &model.Credential{
-			AccessKeyId:                   accessKey,
-			AccessSecretKey:               secretKey,
-			AccessSecretKeyEncryptedBytes: encryptedKey,
-			Type:                          model.CredentialTypeUser,
-			IssuedDate:                    now,
-			UserId:                        &user.Id,
-		}
-		_, err := tx.Exec(
-			`INSERT INTO credentials (access_key_id, access_secret_key, credentials_type, issued_date, user_id)
-					VALUES ($1, $2, $3, $4, $5)`,
-			c.AccessKeyId,
-			encryptedKey,
-			c.Type,
-			c.IssuedDate,
-			c.UserId,
-		)
-		return c, err
-	})
-	if err != nil {
-		return nil, err
-	}
-	return creds.(*model.Credential), err
+	return user.(*model.User), nil
 }
 
-func (s *DBAuthService) GetUser(userId int) (*model.User, error) {
+func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
 	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
 		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, userId)
-		return user, err
+		if err != nil {
+			return nil, err
+		}
+		return user, nil
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -211,20 +202,308 @@ func (s *DBAuthService) GetUser(userId int) (*model.User, error) {
 func (s *DBAuthService) GetFirstUser() (*model.User, error) {
 	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM users ORDER BY id ASC LIMIT 1`)
-		return user, err
-	}, db.ReadOnly(), db.WithLogger(logging.Dummy()))
+		err := tx.Get(user, `SELECT * FROM users ORDER BY id LIMIT 1`)
+		if err != nil {
+			return nil, err
+		}
+		return user, nil
+	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
 	return user.(*model.User), nil
 }
 
-func (s *DBAuthService) GetGroup(groupId int) (*model.Group, error) {
+func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	type res struct {
+		users     []*model.User
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		users := make([]*model.User, 0)
+		err := tx.Select(&users, `SELECT * FROM users WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+			params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+		if len(users) == params.Amount+1 {
+			// we have more pages
+			users = users[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = users[len(users)-1].DisplayName
+			return &res{users, p}, nil
+		}
+		p.Amount = len(users)
+		return &res{users, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).users, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) ListUserCredentials(userDisplayName string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
+	type res struct {
+		credentials []*model.Credential
+		paginator   *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
+		credentials := make([]*model.Credential, 0)
+		err := tx.Select(&credentials, `
+			SELECT credentials.* FROM credentials
+				INNER JOIN users ON (credentials.user_id = users.id)
+			WHERE
+				users.display_name = $1
+				AND credentials.access_key_id > $2
+			ORDER BY credentials.access_key_id
+			LIMIT $3`,
+			userDisplayName, params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+		if len(credentials) == params.Amount+1 {
+			// we have more pages
+			credentials = credentials[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = credentials[len(credentials)-1].AccessKeyId
+			return &res{credentials, p}, nil
+		}
+		p.Amount = len(credentials)
+		return &res{credentials, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).credentials, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, userDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getPolicy(tx, policyDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+		}
+		_, err := tx.Exec(`
+			INSERT INTO user_policies (user_id, policy_id)
+			VALUES (
+				(SELECT id FROM users WHERE display_name = $1),
+				(SELECT id FROM policies WHERE display_name = $2)
+			)`, userDisplayName, policyDisplayName)
+		return nil, err
+	})
+	return err
+}
+
+func (s *DBAuthService) DetachPolicyFromUser(policyDisplayName, userDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getPolicy(tx, policyDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+		}
+		return nil, deleteOrNotFound(tx, `
+			DELETE FROM user_policies USING users, policies
+			WHERE user_policies.user_id = users.id
+				AND user_policies.policy_id = policies.id
+				AND users.display_name = $1
+				AND policies.display_name = $2`,
+			userDisplayName, policyDisplayName)
+	})
+	return err
+}
+
+func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	type res struct {
+		policies  []*model.Policy
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
+		policies := make([]*model.PolicyDBImpl, 0)
+		err := tx.Select(&policies, `
+			SELECT policies.* FROM policies
+				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
+				INNER JOIN users ON (user_policies.user_id = users.id)
+			WHERE
+				users.display_name = $1
+				AND policies.display_name > $2
+			ORDER BY policies.display_name
+			LIMIT $3`,
+			userDisplayName, params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+
+		policyModels := make([]*model.Policy, len(policies))
+		for i, policy := range policies {
+			policyModels[i] = policy.ToModel()
+		}
+
+		if len(policyModels) == params.Amount+1 {
+			// we have more pages
+			policyModels = policyModels[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
+		}
+		p.Amount = len(policyModels)
+		return &res{policyModels, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).policies, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	type res struct {
+		policies  []*model.Policy
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// resolve all policies attached to the user and its groups
+		var err error
+		var policies []*model.PolicyDBImpl
+
+		// resolve all policies
+		// language=sql
+		const resolvePoliciesStmt = `
+		SELECT p.id, p.display_name, p.action, p.resource, p.effect
+		FROM (
+			SELECT policies.id, policies.display_name, policies.action, policies.resource, policies.effect
+			FROM policies
+				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
+				INNER JOIN users ON (users.id = user_policies.user_id)
+			WHERE users.display_name = $1
+			UNION
+			SELECT policies.id, policies.display_name, policies.action, policies.resource, policies.effect
+			FROM policies
+				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
+				INNER JOIN groups ON (groups.id = group_policies.group_id)
+				INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
+				INNER JOIN users ON (users.id = user_groups.user_id)
+			WHERE
+				users.display_name = $1
+		) p `
+
+		const resolvePoliciesPaginated = resolvePoliciesStmt + `WHERE p.display_name > $2 ORDER BY p.display_name LIMIT $3`
+		const resolvePoliciesAll = resolvePoliciesStmt + `ORDER BY p.display_name`
+
+		if params.Amount != -1 {
+			err = tx.Select(&policies, resolvePoliciesPaginated, userDisplayName, params.After, params.Amount+1)
+		} else {
+			err = tx.Select(&policies, resolvePoliciesAll, userDisplayName)
+		}
+		if err != nil {
+			return nil, err
+		}
+
+		p := &model.Paginator{}
+
+		policyModels := make([]*model.Policy, len(policies))
+		for i, p := range policies {
+			policyModels[i] = p.ToModel()
+		}
+
+		if params.Amount != -1 && len(policyModels) == params.Amount+1 {
+			// we have more pages
+			policyModels = policyModels[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
+		}
+		p.Amount = len(policyModels)
+		return &res{policyModels, p}, nil
+
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).policies, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	type res struct {
+		policies  []*model.Policy
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, err
+		}
+		policies := make([]*model.PolicyDBImpl, 0)
+		err := tx.Select(&policies, `
+			SELECT policies.* FROM policies
+				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
+				INNER JOIN groups ON (group_policies.group_id = groups.id)
+			WHERE
+				groups.display_name = $1
+				AND policies.display_name > $2
+			ORDER BY policies.display_name
+			LIMIT $3`,
+			groupDisplayName, params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+
+		policyModels := make([]*model.Policy, len(policies))
+		for i, policy := range policies {
+			policyModels[i] = policy.ToModel()
+		}
+
+		if len(policyModels) == params.Amount+1 {
+			// we have more pages
+			policyModels = policyModels[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
+		}
+		p.Amount = len(policyModels)
+		return &res{policyModels, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).policies, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) CreateGroup(group *model.Group) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if err := model.ValidateAuthEntityId(group.DisplayName); err != nil {
+			return nil, err
+		}
+		return nil, tx.Get(group, `INSERT INTO groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
+			group.DisplayName, group.CreatedAt)
+	})
+	return err
+}
+
+func (s *DBAuthService) DeleteGroup(groupDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, deleteOrNotFound(tx, `DELETE FROM groups WHERE display_name = $1`, groupDisplayName)
+	})
+	return err
+}
+
+func (s *DBAuthService) GetGroup(groupDisplayName string) (*model.Group, error) {
 	group, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		group := &model.Group{}
-		err := tx.Get(group, `SELECT * FROM groups WHERE id = $1`, groupId)
-		return group, err
+		return getGroup(tx, groupDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
@@ -232,40 +511,347 @@ func (s *DBAuthService) GetGroup(groupId int) (*model.Group, error) {
 	return group.(*model.Group), nil
 }
 
-func (s *DBAuthService) GetRole(roleId int) (*model.Role, error) {
-	role, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		role := &model.Role{}
-		err := tx.Get(role, `SELECT * FROM roles WHERE id = $1`, roleId)
-		return role, err
+func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	type res struct {
+		groups    []*model.Group
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		groups := make([]*model.Group, 0)
+		err := tx.Select(&groups, `SELECT * FROM groups WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+			params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+		if len(groups) == params.Amount+1 {
+			// we have more pages
+			groups = groups[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = groups[len(groups)-1].DisplayName
+			return &res{groups, p}, nil
+		}
+		p.Amount = len(groups)
+		return &res{groups, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).groups, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		_, err := tx.Exec(`
+			INSERT INTO user_groups (user_id, group_id)
+			VALUES (
+				(SELECT id FROM users WHERE display_name = $1),
+				(SELECT id FROM groups WHERE display_name = $2)
+			)`, userDisplayName, groupDisplayName)
+		return nil, err
+	})
+	return err
+}
+
+func (s *DBAuthService) RemoveUserFromGroup(userDisplayName, groupDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", userDisplayName, err)
+		}
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		return nil, deleteOrNotFound(tx, `
+			DELETE FROM user_groups USING users, groups
+			WHERE user_groups.user_id = users.id
+				AND user_groups.group_id = groups.id
+				AND users.display_name = $1
+				AND groups.display_name = $2`,
+			userDisplayName, groupDisplayName)
+	})
+	return err
+}
+
+func (s *DBAuthService) ListUserGroups(userDisplayName string, params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
+	type res struct {
+		groups    []*model.Group
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
+		groups := make([]*model.Group, 0)
+		err := tx.Select(&groups, `
+			SELECT groups.* FROM groups
+				INNER JOIN user_groups ON (groups.id = user_groups.group_id)
+				INNER JOIN users ON (user_groups.user_id = users.id)
+			WHERE
+				users.display_name = $1
+				AND groups.display_name > $2
+			ORDER BY groups.display_name
+			LIMIT $3`,
+			userDisplayName, params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+		if len(groups) == params.Amount+1 {
+			// we have more pages
+			groups = groups[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = groups[len(groups)-1].DisplayName
+			return &res{groups, p}, nil
+		}
+		p.Amount = len(groups)
+		return &res{groups, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).groups, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
+	type res struct {
+		users     []*model.User
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, err
+		}
+		users := make([]*model.User, 0)
+		err := tx.Select(&users, `
+			SELECT users.* FROM users
+				INNER JOIN user_groups ON (users.id = user_groups.user_id)
+				INNER JOIN groups ON (user_groups.group_id = groups.id)
+			WHERE
+				groups.display_name = $1
+				AND users.display_name > $2
+			ORDER BY groups.display_name
+			LIMIT $3`,
+			groupDisplayName, params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+		if len(users) == params.Amount+1 {
+			// we have more pages
+			users = users[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = users[len(users)-1].DisplayName
+			return &res{users, p}, nil
+		}
+		p.Amount = len(users)
+		return &res{users, p}, nil
+	})
+
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).users, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if err := model.ValidateAuthEntityId(policy.DisplayName); err != nil {
+			return nil, err
+		}
+		for _, action := range policy.Action {
+			if err := model.ValidateActionName(action); err != nil {
+				return nil, fmt.Errorf("%s: %w", action, err)
+			}
+		}
+		if err := model.ValidateArn(policy.Resource); err != nil {
+			return nil, err
+		}
+
+		p := policy.ToDBImpl()
+		return nil, tx.Get(policy, `INSERT INTO policies (display_name, created_at, action, resource, effect) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
+			p.DisplayName, p.CreatedAt, p.Action, p.Resource, p.Effect)
+	})
+	return err
+}
+
+func (s *DBAuthService) GetPolicy(policyDisplayName string) (*model.Policy, error) {
+	policy, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return getPolicy(tx, policyDisplayName)
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, err
 	}
-	return role.(*model.Role), nil
+	return policy.(*model.Policy), nil
 }
 
-func (s *DBAuthService) AssignRoleToUser(roleId, userId int) error {
+func (s *DBAuthService) DeletePolicy(policyDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`INSERT INTO user_roles (user_id, role_id) VALUES ($1, $2)`, userId, roleId)
-		return nil, err
+		return nil, deleteOrNotFound(tx, `DELETE FROM policies WHERE display_name = $1`, policyDisplayName)
 	})
-
 	return err
 }
 
-func (s *DBAuthService) AssignRoleToGroup(roleId, groupId int) error {
-	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		_, err := tx.Exec(`INSERT INTO group_roles (group_id, role_id) VALUES ($1, $2)`, groupId, roleId)
-		return nil, err
+func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	type res struct {
+		policies  []*model.Policy
+		paginator *model.Paginator
+	}
+	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		policies := make([]*model.PolicyDBImpl, 0)
+		err := tx.Select(&policies, `
+			SELECT *
+			FROM policies
+			WHERE display_name > $1
+			ORDER BY display_name
+			LIMIT $2`,
+			params.After, params.Amount+1)
+		if err != nil {
+			return nil, err
+		}
+		p := &model.Paginator{}
+		policyModels := make([]*model.Policy, len(policies))
+		for i, policy := range policies {
+			policyModels[i] = policy.ToModel()
+		}
+		if len(policies) == params.Amount+1 {
+			// we have more pages
+			policyModels = policyModels[0:params.Amount]
+			p.Amount = params.Amount
+			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
+			return &res{policyModels, p}, nil
+		}
+		p.Amount = len(policies)
+		return &res{policyModels, p}, nil
 	})
 
+	if err != nil {
+		return nil, nil, err
+	}
+	return result.(*res).policies, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) CreateCredentials(userDisplayName string) (*model.Credential, error) {
+	now := time.Now()
+	accessKey := genAccessKeyId()
+	secretKey := genAccessSecretKey()
+	encryptedKey, err := s.encryptSecret(secretKey)
+	if err != nil {
+		return nil, err
+	}
+	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		user, err := getUser(tx, userDisplayName)
+		if err != nil {
+			return nil, err
+		}
+		c := &model.Credential{
+			AccessKeyId:                   accessKey,
+			AccessSecretKey:               secretKey,
+			AccessSecretKeyEncryptedBytes: encryptedKey,
+			IssuedDate:                    now,
+			UserId:                        user.Id,
+		}
+		_, err = tx.Exec(`
+			INSERT INTO credentials (access_key_id, access_secret_key, issued_date, user_id)
+			VALUES ($1, $2, $3, $4)`,
+			c.AccessKeyId,
+			encryptedKey,
+			c.IssuedDate,
+			c.UserId,
+		)
+		return c, err
+	})
+	if err != nil {
+		return nil, err
+	}
+	return credentials.(*model.Credential), err
+}
+
+func (s *DBAuthService) DeleteCredentials(userDisplayName, accessKeyId string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, deleteOrNotFound(tx, `
+			DELETE FROM credentials USING users
+			WHERE credentials.user_id = users.id
+				AND users.display_name = $1
+				AND credentials.access_key_id = $2`,
+			userDisplayName, accessKeyId)
+	})
 	return err
 }
 
-func (s *DBAuthService) GetAPICredentials(accessKey string) (*model.Credential, error) {
+func (s *DBAuthService) AttachPolicyToGroup(policyDisplayName, groupDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		if _, err := getPolicy(tx, policyDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+		}
+		_, err := tx.Exec(`
+			INSERT INTO group_policies (group_id, policy_id)
+			VALUES (
+				(SELECT id FROM groups WHERE display_name = $1),
+				(SELECT id FROM policies WHERE display_name = $2)
+			)`, groupDisplayName, policyDisplayName)
+		return nil, err
+	})
+	return err
+}
+
+func (s *DBAuthService) DetachPolicyFromGroup(policyDisplayName, groupDisplayName string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getGroup(tx, groupDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
+		}
+		if _, err := getPolicy(tx, policyDisplayName); err != nil {
+			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
+		}
+		return nil, deleteOrNotFound(tx, `
+			DELETE FROM group_policies USING groups, policies
+			WHERE group_policies.group_id = groups.id
+				AND group_policies.policy_id = policies.id
+				AND groups.display_name = $1
+				AND policies.display_name = $2`,
+			groupDisplayName, policyDisplayName)
+	})
+	return err
+}
+
+func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error) {
+	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		if _, err := getUser(tx, userDisplayName); err != nil {
+			return nil, err
+		}
+		credentials := &model.Credential{}
+		err := tx.Get(credentials, `
+			SELECT credentials.*
+			FROM credentials
+			INNER JOIN users ON (credentials.user_id = users.id)
+			WHERE credentials.access_key_id = $1
+				AND users.display_name = $2`, accessKeyId, userDisplayName)
+		if err != nil {
+			return nil, err
+		}
+		return credentials, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return credentials.(*model.Credential), nil
+}
+
+func (s *DBAuthService) GetCredentials(accessKeyId string) (*model.Credential, error) {
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		credentials := &model.Credential{}
-		err := tx.Get(credentials, `SELECT * FROM credentials WHERE access_key_id = $1`, accessKey)
+		err := tx.Get(credentials, `
+			SELECT * FROM credentials WHERE credentials.access_key_id = $1`, accessKeyId)
 		if err != nil {
 			return nil, err
 		}
@@ -275,69 +861,51 @@ func (s *DBAuthService) GetAPICredentials(accessKey string) (*model.Credential, 
 		}
 		credentials.AccessSecretKey = key
 		return credentials, nil
-	}, db.ReadOnly())
-
+	})
 	if err != nil {
 		return nil, err
 	}
 	return credentials.(*model.Credential), nil
 }
 
+func interpolateUser(resource string, userDisplayName string) string {
+	return strings.ReplaceAll(resource, "${user}", userDisplayName)
+}
+
 func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error) {
-	resp, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// resolve all policies attached to roles attached to the user
-		var err error
-		var userPolicies []*model.Policy
-		err = tx.Select(&userPolicies, `
-			SELECT distinct policies.id, policies.arn, policies.permission FROM policies
-			INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
-			INNER JOIN roles ON (roles.id = role_policies.role_id)
-			INNER JOIN user_roles ON (roles.id = user_roles.role_id)
-			WHERE user_roles.user_id = $1`, req.UserID)
-		if err != nil {
-			return nil, err
+	policies, _, err := s.ListEffectivePolicies(req.UserDisplayName, &model.PaginationParams{
+		After:  "",
+		Amount: -1, // all
+	})
+	if err != nil {
+		return nil, err
+	}
+	allowed := false
+	for _, policy := range policies {
+		resource := interpolateUser(policy.Resource, req.UserDisplayName)
+		if !ArnMatch(resource, req.Resource) {
+			continue
 		}
-		for _, p := range userPolicies {
-			// get permissions....
-			if strings.EqualFold(p.Permission, string(req.Permission)) && ArnMatch(p.Arn, req.SubjectARN) {
+		for _, action := range policy.Action {
+			if action == string(req.Action) && !policy.Effect {
+				// this is a "Deny" and it takes precedence
 				return &AuthorizationResponse{
-					Allowed: true,
-					Error:   nil,
+					Allowed: false,
+					Error:   ErrInsufficientPermissions,
 				}, nil
+			} else if action == string(req.Action) {
+				allowed = true
 			}
 		}
+	}
 
-		// resolve all policies attached to roles attached to groups attached to the user
-		var groupRoles []*model.Policy
-		err = tx.Select(groupRoles, `
-			SELECT distinct policies.id, policies.arn, policies.permission FROM policies
-			INNER JOIN role_policies ON (policies.id = role_policies.policy_id)
-			INNER JOIN roles ON (roles.id = role_policies.role_id)
-			INNER JOIN group_roles ON (roles.id = group_roles.role_id)
-			INNER JOIN groups ON (groups.id = group_roles.group_id)
-			INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
-			WHERE user_groups.user_id = $2`, req.UserID)
-		if err != nil {
-			return nil, err
-		}
-		for _, p := range userPolicies {
-			// get permissions....
-			if strings.EqualFold(p.Permission, string(req.Permission)) && ArnMatch(p.Arn, req.SubjectARN) {
-				return &AuthorizationResponse{
-					Allowed: true,
-					Error:   nil,
-				}, nil
-			}
-		}
-
-		// otherwise, no permission
+	if !allowed {
 		return &AuthorizationResponse{
 			Allowed: false,
 			Error:   ErrInsufficientPermissions,
 		}, nil
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
 	}
-	return resp.(*AuthorizationResponse), nil
+
+	// we're allowed!
+	return &AuthorizationResponse{Allowed: true}, nil
 }

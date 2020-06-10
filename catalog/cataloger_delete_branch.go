@@ -7,16 +7,16 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string) error {
+func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
 	if err := Validate(ValidateFields{
-		"repo":   ValidateRepoName(repo),
-		"branch": ValidateBranchName(branch),
+		"repository": ValidateRepoName(repository),
+		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return err
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// get repo id and default branch name
+		// get repository id and default branch name
 		var r struct {
 			ID            string `db:"id"`
 			DefaultBranch string `db:"default_branch"`
@@ -24,7 +24,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string
 		err := tx.Get(&r, `SELECT r.id, b.name as default_branch
 			FROM repositories r
 			JOIN branches b ON r.default_branch = b.id 
-			WHERE r.name = $1`, repo)
+			WHERE r.name = $1`, repository)
 		if err != nil {
 			return nil, err
 		}
@@ -42,7 +42,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string
 			return nil, err
 		}
 		if ancestorCount > 0 {
-			return nil, ErrResourceUsed
+			return nil, ErrBranchHasDependentBranches
 		}
 
 		// delete branch entries
@@ -63,7 +63,7 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repo string, branch string
 			return nil, ErrBranchNotFound
 		}
 		c.log.WithContext(ctx).
-			WithFields(logging.Fields{"repo": repo, "repo_id": r.ID, "branch": branch}).
+			WithFields(logging.Fields{"repository": repository, "repo_id": r.ID, "branch": branch}).
 			Debug("Branch deleted")
 		return nil, nil
 	}, c.txOpts(ctx)...)

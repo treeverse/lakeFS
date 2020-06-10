@@ -39,10 +39,10 @@ var runCmd = &cobra.Command{
 			_ = adb.Close()
 			_ = mdb.Close()
 		}()
-		migrator := db.NewDatabaseMigrator().
-			AddDB(config.SchemaCatalog, cfg.CatalogDatabaseURI()).
-			AddDB(config.SchemaMetadata, cfg.MetadataDatabaseURI()).
-			AddDB(config.SchemaAuth, cfg.AuthDatabaseURI())
+		migrator := db.NewDatabaseMigrator()
+		for name, key := range config.SchemaDBKeys {
+			migrator.AddDB(name, cfg.GetDatabaseURI(key))
+		}
 
 		// init index
 		meta := index.NewDBIndex(mdb)
@@ -106,7 +106,7 @@ func getInstallationID(authService auth.Service) string {
 	if err != nil {
 		return defaultInstallationID
 	}
-	return user.Email
+	return user.DisplayName
 }
 
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {

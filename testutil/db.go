@@ -136,7 +136,7 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) (db.Databa
 
 	if options.ApplyDDL {
 		// do the actual migration
-		err := db.MigrateSchema(schemaName, connURI)
+		err := db.MigrateUp(schemaName, connURI)
 		if err != nil {
 			t.Fatal("could not create schema:", err)
 		}
@@ -185,5 +185,11 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 func Must(t *testing.T, err error) {
 	if err != nil {
 		t.Fatalf("error returned for operation: %v", err)
+	}
+}
+
+func MustDo(t *testing.T, what string, err error) {
+	if err != nil {
+		t.Fatalf("%s, expected no error, got err=%s", what, err)
 	}
 }

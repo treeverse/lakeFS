@@ -10,75 +10,94 @@ import (
 
 func TestCataloger_DeleteEntry(t *testing.T) {
 	ctx := context.Background()
-	c := setupCatalogerForTesting(t)
-	repo := setupCatalogerRepo(t, ctx, c, "repo", "master")
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 
 	t.Run("delete file not exists", func(t *testing.T) {
-		err := c.DeleteEntry(ctx, repo, "master", "/file1")
+		err := c.DeleteEntry(ctx, repository, "master", "/file1")
 		wantErr := ErrEntryNotFound
-		if !errors.Is(err, wantErr) {
+		if !errors.As(err, &wantErr) {
 			t.Errorf("DeleteEntry() error = %s, want = %s", err, wantErr)
 		}
 	})
 
-	t.Run("delete file uncommitted", func(t *testing.T) {
-		if err := c.WriteEntry(ctx, repo, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
-			t.Fatal("write entry for delete entry test:", err)
+	t.Run("delete uncommitted", func(t *testing.T) {
+		if err := c.CreateEntry(ctx, repository, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
+			t.Fatal("create entry for delete entry test:", err)
 		}
-		err := c.DeleteEntry(ctx, repo, "master", "/file2")
+		err := c.DeleteEntry(ctx, repository, "master", "/file2")
 		if err != nil {
-			t.Errorf("DeleteEntry() error = %s, want no error", err)
+			t.Errorf("DeleteEntry() error = %s, expected no error", err)
 			return
 		}
-		_, err = c.ReadEntry(ctx, repo, "master", "/file2", true)
-		wantErr := db.ErrNotFound
-		if !errors.Is(err, wantErr) {
-			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
+
+		testDeleteEntryExpectNotFound(t, ctx, c, repository, "master", "/file2")
+
+		// if we try to commit we should fail - there was no change
+		_, err = c.Commit(ctx, repository, "master", "commit nothing", "tester", nil)
+		if !errors.Is(err, ErrNothingToCommit) {
+			t.Fatalf("Commit returned err=%s, expected=%s", err, ErrNothingToCommit)
 		}
 	})
 
-	t.Run("delete file committed on branch", func(t *testing.T) {
-		if err := c.WriteEntry(ctx, repo, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
-			t.Fatal("write entry for delete entry test:", err)
+	t.Run("delete committed on branch", func(t *testing.T) {
+		if err := c.CreateEntry(ctx, repository, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
+			t.Fatal("create entry for delete entry test:", err)
 		}
-		if _, err := c.Commit(ctx, repo, "master", "commit delete test", "tester", nil); err != nil {
+		if _, err := c.Commit(ctx, repository, "master", "commit file3", "tester", nil); err != nil {
 			t.Fatal("commit entry for delete entry test:", err)
 		}
-		err := c.DeleteEntry(ctx, repo, "master", "/file3")
+		err := c.DeleteEntry(ctx, repository, "master", "/file3")
 		if err != nil {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.ReadEntry(ctx, repo, "master", "/file3", true)
-		wantErr := db.ErrNotFound
-		if !errors.Is(err, wantErr) {
-			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
-		}
+		testDeleteEntryExpectNotFound(t, ctx, c, repository, "master", "/file3")
+		testDeleteEntryCommitAndExpectNotFound(t, ctx, c, repository, "master", "/file3")
 	})
 
 	t.Run("delete file committed on parent", func(t *testing.T) {
-		if err := c.WriteEntry(ctx, repo, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
-			t.Fatal("write entry for delete entry test:", err)
+		if err := c.CreateEntry(ctx, repository, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
+			t.Fatal("create entry for delete entry test:", err)
 		}
-		if _, err := c.Commit(ctx, repo, "master", "commit file4", "tester", nil); err != nil {
+		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {
 			t.Fatal("commit entry for delete entry test:", err)
 		}
-		if _, err := c.CreateBranch(ctx, repo, "b1", "master"); err != nil {
+		if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 			t.Fatal("create branch for delete entry test:", err)
 		}
-		err := c.DeleteEntry(ctx, repo, "b1", "/file4")
+		err := c.DeleteEntry(ctx, repository, "b1", "/file4")
 		if err != nil {
 			t.Errorf("DeleteEntry() error = %s, want no error", err)
 			return
 		}
-		_, err = c.ReadEntry(ctx, repo, "b1", "/file4", true)
-		wantErr := db.ErrNotFound
-		if !errors.Is(err, wantErr) {
-			t.Errorf("DeleteEntry() read entry err = %s, want = %s", err, wantErr)
-		}
-		_, err = c.ReadEntry(ctx, repo, "b1", "/file4", false)
-		if err != nil {
-			t.Errorf("DeleteEntry() read entry err = %s, want no error", err)
-		}
+		testDeleteEntryExpectNotFound(t, ctx, c, repository, "b1", "/file4")
+		testDeleteEntryCommitAndExpectNotFound(t, ctx, c, repository, "b1", "/file4")
 	})
+}
+
+func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string, path string) {
+	_, err := c.GetEntry(ctx, repository, branch, path, true)
+	wantErr := db.ErrNotFound
+	if !errors.As(err, &wantErr) {
+		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
+	}
+	// expect a second delete to fail on entry not found
+	err = c.DeleteEntry(ctx, repository, branch, path)
+	wantErr = ErrEntryNotFound
+	if !errors.As(err, &wantErr) {
+		t.Fatalf("DeleteEntry() error = %s, want = %s", err, wantErr)
+	}
+}
+
+func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string, path string) {
+	_, err := c.Commit(ctx, repository, branch, "commit before expect not found "+path, "tester", nil)
+	if err != nil {
+		t.Fatal("Failed to commit before expect not found:", err)
+	}
+	_, err = c.GetEntry(ctx, repository, branch, path, false)
+	wantErr := db.ErrNotFound
+	if !errors.As(err, &wantErr) {
+		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
+	}
 }

@@ -14,15 +14,13 @@ import {doSetupLakeFS} from "../actions/setup";
 import {API_ENDPOINT} from "../actions/api";
 
 const SetupPage = ({ doSetupLakeFS, setupState }) => {
-    const emailRef = useRef(null);
-    const fullNameRef = useRef(null);
-
+    const displayNameRef = useRef(null);
 
     const disabled = setupState.loading;
 
     const onSubmit = (event) => {
         if (disabled) return;
-        doSetupLakeFS(emailRef.current.value, fullNameRef.current.value);
+        doSetupLakeFS(displayNameRef.current.value);
         event.preventDefault();
     };
 
@@ -83,13 +81,10 @@ server:
                             Enter the user information<br/>
                         </Card.Text>
                         <Form onSubmit={onSubmit}>
-                            <Form.Group controlId="email">
-                                <Form.Control type="text" placeholder="Email" ref={emailRef} autoFocus/>
+                            <Form.Group controlId="display-name">
+                                <Form.Control type="text" placeholder="Display Name (e.g. 'jane.doe')" ref={displayNameRef} autoFocus/>
                             </Form.Group>
 
-                            <Form.Group controlId="fullName">
-                                <Form.Control type="text" placeholder="Full Name" ref={fullNameRef}/>
-                            </Form.Group>
                             {setupState.error && <Alert variant={"danger"}>{setupState.error}</Alert>}
                             <Button variant="primary" disabled={disabled} type="submit">Setup</Button>
                         </Form>

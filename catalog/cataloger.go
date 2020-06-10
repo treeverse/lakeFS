@@ -10,45 +10,43 @@ import (
 )
 
 type Cataloger interface {
-	// repository level
-	CreateRepo(ctx context.Context, repo string, bucket string, branch string) error
-	ListRepos(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
-	GetRepo(ctx context.Context, repo string) (*Repo, error)
-	DeleteRepo(ctx context.Context, repo string) error
-	ListRepoCommits(ctx context.Context, repo string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
+	// repository
+	CreateRepository(ctx context.Context, repository string, bucket string, branch string) error
+	GetRepository(ctx context.Context, repository string) (*Repo, error)
+	DeleteRepository(ctx context.Context, repository string) error
+	ListRepositories(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
 
-	// branch level
-	CreateBranch(ctx context.Context, repo string, branch string, sourceBranch string) (*Branch, error)
-	GetBranch(ctx context.Context, repo string, branch string) (*Branch, error)
-	DeleteBranch(ctx context.Context, repo string, branch string) error
-	ListBranchesByPrefix(ctx context.Context, repo string, prefix string, limit int, after string) ([]*Branch, bool, error)
+	// branch
+	CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (int, error)
+	GetBranch(ctx context.Context, repository string, branch string) (*Branch, error)
+	DeleteBranch(ctx context.Context, repository string, branch string) error
+	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
+	RevertBranch(ctx context.Context, repository string, branch string) error
 
-	Commit(ctx context.Context, repo, branch, message, committer string, metadata map[string]string) (int, error)
-	ListBranchCommits(ctx context.Context, repo string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
+	// commit
+	Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (int, error)
+	ListCommits(ctx context.Context, repository string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
+	RevertCommit(ctx context.Context, repository string, branch string, commitID int) error
 
-	// entry level
-	ReadEntry(ctx context.Context, repo, branch, path string, readUncommitted bool) (*Entry, error)
-	WriteEntry(ctx context.Context, repo, branch, path, checksum, physicalAddress string, size int, metadata *map[string]string) error
-	DeleteEntry(ctx context.Context, repo, branch, path string) error
-	ListEntriesByPrefix(ctx context.Context, repo string, branch string, path, after string, limit int, descend bool, readUncommitted bool) ([]*Entry, bool, error)
+	// entry
+	GetEntry(ctx context.Context, repository string, branch string, path string, readUncommitted bool) (*Entry, error)
+	CreateEntry(ctx context.Context, repository string, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
+	DeleteEntry(ctx context.Context, repository string, branch string, path string) error
+	ListEntries(ctx context.Context, repository string, branch string, path string, after string, limit int, readUncommitted bool) ([]*Entry, bool, error)
+	RevertEntry(ctx context.Context, repository string, branch string, path string) error
+	RevertEntries(ctx context.Context, repository string, branch string, prefix string) error
 
 	// diff and merge
-	Diff(ctx context.Context, repo, leftBranch, rightBranch string) (Differences, error)
+	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
 	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
 
-	// revert
-	RevertBranch(ctx context.Context, branch string) error
-	RevertCommit(ctx context.Context, branch string, commitID int) error
-	RevertPath(ctx context.Context, branch string, path string) error
-	RevertEntry(ctx context.Context, branch string, path string) error
-
 	// dedup
-	GetOrCreateDedup(ctx context.Context, repo string, dedupID string, physicalAddress string) (string, error)
+	Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error)
 
 	// multipart
-	CreateMultipartUpload(ctx context.Context, repo, uploadID, path, physicalAddress string, creationTime time.Time) error
-	ReadMultipartUpload(ctx context.Context, repo, uploadID string) (*MultipartUpload, error)
-	DeleteMultipartUpload(ctx context.Context, repo, uploadID string) error
+	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
+	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
+	DeleteMultipartUpload(ctx context.Context, repository, uploadID string) error
 }
 
 type cataloger struct {
@@ -77,18 +75,6 @@ func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch s
 	panic("implement me")
 }
 
-func (c *cataloger) RevertBranch(ctx context.Context, branch string) error {
-	panic("implement me")
-}
-
-func (c *cataloger) RevertCommit(ctx context.Context, branch string, commitID int) error {
-	panic("implement me")
-}
-
-func (c *cataloger) RevertPath(ctx context.Context, branch string, path string) error {
-	panic("implement me")
-}
-
-func (c *cataloger) RevertEntry(ctx context.Context, branch string, path string) error {
+func (c *cataloger) RevertCommit(ctx context.Context, repository string, branch string, commitID int) error {
 	panic("implement me")
 }

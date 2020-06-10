@@ -9,6 +9,8 @@ import (
 	"text/template"
 	"time"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -23,6 +25,10 @@ const (
 	LakectlInteractiveDisable = "no"
 	DeathMessage              = "Error executing command: {{.Error|red}}\n"
 )
+
+const resourceListTemplate = `{{.Table | table -}}
+{{.Pagination | paginate }}
+`
 
 func init() {
 	// disable colors if we're not attached to interactive TTY
@@ -157,4 +163,25 @@ func DieErr(err error) {
 
 func Fmt(msg string, args ...interface{}) {
 	fmt.Printf(msg, args...)
+}
+
+func PrintTable(rows [][]interface{}, headers []interface{}, paginator *models.Pagination, amount int) {
+	ctx := struct {
+		Table      *Table
+		Pagination *Pagination
+	}{
+		Table: &Table{
+			Headers: headers,
+			Rows:    rows,
+		},
+	}
+	if paginator != nil && swag.BoolValue(paginator.HasMore) {
+		ctx.Pagination = &Pagination{
+			Amount:  amount,
+			HasNext: true,
+			After:   paginator.NextOffset,
+		}
+	}
+
+	Write(resourceListTemplate, ctx)
 }

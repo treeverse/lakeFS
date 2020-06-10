@@ -25,7 +25,7 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) Action(repoId, refId, path string) permissions.Action {
+func (controller *PutObject) RequiredPermission(repoId, refId, path string) permissions.Permission {
 	return permissions.WriteObject(repoId)
 }
 
@@ -43,7 +43,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 		return
 	}
 
-	// validate src and dst are in the same repo
+	// validate src and dst are in the same repository
 	if !strings.EqualFold(o.Repo.Id, p.Repo) {
 		o.Log().WithError(err).Error("cannot copy objects across repos")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))

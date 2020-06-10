@@ -112,7 +112,7 @@ func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, action permissions.Action) *operations.AuthenticatedOperation {
+func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perm permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
@@ -135,7 +135,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
 		return nil
 	}
-	creds, err := s.authService.GetAPICredentials(authContext.GetAccessKeyId())
+	creds, err := s.authService.GetCredentials(authContext.GetAccessKeyId())
 	if err != nil {
 		if !errors.Is(err, db.ErrNotFound) {
 			o.Log().WithError(err).WithField("key", authContext.GetAccessKeyId()).Warn("error getting access key")
@@ -157,21 +157,30 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		return nil
 	}
 
+	user, err := s.authService.GetUserById(creds.UserId)
+	if err != nil {
+		o.Log().WithError(err).WithFields(logging.Fields{
+			"key":           authContext.GetAccessKeyId(),
+			"authenticator": authenticator,
+		}).Warn("could not get user for credentials key")
+		o.EncodeError(getApiErrOrDefault(err, gatewayerrors.ErrAccessDenied))
+		return nil
+	}
+
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
-		Operation:   o,
-		SubjectId:   *creds.UserId,
-		SubjectType: creds.Type,
+		Operation: o,
+		Principal: user.DisplayName,
 	}
 
 	// interpolate arn string
-	arn := action.Arn
+	arn := perm.Resource
 
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
-		UserID:     op.SubjectId,
-		Permission: action.Permission,
-		SubjectARN: arn,
+		UserDisplayName: op.Principal,
+		Action:          perm.Action,
+		Resource:        arn,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("failed to authorize")
@@ -192,8 +201,8 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action("", "", "")
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
+		perm := handler.RequiredPermission("", "", "")
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
 		if authOp == nil {
 			return
 		}
@@ -205,8 +214,8 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(repoId, "", "")
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
+		perm := handler.RequiredPermission(repoId, "", "")
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
 		if authOp == nil {
 			return
 		}
@@ -237,8 +246,8 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		action := handler.Action(repoId, refId, path)
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, action)
+		perm := handler.RequiredPermission(repoId, refId, path)
+		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perm)
 		if authOp == nil {
 			return
 		}

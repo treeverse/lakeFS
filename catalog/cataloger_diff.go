@@ -9,9 +9,9 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch string) (Differences, error) {
+func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
 	if err := Validate(ValidateFields{
-		"repo":        ValidateRepoName(repo),
+		"repository":  ValidateRepoName(repository),
 		"leftBranch":  ValidateBranchName(leftBranch),
 		"rightBranch": ValidateBranchName(rightBranch),
 	}); err != nil {
@@ -19,26 +19,26 @@ func (c *cataloger) Diff(ctx context.Context, repo, leftBranch, rightBranch stri
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		log := c.log.WithContext(ctx)
-		leftId, err := getBranchID(tx, repo, leftBranch, LockTypeNone)
+		leftId, err := getBranchID(tx, repository, leftBranch, LockTypeNone)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
-					"branch": leftBranch,
-					"repo":   repo,
+					"branch":     leftBranch,
+					"repository": repository,
 				}).Warn("Branch not found")
 			return nil, err
 		}
-		rightId, err := getBranchID(tx, repo, rightBranch, LockTypeNone)
+		rightId, err := getBranchID(tx, repository, rightBranch, LockTypeNone)
 		if err != nil {
 			log.WithError(err).
 				WithFields(logging.Fields{
-					"branch": rightBranch,
-					"repo":   repo,
+					"branch":     rightBranch,
+					"repository": repository,
 				}).Warn("Branch not found")
 			return nil, err
 		}
 		return doDiff(tx, leftId, rightId, log)
-	})
+	}, c.txOpts(ctx)...)
 	return differences.(Differences), err
 }
 
@@ -194,7 +194,6 @@ func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences
 func nonDirectDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences, error) {
 	panic("not implemented - diff between arbitrary branches ")
 	return nil, nil
-
 }
 
 /*

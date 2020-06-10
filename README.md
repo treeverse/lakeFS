@@ -64,12 +64,12 @@ logging:
 metadata:
   db:
     # Make sure the DB connection string includes search_path (no need to create this schema beforehand)
-    uri: "postgres://localhost:5432/postgres?search_path=lakefs_index"
+    uri: "postgres://localhost:5432/postgres?search_path=lakefs_index&sslmode=disable"
 
 auth:
   db:
     # Make sure the DB connection string includes search_path (no need to create this schema beforehand)
-    uri: "postgres://localhost:5432/postgres?search_path=lakefs_auth"
+    uri: "postgres://localhost:5432/postgres?search_path=lakefs_auth&sslmode=disable"
   encrypt:
     # This value must be set by the user.
     # In production it's recommended to read this value from a safe place like AWS KMS or Hashicorp Vault
@@ -127,3 +127,8 @@ api:
    ```
 
 5. You should end up with 2 binaries in your work directory: `lakefs` and `lakectl`. See the [docs](https://docs.lakefs.io/quickstart.html) on how to run them.
+
+### Running Load Tests
+ 
+After building as described above, you should have a third binary called `lakefs-loadtest`. Run `lakefs-loadtest --help` for details on how to run load tests on your lakeFS instance.
+Alternatively, there is a unit test in the file `local_load_test.go`, which will run the tests on a dedicated test server.

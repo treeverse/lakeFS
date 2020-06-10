@@ -13,33 +13,33 @@ func TestParseARN(t *testing.T) {
 		Error bool
 	}{
 		{Input: "", Error: true},
-		{Input: "arn:treeverse:repo", Error: true},
-		{Input: "arn:treeverse:repos:a:b:myrepo", Arn: auth.Arn{
-			Partition:  "treeverse",
+		{Input: "arn:lakefs:repo", Error: true},
+		{Input: "arn:lakefs:repos:a:b:myrepo", Arn: auth.Arn{
+			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "a",
 			AccountId:  "b",
 			ResourceId: "myrepo"}},
-		{Input: "arn:treeverse:repos:a:b/myrepo", Arn: auth.Arn{
-			Partition:  "treeverse",
+		{Input: "arn:lakefs:repos:a:b/myrepo", Arn: auth.Arn{
+			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "a",
 			AccountId:  "b",
 			ResourceId: "myrepo"}},
-		{Input: "arn:treeverse:repos:a::myrepo", Arn: auth.Arn{
-			Partition:  "treeverse",
+		{Input: "arn:lakefs:repos:a::myrepo", Arn: auth.Arn{
+			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "a",
 			AccountId:  "",
 			ResourceId: "myrepo"}},
-		{Input: "arn:treeverse:repos::b:myrepo", Arn: auth.Arn{
-			Partition:  "treeverse",
+		{Input: "arn:lakefs:repos::b:myrepo", Arn: auth.Arn{
+			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "",
 			AccountId:  "b",
 			ResourceId: "myrepo"}},
-		{Input: "arn:treeverse:repos::/myrepo", Arn: auth.Arn{
-			Partition:  "treeverse",
+		{Input: "arn:lakefs:repos::/myrepo", Arn: auth.Arn{
+			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "",
 			AccountId:  "",
@@ -79,12 +79,12 @@ func TestArnMatch(t *testing.T) {
 		InputDestination string
 		Match            bool
 	}{
-		{"arn:treeverse:repos::b:myrepo", "arn:treeverse:repos::b:myrepo", true},
-		{"arn:treeverse:repos::b:*", "arn:treeverse:repos::b:myrepo", true},
-		{"arn:treeverse:repos::b:myrepo", "arn:treeverse:repos::b:*", false},
-		{"arn:treeverse:repos::b/myrepo", "arn:treeverse:repos::b/*", false},
-		{"arn:treeverse:repos::b/*", "arn:treeverse:repos::b/myrepo", true},
-		{"arn:treeverse:repo", "arn:treeverse:repo", false},
+		{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:myrepo", true},
+		{"arn:lakefs:repos::b:*", "arn:lakefs:repos::b:myrepo", true},
+		{"arn:lakefs:repos::b:myrepo", "arn:lakefs:repos::b:*", false},
+		{"arn:lakefs:repos::b/myrepo", "arn:lakefs:repos::b/*", false},
+		{"arn:lakefs:repos::b/*", "arn:lakefs:repos::b/myrepo", true},
+		{"arn:lakefs:repo", "arn:lakefs:repo", false},
 	}
 
 	for _, c := range cases {
