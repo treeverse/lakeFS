@@ -30,9 +30,11 @@
 
 # Our binaries
 /lakefs
+/lakefs-loadtest
 /lakectl
 /main
 /cmd/lakefs/lakefs
+/cmd/lakefs-loadtest/lakefs-loadtest
 /cmd/lakectl/lakectl
 /dist
 
