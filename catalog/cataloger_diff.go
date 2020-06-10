@@ -66,7 +66,6 @@ func doDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, err
 		return FromSonDiff(tx, leftID, rightID, log)
 	}
 	return nonDirectDiff(tx, leftID, rightID, log)
-
 }
 
 func FromFatherDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, error) {
@@ -112,7 +111,7 @@ func FromFatherDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differen
 										  WHERE displayed_branch = $2 and rank=1) s ON f.path = s.path
 									 JOIN lineage_v l ON f.source_branch = l.ancestor_branch AND l.branch_id = $2 AND l.active_lineage) t_1
 						  WHERE father_changed AND NOT (same_object OR both_deleted) ) t`
-	var result Differences
+	result := Differences{}
 	err = tx.Select(&result, diffSQL, leftID, rightID, maxSonMerge)
 	if err != nil {
 		log.WithError(err).Error("error comparing branches for diff")
@@ -123,7 +122,7 @@ func FromFatherDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differen
 
 func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences, error) {
 	// read last merge commit numbers from commit table
-	// if it is the first son-to-father commit, than those comiit numbers are calculated as follows:
+	// if it is the first son-to-father commit, than those commit numbers are calculated as follows:
 	// the son is 0, as any change in the some was never merged to the father.
 	// the father is lhe effective commit number of the first lineage record of the son that points to the father
 	// it is possible that the son the have already done from_father merge. so we have to take the minimal effective commit
@@ -132,8 +131,8 @@ func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences
 		SonEffectiveCommit    int `db:"son_effective_commit"`
 	}{}
 
-	err := tx.Get(&effectiveCommits, `SELECT commit_id AS Father_effective_commit,merge_source_commit AS Son_effective_commit 
-	FROM commits WHERE branch_id = $1 AND merge_type = 'from_son' ORDER BY commit_id DESC LIMIT 1`, rightId)
+	err := tx.Get(&effectiveCommits, `SELECT commit_id AS father_effective_commit,merge_source_commit AS son_effective_commit 
+		FROM commits WHERE branch_id = $1 AND merge_type = 'from_son' ORDER BY commit_id DESC LIMIT 1`, rightId)
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftId, rightId)
@@ -194,7 +193,6 @@ func FromSonDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differences
 
 func nonDirectDiff(tx db.Tx, leftID, rightID int, log logging.Logger) (Differences, error) {
 	panic("not implemented - diff between arbitrary branches ")
-	return nil, nil
 }
 
 /*
