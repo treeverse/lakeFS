@@ -60,9 +60,9 @@ type Cataloger interface {
 	RepositoryCataloger
 	BranchCataloger
 	EntryCataloger
+	MultipartUpdateCataloger
 	Differ
 	Merger
-	MultipartUpdateCataloger
 	Deduper
 }
 
