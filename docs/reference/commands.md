@@ -41,8 +41,7 @@ will provide a link to download a preconfigured configuration file for you.
 
 ### Command Reference
 
-##### lakectl branch create
-
+##### `lakectl branch create`
 ````text
 create a new branch in a repository
 
@@ -58,8 +57,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl branch delete
-
+##### `lakectl branch delete`
 ````text
 delete a branch in a repository, along with its uncommitted changes (CAREFUL)
 
@@ -75,8 +73,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl branch list
-
+##### `lakectl branch list`
 ````text
 list branches in a repository
 
@@ -96,8 +93,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl branch revert
-
+##### `lakectl branch revert`
 ````text
 revert changes: there are four different ways to revert changes:
 				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
@@ -119,8 +115,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl branch show
-
+##### `lakectl branch show`
 ````text
 show branch metadata
 
@@ -135,8 +130,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl commit
-
+##### `lakectl commit`
 ````text
 commit changes on a given branch
 
@@ -153,8 +147,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl config
-
+##### `lakectl config`
 ````text
 Create/update local lakeFS configuration
 
@@ -169,8 +162,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl diff
-
+##### `lakectl diff`
 ````text
 see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)
 
@@ -185,8 +177,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl fs cat
-
+##### `lakectl fs cat`
 ````text
 dump content of object to stdout
 
@@ -202,8 +193,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl fs ls
-
+##### `lakectl fs ls`
 ````text
 list entries under a given tree
 
@@ -219,8 +209,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl fs rm
-
+##### `lakectl fs rm`
 ````text
 delete object
 
@@ -235,8 +224,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl fs stat
-
+##### `lakectl fs stat`
 ````text
 view object metadata
 
@@ -253,8 +241,7 @@ Global Flags:
 
 ````
 
-##### lakectl fs upload
-
+##### `lakectl fs upload`
 ````text
 upload a local file to the specified URI
 
@@ -271,8 +258,7 @@ Global Flags:
 
 ````
 
-##### lakectl log
-
+##### `lakectl log`
 ````text
 show log of commits for the given branch
 
@@ -290,8 +276,7 @@ Global Flags:
 
 ````
 
-##### lakectl merge
-
+##### `lakectl merge`
 ````text
 merge & commit changes from source branch into destination branch
 
@@ -306,8 +291,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl repo create
-
+##### `lakectl repo create`
 ````text
 create a new repository
 
@@ -323,8 +307,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl repo delete
-
+##### `lakectl repo delete`
 ````text
 delete existing repository
 
@@ -340,8 +323,7 @@ Global Flags:
 
 ````
 
-##### lakectl repo list
-
+##### `lakectl repo list`
 ````text
 list repositories
 
@@ -358,8 +340,7 @@ Global Flags:
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
 
-##### lakectl show
-
+##### `lakectl show`
 ````text
 See detailed information about an entity by ID (commit, user, etc)
 
@@ -374,6 +355,411 @@ Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
       --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
 ````
+
+##### `lakectl auth users create `
+```text
+create a user
+
+Usage:
+  lakectl auth users create [flags]
+
+Flags:
+  -h, --help        help for create
+      --id string   user identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth users list `
+```text
+list users
+
+Usage:
+  lakectl auth users list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth users delete `
+```text
+delete a user
+
+Usage:
+  lakectl auth users delete [flags]
+
+Flags:
+  -h, --help        help for delete
+      --id string   user identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth users --id <userID> groups list `
+```text
+list groups for the given user
+
+Usage:
+  lakectl auth users groups list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+      --id string      user identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+
+##### `lakectl auth users --id <userID> credentials list `
+```text
+create user credentials
+
+Usage:
+  lakectl auth users credentials create [flags]
+
+Flags:
+  -h, --help        help for create
+      --id string   user identifier (default: current user)
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth users --id <userID> credentials create `
+```text
+create user credentials
+
+Usage:
+  lakectl auth users credentials create [flags]
+
+Flags:
+  -h, --help        help for create
+      --id string   user identifier (default: current user)
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth users --id <userID> credentials delete `
+```text
+delete user credentials
+
+Usage:
+  lakectl auth users credentials delete [flags]
+
+Flags:
+      --access-key-id string   access key ID to delete
+  -h, --help                   help for delete
+      --id string              user identifier (default: current user)
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+```
+
+##### `lakectl auth users --id <userID> policies list `
+```text
+list policies for the given user
+
+Usage:
+  lakectl auth users policies list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+      --effective      list all distinct policies attached to the user, even through group memberships
+  -h, --help           help for list
+      --id string      user identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+
+##### `lakectl auth users --id <userID> policies attach `
+```text
+attach a policy to a user
+
+Usage:
+  lakectl auth users policies attach [flags]
+
+Flags:
+  -h, --help            help for attach
+      --id string       user identifier
+      --policy string   policy identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+
+##### `lakectl auth users --id <userID> policies detach`
+```text
+detach a policy from a user
+
+Usage:
+  lakectl auth users policies detach [flags]
+
+Flags:
+  -h, --help            help for detach
+      --id string       user identifier
+      --policy string   policy identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth groups list`
+```text
+list groups
+
+Usage:
+  lakectl auth groups list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth groups create`
+```text
+create a group
+
+Usage:
+  lakectl auth groups create [flags]
+
+Flags:
+  -h, --help        help for create
+      --id string   group identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+
+```
+
+##### `lakectl auth groups delete`
+```text
+delete a group
+
+Usage:
+  lakectl auth groups delete [flags]
+
+Flags:
+  -h, --help        help for delete
+      --id string   group identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth groups --id <groupID> members list`
+```text
+list users in a group
+
+Usage:
+  lakectl auth groups members list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+      --id string      group identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+
+```
+
+##### `lakectl auth groups --id <groupID> members add`
+```text
+add a user to a group
+
+Usage:
+  lakectl auth groups members add [flags]
+
+Flags:
+  -h, --help          help for add
+      --id string     group identifier
+      --user string   user identifier to add to the group
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+
+```
+
+##### `lakectl auth groups --id <groupID> members remove`
+```text
+remove a user from a group
+
+Usage:
+  lakectl auth groups members remove [flags]
+
+Flags:
+  -h, --help          help for remove
+      --id string     group identifier
+      --user string   user identifier to add to the group
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth groups --id <groupID> policies list`
+```text
+list policies for the given group
+
+Usage:
+  lakectl auth groups policies list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+      --id string      group identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth groups --id <groupID> policies attach`
+```text
+attach a policy to a group
+
+Usage:
+  lakectl auth groups policies attach [flags]
+
+Flags:
+  -h, --help            help for attach
+      --id string       user identifier
+      --policy string   policy identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth groups --id <groupID> policies detach`
+```text
+detach a policy from a group
+
+Usage:
+  lakectl auth groups policies detach [flags]
+
+Flags:
+  -h, --help            help for detach
+      --id string       user identifier
+      --policy string   policy identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+
+##### `lakectl auth policies create`
+```text
+create a policy
+
+Usage:
+  lakectl auth policies create [flags]
+
+Flags:
+      --action strings    actions to attach to the policy
+      --effect string     policy effect (Allow/Deny) (default "Allow")
+  -h, --help              help for create
+      --id string         policy identifier
+      --resource string   resource ARN
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth policies delete`
+```text
+delete a policy
+
+Usage:
+  lakectl auth policies delete [flags]
+
+Flags:
+  -h, --help        help for delete
+      --id string   policy identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+##### `lakectl auth policies list`
+```text
+list policies
+
+Usage:
+  lakectl auth policies list [flags]
+
+Flags:
+      --after string   show results after this value (used for pagination)
+      --amount int     how many results to return (default 100)
+  -h, --help           help for list
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
+
+
+
 
 ### lakeFS URI pattern
 
