@@ -22,6 +22,7 @@ func Level() string {
 type Fields map[string]interface{}
 
 type Logger interface {
+	WithContext(ctx context.Context) Logger
 	WithField(key string, value interface{}) Logger
 	WithFields(fields Fields) Logger
 	WithError(err error) Logger
@@ -45,6 +46,10 @@ type Logger interface {
 
 type logrusEntryWrapper struct {
 	e *logrus.Entry
+}
+
+func (l *logrusEntryWrapper) WithContext(ctx context.Context) Logger {
+	return &logrusEntryWrapper{l.e.WithContext(ctx)}
 }
 
 func (l *logrusEntryWrapper) WithField(key string, value interface{}) Logger {

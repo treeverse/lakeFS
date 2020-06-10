@@ -24,14 +24,17 @@
 
 ### IDEs and stuff ###
 .idea/
+.vscode/
 
 # End of https://www.gitignore.io/api/go
 
 # Our binaries
 /lakefs
+/lakefs-loadtest
 /lakectl
 /main
 /cmd/lakefs/lakefs
+/cmd/lakefs-loadtest/lakefs-loadtest
 /cmd/lakectl/lakectl
 /dist
 
