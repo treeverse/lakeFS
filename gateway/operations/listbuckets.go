@@ -11,8 +11,13 @@ import (
 
 type ListBuckets struct{}
 
-func (controller *ListBuckets) RequiredPermission(repoId, refId, path string) permissions.Permission {
-	return permissions.ListRepos()
+func (controller *ListBuckets) RequiredPermissions(request *http.Request) ([]permissions.Permission, error) {
+	return []permissions.Permission{
+		{
+			Action:   permissions.ReadRepositoryAction,
+			Resource: "*",
+		},
+	}, nil
 }
 
 func (controller *ListBuckets) Handle(o *AuthenticatedOperation) {
