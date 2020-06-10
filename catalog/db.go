@@ -1,6 +1,10 @@
 package catalog
 
-import "github.com/treeverse/lakefs/db"
+import (
+	"reflect"
+
+	"github.com/treeverse/lakefs/db"
+)
 
 type LockType int
 
@@ -35,4 +39,27 @@ func getRepoID(tx db.Tx, repository string) (int, error) {
 	var repoID int
 	err := tx.Get(&repoID, `SELECT id FROM repositories WHERE name=$1`, repository)
 	return repoID, err
+}
+
+func getCommitID(tx db.Tx, branchID int) (int, error) {
+	var commitID int
+	err := tx.Get(&commitID, `SELECT next_commit FROM branches WHERE id = $1`, branchID)
+	return commitID, err
+}
+
+// paginateSlice take slice address, resize and return 'has more' when needed
+func paginateSlice(s interface{}, limit int) bool {
+	if limit <= 0 {
+		return false
+	}
+	v := reflect.ValueOf(s)
+	if v.Kind() != reflect.Ptr {
+		return false
+	}
+	el := v.Elem()
+	if el.Len() > limit {
+		el.Set(el.Slice(0, limit))
+		return true
+	}
+	return false
 }

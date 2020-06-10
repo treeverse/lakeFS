@@ -38,7 +38,7 @@ func TestCataloger_GetBranch(t *testing.T) {
 			wantErr: true,
 		},
 		{
-			name:    "no repository",
+			name:    "unknown repository",
 			args:    args{repository: "repoX", branch: "master"},
 			want:    nil,
 			wantErr: true,
@@ -50,8 +50,14 @@ func TestCataloger_GetBranch(t *testing.T) {
 			wantErr: true,
 		},
 		{
+			name:    "unknown branch",
+			args:    args{repository: "repo1", branch: "nobranch"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name:    "missing branch",
-			args:    args{repository: "repo1", branch: "main"},
+			args:    args{repository: "repo1", branch: ""},
 			want:    nil,
 			wantErr: true,
 		},

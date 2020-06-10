@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
 func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repo, bool, error) {
@@ -23,12 +22,6 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 		if err := tx.Select(&repos, query, args...); err != nil {
 			return nil, err
 		}
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{
-				"limit": limit,
-				"after": after,
-			}).Debug("List repos")
-
 		return repos, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 
@@ -36,11 +29,6 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 		return nil, false, err
 	}
 	repos := res.([]*Repo)
-	// has more support - we read extra one and it is the indicator for more
-	hasMore := false
-	if limit >= 0 && len(repos) > limit {
-		repos = repos[0:limit]
-		hasMore = true
-	}
+	hasMore := paginateSlice(&repos, limit)
 	return repos, hasMore, err
 }

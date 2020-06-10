@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -40,17 +39,12 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository string, branch 
 		}
 
 		// insert new lineage for the new branch
-		res, err := tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit)
+		_, err = tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit)
 			SELECT $1, precedence + 1, ancestor_branch, effective_commit
 			FROM lineage_v
 			WHERE branch_id = $2`, branchID, sourceBranchID)
 		if err != nil {
 			return 0, err
-		}
-		if affected, err := res.RowsAffected(); err != nil {
-			return 0, err
-		} else if affected == 0 {
-			return 0, fmt.Errorf("lineage not found for source branch id: %d", sourceBranchID)
 		}
 		return branchID, nil
 	}, c.txOpts(ctx)...)

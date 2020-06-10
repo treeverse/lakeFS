@@ -4,7 +4,6 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
 func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
@@ -62,9 +61,6 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch 
 		} else if affected != 1 {
 			return nil, ErrBranchNotFound
 		}
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{"repository": repository, "repo_id": r.ID, "branch": branch}).
-			Debug("Branch deleted")
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return err

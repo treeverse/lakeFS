@@ -52,11 +52,6 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, branch s
 		return nil, false, err
 	}
 	entries := res.([]*Entry)
-	// has more support - we read extra one and it is the indicator for more
-	hasMore := false
-	if limit >= 0 && len(entries) > limit {
-		entries = entries[0:limit]
-		hasMore = true
-	}
+	hasMore := paginateSlice(&entries, limit)
 	return entries, hasMore, err
 }

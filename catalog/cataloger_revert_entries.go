@@ -20,15 +20,8 @@ func (c *cataloger) RevertEntries(ctx context.Context, repository string, branch
 			return nil, err
 		}
 		prefixCond := db.Prefix(prefix)
-		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND path LIKE $2 AND min_commit = 0`, branchID, prefixCond)
-		if err != nil {
-			return nil, err
-		}
-		affected, err := res.RowsAffected()
-		if err != nil {
-			return nil, err
-		}
-		return affected, nil
+		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND path LIKE $2 AND min_commit = 0`, branchID, prefixCond)
+		return nil, err
 	}, c.txOpts(ctx)...)
 	return err
 }

@@ -39,11 +39,6 @@ func (c *cataloger) ListCommits(ctx context.Context, repository string, branch s
 		return nil, false, err
 	}
 	commits := res.([]*CommitLog)
-	// has more support - we read extra one and it is the indicator for more
-	hasMore := false
-	if limit >= 0 && len(commits) > limit {
-		commits = commits[0:limit]
-		hasMore = true
-	}
+	hasMore := paginateSlice(&commits, limit)
 	return commits, hasMore, err
 }

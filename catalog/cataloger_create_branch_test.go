@@ -12,9 +12,10 @@ func TestCataloger_CreateBranch(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
-	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
-		t.Fatal("create repository for testing", err)
-	}
+	testutil.MustDo(t, "test repository for create branch",
+		c.CreateRepository(ctx, "repo1", "bucket1", "master"))
+	_, err := c.CreateBranch(ctx, "repo1", "master2", "master")
+	testutil.MustDo(t, "create test branch for create branch test", err)
 
 	type args struct {
 		repository   string
@@ -32,6 +33,18 @@ func TestCataloger_CreateBranch(t *testing.T) {
 			args:           args{repository: "repo1", branch: "b1", sourceBranch: "master"},
 			wantBranchName: "b1",
 			wantErr:        false,
+		},
+		{
+			name:           "self",
+			args:           args{repository: "repo1", branch: "master", sourceBranch: "master"},
+			wantBranchName: "",
+			wantErr:        true,
+		},
+		{
+			name:           "existing",
+			args:           args{repository: "repo1", branch: "master2", sourceBranch: "master"},
+			wantBranchName: "",
+			wantErr:        true,
 		},
 		{
 			name:           "unknown source",

@@ -15,6 +15,9 @@ const (
 	DifferenceTypeAdded DifferenceType = iota
 	DifferenceTypeRemoved
 	DifferenceTypeChanged
+
+	EntryTypeObject = "object"
+	EntryTypeTree   = "tree"
 )
 
 type Difference struct {

@@ -2,8 +2,11 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
+
+	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -68,8 +71,17 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := c.DeleteBranch(ctx, tt.args.repository, tt.args.branch); (err != nil) != tt.wantErr {
-				t.Errorf("DeleteBranch() error = %v, wantErr %v", err, tt.wantErr)
+			err := c.DeleteBranch(ctx, tt.args.repository, tt.args.branch)
+			if (err != nil) != tt.wantErr {
+				t.Fatalf("DeleteBranch() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			_, err = c.GetBranch(ctx, tt.args.repository, tt.args.branch)
+			if !errors.As(err, &db.ErrNotFound) {
+				t.Errorf("Branch should not be found after delete, got err=%s", err)
+				return
 			}
 		})
 	}
