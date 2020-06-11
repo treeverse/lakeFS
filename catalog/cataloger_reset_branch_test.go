@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCataloger_RevertBranch_NoChanges(t *testing.T) {
+func TestCataloger_ResetBranch_NoChanges(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
@@ -17,7 +17,7 @@ func TestCataloger_RevertBranch_NoChanges(t *testing.T) {
 	}
 }
 
-func TestCataloger_RevertBranch_ChangesOnBranch(t *testing.T) {
+func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
@@ -56,7 +56,7 @@ func TestCataloger_RevertBranch_ChangesOnBranch(t *testing.T) {
 	}
 }
 
-func TestCataloger_RevertBranch_ChangesOnParent(t *testing.T) {
+func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
