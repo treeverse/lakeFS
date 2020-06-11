@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListCommits(ctx context.Context, repository string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error) {
+func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),
