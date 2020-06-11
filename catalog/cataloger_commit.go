@@ -9,7 +9,7 @@ import (
 
 const MaxCommitID = 0x7FFFFFFF
 
-func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (int, error) {
+func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (CommitID, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),
@@ -69,7 +69,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 	if err != nil {
 		return 0, err
 	}
-	return res.(int), nil
+	return CommitID(res.(int)), nil
 }
 
 func commitIncrementCommitID(tx sqlx.Execer, branchID int, commitID int) error {

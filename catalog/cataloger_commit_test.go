@@ -35,7 +35,7 @@ func TestCataloger_Commit(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    int
+		want    CommitID
 		wantErr bool
 	}{
 		{
@@ -107,8 +107,9 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
-			if commitID != i+1 {
-				t.Errorf("Commit got ID %d, expected %d", commitID, i+1)
+			expectedCommit := CommitID(i + 1)
+			if commitID != expectedCommit {
+				t.Errorf("Commit got ID %d, expected %d", commitID, expectedCommit)
 				return
 			}
 			ent, _, err := c.ListEntries(ctx, repository, "master", CommittedID, "", "", -1)
@@ -140,8 +141,9 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
-			if commitID != i+1 {
-				t.Errorf("Commit got ID %d, expected %d", commitID, i+1)
+			expectedCommit := CommitID(i + 1)
+			if commitID != expectedCommit {
+				t.Errorf("Commit got ID %d, expected %d", commitID, expectedCommit)
 				return
 			}
 			ent, _, err := c.ListEntries(ctx, repository, "master", CommittedID, "", "", -1)

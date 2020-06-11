@@ -2,7 +2,12 @@ package catalog
 
 import (
 	"context"
+	"errors"
+	"strconv"
 	"testing"
+
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_GetEntry(t *testing.T) {
@@ -105,6 +110,113 @@ func TestCataloger_GetEntry(t *testing.T) {
 				t.Errorf("GetEntry() got Checksum = %v, want = %v", got.Checksum, tt.want.Checksum)
 			}
 		})
+	}
+}
+
+func TestCataloger_GetEntry_ByCommitSameBranch(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := setupReadEntryData(t, ctx, c)
+
+	// create the following commits on /file11 - new, change, del, new
+	const fileName = "/file11"
+	commit := make([]CommitID, 4)
+	for i := 0; i < 4; i++ {
+		id := i + 1
+		fileChecksum := "fff" + strconv.Itoa(id)
+		fileAddr := "/addr/" + strconv.Itoa(id)
+		fileSize := 42 + id
+		if id == 3 {
+			testutil.MustDo(t, "delete "+fileName,
+				c.DeleteEntry(ctx, repository, "master", fileName))
+		} else {
+			testutil.MustDo(t, "create "+fileName,
+				c.CreateEntry(ctx, repository, "master", fileName, fileChecksum, fileAddr, fileSize, nil))
+		}
+		commitMsg := "commit " + fileName + " for the " + strconv.Itoa(id+1) + " time"
+		commitID, err := c.Commit(ctx, repository, "master", commitMsg, "tester", nil)
+		testutil.MustDo(t, commitMsg, err)
+		commit[i] = commitID
+	}
+
+	// verify the above
+	for i := 0; i < 4; i++ {
+		id := i + 1
+		commitID := commit[i]
+		ent, err := c.GetEntry(ctx, repository, "master", commitID, fileName)
+		if id == 3 {
+			// check file not found
+			if !errors.As(err, &db.ErrNotFound) {
+				t.Errorf("On commit %d the entry is not expected to be found, err=%s", commitID, err)
+			}
+		} else {
+			// check file exists with the right address
+			if err != nil {
+				t.Fatalf("On commit %d the entry is expected to be found, err=%s", commitID, err)
+			}
+			expectedAddr := "/addr/" + strconv.Itoa(id)
+			if ent.PhysicalAddress != expectedAddr {
+				t.Errorf("On commit %d the physical address = %s, expected %s", commitID, ent.PhysicalAddress, expectedAddr)
+			}
+		}
+	}
+}
+
+func TestCataloger_GetEntry_ByCommitParentBranch(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := setupReadEntryData(t, ctx, c)
+
+	// create the following commits on /file11 - new, change, <branch>, del, new
+	const fileName = "/file12"
+	commit := make([]CommitID, 4)
+	branch := "master"
+	for i := 0; i < 4; i++ {
+		id := i + 1
+		fileChecksum := "fff" + strconv.Itoa(id)
+		fileAddr := "/addr/" + strconv.Itoa(id)
+		fileSize := 42 + id
+		if id == 3 {
+			branch = "b1"
+			_, err := c.CreateBranch(ctx, repository, branch, "master")
+			testutil.MustDo(t, "create branch b1", err)
+			testutil.MustDo(t, "delete "+fileName,
+				c.DeleteEntry(ctx, repository, branch, fileName))
+		} else {
+			testutil.MustDo(t, "create "+fileName,
+				c.CreateEntry(ctx, repository, branch, fileName, fileChecksum, fileAddr, fileSize, nil))
+		}
+
+		commitMsg := "commit " + fileName + " for the " + strconv.Itoa(id+1) + " time"
+		commitID, err := c.Commit(ctx, repository, branch, commitMsg, "tester", nil)
+		testutil.MustDo(t, commitMsg, err)
+		commit[i] = commitID
+	}
+
+	// verify the above
+	branch = "master"
+	for i := 0; i < 4; i++ {
+		id := i + 1
+		commitID := commit[i]
+		if id == 3 {
+			branch = "b1"
+		}
+		ent, err := c.GetEntry(ctx, repository, branch, commitID, fileName)
+		if id == 3 {
+			// check file not found
+			if !errors.As(err, &db.ErrNotFound) {
+				t.Errorf("On commit %d the entry is not expected to be found, err=%s", commitID, err)
+			}
+		} else {
+			// check file exists with the right address
+			if err != nil {
+				t.Fatalf("On commit %d the entry is expected to be found, err=%s", commitID, err)
+			}
+			expectedAddr := "/addr/" + strconv.Itoa(id)
+			if ent.PhysicalAddress != expectedAddr {
+				t.Errorf("On commit %d the physical address = %s, expected %s", commitID, ent.PhysicalAddress, expectedAddr)
+			}
+		}
 	}
 }
 

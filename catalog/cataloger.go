@@ -50,8 +50,8 @@ type Deduper interface {
 }
 
 type Committer interface {
-	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (int, error)
-	ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
+	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (CommitID, error)
+	ListCommits(ctx context.Context, repository, branch string, fromCommitID CommitID, limit int) ([]*CommitLog, bool, error)
 	RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error
 }
 

@@ -21,7 +21,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 	type args struct {
 		repository   string
 		branch       string
-		fromCommitID int
+		fromCommitID CommitID
 		limit        int
 	}
 	tests := []struct {
