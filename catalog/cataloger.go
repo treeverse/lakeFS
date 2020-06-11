@@ -56,11 +56,11 @@ type Committer interface {
 }
 
 type Differ interface {
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
+	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (*Differences, error)
 }
 
 type Merger interface {
-	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
+	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (*Differences, error)
 }
 
 type Cataloger interface {
@@ -97,7 +97,7 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 	return append(o, opts...)
 }
 
-func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error) {
+func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (*Differences, error) {
 	panic("implement me")
 }
 
