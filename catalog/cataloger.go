@@ -9,46 +9,72 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type Cataloger interface {
-	// repository
+type CommitID int
+
+const (
+	CommittedID   CommitID = 0
+	UncommittedID CommitID = -1
+)
+
+type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, bucket string, branch string) error
 	GetRepository(ctx context.Context, repository string) (*Repo, error)
 	DeleteRepository(ctx context.Context, repository string) error
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
+}
 
-	// branch
-	CreateBranch(ctx context.Context, repository string, branch string, sourceBranch string) (int, error)
-	GetBranch(ctx context.Context, repository string, branch string) (*Branch, error)
-	DeleteBranch(ctx context.Context, repository string, branch string) error
+type BranchCataloger interface {
+	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (int, error)
+	GetBranch(ctx context.Context, repository, branch string) (*Branch, error)
+	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
-	RevertBranch(ctx context.Context, repository string, branch string) error
+	ResetBranch(ctx context.Context, repository, branch string) error
+}
 
-	// commit
-	Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (int, error)
-	ListCommits(ctx context.Context, repository string, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
-	RevertCommit(ctx context.Context, repository string, branch string, commitID int) error
-
-	// entry
-	GetEntry(ctx context.Context, repository string, branch string, path string, readUncommitted bool) (*Entry, error)
-	CreateEntry(ctx context.Context, repository string, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
-	DeleteEntry(ctx context.Context, repository string, branch string, path string) error
-	ListEntries(ctx context.Context, repository string, branch string, path string, after string, limit int, readUncommitted bool) ([]*Entry, bool, error)
-	RevertEntry(ctx context.Context, repository string, branch string, path string) error
-	RevertEntries(ctx context.Context, repository string, branch string, prefix string) error
-
-	// diff and merge
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
-	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
-
-	// dedup
-	Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error)
-
-	// multipart
+type EntryCataloger interface {
+	GetEntry(ctx context.Context, repository, branch string, commitID CommitID, path string) (*Entry, error)
+	CreateEntry(ctx context.Context, repository, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
+	DeleteEntry(ctx context.Context, repository, branch string, path string) error
+	ListEntries(ctx context.Context, repository, branch string, commitID CommitID, prefix, after string, limit int) ([]*Entry, bool, error)
+	ResetEntry(ctx context.Context, repository, branch string, path string) error
+	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
+}
+type MultipartUpdateCataloger interface {
 	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
 	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
 	DeleteMultipartUpload(ctx context.Context, repository, uploadID string) error
 }
 
+type Deduper interface {
+	Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error)
+}
+
+type Committer interface {
+	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (int, error)
+	ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
+	RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error
+}
+
+type Differ interface {
+	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
+}
+
+type Merger interface {
+	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
+}
+
+type Cataloger interface {
+	RepositoryCataloger
+	BranchCataloger
+	EntryCataloger
+	Committer
+	MultipartUpdateCataloger
+	Differ
+	Merger
+	Deduper
+}
+
+// cataloger main catalog implementation based on mvcc
 type cataloger struct {
 	Clock clock.Clock
 	log   logging.Logger
@@ -75,6 +101,6 @@ func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch s
 	panic("implement me")
 }
 
-func (c *cataloger) RevertCommit(ctx context.Context, repository string, branch string, commitID int) error {
+func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error {
 	panic("implement me")
 }

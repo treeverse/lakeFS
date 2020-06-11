@@ -9,7 +9,7 @@ import (
 
 const MaxCommitID = 0x7FFFFFFF
 
-func (c *cataloger) Commit(ctx context.Context, repository string, branch string, message string, committer string, metadata Metadata) (int, error) {
+func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (int, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),

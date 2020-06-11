@@ -16,12 +16,6 @@ type Repo struct {
 	CreationDate     time.Time `db:"creation_date"`
 }
 
-type ObjectDedup struct {
-	RepositoryID    int    `db:"repository_id"`
-	DedupID         string `db:"dedup_id"`
-	PhysicalAddress string `db:"physical_address"`
-}
-
 type Entry struct {
 	BranchID        int       `db:"branch_id"`
 	Path            string    `db:"path"`
@@ -33,18 +27,6 @@ type Entry struct {
 	Checksum        string    `db:"checksum"`
 	Metadata        Metadata  `db:"metadata"`
 	IsTombstone     bool      `db:"is_tombstone"`
-}
-
-type Commit struct {
-	BranchID          int       `db:"branch_id"`
-	CommitID          int       `db:"commit_id"`
-	Committer         string    `db:"committer"`
-	Message           string    `db:"message"`
-	CreationDate      time.Time `db:"creation_date"`
-	Metadata          Metadata  `db:"metadata"`
-	MergeSourceBranch *int      `db:"merge_source_branch"`
-	MergeSourceCommit *int      `db:"merge_source_commit"`
-	MergeType         string    `db:"merge_type"`
 }
 
 type CommitLog struct {
@@ -59,13 +41,6 @@ type CommitLog struct {
 type Branch struct {
 	Repository string `db:"repository"`
 	Name       string `db:"name"`
-}
-
-type BranchDB struct {
-	RepositoryID int    `db:"repository_id"`
-	ID           int    `db:"id"`
-	Name         string `db:"name"`
-	NextCommit   int    `db:"next_commit"`
 }
 
 type MultipartUpload struct {
