@@ -103,8 +103,8 @@ func FromFatherDiff(tx db.Tx, leftId, rightId int, log logging.Logger) (Differen
 															OR s.max_commit > $3 AND s.is_deleted)  -- deleted after last commit
 																	AS son_changed
 								   FROM ( SELECT *
-										   FROM entries_lineage_Committed_v
-										  WHERE displayed_branch = $1 AND rank=1) f
+										   FROM entries_lineage_committed_v
+										  WHERE displayed_branch = $1) f
 									 LEFT JOIN ( SELECT *
 										   FROM entries_lineage_full_v 
 										  WHERE displayed_branch = $2 and rank=1) s ON f.path = s.path
