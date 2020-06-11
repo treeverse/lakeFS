@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) DeleteBranch(ctx context.Context, repository string, branch string) error {
+func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string) error {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),

@@ -9,20 +9,20 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestCataloger_RevertEntries_Basics(t *testing.T) {
+func TestCataloger_ResetEntries_Basics(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
 	const branch = "master"
 	repository := testCatalogerRepo(t, ctx, c, "repository", branch)
 	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ffff", "/addr1", 111, nil); err != nil {
-		t.Fatal("create entry for revert entry test:", err)
+		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, branch, "commit file1", "tester", nil); err != nil {
-		t.Fatal("commit for revert entry test:", err)
+		t.Fatal("Commit for reset entry test:", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", "/file2", "eeee", "/addr2", 222, nil); err != nil {
-		t.Fatal("create entry for revert entry test:", err)
+		t.Fatal("create entry for reset entry test:", err)
 	}
 
 	type args struct {
@@ -83,17 +83,17 @@ func TestCataloger_RevertEntries_Basics(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if err := c.RevertEntries(ctx, tt.args.repository, tt.args.branch, tt.args.prefix); (err != nil) != tt.wantErr {
-				t.Errorf("RevertEntries() error = %v, wantErr %v", err, tt.wantErr)
+			if err := c.ResetEntries(ctx, tt.args.repository, tt.args.branch, tt.args.prefix); (err != nil) != tt.wantErr {
+				t.Errorf("ResetEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-// TestCataloger_RevertEntries
+// TestCataloger_ResetEntries
 // test data: 3 files committed on master and b1 (child of master)
-// test: for each branch do create, replace and delete operations -> revert
-func TestCataloger_RevertEntries(t *testing.T) {
+// test: for each branch do create, replace and delete operations -> reset
+func TestCataloger_ResetEntries(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -103,19 +103,19 @@ func TestCataloger_RevertEntries(t *testing.T) {
 		testutil.Must(t, c.CreateEntry(ctx, repository, "master", "/file"+strconv.Itoa(i), strings.Repeat("ff", i+1), "/addr"+strconv.Itoa(i), i+1, nil))
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit changes on master", "tester", nil); err != nil {
-		t.Fatal("Commit for revert entry test:", err)
+		t.Fatal("Commit for reset entry test:", err)
 	}
 
 	// create b1 branch with 3 entries committed
 	_, err := c.CreateBranch(ctx, repository, "b1", "master")
 	if err != nil {
-		t.Fatal("CreateBranch for RevertEntries:", err)
+		t.Fatal("CreateBranch for ResetEntries:", err)
 	}
 	for i := 3; i < 6; i++ {
 		testutil.Must(t, c.CreateEntry(ctx, repository, "b1", "/file"+strconv.Itoa(i), strings.Repeat("ff", i+1), "/addr"+strconv.Itoa(i), i+1, nil))
 	}
 	if _, err := c.Commit(ctx, repository, "b1", "commit changes on b1", "tester", nil); err != nil {
-		t.Fatal("Commit for revert entry test:", err)
+		t.Fatal("Commit for reset entry test:", err)
 	}
 	testutil.Must(t, c.CreateEntry(ctx, repository, "master", "/file2", "eeee", "/addr2", 222, nil))
 
@@ -131,35 +131,35 @@ func TestCataloger_RevertEntries(t *testing.T) {
 	testutil.Must(t, c.DeleteEntry(ctx, repository, "master", "/file1"))
 	testutil.Must(t, c.DeleteEntry(ctx, repository, "b1", "/file4"))
 
-	t.Run("revert master", func(t *testing.T) {
-		err = c.RevertEntries(ctx, repository, "master", "/file")
+	t.Run("reset master", func(t *testing.T) {
+		err = c.ResetEntries(ctx, repository, "master", "/file")
 		if err != nil {
-			t.Fatal("RevertEntries expected to succeed:", err)
+			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1, true)
+		entries, _, err := c.ListEntries(ctx, repository, "master", UncommittedID, "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
-			t.Fatal("List entries of reverted master branch should return 3 items, got", len(entries))
+			t.Fatal("List entries of reseted master branch should return 3 items, got", len(entries))
 		}
 		for i := 0; i < 3; i++ {
 			if entries[i].Size != int64(i+1) {
-				t.Fatalf("RevertEntries got mismatch size on entry %d: %d, expected %d", i, entries[i].Size, i+1)
+				t.Fatalf("ResetEntries got mismatch size on entry %d: %d, expected %d", i, entries[i].Size, i+1)
 			}
 		}
 	})
-	t.Run("revert b1", func(t *testing.T) {
-		err = c.RevertEntries(ctx, repository, "b1", "/file")
+	t.Run("reset b1", func(t *testing.T) {
+		err = c.ResetEntries(ctx, repository, "b1", "/file")
 		if err != nil {
-			t.Fatal("RevertEntries expected to succeed:", err)
+			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "b1", "", "", -1, true)
+		entries, _, err := c.ListEntries(ctx, repository, "b1", UncommittedID, "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 6 {
-			t.Fatal("List entries of reverted b1 branch should return 3 items, got", len(entries))
+			t.Fatal("List entries of reseted b1 branch should return 3 items, got", len(entries))
 		}
 		for i := 0; i < 6; i++ {
 			if entries[i].Size != int64(i+1) {
-				t.Fatalf("RevertEntries got mismatch size on entry %d: %d, expected %d", i, entries[i].Size, i+1)
+				t.Fatalf("ResetEntries got mismatch size on entry %d: %d, expected %d", i, entries[i].Size, i+1)
 			}
 		}
 	})

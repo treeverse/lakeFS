@@ -14,7 +14,7 @@ const (
 	LockTypeUpdate
 )
 
-func getBranchID(tx db.Tx, repository string, branch string, branchLockType LockType) (int, error) {
+func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (int, error) {
 	const b = `SELECT b.id FROM branches b join repositories r 
 					ON r.id = b.repository_id
 					WHERE r.name = $1 AND b.name = $2`

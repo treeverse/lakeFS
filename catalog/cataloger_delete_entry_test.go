@@ -45,7 +45,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file3", "tester", nil); err != nil {
-			t.Fatal("commit entry for delete entry test:", err)
+			t.Fatal("Commit entry for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repository, "master", "/file3")
 		if err != nil {
@@ -61,7 +61,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {
-			t.Fatal("commit entry for delete entry test:", err)
+			t.Fatal("Commit entry for delete entry test:", err)
 		}
 		if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 			t.Fatal("create branch for delete entry test:", err)
@@ -76,8 +76,8 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 }
 
-func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string, path string) {
-	_, err := c.GetEntry(ctx, repository, branch, path, true)
+func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository, branch string, path string) {
+	_, err := c.GetEntry(ctx, repository, branch, UncommittedID, path)
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
@@ -90,12 +90,12 @@ func testDeleteEntryExpectNotFound(t *testing.T, ctx context.Context, c Cataloge
 	}
 }
 
-func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string, path string) {
+func testDeleteEntryCommitAndExpectNotFound(t *testing.T, ctx context.Context, c Cataloger, repository, branch string, path string) {
 	_, err := c.Commit(ctx, repository, branch, "commit before expect not found "+path, "tester", nil)
 	if err != nil {
 		t.Fatal("Failed to commit before expect not found:", err)
 	}
-	_, err = c.GetEntry(ctx, repository, branch, path, false)
+	_, err = c.GetEntry(ctx, repository, branch, CommittedID, path)
 	wantErr := db.ErrNotFound
 	if !errors.As(err, &wantErr) {
 		t.Fatalf("DeleteEntry() get entry err = %s, want = %s", err, wantErr)
