@@ -150,7 +150,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 	}
 }
 
-func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string) {
+func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository, branch string) {
 	for i := 0; i < 3; i++ {
 		fileName := fmt.Sprintf("/file%d", i)
 		fileAddr := fmt.Sprintf("/addr%d", i)

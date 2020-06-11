@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetBranch(ctx context.Context, repository string, branch string) (*Branch, error) {
+func (c *cataloger) GetBranch(ctx context.Context, repository, branch string) (*Branch, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),

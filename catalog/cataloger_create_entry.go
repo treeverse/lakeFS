@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) CreateEntry(ctx context.Context, repository string, branch string, path string, checksum string, physicalAddress string, size int, metadata Metadata) error {
+func (c *cataloger) CreateEntry(ctx context.Context, repository, branch string, path string, checksum string, physicalAddress string, size int, metadata Metadata) error {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),
