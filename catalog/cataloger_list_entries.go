@@ -2,13 +2,14 @@ package catalog
 
 import (
 	"context"
+	"errors"
 
 	"github.com/treeverse/lakefs/db"
 )
 
 // TODO(barak): add delimiter support - return entry and common prefix entries
 
-func (c *cataloger) ListEntries(ctx context.Context, repository string, branch string, prefix, after string, limit int, readUncommitted bool) ([]*Entry, bool, error) {
+func (c *cataloger) ListEntries(ctx context.Context, repository, branch string, commitID CommitID, prefix, after string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
 		"repository": ValidateRepoName(repository),
 		"branch":     ValidateBranchName(branch),
@@ -23,16 +24,19 @@ func (c *cataloger) ListEntries(ctx context.Context, repository string, branch s
 		}
 
 		var q string
-		if readUncommitted {
+		switch commitID {
+		case UncommittedID:
 			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
 					ORDER BY path`
-		} else {
+		case CommittedID:
 			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
 					FROM entries_lineage_committed_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
 					ORDER BY path`
+		default:
+			return nil, errors.New("TBD")
 		}
 		args := []interface{}{branchID, db.Prefix(prefix), after}
 		if limit >= 0 {
