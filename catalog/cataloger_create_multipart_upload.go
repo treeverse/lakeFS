@@ -9,7 +9,7 @@ import (
 
 func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string, uploadID, path, physicalAddress string, creationTime time.Time) error {
 	if err := Validate(ValidateFields{
-		"repository":      ValidateRepoName(repository),
+		"repository":      ValidateRepositoryName(repository),
 		"uploadID":        ValidateUploadID(uploadID),
 		"path":            ValidatePath(path),
 		"physicalAddress": ValidatePhysicalAddress(physicalAddress),
@@ -18,7 +18,7 @@ func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repository)
+		repoID, err := getRepositoryID(tx, repository)
 		if err != nil {
 			return nil, err
 		}

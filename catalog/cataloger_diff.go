@@ -8,9 +8,11 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (*Differences, error) {
+const diffResultsTableName = "diff_results"
+
+func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
 	if err := Validate(ValidateFields{
-		"repository":  ValidateRepoName(repository),
+		"repository":  ValidateRepositoryName(repository),
 		"leftBranch":  ValidateBranchName(leftBranch),
 		"rightBranch": ValidateBranchName(rightBranch),
 	}); err != nil {
@@ -30,33 +32,31 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 	if err != nil {
 		return nil, err
 	}
-	return differences.(*Differences), nil
+	return differences.(Differences), nil
 }
 
-func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int) (*Differences, error) {
-	// call diff based on diff type
-	const directLinkQuery = `select count(*) from lineage where branch_id = $2 and ancestor_branch = $1 and precedence = 1`
-	var directLink int
-	err := tx.Get(&directLink, directLinkQuery, leftID, rightID)
+func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int) (Differences, error) {
+	relation, err := getBranchesRelationType(tx, leftID, rightID)
 	if err != nil {
-		c.log.WithError(err).Error("error reading lineage table")
 		return nil, err
 	}
-	if directLink > 0 {
-		return c.diffFromFather(tx, leftID, rightID)
-	}
-	err = tx.Get(&directLink, directLinkQuery, rightID, leftID)
-	if err != nil {
-		c.log.WithError(err).Error("error reading lineage table")
-		return nil, err
-	}
-	if directLink > 0 {
-		return c.diffFromSun(tx, leftID, rightID)
-	}
-	return c.diffNonDirect(tx, leftID, rightID)
+	return c.doDiffByRelation(tx, relation, leftID, rightID, false)
 }
 
-func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (*Differences, error) {
+func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int, createTemp bool) (Differences, error) {
+	switch relation {
+	case RelationTypeFromFather:
+		return c.diffFromFather(tx, leftID, rightID, createTemp)
+	case RelationTypeFromSon:
+		return c.diffFromSun(tx, leftID, rightID, createTemp)
+	case RelationTypeNotDirect:
+		return c.diffNonDirect(tx, leftID, rightID, createTemp)
+	default:
+		return nil, nil
+	}
+}
+
+func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int
@@ -99,15 +99,19 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (*Differences,
 							  WHERE displayed_branch = $2 and rank=1) s ON f.path = s.path
 						 JOIN lineage_v l ON f.source_branch = l.ancestor_branch AND l.branch_id = $2 AND l.active_lineage) t_1
 			   WHERE father_changed AND NOT (same_object OR both_deleted) ) t`
+	if createTemp {
+		_, err := tx.Exec("CREATE TEMP TABLE "+diffResultsTableName+" ON COMMIT DROP AS "+diffSQL, leftID, rightID, maxSonMerge)
+		return nil, err
+	}
 	var result Differences
 	err = tx.Select(&result, diffSQL, leftID, rightID, maxSonMerge)
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return result, nil
 }
 
-func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int) (*Differences, error) {
+func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
 	// read last merge commit numbers from commit table
 	// if it is the first son-to-father commit, than those commit numbers are calculated as follows:
 	// the son is 0, as any change in the some was never merged to the father.
@@ -171,10 +175,10 @@ func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int) (*Differences, er
 	if err != nil {
 		return nil, err
 	}
-	return &result, nil
+	return result, nil
 }
 
-func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int) (*Differences, error) {
+func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
 	panic("not implemented - diff between arbitrary branches ")
 }
 

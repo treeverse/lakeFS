@@ -14,6 +14,8 @@ var (
 	ErrInvalidState               = errors.New("invalid state")
 	ErrNothingToCommit            = errors.New("nothing to commit")
 	ErrEntryUpdateFailed          = errors.New("entry update failed")
+	ErrNoDifferenceWasFound       = errors.New("no difference was found")
+	ErrConflictFound              = errors.New("conflict found")
 	ErrBranchNotFound             = fmt.Errorf("branch %w", db.ErrNotFound)
 	ErrRepoNotFound               = fmt.Errorf("repository %w", db.ErrNotFound)
 	ErrMultipartUploadNotFound    = fmt.Errorf("multipart upload %w", db.ErrNotFound)

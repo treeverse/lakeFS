@@ -8,14 +8,14 @@ import (
 
 func (c *cataloger) GetBranch(ctx context.Context, repository, branch string) (*Branch, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepoName(repository),
+		"repository": ValidateRepositoryName(repository),
 		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return nil, err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repository)
+		repoID, err := getRepositoryID(tx, repository)
 		if err != nil {
 			return nil, err
 		}

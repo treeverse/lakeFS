@@ -9,7 +9,7 @@ import (
 
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, bucket string, branch string) error {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepoName(repository),
+		"repository": ValidateRepositoryName(repository),
 		"bucket":     ValidateBucketName(bucket),
 		"branch":     ValidateBranchName(branch),
 	}); err != nil {
