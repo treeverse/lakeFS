@@ -88,10 +88,11 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 						OR f.max_commit > l.effective_commit AND f.is_deleted -- father deleted after commit
 									AS father_changed,
 						-- son created or deleted 
-						s.path IS NOT NULL AND (NOT s.is_committed -- uncommitted is new
-												(OR s.min_commit > $3 -- created after last commit
-												 OR s.max_commit > $3 AND s.is_deleted) AND l.main_branch)  -- deleted after last commit
-														AS DifferenceTypeConflict
+						s.path IS NOT NULL AND l.main_branch AND
+							(NOT s.is_committed -- uncommitted is new
+							 OR s.min_commit > $3 -- created after last commit
+                             OR (s.max_commit > $3 AND s.is_deleted)) -- deleted after last commit
+						  AS DifferenceTypeConflict
 					   FROM ( SELECT *
 							   FROM entries_lineage_committed_v
 							  WHERE displayed_branch = $1 AND rank=1) f
