@@ -3,8 +3,11 @@ package catalog
 import (
 	"context"
 	"errors"
+	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/treeverse/lakefs/db"
 
@@ -84,8 +87,13 @@ func TestCataloger_Merge_FromFather(t *testing.T) {
 		t.Fatalf("Get entry %s after merge expected not to be found: %s", delFilename, err)
 	}
 
-	//expectedDiffLen := 1
-	//if len(res.Differences) != expectedDiffLen {
-	//	t.Fatalf("Merge differences len = %d, expected %d", len(res.Differences), expectedDiffLen)
-	//}
+	expectedDifferences := Differences{
+		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
+		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
+		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
+	}
+	if reflect.DeepEqual(res.Differences, expectedDifferences) {
+		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
+	}
+
 }

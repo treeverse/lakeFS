@@ -40,23 +40,23 @@ func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int) (Differences, error) {
 	if err != nil {
 		return nil, err
 	}
-	return c.doDiffByRelation(tx, relation, leftID, rightID, false)
+	return c.doDiffByRelation(tx, relation, leftID, rightID)
 }
 
-func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int, createTemp bool) (Differences, error) {
+func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int) (Differences, error) {
 	switch relation {
 	case RelationTypeFromFather:
-		return c.diffFromFather(tx, leftID, rightID, createTemp)
+		return c.diffFromFather(tx, leftID, rightID)
 	case RelationTypeFromSon:
-		return c.diffFromSun(tx, leftID, rightID, createTemp)
+		return c.diffFromSun(tx, leftID, rightID)
 	case RelationTypeNotDirect:
-		return c.diffNonDirect(tx, leftID, rightID, createTemp)
+		return c.diffNonDirect(tx, leftID, rightID)
 	default:
 		return nil, nil
 	}
 }
 
-func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
+func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, error) {
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int
@@ -66,8 +66,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 		return nil, err
 	}
 
-	args := []interface{}{leftID, rightID, maxSonMerge}
-	const diffSQL = `
+	const diffSQL = `CREATE TEMP TABLE ` + diffResultsTableName + ` ON COMMIT DROP AS
 		SELECT
 			CASE
 				WHEN DifferenceTypeConflict THEN 3
@@ -85,7 +84,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 						s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object,
 						-- father created or deleted
 						f.min_commit > l.effective_commit -- father created after commit
-						OR f.max_commit > l.effective_commit AND f.is_deleted -- father deleted after commit
+						OR f.max_commit >= l.effective_commit AND f.is_deleted -- father deleted after commit
 									AS father_changed,
 						-- son created or deleted 
 						s.path IS NOT NULL AND l.main_branch AND
@@ -101,18 +100,22 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 							  WHERE displayed_branch = $2 and rank=1) s ON f.path = s.path
 						 JOIN lineage_v l ON f.source_branch = l.ancestor_branch AND l.branch_id = $2 AND l.active_lineage) t_1
 			   WHERE father_changed AND NOT (same_object OR both_deleted) ) t`
-	if createTemp {
-		_, err := tx.Exec("CREATE TEMP TABLE "+diffResultsTableName+" ON COMMIT DROP AS "+diffSQL, args...)
+	differences, err := diffReadDifferences(tx, diffSQL, leftID, rightID, maxSonMerge)
+	if err != nil {
 		return nil, err
 	}
+	return differences, nil
+}
+
+func diffReadDifferences(tx db.Tx, sql string, args ...interface{}) (Differences, error) {
 	var result Differences
-	if err := tx.Select(&result, diffSQL, args...); err != nil {
+	if err := tx.Select(&result, sql, args...); err != nil {
 		return nil, err
 	}
 	return result, nil
 }
 
-func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
+func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int) (Differences, error) {
 	// read last merge commit numbers from commit table
 	// if it is the first son-to-father commit, than those commit numbers are calculated as follows:
 	// the son is 0, as any change in the some was never merged to the father.
@@ -179,7 +182,7 @@ func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int, createTemp bool) 
 	return result, nil
 }
 
-func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
+func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int) (Differences, error) {
 	panic("not implemented - diff between arbitrary branches ")
 }
 

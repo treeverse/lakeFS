@@ -31,19 +31,16 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, err
 		}
 
-		_, err = c.doDiffByRelation(tx, relation, leftID, rightID, true)
+		differences, err := c.doDiffByRelation(tx, relation, leftID, rightID)
 		if err != nil {
 			return nil, err
 		}
-
-		differences, _ := c.doDiffByRelation(tx, relation, leftID, rightID, false)
-		c.log.Debug("found diff: %+v", differences)
 
 		var diffCounts = struct {
 			Total     int `db:"total"`
 			Conflicts int `db:"conflicts"`
 		}{}
-		if err := tx.Get(&diffCounts, "SELECT count(*) as total, sum(case when diff_type=3 then 1 else 0 end) as conflicts FROM "+diffResultsTableName); err != nil {
+		if err := tx.Get(&diffCounts, "SELECT count(*) as total, sum(case when diff_type=$1 then 1 else 0 end) as conflicts FROM "+diffResultsTableName, DifferenceTypeConflict); err != nil {
 			return nil, err
 		}
 		if diffCounts.Conflicts > 0 {
@@ -60,8 +57,8 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, err
 		}
 		return &MergeResult{
-			CommitID: commitID,
-			//Differences: differences,
+			CommitID:    commitID,
+			Differences: differences,
 		}, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
@@ -95,7 +92,7 @@ func (c *cataloger) mergeFromFather(tx db.Tx, leftID int, rightID int, committer
 	}
 
 	// set current lineages max commit to current one
-	if _, err := tx.Exec(`UPDATE lineage SET max_commit=$2 WHERE branch_id=$1 AND max_commit=$3`, rightID, commitID-1, MaxCommitID); err != nil {
+	if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`, rightID, commitID, MaxCommitID); err != nil {
 		return 0, err
 	}
 
@@ -111,7 +108,7 @@ func (c *cataloger) mergeFromFather(tx db.Tx, leftID int, rightID int, committer
 	// father_deleted and son_exist - set max_commit the our commit for committed entries
 	_, err = tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
 			WHERE branch_id = $1 AND max_commit = $3
-				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type=$4 OR diff_type=$5)`,
+				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
 		rightID, commitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
 		return 0, err
