@@ -141,7 +141,7 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 		return nil, err
 	}
 
-	diffSQL := `
+	diffSQL := `CREATE TEMP TABLE ` + diffResultsTableName + ` ON COMMIT DROP AS
 		SELECT CASE
 				WHEN DifferenceTypeConflict THEN 3
 				WHEN son_deleted THEN 1
