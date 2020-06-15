@@ -105,7 +105,7 @@ func (c *cataloger) mergeFromFather(tx db.Tx, leftID int, rightID int, committer
 		return 0, err
 	}
 
-	// father_deleted and son_exist - set max_commit the our commit for committed entries
+	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries
 	_, err = tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
 			WHERE branch_id = $1 AND max_commit = $3
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
@@ -114,11 +114,11 @@ func (c *cataloger) mergeFromFather(tx db.Tx, leftID int, rightID int, committer
 		return 0, err
 	}
 
-	// son_exist - create entries into this commit based on father branch
+	// DifferenceTypeChanged - create entries into this commit based on father branch
 	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
-				SELECT displayed_branch AS branch_id,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
-				FROM entries_lineage_committed_v
-				WHERE displayed_branch = $1 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
+				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
+				FROM entries e
+				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
 		rightID, commitID, DifferenceTypeChanged)
 	if err != nil {
 		return 0, err
