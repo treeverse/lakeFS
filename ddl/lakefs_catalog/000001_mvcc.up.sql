@@ -127,7 +127,7 @@ CREATE VIEW entries_lineage_full_v AS
     e.min_commit,
         CASE
             WHEN l.main_branch THEN e.max_commit
-            WHEN (e.max_commit <= l.effective_commit) THEN e.max_commit
+            WHEN (e.max_commit < l.effective_commit) THEN e.max_commit
             ELSE ('01111111111111111111111111111111'::"bit")::integer
         END AS max_commit,
     e.physical_address,
@@ -146,7 +146,7 @@ CREATE VIEW entries_lineage_full_v AS
     e.is_committed,
         CASE
             WHEN l.main_branch THEN e.is_deleted
-            ELSE (e.max_commit <= l.effective_commit)
+            ELSE (e.max_commit < l.effective_commit)
         END AS is_deleted,
     l.active_lineage,
     l.effective_commit,

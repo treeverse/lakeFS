@@ -57,17 +57,11 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 }
 
 func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
-	// get effective commit in case there was no merge before
-	var effectiveCommit int
-	if err := tx.Get(&effectiveCommit, `SELECT effective_commit FROM lineage_v WHERE active_lineage AND branch_id=$2 AND ancestor_branch=$1`, leftID, rightID); err != nil {
-		return nil, err
-	}
-
 	// get the last son commit number of the last father merge
-	// if there is none - then it is the first branch commit id
+	// if there is none - then it is  the first merge
 	var maxSonMerge int
-	err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),$2) FROM commits
-			WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID, effectiveCommit)
+	err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
+			WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
 	if err != nil {
 		return nil, err
 	}
@@ -76,16 +70,16 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 	const diffSQL = `
 		SELECT
 			CASE
-				WHEN son_changed THEN 3
-				WHEN father_deleted THEN 1
-				WHEN son_exist THEN 2
+				WHEN DifferenceTypeConflict THEN 3
+				WHEN DifferenceTypeRemoved THEN 1
+				WHEN DifferenceTypeChanged THEN 2
 				ELSE 0
 			END AS diff_type,
 			path
 	   FROM ( SELECT *
 			   FROM ( SELECT f.path,
-						f.is_deleted AS father_deleted,
-						s.path IS NOT NULL AS son_exist,
+						f.is_deleted AS DifferenceTypeRemoved,
+						s.path IS NOT NULL AS DifferenceTypeChanged,
 						COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted,
 						-- both point to same object, and have the same deletion status
 						s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object,
@@ -95,11 +89,11 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 									AS father_changed,
 						-- son created or deleted 
 						s.path IS NOT NULL AND (NOT s.is_committed -- uncommitted is new
-												OR s.min_commit > $3 -- created after last commit
-												OR s.max_commit > $3 AND s.is_deleted)  -- deleted after last commit
-														AS son_changed
+												(OR s.min_commit > $3 -- created after last commit
+												 OR s.max_commit > $3 AND s.is_deleted) AND l.main_branch)  -- deleted after last commit
+														AS DifferenceTypeConflict
 					   FROM ( SELECT *
-							   FROM entries_lineage_Committed_v
+							   FROM entries_lineage_committed_v
 							  WHERE displayed_branch = $1 AND rank=1) f
 						 LEFT JOIN ( SELECT *
 							   FROM entries_lineage_full_v 
@@ -140,7 +134,7 @@ func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int, createTemp bool) 
 
 	diffSQL := `
 		SELECT CASE
-				WHEN conflict THEN 3
+				WHEN DifferenceTypeConflict THEN 3
 				WHEN son_deleted THEN 1
 				WHEN father_exist THEN 2
 				ELSE 0
@@ -167,7 +161,7 @@ func (c *cataloger) diffFromSun(tx db.Tx, leftID, rightID int, createTemp bool) 
 														(l.effective_commit >= f.min_commit AND
 														 (l.effective_commit >= f.max_commit OR NOT f.is_deleted))
 													   ))) 
-														AS conflict -- father changed so it is a conflict
+														AS DifferenceTypeConflict -- father changed so it is a conflict
 					   FROM ( SELECT *  -- only entries that were committed after last merge
 							   FROM top_committed_entries_v
 							  WHERE branch_id = $2 AND min_commit >= $4 OR (max_commit >= $4 and is_deleted)) s
@@ -191,9 +185,9 @@ func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int, createTemp bool
 /*
 SELECT
 	CASE
-		WHEN son_changed THEN 3
-		WHEN father_deleted THEN 1
-		WHEN son_exist THEN 2
+		WHEN DifferenceTypeConflict THEN 3
+		WHEN DifferenceTypeRemoved THEN 1
+		WHEN DifferenceTypeChanged THEN 2
 		ELSE 0
 	END AS diff_type,
 path
@@ -203,11 +197,11 @@ FROM ( SELECT *
 				--s.source_branch AS son_source,
 				--f.min_commit AS father_min,
 				--s.min_commit AS son_min,
-				f.is_deleted AS father_deleted,
+				f.is_deleted AS DifferenceTypeRemoved,
 				-- COALESCE(s.is_deleted, true) AS son_deleted,
 				--f.effective_commit AS father_effective,
 				--l.effective_commit AS son_effective_on_father,
-				s.path IS NOT NULL AS son_exist,
+				s.path IS NOT NULL AS DifferenceTypeChanged,
 				COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted,
 				-- both point to same object, and have the same deletion status
 				s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object,
@@ -219,7 +213,7 @@ FROM ( SELECT *
 				s.path IS NOT NULL AND (NOT s.is_committed -- uncommitted is new
 										OR s.min_commit > 0-- created after last commit
 										OR s.max_commit > 0 AND s.is_deleted)  -- deleted after last commit
-												AS son_changed
+												AS DifferenceTypeConflict
 			   FROM ( SELECT *
 					   FROM entries_lineage_Committed_v
 					  WHERE displayed_branch = 2 AND rank=1) f
