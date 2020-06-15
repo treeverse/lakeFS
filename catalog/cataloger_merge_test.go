@@ -49,7 +49,7 @@ func TestCataloger_Merge_FromFather(t *testing.T) {
 	// before the merge - make sure we see the deleted file
 	_, err = c.GetEntry(ctx, repository, "branch1", CommittedID, delFilename)
 	if err != nil {
-		t.Fatalf("Get entry %s, expected to be found: %s ", delFilename, err)
+		t.Fatalf("Get entry %s, expected to be found: %s", delFilename, err)
 	}
 
 	// merge master to branch1
