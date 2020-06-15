@@ -74,7 +74,10 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 				WHEN DifferenceTypeChanged THEN 2
 				ELSE 0
 			END AS diff_type,
-			path
+			path,
+			CASE
+				WHEN DifferenceTypeChanged THEN entry_ctid
+				ELSE NULL END AS entry_ctid
 	   FROM ( SELECT *
 			   FROM ( SELECT f.path,
 						f.is_deleted AS DifferenceTypeRemoved,
@@ -91,7 +94,8 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 							(NOT s.is_committed -- uncommitted is new
 							 OR s.min_commit > $3 -- created after last commit
                              OR (s.max_commit > $3 AND s.is_deleted)) -- deleted after last commit
-						  AS DifferenceTypeConflict
+						  AS DifferenceTypeConflict,
+							f.entry_ctid
 					   FROM ( SELECT *
 							   FROM entries_lineage_committed_v
 							  WHERE displayed_branch = $1 AND rank=1) f
