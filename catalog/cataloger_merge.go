@@ -30,20 +30,20 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		differences, _ := c.doDiffByRelation(tx, relation, leftID, rightID, false)
-		c.log.Debug("found diff: %+v", differences)
 
 		_, err = c.doDiffByRelation(tx, relation, leftID, rightID, true)
 		if err != nil {
 			return nil, err
 		}
 
-		// check for conflicts
+		differences, _ := c.doDiffByRelation(tx, relation, leftID, rightID, false)
+		c.log.Debug("found diff: %+v", differences)
+
 		var diffCounts = struct {
-			Total     int
-			Conflicts int
+			Total     int `db:"total"`
+			Conflicts int `db:"conflicts"`
 		}{}
-		if err := tx.Get(&diffCounts, "SELECT count(*) as total, sum(case when diff_type=$1 then 1 else 0 end) AS conflicts FROM "+diffResultsTableName, DifferenceTypeConflict); err != nil {
+		if err := tx.Get(&diffCounts, "SELECT count(*) as total, sum(case when diff_type=3 then 1 else 0 end) as conflicts FROM "+diffResultsTableName); err != nil {
 			return nil, err
 		}
 		if diffCounts.Conflicts > 0 {

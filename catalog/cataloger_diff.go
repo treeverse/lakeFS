@@ -57,15 +57,22 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 }
 
 func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp bool) (Differences, error) {
+	// get effective commit in case there was no merge before
+	var effectiveCommit int
+	if err := tx.Get(&effectiveCommit, `SELECT effective_commit FROM lineage_v WHERE active_lineage AND branch_id=$2 AND ancestor_branch=$1`, leftID, rightID); err != nil {
+		return nil, err
+	}
+
 	// get the last son commit number of the last father merge
-	// if there is none - then it is  the first merge
+	// if there is none - then it is the first branch commit id
 	var maxSonMerge int
-	err := tx.Get(&maxSonMerge, `select coalesce(max(commit_id),0) from commits
-			where branch_id = $1 and merge_type = 'from_father'`, rightID)
+	err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),$2) FROM commits
+			WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID, effectiveCommit)
 	if err != nil {
 		return nil, err
 	}
 
+	args := []interface{}{leftID, rightID, maxSonMerge}
 	const diffSQL = `
 		SELECT
 			CASE
@@ -88,7 +95,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 									AS father_changed,
 						-- son created or deleted 
 						s.path IS NOT NULL AND (NOT s.is_committed -- uncommitted is new
-												OR s.min_commit > $3-- created after last commit
+												OR s.min_commit > $3 -- created after last commit
 												OR s.max_commit > $3 AND s.is_deleted)  -- deleted after last commit
 														AS son_changed
 					   FROM ( SELECT *
@@ -100,12 +107,11 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int, createTemp boo
 						 JOIN lineage_v l ON f.source_branch = l.ancestor_branch AND l.branch_id = $2 AND l.active_lineage) t_1
 			   WHERE father_changed AND NOT (same_object OR both_deleted) ) t`
 	if createTemp {
-		_, err := tx.Exec("CREATE TEMP TABLE "+diffResultsTableName+" ON COMMIT DROP AS "+diffSQL, leftID, rightID, maxSonMerge)
+		_, err := tx.Exec("CREATE TEMP TABLE "+diffResultsTableName+" ON COMMIT DROP AS "+diffSQL, args...)
 		return nil, err
 	}
 	var result Differences
-	err = tx.Select(&result, diffSQL, leftID, rightID, maxSonMerge)
-	if err != nil {
+	if err := tx.Select(&result, diffSQL, args...); err != nil {
 		return nil, err
 	}
 	return result, nil
