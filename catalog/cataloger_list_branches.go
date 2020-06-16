@@ -8,14 +8,14 @@ import (
 
 func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepoName(repository),
+		"repository": ValidateRepositoryName(repository),
 	}); err != nil {
 		return nil, false, err
 	}
 
 	prefixCond := db.Prefix(prefix)
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repository)
+		repoID, err := getRepositoryID(tx, repository)
 		if err != nil {
 			return nil, err
 		}

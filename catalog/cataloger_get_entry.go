@@ -9,7 +9,7 @@ import (
 
 func (c *cataloger) GetEntry(ctx context.Context, repository, branch string, commitID CommitID, path string) (*Entry, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepoName(repository),
+		"repository": ValidateRepositoryName(repository),
 		"branch":     ValidateBranchName(branch),
 		"path":       ValidatePath(path),
 	}); err != nil {

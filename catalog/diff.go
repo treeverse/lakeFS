@@ -11,7 +11,7 @@ const (
 
 type Difference struct {
 	Type DifferenceType `db:"diff_type"`
-	Path string
+	Path string         `db:"path"`
 }
 
 func (d Difference) String() string {
@@ -30,3 +30,35 @@ func (d Difference) String() string {
 }
 
 type Differences []Difference
+
+func (d Differences) CountByType() map[DifferenceType]int {
+	result := make(map[DifferenceType]int)
+	for i := range d {
+		typ := d[i].Type
+		if count, ok := result[typ]; !ok {
+			result[typ] = 1
+		} else {
+			result[typ] = count + 1
+		}
+	}
+	return result
+}
+
+func (d Differences) Equal(other Differences) bool {
+	if len(d) != len(other) {
+		return false
+	}
+	for _, item := range d {
+		m := false
+		for _, otherItem := range other {
+			if otherItem.Path == item.Path {
+				m = otherItem.Type == item.Type
+				break
+			}
+		}
+		if !m {
+			return false
+		}
+	}
+	return false
+}
