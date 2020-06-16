@@ -64,8 +64,8 @@ func (l *Adapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *Adapter) Put(_ string, identifier string, _ int64, reader io.Reader) error {
-	path := l.getPath(identifier)
+func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader) error {
+	path := l.getPath(obj.Identifier)
 	f, err := os.Create(path)
 	defer f.Close()
 	_, err = io.Copy(f, reader)
@@ -75,14 +75,14 @@ func (l *Adapter) Put(_ string, identifier string, _ int64, reader io.Reader) er
 	return nil
 }
 
-func (l *Adapter) Remove(_ string, identifier string) error {
-	path := l.getPath(identifier)
+func (l *Adapter) Remove(obj block.ObjectPointer) error {
+	path := l.getPath(obj.Identifier)
 	err := os.Remove(path)
 	return err
 }
 
-func (l *Adapter) Get(_ string, identifier string) (reader io.ReadCloser, err error) {
-	path := l.getPath(identifier)
+func (l *Adapter) Get(obj block.ObjectPointer) (reader io.ReadCloser, err error) {
+	path := l.getPath(obj.Identifier)
 	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
 		return nil, err
@@ -90,8 +90,8 @@ func (l *Adapter) Get(_ string, identifier string) (reader io.ReadCloser, err er
 	return f, nil
 }
 
-func (l *Adapter) GetRange(_ string, identifier string, start int64, end int64) (io.ReadCloser, error) {
-	path := l.getPath(identifier)
+func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
+	path := l.getPath(obj.Identifier)
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -124,9 +124,9 @@ func isDirectoryWritable(pth string) bool {
 	}
 }
 
-func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
-	if strings.Contains(identifier, "/") {
-		fullPath := l.getPath(identifier)
+func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request) (string, error) {
+	if strings.Contains(obj.Identifier, "/") {
+		fullPath := l.getPath(obj.Identifier)
 		fullDir := path.Dir(fullPath)
 		err := os.MkdirAll(fullDir, 0755)
 		if err != nil {
@@ -141,14 +141,14 @@ func (l *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 	return uploadId, nil
 }
 
-func (l *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
-	err := l.Put("", fName, -1, md5Read)
+	err := l.Put(block.ObjectPointer{Repo: "", Identifier: fName}, -1, md5Read)
 	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return ETag, err
 }
-func (l *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
+func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	files, err := l.getPartFiles(uploadId)
 	if err != nil {
 		return err
@@ -156,14 +156,14 @@ func (l *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	l.removePartFiles(files)
 	return nil
 }
-func (l *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	ETag := computeETag(MultipartList.Part) + "-" + strconv.Itoa(len(MultipartList.Part))
 	partFiles, err := l.getPartFiles(uploadId)
 	if err != nil {
 		fmt.Errorf("did not find part files for: " + uploadId)
 		return nil, -1, err
 	}
-	size, err := l.unitePartFiles(identifier, partFiles)
+	size, err := l.unitePartFiles(obj.Identifier, partFiles)
 	if err != nil {
 		fmt.Errorf("faile multipart upload file unification: " + uploadId)
 		return nil, -1, err

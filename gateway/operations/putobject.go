@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
@@ -99,7 +100,7 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 		return
 	}
 	byteSize := o.Request.ContentLength
-	ETag, err := o.BlockStore.UploadPart(o.Repo.StorageNamespace, multiPart.PhysicalAddress, byteSize, o.Request.Body, uploadId, partNumber)
+	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: multiPart.PhysicalAddress}, byteSize, o.Request.Body, uploadId, partNumber)
 	if err != nil {
 		o.Log().WithError(err).Error("part " + partNumberStr + " upload failed")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
