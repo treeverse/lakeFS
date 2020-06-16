@@ -41,38 +41,39 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(repo string, _ string, _ int64, reader io.Reader) error {
+func (a *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader) error {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
 	}
 	a.totalSize += int64(len(data))
 	a.count++
-	a.lastBucket = repo
+	a.lastBucket = obj.Repo
 	return nil
 }
-func (a *mockAdapter) Get(_ string, _ string) (io.ReadCloser, error) {
+func (a *mockAdapter) Get(_ block.ObjectPointer) (io.ReadCloser, error) {
 	return nil, nil
 }
-func (a *mockAdapter) GetRange(_ string, _ string, _ int64, _ int64) (io.ReadCloser, error) {
+func (a *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }
-func (s *mockAdapter) Remove(repo string, identifier string) error {
 
+func (s *mockAdapter) Remove(_ block.ObjectPointer) error {
 	return errors.New(" remove method not implemented in mock adapter")
 }
-func (s *mockAdapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
+func (s *mockAdapter) CreateMultiPartUpload(_ block.ObjectPointer, r *http.Request) (string, error) {
 	panic("try to create multipart in mock adaptor ")
 }
-func (s *mockAdapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+
+func (s *mockAdapter) UploadPart(_ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	panic("try to upload part in mock adaptor ")
 
 }
-func (s *mockAdapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
+func (s *mockAdapter) AbortMultiPartUpload(_ block.ObjectPointer, uploadId string) error {
 	panic("try to abort multipart in mock adaptor ")
 
 }
-func (s *mockAdapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	panic("try to complete multipart in mock adaptor ")
 }
 

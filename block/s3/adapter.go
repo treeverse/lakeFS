@@ -86,17 +86,18 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
-func (s *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io.Reader) error {
 
-	putObject := s3.PutObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
+func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader) error {
+
+	putObject := s3.PutObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
 	sdkRequest, _ := s.s3.PutObjectRequest(&putObject)
 	_, err := s.streamToS3(sdkRequest, sizeBytes, reader)
 	return err
 }
 
-func (s *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
-	uploadPartObject := s3.UploadPartInput{Bucket: aws.String(repo), Key: aws.String(identifier), PartNumber: aws.Int64(partNumber), UploadId: aws.String(uploadId)}
+	uploadPartObject := s3.UploadPartInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier), PartNumber: aws.Int64(partNumber), UploadId: aws.String(uploadId)}
 	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
 	resp, err := s.streamToS3(sdkRequest, sizeBytes, reader)
 	if err == nil && resp != nil {
@@ -177,9 +178,9 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	return resp, nil
 }
 
-func (s *Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
+func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
 	log := s.log().WithField("operation", "GetObject")
-	getObjectInput := s3.GetObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
+	getObjectInput := s3.GetObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
 	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
 		log.WithError(err).Error("failed to get S3 object")
@@ -188,9 +189,9 @@ func (s *Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
 	return objectOutput.Body, nil
 }
 
-func (s *Adapter) GetRange(repo string, identifier string, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	log := s.log().WithField("operation", "GetObjectRange")
-	getObjectInput := s3.GetObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier), Range: aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition))}
+	getObjectInput := s3.GetObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier), Range: aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition))}
 	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{
@@ -202,24 +203,24 @@ func (s *Adapter) GetRange(repo string, identifier string, startPosition int64, 
 	return objectOutput.Body, nil
 }
 
-func (s *Adapter) Remove(repo string, identifier string) error {
-	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(repo), Key: aws.String(identifier)}
+func (s *Adapter) Remove(obj block.ObjectPointer) error {
+	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
 	_, err := s.s3.DeleteObject(deleteObjectParams)
 	if err != nil {
 		s.log().WithError(err).Error("failed to delete S3 object")
 		return err
 	}
 	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-		Bucket: aws.String(repo),
-		Key:    aws.String(identifier),
+		Bucket: aws.String(obj.Repo),
+		Key:    aws.String(obj.Identifier),
 	})
 	return err
 }
 
-func (s *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
+func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request) (string, error) {
 	input := &s3.CreateMultipartUploadInput{
-		Bucket:      aws.String(repo),
-		Key:         aws.String(identifier),
+		Bucket:      aws.String(obj.Repo),
+		Key:         aws.String(obj.Identifier),
 		ContentType: aws.String(""),
 	}
 	resp, err := s.s3.CreateMultipartUpload(input)
@@ -231,11 +232,11 @@ func (s *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 		return "", err
 	}
 }
-func (s *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
+func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.AbortMultipartUploadInput{
-		Bucket:   aws.String(repo),
-		Key:      aws.String(identifier),
+		Bucket:   aws.String(obj.Repo),
+		Key:      aws.String(obj.Identifier),
 		UploadId: aws.String(uploadId),
 	}
 	_, err := s.s3.AbortMultipartUpload(input)
@@ -243,19 +244,19 @@ func (s *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	return err
 }
 
-func (s *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Part}
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.CompleteMultipartUploadInput{
-		Bucket:          aws.String(repo),
-		Key:             aws.String(identifier),
+		Bucket:          aws.String(obj.Repo),
+		Key:             aws.String(obj.Identifier),
 		UploadId:        aws.String(uploadId),
 		MultipartUpload: cmpu,
 	}
 	resp, err := s.s3.CompleteMultipartUpload(input)
 	if err == nil {
 		s.uploadIdTranslator.RemoveUploadId(uploadId)
-		headInput := &s3.HeadObjectInput{Bucket: &repo, Key: &identifier}
+		headInput := &s3.HeadObjectInput{Bucket: &obj.Repo, Key: &obj.Identifier}
 		headResp, err := s.s3.HeadObject(headInput)
 		if err != nil {
 			return nil, -1, err
