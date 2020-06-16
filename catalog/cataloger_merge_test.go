@@ -208,6 +208,9 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 		{Path: newFilename},
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
+		{Path: "/b2/file0", Seed: "seed2"},
+		{Path: "/b2/file1", Seed: "seed2"},
+		{Path: "/b2/file2", Seed: "seed2"},
 	})
 }
 
@@ -267,7 +270,7 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "branch2", CommittedID, []testEntryInfo{
 		{Path: newFilename},
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
@@ -481,7 +484,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromSonDelGrandfatherFile(t *testing.T) {
+func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -519,6 +522,43 @@ func TestCataloger_Merge_FromSonDelGrandfatherFile(t *testing.T) {
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeRemoved, Path: "/file0"},
 		Difference{Type: DifferenceTypeChanged, Path: "/file1"},
+	}
+	if res.Differences.Equal(expectedDifferences) {
+		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
+	}
+}
+
+func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	// create new file and commit to branch
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file0", nil, "seed0")
+	_, err := c.Commit(ctx, repository, "master", "Add new files", "tester", nil)
+	testutil.MustDo(t, "add new files to master", err)
+
+	// branch and modify the file
+	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "/file0", nil, "seed1")
+	_, err = c.Commit(ctx, repository, "branch1", "Modify the file", "tester", nil)
+	testutil.MustDo(t, "modify /file0 on branch1", err)
+
+	// modify the file on master
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file0", nil, "seed3")
+	_, err = c.Commit(ctx, repository, "master", "Modify the file (master)", "tester", nil)
+	testutil.MustDo(t, "modify /file0 on master", err)
+
+	// merge changes from branch to master should find the conflict
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	if !errors.Is(err, ErrConflictFound) {
+		t.Fatalf("Merge from branch1 to master err=%s, expected conflict", err)
+	}
+	if res.CommitID != 0 {
+		t.Fatalf("Merge commit ID = %d, expected 0", res.CommitID)
+	}
+	expectedDifferences := Differences{
+		Difference{Type: DifferenceTypeChanged, Path: "/file0"},
 	}
 	if res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))

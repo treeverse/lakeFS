@@ -21,11 +21,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 
 	var result *MergeResult
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeShare)
+		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
 			return nil, err
 		}
-		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeShare)
+		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeUpdate)
 		if err != nil {
 			return nil, err
 		}
@@ -147,7 +147,7 @@ func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int, right
 		return err
 	}
 
-	// DifferenceTypeChanged - create entries into this commit based on father branch
+	// DifferenceTypeChanged or DifferenceTypeAdded - create entries into this commit based on father branch
 	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM entries e
