@@ -17,7 +17,7 @@ func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, ad
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
 	UUIDbytes := ([16]byte(uuid.New()))
 	objName := hex.EncodeToString(UUIDbytes[:])
-	err := adapter.Put(bucketName, objName, contentLength, hashReader)
+	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: objName}, contentLength, hashReader)
 	if err != nil {
 		return "", "", -1, err
 	}
@@ -27,8 +27,8 @@ func WriteBlob(index DedupHandler, repoId, bucketName string, body io.Reader, ad
 	if err != nil {
 		return "", "", -1, err
 	}
-	if existingName != objName { // object already exist
-		adapter.Remove(bucketName, objName)
+	if existingName != objName { // object already exists
+		adapter.Remove(block.ObjectPointer{Repo: bucketName, Identifier: objName})
 		objName = existingName
 	}
 	return checksum, objName, hashReader.CopiedSize, nil
