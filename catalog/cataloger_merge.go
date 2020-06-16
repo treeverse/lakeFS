@@ -59,7 +59,13 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 }
 
 func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID int, rightID int, committer string, msg string, metadata Metadata) (CommitID, error) {
-	// get commit id on destination
+	// get source commit id on destination
+	sourceCommitID, err := getCommitID(tx, leftID)
+	if err != nil {
+		return 0, err
+	}
+
+	// get destination commit id on destination
 	commitID, err := getCommitID(tx, rightID)
 	if err != nil {
 		return 0, err
@@ -86,7 +92,9 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 	}
 
 	// add commit record
-	if err := commitInsertCommitRecord(tx, rightID, commitID, committer, msg, metadata, c.Clock.Now()); err != nil {
+	if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
+		rightID, commitID, committer, msg, c.Clock.Now(), metadata, relation, leftID, sourceCommitID); err != nil {
 		return 0, err
 	}
 	return commitID, nil

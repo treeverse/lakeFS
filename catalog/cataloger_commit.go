@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
@@ -61,7 +60,8 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 
 		// add commit record
 		creationDate := c.Clock.Now()
-		if err := commitInsertCommitRecord(tx, branchID, commitID, committer, message, metadata, creationDate); err != nil {
+		if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone); err != nil {
 			return 0, err
 		}
 		return commitID, nil
@@ -70,12 +70,6 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 		return 0, err
 	}
 	return res.(CommitID), nil
-}
-
-func commitInsertCommitRecord(tx sqlx.Execer, branchID int, commitID CommitID, committer string, message string, metadata Metadata, creationDate time.Time) error {
-	_, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type) VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-		branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone)
-	return err
 }
 
 func commitIncrementCommitID(tx sqlx.Execer, branchID int, commitID CommitID) error {

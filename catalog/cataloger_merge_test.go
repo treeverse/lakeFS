@@ -134,8 +134,6 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 	testutil.MustDo(t, "delete committed file on master",
 		c.DeleteEntry(ctx, repository, "branch1", delFilename))
 	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", overFilename, nil, "seed2")
-	//_, err = c.Commit(ctx, repository, "branch1", "first commit to branch1", "tester", nil)
-	//testutil.MustDo(t, "first commit on branch1", err)
 
 	// merge should identify conflicts on pending changes
 	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", nil)
