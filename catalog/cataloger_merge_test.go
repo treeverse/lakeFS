@@ -488,16 +488,18 @@ func TestCataloger_Merge_FromSonDelGrandfatherFile(t *testing.T) {
 
 	// create new file and commit to branch
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file0", nil, "")
-	_, err := c.Commit(ctx, repository, "master", "Add new file", "tester", nil)
-	testutil.MustDo(t, "add new file to master", err)
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file1", nil, "")
+	_, err := c.Commit(ctx, repository, "master", "Add new files", "tester", nil)
+	testutil.MustDo(t, "add new files to master", err)
 
 	// create branches
 	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
 	testCatalogerBranch(t, ctx, c, repository, "branch2", "branch1")
 
-	// delete file committed on master in branch2
+	// delete and change files committed on master in branch2
 	testutil.MustDo(t, "Delete /file0 from master on branch2",
 		c.DeleteEntry(ctx, repository, "branch2", "/file0"))
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch2", "/file1", nil, "seed1")
 	_, err = c.Commit(ctx, repository, "branch2", "Delete the file", "tester", nil)
 	testutil.MustDo(t, "Commit with deleted file", err)
 
@@ -510,9 +512,13 @@ func TestCataloger_Merge_FromSonDelGrandfatherFile(t *testing.T) {
 		t.Fatalf("Merge commit ID = %d, expected valid ID", res.CommitID)
 	}
 	// verify that the file is deleted (tombstone)
-	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{{Path: "/file0", Deleted: true}})
+	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{
+		{Path: "/file0", Deleted: true},
+		{Path: "/file1", Seed: "seed1"},
+	})
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeRemoved, Path: "/file0"},
+		Difference{Type: DifferenceTypeChanged, Path: "/file1"},
 	}
 	if res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
