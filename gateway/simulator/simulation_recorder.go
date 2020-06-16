@@ -67,7 +67,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 	if err != nil {
 		logger.WithError(err).Fatal("FAILED create directory for recordings")
 	}
-	uploadIdRegexp := regexp.MustCompile("<UploadId>([^\\b<])</UploadId>")
+	uploadIdRegexp := regexp.MustCompile(`<UploadId>([^\\b<]+)</UploadId>`)
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
