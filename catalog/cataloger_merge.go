@@ -87,7 +87,7 @@ func (c *cataloger) mergeFromFather(tx db.Tx, leftID int, rightID int, committer
 	_, err = tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit, min_commit)
 			SELECT $1, precedence + 1, ancestor_branch, effective_commit, $3
 			FROM lineage_v
-			WHERE branch_id = $2`, rightID, leftID, commitID)
+			WHERE branch_id = $2 AND active_lineage`, rightID, leftID, commitID)
 	if err != nil {
 		return 0, err
 	}
