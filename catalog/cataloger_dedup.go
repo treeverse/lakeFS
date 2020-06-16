@@ -9,7 +9,7 @@ import (
 
 func (c *cataloger) Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error) {
 	if err := Validate(ValidateFields{
-		"repository":      ValidateRepoName(repository),
+		"repository":      ValidateRepositoryName(repository),
 		"dedupID":         ValidateDedupID(dedupID),
 		"physicalAddress": ValidateNonEmptyString(physicalAddress),
 	}); err != nil {
@@ -17,7 +17,7 @@ func (c *cataloger) Dedup(ctx context.Context, repository string, dedupID string
 	}
 
 	addr, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repository)
+		repoID, err := getRepositoryID(tx, repository)
 		if err != nil {
 			return physicalAddress, err
 		}

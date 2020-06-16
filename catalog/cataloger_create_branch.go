@@ -8,7 +8,7 @@ import (
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (int, error) {
 	if err := Validate(ValidateFields{
-		"repository":   ValidateRepoName(repository),
+		"repository":   ValidateRepositoryName(repository),
 		"branch":       ValidateBranchName(branch),
 		"sourceBranch": ValidateBranchName(sourceBranch),
 	}); err != nil {
@@ -16,7 +16,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepoID(tx, repository)
+		repoID, err := getRepositoryID(tx, repository)
 		if err != nil {
 			return 0, err
 		}
@@ -42,7 +42,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		_, err = tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit)
 			SELECT $1, precedence + 1, ancestor_branch, effective_commit
 			FROM lineage_v
-			WHERE branch_id = $2`, branchID, sourceBranchID)
+			WHERE branch_id = $2 AND active_lineage`, branchID, sourceBranchID)
 		if err != nil {
 			return 0, err
 		}

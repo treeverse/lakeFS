@@ -35,37 +35,37 @@ func TestCataloger_Commit(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    int
+		want    CommitID
 		wantErr bool
 	}{
 		{
 			name:    "simple",
 			args:    args{repository: repository, branch: "master", message: "merge to master", committer: "tester", metadata: meta},
-			want:    1,
+			want:    CommitID(1),
 			wantErr: false,
 		},
 		{
 			name:    "no repository",
 			args:    args{repository: "repoX", branch: "master", message: "merge to master", committer: "tester", metadata: meta},
-			want:    0,
+			want:    CommitID(0),
 			wantErr: true,
 		},
 		{
 			name:    "no branch",
 			args:    args{repository: repository, branch: "shifu", message: "merge to shifu", committer: "tester", metadata: meta},
-			want:    0,
+			want:    CommitID(0),
 			wantErr: true,
 		},
 		{
 			name:    "no message",
 			args:    args{repository: repository, branch: "master", message: "", committer: "tester", metadata: meta},
-			want:    0,
+			want:    CommitID(0),
 			wantErr: true,
 		},
 		{
 			name:    "no committer",
 			args:    args{repository: repository, branch: "master", message: "merge to master", committer: "", metadata: meta},
-			want:    0,
+			want:    CommitID(0),
 			wantErr: true,
 		},
 	}
@@ -107,7 +107,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
-			if commitID != i+1 {
+			if commitID != CommitID(i+1) {
 				t.Errorf("Commit got ID %d, expected %d", commitID, i+1)
 				return
 			}
@@ -140,7 +140,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
-			if commitID != i+1 {
+			if commitID != CommitID(i+1) {
 				t.Errorf("Commit got ID %d, expected %d", commitID, i+1)
 				return
 			}

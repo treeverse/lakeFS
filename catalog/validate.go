@@ -52,7 +52,7 @@ func ValidateBranchName(name string) ValidateFunc {
 	return ValidateRegexp(name, validBranchNameRE)
 }
 
-func ValidateRepoName(name string) ValidateFunc {
+func ValidateRepositoryName(name string) ValidateFunc {
 	return ValidateRegexp(name, validRepoIDRE)
 }
 
@@ -76,8 +76,8 @@ func ValidateCommitMessage(msg string) ValidateFunc {
 	return ValidateNonEmptyString(msg)
 }
 
-func ValidateCommitter(msg string) ValidateFunc {
-	return ValidateNonEmptyString(msg)
+func ValidateCommitter(name string) ValidateFunc {
+	return ValidateNonEmptyString(name)
 }
 
 func ValidateBucketName(bucket string) ValidateFunc {

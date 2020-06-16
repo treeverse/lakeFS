@@ -51,15 +51,6 @@ type MultipartUpload struct {
 	PhysicalAddress string    `db:"physical_address"`
 }
 
-type Lineage struct {
-	BranchID        int `db:"branch_id"`
-	Precedence      int `db:"precedence"`
-	AncestorBranch  int `db:"ancestor_branch"`
-	EffectiveCommit int `db:"effective_commit"`
-	MinCommit       int `db:"min_commit"`
-	MaxCommit       int `db:"max_commit"`
-}
-
 func (j Metadata) Value() (driver.Value, error) {
 	if j == nil {
 		return json.Marshal(struct{}{})
