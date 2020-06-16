@@ -394,12 +394,12 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(bucketName, dummyKey, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)))
 	if err != nil {
 		return err
 	}
 
-	_, err = adapter.Get(bucketName, dummyKey)
+	_, err = adapter.Get(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey})
 	if err != nil {
 		return err
 	}
@@ -794,7 +794,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = obj.Size
-		reader, err := ctx.BlockAdapter.Get(repo.StorageNamespace, obj.PhysicalAddress)
+		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{Repo: repo.StorageNamespace, Identifier: obj.PhysicalAddress})
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
