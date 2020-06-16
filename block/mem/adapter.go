@@ -70,8 +70,8 @@ func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
 	}
 }
 
-func getKey(repo, identifier string) string {
-	return fmt.Sprintf("%s:%s", repo, identifier)
+func getKey(obj block.ObjectPointer) string {
+	return fmt.Sprintf("%s:%s", obj.Repo, obj.Identifier)
 }
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
@@ -84,45 +84,45 @@ func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 	}
 }
 
-func (a *Adapter) Put(repo string, identifier string, sizeBytes int64, reader io.Reader) error {
+func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-	a.data[getKey(repo, identifier)] = data
+	a.data[getKey(obj)] = data
 	return nil
 }
 
-func (a *Adapter) Get(repo string, identifier string) (io.ReadCloser, error) {
+func (a *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(repo, identifier)]
+	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, fmt.Errorf("no data for key")
 	}
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
 
-func (a *Adapter) GetRange(repo string, identifier string, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(repo, identifier)]
+	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, fmt.Errorf("no data for key")
 	}
 	return ioutil.NopCloser(io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)), nil
 }
 
-func (a *Adapter) Remove(repo string, identifier string) error {
+func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	delete(a.data, getKey(repo, identifier))
+	delete(a.data, getKey(obj))
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.Request) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu := newMPU()
@@ -131,7 +131,7 @@ func (a *Adapter) CreateMultiPartUpload(repo string, identifier string, r *http.
 	return tid, nil
 }
 
-func (a *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
@@ -150,7 +150,7 @@ func (a *Adapter) UploadPart(repo string, identifier string, sizeBytes int64, re
 	return fmt.Sprintf("%x", code), nil
 }
 
-func (a *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId string) error {
+func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
@@ -163,7 +163,7 @@ func (a *Adapter) AbortMultiPartUpload(repo string, identifier string, uploadId 
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(repo string, identifier string, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
@@ -177,6 +177,6 @@ func (a *Adapter) CompleteMultiPartUpload(repo string, identifier string, upload
 	code := h.Sum(nil)
 	hex := fmt.Sprintf("%x", code)
 	a.uploadIdTranslator.RemoveUploadId(uploadId)
-	a.data[getKey(repo, identifier)] = data
+	a.data[getKey(obj)] = data
 	return &hex, int64(len(data)), nil
 }
