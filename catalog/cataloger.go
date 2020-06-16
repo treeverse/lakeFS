@@ -50,7 +50,7 @@ type Deduper interface {
 }
 
 type Committer interface {
-	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (int, error)
+	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (CommitID, error)
 	ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
 	RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error
 }
@@ -59,8 +59,13 @@ type Differ interface {
 	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
 }
 
+type MergeResult struct {
+	Differences Differences
+	CommitID    CommitID
+}
+
 type Merger interface {
-	Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error)
+	Merge(ctx context.Context, repository, sourceBranch, destinationBranch string, committer string, metadata Metadata) (*MergeResult, error)
 }
 
 type Cataloger interface {
@@ -95,10 +100,6 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 		db.WithLogger(c.log),
 	}
 	return append(o, opts...)
-}
-
-func (c *cataloger) Merge(ctx context.Context, sourceBranch, destinationBranch string, userID string) (Differences, error) {
-	panic("implement me")
 }
 
 func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error {

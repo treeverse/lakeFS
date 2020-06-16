@@ -8,7 +8,7 @@ import (
 
 func (c *cataloger) GetRepository(ctx context.Context, repository string) (*Repo, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepoName(repository),
+		"repository": ValidateRepositoryName(repository),
 	}); err != nil {
 		return nil, err
 	}
