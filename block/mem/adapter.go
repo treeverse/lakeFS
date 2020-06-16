@@ -70,8 +70,8 @@ func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
 	}
 }
 
-func getKey(repo, identifier string) string {
-	return fmt.Sprintf("%s:%s", repo, identifier)
+func getKey(obj block.ObjectPointer) string {
+	return fmt.Sprintf("%s:%s", obj.Repo, obj.Identifier)
 }
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
@@ -91,14 +91,14 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	if err != nil {
 		return err
 	}
-	a.data[getKey(obj.Repo, obj.Identifier)] = data
+	a.data[getKey(obj)] = data
 	return nil
 }
 
 func (a *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(obj.Repo, obj.Identifier)]
+	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, fmt.Errorf("no data for key")
 	}
@@ -108,7 +108,7 @@ func (a *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
 func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
-	data, ok := a.data[getKey(obj.Repo, obj.Identifier)]
+	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, fmt.Errorf("no data for key")
 	}
@@ -118,7 +118,7 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	delete(a.data, getKey(obj.Repo, obj.Identifier))
+	delete(a.data, getKey(obj))
 	return nil
 }
 
@@ -177,6 +177,6 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	code := h.Sum(nil)
 	hex := fmt.Sprintf("%x", code)
 	a.uploadIdTranslator.RemoveUploadId(uploadId)
-	a.data[getKey(obj.Repo, obj.Identifier)] = data
+	a.data[getKey(obj)] = data
 	return &hex, int64(len(data)), nil
 }
