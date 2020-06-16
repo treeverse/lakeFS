@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -64,6 +66,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 	if err != nil {
 		return 0, err
 	}
+	sourceCommitID -= 1 // move next current to current source commit id
 
 	// get destination commit id on destination
 	commitID, err := getCommitID(tx, rightID)
@@ -76,7 +79,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 	case RelationTypeFromFather:
 		err = c.mergeFromFather(tx, commitID, leftID, rightID)
 	case RelationTypeFromSon:
-		err = c.mergeFromSun(tx, commitID, leftID, rightID)
+		err = c.mergeFromSon(tx, commitID, leftID, rightID)
 	case RelationTypeNotDirect:
 		err = c.mergeNonDirect(tx, commitID, leftID, rightID)
 	default:
@@ -100,7 +103,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 	return commitID, nil
 }
 
-func (c *cataloger) mergeFromFather(tx db.Tx, commitID CommitID, leftID int, rightID int) error {
+func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID int, rightID int) error {
 	// set current lineages max commit to current one
 	if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`,
 		rightID, commitID, MaxCommitID); err != nil {
@@ -134,10 +137,34 @@ func (c *cataloger) mergeFromFather(tx db.Tx, commitID CommitID, leftID int, rig
 	return err
 }
 
-func (c *cataloger) mergeFromSun(tx db.Tx, commitID CommitID, leftID int, rightID int) error {
-	panic("implement")
+func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int, rightID int) error {
+	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries
+	_, err := tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
+			WHERE branch_id = $1 AND max_commit = $3
+				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
+		rightID, commitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
+	if err != nil {
+		return err
+	}
+
+	// DifferenceTypeChanged - create entries into this commit based on father branch
+	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
+				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
+				FROM entries e
+				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
+		rightID, commitID, DifferenceTypeAdded, DifferenceTypeChanged)
+	if err != nil {
+		return err
+	}
+	// DifferenceTypeRemoved - create tombstones if source branch is not our destination
+	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
+				SELECT $1,path,'',0,'','{}',$2,0
+				FROM `+diffResultsTableName+`
+				WHERE diff_type=$3 AND source_branch<>$4`,
+		rightID, commitID, DifferenceTypeRemoved, rightID)
+	return err
 }
 
-func (c *cataloger) mergeNonDirect(tx db.Tx, commitID CommitID, leftID int, rightID int) error {
-	panic("implement")
+func (c *cataloger) mergeNonDirect(tx sqlx.Execer, commitID CommitID, leftID int, rightID int) error {
+	panic("not implemented - Someday is not a day of the week")
 }

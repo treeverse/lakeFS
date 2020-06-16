@@ -139,22 +139,22 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 	if err != nil {
 		return nil, err
 	}
-
-	diffSQL := `CREATE TEMP TABLE ` + diffResultsTableName + ` ON COMMIT DROP AS
+	const diffFromSonSQL = `CREATE TEMP TABLE ` + diffResultsTableName + ` ON COMMIT DROP AS
 		SELECT CASE
 				WHEN DifferenceTypeConflict THEN 3
-				WHEN son_deleted THEN 1
-				WHEN father_exist THEN 2
+				WHEN DifferenceTypeRemoved THEN 1
+				WHEN DifferenceTypeChanged THEN 2
 				ELSE 0
 			END AS diff_type,
 			path,
 			CASE
-				WHEN NOT(DifferenceTypeConflict OR son_deleted) THEN entry_ctid
-				ELSE NULL END AS entry_ctid
+				WHEN NOT(DifferenceTypeConflict OR DifferenceTypeRemoved) THEN entry_ctid
+				ELSE NULL END AS entry_ctid,
+			source_branch
 	    FROM ( SELECT *
 			   FROM ( SELECT s.path,
-						s.is_deleted AS son_deleted,
-						f.path IS NOT NULL AS father_exist,
+						s.is_deleted AS DifferenceTypeRemoved,
+						f.path IS NOT NULL AS DifferenceTypeChanged,
 						  -- can be ignored -father and son entries do not exist
 						COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted,
 						-- can be ignored - both point to same object, and have the same deletion status
@@ -175,7 +175,8 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 														 (l.effective_commit > f.max_commit OR NOT f.is_deleted))
 													   ))) 
 														AS DifferenceTypeConflict, -- father changed so it is a conflict
-												s.entry_ctid
+												s.entry_ctid,
+							f.source_branch
 					   FROM ( SELECT *  -- only entries that were committed after last merge
 							   FROM top_committed_entries_v
 							  WHERE branch_id = $2 AND min_commit >= $4 OR (max_commit >= $4 and is_deleted)) s
@@ -184,14 +185,12 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 							  WHERE displayed_branch =$1 AND rank=1) f 
 						 ON f.path = s.path
 			  ) t WHERE  NOT (same_object OR both_deleted)) t1`
-	var result Differences
-	err = tx.Select(&result, diffSQL, rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit)
-	if err != nil {
+	if _, err := tx.Exec(diffFromSonSQL, rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit); err != nil {
 		return nil, err
 	}
-	return result, nil
+	return diffReadDifferences(tx)
 }
 
 func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int) (Differences, error) {
-	panic("not implemented - diff between arbitrary branches ")
+	panic("not implemented - Someday is not a day of the week")
 }
