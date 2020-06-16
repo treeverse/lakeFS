@@ -11,7 +11,7 @@ import (
 
 func (c *cataloger) ListEntries(ctx context.Context, repository, branch string, commitID CommitID, prefix, after string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepoName(repository),
+		"repository": ValidateRepositoryName(repository),
 		"branch":     ValidateBranchName(branch),
 	}); err != nil {
 		return nil, false, err
