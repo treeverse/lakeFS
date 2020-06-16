@@ -8,6 +8,7 @@ import (
 
 	"github.com/treeverse/lakefs/httputil"
 
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
@@ -87,10 +88,10 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
 		expected = obj.Size
-		data, err = o.BlockStore.Get(o.Repo.StorageNamespace, obj.PhysicalAddress)
+		data, err = o.BlockStore.Get(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: obj.PhysicalAddress})
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-		data, err = o.BlockStore.GetRange(o.Repo.StorageNamespace, obj.PhysicalAddress, rng.StartOffset, rng.EndOffset)
+		data, err = o.BlockStore.GetRange(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: obj.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
