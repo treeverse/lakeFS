@@ -55,9 +55,6 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	// merge master to branch1
 	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", nil)
 	if err != nil {
-		if res.CommitID != 0 {
-			t.Errorf("Failed merge should return no commit id, got %d", res.CommitID)
-		}
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
 	if res.CommitID <= 0 {
@@ -117,7 +114,7 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 
 	// add new file
 	const newFilename = "/file5"
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file5", nil, "")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", newFilename, nil, "")
 
 	// delete committed file
 	const delFilename = "/file1"
@@ -193,7 +190,7 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 
 	// add new file
 	const newFilename = "/file5"
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", "/file5", nil, "")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", newFilename, nil, "")
 
 	// delete committed file
 	const delFilename = "/file1"
@@ -244,8 +241,8 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 		t.Errorf("Entry /file2 address %s, expected %s", ent2.PhysicalAddress, ent2Addr)
 	}
 	const ent5Addr = "53c9486452c01e26833296dcf1f701379fa22f01e610dd9817d064093daab07d"
-	testutil.MustDo(t, "Expected to find an entry /file5", err)
 	ent5, err := c.GetEntry(ctx, repository, "branch1", CommittedID, "/file5")
+	testutil.MustDo(t, "Expected to find an entry /file5", err)
 	if ent5.PhysicalAddress != ent5Addr {
 		t.Errorf("Entry /file5 address %s, expected %s", ent5.PhysicalAddress, ent5Addr)
 	}
@@ -319,8 +316,9 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 		t.Errorf("Entry /file2 address %s, expected %s", ent2.PhysicalAddress, ent2Addr)
 	}
 	const ent555Addr = "a4708cfbf3a5a84e0cc774da7b273bbb339b56014183e78170075c6330896b85"
-	testutil.MustDo(t, "Expected to find an entry /file5", err)
+	testutil.MustDo(t, "Expected to find an entry /file555", err)
 	ent555, err := c.GetEntry(ctx, repository, "branch1", CommittedID, "/file555")
+	testutil.MustDo(t, "Expected to find an entry /file2", err)
 	if ent555.PhysicalAddress != ent555Addr {
 		t.Errorf("Entry /file5 address %s, expected %s", ent555.PhysicalAddress, ent555Addr)
 	}
