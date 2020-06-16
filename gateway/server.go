@@ -172,7 +172,10 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Operation: o,
 		Principal: user.DisplayName,
 	}
-
+	if perms == nil {
+		// no special permissions required, no need to authorize (used for delete-objects, where permissions are checked separately)
+		return op
+	}
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
 		UserDisplayName:     op.Principal,
