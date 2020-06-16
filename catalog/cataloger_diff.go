@@ -91,7 +91,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 						OR f.max_commit >= l.effective_commit AND f.is_deleted -- father deleted after commit
 									AS father_changed,
 						-- son created or deleted 
-						s.path IS NOT NULL AND l.main_branch AND
+						s.path IS NOT NULL AND s.source_branch = $2 AND
 							(NOT s.is_committed -- uncommitted is new
 							 OR s.min_commit > $3 -- created after last commit
                              OR (s.max_commit > $3 AND s.is_deleted)) -- deleted after last commit

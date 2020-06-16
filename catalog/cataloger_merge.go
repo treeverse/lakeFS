@@ -17,7 +17,8 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}
 
-	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+	var result *MergeResult
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeShare)
 		if err != nil {
 			return nil, err
@@ -35,34 +36,22 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		result := &MergeResult{
+		result = &MergeResult{
 			Differences: differences,
 		}
-		var diffCounts = struct {
-			Total     int `db:"total"`
-			Conflicts int `db:"conflicts"`
-		}{}
-		if err := tx.Get(&diffCounts, "SELECT count(*) as total, sum(case when diff_type=$1 then 1 else 0 end) as conflicts FROM "+diffResultsTableName, DifferenceTypeConflict); err != nil {
-			return result, err
+		diffCounts := result.Differences.CountByType()
+		if diffCounts[DifferenceTypeConflict] > 0 {
+			return nil, ErrConflictFound
 		}
-		if diffCounts.Conflicts > 0 {
-			return result, ErrConflictFound
-		}
-		// check for any change
-		if diffCounts.Total == 0 {
-			return result, ErrNoDifferenceWasFound
+		if len(diffCounts) == 0 {
+			return nil, ErrNoDifferenceWasFound
 		}
 
 		commitMsg := formatMergeMessage(leftBranch, rightBranch)
 		result.CommitID, err = c.doMergeByRelation(tx, relation, leftID, rightID, committer, commitMsg, metadata)
-		return result, err
-	}, c.txOpts(ctx)...)
-	// we like to return the result if exist, in case of a conflict
-	// data is kept in Differences
-	if res == nil {
 		return nil, err
-	}
-	return res.(*MergeResult), err
+	}, c.txOpts(ctx)...)
+	return result, err
 }
 
 func formatMergeMessage(leftBranch string, rightBranch string) string {
