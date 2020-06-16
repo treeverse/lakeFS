@@ -54,11 +54,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		}
 
 		commitMsg := formatMergeMessage(leftBranch, rightBranch)
-		commitID, err := c.doMergeByRelation(tx, relation, leftID, rightID, committer, commitMsg, metadata)
-		// keep the commit ID if we made the merge
-		if err != nil {
-			result.CommitID = commitID
-		}
+		result.CommitID, err = c.doMergeByRelation(tx, relation, leftID, rightID, committer, commitMsg, metadata)
 		return result, err
 	}, c.txOpts(ctx)...)
 	// we like to return the result if exist, in case of a conflict
