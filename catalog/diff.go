@@ -11,7 +11,7 @@ const (
 
 type Difference struct {
 	Type DifferenceType `db:"diff_type"`
-	Path string
+	Path string         `db:"path"`
 }
 
 func (d Difference) String() string {

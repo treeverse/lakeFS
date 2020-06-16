@@ -35,36 +35,38 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-
+		result := &MergeResult{
+			Differences: differences,
+		}
 		var diffCounts = struct {
 			Total     int `db:"total"`
 			Conflicts int `db:"conflicts"`
 		}{}
 		if err := tx.Get(&diffCounts, "SELECT count(*) as total, sum(case when diff_type=$1 then 1 else 0 end) as conflicts FROM "+diffResultsTableName, DifferenceTypeConflict); err != nil {
-			return nil, err
+			return result, err
 		}
 		if diffCounts.Conflicts > 0 {
-			return nil, ErrConflictFound
+			return result, ErrConflictFound
 		}
 		// check for any change
 		if diffCounts.Total == 0 {
-			return nil, ErrNoDifferenceWasFound
+			return result, ErrNoDifferenceWasFound
 		}
 
 		commitMsg := formatMergeMessage(leftBranch, rightBranch)
 		commitID, err := c.doMergeByRelation(tx, relation, leftID, rightID, committer, commitMsg, metadata)
+		// keep the commit ID if we made the merge
 		if err != nil {
-			return nil, err
+			result.CommitID = commitID
 		}
-		return &MergeResult{
-			CommitID:    commitID,
-			Differences: differences,
-		}, nil
+		return result, err
 	}, c.txOpts(ctx)...)
-	if err != nil {
+	// we like to return the result if exist, in case of a conflict
+	// data is kept in Differences
+	if res == nil {
 		return nil, err
 	}
-	return res.(*MergeResult), nil
+	return res.(*MergeResult), err
 }
 
 func formatMergeMessage(leftBranch string, rightBranch string) string {

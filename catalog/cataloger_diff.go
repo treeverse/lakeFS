@@ -105,16 +105,15 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 							  WHERE displayed_branch = $2 and rank=1) s ON f.path = s.path
 						 JOIN lineage_v l ON f.source_branch = l.ancestor_branch AND l.branch_id = $2 AND l.active_lineage) t_1
 			   WHERE father_changed AND NOT (same_object OR both_deleted) ) t`
-	differences, err := diffReadDifferences(tx, diffSQL, leftID, rightID, maxSonMerge)
-	if err != nil {
+	if _, err := tx.Exec(diffSQL, leftID, rightID, maxSonMerge); err != nil {
 		return nil, err
 	}
-	return differences, nil
+	return diffReadDifferences(tx)
 }
 
-func diffReadDifferences(tx db.Tx, sql string, args ...interface{}) (Differences, error) {
+func diffReadDifferences(tx db.Tx) (Differences, error) {
 	var result Differences
-	if err := tx.Select(&result, sql, args...); err != nil {
+	if err := tx.Select(&result, "SELECT diff_type, path FROM "+diffResultsTableName); err != nil {
 		return nil, err
 	}
 	return result, nil
