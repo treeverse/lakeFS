@@ -62,14 +62,14 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 
 func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID int, rightID int, committer string, msg string, metadata Metadata) (CommitID, error) {
 	// get source commit id on destination
-	sourceCommitID, err := getCommitID(tx, leftID)
+	sourceCommitID, err := getNextCommitID(tx, leftID)
 	if err != nil {
 		return 0, err
 	}
 	sourceCommitID -= 1 // move next current to current source commit id
 
 	// get destination commit id on destination
-	commitID, err := getCommitID(tx, rightID)
+	commitID, err := getNextCommitID(tx, rightID)
 	if err != nil {
 		return 0, err
 	}
