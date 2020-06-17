@@ -583,7 +583,7 @@ func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
 		t.Fatalf("Merge commit ID = %d, expected 0", res.CommitID)
 	}
 	expectedDifferences := Differences{
-		Difference{Type: DifferenceTypeChanged, Path: "/file0"},
+		Difference{Type: DifferenceTypeConflict, Path: "/file0"},
 	}
 	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
