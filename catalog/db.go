@@ -41,7 +41,7 @@ func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	return repoID, err
 }
 
-func getCommitID(tx db.Tx, branchID int) (CommitID, error) {
+func getNextCommitID(tx db.Tx, branchID int) (CommitID, error) {
 	var commitID CommitID
 	err := tx.Get(&commitID, `SELECT next_commit FROM branches WHERE id = $1`, branchID)
 	return commitID, err
@@ -78,6 +78,9 @@ func paginateSlice(s interface{}, limit int) bool {
 		return false
 	}
 	el := v.Elem()
+	if el.Kind() != reflect.Slice {
+		return false
+	}
 	if el.Len() > limit {
 		el.Set(el.Slice(0, limit))
 		return true

@@ -25,7 +25,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			return 0, err
 		}
 
-		commitID, err := getCommitID(tx, branchID)
+		commitID, err := getNextCommitID(tx, branchID)
 		if err != nil {
 			return 0, err
 		}
