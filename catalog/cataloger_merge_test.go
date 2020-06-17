@@ -69,7 +69,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
 		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 }
@@ -125,7 +125,7 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 		Difference{Type: DifferenceTypeConflict, Path: "/file2"},
 		Difference{Type: DifferenceTypeConflict, Path: "/file5"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 }
@@ -200,7 +200,7 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
 		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
@@ -266,7 +266,7 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
 		Difference{Type: DifferenceTypeAdded, Path: "/file555"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
@@ -355,7 +355,7 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
 		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 }
@@ -418,7 +418,7 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 		Difference{Type: DifferenceTypeAdded, Path: "/file8"},
 		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
@@ -457,7 +457,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeAdded, Path: "/file0"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
@@ -479,7 +479,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	expectedDifferences = Differences{
 		Difference{Type: DifferenceTypeRemoved, Path: "/file0"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 }
@@ -523,7 +523,7 @@ func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 		Difference{Type: DifferenceTypeRemoved, Path: "/file0"},
 		Difference{Type: DifferenceTypeChanged, Path: "/file1"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 }
@@ -560,7 +560,7 @@ func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeChanged, Path: "/file0"},
 	}
-	if res.Differences.Equal(expectedDifferences) {
+	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 }

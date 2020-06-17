@@ -57,6 +57,7 @@ type Committer interface {
 
 type Differ interface {
 	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
+	DiffUncommitted(ctx context.Context, repository, branch string) (Differences, error)
 }
 
 type MergeResult struct {
