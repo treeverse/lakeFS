@@ -397,17 +397,42 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "second commit to branch2", err)
 
 	// merge the above up to master (from branch2)
-	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch2", "branch1", "tester", nil)
 	testutil.MustDo(t, "Merge changes from branch2 to branch1", err)
+
+	if res.CommitID <= 0 {
+		t.Errorf("Merge commit ID = %d, expected a valid commit number", res.CommitID)
+	}
+	expectedDifferences := Differences{
+		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
+		Difference{Type: DifferenceTypeAdded, Path: "/file555"},
+		Difference{Type: DifferenceTypeAdded, Path: "/file6"},
+		Difference{Type: DifferenceTypeAdded, Path: "/file7"},
+		Difference{Type: DifferenceTypeAdded, Path: "/file8"},
+		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
+	}
+	if !res.Differences.Equal(expectedDifferences) {
+		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
+	}
+
+	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{
+		{Path: "/file1", Deleted: true},
+		{Path: "/file2", Seed: "seed1"},
+		{Path: "/file555"},
+		{Path: "/file6"},
+		{Path: "/file7"},
+		{Path: "/file8"},
+	})
+
 	// merge the changes from branch1 to master
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", nil)
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
 	// verify valid commit id
 	if res.CommitID <= 0 {
 		t.Errorf("Merge commit ID = %d, expected a valid commit number", res.CommitID)
 	}
-	expectedDifferences := Differences{
+	expectedDifferences = Differences{
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
 		Difference{Type: DifferenceTypeAdded, Path: "/file3"},
 		Difference{Type: DifferenceTypeAdded, Path: "/file4"},
