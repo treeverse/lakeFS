@@ -83,7 +83,7 @@ func createGroups(authService auth.Service, groups []*model.Group) error {
 
 func createPolicies(authService auth.Service, policies []*model.Policy) error {
 	for _, policy := range policies {
-		err := authService.CreatePolicy(policy)
+		err := authService.WritePolicy(policy)
 		if err != nil {
 			return err
 		}

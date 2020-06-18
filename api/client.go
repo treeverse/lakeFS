@@ -134,7 +134,7 @@ func (c *client) DeleteUser(ctx context.Context, userId string) error {
 func (c *client) CreateUser(ctx context.Context, userId string) (*models.User, error) {
 	resp, err := c.remote.Auth.CreateUser(&auth.CreateUserParams{
 		User: &models.UserCreation{
-			ID: userId,
+			ID: swag.String(userId),
 		},
 		Context: ctx,
 	}, c.auth)
@@ -170,7 +170,7 @@ func (c *client) ListGroups(ctx context.Context, after string, amount int) ([]*m
 func (c *client) CreateGroup(ctx context.Context, groupId string) (*models.Group, error) {
 	resp, err := c.remote.Auth.CreateGroup(&auth.CreateGroupParams{
 		Group: &models.GroupCreation{
-			ID: groupId,
+			ID: swag.String(groupId),
 		},
 		Context: ctx,
 	}, c.auth)
