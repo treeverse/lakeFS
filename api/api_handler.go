@@ -753,7 +753,6 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 	return objects.GetUnderlyingPropertiesHandlerFunc(func(params objects.GetUnderlyingPropertiesParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{
 			{
-				// TODO(ariels): Use a more specific permission?
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
 			},
