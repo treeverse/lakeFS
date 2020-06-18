@@ -16,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/ident"
@@ -840,9 +841,11 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		t.Fatal(err)
 	}
 
+	expensiveString := "EXPENSIVE"
+
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	checksum, physicalAddress, size, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks, 37)
+	checksum, physicalAddress, size, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -892,6 +895,20 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		}, bauth, buf)
 		if _, ok := err.(*objects.GetObjectNotFound); !ok {
 			t.Fatalf("expected object not found error, got %v", err)
+		}
+	})
+
+	t.Run("get properties", func(t *testing.T) {
+		properties, err := clt.Objects.GetUnderlyingProperties(&objects.GetUnderlyingPropertiesParams{
+			Ref:          "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatalf("expected to get underlying properties, got %v", err)
+		}
+		if *properties.Payload.StorageClass != expensiveString {
+			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
 		}
 	})
 }

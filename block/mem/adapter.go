@@ -46,6 +46,7 @@ type Adapter struct {
 	ctx                context.Context
 	data               map[string][]byte
 	mpu                map[string]*mpu
+	properties         map[string]block.Properties
 	mutex              *sync.RWMutex
 	uploadIdTranslator block.UploadIdTranslator
 }
@@ -56,6 +57,7 @@ func New(opts ...func(a *Adapter)) *Adapter {
 		uploadIdTranslator: &block.NoOpTranslator{},
 		data:               make(map[string][]byte),
 		mpu:                make(map[string]*mpu),
+		properties:         make(map[string]block.Properties),
 		mutex:              &sync.RWMutex{},
 	}
 	for _, opt := range opts {
@@ -79,19 +81,22 @@ func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 		ctx:                ctx,
 		data:               a.data,
 		mpu:                a.mpu,
+		properties:         a.properties,
 		mutex:              a.mutex,
 		uploadIdTranslator: a.uploadIdTranslator,
 	}
 }
 
-func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader) error {
+func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-	a.data[getKey(obj)] = data
+	key := getKey(obj)
+	a.data[key] = data
+	a.properties[key] = block.Properties(opts)
 	return nil
 }
 
@@ -115,6 +120,16 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return ioutil.NopCloser(io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)), nil
 }
 
+func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+	a.mutex.RLock()
+	defer a.mutex.RUnlock()
+	props, ok := a.properties[getKey(obj)]
+	if !ok {
+		return block.Properties{}, fmt.Errorf("no properties for key")
+	}
+	return props, nil
+}
+
 func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
@@ -122,7 +137,7 @@ func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	return nil
 }
 
-func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	mpu := newMPU()

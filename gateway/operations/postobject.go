@@ -37,7 +37,9 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	o.Incr("create_mpu")
 	UUIDbytes := ([16]byte(uuid.New()))
 	objName := hex.EncodeToString(UUIDbytes[:])
-	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: objName}, o.Request)
+	storageClass := StorageClassFromHeader(o.Request.Header)
+	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
+	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: objName}, o.Request, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
