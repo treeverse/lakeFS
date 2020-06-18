@@ -2,7 +2,7 @@ import React, {useEffect, useState, useCallback, useRef} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 import {Tooltip, OverlayTrigger, ButtonToolbar, Button, Form, Row, Col, Modal} from "react-bootstrap";
-import Octicon, {Sync as SyncIcon, GitCommit, Plus, X} from "@primer/octicons-react";
+import {SyncIcon, GitCommitIcon, PlusIcon, XIcon} from "@primer/octicons-react";
 import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
@@ -47,7 +47,7 @@ const RevertButton = connect(
         <>
         <ConfirmationModal show={show} onHide={onHide} msg="Are you sure you want to revert all uncommitted changes?" onConfirm={onSubmit} />
         <Button variant="light" disabled={disabled} onClick={() => { setShow(true) }}>
-            <Octicon icon={GitCommit}/> Revert
+            <GitCommitIcon/> Revert
         </Button>
         </>
     );
@@ -118,7 +118,7 @@ const UploadButton = connect(
                 </Modal.Footer>
             </Modal>
             <Button variant="light" onClick={() => { setShow(true) }}>
-                <Octicon icon={GitCommit}/> Upload Object
+                <GitCommitIcon/> Upload Object
             </Button>
         </>
     );
@@ -205,10 +205,10 @@ const CommitButton = connect(
                                         </Col>
                                         <Col md={{ span: 1}}>
                                             <Form.Text>
-                                                <Button size="sm" variant="outline-secondary" onClick={() => {
+                                                <Button size="sm" variant="secondary" onClick={() => {
                                                     setMetadataFields([...metadataFields.slice(0,i), ...metadataFields.slice(i+1)]);
                                                 }}>
-                                                    <Octicon icon={X}/>
+                                                    <XIcon/>
                                                 </Button>
                                             </Form.Text>
                                         </Col>
@@ -219,8 +219,8 @@ const CommitButton = connect(
 
                         <Button onClick={() => {
                             setMetadataFields([...metadataFields, {key: "", value: ""}]);
-                        }} size="sm" variant="outline-secondary">
-                            <Octicon icon={Plus}/>{' '}
+                        }} size="sm" variant="secondary">
+                            <PlusIcon/>{' '}
                             Add Metadata field
                         </Button>
                     </Form>
@@ -236,7 +236,7 @@ const CommitButton = connect(
                 </Modal.Footer>
             </Modal>
             <Button disabled={commitDisabled} variant={commitVariant} onClick={() => { setShow(true); }}>
-                <Octicon icon={GitCommit}/> Commit Changes{' '}
+                <GitCommitIcon/> Commit Changes{' '}
             </Button>
         </>
     );
@@ -287,7 +287,7 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
 
                 <ButtonToolbar className="float-right mb-2">
                     <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
-                        <Button variant="light" disabled={list.loading} onClick={refreshData}><Octicon icon={SyncIcon}/></Button>
+                        <Button variant="light" disabled={list.loading} onClick={refreshData}><SyncIcon/></Button>
                     </OverlayTrigger>
 
                     <RevertButton refId={refId} repo={repo} changes={changes}/>

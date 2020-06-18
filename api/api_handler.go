@@ -1262,16 +1262,18 @@ func (a *Handler) DeleteGroupHandler() authentication.DeleteGroupHandler {
 }
 
 func serializePolicy(p *authmodel.Policy) *models.Policy {
-	effect := "Deny"
-	if p.Effect {
-		effect = "Allow"
+	stmts := make([]*models.Statement, len(p.Statement))
+	for i, s := range p.Statement {
+		stmts[i] = &models.Statement{
+			Action:   s.Action,
+			Effect:   swag.String(s.Effect),
+			Resource: swag.String(s.Resource),
+		}
 	}
 	return &models.Policy{
-		Action:       p.Action,
+		ID:           swag.String(p.DisplayName),
 		CreationDate: p.CreatedAt.Unix(),
-		Effect:       effect,
-		ID:           p.DisplayName,
-		Resource:     p.Resource,
+		Statement:    stmts,
 	}
 }
 
@@ -1323,17 +1325,19 @@ func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 
-		effect := false
-		if swag.StringValue(params.Policy.Effect) == "Allow" {
-			effect = true
+		stmts := make(authmodel.Statements, len(params.Policy.Statement))
+		for i, apiStatement := range params.Policy.Statement {
+			stmts[i] = authmodel.Statement{
+				Effect:   swag.StringValue(apiStatement.Effect),
+				Action:   apiStatement.Action,
+				Resource: swag.StringValue(apiStatement.Resource),
+			}
 		}
 
 		p := &authmodel.Policy{
 			CreatedAt:   time.Now(),
 			DisplayName: swag.StringValue(params.Policy.ID),
-			Action:      params.Policy.Action,
-			Resource:    swag.StringValue(params.Policy.Resource),
-			Effect:      effect,
+			Statement:   stmts,
 		}
 
 		err = a.context.Auth.CreatePolicy(p)

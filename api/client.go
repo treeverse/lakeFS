@@ -33,7 +33,7 @@ type AuthClient interface {
 	CreateGroup(ctx context.Context, groupId string) (*models.Group, error)
 	DeleteGroup(ctx context.Context, groupId string) error
 	ListPolicies(ctx context.Context, after string, amount int) ([]*models.Policy, *models.Pagination, error)
-	CreatePolicy(ctx context.Context, creation *models.PolicyCreation) (*models.Policy, error)
+	CreatePolicy(ctx context.Context, policy *models.Policy) (*models.Policy, error)
 	GetPolicy(ctx context.Context, policyId string) (*models.Policy, error)
 	DeletePolicy(ctx context.Context, policyId string) error
 	ListGroupMembers(ctx context.Context, groupId string, after string, amount int) ([]*models.User, *models.Pagination, error)
@@ -200,9 +200,9 @@ func (c *client) ListPolicies(ctx context.Context, after string, amount int) ([]
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) CreatePolicy(ctx context.Context, creation *models.PolicyCreation) (*models.Policy, error) {
+func (c *client) CreatePolicy(ctx context.Context, policy *models.Policy) (*models.Policy, error) {
 	resp, err := c.remote.Auth.CreatePolicy(&auth.CreatePolicyParams{
-		Policy:  creation,
+		Policy:  policy,
 		Context: ctx,
 	}, c.auth)
 	if err != nil {
