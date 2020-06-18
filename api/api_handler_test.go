@@ -896,6 +896,20 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 			t.Fatalf("expected object not found error, got %v", err)
 		}
 	})
+
+	t.Run("get properties", func(t *testing.T) {
+		properties, err := clt.Objects.GetUnderlyingProperties(&objects.GetUnderlyingPropertiesParams{
+			Ref:          "master",
+			Path:         "foo/bar",
+			RepositoryID: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatalf("expected to get underlying properties, got %v", err)
+		}
+		if *properties.Payload.StorageClass != "expensive" {
+			t.Errorf("expected to get \"expensive\" storage class, got %v", properties)
+		}
+	})
 }
 
 func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
