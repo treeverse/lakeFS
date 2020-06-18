@@ -94,6 +94,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.AuthCreatePolicyHandler = a.CreatePolicyHandler()
 	api.AuthGetPolicyHandler = a.GetPolicyHandler()
 	api.AuthDeletePolicyHandler = a.DeletePolicyHandler()
+	api.AuthUpdatePolicyHandler = a.UpdatePolicyHandler()
 	api.AuthListGroupMembersHandler = a.ListGroupMembersHandler()
 	api.AuthAddGroupMembershipHandler = a.AddGroupMembershipHandler()
 	api.AuthDeleteGroupMembershipHandler = a.DeleteGroupMembershipHandler()
@@ -1015,7 +1016,7 @@ func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.CreateUserAction,
-				Resource: permissions.UserArn(params.User.ID),
+				Resource: permissions.UserArn(swag.StringValue(params.User.ID)),
 			},
 		})
 		if err != nil {
@@ -1024,7 +1025,7 @@ func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 		}
 		u := &authmodel.User{
 			CreatedAt:   time.Now(),
-			DisplayName: params.User.ID,
+			DisplayName: swag.StringValue(params.User.ID),
 		}
 		err = a.context.Auth.CreateUser(u)
 		if err != nil {
@@ -1209,7 +1210,7 @@ func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.CreateGroupAction,
-				Resource: permissions.GroupArn(params.Group.ID),
+				Resource: permissions.GroupArn(swag.StringValue(params.Group.ID)),
 			},
 		})
 		if err != nil {
@@ -1218,7 +1219,7 @@ func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 		}
 		g := &authmodel.Group{
 			CreatedAt:   time.Now(),
-			DisplayName: params.Group.ID,
+			DisplayName: swag.StringValue(params.Group.ID),
 		}
 
 		err = a.context.Auth.CreateGroup(g)
@@ -1340,7 +1341,7 @@ func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
 			Statement:   stmts,
 		}
 
-		err = a.context.Auth.CreatePolicy(p)
+		err = a.context.Auth.WritePolicy(p)
 		if err != nil {
 			return authentication.NewCreatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -1374,6 +1375,45 @@ func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
 		}
 
 		return authentication.NewGetPolicyOK().
+			WithPayload(serializePolicy(p))
+	})
+}
+
+func (a *Handler) UpdatePolicyHandler() authentication.UpdatePolicyHandler {
+	return authentication.UpdatePolicyHandlerFunc(func(params authentication.UpdatePolicyParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.UpdatePolicyAction,
+				Resource: permissions.PolicyArn(params.PolicyID),
+			},
+		})
+		if err != nil {
+			return authentication.NewUpdatePolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		stmts := make(authmodel.Statements, len(params.Policy.Statement))
+		for i, apiStatement := range params.Policy.Statement {
+			stmts[i] = authmodel.Statement{
+				Effect:   swag.StringValue(apiStatement.Effect),
+				Action:   apiStatement.Action,
+				Resource: swag.StringValue(apiStatement.Resource),
+			}
+		}
+
+		p := &authmodel.Policy{
+			CreatedAt:   time.Now(),
+			DisplayName: swag.StringValue(params.Policy.ID),
+			Statement:   stmts,
+		}
+
+		err = a.context.Auth.WritePolicy(p)
+		if err != nil {
+			return authentication.NewUpdatePolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+
+		return authentication.NewUpdatePolicyOK().
 			WithPayload(serializePolicy(p))
 	})
 }

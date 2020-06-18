@@ -145,6 +145,20 @@ class Auth {
         }
     }
 
+    async attachPolicyToGroup(groupId, policyId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/policies/${policyId}`, {method: 'PUT'})
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async detachPolicyFromGroup(groupId, policyId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/policies/${policyId}`, {method: 'DELETE'})
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
     async deleteCredentials(userId, accessKeyId) {
         const response = await apiRequest(`/auth/users/${userId}/credentials/${accessKeyId}`, {method: 'DELETE'})
         if (response.status !== 204) {
@@ -170,11 +184,24 @@ class Auth {
     }
 
     async createPolicy(policyId, policyDocument) {
+        const policy = {id: policyId, ...JSON.parse(policyDocument)};
         const response = await apiRequest(`/auth/policies`, {
             method: 'POST',
-            body: json({id: policyId, ...policyDocument})
+            body: json(policy)
         });
         if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async editPolicy(policyId, policyDocument) {
+        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        const response = await apiRequest(`/auth/policies/${policyId}`, {
+            method: 'PUT',
+            body: json(policy)
+        });
+        if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
         return await response.json();
@@ -235,6 +262,49 @@ class Auth {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
         return await response.json();
+    }
+
+    async deleteUser(userId) {
+        const response = await apiRequest(`/auth/users/${userId}`, {method: 'DELETE'});
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deleteUsers (userIds) {
+        for (let i = 0; i < userIds.length; i++) {
+            const userId = userIds[i];
+            await this.deleteUser(userId);
+        }
+
+    }
+
+    async deleteGroup(groupId) {
+        const response = await apiRequest(`/auth/groups/${groupId}`, {method: 'DELETE'});
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deleteGroups (groupIds) {
+        for (let i = 0; i < groupIds.length; i++) {
+            const groupId = groupIds[i];
+            await this.deleteGroup(groupId);
+        }
+    }
+
+    async deletePolicy(policyId) {
+        const response = await apiRequest(`/auth/policies/${policyId}`, {method: 'DELETE'});
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deletePolicies (policyIds) {
+        for (let i = 0; i < policyIds.length; i++) {
+            const policyId = policyIds[i];
+            await this.deletePolicy(policyId);
+        }
     }
 
     async logout() {
