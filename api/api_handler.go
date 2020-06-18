@@ -394,7 +394,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)), block.PutOpts{})
 	if err != nil {
 		return err
 	}
@@ -904,7 +904,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// read the content
-		checksum, physicalAddress, size, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize)
+		checksum, physicalAddress, size, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

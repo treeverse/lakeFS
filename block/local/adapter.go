@@ -25,6 +25,8 @@ type Adapter struct {
 	uploadIdTranslator block.UploadIdTranslator
 }
 
+var nilPutOpts = block.PutOpts{}
+
 func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
 		path:               l.path,
@@ -64,7 +66,7 @@ func (l *Adapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader) error {
+func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	path := l.getPath(obj.Identifier)
 	f, err := os.Create(path)
 	defer f.Close()
@@ -105,6 +107,16 @@ func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.
 	}, nil
 }
 
+func (l *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+	path := l.getPath(obj.Identifier)
+	_, err := os.Stat(path)
+	if err != nil {
+		return block.Properties{}, err
+	}
+	// No properties, just return that it exists
+	return block.Properties{}, nil
+}
+
 func isDirectoryWritable(pth string) bool {
 	// test ability to write to directory.
 	// as there is no simple way to test this in windows, I prefer the "brute force" method
@@ -124,7 +136,7 @@ func isDirectoryWritable(pth string) bool {
 	}
 }
 
-func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request) (string, error) {
+func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	if strings.Contains(obj.Identifier, "/") {
 		fullPath := l.getPath(obj.Identifier)
 		fullDir := path.Dir(fullPath)
@@ -144,7 +156,7 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
-	err := l.Put(block.ObjectPointer{Repo: "", Identifier: fName}, -1, md5Read)
+	err := l.Put(block.ObjectPointer{Repo: "", Identifier: fName}, -1, md5Read, nilPutOpts)
 	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return ETag, err
 }
