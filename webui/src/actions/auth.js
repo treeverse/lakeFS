@@ -12,6 +12,7 @@ export const
     AUTH_CREATE_GROUP = new AsyncActionType('AUTH_CREATE_GROUP'),
     AUTH_LIST_POLICIES = new AsyncActionType('AUTH_LIST_POLICIES'),
     AUTH_CREATE_POLICY = new AsyncActionType('AUTH_CREATE_POLICY'),
+    AUTH_EDIT_POLICY = new AsyncActionType('AUTH_EDIT_POLICY'),
     AUTH_LIST_CREDENTIALS = new AsyncActionType('AUTH_LIST_CREDENTIALS'),
     AUTH_CREATE_CREDENTIALS = new AsyncActionType('AUTH_CREATE_CREDENTIALS'),
     AUTH_DELETE_CREDENTIALS = new AsyncActionType('AUTH_DELETE_CREDENTIALS'),
@@ -25,6 +26,11 @@ export const
     AUTH_GET_POLICY = new AsyncActionType('AUTH_GET_POLICY'),
     AUTH_ATTACH_POLICY_TO_USER = new AsyncActionType('AUTH_ATTACH_POLICY_TO_USER'),
     AUTH_DETACH_POLICY_FROM_USER = new AsyncActionType('AUTH_DETACH_POLICY_FROM_USER'),
+    AUTH_ATTACH_POLICY_TO_GROUP = new AsyncActionType('AUTH_ATTACH_POLICY_TO_GROUP'),
+    AUTH_DETACH_POLICY_FROM_GROUP = new AsyncActionType('AUTH_DETACH_POLICY_FROM_GROUP'),
+    AUTH_DELETE_USERS = new AsyncActionType('AUTH_DELETE_USERS'),
+    AUTH_DELETE_GROUPS = new AsyncActionType('AUTH_DELETE_GROUPS'),
+    AUTH_DELETE_POLICIES = new AsyncActionType('AUTH_DELETE_POLICIES'),
     AUTH_REDIRECTED = 'AUTH_REDIRECTED';
 
 export const logout = () => {
@@ -84,6 +90,16 @@ export const resetCreatePolicy = () => ({
     ...AUTH_CREATE_POLICY.resetAction(),
 });
 
+export const editPolicy = (policyId, policyDocument) => {
+    return AUTH_EDIT_POLICY.execute(async () => {
+        return await api.auth.editPolicy(policyId, policyDocument);
+    });
+};
+
+export const resetEditPolicy = () => ({
+    ...AUTH_EDIT_POLICY.resetAction(),
+});
+
 export const listCredentials = (userId, after = "", amount = DEFAULT_LISTING_AMOUNT) => {
     return AUTH_LIST_CREDENTIALS.execute(async () => {
         return await api.auth.listCredentials(userId, after, amount);
@@ -116,8 +132,6 @@ export const listGroupMembers = (groupId, after = "", amount = DEFAULT_LISTING_A
     });
 }
 
-
-
 export const addUserToGroup = (userId, groupId) => {
   return AUTH_ADD_USER_TO_GROUP.execute(async () => {
       return await api.auth.addUserToGroup(userId, groupId)
@@ -147,6 +161,26 @@ export const detachPolicyFromUser = (userId, policyId) => {
 
 export const resetDetachPolicyFromUser = () => ({
     ...AUTH_DETACH_POLICY_FROM_USER.resetAction()
+})
+
+export const attachPolicyToGroup = (groupId, policyId) => {
+    return AUTH_ATTACH_POLICY_TO_GROUP.execute(async () => {
+        return await api.auth.attachPolicyToGroup(groupId, policyId)
+    });
+};
+
+export const resetAttachPolicyToGroup = () => ({
+    ...AUTH_ATTACH_POLICY_TO_GROUP.resetAction()
+})
+
+export const detachPolicyFromGroup = (groupId, policyId) => {
+    return AUTH_DETACH_POLICY_FROM_GROUP.execute(async () => {
+        return await api.auth.detachPolicyFromGroup(groupId, policyId)
+    });
+};
+
+export const resetDetachPolicyFromGroup = () => ({
+    ...AUTH_DETACH_POLICY_FROM_GROUP.resetAction()
 })
 
 export const removeUserFromGroup = (userId, groupId) => {
@@ -187,7 +221,37 @@ export const getPolicy = (policyId) => {
     return AUTH_GET_POLICY.execute(async () => {
         return await api.auth.getPolicy(policyId);
     })
-}
+};
+
+export const deleteUsers = (userIds) => {
+    return AUTH_DELETE_USERS.execute(async () => {
+        return await api.auth.deleteUsers(userIds);
+    });
+};
+
+export const resetDeleteUsers = () => ({
+    ...AUTH_DELETE_USERS.resetAction(),
+});
+
+export const deleteGroups = (groupIds) => {
+    return AUTH_DELETE_GROUPS.execute(async () => {
+        return await api.auth.deleteGroups(groupIds);
+    });
+};
+
+export const resetDeleteGroups = () => ({
+    ...AUTH_DELETE_GROUPS.resetAction(),
+});
+
+export const deletePolicies = (policyIds) => {
+    return AUTH_DELETE_POLICIES.execute(async () => {
+        return await api.auth.deletePolicies(policyIds);
+    });
+};
+
+export const resetDeletePolicies = () => ({
+    ...AUTH_DELETE_POLICIES.resetAction(),
+});
 
 export const redirected = () => ({
     type: AUTH_REDIRECTED,

@@ -3,7 +3,7 @@ import {Switch, Route, useHistory, Redirect} from "react-router-dom";
 
 import RepositoryExplorerPage from './RepositoryExplorerPage';
 import {RepositoryListPage} from './RepositoryListPage';
-import {AuthManagementPage} from './AuthManagementPage';
+import {AuthManagementPage} from './auth';
 
 
 export const IndexPage = () => {
