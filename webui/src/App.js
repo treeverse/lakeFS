@@ -3,7 +3,10 @@ import React from 'react';
 import {connect} from 'react-redux';
 import Navbar from 'react-bootstrap/Navbar';
 import Container from "react-bootstrap/Container";
-import {BrowserRouter as Router, Switch, Route, Redirect} from "react-router-dom";
+import {BrowserRouter as Router, Switch, Route, Redirect, useLocation, useHistory} from "react-router-dom";
+
+
+
 
 import LoginForm from "./components/Login";
 import SetupPage from "./components/SetupPage";
@@ -12,8 +15,9 @@ import { logout, redirected } from './actions/auth';
 import {IndexPage} from "./components/IndexPage";
 
 // css imports
-import 'bootstrap/dist/css/bootstrap.min.css';
+import 'bootswatch/dist/lumen/bootstrap.css';
 import './App.css';
+import Nav from "react-bootstrap/Nav";
 
 
 const NavUserInfo = connect(
@@ -26,6 +30,9 @@ const NavUserInfo = connect(
     return (
         <Navbar.Collapse className="justify-content-end">
             <NavDropdown title={user.id} className="navbar-username" alignRight>
+                <NavDropdown.Header>
+                    Access Key ID: <code>{user.accessKeyId}</code>
+                </NavDropdown.Header>
                 <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
             </NavDropdown>
         </Navbar.Collapse>
@@ -48,34 +55,61 @@ const PrivateRoute = ({ children, user, ...rest }) => {
 };
 
 
+const TopBar = ({ user }) => {
+
+    let loc = useLocation();
+    let history = useHistory();
+
+    const onNavigate = (href, e) => {
+        e.preventDefault();
+        history.push(href);
+    };
+
+    React.useEffect(() => {
+
+    }, [loc])
+
+    const isActive = (prefix) => {
+        return loc.pathname.indexOf(prefix) === 0;
+    };
+
+    return (!!user) ? (
+        <Navbar variant="dark" bg="dark" expand="md">
+            <Navbar.Brand href="/">lakeFS</Navbar.Brand>
+
+            <Nav className="mr-auto">
+                <Nav.Link href="/repositories" onSelect={onNavigate} active={isActive("/repositories")}>Repositories</Nav.Link>
+                <Nav.Link href="/auth" onSelect={onNavigate} active={isActive("/auth")}>Administration</Nav.Link>
+            </Nav>
+
+            <NavUserInfo/>
+        </Navbar>
+    ): (
+        <Navbar variant="dark" bg="dark" expand="md">
+            <Navbar.Brand href="/">lakeFS</Navbar.Brand>
+        </Navbar>
+    )
+}
+
+
 const App = ({ user, redirectTo, redirected }) => {
-
     return (
-        <div className="App">
-            <Navbar variant="dark" bg="dark" expand="md">
-                <Navbar.Brand href="/">lakeFS</Navbar.Brand>
-                <NavUserInfo/>
-            </Navbar>
+        <Router className="App">
+            <TopBar user={user}/>
             <Container className={"main-app"}>
-                <Router>
-                    <Switch>
-
-                        <Route path="/login" >
-                            <LoginForm redirectTo={redirectTo} onRedirect={redirected}/>
-                        </Route>
-
-                        <Route path="/setup" >
-                            <SetupPage />
-                        </Route>
-
-                        <PrivateRoute path="/" user={user}>
-                            <IndexPage/>
-                        </PrivateRoute>
-
-                    </Switch>
-                </Router>
+                <Switch>
+                    <Route path="/login">
+                        <LoginForm redirectTo={redirectTo} onRedirect={redirected}/>
+                    </Route>
+                    <Route path="/setup">
+                        <SetupPage />
+                    </Route>
+                    <PrivateRoute path="/" user={user}>
+                        <IndexPage/>
+                    </PrivateRoute>
+                </Switch>
             </Container>
-        </div>
+        </Router>
     );
 };
 

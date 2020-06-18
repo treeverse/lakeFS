@@ -250,6 +250,24 @@ definitions:
       id:
         type: string
 
+  statement:
+    type: object
+    properties:
+      effect:
+        type: string
+        enum: ["Allow", "Deny"]
+      resource:
+        type: string
+      action:
+        type: array
+        items:
+          type: string
+        minItems: 1
+    required:
+      - effect
+      - resource
+      - action
+
   policy:
     type: object
     properties:
@@ -258,36 +276,14 @@ definitions:
       creation_date:
         type: integer
         format: int64
-      action:
+      statement:
         type: array
         items:
-          type: string
-      resource:
-        type: string
-      effect:
-        type: string
-        enum: ["Allow", "Deny"]
-
-  policy_creation:
-    type: object
-    properties:
-      id:
-        type: string
-      action:
-        type: array
-        items:
-          type: string
+          $ref: "#/definitions/statement"
         minItems: 1
-      resource:
-        type: string
-      effect:
-        type: string
-        enum: ["Allow", "Deny"]
     required:
       - id
-      - action
-      - resource
-      - effect
+      - statement
 
 paths:
 
@@ -556,7 +552,7 @@ paths:
         - in: body
           name: policy
           schema:
-            $ref: "#/definitions/policy_creation"
+            $ref: "#/definitions/policy"
       responses:
         201:
           description: policy

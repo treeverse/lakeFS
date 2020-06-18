@@ -6,7 +6,7 @@ import Button from "react-bootstrap/Button";
 import Form from "react-bootstrap/Form";
 import Alert from "react-bootstrap/Alert";
 import Badge from "react-bootstrap/Badge";
-import Octicon, {ChevronDown, ChevronUp, ChevronRight, X} from "@primer/octicons-react";
+import {ChevronDownIcon, ChevronUpIcon, ChevronRightIcon, XIcon} from "@primer/octicons-react";
 
 import * as api from "../actions/api";
 
@@ -143,7 +143,7 @@ const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits
                 {(branch.id === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
-                        <Octicon icon={ChevronRight}/>
+                        <ChevronRightIcon/>
                     </Button>
                 ) : (<span/>)}
             </div>
@@ -222,13 +222,13 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     const cancelButton = (!!onCancel && !!selected) ? (<Button onClick={() => {
         setShow(false);
         onCancel();
-    }} variant="light"><Octicon icon={X}/></Button>) : (<span/>);
+    }} variant="light"><XIcon/></Button>) : (<span/>);
 
     if (!selected) {
         return (
             <>
                 <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                    {emptyText} <Octicon icon={show ? ChevronUp : ChevronDown}/>
+                    {emptyText} {show ? ChevronUpIcon : ChevronDownIcon}
                 </Button>
                 {cancelButton}
                 {popover}
@@ -242,7 +242,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                {title} <strong>{selectedIdDisplay}</strong> <Octicon icon={show ? ChevronUp : ChevronDown}/>
+                {title} <strong>{selectedIdDisplay}</strong> {show ? ChevronUpIcon : ChevronDownIcon}
             </Button>
             {cancelButton}
             {popover}

@@ -8,7 +8,7 @@ import Form from "react-bootstrap/Form";
 import Table from "react-bootstrap/Table";
 import React, {useRef} from "react";
 import Row from "react-bootstrap/Row";
-import Octicon, {Clippy as ClippyIcon, DesktopDownload as DesktopDownloadIcon} from "@primer/octicons-react";
+import { DownloadIcon } from "@primer/octicons-react";
 import {connect} from "react-redux";
 import {doSetupLakeFS} from "../actions/setup";
 import {API_ENDPOINT} from "../actions/api";
@@ -24,7 +24,7 @@ const SetupPage = ({ doSetupLakeFS, setupState }) => {
         event.preventDefault();
     };
 
-    if (setupState.payload) {
+    if (!!setupState.payload && setupState.payload.access_key_id) {
         const downloadContent = 'data:application/octet-stream,' + encodeURIComponent(
 `# lakectl command line configuration - save under the filename $HOME/.lakectl.yaml
 
@@ -47,11 +47,11 @@ server:
                         <tbody>
                             <tr>
                                 <td>Key ID</td>
-                                <td><code>{setupState.payload.access_key_id}</code> <ClipboardButton variant="link" text={setupState.payload.access_key_id} tooltip="Copy key ID" icon={ClippyIcon}/></td>
+                                <td><code>{setupState.payload.access_key_id}</code> <ClipboardButton variant="link" text={setupState.payload.access_key_id} tooltip="Copy key ID"/></td>
                             </tr>
                             <tr>
                                 <td>Secret Key</td>
-                                <td><code>{setupState.payload.access_secret_key}</code> <ClipboardButton variant="link" text={setupState.payload.access_secret_key} tooltip="Copy secret key" icon={ClippyIcon}/></td>
+                                <td><code>{setupState.payload.access_secret_key}</code> <ClipboardButton variant="link" text={setupState.payload.access_secret_key} tooltip="Copy secret key"/></td>
                             </tr>
                         </tbody>
                     </Table>
@@ -63,7 +63,7 @@ server:
                     </Alert>
                     <hr/>
                     <ButtonToolbar>
-                        <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><Octicon icon={DesktopDownloadIcon} /> Download Configuration</Button>{' '}
+                        <Button variant="success" href={downloadContent} taget="_blank" download="lakectl.yaml"><DownloadIcon /> Download Configuration</Button>{' '}
                         <Button variant="link" href="/login">Go To Login</Button>
                     </ButtonToolbar>
                 </Card.Body>

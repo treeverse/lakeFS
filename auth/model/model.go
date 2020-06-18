@@ -1,9 +1,15 @@
 package model
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"time"
+)
 
-	"github.com/jackc/pgtype"
+const (
+	StatementEffectAllow = "Allow"
+	StatementEffectDeny  = "Deny"
 )
 
 type PaginationParams struct {
@@ -28,48 +34,37 @@ type Group struct {
 	DisplayName string    `db:"display_name" json:"display_name"`
 }
 
-type PolicyDBImpl struct {
-	Id          int              `db:"id"`
-	CreatedAt   time.Time        `db:"created_at"`
-	DisplayName string           `db:"display_name" json:"display_name"`
-	Action      pgtype.TextArray `db:"action" json:"action"`
-	Resource    string           `db:"resource" json:"resource"`
-	Effect      bool             `db:"effect" json:"effect"`
-}
-
-func (p *PolicyDBImpl) ToModel() *Policy {
-	var actions []string
-	_ = p.Action.AssignTo(&actions)
-	return &Policy{
-		Id:          p.Id,
-		CreatedAt:   p.CreatedAt,
-		DisplayName: p.DisplayName,
-		Action:      actions,
-		Resource:    p.Resource,
-		Effect:      p.Effect,
-	}
-}
-
 type Policy struct {
-	Id          int
-	CreatedAt   time.Time
-	DisplayName string
-	Action      []string
-	Resource    string
-	Effect      bool
+	Id          int        `db:"id"`
+	CreatedAt   time.Time  `db:"created_at"`
+	DisplayName string     `db:"display_name" json:"display_name"`
+	Statement   Statements `db:"statement"`
 }
 
-func (p *Policy) ToDBImpl() *PolicyDBImpl {
-	actions := pgtype.TextArray{}
-	_ = actions.Set(p.Action)
-	return &PolicyDBImpl{
-		Id:          p.Id,
-		CreatedAt:   p.CreatedAt,
-		DisplayName: p.DisplayName,
-		Action:      actions,
-		Resource:    p.Resource,
-		Effect:      p.Effect,
+type Statement struct {
+	Effect   string   `json:"Effect"`
+	Action   []string `json:"Action"`
+	Resource string   `json:"Resource"`
+}
+
+type Statements []Statement
+
+func (s Statements) Value() (driver.Value, error) {
+	if s == nil {
+		return json.Marshal([]struct{}{})
 	}
+	return json.Marshal(s)
+}
+
+func (s *Statements) Scan(src interface{}) error {
+	if src == nil {
+		return nil
+	}
+	data, ok := src.([]byte)
+	if !ok {
+		return errors.New("invalid statements src format")
+	}
+	return json.Unmarshal(data, s)
 }
 
 type Credential struct {

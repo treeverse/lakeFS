@@ -118,52 +118,72 @@ func SetupBaseGroups(authService auth.Service, ts time.Time) error {
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
-			Action: []string{
-				"fs:*",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   true,
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSReadAll",
-			Action: []string{
-				"fs:List*",
-				"fs:Read*",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:List*",
+						"fs:Read*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   true,
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSDenyAdmin",
-			Action: []string{
-				permissions.DeleteRepositoryAction,
-				permissions.CreateRepositoryAction,
+			Statement: model.Statements{
+				{
+					Action: []string{
+						permissions.DeleteRepositoryAction,
+						permissions.CreateRepositoryAction,
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectDeny,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   false,
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "AuthFullAccess",
-			Action: []string{
-				"auth:*",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"auth:*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   true,
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "AuthManageOwnCredentials",
-			Action: []string{
-				permissions.CreateCredentialsAction,
-				permissions.DeleteCredentialsAction,
-				permissions.ListCredentialsAction,
-				permissions.ReadCredentialsAction,
+			Statement: model.Statements{
+				{
+					Action: []string{
+						permissions.CreateCredentialsAction,
+						permissions.DeleteCredentialsAction,
+						permissions.ListCredentialsAction,
+						permissions.ReadCredentialsAction,
+					},
+					Resource: permissions.UserArn("${user}"),
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.UserArn("${user}"),
-			Effect:   true,
 		},
 	})
 	if err != nil {
