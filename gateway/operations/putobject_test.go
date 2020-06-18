@@ -12,8 +12,6 @@ import (
 	"net/http"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-
 	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/testutil"
@@ -64,7 +62,7 @@ func (a *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.Read
 }
 
 func (s *mockAdapter) GetProperties(_ block.ObjectPointer) (block.Properties, error) {
-	return block.Properties{}, errors.New("getProperies method not implemented in mock adapter")
+	return block.Properties{}, errors.New("getProperties method not implemented in mock adapter")
 }
 
 func (s *mockAdapter) Remove(_ block.ObjectPointer) error {
@@ -86,6 +84,12 @@ func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadId st
 	panic("try to complete multipart in mock adaptor ")
 }
 
+var (
+	expensiveString = "EXPENSIVE"
+	cheapString = "CHEAP"
+	neverCreatedString = "NEVER_CREATED"
+)
+
 func TestReadBlob(t *testing.T) {
 	tt := []struct {
 		name         string
@@ -94,12 +98,12 @@ func TestReadBlob(t *testing.T) {
 	}{
 		{"no data", 0, nil},
 		{"100 bytes", 100, nil},
-		{"1 block", ObjectBlockSize, aws.String("EXPENSIVE")},
-		{"1 block and 100 bytes", ObjectBlockSize + 100, aws.String("CHEAP")},
+		{"1 block", ObjectBlockSize, &expensiveString},
+		{"1 block and 100 bytes", ObjectBlockSize + 100, &cheapString)},
 		{"2 blocks and 1 bytes", ObjectBlockSize*2 + 1, nil},
 		{"1000 blocks", ObjectBlockSize * 1000, nil},
 	}
-	differentOpts := block.PutOpts{StorageClass: aws.String("NEVER_USED")}
+	differentOpts := block.PutOpts{StorageClass: &neverCreatedString}
 	deduper := testutil.NewMockDedup()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
