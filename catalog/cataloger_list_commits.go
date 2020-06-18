@@ -8,8 +8,8 @@ import (
 
 func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
+		{Name: "repository", Func: ValidateRepositoryName(repository)},
+		{Name: "branch", Func: ValidateBranchName(branch)},
 	}); err != nil {
 		return nil, false, err
 	}

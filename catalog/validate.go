@@ -19,12 +19,17 @@ var (
 
 type ValidateFunc func() error
 
-type ValidateFields map[string]ValidateFunc
+type ValidateField struct {
+	Name string
+	Func ValidateFunc
+}
+
+type ValidateFields []ValidateField
 
 func Validate(validators ValidateFields) error {
-	for field, validator := range validators {
-		if err := validator(); err != nil {
-			return fmt.Errorf("%w: %s", ErrInvalidValue, field)
+	for _, v := range validators {
+		if err := v.Func(); err != nil {
+			return fmt.Errorf("%w: %s", ErrInvalidValue, v.Name)
 		}
 	}
 	return nil

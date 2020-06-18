@@ -8,9 +8,9 @@ import (
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (int, error) {
 	if err := Validate(ValidateFields{
-		"repository":   ValidateRepositoryName(repository),
-		"branch":       ValidateBranchName(branch),
-		"sourceBranch": ValidateBranchName(sourceBranch),
+		{Name: "repository", Func: ValidateRepositoryName(repository)},
+		{Name: "branch", Func: ValidateBranchName(branch)},
+		{Name: "sourceBranch", Func: ValidateBranchName(sourceBranch)},
 	}); err != nil {
 		return 0, err
 	}

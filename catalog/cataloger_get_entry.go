@@ -9,9 +9,9 @@ import (
 
 func (c *cataloger) GetEntry(ctx context.Context, repository, branch string, commitID CommitID, path string) (*Entry, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"path":       ValidatePath(path),
+		{Name: "repository", Func: ValidateRepositoryName(repository)},
+		{Name: "branch", Func: ValidateBranchName(branch)},
+		{Name: "path", Func: ValidatePath(path)},
 	}); err != nil {
 		return nil, err
 	}

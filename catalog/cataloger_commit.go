@@ -11,10 +11,9 @@ const MaxCommitID = 0x7FFFFFFF
 
 func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (CommitID, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"message":    ValidateCommitMessage(message),
-		"committer":  ValidateCommitter(committer),
+		{Name: "branch", Func: ValidateBranchName(branch)},
+		{Name: "message", Func: ValidateCommitMessage(message)},
+		{Name: "committer", Func: ValidateCommitter(committer)},
 	}); err != nil {
 		return 0, err
 	}

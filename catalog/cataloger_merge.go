@@ -11,10 +11,10 @@ import (
 
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch string, committer string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
-		"repository":       ValidateRepositoryName(repository),
-		"left branch":      ValidateBranchName(leftBranch),
-		"right branch":     ValidateBranchName(rightBranch),
-		"committer branch": ValidateCommitter(committer),
+		{Name: "repository", Func: ValidateRepositoryName(repository)},
+		{Name: "left branch", Func: ValidateBranchName(leftBranch)},
+		{Name: "right branch", Func: ValidateBranchName(rightBranch)},
+		{Name: "committer branch", Func: ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}
