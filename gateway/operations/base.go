@@ -22,6 +22,8 @@ import (
 	"github.com/treeverse/lakefs/index/model"
 )
 
+const StorageClassHeader = "x-amz-storage-class"
+
 type ActionIncr func(string)
 
 type Operation struct {
@@ -40,6 +42,14 @@ func (o *Operation) RequestId() string {
 	req, rid := httputil.RequestId(o.Request)
 	o.Request = req
 	return rid
+}
+
+func StorageClassFromHeader(header http.Header) *string {
+	storageClass := header.Get(StorageClassHeader)
+	if storageClass == "" {
+		return nil
+	}
+	return &storageClass
 }
 
 func (o *Operation) AddLogFields(fields logging.Fields) {

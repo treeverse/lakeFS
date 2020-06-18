@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
@@ -16,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/ident"
@@ -842,7 +844,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	checksum, physicalAddress, size, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks, 37)
+	checksum, physicalAddress, size, err := upload.WriteBlob(deduper, "ns1", "ns1", buf, deps.blocks, 37, block.PutOpts{StorageClass: aws.String("expensive")})
 	if err != nil {
 		t.Fatal(err)
 	}
