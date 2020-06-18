@@ -85,8 +85,8 @@ func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadId st
 }
 
 var (
-	expensiveString = "EXPENSIVE"
-	cheapString = "CHEAP"
+	expensiveString    = "EXPENSIVE"
+	cheapString        = "CHEAP"
 	neverCreatedString = "NEVER_CREATED"
 )
 
