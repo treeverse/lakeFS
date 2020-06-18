@@ -179,10 +179,10 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 							f.source_branch
 					   FROM ( SELECT *  -- only entries that were committed after last merge
 							   FROM top_committed_entries_v
-							  WHERE branch_id = $2 AND min_commit >= $4 OR (max_commit >= $4 and is_deleted)) s
+							  WHERE branch_id = $2 AND (min_commit >= $4 OR max_commit >= $4 and is_deleted)) s
 						 LEFT JOIN ( SELECT *
 							   FROM entries_lineage_full_v 
-							  WHERE displayed_branch =$1 AND rank=1) f 
+							  WHERE displayed_branch = $1 AND rank=1) f
 						 ON f.path = s.path
 			  ) t WHERE  NOT (same_object OR both_deleted)) t1`
 	if _, err := tx.Exec(diffFromSonSQL, rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit); err != nil {
