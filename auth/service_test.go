@@ -55,7 +55,7 @@ func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) st
 			DisplayName: uuid.New().String(),
 			Statement:   policy.Statement,
 		}
-		err := s.CreatePolicy(p)
+		err := s.WritePolicy(p)
 		if err != nil {
 			t.Fatal(err)
 		}

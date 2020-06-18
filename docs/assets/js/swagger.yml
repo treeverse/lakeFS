@@ -214,6 +214,8 @@ definitions:
     properties:
       id:
         type: string
+    required:
+      - id
 
   credentials:
     type: object
@@ -249,6 +251,8 @@ definitions:
     properties:
       id:
         type: string
+    required:
+      - id
 
   statement:
     type: object
@@ -595,6 +599,31 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+    put:
+      tags:
+        - auth
+      operationId: updatePolicy
+      summary: update policy
+      parameters:
+        - in: body
+          name: policy
+          schema:
+            $ref: "#/definitions/policy"
+      responses:
+        200:
+          description: policy
+          schema:
+            $ref: "#/definitions/policy"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
     delete:
       tags:
         - auth
@@ -764,7 +793,7 @@ paths:
     delete:
       tags:
         - auth
-      operationId: delete credentials
+      operationId: deleteCredentials
       summary: delete credentials
       responses:
         204:

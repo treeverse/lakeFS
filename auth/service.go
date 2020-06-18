@@ -50,7 +50,7 @@ type Service interface {
 	ListGroupUsers(groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
-	CreatePolicy(policy *model.Policy) error
+	WritePolicy(policy *model.Policy) error
 	GetPolicy(policyDisplayName string) (*model.Policy, error)
 	DeletePolicy(policyDisplayName string) error
 	ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
@@ -648,7 +648,7 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 	return result.(*res).users, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
+func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityId(policy.DisplayName); err != nil {
 			return nil, err
@@ -667,7 +667,11 @@ func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
 			}
 		}
 
-		return nil, tx.Get(policy, `INSERT INTO policies (display_name, created_at, statement) VALUES ($1, $2, $3) RETURNING id`,
+		return nil, tx.Get(policy, `
+			INSERT INTO policies (display_name, created_at, statement)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (display_name) DO UPDATE SET statement = $3
+			RETURNING id`,
 			policy.DisplayName, policy.CreatedAt, policy.Statement)
 	})
 	return err
