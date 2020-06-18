@@ -129,6 +129,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.RefsMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
 
 	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
+	api.ObjectsGetUnderlyingPropertiesHandler = a.ObjectsGetUnderlyingPropertiesHandler()
 	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
 	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
@@ -394,7 +395,7 @@ func testBucket(adapter block.Adapter, bucketName string) error {
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)))
+	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)), block.PutOpts{})
 	if err != nil {
 		return err
 	}
@@ -748,6 +749,51 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	})
 }
 
+func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingPropertiesHandler {
+	return objects.GetUnderlyingPropertiesHandlerFunc(func(params objects.GetUnderlyingPropertiesParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.ReadObjectAction,
+				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+			},
+		})
+		if err != nil {
+			return objects.NewGetUnderlyingPropertiesUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		a.incrStat("object_underlying_properties")
+		ctx := a.ForRequest(params.HTTPRequest)
+		idx := ctx.Index
+
+		// read repo
+		repo, err := idx.GetRepo(params.RepositoryID)
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+		}
+		if err != nil {
+			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		obj, err := idx.ReadObject(params.RepositoryID, params.Ref, params.Path, swag.BoolValue(params.ReadUncommitted))
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
+		}
+		if err != nil {
+			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// read object properties from underlying storage
+		properties, err := a.context.BlockAdapter.GetProperties(block.ObjectPointer{Repo: repo.StorageNamespace, Identifier: obj.PhysicalAddress})
+		if err != nil {
+			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+
+		// serialize properties
+		return objects.NewGetUnderlyingPropertiesOK().WithPayload(&models.UnderlyingObjectProperties{
+			StorageClass: properties.StorageClass,
+		})
+	})
+}
+
 func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{
@@ -904,7 +950,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// read the content
-		checksum, physicalAddress, size, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize)
+		checksum, physicalAddress, size, err := upload.WriteBlob(index, repo.Id, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
