@@ -907,8 +907,8 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("expected to get underlying properties, got %v", err)
 		}
-		if *properties.Payload.StorageClass != "expensive" {
-			t.Errorf("expected to get \"expensive\" storage class, got %v", properties)
+		if *properties.Payload.StorageClass != expensiveString {
+			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
 		}
 	})
 }
