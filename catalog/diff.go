@@ -60,5 +60,5 @@ func (d Differences) Equal(other Differences) bool {
 			return false
 		}
 	}
-	return false
+	return true
 }
