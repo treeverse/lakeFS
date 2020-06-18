@@ -12,6 +12,13 @@ jobs:
         id: go
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
+      - name: Try to use cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |       # Modules from another version are a good start
+            ${{ runner.os }}-go-
       - name: Checks validator
         run: |
           make checks-validator
@@ -33,6 +40,13 @@ jobs:
         with:
           go-version: 1.14
         id: go
+      - name: Try to use cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |       # Modules from another version are a good start
+            ${{ runner.os }}-go-
       - name: Setup statik
         run: |
           go get github.com/rakyll/statik
