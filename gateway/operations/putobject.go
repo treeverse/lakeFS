@@ -109,19 +109,30 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	o.SetHeader("ETag", ETag)
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }
+
 func (controller *PutObject) Handle(o *PathOperation) {
-	// check if this is a copy operation (i.e.https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
+	// check if this is a copy operation (i.e. https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 
-	//validate branch
+	// validate branch
 	_, err := o.Index.GetBranch(o.Repo.Id, o.Ref)
 	if err != nil {
 		o.Log().WithError(err).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)
 		return
 	}
+
+	storageClass := StorageClassFromHeader(o.Request.Header)
+	opts := block.PutOpts{StorageClass: storageClass}
+
 	copySource := o.Request.Header.Get(CopySourceHeader)
 	if len(copySource) > 0 {
+		// The *first* PUT operation sets PutOpts such as
+		// storage class, subsequent PUT operations of the
+		// same file continue to use that storage class.
+
+		// TODO(ariels): Add a counter for how often a copy
+		//     has different options.
 		controller.HandleCopy(o, copySource)
 		return
 	}
@@ -137,7 +148,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	o.Incr("put_object")
 	// handle the upload itself
-	checksum, physicalAddress, size, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength)
+	checksum, physicalAddress, size, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

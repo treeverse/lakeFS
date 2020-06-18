@@ -110,6 +110,13 @@ definitions:
         type: string
         enum: [TREE, OBJECT]
 
+  underlying_object_properties:
+    type: object
+    properties:
+      storage_class:
+        x-nullable: true
+        type: string
+
   ref:
     type: object
     required:
@@ -1569,6 +1576,10 @@ paths:
           name: content
           type: file
           description: Object content to upload
+        - in: query
+          name: storageClass
+          required: false
+          type: string
       consumes:
         - multipart/form-data
       responses:
@@ -1634,6 +1645,46 @@ paths:
           description: object metadata
           schema:
             $ref: "#/definitions/object_stats"
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: path or branch not found
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/refs/{ref}/objects/underlyingProperties/:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+      - in: path
+        name: ref
+        required: true
+        type: string
+        description: a reference (could be either a branch ID or a commit ID)
+      - in: query
+        name: path
+        required: true
+        type: string
+      - in: query
+        name: readUncommitted
+        type: boolean
+        default: true
+    get:
+      tags:
+        - objects
+      operationId: getUnderlyingProperties
+      summary: get object properties on underlying storage
+      responses:
+        200:
+          description: object metadata on underlying storage
+          schema:
+            $ref: "#/definitions/underlying_object_properties"
         401:
           $ref: "#/responses/Unauthorized"
         404:
