@@ -13,10 +13,6 @@ export default (state = initialState, action) => {
         log: async.reduce(COMMITS_LIST, state.log, action),
         commit: async.actionReduce(COMMITS_COMMIT, state.commit, action),
     };
-
     state.log = async.reducePaginate(COMMITS_LIST_PAGINATE, state.log, action);
-    switch (action.type) {
-        default:
-            return state;
-    }
+    return state;
 };

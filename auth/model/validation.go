@@ -31,3 +31,10 @@ func ValidateArn(name string) error {
 	}
 	return nil
 }
+
+func ValidateStatementEffect(effect string) error {
+	if effect != StatementEffectDeny && effect != StatementEffectAllow {
+		return ErrValidationError
+	}
+	return nil
+}

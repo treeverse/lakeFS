@@ -11,6 +11,10 @@
     overflow: hidden;
 }
 
+.action-bar.borderless {
+    border-bottom: none;
+}
+
 .action-bar .float-left .btn {
     margin-right: 10px;
 }
@@ -235,3 +239,13 @@
     margin-bottom: 30px;
 }
 
+.policy-body {
+
+    padding: 30px;
+    background-color: #EEEEEE;
+}
+
+
+.auth-page .tab-content {
+    padding: 20px 0;
+}

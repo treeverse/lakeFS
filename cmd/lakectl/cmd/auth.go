@@ -2,12 +2,14 @@ package cmd
 
 import (
 	"context"
+	"encoding/json"
+	"io"
+	"os"
 	"strings"
 	"time"
 
 	"github.com/treeverse/lakefs/api/gen/models"
 
-	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 )
 
@@ -21,19 +23,18 @@ ID: {{ .ID | bold }}
 Creation Date: {{  .CreationDate |date }}
 `
 
-var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
-ID: {{ .ID | bold }}
-Creation Date: {{  .CreationDate |date }}
-Effect: {{ if eq .Effect "Allow" }}{{ .Effect | green }}{{ else }}{{ .Effect | red }}{{ end }}
-Resource: {{ .Resource }}
-Action: {{ .Action | join ", "}}
-`
-
 var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green }}
 {{ "Access Key ID:" | ljust 18 }} {{ .AccessKeyID | bold }}
 {{ "Access Secret Key:" | ljust 18 }} {{  .AccessSecretKey | bold }}
 
 {{ "Keep these somewhere safe since you will not be able to see the secret key again" | yellow }}
+`
+
+var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
+ID: {{ .ID | bold }}
+Creation Date: {{  .CreationDate |date }}
+Statements:
+
 `
 
 var authCmd = &cobra.Command{
@@ -154,14 +155,16 @@ var authUsersPoliciesList = &cobra.Command{
 			DieErr(err)
 		}
 
-		rows := make([][]interface{}, len(policies))
-		for i, policy := range policies {
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+			}
 
-			ts := time.Unix(policy.CreationDate, 0).String()
-			rows[i] = []interface{}{policy.ID, ts, policy.Resource, policy.Effect, strings.Join(policy.Action, ", ")}
 		}
 
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Resource", "Effect", "Actions"}, pagination, amount)
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, pagination, amount)
 	},
 }
 
@@ -431,14 +434,16 @@ var authGroupsPoliciesList = &cobra.Command{
 			DieErr(err)
 		}
 
-		rows := make([][]interface{}, len(policies))
-		for i, policy := range policies {
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+			}
 
-			ts := time.Unix(policy.CreationDate, 0).String()
-			rows[i] = []interface{}{policy.ID, ts, policy.Resource, policy.Effect, strings.Join(policy.Action, ", ")}
 		}
 
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Resource", "Effect", "Actions"}, pagination, amount)
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, pagination, amount)
 	},
 }
 
@@ -496,14 +501,16 @@ var authPoliciesList = &cobra.Command{
 			DieErr(err)
 		}
 
-		rows := make([][]interface{}, len(policies))
-		for i, policy := range policies {
+		rows := make([][]interface{}, 0)
+		for _, policy := range policies {
+			for i, statement := range policy.Statement {
+				ts := time.Unix(policy.CreationDate, 0).String()
+				rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+			}
 
-			ts := time.Unix(policy.CreationDate, 0).String()
-			rows[i] = []interface{}{policy.ID, ts, policy.Resource, policy.Effect, strings.Join(policy.Action, ", ")}
 		}
 
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Resource", "Effect", "Actions"}, pagination, amount)
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, pagination, amount)
 	},
 }
 
@@ -511,23 +518,40 @@ var authPoliciesCreate = &cobra.Command{
 	Use:   "create",
 	Short: "create a policy",
 	Run: func(cmd *cobra.Command, args []string) {
-		id, _ := cmd.Flags().GetString("id")
-		effect, _ := cmd.Flags().GetString("effect")
-		resource, _ := cmd.Flags().GetString("resource")
-		action, _ := cmd.Flags().GetStringSlice("action")
+		document, _ := cmd.Flags().GetString("policy-document")
 		clt := getClient()
 
-		policy, err := clt.CreatePolicy(context.Background(), &models.PolicyCreation{
-			Action:   action,
-			Effect:   swag.String(effect),
-			ID:       swag.String(id),
-			Resource: swag.String(resource),
-		})
+		var err error
+		var fp io.ReadCloser
+		if document == "-" {
+			fp = os.Stdin
+		} else {
+			fp, err = os.Open(document)
+			if err != nil {
+				DieFmt("could not open policy document: %v", err)
+			}
+		}
+
+		var policy *models.Policy
+		err = json.NewDecoder(fp).Decode(policy)
+		if err != nil {
+			DieFmt("could not parse policy document: %v", err)
+		}
+
+		policy, err = clt.CreatePolicy(context.Background(), policy)
 		if err != nil {
 			DieErr(err)
 		}
 
 		Write(policyCreatedTemplate, policy)
+
+		rows := make([][]interface{}, 0)
+		for i, statement := range policy.Statement {
+			ts := time.Unix(policy.CreationDate, 0).String()
+			rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+		}
+
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, nil, 0)
 	},
 }
 
@@ -661,13 +685,8 @@ func init() {
 	authCmd.AddCommand(authGroups)
 
 	// policies
-	authPoliciesCreate.Flags().String("id", "", "policy identifier")
-	authPoliciesCreate.Flags().String("effect", "Allow", "policy effect (Allow/Deny)")
-	authPoliciesCreate.Flags().String("resource", "", "resource ARN")
-	authPoliciesCreate.Flags().StringSlice("action", []string{}, "actions to attach to the policy")
-	_ = authPoliciesCreate.MarkFlagRequired("id")
-	_ = authPoliciesCreate.MarkFlagRequired("resource")
-	_ = authPoliciesCreate.MarkFlagRequired("action")
+	authPoliciesCreate.Flags().String("policy-document", "", "policy document path (or \"-\" for stdin)")
+	_ = authPoliciesCreate.MarkFlagRequired("policy-document")
 
 	authPoliciesDelete.Flags().String("id", "", "policy identifier")
 	_ = authPoliciesDelete.MarkFlagRequired("id")

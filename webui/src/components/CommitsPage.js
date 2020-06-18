@@ -12,7 +12,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import Octicon, {Link as LinkIcon, LinkExternal as LinkExternalIcon, Diff} from "@primer/octicons-react";
+import  {LinkIcon, LinkExternalIcon, DiffIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
@@ -21,7 +21,7 @@ import Table from "react-bootstrap/Table";
 
 const CommitWidget = ({repo, commit, previous}) => {
 
-    const buttonVariant = "outline-secondary";
+    const buttonVariant = "secondary";
 
     return (
         <ListGroupItem>
@@ -56,8 +56,8 @@ const CommitWidget = ({repo, commit, previous}) => {
                 </div>
                 <div className="float-right">
                     <ButtonGroup className="commit-actions">
-                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="copy S3 URI to clipboard" icon={LinkExternalIcon}/>
-                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={LinkIcon}/>
+                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${commit.id}`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
+                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${commit.id}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
                         <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at commit</Tooltip>}>
                             <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
@@ -67,7 +67,7 @@ const CommitWidget = ({repo, commit, previous}) => {
                         {(!!previous && !!previous.parents) ? (
                             <OverlayTrigger placement="bottom" overlay={<Tooltip>Diff with previous commit</Tooltip>}>
                                 <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}&compareCommit=${previous.id}`}>
-                                    <Octicon icon={Diff}/>
+                                    <DiffIcon/>
                                 </Button>
                             </OverlayTrigger>
                         ) : (<span/>)}

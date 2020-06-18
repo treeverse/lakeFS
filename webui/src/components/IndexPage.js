@@ -1,35 +1,29 @@
 import React from 'react';
-import {Switch, Route, useHistory} from "react-router-dom";
-
-import Tabs from "react-bootstrap/Tabs";
-import Tab from "react-bootstrap/Tab";
+import {Switch, Route, useHistory, Redirect} from "react-router-dom";
 
 import RepositoryExplorerPage from './RepositoryExplorerPage';
 import {RepositoryListPage} from './RepositoryListPage';
+import {AuthManagementPage} from './AuthManagementPage';
 
-
-const IndexPageTabs = ({ currentScreen, onNavigate }) => {
-    return (
-        <Tabs activeKey={currentScreen} onSelect={onNavigate} className={"mt-5"}>
-            <Tab eventKey="/" title="Repositories">
-                <RepositoryListPage/>
-            </Tab>
-        </Tabs>
-    );
-};
 
 export const IndexPage = () => {
     const history = useHistory();
     const currentPath = history.location.pathname;
+    const onNavigate = (k) => { history.push(k); };
 
     return (
         <Switch>
-            <Route path="/repositories/:repoId">
-                <RepositoryExplorerPage currentTab={currentPath} onNavigate={(k) => { history.push(k); }}/>
+            <Route exact path={"/"}>
+                <Redirect to="/repositories"/>
             </Route>
-
-            <Route exact path="/">
-                <IndexPageTabs currentScreen={currentPath} onNavigate={(k) => { history.push(k); }}/>
+            <Route path="/repositories/:repoId">
+                <RepositoryExplorerPage currentTab={currentPath} onNavigate={onNavigate}/>
+            </Route>
+            <Route path="/auth">
+                <AuthManagementPage/>
+            </Route>
+            <Route path="/repositories">
+                <RepositoryListPage/>
             </Route>
         </Switch>
     );
