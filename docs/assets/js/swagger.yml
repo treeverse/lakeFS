@@ -221,6 +221,8 @@ definitions:
     properties:
       id:
         type: string
+    required:
+      - id
 
   credentials:
     type: object
@@ -256,6 +258,26 @@ definitions:
     properties:
       id:
         type: string
+    required:
+      - id
+
+  statement:
+    type: object
+    properties:
+      effect:
+        type: string
+        enum: ["Allow", "Deny"]
+      resource:
+        type: string
+      action:
+        type: array
+        items:
+          type: string
+        minItems: 1
+    required:
+      - effect
+      - resource
+      - action
 
   policy:
     type: object
@@ -265,36 +287,14 @@ definitions:
       creation_date:
         type: integer
         format: int64
-      action:
+      statement:
         type: array
         items:
-          type: string
-      resource:
-        type: string
-      effect:
-        type: string
-        enum: ["Allow", "Deny"]
-
-  policy_creation:
-    type: object
-    properties:
-      id:
-        type: string
-      action:
-        type: array
-        items:
-          type: string
+          $ref: "#/definitions/statement"
         minItems: 1
-      resource:
-        type: string
-      effect:
-        type: string
-        enum: ["Allow", "Deny"]
     required:
       - id
-      - action
-      - resource
-      - effect
+      - statement
 
 paths:
 
@@ -563,7 +563,7 @@ paths:
         - in: body
           name: policy
           schema:
-            $ref: "#/definitions/policy_creation"
+            $ref: "#/definitions/policy"
       responses:
         201:
           description: policy
@@ -602,6 +602,31 @@ paths:
           description: policy not found
           schema:
             $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    put:
+      tags:
+        - auth
+      operationId: updatePolicy
+      summary: update policy
+      parameters:
+        - in: body
+          name: policy
+          schema:
+            $ref: "#/definitions/policy"
+      responses:
+        200:
+          description: policy
+          schema:
+            $ref: "#/definitions/policy"
+        400:
+          description: validation error
+          schema:
+            $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
         default:
           description: generic error response
           schema:
@@ -775,7 +800,7 @@ paths:
     delete:
       tags:
         - auth
-      operationId: delete credentials
+      operationId: deleteCredentials
       summary: delete credentials
       responses:
         204:

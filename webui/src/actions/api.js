@@ -2,6 +2,7 @@ import {isValidBranchName} from "../model/validation";
 
 
 export const API_ENDPOINT = '/api/v1';
+export const DEFAULT_LISTING_AMOUNT = 100;
 
 
 export const linkToPath = (repoId, branchId, path) => {
@@ -10,7 +11,6 @@ export const linkToPath = (repoId, branchId, path) => {
     });
     return `${API_ENDPOINT}/repositories/${repoId}/refs/${branchId}/objects?${query}`
 };
-
 
 const json =(data) => {
     return JSON.stringify(data, null, "");
@@ -61,9 +61,9 @@ export class MergeError extends Error {
 
 
 // actual actions:
-export const auth = {
+class Auth {
 
-    login: async (accessKeyId, secretAccessKey) => {
+    async login(accessKeyId, secretAccessKey) {
         const response = await fetch('/auth/login', {
             headers: new Headers({'Content-Type': 'application/json'}),
             method: 'POST',
@@ -80,15 +80,240 @@ export const auth = {
         const userResponse = await apiRequest('/user');
         const body = await userResponse.json();
         return body.user;
-    },
+    }
 
-    logout: async () => {
+    async listUsers(after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/auth/users?${query}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list users: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async createUser(userId) {
+        const response = await apiRequest(`/auth/users`, {method: 'POST', body: json({id: userId})});
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async listGroups(after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/auth/groups?${query}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list groups: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async listGroupMembers(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/auth/groups/${groupId}/members?${query}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list group members: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async addUserToGroup(userId, groupId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/members/${userId}`, {method: 'PUT'})
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async removeUserFromGroup(userId, groupId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/members/${userId}`, {method: 'DELETE'})
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async attachPolicyToUser(userId, policyId) {
+        const response = await apiRequest(`/auth/users/${userId}/policies/${policyId}`, {method: 'PUT'})
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async detachPolicyFromUser(userId, policyId) {
+        const response = await apiRequest(`/auth/users/${userId}/policies/${policyId}`, {method: 'DELETE'})
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async attachPolicyToGroup(groupId, policyId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/policies/${policyId}`, {method: 'PUT'})
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async detachPolicyFromGroup(groupId, policyId) {
+        const response = await apiRequest(`/auth/groups/${groupId}/policies/${policyId}`, {method: 'DELETE'})
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deleteCredentials(userId, accessKeyId) {
+        const response = await apiRequest(`/auth/users/${userId}/credentials/${accessKeyId}`, {method: 'DELETE'})
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async createGroup(groupId) {
+        const response = await apiRequest(`/auth/groups`, {method: 'POST',  body: json({id: groupId})});
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async listPolicies(after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/auth/policies?${query}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list policies: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async createPolicy(policyId, policyDocument) {
+        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        const response = await apiRequest(`/auth/policies`, {
+            method: 'POST',
+            body: json(policy)
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async editPolicy(policyId, policyDocument) {
+        const policy = {id: policyId, ...JSON.parse(policyDocument)};
+        const response = await apiRequest(`/auth/policies/${policyId}`, {
+            method: 'PUT',
+            body: json(policy)
+        });
+        if (response.status !== 200) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async listCredentials(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/auth/users/${userId}/credentials?${query}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list credentials: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async createCredentials(userId) {
+        const response = await apiRequest(`/auth/users/${userId}/credentials`, {
+            method: 'POST',
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json();
+    }
+
+    async listUserGroups(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        const query = qs({after, amount});
+        const response = await apiRequest(`/auth/users/${userId}/groups?${query}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list user groups: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async listUserPolicies(userId, after, amount = DEFAULT_LISTING_AMOUNT, effective = false) {
+        let params = {after, amount};
+        if (effective) {
+            params.effective =  'true';
+        }
+        const response = await apiRequest(`/auth/users/${userId}/policies?${qs(params)}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list policies: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async getPolicy(policyId) {
+        const response = await apiRequest(`/auth/policies/${policyId}`)
+        if (response.status !== 200) {
+            throw new Error(`could not get policy: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async listGroupPolicies(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
+        let params = {after, amount};
+        const response = await apiRequest(`/auth/groups/${groupId}/policies?${qs(params)}`)
+        if (response.status !== 200) {
+            throw new Error(`could not list policies: ${await extractError(response)}`)
+        }
+        return await response.json();
+    }
+
+    async deleteUser(userId) {
+        const response = await apiRequest(`/auth/users/${userId}`, {method: 'DELETE'});
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deleteUsers (userIds) {
+        for (let i = 0; i < userIds.length; i++) {
+            const userId = userIds[i];
+            await this.deleteUser(userId);
+        }
+
+    }
+
+    async deleteGroup(groupId) {
+        const response = await apiRequest(`/auth/groups/${groupId}`, {method: 'DELETE'});
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deleteGroups (groupIds) {
+        for (let i = 0; i < groupIds.length; i++) {
+            const groupId = groupIds[i];
+            await this.deleteGroup(groupId);
+        }
+    }
+
+    async deletePolicy(policyId) {
+        const response = await apiRequest(`/auth/policies/${policyId}`, {method: 'DELETE'});
+        if (response.status !== 204) {
+            throw new Error(await extractError(response));
+        }
+    }
+
+    async deletePolicies (policyIds) {
+        for (let i = 0; i < policyIds.length; i++) {
+            const policyId = policyIds[i];
+            await this.deletePolicy(policyId);
+        }
+    }
+
+    async logout() {
         const response = await fetch('/auth/logout', {method: 'POST'});
         if (response.status !== 200) {
             throw new Error('unknown authentication error');
         }
     }
-};
+}
 
 
 class Repositories {
@@ -350,3 +575,4 @@ export const objects = new Objects();
 export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
+export const auth = new Auth();
