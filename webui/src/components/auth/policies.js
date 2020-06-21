@@ -9,7 +9,7 @@ import {
 } from "../../actions/auth";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Button, ButtonToolbar, Col, Modal, Table} from "react-bootstrap";
-import {SyncIcon} from "@primer/octicons-react";
+import {SyncIcon, CopyIcon, PencilIcon, FileCodeIcon} from "@primer/octicons-react";
 import {EntityCreateButton, PaginatedEntryList} from "./entities";
 import {Link, useParams, useHistory} from "react-router-dom";
 import * as moment from "moment";
@@ -125,11 +125,13 @@ export const PoliciesPage = connect(
 export const PolicyPage = connect(
     ({auth}) => ({
         policy: auth.policy,
-        editStatus: auth.policyEdit
+        editStatus: auth.policyEdit,
+        createStatus: auth.policyCreation,
     }),
-    ({ getPolicy, editPolicy, resetEditPolicy }))
-(({ getPolicy, policy, editPolicy, resetEditPolicy, editStatus }) => {
+    ({ getPolicy, editPolicy, createPolicy, resetCreatePolicy, resetEditPolicy }))
+(({ getPolicy, policy, editPolicy, resetEditPolicy, editStatus, createStatus, createPolicy, resetCreatePolicy }) => {
     let { policyId } = useParams();
+    let history = useHistory();
 
     useEffect(() => {
         getPolicy(policyId);
@@ -137,13 +139,27 @@ export const PolicyPage = connect(
 
     const [asJsonToggle, setAsJsonToggle] = useState(false);
     const [showEditor, setShowEditor] = useState(false);
+    const [editMode, setEditMode] = useState('edit');
 
     const editor = useRef(null);
+    const idEditor = useRef(null);
     const editValue = (!!policy.payload) ? JSON.stringify({statement: policy.payload.statement}, null, 4) : "";
 
     const onEdit = () => {
-        editPolicy(policyId, editor.current.value);
+        if (editMode === 'edit') {
+            editPolicy(policyId, editor.current.value);
+        } else {
+            createPolicy(idEditor.current.value, editor.current.value);
+        }
     }
+
+    useEffect(() => {
+        if (createStatus.done) {
+            setShowEditor(false);
+            resetCreatePolicy();
+            history.push(`/auth/policies/${createStatus.payload.id}`);
+        }
+    })
 
     useEffect(() => {
         if (editStatus.done) {
@@ -167,22 +183,40 @@ export const PolicyPage = connect(
                         e.preventDefault();
                         setAsJsonToggle(!asJsonToggle);
                         e.target.blur();
-                    }} variant="secondary">{(asJsonToggle) ? "Table View" : "JSON Document View"}</Button>
+                    }} variant="outline-dark">
+                        {(asJsonToggle) ? "Table View" : "JSON Document View"}
+                    </Button>
                     {' '}
                     <Button size={"sm"} onClick={(e) => {
                         e.preventDefault();
+                        setEditMode('edit');
                         setShowEditor(true);
                         e.target.blur();
-                    }} variant="primary">Edit</Button>
+                    }} variant="primary"><PencilIcon/> Edit</Button>
+                    {' '}
+                    <Button size={"sm"} onClick={(e) => {
+                        e.preventDefault();
+                        setEditMode('clone');
+                        setShowEditor(true);
+                        e.target.blur();
+                    }} variant="success">
+                        <CopyIcon/>
+                        Clone
+                    </Button>
                 </div>
             </h2>
 
             <Modal show={showEditor} onHide={() => { setShowEditor(false) }}>
                 <Modal.Header>
-                    Edit Policy
+                    {(editMode === 'clone') ? "Clone Policy": "Edit Policy"}
                 </Modal.Header>
                 <Modal.Body>
                     <Form onSubmit={onEdit}>
+                        {(editMode === 'clone') ? (
+                        <Form.Group>
+                            <Form.Control name="policyId" placeholder="Policy ID, e.g. ('MyRepoRead')" defaultValue={`CopyOf${policyId}`} ref={idEditor}/>
+                        </Form.Group>
+                        ) : null}
                         <Form.Group>
                             <Form.Control as="textarea" rows="15" name="policy" placeholder="Policy JSON Document" defaultValue={editValue} ref={editor} className="policy-document"/>
                         </Form.Group>
