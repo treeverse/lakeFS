@@ -7,69 +7,66 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-const MaxCommitID = 0x7FFFFFFF
-
-func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (CommitID, error) {
+func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (string, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"message":    ValidateCommitMessage(message),
-		"committer":  ValidateCommitter(committer),
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "message", IsValid: ValidateCommitMessage(message)},
+		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
-		return 0, err
+		return "", err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := getBranchID(tx, repository, branch, LockTypeUpdate)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		commitID, err := getNextCommitID(tx, branchID)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		committedAffected, err := commitUpdateCommittedEntriesWithMaxCommit(tx, branchID, commitID)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		_, err = commitDeleteUncommittedTombstones(tx, branchID, commitID)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		affectedTombstone, err := commitTombstones(tx, branchID, commitID)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 
 		// uncommitted to committed entries
 		affectedNew, err := commitEntries(tx, branchID, commitID)
 		if err != nil {
-			return 0, err
+			return "", err
 		}
 		if (affectedNew + affectedTombstone + committedAffected) == 0 {
 			return 0, ErrNothingToCommit
 		}
 
 		if err := commitIncrementCommitID(tx, branchID, commitID); err != nil {
-			return 0, err
+			return "", err
 		}
 
 		// add commit record
 		creationDate := c.Clock.Now()
 		if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
 			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone); err != nil {
-			return 0, err
+			return "", err
 		}
 		return commitID, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
-		return 0, err
+		return "", err
 	}
-	return res.(CommitID), nil
+	return MakeReference(branch, res.(CommitID)), nil
 }
 
 func commitIncrementCommitID(tx sqlx.Execer, branchID int, commitID CommitID) error {

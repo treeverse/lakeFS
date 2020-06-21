@@ -8,7 +8,7 @@ import (
 
 func (c *cataloger) DeleteRepository(ctx context.Context, repository string) error {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 	}); err != nil {
 		return err
 	}

@@ -44,7 +44,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	testutil.MustDo(t, "second commit to master", err)
 
 	// before the merge - make sure we see the deleted file
-	_, err = c.GetEntry(ctx, repository, "branch1", CommittedID, delFilename)
+	_, err = c.GetEntry(ctx, repository, "branch1:HEAD", delFilename)
 	if err != nil {
 		t.Fatalf("Get entry %s, expected to be found: %s", delFilename, err)
 	}
@@ -54,11 +54,11 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	if err != nil {
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
-	if res.CommitID <= 0 {
-		t.Fatalf("Merge commit ID = %d, expected new commit ID", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "branch1", []testEntryInfo{
 		{Path: newFilename},
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
@@ -118,8 +118,8 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 	if !errors.Is(err, ErrConflictFound) {
 		t.Errorf("Merge err = %s, expected conflict with err = %s", err, ErrConflictFound)
 	}
-	if res.CommitID != 0 {
-		t.Errorf("Merge commit ID = %d, expected 0", res.CommitID)
+	if IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeConflict, Path: "/file2"},
@@ -140,8 +140,8 @@ func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("Merge err = %s, expected %s", err, expectedErr)
 	}
-	if res.CommitID != 0 {
-		t.Errorf("Merge commit ID = %d, expected 0", res.CommitID)
+	if IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	if len(res.Differences) != 0 {
 		t.Errorf("Merge differences len=%d, expected 0", len(res.Differences))
@@ -192,8 +192,8 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 	if err != nil {
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
-	if res.CommitID <= 0 {
-		t.Errorf("Merge commit ID = %d, expected a valid commit number", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected a reference commit number", res.Reference)
 	}
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
@@ -204,7 +204,7 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "branch1", []testEntryInfo{
 		{Path: newFilename},
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
@@ -258,8 +258,8 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "Merge changes from master to branch1", err)
 
 	// verify valid commit id
-	if res.CommitID <= 0 {
-		t.Errorf("Merge commit ID = %d, expected a valid commit number", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
 	}
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
@@ -270,7 +270,7 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "branch2", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "branch2", []testEntryInfo{
 		{Path: newFilename},
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
@@ -298,8 +298,8 @@ func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("Merge from branch1 to master err=%s, expected=%s", err, expectedErr)
 	}
-	if res.CommitID != 0 {
-		t.Fatalf("Merge commit ID = %d, expected 0", res.CommitID)
+	if res.Reference != "" {
+		t.Fatalf("Merge reference = %s, expected none", res.Reference)
 	}
 }
 
@@ -340,11 +340,11 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if res.CommitID <= 0 {
-		t.Fatalf("Merge commit ID = %d, expected valid ID", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "master", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{
 		{Path: newFilename},
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
@@ -429,8 +429,8 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
 	// verify valid commit id
-	if res.CommitID <= 0 {
-		t.Errorf("Merge commit ID = %d, expected a valid commit number", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	expectedDifferences = Differences{
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
@@ -447,7 +447,7 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "master", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{
 		{Path: "/file1", Deleted: true},
 		{Path: "/file2", Seed: "seed1"},
 		{Path: "/file3"},
@@ -475,10 +475,10 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if res.CommitID <= 0 {
-		t.Fatalf("Merge commit ID = %d, expected valid ID", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
-	testVerifyEntries(t, ctx, c, repository, "master", CommittedID, []testEntryInfo{{Path: "/file0"}})
+	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0"}})
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeAdded, Path: "/file0"},
 	}
@@ -497,10 +497,10 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
-	if res.CommitID <= 0 {
-		t.Fatalf("Merge commit ID = %d, expected valid ID", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
-	testVerifyEntries(t, ctx, c, repository, "master", CommittedID, []testEntryInfo{{Path: "/file0", Deleted: true}})
+	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0", Deleted: true}})
 	expectedDifferences = Differences{
 		Difference{Type: DifferenceTypeRemoved, Path: "/file0"},
 	}
@@ -536,11 +536,11 @@ func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Merge from branch2 to branch1 err=%s, expected none", err)
 	}
-	if res.CommitID <= 0 {
-		t.Fatalf("Merge commit ID = %d, expected valid ID", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	// verify that the file is deleted (tombstone)
-	testVerifyEntries(t, ctx, c, repository, "branch1", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "branch1", []testEntryInfo{
 		{Path: "/file0", Deleted: true},
 		{Path: "/file1", Seed: "seed1"},
 	})
@@ -579,8 +579,8 @@ func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
 	if !errors.Is(err, ErrConflictFound) {
 		t.Fatalf("Merge from branch1 to master err=%s, expected conflict", err)
 	}
-	if res.CommitID != 0 {
-		t.Fatalf("Merge commit ID = %d, expected 0", res.CommitID)
+	if res.Reference != "" {
+		t.Fatalf("Merge reference = %s, expected none", res.Reference)
 	}
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeConflict, Path: "/file0"},

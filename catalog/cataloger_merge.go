@@ -11,10 +11,10 @@ import (
 
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch string, committer string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
-		"repository":       ValidateRepositoryName(repository),
-		"left branch":      ValidateBranchName(leftBranch),
-		"right branch":     ValidateBranchName(rightBranch),
-		"committer branch": ValidateCommitter(committer),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
+		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}
@@ -50,7 +50,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		}
 
 		commitMsg := formatMergeMessage(leftBranch, rightBranch)
-		result.CommitID, err = c.doMergeByRelation(tx, relation, leftID, rightID, committer, commitMsg, metadata)
+		commitID, err := c.doMergeByRelation(tx, relation, leftID, rightID, committer, commitMsg, metadata)
+		if err != nil {
+			return nil, err
+		}
+		result.Reference = MakeReference(rightBranch, commitID)
 		return nil, err
 	}, c.txOpts(ctx)...)
 	return result, err

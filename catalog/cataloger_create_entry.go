@@ -8,9 +8,9 @@ import (
 
 func (c *cataloger) CreateEntry(ctx context.Context, repository, branch string, path string, checksum string, physicalAddress string, size int, metadata Metadata) error {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"path":       ValidatePath(path),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "path", IsValid: ValidatePath(path)},
 	}); err != nil {
 		return err
 	}

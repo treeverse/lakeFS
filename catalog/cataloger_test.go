@@ -66,15 +66,15 @@ func testCreateEntryCalcChecksum(key string, seed string) string {
 	return checksum
 }
 
-func testVerifyEntries(t *testing.T, ctx context.Context, c Cataloger, repository string, branch string, commitID CommitID, entries []testEntryInfo) {
+func testVerifyEntries(t *testing.T, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
 	for _, entry := range entries {
-		ent, err := c.GetEntry(ctx, repository, branch, commitID, entry.Path)
+		ent, err := c.GetEntry(ctx, repository, reference, entry.Path)
 		if entry.Deleted {
 			if !errors.As(err, &db.ErrNotFound) {
 				t.Fatalf("Get entry '%s', err = %s, expected not found", entry.Path, err)
 			}
 		} else {
-			testutil.MustDo(t, fmt.Sprintf("Get entry=%s, repository=%s, branch=%s", entry.Path, repository, branch), err)
+			testutil.MustDo(t, fmt.Sprintf("Get entry=%s, repository=%s, reference=%s", entry.Path, repository, reference), err)
 			expectedAddr := testCreateEntryCalcChecksum(entry.Path, entry.Seed)
 			if ent.PhysicalAddress != expectedAddr {
 				t.Fatalf("Get entry %s, addr = %s, expected %s", entry.Path, ent.PhysicalAddress, expectedAddr)
