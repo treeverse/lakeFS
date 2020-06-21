@@ -14,6 +14,8 @@ const (
 	LockTypeUpdate
 )
 
+const MaxCommitID = 0x7FFFFFFF
+
 func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (int, error) {
 	const b = `SELECT b.id FROM branches b join repositories r 
 					ON r.id = b.repository_id

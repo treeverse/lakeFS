@@ -7,29 +7,33 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetEntry(ctx context.Context, repository, branch string, commitID CommitID, path string) (*Entry, error) {
+func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"path":       ValidatePath(path),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
+		{Name: "path", IsValid: ValidatePath(path)},
 	}); err != nil {
 		return nil, err
 	}
 
+	ref, err := ParseRef(reference)
+	if err != nil {
+		return nil, err
+	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := getBranchID(tx, repository, ref.Branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}
 
 		var q string
-		switch commitID {
+		switch ref.CommitID {
 		case CommittedID:
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit, is_tombstone
+			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
 					FROM entries_lineage_committed_v
 					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
 		case UncommittedID:
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit, is_tombstone
+			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
 		default:

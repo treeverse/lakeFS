@@ -87,9 +87,13 @@ func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
-func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader) error {
+func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 
-	putObject := s3.PutObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
+	putObject := s3.PutObjectInput{
+		Bucket:       aws.String(obj.Repo),
+		Key:          aws.String(obj.Identifier),
+		StorageClass: opts.StorageClass,
+	}
 	sdkRequest, _ := s.s3.PutObjectRequest(&putObject)
 	_, err := s.streamToS3(sdkRequest, sizeBytes, reader)
 	return err
@@ -203,6 +207,15 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return objectOutput.Body, nil
 }
 
+func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+	headObjectParams := &s3.HeadObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
+	s3Props, err := s.s3.HeadObject(headObjectParams)
+	if err != nil {
+		return block.Properties{}, err
+	}
+	return block.Properties{StorageClass: s3Props.StorageClass}, nil
+}
+
 func (s *Adapter) Remove(obj block.ObjectPointer) error {
 	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
 	_, err := s.s3.DeleteObject(deleteObjectParams)
@@ -217,11 +230,12 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 	return err
 }
 
-func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request) (string, error) {
+func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	input := &s3.CreateMultipartUploadInput{
-		Bucket:      aws.String(obj.Repo),
-		Key:         aws.String(obj.Identifier),
-		ContentType: aws.String(""),
+		Bucket:       aws.String(obj.Repo),
+		Key:          aws.String(obj.Identifier),
+		ContentType:  aws.String(""),
+		StorageClass: opts.StorageClass,
 	}
 	resp, err := s.s3.CreateMultipartUpload(input)
 	if err == nil {

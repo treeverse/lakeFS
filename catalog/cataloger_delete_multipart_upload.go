@@ -8,8 +8,8 @@ import (
 
 func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string, uploadID string) error {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"uploadID":   ValidateUploadID(uploadID),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "uploadID", IsValid: ValidateUploadID(uploadID)},
 	}); err != nil {
 		return err
 	}

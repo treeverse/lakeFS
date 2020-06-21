@@ -51,7 +51,7 @@ func createBranch(t *testing.T, index index.Index, name, parent string) {
 }
 
 func uploadObject(t *testing.T, deps *dependencies, path, branch string, content string) {
-	checksum, physicalAddress, size, err := upload.WriteBlob(deps.meta, TestRepo, branch, strings.NewReader(content), deps.blocks, int64(len(content)))
+	checksum, physicalAddress, size, err := upload.WriteBlob(deps.meta, TestRepo, branch, strings.NewReader(content), deps.blocks, int64(len(content)), block.PutOpts{})
 	if err != nil {
 		t.Error("error storing object in blocks", err)
 		return

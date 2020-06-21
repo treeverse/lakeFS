@@ -9,29 +9,33 @@ import (
 
 // TODO(barak): add delimiter support - return entry and common prefix entries
 
-func (c *cataloger) ListEntries(ctx context.Context, repository, branch string, commitID CommitID, prefix, after string, limit int) ([]*Entry, bool, error) {
+func (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
 	}); err != nil {
 		return nil, false, err
 	}
 
+	ref, err := ParseRef(reference)
+	if err != nil {
+		return nil, false, err
+	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := getBranchID(tx, repository, ref.Branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}
 
 		var q string
-		switch commitID {
+		switch ref.CommitID {
 		case UncommittedID:
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
+			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
 					FROM entries_lineage_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
 					ORDER BY path`
 		case CommittedID:
-			q = `SELECT displayed_branch as branch_id, path, physical_address, creation_date, size, checksum, metadata, min_commit, max_commit
+			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
 					FROM entries_lineage_committed_v
 					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
 					ORDER BY path`
@@ -48,7 +52,6 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, branch string, 
 		if err := tx.Select(&entries, q, args...); err != nil {
 			return nil, err
 		}
-
 		return entries, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 

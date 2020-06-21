@@ -40,6 +40,7 @@ const (
 	RemoveGroupMemberAction = "auth:RemoveGroupMember"
 	ReadPolicyAction        = "auth:ReadPolicy"
 	CreatePolicyAction      = "auth:CreatePolicy"
+	UpdatePolicyAction      = "auth:UpdatePolicy"
 	DeletePolicyAction      = "auth:DeletePolicy"
 	ListPoliciesAction      = "auth:ListPolicies"
 	AttachPolicyAction      = "auth:AttachPolicy"

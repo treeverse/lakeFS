@@ -6,7 +6,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repo, bool, error) {
+func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		query := `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
 			FROM repositories r JOIN branches b ON r.default_branch = b.id 
@@ -18,7 +18,7 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 			args = append(args, limit+1)
 		}
 
-		var repos []*Repo
+		var repos []*Repository
 		if err := tx.Select(&repos, query, args...); err != nil {
 			return nil, err
 		}
@@ -28,7 +28,7 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 	if err != nil {
 		return nil, false, err
 	}
-	repos := res.([]*Repo)
+	repos := res.([]*Repository)
 	hasMore := paginateSlice(&repos, limit)
 	return repos, hasMore, err
 }

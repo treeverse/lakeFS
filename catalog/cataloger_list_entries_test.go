@@ -33,8 +33,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 
 	type args struct {
 		repository string
-		branch     string
-		commitID   CommitID
+		reference  string
 		path       string
 		after      string
 		limit      int
@@ -50,8 +49,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "all uncommitted",
 			args: args{
 				repository: "repo1",
-				branch:     "master",
-				commitID:   UncommittedID,
+				reference:  "master",
 				path:       "",
 				after:      "",
 				limit:      -1,
@@ -70,8 +68,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "first 2 uncommitted",
 			args: args{
 				repository: "repo1",
-				branch:     "master",
-				commitID:   UncommittedID,
+				reference:  "master",
 				path:       "",
 				after:      "",
 				limit:      2,
@@ -87,8 +84,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "last 2",
 			args: args{
 				repository: "repo1",
-				branch:     "master",
-				commitID:   UncommittedID,
+				reference:  "master",
 				path:       "",
 				after:      "/file3",
 				limit:      2,
@@ -104,8 +100,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "committed",
 			args: args{
 				repository: "repo1",
-				branch:     "master",
-				commitID:   CommittedID,
+				reference:  "master:HEAD",
 				path:       "",
 				after:      "/file1",
 				limit:      -1,
@@ -120,7 +115,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.branch, tt.args.commitID, tt.args.path, tt.args.after, tt.args.limit)
+			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}

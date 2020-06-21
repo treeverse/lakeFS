@@ -9,7 +9,7 @@ import (
 
 type Metadata map[string]string
 
-type Repo struct {
+type Repository struct {
 	Name             string    `db:"name"`
 	StorageNamespace string    `db:"storage_namespace"`
 	DefaultBranch    string    `db:"default_branch"`
@@ -17,21 +17,36 @@ type Repo struct {
 }
 
 type Entry struct {
-	BranchID        int       `db:"branch_id"`
 	Path            string    `db:"path"`
-	MinCommit       int       `db:"min_commit"`
-	MaxCommit       int       `db:"max_commit"`
 	PhysicalAddress string    `db:"physical_address"`
 	CreationDate    time.Time `db:"creation_date"`
 	Size            int64     `db:"size"`
 	Checksum        string    `db:"checksum"`
 	Metadata        Metadata  `db:"metadata"`
+}
+
+type entryRaw struct {
+	BranchID        int       `db:"branch_id"`
+	Path            string    `db:"path"`
+	PhysicalAddress string    `db:"physical_address"`
+	CreationDate    time.Time `db:"creation_date"`
+	Size            int64     `db:"size"`
+	Checksum        string    `db:"checksum"`
+	Metadata        Metadata  `db:"metadata"`
+	MinCommit       int       `db:"min_commit"`
 	IsTombstone     bool      `db:"is_tombstone"`
 }
 
 type CommitLog struct {
-	Branch       string    `db:"branch"`
-	CommitID     int       `db:"commit_id"`
+	Reference    string
+	Committer    string    `db:"committer"`
+	Message      string    `db:"message"`
+	CreationDate time.Time `db:"creation_date"`
+	Metadata     Metadata  `db:"metadata"`
+}
+
+type commitLogRaw struct {
+	CommitID     CommitID  `db:"commit_id"`
 	Committer    string    `db:"committer"`
 	Message      string    `db:"message"`
 	CreationDate time.Time `db:"creation_date"`
