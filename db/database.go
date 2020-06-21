@@ -58,7 +58,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 				return nil, rollbackErr
 			}
 			// retry on serialization error
-			if isSerializationError(err) {
+			if IsSerializationError(err) {
 				// retry
 				attempt++
 				continue
@@ -68,7 +68,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			err = tx.Commit()
 			if err != nil {
 				// retry on serialization error
-				if isSerializationError(err) {
+				if IsSerializationError(err) {
 					attempt++
 					continue
 				}
