@@ -20,7 +20,13 @@ func TestCataloger_Commit(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		fileName := "/file" + strconv.Itoa(i)
 		fileAddr := "/addr" + strconv.Itoa(i)
-		if err := c.CreateEntry(ctx, repository, "master", fileName, "ff", fileAddr, i+1, meta); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            fileName,
+			Checksum:        "ff",
+			PhysicalAddress: fileAddr,
+			Size:            int64(i) + 1,
+			Metadata:        meta,
+		}); err != nil {
 			t.Fatal("create entry for testing", fileName, err)
 		}
 	}
@@ -98,7 +104,12 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 	t.Run("same file more than once", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 		for i := 0; i < 3; i++ {
-			if err := c.CreateEntry(ctx, repository, "master", "/file1", strings.Repeat("ff", i), "/addr"+strconv.Itoa(i+1), i+1, nil); err != nil {
+			if err := c.CreateEntry(ctx, repository, "master", Entry{
+				Path:            "/file1",
+				Checksum:        strings.Repeat("ff", i),
+				PhysicalAddress: "/addr" + strconv.Itoa(i+1),
+				Size:            int64(i) + 1,
+			}); err != nil {
 				t.Error("create entry for commit twice", err)
 				return
 			}
@@ -132,7 +143,12 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 		for i := 0; i < 3; i++ {
 			fileName := fmt.Sprintf("/file%d", i+1)
 			addrName := fmt.Sprintf("/addr%d", i+1)
-			if err := c.CreateEntry(ctx, repository, "master", fileName, "ff", addrName, 42, nil); err != nil {
+			if err := c.CreateEntry(ctx, repository, "master", Entry{
+				Path:            fileName,
+				Checksum:        "ff",
+				PhysicalAddress: addrName,
+				Size:            42,
+			}); err != nil {
 				t.Error("create entry for file per commit", err)
 				return
 			}
@@ -159,7 +175,12 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("delete on a committed file same branch", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-		if err := c.CreateEntry(ctx, repository, "master", "/file5", "ffff", "/addr5", 55, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file5",
+			Checksum:        "ffff",
+			PhysicalAddress: "/addr5",
+			Size:            55,
+		}); err != nil {
 			t.Fatal("create entry for file per commit", err)
 			return
 		}

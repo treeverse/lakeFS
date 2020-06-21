@@ -153,7 +153,12 @@ func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger
 	for i := 0; i < 3; i++ {
 		fileName := fmt.Sprintf("/file%d", i)
 		fileAddr := fmt.Sprintf("/addr%d", i)
-		if err := c.CreateEntry(ctx, repository, branch, fileName, strings.Repeat("ff", i), fileAddr, i+1, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, branch, Entry{
+			Path:            fileName,
+			Checksum:        strings.Repeat("ff", i),
+			PhysicalAddress: fileAddr,
+			Size:            int64(i) + 1,
+		}); err != nil {
 			t.Fatal("Write entry for list repository commits failed", err)
 		}
 		message := "commit" + strconv.Itoa(i+1)
