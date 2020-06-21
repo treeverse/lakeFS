@@ -375,8 +375,8 @@ const CredentialsCreateButton = connect(
         <EntityCreateButton
             variant={'success'}
             modalSize={"lg"}
-            buttonText={'Create Key Pair'}
-            modalTitle={'Create Key Pair'}
+            buttonText={'Create Access Key'}
+            modalTitle={'Create Access Key'}
             createFn={createFn}
             resetFn={resetCreateCredentials}
             status={creationStatus}
@@ -411,7 +411,7 @@ const CredentialsCreateButton = connect(
             }}
         >
             <p>
-                Create a new Key Pair for user <strong>{userId}</strong>?
+                Create a new Access Key for user <strong>{userId}</strong>?
             </p>
         </EntityCreateButton>
     )
@@ -430,7 +430,7 @@ export const UserCredentialsPane = connect(
     }, [userId, listCredentials]);
 
     const deleteCredentialsFn = useCallback((accessKeyId) => {
-        if (window.confirm(`Are you sure you'd like to delete key pair '${accessKeyId}?'`))
+        if (window.confirm(`Are you sure you'd like to delete access key '${accessKeyId}?'`))
             deleteCredentials(userId, accessKeyId);
     }, [deleteCredentials, userId]);
 
@@ -457,7 +457,7 @@ export const UserCredentialsPane = connect(
             <PaginatedEntryList
                 listFn={listCredentialsFn}
                 entities={credentials}
-                emptyState={"No Key Pairs found"}
+                emptyState={"No Access Keys found"}
                 fields={["Access Key ID", "Issued At", ""]}
                 entityToKey={entity => entity.access_key_id}
                 entityToRow={entity => {
@@ -505,7 +505,7 @@ export const UserPage = () => {
                 <Tab eventKey="effectivePolicies" title="Effective Attached Policies">
                     <UserEffectivePoliciesPane userId={userId}/>
                 </Tab>
-                <Tab eventKey="credentials" title="Key Pairs">
+                <Tab eventKey="credentials" title="Access Keys">
                     <UserCredentialsPane userId={userId}/>
                 </Tab>
             </Tabs>

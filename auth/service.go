@@ -300,6 +300,9 @@ func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, userDisplayName st
 				(SELECT id FROM users WHERE display_name = $1),
 				(SELECT id FROM policies WHERE display_name = $2)
 			)`, userDisplayName, policyDisplayName)
+		if db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
+		}
 		return nil, err
 	})
 	return err
@@ -542,7 +545,11 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 				(SELECT id FROM users WHERE display_name = $1),
 				(SELECT id FROM groups WHERE display_name = $2)
 			)`, userDisplayName, groupDisplayName)
+		if db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("group membership: %w", db.ErrAlreadyExists)
+		}
 		return nil, err
+
 	})
 	return err
 }
@@ -792,6 +799,9 @@ func (s *DBAuthService) AttachPolicyToGroup(policyDisplayName, groupDisplayName 
 				(SELECT id FROM groups WHERE display_name = $1),
 				(SELECT id FROM policies WHERE display_name = $2)
 			)`, groupDisplayName, policyDisplayName)
+		if db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
+		}
 		return nil, err
 	})
 	return err
