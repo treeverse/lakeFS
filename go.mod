@@ -3,6 +3,7 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
+	github.com/Masterminds/squirrel v1.4.0
 	github.com/aws/aws-sdk-go v1.30.14
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/cloudfoundry/clock v1.0.0
@@ -20,6 +21,7 @@ require (
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.5.0
 	github.com/jackc/pgtype v1.3.0
+	github.com/jackc/pgx v3.6.2+incompatible
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0

@@ -60,8 +60,12 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int
-	err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
-			WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
+	maxSonQuery, args := initialSelect.Columns("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
+													From("commits").
+													Where("branch_id = ? AND merge_type = 'from_father'", rightID).MustSql()
+	err := tx.Get(&maxSonMerge, maxSonQuery, args...)
+	//err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
+	//		WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,11 +134,24 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 		SonEffectiveCommit    int `db:"son_effective_commit"`
 	}{}
 
-	err := tx.Get(&effectiveCommits, `SELECT commit_id AS father_effective_commit,merge_source_commit AS son_effective_commit 
-		FROM commits WHERE branch_id = $1 AND merge_type = 'from_son' ORDER BY commit_id DESC LIMIT 1`, rightID)
+	effectiveCommitsQuery, args := initialSelect.Columns(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
+		From("commits").
+		Where("branch_id = ? AND merge_type = 'from_son'", rightID).
+		OrderBy(`commit_id DESC`).
+		Limit(1).
+		MustSql()
+
+	err := tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
+
+	//err := tx.Get(&effectiveCommits, `SELECT commit_id AS father_effective_commit,merge_source_commit AS son_effective_commit
+	//	FROM commits WHERE branch_id = $1 AND merge_type = 'from_son' ORDER BY commit_id DESC LIMIT 1`, rightID)
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1
-		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftID, rightID)
+		FatherEffectiveQuery, args := initialSelect.Columns("effective_commit").From("lineage").
+			Where("branch_id = ? AND ancestor_branch = ?", leftID, rightID).
+			OrderBy("min_commit DESC").Limit(1).MustSql()
+		//err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftID, rightID)
+		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
 	if err != nil {
 		return nil, err
