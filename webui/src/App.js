@@ -3,7 +3,7 @@ import React from 'react';
 import {connect} from 'react-redux';
 import Navbar from 'react-bootstrap/Navbar';
 import Container from "react-bootstrap/Container";
-import {BrowserRouter as Router, Switch, Route, Redirect, useLocation, useHistory} from "react-router-dom";
+import {BrowserRouter as Router, Switch, Route, Redirect, useLocation, useHistory, Link} from "react-router-dom";
 
 
 
@@ -33,6 +33,8 @@ const NavUserInfo = connect(
                 <NavDropdown.Header>
                     Access Key ID: <code>{user.accessKeyId}</code>
                 </NavDropdown.Header>
+                <NavDropdown.Divider/>
+                <NavDropdown.Item as={Link} to={`/auth/credentials`}>Manage Credentials</NavDropdown.Item>
                 <NavDropdown.Item onClick={(e) => { e.preventDefault(); logout(); }}>Logout</NavDropdown.Item>
             </NavDropdown>
         </Navbar.Collapse>
