@@ -16,7 +16,7 @@ const (
 	UncommittedID CommitID = 0
 
 	CommittedSuffix = ":HEAD"
-	CommitPrefix    = "#"
+	CommitPrefix    = "~"
 )
 
 type Ref struct {

@@ -47,7 +47,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 			RequiredPermissions: []permissions.Permission{
 				{
 					Action:   permissions.DeleteObjectAction,
-					Resource: permissions.ObjectArn(o.Repo.Id, resolvedPath.Path),
+					Resource: permissions.ObjectArn(o.Repository.Name, resolvedPath.Path),
 				},
 			},
 		})
@@ -60,7 +60,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		}
 
 		lg := o.Log().WithField("key", obj.Key)
-		err = o.Index.DeleteObject(o.Repo.Id, resolvedPath.Ref, resolvedPath.Path)
+		err = o.Cataloger.DeleteEntry(o.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			lg.WithError(err).Error("failed deleting object")
 			errs = append(errs, serde.DeleteError{
@@ -87,5 +87,4 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		resp.Deleted = responses
 	}
 	o.EncodeResponse(resp, http.StatusOK)
-
 }

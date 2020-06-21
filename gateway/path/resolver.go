@@ -4,8 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strconv"
+	"strings"
+	"unicode/utf8"
 
-	pth "github.com/treeverse/lakefs/index/path"
+	"github.com/mr-tron/base58"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 )
 
 const (
@@ -31,34 +36,83 @@ var (
 	ErrPathMalformed = errors.New("encoded path is malformed")
 )
 
+type Ref struct {
+	Branch   string
+	CommitID catalog.CommitID
+}
+
 type ResolvedPath struct {
-	Path     string
 	Ref      string
+	Path     string
 	WithPath bool
 }
 
 type ResolvedAbsolutePath struct {
 	Repo string
+	Ref  Ref
 	Path string
-	Ref  string
 }
 
+func ResolveRef(ref string) (Ref, error) {
+	if !strings.HasPrefix(ref, "#") {
+		return Ref{Branch: ref}, nil
+	}
+	refData, err := base58.Decode(ref[1:])
+	if err != nil {
+		return Ref{}, fmt.Errorf("%w: ref decode", ErrPathMalformed)
+	}
+	if !utf8.Valid(refData) {
+		return Ref{}, fmt.Errorf("%w: ref utf8", ErrPathMalformed)
+	}
+	const refPartsCount = 2
+	parts := strings.SplitN(string(refData), ":", refPartsCount)
+	if len(parts) != refPartsCount {
+		return Ref{}, fmt.Errorf("%w: missing commit id", ErrPathMalformed)
+	}
+	id, err := strconv.Atoi(parts[1])
+	if err != nil {
+		return Ref{}, fmt.Errorf("%w: invalid commit id", ErrPathMalformed)
+	}
+	return Ref{
+		Branch:   parts[0],
+		CommitID: catalog.CommitID(id),
+	}, nil
+}
+
+//func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
+//	r := ResolvedAbsolutePath{}
+//	match := EncodedAbsPathRe.FindStringSubmatch(encodedPath)
+//	if len(match) == 0 {
+//		return r, ErrPathMalformed
+//	}
+//	result := make(map[string]string)
+//	for i, name := range EncodedAbsPathRe.SubexpNames() {
+//		if i != 0 && name != "" {
+//			result[name] = match[i]
+//		}
+//	}
+//	r.Repo = result["repo"]
+//	r.Path = result["path"]
+//	r.Ref = result["ref"]
+//	return r, nil
+//}
+
 func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
-	r := ResolvedAbsolutePath{}
-	match := EncodedAbsPathRe.FindStringSubmatch(encodedPath)
-	if len(match) == 0 {
-		return r, ErrPathMalformed
+	const encodedPartsCount = 3
+	encodedPath = strings.TrimLeft(encodedPath, "/")
+	parts := strings.SplitN(encodedPath, "/", encodedPartsCount)
+	if len(parts) != encodedPartsCount {
+		return ResolvedAbsolutePath{}, ErrPathMalformed
 	}
-	result := make(map[string]string)
-	for i, name := range EncodedAbsPathRe.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
-		}
+	ref, err := ResolveRef(parts[1])
+	if err != nil {
+		return ResolvedAbsolutePath{}, err
 	}
-	r.Repo = result["repo"]
-	r.Path = result["path"]
-	r.Ref = result["ref"]
-	return r, nil
+	return ResolvedAbsolutePath{
+		Repo: parts[0],
+		Ref:  ref,
+		Path: parts[2],
+	}, nil
 }
 
 func ResolvePath(encodedPath string) (ResolvedPath, error) {
@@ -95,5 +149,5 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 }
 
 func WithRef(path, ref string) string {
-	return pth.Join([]string{ref, path})
+	return block.JoinPathParts([]string{ref, path})
 }
