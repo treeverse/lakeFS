@@ -16,19 +16,6 @@ type Repository struct {
 	CreationDate     time.Time `db:"creation_date"`
 }
 
-//type Entry struct {
-//	BranchID        int       `db:"branch_id"`
-//	Path            string    `db:"path"`
-//	MinCommit       int       `db:"min_commit"`
-//	MaxCommit       int       `db:"max_commit"`
-//	PhysicalAddress string    `db:"physical_address"`
-//	CreationDate    time.Time `db:"creation_date"`
-//	Size            int64     `db:"size"`
-//	Checksum        string    `db:"checksum"`
-//	Metadata        Metadata  `db:"metadata"`
-//	IsTombstone     bool      `db:"is_tombstone"`
-//}
-
 type Entry struct {
 	Path            string    `db:"path"`
 	PhysicalAddress string    `db:"physical_address"`
