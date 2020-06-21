@@ -16,6 +16,7 @@ const (
 	UncommittedID CommitID = 0
 
 	CommittedSuffix = ":HEAD"
+	CommitPrefix    = "#"
 )
 
 type Ref struct {
@@ -32,7 +33,7 @@ func (r Ref) String() string {
 	default:
 		ref := r.Branch + ":" + strconv.Itoa(int(r.CommitID))
 		encRef := base58.Encode([]byte(ref))
-		return "#" + encRef
+		return CommitPrefix + encRef
 	}
 }
 
@@ -49,7 +50,7 @@ func ParseRef(ref string) (*Ref, error) {
 		}, nil
 	}
 	// uncommitted branch
-	if !strings.HasPrefix(ref, "#") {
+	if !strings.HasPrefix(ref, CommitPrefix) {
 		return &Ref{
 			Branch:   ref,
 			CommitID: UncommittedID,
