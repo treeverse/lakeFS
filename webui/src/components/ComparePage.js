@@ -2,7 +2,7 @@ import React, {useEffect, useState, useCallback} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 import {Alert, ButtonToolbar, Button, OverlayTrigger, Tooltip} from "react-bootstrap";
-import Octicon, {Sync as SyncIcon, GitMerge} from "@primer/octicons-react";
+import {SyncIcon, GitMergeIcon} from "@primer/octicons-react";
 import {PAGINATION_AMOUNT, listTree, listTreePaginate} from "../actions/objects";
 import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
@@ -73,7 +73,7 @@ const MergeButton = connect(
                     disabled={mergeDisabled}
                     style={mergeDisabled ? { pointerEvents: "none" } : {}}
                     onClick={() => { resetMerge(); setShow(true); }}>
-                    <Octicon icon={GitMerge} /> Merge
+                    <GitMergeIcon /> Merge
                 </Button>
             </span>
         </OverlayTrigger>
@@ -134,7 +134,7 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
         </ButtonToolbar>
         <ButtonToolbar className="float-right mb-2">
             <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
-                <Button variant="light" onClick={refresh}><Octicon icon={SyncIcon}/></Button>
+                <Button variant="light" onClick={refresh}><SyncIcon/></Button>
             </OverlayTrigger>
             <MergeButton repo={repo} refId={refId} compare={compare} />
         </ButtonToolbar>

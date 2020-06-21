@@ -10,7 +10,7 @@ import {createRepository, createRepositoryDone, filterRepositories, listReposito
 import React, {useEffect, useRef, useState} from "react";
 import Form from "react-bootstrap/Form";
 import InputGroup from "react-bootstrap/InputGroup";
-import Octicon, {Repo, Search} from "@primer/octicons-react";
+import {RepoIcon, SearchIcon} from "@primer/octicons-react";
 import {DebouncedFormControl} from "./DebouncedInput";
 import ButtonToolbar from "react-bootstrap/ButtonToolbar";
 import Button from "react-bootstrap/Button";
@@ -103,7 +103,7 @@ export const RepositoryListPage = connect(
                             <InputGroup>
                                 <InputGroup.Prepend>
                                     <InputGroup.Text>
-                                        <Octicon icon={Search}/>
+                                        <SearchIcon/>
                                     </InputGroup.Text>
                                 </InputGroup.Prepend>
                                 <DebouncedFormControl type="text" placeholder="Find a repository..." autoFocus ref={filterField} onChange={() =>{
@@ -118,7 +118,7 @@ export const RepositoryListPage = connect(
                         createRepositoryDone();
                         showCreateModal();
                     }}>
-                        <Octicon icon={Repo}/> Create Repository
+                        <RepoIcon/> Create Repository
                     </Button>
                 </ButtonToolbar>
             </div>

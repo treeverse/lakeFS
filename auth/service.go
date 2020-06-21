@@ -50,7 +50,7 @@ type Service interface {
 	ListGroupUsers(groupDisplayName string, params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// policies
-	CreatePolicy(policy *model.Policy) error
+	WritePolicy(policy *model.Policy) error
 	GetPolicy(policyDisplayName string) (*model.Policy, error)
 	DeletePolicy(policyDisplayName string) error
 	ListPolicies(params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error)
@@ -96,12 +96,12 @@ func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 }
 
 func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
-	policy := &model.PolicyDBImpl{}
+	policy := &model.Policy{}
 	err := tx.Get(policy, `SELECT * FROM policies WHERE display_name = $1`, policyDisplayName)
 	if err != nil {
 		return nil, err
 	}
-	return policy.ToModel(), nil
+	return policy, nil
 }
 
 func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
@@ -300,6 +300,9 @@ func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, userDisplayName st
 				(SELECT id FROM users WHERE display_name = $1),
 				(SELECT id FROM policies WHERE display_name = $2)
 			)`, userDisplayName, policyDisplayName)
+		if db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
+		}
 		return nil, err
 	})
 	return err
@@ -333,7 +336,7 @@ func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.P
 		if _, err := getUser(tx, userDisplayName); err != nil {
 			return nil, err
 		}
-		policies := make([]*model.PolicyDBImpl, 0)
+		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
 			SELECT policies.* FROM policies
 				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
@@ -349,20 +352,15 @@ func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.P
 		}
 		p := &model.Paginator{}
 
-		policyModels := make([]*model.Policy, len(policies))
-		for i, policy := range policies {
-			policyModels[i] = policy.ToModel()
-		}
-
-		if len(policyModels) == params.Amount+1 {
+		if len(policies) == params.Amount+1 {
 			// we have more pages
-			policyModels = policyModels[0:params.Amount]
+			policies = policies[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
-			return &res{policyModels, p}, nil
+			p.NextPageToken = policies[len(policies)-1].DisplayName
+			return &res{policies, p}, nil
 		}
-		p.Amount = len(policyModels)
-		return &res{policyModels, p}, nil
+		p.Amount = len(policies)
+		return &res{policies, p}, nil
 	})
 
 	if err != nil {
@@ -379,20 +377,20 @@ func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *mo
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// resolve all policies attached to the user and its groups
 		var err error
-		var policies []*model.PolicyDBImpl
+		var policies []*model.Policy
 
 		// resolve all policies
 		// language=sql
 		const resolvePoliciesStmt = `
-		SELECT p.id, p.display_name, p.action, p.resource, p.effect
+		SELECT p.id, p.created_at, p.display_name, p.statement
 		FROM (
-			SELECT policies.id, policies.display_name, policies.action, policies.resource, policies.effect
+			SELECT policies.id, policies.created_at, policies.display_name, policies.statement
 			FROM policies
 				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
 				INNER JOIN users ON (users.id = user_policies.user_id)
 			WHERE users.display_name = $1
 			UNION
-			SELECT policies.id, policies.display_name, policies.action, policies.resource, policies.effect
+			SELECT policies.id, policies.created_at, policies.display_name, policies.statement
 			FROM policies
 				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
 				INNER JOIN groups ON (groups.id = group_policies.group_id)
@@ -416,20 +414,15 @@ func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *mo
 
 		p := &model.Paginator{}
 
-		policyModels := make([]*model.Policy, len(policies))
-		for i, p := range policies {
-			policyModels[i] = p.ToModel()
-		}
-
-		if params.Amount != -1 && len(policyModels) == params.Amount+1 {
+		if params.Amount != -1 && len(policies) == params.Amount+1 {
 			// we have more pages
-			policyModels = policyModels[0:params.Amount]
+			policies = policies[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
-			return &res{policyModels, p}, nil
+			p.NextPageToken = policies[len(policies)-1].DisplayName
+			return &res{policies, p}, nil
 		}
-		p.Amount = len(policyModels)
-		return &res{policyModels, p}, nil
+		p.Amount = len(policies)
+		return &res{policies, p}, nil
 
 	}, db.ReadOnly())
 	if err != nil {
@@ -447,7 +440,7 @@ func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model
 		if _, err := getGroup(tx, groupDisplayName); err != nil {
 			return nil, err
 		}
-		policies := make([]*model.PolicyDBImpl, 0)
+		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
 			SELECT policies.* FROM policies
 				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
@@ -463,20 +456,15 @@ func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model
 		}
 		p := &model.Paginator{}
 
-		policyModels := make([]*model.Policy, len(policies))
-		for i, policy := range policies {
-			policyModels[i] = policy.ToModel()
-		}
-
-		if len(policyModels) == params.Amount+1 {
+		if len(policies) == params.Amount+1 {
 			// we have more pages
-			policyModels = policyModels[0:params.Amount]
+			policies = policies[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
-			return &res{policyModels, p}, nil
+			p.NextPageToken = policies[len(policies)-1].DisplayName
+			return &res{policies, p}, nil
 		}
-		p.Amount = len(policyModels)
-		return &res{policyModels, p}, nil
+		p.Amount = len(policies)
+		return &res{policies, p}, nil
 	})
 
 	if err != nil {
@@ -557,7 +545,11 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 				(SELECT id FROM users WHERE display_name = $1),
 				(SELECT id FROM groups WHERE display_name = $2)
 			)`, userDisplayName, groupDisplayName)
+		if db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("group membership: %w", db.ErrAlreadyExists)
+		}
 		return nil, err
+
 	})
 	return err
 }
@@ -663,23 +655,31 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 	return result.(*res).users, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) CreatePolicy(policy *model.Policy) error {
+func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityId(policy.DisplayName); err != nil {
 			return nil, err
 		}
-		for _, action := range policy.Action {
-			if err := model.ValidateActionName(action); err != nil {
+		for _, stmt := range policy.Statement {
+			for _, action := range stmt.Action {
+				if err := model.ValidateActionName(action); err != nil {
+					return nil, err
+				}
+			}
+			if err := model.ValidateArn(stmt.Resource); err != nil {
+				return nil, err
+			}
+			if err := model.ValidateStatementEffect(stmt.Effect); err != nil {
 				return nil, err
 			}
 		}
-		if err := model.ValidateArn(policy.Resource); err != nil {
-			return nil, err
-		}
 
-		p := policy.ToDBImpl()
-		return nil, tx.Get(policy, `INSERT INTO policies (display_name, created_at, action, resource, effect) VALUES ($1, $2, $3, $4, $5) RETURNING id`,
-			p.DisplayName, p.CreatedAt, p.Action, p.Resource, p.Effect)
+		return nil, tx.Get(policy, `
+			INSERT INTO policies (display_name, created_at, statement)
+			VALUES ($1, $2, $3)
+			ON CONFLICT (display_name) DO UPDATE SET statement = $3
+			RETURNING id`,
+			policy.DisplayName, policy.CreatedAt, policy.Statement)
 	})
 	return err
 }
@@ -707,7 +707,7 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 		paginator *model.Paginator
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		policies := make([]*model.PolicyDBImpl, 0)
+		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
 			SELECT *
 			FROM policies
@@ -719,19 +719,16 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 			return nil, err
 		}
 		p := &model.Paginator{}
-		policyModels := make([]*model.Policy, len(policies))
-		for i, policy := range policies {
-			policyModels[i] = policy.ToModel()
-		}
+
 		if len(policies) == params.Amount+1 {
 			// we have more pages
-			policyModels = policyModels[0:params.Amount]
+			policies = policies[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = policyModels[len(policyModels)-1].DisplayName
-			return &res{policyModels, p}, nil
+			p.NextPageToken = policies[len(policies)-1].DisplayName
+			return &res{policies, p}, nil
 		}
 		p.Amount = len(policies)
-		return &res{policyModels, p}, nil
+		return &res{policies, p}, nil
 	})
 
 	if err != nil {
@@ -802,6 +799,9 @@ func (s *DBAuthService) AttachPolicyToGroup(policyDisplayName, groupDisplayName 
 				(SELECT id FROM groups WHERE display_name = $1),
 				(SELECT id FROM policies WHERE display_name = $2)
 			)`, groupDisplayName, policyDisplayName)
+		if db.IsUniqueViolation(err) {
+			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
+		}
 		return nil, err
 	})
 	return err
@@ -885,24 +885,26 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 	allowed := false
 	for _, perm := range req.RequiredPermissions {
 		for _, policy := range policies {
-			resource := interpolateUser(policy.Resource, req.UserDisplayName)
-			if !ArnMatch(resource, perm.Resource) {
-				continue
-			}
-			for _, action := range policy.Action {
-				if !wildcard.Match(action, string(perm.Action)) {
-					continue // not a matching action
+			for _, stmt := range policy.Statement {
+				resource := interpolateUser(stmt.Resource, req.UserDisplayName)
+				if !ArnMatch(resource, perm.Resource) {
+					continue
 				}
+				for _, action := range stmt.Action {
+					if !wildcard.Match(action, string(perm.Action)) {
+						continue // not a matching action
+					}
 
-				if !policy.Effect {
-					// this is a "Deny" and it takes precedence
-					return &AuthorizationResponse{
-						Allowed: false,
-						Error:   ErrInsufficientPermissions,
-					}, nil
+					if stmt.Effect == model.StatementEffectDeny {
+						// this is a "Deny" and it takes precedence
+						return &AuthorizationResponse{
+							Allowed: false,
+							Error:   ErrInsufficientPermissions,
+						}, nil
+					}
+
+					allowed = true
 				}
-
-				allowed = true
 			}
 		}
 	}

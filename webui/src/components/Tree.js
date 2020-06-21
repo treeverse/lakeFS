@@ -2,15 +2,15 @@ import React, {useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
-import Octicon, {
-    File,
-    FileDirectory,
-    Plus,
-    Trashcan,
-    Pencil,
-    ChevronDown,
-    ChevronUp,
-    CloudDownload
+import {
+    FileIcon,
+    FileDirectoryIcon,
+    PlusIcon,
+    TrashcanIcon,
+    PencilIcon,
+    ChevronDownIcon,
+    ChevronUpIcon,
+    DownloadIcon
 } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import * as moment from "moment";
@@ -179,7 +179,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
         diffIndicator = (
             <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
                 <span>
-                    <Octicon icon={Trashcan}/>
+                    <TrashcanIcon/>
                 </span>
             </OverlayTrigger>
         );
@@ -187,7 +187,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
         diffIndicator = (
             <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
                 <span>
-                    <Octicon icon={Plus}/>
+                    <PlusIcon/>
                 </span>
             </OverlayTrigger>
         );
@@ -195,7 +195,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
         diffIndicator = (
             <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
                 <span>
-                    <Octicon icon={Pencil}/>
+                    <PencilIcon/>
                 </span>
             </OverlayTrigger>
         );
@@ -215,12 +215,12 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                             </Button>
                             );
                     })}>
-                    <Octicon icon={(isDropdownOpen) ?  ChevronUp : ChevronDown}/>
+                    {(isDropdownOpen) ?  ChevronUpIcon : ChevronDownIcon}
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
-                    <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><Octicon icon={CloudDownload}/> {' '} Download</PathLink>
-                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are  you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><Octicon icon={Trashcan}/> {' '} Delete</Dropdown.Item>
+                    <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are  you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
                 </Dropdown.Menu>
             </Dropdown>
         );
@@ -232,7 +232,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {diffIndicator}
             </td>
             <td className="tree-path">
-                <Octicon icon={entry.path_type === 'TREE' ? FileDirectory : File}/> {' '}
+                {entry.path_type === 'TREE' ? <FileDirectoryIcon/> : <FileIcon/>} {' '}
                 {button}
             </td>
             <td className="tree-size">
