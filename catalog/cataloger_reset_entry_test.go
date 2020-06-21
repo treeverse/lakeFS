@@ -14,13 +14,25 @@ func TestCataloger_ResetEntry(t *testing.T) {
 
 	const branch = "master"
 	repository := testCatalogerRepo(t, ctx, c, "repository", branch)
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ffff", "/addr1", 111, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ffff",
+		PhysicalAddress: "/addr1",
+		Size:            111,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, branch, "commit file1", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", "/file2", "eeee", "/addr2", 222, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file2",
+		Checksum:        "eeee",
+		PhysicalAddress: "/addr2",
+		Size:            222,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 
@@ -103,7 +115,13 @@ func TestCataloger_ResetEntry_NewToNone(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            1,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if err := c.ResetEntry(ctx, repository, "master", "/file1"); err != nil {
@@ -121,7 +139,13 @@ func TestCataloger_ResetEntry_NewToPrevious(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            1,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -129,7 +153,13 @@ func TestCataloger_ResetEntry_NewToPrevious(t *testing.T) {
 	}
 	const newChecksum = "eeee"
 	const newPhysicalAddress = "/addrNew"
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", newChecksum, newPhysicalAddress, 2, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        newChecksum,
+		PhysicalAddress: newPhysicalAddress,
+		Size:            2,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1")
@@ -149,7 +179,13 @@ func TestCataloger_ResetEntry_Committed(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            1,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -167,7 +203,13 @@ func TestCataloger_ResetEntry_CommittedParentBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            1,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -189,7 +231,13 @@ func TestCataloger_ResetEntry_UncommittedDeleteSameBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            1,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
@@ -217,7 +265,13 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 1, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            1,
+		Metadata:        nil,
+	}); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {

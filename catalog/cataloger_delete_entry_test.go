@@ -22,7 +22,13 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete uncommitted", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repository, "master", "/file2", "ff", "/addr2", 2, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file2",
+			Checksum:        "ff",
+			PhysicalAddress: "/addr2",
+			Size:            2,
+			Metadata:        nil,
+		}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repository, "master", "/file2")
@@ -41,7 +47,13 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete committed on branch", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repository, "master", "/file3", "ffff", "/addr3", 2, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file3",
+			Checksum:        "ffff",
+			PhysicalAddress: "/addr3",
+			Size:            2,
+			Metadata:        nil,
+		}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file3", "tester", nil); err != nil {
@@ -57,7 +69,13 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 	})
 
 	t.Run("delete file committed on parent", func(t *testing.T) {
-		if err := c.CreateEntry(ctx, repository, "master", "/file4", "ffff", "/addr4", 4, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file4",
+			Checksum:        "ffff",
+			PhysicalAddress: "/addr4",
+			Size:            4,
+			Metadata:        nil,
+		}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {

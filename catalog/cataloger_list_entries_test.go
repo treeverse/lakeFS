@@ -22,9 +22,15 @@ func TestCataloger_ListEntries(t *testing.T) {
 		filePath := fmt.Sprintf("/file%d", n)
 		fileChecksum := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 		fileAddress := fmt.Sprintf("/addr%d", n)
-		fileSize := n * 10
+		fileSize := int64(n) * 10
 		testutil.MustDo(t, "create test entry",
-			c.CreateEntry(ctx, "repo1", "master", filePath, fileChecksum, fileAddress, fileSize, nil))
+			c.CreateEntry(ctx, "repo1", "master", Entry{
+				Path:            filePath,
+				Checksum:        fileChecksum,
+				PhysicalAddress: fileAddress,
+				Size:            fileSize,
+				Metadata:        nil,
+			}))
 		if i == 2 {
 			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
 			testutil.MustDo(t, "commit test files", err)

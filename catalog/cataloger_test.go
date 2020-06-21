@@ -48,11 +48,17 @@ func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, reposit
 
 func testCatalogerCreateEntry(t *testing.T, ctx context.Context, c Cataloger, repository, branch, key string, metadata Metadata, seed string) {
 	checksum := testCreateEntryCalcChecksum(key, seed)
-	size := 0
+	var size int64
 	for i := range checksum {
-		size += int(checksum[i])
+		size += int64(checksum[i])
 	}
-	err := c.CreateEntry(ctx, repository, branch, key, checksum, checksum, size, metadata)
+	err := c.CreateEntry(ctx, repository, branch, Entry{
+		Path:            key,
+		Checksum:        checksum,
+		PhysicalAddress: checksum,
+		Size:            size,
+		Metadata:        metadata,
+	})
 	if err != nil {
 		t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", key, branch, repository, err)
 	}

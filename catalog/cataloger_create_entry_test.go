@@ -14,7 +14,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 	// test data
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testutil.MustDo(t, "create entry on master for testing",
-		c.CreateEntry(ctx, repo, "master", "/aaa/bbb/ddd", "cc", "xx", 1, nil))
+		c.CreateEntry(ctx, repo, "master", Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1}))
 	_, err := c.CreateBranch(ctx, repo, "b1", "master")
 	testutil.MustDo(t, "create branch b1 based on master", err)
 
@@ -24,7 +24,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 		path            string
 		checksum        string
 		physicalAddress string
-		size            int
+		size            int64
 		metadata        Metadata
 	}
 	tests := []struct {
@@ -139,8 +139,13 @@ func TestCataloger_CreateEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := c.CreateEntry(ctx, tt.args.repository, tt.args.branch, tt.args.path, tt.args.checksum,
-				tt.args.physicalAddress, tt.args.size, tt.args.metadata)
+			err := c.CreateEntry(ctx, tt.args.repository, tt.args.branch, Entry{
+				Path:            tt.args.path,
+				Checksum:        tt.args.checksum,
+				PhysicalAddress: tt.args.physicalAddress,
+				Size:            tt.args.size,
+				Metadata:        tt.args.metadata,
+			})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -152,7 +157,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 			ref := MakeReference(tt.args.branch, UncommittedID)
 			ent, err := c.GetEntry(ctx, tt.args.repository, ref, tt.args.path)
 			testutil.MustDo(t, "get entry we just created", err)
-			if ent.Size != int64(tt.args.size) {
+			if ent.Size != tt.args.size {
 				t.Fatalf("entry size %d, expected %d", ent.Size, tt.args.size)
 			}
 			if ent.PhysicalAddress != tt.args.physicalAddress {

@@ -26,7 +26,7 @@ type BranchCataloger interface {
 
 type EntryCataloger interface {
 	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
-	CreateEntry(ctx context.Context, repository, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
+	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error

@@ -24,7 +24,12 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 
 	// commit data
 	for i := 0; i < 3; i++ {
-		if err := c.CreateEntry(ctx, repository, "master", "/file"+strconv.Itoa(i), strings.Repeat("01", i+1), "/addr"+strconv.Itoa(i), i+1, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file" + strconv.Itoa(i),
+			Checksum:        strings.Repeat("01", i+1),
+			PhysicalAddress: "/addr" + strconv.Itoa(i),
+			Size:            int64(i) + 1,
+		}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -38,7 +43,12 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 		t.Fatal("delete for ResetBranch:", err)
 	}
 	for i := 3; i < 6; i++ {
-		if err := c.CreateEntry(ctx, repository, "master", "/file"+strconv.Itoa(i), strings.Repeat("01", i+1), "/addr"+strconv.Itoa(i), i+1, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file" + strconv.Itoa(i),
+			Checksum:        strings.Repeat("01", i+1),
+			PhysicalAddress: "/addr" + strconv.Itoa(i),
+			Size:            int64(i) + 1,
+		}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -63,7 +73,12 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 
 	// commit data
 	for i := 0; i < 3; i++ {
-		if err := c.CreateEntry(ctx, repository, "master", "/file"+strconv.Itoa(i), strings.Repeat("01", i+1), "/addr"+strconv.Itoa(i), i+1, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "master", Entry{
+			Path:            "/file" + strconv.Itoa(i),
+			Checksum:        strings.Repeat("01", i+1),
+			PhysicalAddress: "/addr" + strconv.Itoa(i),
+			Size:            int64(i) + 1,
+		}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -82,7 +97,13 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 		t.Fatal("delete for ResetBranch:", err)
 	}
 	for i := 3; i < 6; i++ {
-		if err := c.CreateEntry(ctx, repository, "b1", "/file"+strconv.Itoa(i), strings.Repeat("01", i+1), "/addr"+strconv.Itoa(i), i+1, nil); err != nil {
+		if err := c.CreateEntry(ctx, repository, "b1", Entry{
+			Path:            "/file" + strconv.Itoa(i),
+			Checksum:        strings.Repeat("01", i+1),
+			PhysicalAddress: "/addr" + strconv.Itoa(i),
+			Size:            int64(i) + 1,
+			Metadata:        nil,
+		}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
