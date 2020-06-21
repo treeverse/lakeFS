@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import {useParams, useLocation, Switch, Route, useRouteMatch, Link, generatePath, Redirect} from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import Octicon, {GitCommit, Database, GitBranch, GitCompare} from "@primer/octicons-react";
+import {GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import CommitsPage from './CommitsPage';
@@ -48,16 +48,16 @@ const RepositoryTabs = () => {
     return (
         <Nav variant="tabs" defaultActiveKey="/home">
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/tree" passInQuery={['branch', 'commit']}><Octicon icon={Database}/>  Objects</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/tree" passInQuery={['branch', 'commit']}><DatabaseIcon/>  Objects</RoutedTab>
             </Nav.Item>
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/commits" passInQuery={['branch']}><Octicon icon={GitCommit}/>  Commits</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/commits" passInQuery={['branch']}><GitCommitIcon/>  Commits</RoutedTab>
             </Nav.Item>
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/branches"><Octicon icon={GitBranch}/>  Branches</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/branches"><GitBranchIcon/>  Branches</RoutedTab>
             </Nav.Item>
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/compare"><Octicon icon={GitCompare}/>  Compare</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/compare"><GitCompareIcon/>  Compare</RoutedTab>
             </Nav.Item>
         </Nav>
     );
@@ -119,7 +119,7 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
     return (
         <div className="mt-5">
             <Breadcrumb>
-                <Breadcrumb.Item href={`/`}>Repositories</Breadcrumb.Item>
+                <Breadcrumb.Item href={`/repositories`}>Repositories</Breadcrumb.Item>
                 <Breadcrumb.Item active href={`/repositories/${repoId}`}>{repoId}</Breadcrumb.Item>
             </Breadcrumb>
 

@@ -8,7 +8,8 @@ export const initialState = {
 export const actionInitialState = {
     inProgress: false,
     error: null,
-    done: false
+    done: false,
+    payload: {},
 };
 
 export const actionReduce = (actionType, state, action) => {
@@ -26,6 +27,7 @@ export const actionReduce = (actionType, state, action) => {
             return {
                 ...actionInitialState,
                 done: true,
+                payload: action.payload,
             };
         case actionType.error:
             return {
@@ -35,6 +37,7 @@ export const actionReduce = (actionType, state, action) => {
         case actionType.reset:
             return  {
                 ...actionInitialState,
+                payload: state.payload,
             };
         default:
             return state;
