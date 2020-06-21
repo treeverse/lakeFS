@@ -45,9 +45,6 @@ type CommitLog struct {
 	Metadata     Metadata  `db:"metadata"`
 }
 
-// commitLogRaw is internal struct used to load commit information
-//   after converting the commit id information to reference
-//   data used it CommitLog
 type commitLogRaw struct {
 	CommitID     CommitID  `db:"commit_id"`
 	Committer    string    `db:"committer"`

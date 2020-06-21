@@ -29,7 +29,7 @@ func TestCataloger_GetEntry(t *testing.T) {
 		},
 		{
 			name:    "uncommitted - committed file",
-			args:    args{repository: repository, reference: "master:HEAD", path: "/file1"},
+			args:    args{repository: repository, reference: "master", path: "/file1"},
 			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},

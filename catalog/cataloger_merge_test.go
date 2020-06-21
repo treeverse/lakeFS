@@ -44,7 +44,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	testutil.MustDo(t, "second commit to master", err)
 
 	// before the merge - make sure we see the deleted file
-	_, err = c.GetEntry(ctx, repository, "branch1", delFilename)
+	_, err = c.GetEntry(ctx, repository, "branch1:HEAD", delFilename)
 	if err != nil {
 		t.Fatalf("Get entry %s, expected to be found: %s", delFilename, err)
 	}

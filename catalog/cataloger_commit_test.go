@@ -195,7 +195,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Fatal("Commit expected to succeed error:", err)
 		}
 		// make sure we don't see the file after we commit the change
-		entries, _, err = c.ListEntries(ctx, repository, "master", "", "", -1)
+		entries, _, err = c.ListEntries(ctx, repository, "master:HEAD", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 0 {
 			t.Errorf("Delete should left no entries, got %d", len(entries))
