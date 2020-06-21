@@ -9,10 +9,10 @@ import (
 
 func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string, uploadID, path, physicalAddress string, creationTime time.Time) error {
 	if err := Validate(ValidateFields{
-		"repository":      ValidateRepositoryName(repository),
-		"uploadID":        ValidateUploadID(uploadID),
-		"path":            ValidatePath(path),
-		"physicalAddress": ValidatePhysicalAddress(physicalAddress),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "uploadID", IsValid: ValidateUploadID(uploadID)},
+		{Name: "path", IsValid: ValidatePath(path)},
+		{Name: "physicalAddress", IsValid: ValidatePhysicalAddress(physicalAddress)},
 	}); err != nil {
 		return err
 	}
