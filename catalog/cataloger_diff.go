@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
+
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -12,9 +14,9 @@ const diffResultsTableName = "diff_results"
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
 	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
-		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
+		"repository":  ValidateRepositoryName(repository),
+		"leftBranch":  ValidateBranchName(leftBranch),
+		"rightBranch": ValidateBranchName(rightBranch),
 	}); err != nil {
 		return nil, err
 	}
@@ -60,8 +62,13 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int
-	err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
-			WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
+	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
+											From("commits").
+											Where("branch_id = ? AND merge_type = 'from_father'", rightID).
+											PlaceholderFormat(sq.Dollar).MustSql()
+	err := tx.Get(&maxSonMerge, maxSonQuery, args...)
+	//err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
+	//		WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
 	if err != nil {
 		return nil, err
 	}
@@ -130,62 +137,34 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 		SonEffectiveCommit    int `db:"son_effective_commit"`
 	}{}
 
-	err := tx.Get(&effectiveCommits, `SELECT commit_id AS father_effective_commit,merge_source_commit AS son_effective_commit 
-		FROM commits WHERE branch_id = $1 AND merge_type = 'from_son' ORDER BY commit_id DESC LIMIT 1`, rightID)
+	effectiveCommitsQuery, args := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
+		From("commits").
+		Where("branch_id = ? AND merge_type = 'from_son'", rightID).
+		OrderBy(`commit_id DESC`).
+		Limit(1).PlaceholderFormat(sq.Dollar).
+		MustSql()
+
+	err := tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
+
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1
-		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftID, rightID)
+		FatherEffectiveQuery, args := sq.Select("effective_commit").From("lineage").
+			Where("branch_id = ? AND ancestor_branch = ?", leftID, rightID).
+			OrderBy("min_commit DESC").Limit(1).PlaceholderFormat(sq.Dollar).MustSql()
+		//err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftID, rightID)
+		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
 	if err != nil {
 		return nil, err
 	}
-	const diffFromSonSQL = `CREATE TEMP TABLE ` + diffResultsTableName + ` ON COMMIT DROP AS
-		SELECT CASE
-				WHEN DifferenceTypeConflict THEN 3
-				WHEN DifferenceTypeRemoved THEN 1
-				WHEN DifferenceTypeChanged THEN 2
-				ELSE 0
-			END AS diff_type,
-			path,
-			CASE
-				WHEN NOT(DifferenceTypeConflict OR DifferenceTypeRemoved) THEN entry_ctid
-				ELSE NULL END AS entry_ctid,
-			source_branch
-	    FROM ( SELECT *
-			   FROM ( SELECT s.path,
-						s.is_deleted AS DifferenceTypeRemoved,
-						f.path IS NOT NULL AS DifferenceTypeChanged,
-						  -- can be ignored -father and son entries do not exist
-						COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted,
-						-- can be ignored - both point to same object, and have the same deletion status
-						f.path IS NOT NULL AND (f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted) AS same_object,
-						-- father either created or deleted after last merge  - conflict
-						f.path IS NOT NULL AND ( NOT f.is_committed OR -- uncommitted entries allways new
-												(f.source_branch = $1 AND  -- it is the father branch - not from lineage
-												( f.min_commit > $3 OR -- created after last merge
-												 (f.max_commit >= $3 AND f.is_deleted))) -- deleted after last merge
-												OR (f.source_branch != $1 AND  -- an entry from father lineage
-							-- negative proof - if the son could see this object - than this is NOT a conflict
-							-- done by examining the son lineage against the father object
-												 NOT EXISTS ( SELECT * FROM lineage l WHERE
-														l.branch_id = $2 AND l.ancestor_branch = f.source_branch AND
-													-- prove that ancestor entry  was observable by the son
-													  ( $4 BETWEEN l.min_commit AND l.max_commit) AND -- effective lineage on last merge
-														(l.effective_commit >= f.min_commit AND
-														 (l.effective_commit > f.max_commit OR NOT f.is_deleted))
-													   ))) 
-														AS DifferenceTypeConflict, -- father changed so it is a conflict
-												s.entry_ctid,
-							f.source_branch
-					   FROM ( SELECT *  -- only entries that were committed after last merge
-							   FROM top_committed_entries_v
-							  WHERE branch_id = $2 AND (min_commit >= $4 OR max_commit >= $4 and is_deleted)) s
-						 LEFT JOIN ( SELECT *
-							   FROM entries_lineage_full_v 
-							  WHERE displayed_branch = $1 AND rank=1) f
-						 ON f.path = s.path
-			  ) t WHERE  NOT (same_object OR both_deleted)) t1`
-	if _, err := tx.Exec(diffFromSonSQL, rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit); err != nil {
+
+	s, args, err := diffFromSonV(rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit).PlaceholderFormat(sq.Dollar).ToSql()
+	if err != nil {
+		panic(err)
+	}
+	diffFromSonSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
+
+	if _, err := tx.Exec(diffFromSonSQL, args...); err != nil {
 		return nil, err
 	}
 	return diffReadDifferences(tx)
