@@ -9,18 +9,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type CommitID int
-
-const (
-	CommittedID   CommitID = 0
-	UncommittedID CommitID = -1
-)
-
 type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, bucket string, branch string) error
-	GetRepository(ctx context.Context, repository string) (*Repo, error)
+	GetRepository(ctx context.Context, repository string) (*Repository, error)
 	DeleteRepository(ctx context.Context, repository string) error
-	ListRepositories(ctx context.Context, limit int, after string) ([]*Repo, bool, error)
+	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)
 }
 
 type BranchCataloger interface {
@@ -32,13 +25,14 @@ type BranchCataloger interface {
 }
 
 type EntryCataloger interface {
-	GetEntry(ctx context.Context, repository, branch string, commitID CommitID, path string) (*Entry, error)
+	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, path, checksum, physicalAddress string, size int, metadata Metadata) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
-	ListEntries(ctx context.Context, repository, branch string, commitID CommitID, prefix, after string, limit int) ([]*Entry, bool, error)
+	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 }
+
 type MultipartUpdateCataloger interface {
 	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
 	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
@@ -50,9 +44,9 @@ type Deduper interface {
 }
 
 type Committer interface {
-	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (CommitID, error)
-	ListCommits(ctx context.Context, repository, branch string, fromCommitID int, limit int) ([]*CommitLog, bool, error)
-	RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error
+	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (string, error)
+	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
+	RollbackCommit(ctx context.Context, repository, reference string) error
 }
 
 type Differ interface {
@@ -62,7 +56,7 @@ type Differ interface {
 
 type MergeResult struct {
 	Differences Differences
-	CommitID    CommitID
+	Reference   string
 }
 
 type Merger interface {
@@ -103,6 +97,6 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 	return append(o, opts...)
 }
 
-func (c *cataloger) RollbackCommit(ctx context.Context, repository, branch string, commitID CommitID) error {
+func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference string) error {
 	panic("implement me")
 }

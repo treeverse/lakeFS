@@ -136,7 +136,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "master", UncommittedID, "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, MakeReference("master", UncommittedID), "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
 			t.Fatal("List entries of reseted master branch should return 3 items, got", len(entries))
@@ -152,12 +152,13 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
-		entries, _, err := c.ListEntries(ctx, repository, "b1", UncommittedID, "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", -1)
 		testutil.Must(t, err)
-		if len(entries) != 6 {
-			t.Fatal("List entries of reseted b1 branch should return 3 items, got", len(entries))
+		expectedEntriesLen := 6
+		if len(entries) != expectedEntriesLen {
+			t.Fatalf("List entries of rested b1 branch got %d items, expected %d", len(entries), expectedEntriesLen)
 		}
-		for i := 0; i < 6; i++ {
+		for i := 0; i < expectedEntriesLen; i++ {
 			if entries[i].Size != int64(i+1) {
 				t.Fatalf("ResetEntries got mismatch size on entry %d: %d, expected %d", i, entries[i].Size, i+1)
 			}

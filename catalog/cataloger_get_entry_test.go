@@ -12,8 +12,7 @@ func TestCataloger_GetEntry(t *testing.T) {
 
 	type args struct {
 		repository string
-		branch     string
-		commitID   CommitID
+		reference  string
 		path       string
 	}
 	tests := []struct {
@@ -24,62 +23,62 @@ func TestCataloger_GetEntry(t *testing.T) {
 	}{
 		{
 			name:    "uncommitted - uncommitted file",
-			args:    args{repository: repository, branch: "master", path: "/file3", commitID: UncommittedID},
+			args:    args{repository: repository, reference: "master", path: "/file3"},
 			want:    &Entry{Path: "/file3", PhysicalAddress: "/addr3", Size: 42, Checksum: "ffff"},
 			wantErr: false,
 		},
 		{
 			name:    "uncommitted - committed file",
-			args:    args{repository: repository, branch: "master", path: "/file1", commitID: UncommittedID},
+			args:    args{repository: repository, reference: "master", path: "/file1"},
 			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},
 		{
 			name:    "committed - committed file",
-			args:    args{repository: repository, branch: "master", path: "/file2", commitID: CommittedID},
+			args:    args{repository: repository, reference: "master:HEAD", path: "/file2"},
 			want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
 			wantErr: false,
 		},
 		{
 			name:    "uncommitted - unknown file",
-			args:    args{repository: repository, branch: "master", path: "/fileX", commitID: UncommittedID},
+			args:    args{repository: repository, reference: "master", path: "/fileX"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "committed - unknown file",
-			args:    args{repository: repository, branch: "master", path: "/fileX", commitID: CommittedID},
+			args:    args{repository: repository, reference: "master:HEAD", path: "/fileX"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "unknown repository",
-			args:    args{repository: "repoX", branch: "master", path: "/file1", commitID: UncommittedID},
+			args:    args{repository: "repoX", reference: "master", path: "/file1"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "missing repository",
-			args:    args{repository: "", branch: "master", path: "/file1", commitID: UncommittedID},
+			args:    args{repository: "", reference: "master", path: "/file1"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
-			name:    "missing branch",
-			args:    args{repository: repository, branch: "", path: "/file1", commitID: UncommittedID},
+			name:    "empty reference",
+			args:    args{repository: repository, reference: "", path: "/file1"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "missing path",
-			args:    args{repository: repository, branch: "master", path: "", commitID: UncommittedID},
+			args:    args{repository: repository, reference: "master:HEAD", path: ""},
 			want:    nil,
 			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.branch, tt.args.commitID, tt.args.path)
+			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
