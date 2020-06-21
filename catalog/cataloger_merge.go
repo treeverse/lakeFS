@@ -12,9 +12,9 @@ import (
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch string, committer string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "left branch", IsValid: ValidateBranchName(leftBranch)},
-		{Name: "right branch", IsValid: ValidateBranchName(rightBranch)},
-		{Name: "committer branch", IsValid: ValidateCommitter(committer)},
+		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
+		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
 	}

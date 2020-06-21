@@ -2,29 +2,10 @@ package catalog
 
 import (
 	"reflect"
-	"sort"
 	"testing"
-
-	"github.com/davecgh/go-spew/spew"
 )
 
-func TestReferenceSotrable(t *testing.T) {
-	var commits []string
-	for i := 1; i < 30; i++ {
-		reference := MakeReference("master", CommitID(i))
-		commits = append(commits, reference)
-	}
-
-	sorted := make([]string, len(commits))
-	copy(sorted, commits)
-	sort.Strings(sorted)
-
-	if !reflect.DeepEqual(commits, sorted) {
-		t.Fatalf("Commints are not sortable %s, expected %s", spew.Sdump(commits), spew.Sdump(sorted))
-	}
-}
-
-func TestReference_String(t *testing.T) {
+func TestRef_String(t *testing.T) {
 	type fields struct {
 		Branch   string
 		CommitID CommitID
@@ -35,19 +16,19 @@ func TestReference_String(t *testing.T) {
 		want   string
 	}{
 		{
-			name:   "branch",
-			fields: fields{Branch: "master", CommitID: 0},
+			name:   "uncommitted",
+			fields: fields{Branch: "master", CommitID: UncommittedID},
 			want:   "master",
+		},
+		{
+			name:   "committed",
+			fields: fields{Branch: "feature", CommitID: CommittedID},
+			want:   "feature:HEAD",
 		},
 		{
 			name:   "commit",
 			fields: fields{Branch: "feature", CommitID: 10},
-			want:   "#DeNR42ZXB7Q4aAsh77uvji",
-		},
-		{
-			name:   "uncommitted",
-			fields: fields{Branch: "feature", CommitID: -1},
-			want:   "feature#",
+			want:   "#6kfQBz477AZCUw",
 		},
 		{
 			name:   "empty",
@@ -68,7 +49,7 @@ func TestReference_String(t *testing.T) {
 	}
 }
 
-func TestParseReference(t *testing.T) {
+func TestParseRef(t *testing.T) {
 	type args struct {
 		ref string
 	}
@@ -79,14 +60,20 @@ func TestParseReference(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "branch",
+			name:    "uncommitted",
 			args:    args{ref: "main"},
+			want:    &Ref{Branch: "main", CommitID: UncommittedID},
+			wantErr: false,
+		},
+		{
+			name:    "committed",
+			args:    args{ref: "main:HEAD"},
 			want:    &Ref{Branch: "main", CommitID: CommittedID},
 			wantErr: false,
 		},
 		{
 			name:    "commit",
-			args:    args{ref: "#DeNR42ZXB7Q4aAsh77uvji"},
+			args:    args{ref: "#6kfQBz477AZCUw"},
 			want:    &Ref{Branch: "feature", CommitID: 10},
 			wantErr: false,
 		},
@@ -100,12 +87,6 @@ func TestParseReference(t *testing.T) {
 			name:    "empty",
 			args:    args{ref: ""},
 			want:    &Ref{},
-			wantErr: false,
-		},
-		{
-			name:    "uncommitted branch",
-			args:    args{ref: "master#"},
-			want:    &Ref{Branch: "master", CommitID: UncommittedID},
 			wantErr: false,
 		},
 	}

@@ -49,7 +49,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "all uncommitted",
 			args: args{
 				repository: "repo1",
-				reference:  "master#",
+				reference:  "master",
 				path:       "",
 				after:      "",
 				limit:      -1,
@@ -68,7 +68,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "first 2 uncommitted",
 			args: args{
 				repository: "repo1",
-				reference:  "master#",
+				reference:  "master",
 				path:       "",
 				after:      "",
 				limit:      2,
@@ -84,7 +84,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "last 2",
 			args: args{
 				repository: "repo1",
-				reference:  "master#",
+				reference:  "master",
 				path:       "",
 				after:      "/file3",
 				limit:      2,
@@ -100,7 +100,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			name: "committed",
 			args: args{
 				repository: "repo1",
-				reference:  "master",
+				reference:  "master:HEAD",
 				path:       "",
 				after:      "/file1",
 				limit:      -1,

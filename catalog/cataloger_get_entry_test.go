@@ -23,43 +23,43 @@ func TestCataloger_GetEntry(t *testing.T) {
 	}{
 		{
 			name:    "uncommitted - uncommitted file",
-			args:    args{repository: repository, reference: "master#", path: "/file3"},
+			args:    args{repository: repository, reference: "master", path: "/file3"},
 			want:    &Entry{Path: "/file3", PhysicalAddress: "/addr3", Size: 42, Checksum: "ffff"},
 			wantErr: false,
 		},
 		{
 			name:    "uncommitted - committed file",
-			args:    args{repository: repository, reference: "master#", path: "/file1"},
+			args:    args{repository: repository, reference: "master:HEAD", path: "/file1"},
 			want:    &Entry{Path: "/file1", PhysicalAddress: "/addr1", Size: 42, Checksum: "ff"},
 			wantErr: false,
 		},
 		{
 			name:    "committed - committed file",
-			args:    args{repository: repository, reference: "master", path: "/file2"},
+			args:    args{repository: repository, reference: "master:HEAD", path: "/file2"},
 			want:    &Entry{Path: "/file2", PhysicalAddress: "/addr2", Size: 24, Checksum: "ee"},
 			wantErr: false,
 		},
 		{
 			name:    "uncommitted - unknown file",
-			args:    args{repository: repository, reference: "master#", path: "/fileX"},
-			want:    nil,
-			wantErr: true,
-		},
-		{
-			name:    "committed - unknown file",
 			args:    args{repository: repository, reference: "master", path: "/fileX"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
+			name:    "committed - unknown file",
+			args:    args{repository: repository, reference: "master:HEAD", path: "/fileX"},
+			want:    nil,
+			wantErr: true,
+		},
+		{
 			name:    "unknown repository",
-			args:    args{repository: "repoX", reference: "master#", path: "/file1"},
+			args:    args{repository: "repoX", reference: "master", path: "/file1"},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "missing repository",
-			args:    args{repository: "", reference: "master#", path: "/file1"},
+			args:    args{repository: "", reference: "master", path: "/file1"},
 			want:    nil,
 			wantErr: true,
 		},
@@ -71,7 +71,7 @@ func TestCataloger_GetEntry(t *testing.T) {
 		},
 		{
 			name:    "missing path",
-			args:    args{repository: repository, reference: "master", path: ""},
+			args:    args{repository: repository, reference: "master:HEAD", path: ""},
 			want:    nil,
 			wantErr: true,
 		},

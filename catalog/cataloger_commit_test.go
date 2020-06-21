@@ -168,7 +168,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Fatal("Commit expected to succeed error:", err)
 		}
 		// make sure we see one file
-		entries, _, err := c.ListEntries(ctx, repository, "master#", "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 1 {
 			t.Fatalf("List should find 1 file, got %d", len(entries))
@@ -179,13 +179,13 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Fatal("Delete expected to succeed, got err", err)
 		}
 		// make sure we see no file uncommitted
-		entries, _, err = c.ListEntries(ctx, repository, "master#", "", "", -1)
+		entries, _, err = c.ListEntries(ctx, repository, "master", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 0 {
 			t.Fatalf("List should find no files, got %d", len(entries))
 		}
 		// make sure we see one file committed
-		entries, _, err = c.ListEntries(ctx, repository, "master", "", "", -1)
+		entries, _, err = c.ListEntries(ctx, repository, "master:HEAD", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 1 {
 			t.Fatalf("List should find 1 file, got %d", len(entries))

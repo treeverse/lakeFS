@@ -12,8 +12,10 @@ import (
 type CommitID int
 
 const (
-	CommittedID   CommitID = 0
-	UncommittedID CommitID = -1
+	CommittedID   CommitID = -1
+	UncommittedID CommitID = 0
+
+	CommittedSuffix = ":HEAD"
 )
 
 type Ref struct {
@@ -24,11 +26,11 @@ type Ref struct {
 func (r Ref) String() string {
 	switch r.CommitID {
 	case CommittedID:
-		return r.Branch
+		return r.Branch + CommittedSuffix
 	case UncommittedID:
-		return r.Branch + "#"
+		return r.Branch
 	default:
-		ref := fmt.Sprintf("%s:%08x", r.Branch, r.CommitID)
+		ref := r.Branch + ":" + strconv.Itoa(int(r.CommitID))
 		encRef := base58.Encode([]byte(ref))
 		return "#" + encRef
 	}
@@ -39,18 +41,18 @@ func MakeReference(branch string, commitID CommitID) string {
 }
 
 func ParseRef(ref string) (*Ref, error) {
-	// uncommitted branch
-	if strings.HasSuffix(ref, "#") {
+	// committed branch
+	if strings.HasSuffix(ref, CommittedSuffix) {
 		return &Ref{
-			Branch:   strings.TrimRight(ref, "#"),
-			CommitID: UncommittedID,
+			Branch:   strings.TrimRight(ref, CommittedSuffix),
+			CommitID: CommittedID,
 		}, nil
 	}
-	// committed branch
+	// uncommitted branch
 	if !strings.HasPrefix(ref, "#") {
 		return &Ref{
 			Branch:   ref,
-			CommitID: CommittedID,
+			CommitID: UncommittedID,
 		}, nil
 	}
 	// specific commit
@@ -66,7 +68,7 @@ func ParseRef(ref string) (*Ref, error) {
 	if len(parts) != refPartsCount {
 		return nil, fmt.Errorf("%w: missing commit id", ErrInvalidReference)
 	}
-	id, err := strconv.ParseInt(parts[1], 16, 64)
+	id, err := strconv.Atoi(parts[1])
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid commit id", ErrInvalidReference)
 	}

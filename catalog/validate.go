@@ -73,7 +73,7 @@ func IsValidReference(reference string) bool {
 	if !IsValidBranchName(ref.Branch) {
 		return false
 	}
-	if ref.CommitID < UncommittedID {
+	if ref.CommitID < CommittedID {
 		return false
 	}
 	return true
