@@ -120,3 +120,16 @@ func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int
 		Column("source_branch").FromSelect(fromSonInternalQ.Where(""), "f").FromSelect(RemoveNonRelevantQ, "t1")
 
 }
+
+func diffFromFatherV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int) sq.SelectBuilder {
+	internalV := sq.Select("f.path", "f.entry_ctid",
+		"s.path IS NOT NULL AS DifferenceTypeChanged",
+		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
+		//both point to same object, and have the same deletion status
+		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object",
+		`f.min_commit > l.effective_commit -- father created after commit
+			OR f.max_commit >= l.effective_commit AND f.is_deleted -- father deleted after commit
+									AS father_changed`).
+		Column()
+
+}
