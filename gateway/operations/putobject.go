@@ -13,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
-	ipath "github.com/treeverse/lakefs/index/path"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -50,14 +49,14 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// validate src and dst are in the same repository
-	if !strings.EqualFold(o.Repo.Id, p.Repo) {
+	if !strings.EqualFold(o.Repository.Name, p.Repo) {
 		o.Log().WithError(err).Error("cannot copy objects across repos")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntryObject(o.Repo.Id, p.Ref, p.Path, true)
+	src, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, p.Ref, p.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
@@ -67,7 +66,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	// TODO: move this logic into the Index impl.
 	src.CreationDate = time.Now()
 	src.Name = ipath.New(o.Path, src.EntryType).BaseName()
-	err = o.Index.WriteEntry(o.Repo.Id, o.Ref, o.Path, src)
+	err = o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Ref, o.Path, "", src, 0, nil)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -93,14 +92,14 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 		return
 	}
 	// handle the upload itself
-	multiPart, err := o.Index.ReadMultiPartUpload(o.Repo.Id, uploadId)
+	multiPart, err := o.Index.ReadMultiPartUpload(o.Repository.Name, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read  multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	byteSize := o.Request.ContentLength
-	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: multiPart.PhysicalAddress}, byteSize, o.Request.Body, uploadId, partNumber)
+	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress}, byteSize, o.Request.Body, uploadId, partNumber)
 	if err != nil {
 		o.Log().WithError(err).Error("part " + partNumberStr + " upload failed")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -115,7 +114,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 
 	// validate branch
-	_, err := o.Index.GetBranch(o.Repo.Id, o.Ref)
+	_, err := o.Cataloger.GetBranch(o.Context(), o.Repository.Name, o.Ref)
 	if err != nil {
 		o.Log().WithError(err).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)
@@ -148,7 +147,8 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	o.Incr("put_object")
 	// handle the upload itself
-	checksum, physicalAddress, size, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength, opts)
+	checksum, physicalAddress, size, err := upload.WriteBlob(o.Context(), o.Cataloger, o.Repository.Name,
+		o.Repository.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

@@ -1,11 +1,10 @@
 package operations
 
 import (
-	"github.com/treeverse/lakefs/ident"
-	"github.com/treeverse/lakefs/index/model"
-	pth "github.com/treeverse/lakefs/index/path"
-	"github.com/treeverse/lakefs/logging"
 	"time"
+
+	"github.com/treeverse/lakefs/ident"
+	"github.com/treeverse/lakefs/logging"
 )
 
 func (o *PathOperation) finishUpload(checksum, physicalAddress string, size int64) error {
@@ -29,7 +28,7 @@ func (o *PathOperation) finishUpload(checksum, physicalAddress string, size int6
 		Size:         size,
 		Checksum:     checksum,
 	}
-	err := o.Index.WriteFile(o.Repo.Id, o.Ref, o.Path, entry, obj)
+	err := o.Index.WriteFile(o.Repository.Id, o.Ref, o.Path, entry, obj)
 	tookMeta := time.Since(writeTime)
 
 	if err != nil {

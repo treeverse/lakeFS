@@ -11,8 +11,6 @@ import (
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
-	indexerrors "github.com/treeverse/lakefs/index/errors"
-	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 )
@@ -144,7 +142,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
 		o.Log().WithField("prefix", branchPrefix).Debug("listing branches with prefix")
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, branchPrefix, maxKeys, fromStr)
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repository.Id, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -153,7 +151,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// return branch response
 		dirs, lastKey := controller.serializeBranches(branches)
 		resp := serde.ListObjectsV2Output{
-			Name:           o.Repo.Id,
+			Name:           o.Repository.Id,
 			Prefix:         params.Get("prefix"),
 			Delimiter:      delimiter,
 			KeyCount:       len(dirs),
@@ -190,7 +188,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		}
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
-			o.Repo.Id,
+			o.Repository.Id,
 			prefix.Ref,
 			prefix.Path,
 			from.Path,
@@ -218,7 +216,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
 
 	resp := serde.ListObjectsV2Output{
-		Name:           o.Repo.Id,
+		Name:           o.Repository.Id,
 		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		KeyCount:       len(results),
@@ -277,7 +275,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	if !prefix.WithPath {
 		// list branches then.
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, prefix.Ref, maxKeys, params.Get("marker"))
+		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repository.Id, prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -287,7 +285,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		// return branch response
 		dirs, lastKey := controller.serializeBranches(branches)
 		resp := serde.ListBucketResult{
-			Name:           o.Repo.Id,
+			Name:           o.Repository.Id,
 			Prefix:         params.Get("prefix"),
 			Delimiter:      delimiter,
 			Marker:         params.Get("marker"),
@@ -332,7 +330,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		}
 
 		results, hasMore, err = o.Index.ListObjectsByPrefix(
-			o.Repo.Id,
+			o.Repository.Id,
 			prefix.Ref,
 			prefix.Path,
 			marker.Path,
@@ -355,7 +353,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	// build a response
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
 	resp := serde.ListBucketResult{
-		Name:           o.Repo.Id,
+		Name:           o.Repository.Id,
 		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		Marker:         params.Get("marker"),

@@ -28,7 +28,7 @@ func TestRef_String(t *testing.T) {
 		{
 			name:   "commit",
 			fields: fields{Branch: "feature", CommitID: 10},
-			want:   "#6kfQBz477AZCUw",
+			want:   "~6kfQBz477AZCUw",
 		},
 		{
 			name:   "empty",
@@ -73,13 +73,13 @@ func TestParseRef(t *testing.T) {
 		},
 		{
 			name:    "commit",
-			args:    args{ref: "#6kfQBz477AZCUw"},
+			args:    args{ref: "~6kfQBz477AZCUw"},
 			want:    &Ref{Branch: "feature", CommitID: 10},
 			wantErr: false,
 		},
 		{
 			name:    "invalid commit",
-			args:    args{ref: "#-"},
+			args:    args{ref: "~-"},
 			want:    nil,
 			wantErr: true,
 		},

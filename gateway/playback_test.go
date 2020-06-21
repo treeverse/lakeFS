@@ -18,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
 )
 

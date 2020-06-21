@@ -7,10 +7,10 @@ import (
 	"net/http/pprof"
 	"strings"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
-
-	"github.com/treeverse/lakefs/index"
 )
 
 const (
@@ -20,7 +20,7 @@ const (
 
 type Handler struct {
 	BareDomain string
-	ctx        *ServerContext
+	sc         *ServerContext
 
 	NotFoundHandler    http.Handler
 	ServerErrorHandler http.Handler
@@ -28,8 +28,7 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// pprof endpoints
-	var handler http.Handler
-	handler = h.serveHealthCheck(r)
+	handler := h.serveHealthCheck(r)
 
 	if handler == nil {
 		handler = h.servePprof(r)
@@ -91,11 +90,11 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 		repositoryId := parts[0]
 		ref := parts[1]
 		key := parts[2]
-		if err := index.ValidateAll(
-			index.ValidateRepoId(repositoryId),
-			index.ValidateRef(ref),
-			index.ValidatePath(key),
-		); err != nil {
+		if err := catalog.Validate(catalog.ValidateFields{
+			{Name: "repository", IsValid: catalog.ValidateRepositoryName(repositoryId)},
+			{Name: "ref", IsValid: catalog.ValidateRef(ref)},
+			{Name: "path", IsValid: catalog.ValidatePath(key)},
+		}); err != nil {
 			return h.NotFoundHandler
 		}
 
@@ -122,7 +121,7 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 	// no repository given
 	switch r.Method {
 	case http.MethodGet:
-		return OperationHandler(h.ctx, &operations.ListBuckets{})
+		return OperationHandler(h.sc, &operations.ListBuckets{})
 	}
 
 	return h.NotFoundHandler
@@ -179,7 +178,7 @@ func (h *Handler) pathBasedHandler(method, repositoryId, ref, path string) http.
 		return h.NotFoundHandler
 	}
 
-	return PathOperationHandler(h.ctx, repositoryId, ref, path, handler)
+	return PathOperationHandler(h.sc, repositoryId, ref, path, handler)
 }
 
 func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handler {
@@ -197,7 +196,7 @@ func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handl
 		return h.NotFoundHandler
 	}
 
-	return RepoOperationHandler(h.ctx, repositoryId, handler)
+	return RepoOperationHandler(h.sc, repositoryId, handler)
 }
 
 func SplitFirst(pth string, parts int) ([]string, bool) {

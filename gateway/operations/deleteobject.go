@@ -12,11 +12,11 @@ import (
 
 type DeleteObject struct{}
 
-func (controller *DeleteObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.DeleteObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }
@@ -24,8 +24,8 @@ func (controller *DeleteObject) RequiredPermissions(request *http.Request, repoI
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 	o.Incr("abort_mpu")
 	query := o.Request.URL.Query()
-	uploadId := query.Get(QueryParamUploadId)
-	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: o.Path}, uploadId)
+	uploadID := query.Get(QueryParamUploadId)
+	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: o.Path}, uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -38,15 +38,15 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 func (controller *DeleteObject) Handle(o *PathOperation) {
 	query := o.Request.URL.Query()
 
-	_, hasUploadId := query[QueryParamUploadId]
-	if hasUploadId {
+	_, hasUploadID := query[QueryParamUploadId]
+	if hasUploadID {
 		controller.HandleAbortMultipartUpload(o)
 		return
 	}
 
 	o.Incr("delete_object")
 	lg := o.Log().WithField("key", o.Path)
-	err := o.Index.DeleteObject(o.Repo.Id, o.Ref, o.Path)
+	err := o.Cataloger.DeleteEntry(o.Context(), o.Repository.Name, o.Ref, o.Path)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		lg.WithError(err).Error("could not delete object")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))

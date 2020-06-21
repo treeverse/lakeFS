@@ -7,22 +7,23 @@ import (
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/sig"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/stats"
 )
 
 type ServerContext struct {
+	ctx         context.Context
 	region      string
 	bareDomain  string
-	meta        index.Index
+	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService simulator.GatewayAuthService
 	stats       stats.Collector
@@ -30,9 +31,10 @@ type ServerContext struct {
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
+		ctx: ctx,
 		region:      c.region,
 		bareDomain:  c.bareDomain,
-		meta:        c.meta.WithContext(ctx),
+		cataloger:   c.cataloger,
 		blockStore:  c.blockStore.WithContext(ctx),
 		authService: c.authService,
 		stats:       c.stats,
@@ -47,14 +49,15 @@ type Server struct {
 
 func NewServer(
 	region string,
-	meta index.Index,
+	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
 	listenAddr, bareDomain string,
 	stats stats.Collector,
 ) *Server {
-	ctx := &ServerContext{
-		meta:        meta,
+	sc := &ServerContext{
+		ctx: context.Background(),
+		cataloger:   cataloger,
 		region:      region,
 		bareDomain:  bareDomain,
 		blockStore:  blockStore,
@@ -66,7 +69,7 @@ func NewServer(
 	var handler http.Handler
 	handler = &Handler{
 		BareDomain:         bareDomain,
-		ctx:                ctx,
+		sc:                 sc,
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
@@ -81,7 +84,7 @@ func NewServer(
 
 	// assemble Server
 	return &Server{
-		ctx:        ctx,
+		ctx:        sc,
 		bareDomain: bareDomain,
 		Server: &http.Server{
 			Handler: handler,
@@ -118,11 +121,10 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		ResponseWriter: writer,
 		Region:         s.region,
 		FQDN:           s.bareDomain,
-
-		Index:      s.meta,
-		BlockStore: s.blockStore,
-		Auth:       s.authService,
-		Incr:       func(action string) { s.stats.Collect("s3_gateway", action) },
+		Cataloger:      s.cataloger,
+		BlockStore:     s.blockStore,
+		Auth:           s.authService,
+		Incr:           func(action string) { s.stats.Collect("s3_gateway", action) },
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
@@ -204,23 +206,23 @@ func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Req
 		Region:         ctx.region,
 		FQDN:           ctx.bareDomain,
 
-		Index:      ctx.meta,
+		Cataloger:  ctx.cataloger,
 		BlockStore: ctx.blockStore,
 		Auth:       ctx.authService,
 		Incr:       func(action string) { ctx.stats.Collect("s3_gateway", action) },
 	}
 }
 
-func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
+func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
 		perms, err := handler.RequiredPermissions(request)
 		if err != nil {
-			o := operation(ctx, writer, request)
+			o := operation(sc, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
+		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
@@ -229,24 +231,24 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 	})
 }
 
-func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.RepoOperationHandler) http.Handler {
+func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repoId)
+		perms, err := handler.RequiredPermissions(request, repoID)
 		if err != nil {
-			o := operation(ctx, writer, request)
+			o := operation(sc, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
+		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(repoId)
+		repo, err := authOp.Cataloger.GetRepository(sc.ctx repoID)
 		if errors.Is(err, db.ErrNotFound) {
-			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
+			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
@@ -257,7 +259,7 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 		// run callback
 		repoOperation := &operations.RepoOperation{
 			AuthenticatedOperation: authOp,
-			Repo:                   repo,
+			Repository:             repo,
 		}
 		repoOperation.AddLogFields(logging.Fields{
 			"repository": repo.Id,
@@ -266,24 +268,24 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 	})
 }
 
-func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handler operations.PathOperationHandler) http.Handler {
+func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repoId, refId, path)
+		perms, err := handler.RequiredPermissions(request, repoID, refID, path)
 		if err != nil {
-			o := operation(ctx, writer, request)
+			o := operation(sc, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
+		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(repoId)
+		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
-			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
+			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
 			return
 		}
@@ -297,15 +299,15 @@ func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handle
 			RefOperation: &operations.RefOperation{
 				RepoOperation: &operations.RepoOperation{
 					AuthenticatedOperation: authOp,
-					Repo:                   repo,
+					Repository:             *repo,
 				},
-				Ref: refId,
+				Ref: refID,
 			},
 			Path: path,
 		}
 		operation.AddLogFields(logging.Fields{
-			"repository": repo.Id,
-			"ref":        refId,
+			"repository": repo.Name,
+			"ref":        refID,
 			"path":       path,
 		})
 		handler.Handle(operation)
