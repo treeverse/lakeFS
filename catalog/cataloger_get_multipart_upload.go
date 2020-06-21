@@ -8,8 +8,8 @@ import (
 
 func (c *cataloger) GetMultipartUpload(ctx context.Context, repository string, uploadID string) (*MultipartUpload, error) {
 	if err := Validate(ValidateFields{
-		{Name: "repository", Func: ValidateRepositoryName(repository)},
-		{Name: "uploadID", Func: ValidateUploadID(uploadID)},
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "uploadID", IsValid: ValidateUploadID(uploadID)},
 	}); err != nil {
 		return nil, err
 	}

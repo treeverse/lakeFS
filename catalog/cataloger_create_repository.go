@@ -9,9 +9,9 @@ import (
 
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, bucket string, branch string) error {
 	if err := Validate(ValidateFields{
-		{Name: "repository", Func: ValidateRepositoryName(repository)},
-		{Name: "bucket", Func: ValidateBucketName(bucket)},
-		{Name: "branch", Func: ValidateBranchName(branch)},
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "bucket", IsValid: ValidateBucketName(bucket)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
 	}

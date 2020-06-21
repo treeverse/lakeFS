@@ -8,8 +8,8 @@ import (
 
 func (c *cataloger) GetBranch(ctx context.Context, repository, branch string) (*Branch, error) {
 	if err := Validate(ValidateFields{
-		{Name: "repository", Func: ValidateRepositoryName(repository)},
-		{Name: "branch", Func: ValidateBranchName(branch)},
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return nil, err
 	}

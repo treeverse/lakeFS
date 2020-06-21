@@ -12,9 +12,9 @@ const diffResultsTableName = "diff_results"
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
 	if err := Validate(ValidateFields{
-		{Name: "repository", Func: ValidateRepositoryName(repository)},
-		{Name: "leftBranch", Func: ValidateBranchName(leftBranch)},
-		{Name: "rightBranch", Func: ValidateBranchName(rightBranch)},
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
 	}); err != nil {
 		return nil, err
 	}

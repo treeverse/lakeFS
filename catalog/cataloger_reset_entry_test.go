@@ -109,7 +109,7 @@ func TestCataloger_ResetEntry_NewToNone(t *testing.T) {
 	if err := c.ResetEntry(ctx, repository, "master", "/file1"); err != nil {
 		t.Fatal("ResetEntry should reset new uncommitted file:", err)
 	}
-	_, err := c.GetEntry(ctx, repository, "master", UncommittedID, "/file1")
+	_, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1")
 	expectedErr := db.ErrNotFound
 	if !errors.As(err, &expectedErr) {
 		t.Fatalf("ResetEntry expecting the file to be gone with %s, got = %s", expectedErr, err)
@@ -132,7 +132,7 @@ func TestCataloger_ResetEntry_NewToPrevious(t *testing.T) {
 	if err := c.CreateEntry(ctx, repository, "master", "/file1", newChecksum, newPhysicalAddress, 2, nil); err != nil {
 		t.Fatal("create entry for reset entry test:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, "master", UncommittedID, "/file1")
+	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1")
 	if err != nil {
 		t.Fatal("ResetEntry expecting previous file to be found:", err)
 	}
@@ -203,7 +203,7 @@ func TestCataloger_ResetEntry_UncommittedDeleteSameBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("ResetEntry expected successful reset on delete entry:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, "master", UncommittedID, "/file1")
+	ent, err := c.GetEntry(ctx, repository, MakeReference("master", UncommittedID), "/file1")
 	if err != nil {
 		t.Fatal("get entry for reset entry test:", err)
 	}
@@ -234,7 +234,7 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	if err != nil {
 		t.Fatal("ResetEntry expected successful reset on delete entry:", err)
 	}
-	ent, err := c.GetEntry(ctx, repository, "b1", UncommittedID, "/file1")
+	ent, err := c.GetEntry(ctx, repository, MakeReference("b1", UncommittedID), "/file1")
 	if err != nil {
 		t.Fatal("get entry for reset entry test:", err)
 	}
