@@ -1,9 +1,6 @@
 import {connect} from "react-redux";
-import {createCredentials, resetCreateCredentials} from "../../actions/auth";
-import React, {useCallback} from "react";
-import {EntityCreateButton} from "./entities";
-import {Alert, Col, Table} from "react-bootstrap";
-import ClipboardButton from "../ClipboardButton";
+import React from "react";
+import {Col} from "react-bootstrap";
 import {UserCredentialsPane} from "./users";
 
 
