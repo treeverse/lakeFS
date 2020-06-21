@@ -48,7 +48,7 @@ export const UsersPage = connect(
             setCheckedUsers([]);
             listUsers();
         }
-    });
+    }, [deletionStatus, resetDeleteUsers, listUsers]);
 
     return (
         <Col lg={9}>
@@ -432,14 +432,14 @@ export const UserCredentialsPane = connect(
     const deleteCredentialsFn = useCallback((accessKeyId) => {
         if (window.confirm(`Are you sure you'd like to delete key pair '${accessKeyId}?'`))
             deleteCredentials(userId, accessKeyId);
-    }, [userId]);
+    }, [deleteCredentials, userId]);
 
     useEffect(() => {
         if (credentialsDeletionStatus.done) {
             resetDeleteCredentials()
             listCredentialsFn()
         }
-    }, [userId, credentialsDeletionStatus, resetDeleteCredentials])
+    }, [userId, listCredentialsFn, credentialsDeletionStatus, resetDeleteCredentials])
 
     return (
         <>
@@ -482,7 +482,7 @@ export const UserCredentialsPane = connect(
 });
 
 
-export const UserPage = ({   }) => {
+export const UserPage = () => {
     let { userId } = useParams();
 
     return (
