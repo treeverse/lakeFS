@@ -9,9 +9,9 @@ import (
 
 func (c *cataloger) Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error) {
 	if err := Validate(ValidateFields{
-		"repository":      ValidateRepositoryName(repository),
-		"dedupID":         ValidateDedupID(dedupID),
-		"physicalAddress": ValidateNonEmptyString(physicalAddress),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "dedupID", IsValid: ValidateDedupID(dedupID)},
+		{Name: "physicalAddress", IsValid: ValidatePhysicalAddress(physicalAddress)},
 	}); err != nil {
 		return physicalAddress, err
 	}

@@ -8,9 +8,9 @@ import (
 
 func (c *cataloger) ResetEntries(ctx context.Context, repository, branch string, prefix string) error {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"prefix":     ValidatePath(prefix),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "prefix", IsValid: ValidatePath(prefix)},
 	}); err != nil {
 		return err
 	}

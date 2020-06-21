@@ -19,10 +19,10 @@ func TestCataloger_ListCommits(t *testing.T) {
 	setupListCommitsByBranchData(t, ctx, c, repository, "master")
 
 	type args struct {
-		repository   string
-		branch       string
-		fromCommitID int
-		limit        int
+		repository    string
+		branch        string
+		fromReference string
+		limit         int
 	}
 	tests := []struct {
 		name     string
@@ -34,15 +34,15 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "all",
 			args: args{
-				repository:   repository,
-				branch:       "master",
-				fromCommitID: 0,
-				limit:        -1,
+				repository:    repository,
+				branch:        "master",
+				fromReference: "",
+				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
-				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 1), Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 2), Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 3), Committer: "tester", Message: "commit3", Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -50,14 +50,14 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "just 2",
 			args: args{
-				repository:   repository,
-				branch:       "master",
-				fromCommitID: 0,
-				limit:        2,
+				repository:    repository,
+				branch:        "master",
+				fromReference: "",
+				limit:         2,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 1, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 1), Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 2), Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -65,13 +65,13 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "last 1",
 			args: args{
-				repository:   repository,
-				branch:       "master",
-				fromCommitID: 2,
-				limit:        1,
+				repository:    repository,
+				branch:        "master",
+				fromReference: MakeReference("master", 2),
+				limit:         1,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 3, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 3), Committer: "tester", Message: "commit3", Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -79,13 +79,13 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "center",
 			args: args{
-				repository:   repository,
-				branch:       "master",
-				fromCommitID: 1,
-				limit:        1,
+				repository:    repository,
+				branch:        "master",
+				fromReference: MakeReference("master", 1),
+				limit:         1,
 			},
 			want: []*CommitLog{
-				{Branch: "master", CommitID: 2, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: MakeReference("master", 2), Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -93,10 +93,10 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "unknown repository",
 			args: args{
-				repository:   "no_repo",
-				branch:       "master",
-				fromCommitID: 0,
-				limit:        -1,
+				repository:    "no_repo",
+				branch:        "master",
+				fromReference: "",
+				limit:         -1,
 			},
 			want:     nil,
 			wantMore: false,
@@ -105,10 +105,10 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "no repository",
 			args: args{
-				repository:   "",
-				branch:       "master",
-				fromCommitID: 0,
-				limit:        -1,
+				repository:    "",
+				branch:        "master",
+				fromReference: "",
+				limit:         -1,
 			},
 			want:     nil,
 			wantMore: false,
@@ -117,10 +117,10 @@ func TestCataloger_ListCommits(t *testing.T) {
 		{
 			name: "no branch",
 			args: args{
-				repository:   repository,
-				branch:       "",
-				fromCommitID: 0,
-				limit:        -1,
+				repository:    repository,
+				branch:        "",
+				fromReference: "",
+				limit:         -1,
 			},
 			want:     nil,
 			wantMore: false,
@@ -129,10 +129,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListCommits(ctx, tt.args.repository, tt.args.branch, tt.args.fromCommitID, tt.args.limit)
+			got, gotMore, err := c.ListCommits(ctx, tt.args.repository, tt.args.branch, tt.args.fromReference, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("ListCommits() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("ListCommits() error = %s, wantErr %t", err, tt.wantErr)
 			}
 			// hack - remove the timestamp in order to compare everything except the time
 			// consider create entry will control creation time

@@ -8,9 +8,9 @@ import (
 
 func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, path string) error {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
-		"path":       ValidatePath(path),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
+		{Name: "path", IsValid: ValidatePath(path)},
 	}); err != nil {
 		return err
 	}
@@ -21,8 +21,8 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		}
 
 		// getting two entries on this path so we can check uncommitted and committed changes
-		var entries []*Entry
-		err = tx.Select(&entries, `SELECT source_branch as branch_id,physical_address,checksum,size,metadata,min_commit,max_commit,is_tombstone
+		var entries []*entryRaw
+		err = tx.Select(&entries, `SELECT physical_address,checksum,size,metadata,min_commit,is_tombstone
 			FROM entries_lineage_full_v
 			WHERE displayed_branch = $1 AND path = $2 ORDER BY rank LIMIT 2
 		`, branchID, path)
