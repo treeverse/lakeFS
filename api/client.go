@@ -33,7 +33,7 @@ type AuthClient interface {
 	CreateGroup(ctx context.Context, groupId string) (*models.Group, error)
 	DeleteGroup(ctx context.Context, groupId string) error
 	ListPolicies(ctx context.Context, after string, amount int) ([]*models.Policy, *models.Pagination, error)
-	CreatePolicy(ctx context.Context, creation *models.PolicyCreation) (*models.Policy, error)
+	CreatePolicy(ctx context.Context, policy *models.Policy) (*models.Policy, error)
 	GetPolicy(ctx context.Context, policyId string) (*models.Policy, error)
 	DeletePolicy(ctx context.Context, policyId string) error
 	ListGroupMembers(ctx context.Context, groupId string, after string, amount int) ([]*models.User, *models.Pagination, error)
@@ -134,7 +134,7 @@ func (c *client) DeleteUser(ctx context.Context, userId string) error {
 func (c *client) CreateUser(ctx context.Context, userId string) (*models.User, error) {
 	resp, err := c.remote.Auth.CreateUser(&auth.CreateUserParams{
 		User: &models.UserCreation{
-			ID: userId,
+			ID: swag.String(userId),
 		},
 		Context: ctx,
 	}, c.auth)
@@ -170,7 +170,7 @@ func (c *client) ListGroups(ctx context.Context, after string, amount int) ([]*m
 func (c *client) CreateGroup(ctx context.Context, groupId string) (*models.Group, error) {
 	resp, err := c.remote.Auth.CreateGroup(&auth.CreateGroupParams{
 		Group: &models.GroupCreation{
-			ID: groupId,
+			ID: swag.String(groupId),
 		},
 		Context: ctx,
 	}, c.auth)
@@ -200,9 +200,9 @@ func (c *client) ListPolicies(ctx context.Context, after string, amount int) ([]
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) CreatePolicy(ctx context.Context, creation *models.PolicyCreation) (*models.Policy, error) {
+func (c *client) CreatePolicy(ctx context.Context, policy *models.Policy) (*models.Policy, error) {
 	resp, err := c.remote.Auth.CreatePolicy(&auth.CreatePolicyParams{
-		Policy:  creation,
+		Policy:  policy,
 		Context: ctx,
 	}, c.auth)
 	if err != nil {

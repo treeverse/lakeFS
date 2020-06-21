@@ -53,11 +53,9 @@ func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) st
 	for _, policy := range policies {
 		p := &model.Policy{
 			DisplayName: uuid.New().String(),
-			Action:      policy.Action,
-			Resource:    policy.Resource,
-			Effect:      policy.Effect,
+			Statement:   policy.Statement,
 		}
-		err := s.CreatePolicy(p)
+		err := s.WritePolicy(p)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -85,9 +83,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "basic_allowed",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"fs:WriteObject"},
-					Resource: "arn:lakefs:fs:::repository/foo/object/bar",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"fs:WriteObject"},
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -108,9 +110,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "basic_disallowed",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"fs:WriteObject"},
-					Resource: "arn:lakefs:fs:::repository/foo/object/bar",
-					Effect:   false,
+					Statement: model.Statements{
+						{
+							Action:   []string{"fs:WriteObject"},
+							Resource: "arn:lakefs:fs:::repository/foo/object/bar",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -131,9 +137,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_wildcard",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"fs:WriteObject"},
-					Resource: "arn:lakefs:fs:::repository/foo/object/*",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"fs:WriteObject"},
+							Resource: "arn:lakefs:fs:::repository/foo/object/*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -154,9 +164,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_invalid_user",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:CreateUser"},
-					Resource: "arn:lakefs:auth:::user/${user}",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:CreateUser"},
+							Resource: "arn:lakefs:auth:::user/${user}",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -177,9 +191,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_valid_user",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:CreateUser"},
-					Resource: "arn:lakefs:auth:::user/${user}",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:CreateUser"},
+							Resource: "arn:lakefs:auth:::user/${user}",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -200,9 +218,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_other_user",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:CreateUser"},
-					Resource: "arn:lakefs:auth:::user/${user}",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:CreateUser"},
+							Resource: "arn:lakefs:auth:::user/${user}",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -223,9 +245,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "policy_with_wildcard",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:CreateUser"},
-					Resource: "arn:lakefs:auth:::user/*",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:CreateUser"},
+							Resource: "arn:lakefs:auth:::user/*",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -246,9 +272,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "action_passing_wildcards",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:Create*"},
-					Resource: "arn:lakefs:auth:::user/foobar",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:Create*"},
+							Resource: "arn:lakefs:auth:::user/foobar",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -269,9 +299,13 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "action_other_wildcards",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:Create*"},
-					Resource: "arn:lakefs:auth:::user/foobar",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:Create*"},
+							Resource: "arn:lakefs:auth:::user/foobar",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
@@ -292,14 +326,22 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			name: "action_denying_wildcards",
 			policies: []*model.Policy{
 				{
-					Action:   []string{"auth:DeleteUser"},
-					Resource: "arn:lakefs:auth:::user/foobar",
-					Effect:   true,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:DeleteUser"},
+							Resource: "arn:lakefs:auth:::user/foobar",
+							Effect:   model.StatementEffectAllow,
+						},
+					},
 				},
 				{
-					Action:   []string{"auth:*"},
-					Resource: "*",
-					Effect:   false,
+					Statement: model.Statements{
+						{
+							Action:   []string{"auth:*"},
+							Resource: "*",
+							Effect:   model.StatementEffectDeny,
+						},
+					},
 				},
 			},
 			request: func(userName string) *auth.AuthorizationRequest {

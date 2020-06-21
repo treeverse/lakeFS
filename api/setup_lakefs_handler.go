@@ -83,7 +83,7 @@ func createGroups(authService auth.Service, groups []*model.Group) error {
 
 func createPolicies(authService auth.Service, policies []*model.Policy) error {
 	for _, policy := range policies {
-		err := authService.CreatePolicy(policy)
+		err := authService.WritePolicy(policy)
 		if err != nil {
 			return err
 		}
@@ -118,52 +118,83 @@ func SetupBaseGroups(authService auth.Service, ts time.Time) error {
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSFullAccess",
-			Action: []string{
-				"fs:*",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   true,
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "FSReadWriteAll",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						permissions.ListRepositoriesAction,
+						permissions.ReadRepositoryAction,
+						permissions.ReadCommitAction,
+						permissions.ListBranchesAction,
+						permissions.ListObjectsAction,
+						permissions.ReadObjectAction,
+						permissions.WriteObjectAction,
+						permissions.DeleteObjectAction,
+						permissions.RevertBranchAction,
+						permissions.ReadBranchAction,
+						permissions.CreateBranchAction,
+						permissions.DeleteBranchAction,
+						permissions.CreateCommitAction,
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
+			},
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "FSReadAll",
-			Action: []string{
-				"fs:List*",
-				"fs:Read*",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"fs:List*",
+						"fs:Read*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   true,
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSDenyAdmin",
-			Action: []string{
-				permissions.DeleteRepositoryAction,
-				permissions.CreateRepositoryAction,
-			},
-			Resource: permissions.All,
-			Effect:   false,
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "AuthFullAccess",
-			Action: []string{
-				"auth:*",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"auth:*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.All,
-			Effect:   true,
 		},
 		{
 			CreatedAt:   ts,
 			DisplayName: "AuthManageOwnCredentials",
-			Action: []string{
-				permissions.CreateCredentialsAction,
-				permissions.DeleteCredentialsAction,
-				permissions.ListCredentialsAction,
-				permissions.ReadCredentialsAction,
+			Statement: model.Statements{
+				{
+					Action: []string{
+						permissions.CreateCredentialsAction,
+						permissions.DeleteCredentialsAction,
+						permissions.ListCredentialsAction,
+						permissions.ReadCredentialsAction,
+					},
+					Resource: permissions.UserArn("${user}"),
+					Effect:   model.StatementEffectAllow,
+				},
 			},
-			Resource: permissions.UserArn("${user}"),
-			Effect:   true,
 		},
 	})
 	if err != nil {
@@ -178,7 +209,7 @@ func SetupBaseGroups(authService auth.Service, ts time.Time) error {
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "Developers", []string{"FSFullAccess", "FSDenyAdmin", "AuthManageOwnCredentials"})
+	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials"})
 	if err != nil {
 		return err
 	}

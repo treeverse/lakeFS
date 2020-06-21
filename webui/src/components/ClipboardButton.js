@@ -1,6 +1,6 @@
 import React, {useEffect, useRef, useState} from "react";
 import Button from "react-bootstrap/Button";
-import Octicon, {Clippy} from "@primer/octicons-react";
+import {ClippyIcon} from "@primer/octicons-react";
 import Tooltip from "react-bootstrap/Tooltip";
 import Overlay from "react-bootstrap/Overlay";
 
@@ -97,7 +97,7 @@ function useHover() {
     return [ref, value];
 }
 
-export default ({ text, variant, onSuccess, onError, icon = Clippy,  tooltip = "Copy to clipboard"}) => {
+export default ({ text, variant, onSuccess, onError, icon = <ClippyIcon/>,  tooltip = "Copy to clipboard"}) => {
 
     const [show, setShow] = useState(false);
     const [tooltipText, setTooltipText] = useState(tooltip);
@@ -121,7 +121,7 @@ export default ({ text, variant, onSuccess, onError, icon = Clippy,  tooltip = "
                 }, 2500);
                 copyTextToClipboard(text, onSuccess, onError);
             }}>
-                <Octicon icon={icon}/>
+                {icon}
             </Button>
         </>
     );
