@@ -1,7 +1,6 @@
 import {connect} from "react-redux";
 import {
     addUserToGroup, attachPolicyToGroup,
-    attachPolicyToUser,
     createGroup,
     deleteGroups, detachPolicyFromGroup,
     listGroupMembers,
@@ -11,7 +10,6 @@ import {
     listUsers,
     removeUserFromGroup,
     resetAddUserToGroup, resetAttachPolicyToGroup,
-    resetAttachPolicyToUser,
     resetCreateGroup,
     resetDeleteGroups, resetDetachPolicyFromGroup,
     resetRemoveUserFromGroup
@@ -56,7 +54,7 @@ export const GroupsPage = connect(
             setCheckedGroups([]);
             listGroups();
         }
-    });
+    }, [deletionStatus, resetDeleteGroups, listGroups]);
 
     return (
         <Col lg={9}>
@@ -328,7 +326,7 @@ const GroupPoliciesPane = connect(
     );
 });
 
-export const GroupPage = ({  }) => {
+export const GroupPage = () => {
     let { groupId } = useParams();
 
     return (

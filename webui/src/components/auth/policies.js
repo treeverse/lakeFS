@@ -9,7 +9,7 @@ import {
 } from "../../actions/auth";
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {Button, ButtonToolbar, Col, Modal, Table} from "react-bootstrap";
-import {SyncIcon, CopyIcon, PencilIcon, FileCodeIcon} from "@primer/octicons-react";
+import {SyncIcon, CopyIcon, PencilIcon} from "@primer/octicons-react";
 import {EntityCreateButton, PaginatedEntryList} from "./entities";
 import {Link, useParams, useHistory} from "react-router-dom";
 import * as moment from "moment";
@@ -47,7 +47,7 @@ export const PoliciesPage = connect(
             setCheckedPolicies([]);
             listPolicies();
         }
-    });
+    }, [deletionStatus, resetDeletePolicies, listPolicies]);
 
     return (
         <Col lg={9}>
@@ -159,7 +159,7 @@ export const PolicyPage = connect(
             resetCreatePolicy();
             history.push(`/auth/policies/${createStatus.payload.id}`);
         }
-    })
+    }, [createStatus, resetCreatePolicy, history])
 
     useEffect(() => {
         if (editStatus.done) {
