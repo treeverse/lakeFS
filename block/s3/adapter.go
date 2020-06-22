@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws/request"
@@ -87,21 +88,47 @@ func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
-func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func GetScheme(key string) string {
+	parsed, err := url.Parse(key)
+	if err != nil {
+		return ""
+	}
+	return parsed.Scheme
+}
 
+func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return block.ErrInvalidNamespace
+	}
 	putObject := s3.PutObjectInput{
-		Bucket:       aws.String(obj.Repo),
-		Key:          aws.String(obj.Identifier),
+		Bucket:       aws.String(qualifiedKey.StorageNamespace),
+		Key:          aws.String(qualifiedKey.Key),
 		StorageClass: opts.StorageClass,
 	}
 	sdkRequest, _ := s.s3.PutObjectRequest(&putObject)
-	_, err := s.streamToS3(sdkRequest, sizeBytes, reader)
+	_, err = s.streamToS3(sdkRequest, sizeBytes, reader)
 	return err
 }
 
 func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return "", err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return "", block.ErrInvalidNamespace
+	}
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
-	uploadPartObject := s3.UploadPartInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier), PartNumber: aws.Int64(partNumber), UploadId: aws.String(uploadId)}
+	uploadPartObject := s3.UploadPartInput{
+		Bucket:     aws.String(qualifiedKey.StorageNamespace),
+		Key:        aws.String(qualifiedKey.Key),
+		PartNumber: aws.Int64(partNumber),
+		UploadId:   aws.String(uploadId),
+	}
 	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
 	resp, err := s.streamToS3(sdkRequest, sizeBytes, reader)
 	if err == nil && resp != nil {
@@ -183,8 +210,18 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 }
 
 func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return nil, err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return nil, block.ErrInvalidNamespace
+	}
 	log := s.log().WithField("operation", "GetObject")
-	getObjectInput := s3.GetObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
+	getObjectInput := s3.GetObjectInput{
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
+	}
 	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
 		log.WithError(err).Error("failed to get S3 object")
@@ -195,7 +232,18 @@ func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
 
 func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	log := s.log().WithField("operation", "GetObjectRange")
-	getObjectInput := s3.GetObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier), Range: aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition))}
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return nil, err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return nil, block.ErrInvalidNamespace
+	}
+	getObjectInput := s3.GetObjectInput{
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
+		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
+	}
 	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{
@@ -208,7 +256,17 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 }
 
 func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
-	headObjectParams := &s3.HeadObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return block.Properties{}, err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return block.Properties{}, block.ErrInvalidNamespace
+	}
+	headObjectParams := &s3.HeadObjectInput{
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
+	}
 	s3Props, err := s.s3.HeadObject(headObjectParams)
 	if err != nil {
 		return block.Properties{}, err
@@ -217,14 +275,24 @@ func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 }
 
 func (s *Adapter) Remove(obj block.ObjectPointer) error {
-	deleteObjectParams := &s3.DeleteObjectInput{Bucket: aws.String(obj.Repo), Key: aws.String(obj.Identifier)}
-	_, err := s.s3.DeleteObject(deleteObjectParams)
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return block.ErrInvalidNamespace
+	}
+	deleteObjectParams := &s3.DeleteObjectInput{
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
+	}
+	_, err = s.s3.DeleteObject(deleteObjectParams)
 	if err != nil {
 		s.log().WithError(err).Error("failed to delete S3 object")
 		return err
 	}
 	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-		Bucket: aws.String(obj.Repo),
+		Bucket: aws.String(obj.StorageNamespace),
 		Key:    aws.String(obj.Identifier),
 	})
 	return err
@@ -232,7 +300,7 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 
 func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	input := &s3.CreateMultipartUploadInput{
-		Bucket:       aws.String(obj.Repo),
+		Bucket:       aws.String(obj.StorageNamespace),
 		Key:          aws.String(obj.Identifier),
 		ContentType:  aws.String(""),
 		StorageClass: opts.StorageClass,
@@ -249,7 +317,7 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.AbortMultipartUploadInput{
-		Bucket:   aws.String(obj.Repo),
+		Bucket:   aws.String(obj.StorageNamespace),
 		Key:      aws.String(obj.Identifier),
 		UploadId: aws.String(uploadId),
 	}
@@ -262,7 +330,7 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Part}
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.CompleteMultipartUploadInput{
-		Bucket:          aws.String(obj.Repo),
+		Bucket:          aws.String(obj.StorageNamespace),
 		Key:             aws.String(obj.Identifier),
 		UploadId:        aws.String(uploadId),
 		MultipartUpload: cmpu,
@@ -270,7 +338,7 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	resp, err := s.s3.CompleteMultipartUpload(input)
 	if err == nil {
 		s.uploadIdTranslator.RemoveUploadId(uploadId)
-		headInput := &s3.HeadObjectInput{Bucket: &obj.Repo, Key: &obj.Identifier}
+		headInput := &s3.HeadObjectInput{Bucket: &obj.StorageNamespace, Key: &obj.Identifier}
 		headResp, err := s.s3.HeadObject(headInput)
 		if err != nil {
 			return nil, -1, err
