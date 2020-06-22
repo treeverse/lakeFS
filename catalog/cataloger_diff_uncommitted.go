@@ -8,8 +8,8 @@ import (
 
 func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch string) (Differences, error) {
 	if err := Validate(ValidateFields{
-		"repository": ValidateRepositoryName(repository),
-		"branch":     ValidateBranchName(branch),
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return nil, err
 	}

@@ -52,9 +52,8 @@ func TestCataloger_Diff_FromSonThreeBranches(t *testing.T) {
 	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
-	// verify valid commit id
-	if res.CommitID <= 0 {
-		t.Errorf("Merge commit ID = %d, expected a valid commit number", res.CommitID)
+	if !IsValidReference(res.Reference) {
+		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
 	}
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
@@ -71,7 +70,7 @@ func TestCataloger_Diff_FromSonThreeBranches(t *testing.T) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
-	testVerifyEntries(t, ctx, c, repository, "master", CommittedID, []testEntryInfo{
+	testVerifyEntries(t, ctx, c, repository, "master:HEAD", []testEntryInfo{
 		{Path: "/file1", Deleted: true},
 		{Path: "/file2", Seed: "seed1"},
 		{Path: "/file3"},
