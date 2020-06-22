@@ -8,17 +8,6 @@ import (
 	"github.com/treeverse/lakefs/auth/wildcard"
 )
 
-// arn:${Partition}:s3:::${BucketName}
-// e.g. arn:aws:s3:::myrepo
-// in our case, arn:lakefs:repos:::myrepo
-
-const (
-	ArnPartition   = "arn"
-	ArnServiceName = "lakefs"
-	ArnWildcardAll = "*"
-	ArnWildcardOne = "?"
-)
-
 type Arn struct {
 	Partition  string
 	Service    string
