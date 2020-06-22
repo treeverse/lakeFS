@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"path"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 
 	"github.com/go-openapi/runtime"
@@ -19,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
-	"github.com/treeverse/lakefs/index/errors"
 )
 
 type AuthClient interface {
@@ -547,16 +548,16 @@ func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([
 	}
 	conflict, ok := err.(*refs.MergeIntoBranchConflict)
 	if ok {
-		return conflict.Payload.Results, errors.ErrMergeConflict
+		return conflict.Payload.Results, catalog.ErrConflictFound
 	} else {
 		return nil, err
 	}
 }
 
-func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error) {
+func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*models.Diff, error) {
 	diff, err := c.remote.Branches.DiffBranch(&branches.DiffBranchParams{
 		BranchID:     branch,
-		RepositoryID: repoId,
+		RepositoryID: repoID,
 		Context:      ctx,
 	}, c.auth)
 	if err != nil {
@@ -565,11 +566,11 @@ func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*mode
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) StatObject(ctx context.Context, repoId, ref, path string, readUncommitted bool) (*models.ObjectStats, error) {
+func (c *client) StatObject(ctx context.Context, repoID, ref, path string, readUncommitted bool) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
 		Ref:             ref,
 		Path:            path,
-		RepositoryID:    repoId,
+		RepositoryID:    repoID,
 		Context:         ctx,
 		ReadUncommitted: swag.Bool(readUncommitted),
 	}, c.auth)
@@ -579,12 +580,12 @@ func (c *client) StatObject(ctx context.Context, repoId, ref, path string, readU
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListObjects(ctx context.Context, repoId, ref, tree, after string, amount int, readUncommitted bool) ([]*models.ObjectStats, *models.Pagination, error) {
+func (c *client) ListObjects(ctx context.Context, repoID, ref, tree, after string, amount int, readUncommitted bool) ([]*models.ObjectStats, *models.Pagination, error) {
 	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
 		After:           swag.String(after),
 		Amount:          swag.Int64(int64(amount)),
 		Ref:             ref,
-		RepositoryID:    repoId,
+		RepositoryID:    repoID,
 		Tree:            swag.String(tree),
 		Context:         ctx,
 		ReadUncommitted: swag.Bool(readUncommitted),
@@ -595,11 +596,11 @@ func (c *client) ListObjects(ctx context.Context, repoId, ref, tree, after strin
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) GetObject(ctx context.Context, repoId, ref, path string, readUncommitted bool, writer io.Writer) (*objects.GetObjectOK, error) {
+func (c *client) GetObject(ctx context.Context, repoID, ref, path string, readUncommitted bool, writer io.Writer) (*objects.GetObjectOK, error) {
 	params := &objects.GetObjectParams{
 		Ref:             ref,
 		Path:            path,
-		RepositoryID:    repoId,
+		RepositoryID:    repoID,
 		Context:         ctx,
 		ReadUncommitted: swag.Bool(readUncommitted),
 	}
@@ -610,12 +611,12 @@ func (c *client) GetObject(ctx context.Context, repoId, ref, path string, readUn
 	return resp, nil
 }
 
-func (c *client) UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error) {
+func (c *client) UploadObject(ctx context.Context, repoID, branchId, path string, r io.Reader) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.UploadObject(&objects.UploadObjectParams{
 		BranchID:     branchId,
 		Content:      runtime.NamedReader("content", r),
 		Path:         path,
-		RepositoryID: repoId,
+		RepositoryID: repoID,
 		Context:      ctx,
 	}, c.auth)
 	if err != nil {
@@ -635,15 +636,15 @@ func (c *client) DeleteObject(ctx context.Context, repoId, branchId, path string
 }
 
 func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
-	parsedUrl, err := url.Parse(endpointURL)
+	parsedURL, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
 	}
-	if len(parsedUrl.Path) == 0 {
-		parsedUrl.Path = path.Join(parsedUrl.Path, genclient.DefaultBasePath)
+	if len(parsedURL.Path) == 0 {
+		parsedURL.Path = path.Join(parsedURL.Path, genclient.DefaultBasePath)
 	}
 	return &client{
-		remote: genclient.New(httptransport.New(parsedUrl.Host, parsedUrl.Path, []string{parsedUrl.Scheme}), strfmt.Default),
+		remote: genclient.New(httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme}), strfmt.Default),
 		auth:   httptransport.BasicAuth(accessKeyId, secretAccessKey),
 	}, nil
 }

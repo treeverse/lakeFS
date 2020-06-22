@@ -41,7 +41,6 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
-
 		}
 		if len(req.DisplayName) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)
@@ -91,9 +90,9 @@ func createPolicies(authService auth.Service, policies []*model.Policy) error {
 	return nil
 }
 
-func attachPolicies(authService auth.Service, groupId string, policyIds []string) error {
-	for _, policyId := range policyIds {
-		err := authService.AttachPolicyToGroup(policyId, groupId)
+func attachPolicies(authService auth.Service, groupID string, policyIDs []string) error {
+	for _, policyID := range policyIDs {
+		err := authService.AttachPolicyToGroup(policyID, groupID)
 		if err != nil {
 			return err
 		}
@@ -102,9 +101,7 @@ func attachPolicies(authService auth.Service, groupId string, policyIds []string
 }
 
 func SetupBaseGroups(authService auth.Service, ts time.Time) error {
-	var err error
-
-	err = createGroups(authService, []*model.Group{
+	err := createGroups(authService, []*model.Group{
 		{CreatedAt: ts, DisplayName: "Admins"},
 		{CreatedAt: ts, DisplayName: "SuperUsers"},
 		{CreatedAt: ts, DisplayName: "Developers"},
@@ -223,10 +220,9 @@ func SetupBaseGroups(authService auth.Service, ts time.Time) error {
 
 func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
 	now := time.Now()
-	var err error
 
 	// Setup the basic groups and policies
-	err = SetupBaseGroups(authService, now)
+	err := SetupBaseGroups(authService, now)
 	if err != nil {
 		return nil, err
 	}

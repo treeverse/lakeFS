@@ -88,7 +88,7 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 	}
 
 	// create branch
-	if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
+	if err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 		t.Fatal("CreateBranch for ResetBranch:", err)
 	}
 

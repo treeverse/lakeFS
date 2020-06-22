@@ -1,6 +1,14 @@
 package api_test
 
 import (
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -11,17 +19,10 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -47,9 +48,9 @@ func TestMain(m *testing.M) {
 }
 
 type dependencies struct {
-	blocks block.Adapter
-	auth   auth.Service
-	meta   index.Index
+	blocks    block.Adapter
+	auth      auth.Service
+	cataloger catalog.Cataloger
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
@@ -71,7 +72,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(mdb)
+	cataloger := catalog.NewCataloger(mdb)
 
 	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
@@ -84,7 +85,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		AddDB(config.SchemaAuth, adbURI)
 
 	server := api.NewServer(
-		meta,
+		cataloger,
 		blockAdapter,
 		authService,
 		&mockCollector{},
@@ -96,9 +97,9 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		t.Fatal(err)
 	}
 	return handler, &dependencies{
-		blocks: blockAdapter,
-		auth:   authService,
-		meta:   meta,
+		blocks:    blockAdapter,
+		auth:      authService,
+		cataloger: cataloger,
 	}
 }
 

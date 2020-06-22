@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"gopkg.in/dgrijalva/jwt-go.v3"
 
 	"github.com/go-openapi/errors"
@@ -16,7 +18,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
@@ -33,7 +34,7 @@ var (
 )
 
 type Server struct {
-	meta        index.Index
+	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
@@ -44,7 +45,7 @@ type Server struct {
 }
 
 func NewServer(
-	meta index.Index,
+	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,
@@ -52,7 +53,7 @@ func NewServer(
 ) *Server {
 	logging.Default().Info("initialized OpenAPI server")
 	return &Server{
-		meta:        meta,
+		cataloger:   cataloger,
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
@@ -147,7 +148,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.meta, s.authService, s.blockStore, s.stats).Configure(api)
+	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
