@@ -25,9 +25,9 @@ type QualifiedKey struct {
 	Key              string
 }
 
-func GetStorageType(namespaceUrl *url.URL) (StorageType, error) {
+func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 	var st StorageType
-	switch namespaceUrl.Scheme {
+	switch namespaceURL.Scheme {
 	case "s3":
 		return StorageTypeS3, nil
 	case "mem", "memory":
@@ -35,17 +35,17 @@ func GetStorageType(namespaceUrl *url.URL) (StorageType, error) {
 	case "local":
 		return StorageTypeLocal, nil
 	default:
-		return st, fmt.Errorf("%s: %w", namespaceUrl.Scheme, ErrInvalidNamespace)
+		return st, fmt.Errorf("%s: %w", namespaceURL.Scheme, ErrInvalidNamespace)
 	}
 }
 
-func pathJoin(s1, s2 string) string {
-	s1 = strings.TrimPrefix(s1, "/")
-	s2 = strings.TrimPrefix(s2, "/")
-	if len(s1) == 0 {
-		return s2
+func formatPathWithNamespace(namespacePath, keyPath string) string {
+	namespacePath = strings.TrimPrefix(namespacePath, "/")
+	keyPath = strings.TrimPrefix(keyPath, "/")
+	if len(namespacePath) == 0 {
+		return keyPath
 	}
-	return s1 + "/" + s2
+	return namespacePath + "/" + keyPath
 }
 
 func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
@@ -67,7 +67,7 @@ func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
 		return QualifiedKey{
 			StorageType:      storageType,
 			StorageNamespace: parsedNs.Host,
-			Key:              pathJoin(parsedNs.Path, key),
+			Key:              formatPathWithNamespace(parsedNs.Path, key),
 		}, nil
 	}
 
@@ -79,6 +79,6 @@ func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
 	return QualifiedKey{
 		StorageType:      storageType,
 		StorageNamespace: parsedKey.Host,
-		Key:              pathJoin("", parsedKey.Path),
+		Key:              formatPathWithNamespace("", parsedKey.Path),
 	}, nil
 }
