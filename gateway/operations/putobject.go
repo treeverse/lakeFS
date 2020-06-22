@@ -25,7 +25,7 @@ const (
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+func (controller *PutObject) RequiredPermissions(_ *http.Request, repoId, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.WriteObjectAction,
@@ -56,7 +56,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, p.Ref, p.Path)
+	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, p.Reference, p.Path)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
@@ -64,9 +64,9 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 	// write this object to workspace
 	// TODO: move this logic into the Index impl.
-	src.CreationDate = time.Now()
-	src.Name = ipath.New(o.Path, src.EntryType).BaseName()
-	err = o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Ref, o.Path, "", src, 0, nil)
+	ent.CreationDate = time.Now()
+	ent.Path = o.Path
+	err = o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Reference, *ent)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -74,15 +74,15 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	o.EncodeResponse(&serde.CopyObjectResult{
-		LastModified: serde.Timestamp(src.CreationDate),
-		ETag:         fmt.Sprintf("\"%s\"", src.Checksum),
+		LastModified: serde.Timestamp(ent.CreationDate),
+		ETag:         fmt.Sprintf("\"%s\"", ent.Checksum),
 	}, http.StatusOK)
 }
 
 func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	o.Incr("put_mpu_part")
 	query := o.Request.URL.Query()
-	uploadId := query.Get(QueryParamUploadId)
+	uploadID := query.Get(QueryParamUploadId)
 	partNumberStr := query.Get(QueryParamPartNumber)
 
 	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
@@ -92,14 +92,14 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 		return
 	}
 	// handle the upload itself
-	multiPart, err := o.Index.ReadMultiPartUpload(o.Repository.Name, uploadId)
+	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read  multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	byteSize := o.Request.ContentLength
-	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress}, byteSize, o.Request.Body, uploadId, partNumber)
+	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress}, byteSize, o.Request.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log().WithError(err).Error("part " + partNumberStr + " upload failed")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -114,7 +114,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 
 	// validate branch
-	_, err := o.Cataloger.GetBranch(o.Context(), o.Repository.Name, o.Ref)
+	_, err := o.Cataloger.GetBranch(o.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log().WithError(err).Debug("trying to write to invalid branch")
 		o.ResponseWriter.WriteHeader(http.StatusNotFound)

@@ -20,7 +20,7 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+func (controller *GetObject) RequiredPermissions(_ *http.Request, repoId, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.ReadObjectAction,
@@ -44,7 +44,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 
 	beforeMeta := time.Now()
 	// make sure we work on uncommitted data
-	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Ref, o.Path)
+	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -67,7 +67,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
 	// now we might need the object itself
-	obj, err := o.Cataloger.ReadObject(o.Repository.Id, o.Ref, o.Path, true)
+	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -81,18 +81,18 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		rng, err = ghttp.ParseHTTPRange(rangeSpec, obj.Size)
+		rng, err = ghttp.ParseHTTPRange(rangeSpec, ent.Size)
 		if err != nil {
 			o.Log().WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}
 	}
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
-		expected = obj.Size
-		data, err = o.BlockStore.Get(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: obj.PhysicalAddress})
+		expected = ent.Size
+		data, err = o.BlockStore.Get(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress})
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-		data, err = o.BlockStore.GetRange(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: obj.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		data, err = o.BlockStore.GetRange(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -103,7 +103,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}()
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", expected))
 	if rng.StartOffset != -1 {
-		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, obj.Size))
+		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, ent.Size))
 	}
 	_, err = io.Copy(o.ResponseWriter, data)
 	if err != nil {

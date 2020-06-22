@@ -143,7 +143,7 @@ type AuthenticatedOperation struct {
 
 type RepoOperation struct {
 	*AuthenticatedOperation
-	Repository catalog.Repository
+	Repository *catalog.Repository
 }
 
 func (o *RepoOperation) EncodeError(err errors.APIError) {
@@ -164,7 +164,7 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 
 type RefOperation struct {
 	*RepoOperation
-	Ref string
+	Reference string
 }
 
 type PathOperation struct {
@@ -178,7 +178,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		Message:    err.Description,
 		BucketName: o.Repository.Name,
 		Key:        o.Path,
-		Resource:   fmt.Sprintf("%s@%s", o.Ref, o.Repository.Name),
+		Resource:   fmt.Sprintf("%s@%s", o.Reference, o.Repository.Name),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),

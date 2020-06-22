@@ -4,11 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strconv"
 	"strings"
-	"unicode/utf8"
 
-	"github.com/mr-tron/base58"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -48,36 +45,36 @@ type ResolvedPath struct {
 }
 
 type ResolvedAbsolutePath struct {
-	Repo string
-	Ref  Ref
-	Path string
+	Repo      string
+	Reference string
+	Path      string
 }
 
-func ResolveRef(ref string) (Ref, error) {
-	if !strings.HasPrefix(ref, "#") {
-		return Ref{Branch: ref}, nil
-	}
-	refData, err := base58.Decode(ref[1:])
-	if err != nil {
-		return Ref{}, fmt.Errorf("%w: ref decode", ErrPathMalformed)
-	}
-	if !utf8.Valid(refData) {
-		return Ref{}, fmt.Errorf("%w: ref utf8", ErrPathMalformed)
-	}
-	const refPartsCount = 2
-	parts := strings.SplitN(string(refData), ":", refPartsCount)
-	if len(parts) != refPartsCount {
-		return Ref{}, fmt.Errorf("%w: missing commit id", ErrPathMalformed)
-	}
-	id, err := strconv.Atoi(parts[1])
-	if err != nil {
-		return Ref{}, fmt.Errorf("%w: invalid commit id", ErrPathMalformed)
-	}
-	return Ref{
-		Branch:   parts[0],
-		CommitID: catalog.CommitID(id),
-	}, nil
-}
+//func ResolveRef(ref string) (Ref, error) {
+//	if !strings.HasPrefix(ref, "#") {
+//		return Ref{Branch: ref}, nil
+//	}
+//	refData, err := base58.Decode(ref[1:])
+//	if err != nil {
+//		return Ref{}, fmt.Errorf("%w: ref decode", ErrPathMalformed)
+//	}
+//	if !utf8.Valid(refData) {
+//		return Ref{}, fmt.Errorf("%w: ref utf8", ErrPathMalformed)
+//	}
+//	const refPartsCount = 2
+//	parts := strings.SplitN(string(refData), ":", refPartsCount)
+//	if len(parts) != refPartsCount {
+//		return Ref{}, fmt.Errorf("%w: missing commit id", ErrPathMalformed)
+//	}
+//	id, err := strconv.Atoi(parts[1])
+//	if err != nil {
+//		return Ref{}, fmt.Errorf("%w: invalid commit id", ErrPathMalformed)
+//	}
+//	return Ref{
+//		Branch:   parts[0],
+//		CommitID: catalog.CommitID(id),
+//	}, nil
+//}
 
 //func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 //	r := ResolvedAbsolutePath{}
@@ -104,14 +101,10 @@ func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 	if len(parts) != encodedPartsCount {
 		return ResolvedAbsolutePath{}, ErrPathMalformed
 	}
-	ref, err := ResolveRef(parts[1])
-	if err != nil {
-		return ResolvedAbsolutePath{}, err
-	}
 	return ResolvedAbsolutePath{
-		Repo: parts[0],
-		Ref:  ref,
-		Path: parts[2],
+		Repo:      parts[0],
+		Reference: parts[1],
+		Path:      parts[2],
 	}, nil
 }
 

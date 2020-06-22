@@ -105,6 +105,7 @@ func TestReadBlob(t *testing.T) {
 	}
 	differentOpts := block.PutOpts{StorageClass: &neverCreatedString}
 	deduper := testutil.NewMockDedup()
+	ctx := context.Background()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
@@ -116,7 +117,7 @@ func TestReadBlob(t *testing.T) {
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
 			opts := block.PutOpts{StorageClass: tc.storageClass}
-			checksum, physicalAddress_1, size, err := upload.WriteBlob(deduper, bucketName, bucketName, reader, adapter, tc.size, opts)
+			checksum, physicalAddress_1, size, err := upload.WriteBlob(ctx, deduper, bucketName, bucketName, reader, adapter, tc.size, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -148,7 +149,7 @@ func TestReadBlob(t *testing.T) {
 			// write the same data again - make sure it is de-duped
 			reader.Reset(data)
 			adapter = newMockAdapter()
-			_, physicalAddress_2, _, err := upload.WriteBlob(deduper, bucketName, bucketName, reader, adapter, tc.size, differentOpts)
+			_, physicalAddress_2, _, err := upload.WriteBlob(ctx, deduper, bucketName, bucketName, reader, adapter, tc.size, differentOpts)
 			if err != nil {
 				t.Fatal(err)
 			}
