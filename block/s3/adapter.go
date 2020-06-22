@@ -28,6 +28,17 @@ const (
 	StreamingDefaultChunkSize = 2 << 19 // 1MiB by default per chunk
 )
 
+func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
+	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	if err != nil {
+		return qualifiedKey, err
+	}
+	if qualifiedKey.StorageType != block.StorageTypeS3 {
+		return qualifiedKey, block.ErrInvalidNamespace
+	}
+	return qualifiedKey, nil
+}
+
 type Adapter struct {
 	s3                 s3iface.S3API
 	httpClient         *http.Client
@@ -97,12 +108,9 @@ func GetScheme(key string) string {
 }
 
 func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return block.ErrInvalidNamespace
 	}
 	putObject := s3.PutObjectInput{
 		Bucket:       aws.String(qualifiedKey.StorageNamespace),
@@ -115,12 +123,9 @@ func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 }
 
 func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return "", block.ErrInvalidNamespace
 	}
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	uploadPartObject := s3.UploadPartInput{
@@ -210,12 +215,9 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 }
 
 func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return nil, block.ErrInvalidNamespace
 	}
 	log := s.log().WithField("operation", "GetObject")
 	getObjectInput := s3.GetObjectInput{
@@ -231,14 +233,11 @@ func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
 }
 
 func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
-	log := s.log().WithField("operation", "GetObjectRange")
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
 	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return nil, block.ErrInvalidNamespace
-	}
+	log := s.log().WithField("operation", "GetObjectRange")
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
@@ -256,12 +255,9 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 }
 
 func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return block.Properties{}, err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return block.Properties{}, block.ErrInvalidNamespace
 	}
 	headObjectParams := &s3.HeadObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
@@ -275,12 +271,9 @@ func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 }
 
 func (s *Adapter) Remove(obj block.ObjectPointer) error {
-	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
+	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
-	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
-		return block.ErrInvalidNamespace
 	}
 	deleteObjectParams := &s3.DeleteObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
