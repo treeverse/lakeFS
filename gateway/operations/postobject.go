@@ -35,8 +35,8 @@ func (controller *PostObject) RequiredPermissions(_ *http.Request, repoId, _, pa
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	//var err error
 	o.Incr("create_mpu")
-	UUIDbytes := [16]byte(uuid.New())
-	objName := hex.EncodeToString(UUIDbytes[:])
+	uuidBytes := [16]byte(uuid.New())
+	objName := hex.EncodeToString(uuidBytes[:])
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
 	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: objName}, o.Request, opts)
@@ -80,9 +80,9 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		return
 	}
 	objName := multiPart.PhysicalAddress
-	XMLmultiPartComplete, err := ioutil.ReadAll(o.Request.Body)
+	xmlMultipartComplete, err := ioutil.ReadAll(o.Request.Body)
 	var MultipartList block.MultipartUploadCompletion
-	err = xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
+	err = xml.Unmarshal(xmlMultipartComplete, &MultipartList)
 	if err != nil {
 		o.Log().WithError(err).Error("could not parse multipart XML on complete multipart")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -122,7 +122,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 
 	// TODO: pass scheme instead of hard-coding http instead of https
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
-		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repository, o.FQDN, o.Ref, o.Path),
+		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repository, o.FQDN, o.Reference, o.Path),
 		Bucket:   o.Repository.Name,
 		Key:      o.Path,
 		ETag:     *etag,

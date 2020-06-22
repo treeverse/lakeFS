@@ -31,7 +31,7 @@ type ServerContext struct {
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
-		ctx: ctx,
+		ctx:         ctx,
 		region:      c.region,
 		bareDomain:  c.bareDomain,
 		cataloger:   c.cataloger,
@@ -56,7 +56,7 @@ func NewServer(
 	stats stats.Collector,
 ) *Server {
 	sc := &ServerContext{
-		ctx: context.Background(),
+		ctx:         context.Background(),
 		cataloger:   cataloger,
 		region:      region,
 		bareDomain:  bareDomain,
@@ -246,7 +246,7 @@ func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.R
 		}
 
 		// validate repo exists
-		repo, err := authOp.Cataloger.GetRepository(sc.ctx repoID)
+		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
 			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
@@ -262,7 +262,7 @@ func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.R
 			Repository:             repo,
 		}
 		repoOperation.AddLogFields(logging.Fields{
-			"repository": repo.Id,
+			"repository": repo.Name,
 		})
 		handler.Handle(repoOperation)
 	})
@@ -299,9 +299,9 @@ func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler
 			RefOperation: &operations.RefOperation{
 				RepoOperation: &operations.RepoOperation{
 					AuthenticatedOperation: authOp,
-					Repository:             *repo,
+					Repository:             repo,
 				},
-				Ref: refID,
+				Reference: refID,
 			},
 			Path: path,
 		}
