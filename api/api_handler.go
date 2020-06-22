@@ -198,10 +198,10 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 		var lastID string
 		for i, repo := range repos {
 			repoList[i] = &models.Repository{
-				BucketName:    repo.StorageNamespace,
-				CreationDate:  repo.CreationDate.Unix(),
-				DefaultBranch: repo.DefaultBranch,
-				ID:            repo.Id,
+				StorageNamespace: repo.StorageNamespace,
+				CreationDate:     repo.CreationDate.Unix(),
+				DefaultBranch:    repo.DefaultBranch,
+				ID:               repo.Id,
 			}
 			lastID = repo.Id
 		}
@@ -260,10 +260,10 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 
 		return repositories.NewGetRepositoryOK().
 			WithPayload(&models.Repository{
-				BucketName:    repo.StorageNamespace,
-				CreationDate:  repo.CreationDate.Unix(),
-				DefaultBranch: repo.DefaultBranch,
-				ID:            repo.Id,
+				StorageNamespace: repo.StorageNamespace,
+				CreationDate:     repo.CreationDate.Unix(),
+				DefaultBranch:    repo.DefaultBranch,
+				ID:               repo.Id,
 			})
 	})
 }
@@ -390,18 +390,18 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 	})
 }
 
-func testBucket(adapter block.Adapter, bucketName string) error {
+func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
 		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
 	)
 
-	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)), block.PutOpts{})
+	err := adapter.Put(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)), block.PutOpts{})
 	if err != nil {
 		return err
 	}
 
-	_, err = adapter.Get(block.ObjectPointer{Repo: bucketName, Identifier: dummyKey})
+	_, err = adapter.Get(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey})
 	if err != nil {
 		return err
 	}
@@ -423,12 +423,12 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		a.incrStat("create_repo")
 		ctx := a.ForRequest(params.HTTPRequest)
 
-		err = testBucket(ctx.BlockAdapter, swag.StringValue(params.Repository.BucketName))
+		err = ensureStorageNamespaceRW(ctx.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
 		if err != nil {
 			return repositories.NewCreateRepositoryBadRequest().
-				WithPayload(responseError("error creating repository: could not access bucket"))
+				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
-		err = ctx.Index.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.BucketName), params.Repository.DefaultBranch)
+		err = ctx.Index.CreateRepo(swag.StringValue(params.Repository.ID), swag.StringValue(params.Repository.StorageNamespace), params.Repository.DefaultBranch)
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
@@ -441,10 +441,10 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		}
 
 		return repositories.NewCreateRepositoryCreated().WithPayload(&models.Repository{
-			BucketName:    repo.StorageNamespace,
-			CreationDate:  repo.CreationDate.Unix(),
-			DefaultBranch: repo.DefaultBranch,
-			ID:            repo.Id,
+			StorageNamespace: repo.StorageNamespace,
+			CreationDate:     repo.CreationDate.Unix(),
+			DefaultBranch:    repo.DefaultBranch,
+			ID:               repo.Id,
 		})
 	})
 }
@@ -783,7 +783,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		}
 
 		// read object properties from underlying storage
-		properties, err := a.context.BlockAdapter.GetProperties(block.ObjectPointer{Repo: repo.StorageNamespace, Identifier: obj.PhysicalAddress})
+		properties, err := a.context.BlockAdapter.GetProperties(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: obj.PhysicalAddress})
 		if err != nil {
 			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -841,7 +841,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = obj.Size
-		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{Repo: repo.StorageNamespace, Identifier: obj.PhysicalAddress})
+		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: obj.PhysicalAddress})
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

@@ -5,6 +5,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"time"
+
+	"github.com/go-openapi/swag"
+
 	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/schollz/progressbar/v3"
@@ -13,9 +19,6 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/auth/model"
 	vegeta "github.com/tsenart/vegeta/v12/lib"
-	"net/http"
-	"os"
-	"time"
 )
 
 type Loader struct {
@@ -88,9 +91,9 @@ func (t *Loader) createRepo(apiClient api.Client) (string, error) {
 		return t.Config.RepoName, nil
 	}
 	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
-		DefaultBranch: "master",
-		ID:            &t.NewRepoName,
-		BucketName:    &t.NewRepoName,
+		DefaultBranch:    "master",
+		ID:               &t.NewRepoName,
+		StorageNamespace: swag.String("s3://" + t.NewRepoName),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)
