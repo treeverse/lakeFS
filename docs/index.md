@@ -7,7 +7,7 @@ nav_order: 0
 # What is lakeFS
 {: .no_toc }
 
-**Warning:** lakeFS is currently in POC - this is a pre-alpha version that *should not be used in production*. The API and data model are likely to change.
+**Disclaimer:** lakeFS is currently in POC - this is a pre-alpha version that *should not be used in production*. The API and data model are likely to change.
 {: .note .pb-3 }
 
 lakeFS is a Data Lake Management platform that enables ACID guarantees using Git-like operations on conventional Object Stores (e.g. S3).
