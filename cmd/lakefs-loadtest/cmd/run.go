@@ -2,11 +2,12 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+	"time"
+
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/loadtest"
-	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 )

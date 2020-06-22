@@ -156,7 +156,7 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
-	err := l.Put(block.ObjectPointer{Repo: "", Identifier: fName}, -1, md5Read, nilPutOpts)
+	err := l.Put(block.ObjectPointer{StorageNamespace: "", Identifier: fName}, -1, md5Read, nilPutOpts)
 	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return ETag, err
 }

@@ -39,7 +39,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	objName := hex.EncodeToString(UUIDbytes[:])
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
-	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: objName}, o.Request, opts)
+	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: objName}, o.Request, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -88,7 +88,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: objName}, uploadId, &MultipartList)
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: objName}, uploadId, &MultipartList)
 	if err != nil {
 		o.Log().WithError(err).Error("could not complete multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -104,7 +104,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 
 	if existingName != objName { // object already exist
-		o.BlockStore.Remove(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: objName})
+		o.BlockStore.Remove(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: objName})
 		objName = existingName
 	}
 	err = o.finishUpload(checksum, objName, size)
