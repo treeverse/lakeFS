@@ -13,8 +13,8 @@ type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 // ObjectPointer is a unique identifier of an object in the object
 // store: the store is a 1:1 mapping between pointers and objects.
 type ObjectPointer struct {
-	Repo       string
-	Identifier string
+	StorageNamespace string
+	Identifier       string
 }
 
 // PutOpts contains optional arguments for Put.  These should be

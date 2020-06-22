@@ -46,7 +46,7 @@ type Index interface {
 	RevertPath(repoId, branch, path string) error
 	RevertObject(repoId, branch, path string) error
 	Merge(repoId, source, destination, userId string) (merkle.Differences, error)
-	CreateRepo(repoId, bucketName, defaultBranch string) error
+	CreateRepo(repoId, storageNamespace, defaultBranch string) error
 	ListRepos(amount int, after string) ([]*model.Repo, bool, error)
 	GetRepo(repoId string) (*model.Repo, error)
 	DeleteRepo(repoId string) error
@@ -1101,7 +1101,7 @@ func (index *DBIndex) Merge(repoId, source, destination, userId string) (merkle.
 	return mergeOperations, err
 }
 
-func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error {
+func (index *DBIndex) CreateRepo(repoId, storageNamespace, defaultBranch string) error {
 	err := ValidateAll(
 		ValidateRepoId(repoId))
 	if err != nil {
@@ -1112,7 +1112,7 @@ func (index *DBIndex) CreateRepo(repoId, bucketName, defaultBranch string) error
 
 	repo := &model.Repo{
 		Id:               repoId,
-		StorageNamespace: bucketName,
+		StorageNamespace: storageNamespace,
 		CreationDate:     creationDate,
 		DefaultBranch:    defaultBranch,
 	}

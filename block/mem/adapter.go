@@ -73,7 +73,7 @@ func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
 }
 
 func getKey(obj block.ObjectPointer) string {
-	return fmt.Sprintf("%s:%s", obj.Repo, obj.Identifier)
+	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
