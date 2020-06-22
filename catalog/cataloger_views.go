@@ -117,7 +117,8 @@ func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int
 		When("NOT(DifferenceTypeConflict OR DifferenceTypeRemoved)", "entry_ctid").
 		Else("NULL"),
 		"entry_ctid")).
-		Column("source_branch").FromSelect(fromSonInternalQ.Where(""), "f").FromSelect(RemoveNonRelevantQ, "t1")
+		Column("source_branch").
+		FromSelect(RemoveNonRelevantQ, "t1")
 
 }
 
