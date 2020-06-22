@@ -10,7 +10,7 @@ nav_order: 0
 **Disclaimer:** This is an early access version intended for collecting feedback and should not be used in production. API and data model are expected to change.
 {: .note .pb-3 }
 
-lakeFS is an open source Data Lake Management platform with ACID guarantees and Git-like collaboration capabilities, such as data quality assurance by data CI/CD, data reproducibility by time travel to previous lake versions, and reducing costs of mistakes by allowing instant revert. 
+lakeFS is an open source project that empowers your object storage data lake (e.g. S3, GCS, Azure Blob) with ACID guarantees and Git-like collaboration capabilities, such as data quality assurance by data CI/CD, data reproducibility by time travel to previous lake versions, and reducing costs of mistakes by allowing instant revert. 
 {: .pb-5 }
 
 ## Table of contents
