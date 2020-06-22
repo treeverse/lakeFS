@@ -61,8 +61,9 @@ definitions:
       default_branch:
         example: "master"
         type: string
-      bucket_name:
+      storage_namespace:
         type: string
+        description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
 
   mergeResult:
     type: object
@@ -83,12 +84,15 @@ definitions:
     type: object
     required:
       - id
-      - bucket_name
+      - storage_namespace
     properties:
       id:
         type: string
-      bucket_name:
+      storage_namespace:
         type: string
+        description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
+        example: "s3://example-bucket/"
+        pattern: '^(s3://|mem://|local://).*$'
       default_branch:
         example: "master"
         type: string
