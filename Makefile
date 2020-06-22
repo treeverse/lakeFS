@@ -21,7 +21,7 @@ SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
 
-UI_DIR=$(PWD)/webui
+UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/build
 API_BUILD_DIR=api/gen
 
