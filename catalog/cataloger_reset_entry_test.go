@@ -215,7 +215,7 @@ func TestCataloger_ResetEntry_CommittedParentBranch(t *testing.T) {
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
 	}
-	_, err := c.CreateBranch(ctx, repository, "b1", "master")
+	err := c.CreateBranch(ctx, repository, "b1", "master")
 	if err != nil {
 		t.Fatal("create branch for reset entry test:", err)
 	}
@@ -277,7 +277,7 @@ func TestCataloger_ResetEntry_UncommittedDeleteParentBranch(t *testing.T) {
 	if _, err := c.Commit(ctx, repository, "master", "commit file1", "tester", nil); err != nil {
 		t.Fatal("Commit for reset entry test:", err)
 	}
-	if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
+	if err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 		t.Fatal("create branch for reset entry test:", err)
 	}
 	err := c.DeleteEntry(ctx, repository, "b1", "/file1")

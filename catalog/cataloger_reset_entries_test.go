@@ -124,10 +124,8 @@ func TestCataloger_ResetEntries(t *testing.T) {
 	}
 
 	// create b1 branch with 3 entries committed
-	_, err := c.CreateBranch(ctx, repository, "b1", "master")
-	if err != nil {
-		t.Fatal("CreateBranch for ResetEntries:", err)
-	}
+	testutil.MustDo(t, "Create branch b1 for ResetEntries",
+		c.CreateBranch(ctx, repository, "b1", "master"))
 	for i := 3; i < 6; i++ {
 		testutil.Must(t, c.CreateEntry(ctx, repository, "b1", Entry{
 			Path:            "/file" + strconv.Itoa(i),
@@ -184,7 +182,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 	testutil.Must(t, c.DeleteEntry(ctx, repository, "b1", "/file4"))
 
 	t.Run("reset master", func(t *testing.T) {
-		err = c.ResetEntries(ctx, repository, "master", "/file")
+		err := c.ResetEntries(ctx, repository, "master", "/file")
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}
@@ -200,7 +198,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		}
 	})
 	t.Run("reset b1", func(t *testing.T) {
-		err = c.ResetEntries(ctx, repository, "b1", "/file")
+		err := c.ResetEntries(ctx, repository, "b1", "/file")
 		if err != nil {
 			t.Fatal("ResetEntries expected to succeed:", err)
 		}

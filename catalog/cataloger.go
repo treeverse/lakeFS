@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"github.com/cloudfoundry/clock"
+	"code.cloudfoundry.org/clock"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -17,7 +17,7 @@ type RepositoryCataloger interface {
 }
 
 type BranchCataloger interface {
-	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (int, error)
+	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) error
 	GetBranch(ctx context.Context, repository, branch string) (*Branch, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
@@ -45,6 +45,7 @@ type Deduper interface {
 
 type Committer interface {
 	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (string, error)
+	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
 	RollbackCommit(ctx context.Context, repository, reference string) error
 }

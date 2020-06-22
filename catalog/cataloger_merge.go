@@ -9,6 +9,12 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
+// Merge changes from leftBranch to rightBranch
+//	 On success merge results will include Reference and Differences
+//   ErrConflictFound in case of conflict, Differences will be filled in this case
+//   ErrNoDifferenceWasFound
+//   Other DB related errors
+
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch string, committer string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},

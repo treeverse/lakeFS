@@ -26,9 +26,9 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 		} else {
 			sourceBranch = fmt.Sprintf("branch%d", i-1)
 		}
-		_ = testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranch)
+		testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranch)
 	}
-	_ = testCatalogerBranch(t, ctx, c, "repo1", "b1", "master")
+	testCatalogerBranch(t, ctx, c, "repo1", "b1", "master")
 
 	if err := c.CreateEntry(ctx, "repo1", "b1", Entry{
 		Path:            "/file1",
@@ -107,7 +107,7 @@ func TestCataloger_DeleteBranchTwice(t *testing.T) {
 	for i := 0; i < numBranches; i++ {
 		sourceBranchName := fmt.Sprintf("branch%d", i)
 		branchName := fmt.Sprintf("branch%d", i+1)
-		_ = testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranchName)
+		testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranchName)
 	}
 	// delete twice (checking double delete) in reverse order
 	for i := numBranches; i > 0; i-- {

@@ -38,29 +38,28 @@ func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix st
 	return name
 }
 
-func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repository, name, source string) int {
-	id, err := c.CreateBranch(ctx, repository, name, source)
+func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repository, name, source string) {
+	err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
 		t.Fatalf("failed to create branch %s (%s) on %s: %s", name, source, repository, err)
 	}
-	return id
 }
 
-func testCatalogerCreateEntry(t *testing.T, ctx context.Context, c Cataloger, repository, branch, key string, metadata Metadata, seed string) {
-	checksum := testCreateEntryCalcChecksum(key, seed)
+func testCatalogerCreateEntry(t *testing.T, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
+	checksum := testCreateEntryCalcChecksum(path, seed)
 	var size int64
 	for i := range checksum {
 		size += int64(checksum[i])
 	}
 	err := c.CreateEntry(ctx, repository, branch, Entry{
-		Path:            key,
+		Path:            path,
 		Checksum:        checksum,
 		PhysicalAddress: checksum,
 		Size:            size,
 		Metadata:        metadata,
 	})
 	if err != nil {
-		t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", key, branch, repository, err)
+		t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repository, err)
 	}
 }
 

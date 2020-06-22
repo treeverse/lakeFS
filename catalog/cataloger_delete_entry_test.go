@@ -81,7 +81,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {
 			t.Fatal("Commit entry for delete entry test:", err)
 		}
-		if _, err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
+		if err := c.CreateBranch(ctx, repository, "b1", "master"); err != nil {
 			t.Fatal("create branch for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repository, "b1", "/file4")

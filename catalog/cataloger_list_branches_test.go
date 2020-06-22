@@ -16,12 +16,12 @@ func TestCataloger_ListBranches(t *testing.T) {
 	}
 	const numOfBranches = 3
 	for i := numOfBranches; i > 0; i-- {
-		if _, err := c.CreateBranch(ctx, "repo1", "b"+strconv.Itoa(i), "master"); err != nil {
+		if err := c.CreateBranch(ctx, "repo1", "b"+strconv.Itoa(i), "master"); err != nil {
 			t.Fatal("create branch for testing", err)
 		}
 	}
 	for i := numOfBranches; i > 0; i-- {
-		if _, err := c.CreateBranch(ctx, "repo1", "z"+strconv.Itoa(i), "master"); err != nil {
+		if err := c.CreateBranch(ctx, "repo1", "z"+strconv.Itoa(i), "master"); err != nil {
 			t.Fatal("create branch for testing", err)
 		}
 	}
