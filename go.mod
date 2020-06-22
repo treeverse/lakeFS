@@ -3,9 +3,10 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
+	code.cloudfoundry.org/clock v1.0.0
 	github.com/aws/aws-sdk-go v1.30.14
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
-	github.com/cloudfoundry/clock v1.0.0
+	github.com/cloudfoundry/clock v1.0.0 // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
 	github.com/davecgh/go-spew v1.1.1
 	github.com/go-openapi/errors v0.19.2
@@ -19,7 +20,7 @@ require (
 	github.com/google/uuid v1.1.1
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.5.0
-	github.com/jackc/pgtype v1.3.0
+	github.com/jackc/pgtype v1.3.0 // indirect
 	github.com/jackc/pgx/v4 v4.6.0
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
@@ -34,6 +35,7 @@ require (
 	github.com/sirupsen/logrus v1.5.0
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.4.0
+	github.com/tedsuo/ifrit v0.0.0-20191009134036-9a97d0632f00 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.3
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
