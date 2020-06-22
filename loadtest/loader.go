@@ -31,13 +31,12 @@ type Loader struct {
 }
 
 type Config struct {
-	FreqPerSecond        int
-	Duration             time.Duration
-	RepoName             string
-	RepoStorageNamespace string
-	KeepRepo             bool
-	Credentials          model.Credential
-	ServerAddress        string
+	FreqPerSecond int
+	Duration      time.Duration
+	RepoName      string
+	KeepRepo      bool
+	Credentials   model.Credential
+	ServerAddress string
 }
 
 func NewLoader(config Config) *Loader {
