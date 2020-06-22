@@ -60,7 +60,7 @@ const RepositoryList = ({ list, paginate }) => {
                                     <small>
                                         created at <code>{moment.unix(repo.creation_date).toISOString()}</code> ({moment.unix(repo.creation_date).fromNow()})<br/>
                                         default branch: <code>{repo.default_branch}</code>,{' '}
-                                        storage namesapce: <code>{repo.bucket_name}</code>
+                                        storage namesapce: <code>{repo.storage_namespace}</code>
                                     </small>
                                 </p>
                             </Card.Body>

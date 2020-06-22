@@ -50,7 +50,7 @@ func (a *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, op
 	}
 	a.totalSize += int64(len(data))
 	a.count++
-	a.lastBucket = obj.Repo
+	a.lastBucket = obj.StorageNamespace
 	a.lastStorageClass = opts.StorageClass
 	return nil
 }

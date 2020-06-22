@@ -42,7 +42,7 @@ var repoListCmd = &cobra.Command{
 		rows := make([][]interface{}, len(repos))
 		for i, repo := range repos {
 			ts := time.Unix(repo.CreationDate, 0).String()
-			rows[i] = []interface{}{repo.ID, ts, repo.DefaultBranch, repo.BucketName}
+			rows[i] = []interface{}{repo.ID, ts, repo.DefaultBranch, repo.StorageNamespace}
 		}
 
 		ctx := struct {
@@ -67,10 +67,10 @@ var repoListCmd = &cobra.Command{
 }
 
 // repoCreateCmd represents the create repo command
-// lakectl create lakefs://myrepo mybucket
+// lakectl create lakefs://myrepo s3://my-bucket/
 // not verifying bucket name in order not to bind to s3
 var repoCreateCmd = &cobra.Command{
-	Use:   "create  [repository uri] [bucket name]",
+	Use:   "create  [repository uri] [storage namespace]",
 	Short: "create a new repository ",
 	Args: ValidationChain(
 		HasNArgs(2),
@@ -85,9 +85,9 @@ var repoCreateCmd = &cobra.Command{
 			DieErr(err)
 		}
 		err = clt.CreateRepository(context.Background(), &models.RepositoryCreation{
-			BucketName:    &args[1],
-			DefaultBranch: defaultBranch,
-			ID:            &u.Repository,
+			StorageNamespace: &args[1],
+			DefaultBranch:    defaultBranch,
+			ID:               &u.Repository,
 		})
 		if err != nil {
 			DieErr(err)
@@ -97,8 +97,8 @@ var repoCreateCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		Fmt("Repository '%s' created:\nbucket name: %s\ndefault branch: %s\ntimestamp: %d\n",
-			repo.ID, repo.BucketName, repo.DefaultBranch, repo.CreationDate)
+		Fmt("Repository '%s' created:\nstorage namespace: %s\ndefault branch: %s\ntimestamp: %d\n",
+			repo.ID, repo.StorageNamespace, repo.DefaultBranch, repo.CreationDate)
 	},
 }
 
