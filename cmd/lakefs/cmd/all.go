@@ -10,9 +10,9 @@ import (
 // allCmd represents the all command
 var allCmd = &cobra.Command{
 	Use:   "all",
-	Short: "Run a lakeFS services",
+	Short: "Run all lakeFS services",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Default().WithField("version", config.Version).Info("lakeFS run all")
+		logging.Default().WithField("version", config.Version).Info("lakeFS run all services")
 		runLakeFSServices(LakeFSServiceAPI | LakeFSServiceS3Gateway)
 	},
 }

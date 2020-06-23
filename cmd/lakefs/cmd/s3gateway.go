@@ -9,7 +9,7 @@ import (
 // s3gatewayCmd represents the s3gateway command
 var s3gatewayCmd = &cobra.Command{
 	Use:   "s3gateway",
-	Short: "Run a lakeFS S3 Gateway",
+	Short: "Run lakeFS S3 Gateway",
 	Run: func(cmd *cobra.Command, args []string) {
 		logging.Default().WithField("version", config.Version).Info("lakeFS run S3 Gateway")
 		runLakeFSServices(LakeFSServiceS3Gateway)

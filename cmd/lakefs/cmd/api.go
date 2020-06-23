@@ -9,9 +9,9 @@ import (
 // apiCmd represents the api command
 var apiCmd = &cobra.Command{
 	Use:   "api",
-	Short: "Run a lakeFS API Service",
+	Short: "Run lakeFS API server",
 	Run: func(cmd *cobra.Command, args []string) {
-		logging.Default().WithField("version", config.Version).Info("lakeFS run API Service")
+		logging.Default().WithField("version", config.Version).Info("lakeFS run API server")
 		runLakeFSServices(LakeFSServiceAPI)
 	},
 }

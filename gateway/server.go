@@ -99,6 +99,9 @@ func (s *Server) Listen() error {
 
 func (s *Server) Shutdown(ctx context.Context) error {
 	simulator.ShutdownRecorder()
+	if s == nil {
+		return nil
+	}
 	s.Server.SetKeepAlivesEnabled(false)
 	return s.Server.Shutdown(ctx)
 }

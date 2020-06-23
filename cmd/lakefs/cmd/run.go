@@ -27,6 +27,10 @@ const (
 	defaultInstallationID = "anon@example.com"
 )
 
+type Shutter interface {
+	Shutdown(context.Context) error
+}
+
 type LakeFSServices uint8
 
 const (
@@ -37,7 +41,7 @@ const (
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Run a LakeFS",
+	Short: "Run lakeFS",
 }
 
 func runLakeFSServices(services LakeFSServices) {
@@ -113,7 +117,7 @@ func runLakeFSServices(services LakeFSServices) {
 			}
 		}()
 	}
-	go gracefulShutdown(apiServer, gatewayServer, quit, done)
+	go gracefulShutdown(quit, done, apiServer, gatewayServer)
 	<-done
 	cancelFn()
 	<-stats.Done()
@@ -127,7 +131,7 @@ func getInstallationID(authService auth.Service) string {
 	return user.DisplayName
 }
 
-func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
+func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
 	logger := logging.Default()
 	logger.WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
 	<-quit
@@ -136,20 +140,12 @@ func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
 
-	if apiServer != nil {
-		if err := apiServer.Shutdown(ctx); err != nil {
-			fmt.Printf("Cloud not shutdown the API server: %v\n", err)
+	for _, server := range servers {
+		if err := server.Shutdown(ctx); err != nil {
+			fmt.Printf("Cloud not shutdown the gateway server: %s\n", err)
 			os.Exit(1)
 		}
 	}
-
-	if gatewayServer != nil {
-		if err := gatewayServer.Shutdown(ctx); err != nil {
-			fmt.Printf("Cloud not shutdown the gateway server: %v\n", err)
-			os.Exit(1)
-		}
-	}
-
 	close(done)
 }
 
