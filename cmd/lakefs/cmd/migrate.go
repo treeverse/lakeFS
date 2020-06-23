@@ -71,7 +71,15 @@ var gotoCmd = &cobra.Command{
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
 		schemaName, err := cmd.Flags().GetString("schema")
+		if err != nil {
+			fmt.Printf("Failed to get value for 'schema': %s\n", err)
+			os.Exit(1)
+		}
 		version, err := cmd.Flags().GetUint("version")
+		if err != nil {
+			fmt.Printf("Failed to get value for 'version': %s\n", err)
+			os.Exit(1)
+		}
 		uri := cfg.GetDatabaseURI(config.SchemaDBKeys[schemaName])
 		if len(uri) == 0 {
 			fmt.Printf("Unknown schema: %s\n", schemaName)

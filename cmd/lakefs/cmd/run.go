@@ -73,7 +73,6 @@ func runLakeFSServices(services LakeFSServices) {
 	stats := cfg.BuildStats(getInstallationID(authService))
 
 	// start API server
-
 	done := make(chan bool, 1)
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, os.Interrupt)
