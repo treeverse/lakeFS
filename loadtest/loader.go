@@ -28,21 +28,19 @@ type Loader struct {
 }
 
 type Config struct {
-	FreqPerSecond int
-	Duration      time.Duration
-	RepoName      string
-	KeepRepo      bool
-	Credentials   model.Credential
-	ServerAddress string
+	FreqPerSecond     int
+	Duration          time.Duration
+	BucketNameForRepo string
+	KeepRepo          bool
+	Credentials       model.Credential
+	ServerAddress     string
 }
 
 func NewLoader(config Config) *Loader {
 	res := &Loader{
 		Config: config,
 	}
-	if config.RepoName == "" {
-		res.NewRepoName = uuid.New().String()
-	}
+	res.NewRepoName = uuid.New().String()
 	return res
 }
 
@@ -51,7 +49,7 @@ func (t *Loader) Run() error {
 	if err != nil {
 		return err
 	}
-	repoName, err := t.createRepo(apiClient)
+	repoName, err := t.createRepo(apiClient, t.Config.BucketNameForRepo)
 	if err != nil {
 		return err
 	}
@@ -62,7 +60,7 @@ func (t *Loader) Run() error {
 	hasErrors := t.doAttack()
 	close(stopCh)
 
-	if t.Config.RepoName == "" && !t.Config.KeepRepo {
+	if !t.Config.KeepRepo {
 		err = apiClient.DeleteRepository(context.Background(), t.NewRepoName)
 		if err != nil {
 			return err
@@ -82,15 +80,11 @@ func (t *Loader) Run() error {
 	return nil
 }
 
-func (t *Loader) createRepo(apiClient api.Client) (string, error) {
-	if t.Config.RepoName != "" {
-		// using an existing repo, no need to create one
-		return t.Config.RepoName, nil
-	}
+func (t *Loader) createRepo(apiClient api.Client, bucketName string) (string, error) {
 	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
 		DefaultBranch: "master",
 		ID:            &t.NewRepoName,
-		BucketName:    &t.NewRepoName,
+		BucketName:    &bucketName,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)
@@ -99,10 +93,6 @@ func (t *Loader) createRepo(apiClient api.Client) (string, error) {
 }
 
 func (t *Loader) getClient() (apiClient api.Client, err error) {
-	if t.Config.RepoName != "" {
-		// using an existing repo, no need to create a client
-		return nil, nil
-	}
 	apiClient, err = api.NewClient(t.Config.ServerAddress, t.Config.Credentials.AccessKeyId, t.Config.Credentials.AccessSecretKey)
 	if err != nil {
 		return nil, errors.New("failed to create lakeFS client")
