@@ -82,29 +82,6 @@ func TestIsValidBranchName(t *testing.T) {
 	}
 }
 
-func TestIsValidBucketName(t *testing.T) {
-	tests := []struct {
-		name  string
-		input string
-		want  bool
-	}{
-		{name: "simple", input: "s3://bucket1", want: true},
-		{name: "empty", input: "", want: false},
-		{name: "short", input: "a", want: false},
-		{name: "space", input: "got space", want: false},
-		{name: "special1", input: "1.2.3.4", want: false},
-		{name: "special2", input: "1/2/3/4", want: false},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := IsValidBranchName(tt.input)
-			if got != tt.want {
-				t.Errorf("IsValidBranchName() got %t, expected %t", got, tt.want)
-			}
-		})
-	}
-}
-
 func TestIsNonEmptyString(t *testing.T) {
 	tests := []struct {
 		name  string
