@@ -8,16 +8,17 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/index"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/index"
 )
 
 const (
@@ -29,49 +30,69 @@ const (
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
-	Short: "Run a LakeFS instance",
-	Run: func(cmd *cobra.Command, args []string) {
-		logging.Default().WithField("version", config.Version).Info("lakeFS run")
+	Short: "Run a LakeFS",
+}
 
-		mdb := cfg.ConnectMetadataDatabase()
-		adb := cfg.ConnectAuthDatabase()
-		defer func() {
-			_ = adb.Close()
-			_ = mdb.Close()
-		}()
-		migrator := db.NewDatabaseMigrator()
-		for name, key := range config.SchemaDBKeys {
-			migrator.AddDB(name, cfg.GetDatabaseURI(key))
-		}
+type LakeFSServices uint8
 
-		// init index
-		meta := index.NewDBIndex(mdb)
+const (
+	LakeFSService_API LakeFSServices = 1 << iota
+	LakeFSService_S3Gateway
+)
 
-		// init block store
-		blockStore := cfg.BuildBlockAdapter()
+func runLakeFSServices(services LakeFSServices) {
+	logger := logging.Default()
+	logger.WithField("version", config.Version).Infof("lakeFS run")
 
-		// init authentication
-		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+	if services == 0 {
+		logger.Info("nothing to run!")
+		return
+	}
 
-		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(getInstallationID(authService))
+	mdb := cfg.ConnectMetadataDatabase()
+	adb := cfg.ConnectAuthDatabase()
+	defer func() {
+		_ = adb.Close()
+		_ = mdb.Close()
+	}()
+	migrator := db.NewDatabaseMigrator()
+	for name, key := range config.SchemaDBKeys {
+		migrator.AddDB(name, cfg.GetDatabaseURI(key))
+	}
 
-		// start API server
-		apiServer := api.NewServer(meta, blockStore, authService, stats, migrator)
+	// init index
+	meta := index.NewDBIndex(mdb)
 
-		done := make(chan bool, 1)
-		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, os.Interrupt)
+	// init block store
+	blockStore := cfg.BuildBlockAdapter()
 
+	// init authentication
+	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+
+	ctx, cancelFn := context.WithCancel(context.Background())
+	stats := cfg.BuildStats(getInstallationID(authService))
+
+	// start API server
+
+	done := make(chan bool, 1)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt)
+
+	var apiServer *api.Server
+	if services&LakeFSService_API != 0 {
+		apiServer = api.NewServer(meta, blockStore, authService, stats, migrator)
 		go func() {
 			if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
 				fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
 				os.Exit(1)
 			}
 		}()
+	}
 
+	var gatewayServer *gateway.Server
+	if services&LakeFSService_S3Gateway != 0 {
 		// init gateway server
-		gatewayServer := gateway.NewServer(
+		gatewayServer = gateway.NewServer(
 			cfg.GetS3GatewayRegion(),
 			meta,
 			blockStore,
@@ -80,25 +101,23 @@ var runCmd = &cobra.Command{
 			cfg.GetS3GatewayDomainName(),
 			stats,
 		)
+	}
 
-		go stats.Run(ctx)
-		stats.Collect("global", "run")
+	go stats.Run(ctx)
+	stats.Collect("global", "run")
 
+	if gatewayServer != nil {
 		go func() {
 			if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
 				fmt.Printf("Gateway server failed to listen on %s: %v\n", cfg.GetS3GatewayListenAddress(), err)
 				os.Exit(1)
 			}
 		}()
-
-		go gracefulShutdown(apiServer, gatewayServer, quit, done)
-
-		logging.Default().WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
-
-		<-done
-		cancelFn()
-		<-stats.Done()
-	},
+	}
+	go gracefulShutdown(apiServer, gatewayServer, quit, done)
+	<-done
+	cancelFn()
+	<-stats.Done()
 }
 
 func getInstallationID(authService auth.Service) string {
@@ -110,20 +129,26 @@ func getInstallationID(authService auth.Service) string {
 }
 
 func gracefulShutdown(apiServer *api.Server, gatewayServer *gateway.Server, quit <-chan os.Signal, done chan<- bool) {
+	logger := logging.Default()
+	logger.WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
 	<-quit
-	logging.Default().Warn("shutting down...")
+	logger.Warn("shutting down...")
 
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
 
-	if err := apiServer.Shutdown(ctx); err != nil {
-		fmt.Printf("Cloud not shutdown the API server: %v\n", err)
-		os.Exit(1)
+	if apiServer != nil {
+		if err := apiServer.Shutdown(ctx); err != nil {
+			fmt.Printf("Cloud not shutdown the API server: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
-	if err := gatewayServer.Shutdown(ctx); err != nil {
-		fmt.Printf("Cloud not shutdown the gateway server: %v\n", err)
-		os.Exit(1)
+	if gatewayServer != nil {
+		if err := gatewayServer.Shutdown(ctx); err != nil {
+			fmt.Printf("Cloud not shutdown the gateway server: %v\n", err)
+			os.Exit(1)
+		}
 	}
 
 	close(done)
