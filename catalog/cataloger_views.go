@@ -2,10 +2,6 @@ package catalog
 
 import (
 	sq "github.com/Masterminds/squirrel"
-	//sq "github.com/Masterminds/squirrel"
-	//_ "github.com/jackc/pgx/stdlib"
-	//"github.com/treeverse/lakefs/db"
-	//"github.com/jmoiron/sqlx"
 )
 
 const MaxCommitIDs = "x'7fffffff'::integer"
@@ -60,7 +56,7 @@ func entriesLineageFullV(committedOnly bool) sq.SelectBuilder {
 		"e.is_tombstone", "e.entry_ctid").
 		Column(sq.Alias(sq.Case().
 			When("l.main_branch", "e.max_commit").
-			When("e.max_commit <= l.effective_commit", "e.max_commit").
+			When("e.max_commit < l.effective_commit", "e.max_commit").
 			Else(MaxCommitIDs), "max_commit")).
 		Column(`row_number() OVER (PARTITION BY l.branch_id, e.path 
 							ORDER BY l.precedence, 
@@ -68,7 +64,10 @@ func entriesLineageFullV(committedOnly bool) sq.SelectBuilder {
 						WHEN l.main_branch AND e.min_commit = 0 THEN '01111111111111111111111111111111'::"bit"::integer
 						ELSE e.min_commit
 						END) DESC) AS rank`).
-		Column("e.max_commit <= l.effective_commit AS is_deleted").
+		Column(`CASE
+		   WHEN l.main_branch THEN e.is_deleted
+		   ELSE e.max_commit < l.effective_commit
+		END AS is_deleted`).
 		FromSelect(entriesV(committedOnly), "e").
 		Join("(" + lineageSQL + ") AS l ON l.ancestor_branch = e.branch_id").
 		Where("(l.main_branch OR e.min_commit <= l.effective_commit AND e.is_committed)").
@@ -104,7 +103,7 @@ func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int
 										   ))) 
 											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit,
 			fatherID, sonID, sonEffectiveCommit).
-		FromSelect(entriesLineageFullV(true).
+		FromSelect(entriesV(true).
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
 		LeftJoin("("+fatherSQL+") AS f ON f.path = s.path", fatherArgs...)
 	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromSonInternalQ, "t").Where("NOT (same_object OR both_deleted)")
@@ -122,29 +121,42 @@ func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int
 
 }
 
-//func diffFromFatherV(fatherID, sonID, lastSonCommit int) sq.SelectBuilder {
-//	sonSQL, sonArgs := sq.Select("*").FromSelect(entriesLineageFullV(false), "s").
-//		Where("displayed_branch = $ and rank=1", sonID).MustSql()
-//	lineageSQL,lineageArgs := sq.Select("*").FromSelect(lineageV(),"l").
-//		Where("l.branch_id = $ AND l.active_lineage",sonID).MustSql()
-//	internalV := sq.Select("f.path", "f.entry_ctid",
-//		"s.path IS NOT NULL AS DifferenceTypeChanged",
-//		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
-//		//both point to same object, and have the same deletion status
-//		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object",
-//		`f.min_commit > l.effective_commit -- father created after commit
-//			OR f.max_commit >= l.effective_commit AND f.is_deleted -- father deleted after commit
-//									AS father_changed`).
-//		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
-//		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
-//							(NOT s.is_committed -- uncommitted is new
-//							 OR s.min_commit > ? -- created after last commit
-//                             OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
-//						  AS DifferenceTypeConflict`, sonID, lastSonCommit, lastSonCommit).
-//		FromSelect(entriesLineageFullV(true).
-//			Where("displayed_branch = $ AND rank=1", fatherID), "f").
-//		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...).
-//		Join("("+lineageSQL+") AS l ON f.source_branch = l.ancestor_branch")
-//	RemoveNonRelevantQ := sq.Select("*").FromSelect(internalV,"t").Where(("father_changed AND NOT (same_object OR both_deleted)"))
-//
-//}
+func diffFromFatherV(fatherID, sonID, lastSonCommit int) sq.SelectBuilder {
+	sonSQL, sonArgs := sq.Select("*").FromSelect(entriesLineageFullV(false), "s").
+		Where("displayed_branch = ? and rank=1", sonID).MustSql()
+	lineageSQL, lineageArgs := sq.Select("*").FromSelect(lineageV(), "l").
+		Where("l.branch_id = ? AND l.active_lineage", sonID).MustSql()
+	internalV := sq.Select("f.path",
+		"f.entry_ctid",
+		"f.is_deleted AS DifferenceTypeRemoved",
+		"s.path IS NOT NULL AS DifferenceTypeChanged",
+		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
+		//both point to same object, and have the same deletion status
+		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object",
+		`f.min_commit > l.effective_commit -- father created after commit
+			OR f.max_commit >= l.effective_commit AND f.is_deleted -- father deleted after commit
+									AS father_changed`).
+		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
+		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
+							(NOT s.is_committed -- uncommitted is new
+							 OR s.min_commit > ? -- created after last commit
+                           OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
+						  AS DifferenceTypeConflict`, sonID, lastSonCommit, lastSonCommit).
+		FromSelect(entriesLineageFullV(true), "f").
+		Where("f.displayed_branch = ? AND f.rank=1", fatherID).
+		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...).
+		Join("("+lineageSQL+") AS l ON f.source_branch = l.ancestor_branch", lineageArgs...)
+	RemoveNonRelevantQ := sq.Select("*").FromSelect(internalV, "t").Where("father_changed AND NOT (same_object OR both_deleted)")
+
+	return sq.Select().
+		Column(sq.Alias(sq.Case().When("DifferenceTypeConflict", "3").
+			When("DifferenceTypeRemoved", "1").
+			When("DifferenceTypeChanged", "2").
+			Else("0"), "diff_type")).
+		Column("path").
+		Column(sq.Alias(sq.Case().
+			When("DifferenceTypeChanged AND entry_in_son", "entry_ctid").
+			Else("NULL"), "entry_ctid")).
+		FromSelect(RemoveNonRelevantQ, "t1")
+
+}

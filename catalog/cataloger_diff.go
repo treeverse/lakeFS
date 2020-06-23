@@ -73,49 +73,15 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, 
 		return nil, err
 	}
 
-	const diffSQL = `CREATE TEMP TABLE ` + diffResultsTableName + ` ON COMMIT DROP AS
-		SELECT
-			CASE
-				WHEN DifferenceTypeConflict THEN 3
-				WHEN DifferenceTypeRemoved THEN 1
-				WHEN DifferenceTypeChanged THEN 2
-				ELSE 0
-			END AS diff_type,
-			path,
-			CASE
-				WHEN DifferenceTypeChanged AND entry_in_son THEN entry_ctid
-				ELSE NULL END AS entry_ctid
-	   FROM ( SELECT *
-			   FROM ( SELECT f.path,
-						f.is_deleted AS DifferenceTypeRemoved,
-						s.path IS NOT NULL AS DifferenceTypeChanged,
-						s.path IS NOT NULL AND s.source_branch = $2 as entry_in_son,
-						COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted,
-						-- both point to same object, and have the same deletion status
-						s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object,
-						-- father created or deleted
-						f.min_commit > l.effective_commit -- father created after commit
-						OR f.max_commit >= l.effective_commit AND f.is_deleted -- father deleted after commit
-									AS father_changed,
-						-- son created or deleted 
-						s.path IS NOT NULL AND s.source_branch = $2 AND
-							(NOT s.is_committed -- uncommitted is new
-							 OR s.min_commit > $3 -- created after last commit
-                             OR (s.max_commit > $3 AND s.is_deleted)) -- deleted after last commit
-						  AS DifferenceTypeConflict,
-							f.entry_ctid
-					   FROM ( SELECT *
-							   FROM entries_lineage_committed_v
-							  WHERE displayed_branch = $1 AND rank=1) f
-						 LEFT JOIN ( SELECT *
-							   FROM entries_lineage_full_v 
-							  WHERE displayed_branch = $2 and rank=1) s ON f.path = s.path
-						 JOIN lineage_v l ON f.source_branch = l.ancestor_branch AND l.branch_id = $2 AND l.active_lineage) t_1
-			   WHERE father_changed AND NOT (same_object OR both_deleted) ) t`
-	if _, err := tx.Exec(diffSQL, leftID, rightID, maxSonMerge); err != nil {
+	s, args := diffFromFatherV(leftID, rightID, maxSonMerge).PlaceholderFormat(sq.Dollar).MustSql()
+
+	diffFromFatherSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
+
+	if _, err := tx.Exec(diffFromFatherSQL, args...); err != nil {
 		return nil, err
 	}
 	return diffReadDifferences(tx)
+
 }
 
 func diffReadDifferences(tx db.Tx) (Differences, error) {
@@ -158,10 +124,8 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 		return nil, err
 	}
 
-	s, args, err := diffFromSonV(rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit).PlaceholderFormat(sq.Dollar).ToSql()
-	if err != nil {
-		panic(err)
-	}
+	s, args := diffFromSonV(rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit).PlaceholderFormat(sq.Dollar).MustSql()
+
 	diffFromSonSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 
 	if _, err := tx.Exec(diffFromSonSQL, args...); err != nil {
