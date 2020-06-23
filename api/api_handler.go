@@ -73,6 +73,9 @@ func (a *Handler) ForRequest(r *http.Request) *HandlerContext {
 }
 
 func (a *Handler) Context() context.Context {
+	if a.context.ctx == nil {
+		return context.Background()
+	}
 	return a.context.ctx
 }
 
@@ -351,17 +354,17 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
 
 		// read branch
-		branch, err := cataloger.GetBranch(a.Context(), params.RepositoryID, params.BranchID)
-		if errors.Is(err, db.ErrNotFound) {
-			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
-		}
-		if err != nil {
-			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-		}
+		//branch, err := cataloger.GetBranch(a.Context(), params.RepositoryID, params.BranchID)
+		//if errors.Is(err, db.ErrNotFound) {
+		//	return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
+		//}
+		//if err != nil {
+		//	return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		//}
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.RepositoryID, branch.Name, after, amount)
+		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.RepositoryID, params.BranchID, after, amount)
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -533,6 +536,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 }
 
 func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
+	// TODO(barak): do we need branch branch handler as the branch name say it all, or do we need to get reference to committed data on branch
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{
 			{
@@ -545,7 +549,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		}
 		a.incrStat("get_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		branch, err := cataloger.GetBranch(a.Context(), params.RepositoryID, params.BranchID)
+		_, err = cataloger.GetBranchReference(a.Context(), params.RepositoryID, params.BranchID)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -557,8 +561,8 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 
 		return branches.NewGetBranchOK().
 			WithPayload(&models.Ref{
-				CommitID: swag.String(branch.Name),
-				ID:       swag.String(branch.Repository),
+				CommitID: swag.String(params.BranchID),
+				ID:       swag.String(params.RepositoryID),
 			})
 	})
 }

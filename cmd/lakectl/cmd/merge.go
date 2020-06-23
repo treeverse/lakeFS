@@ -5,10 +5,11 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
-	indexerrors "github.com/treeverse/lakefs/index/errors"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -48,7 +49,7 @@ var mergeCmd = &cobra.Command{
 				}
 			}
 			_, _ = os.Stdout.WriteString(fmt.Sprintf("new: %d modified: %d removed: %d \n", added, changed, removed))
-		} else if err == indexerrors.ErrMergeConflict {
+		} else if err == catalog.ErrConflictFound {
 			_, _ = os.Stdout.WriteString(" Conflicts:\n")
 			for _, line := range result {
 				if line.Direction == models.DiffDirectionCONFLICT {

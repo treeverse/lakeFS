@@ -1,21 +1,22 @@
 package loadtest
 
 import (
+	"log"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
-	"log"
-	"net/http/httptest"
-	"os"
-	"testing"
-	"time"
 )
 
 var (
@@ -44,18 +45,18 @@ func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
-	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata)
+	cdb, cdbURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(mdb)
+	cataloger := catalog.NewCataloger(cdb)
 
 	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaMetadata, mdbURI).
+		AddDB(config.SchemaCatalog, cdbURI).
 		AddDB(config.SchemaAuth, adbURI)
 	server := api.NewServer(
-		meta,
+		cataloger,
 		blockAdapter,
 		authService,
 		&mockCollector{},

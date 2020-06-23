@@ -84,7 +84,7 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 			if err != nil {
 				return
 			}
-			_, err = c.GetBranch(ctx, tt.args.repository, tt.args.branch)
+			_, err = c.GetBranchReference(ctx, tt.args.repository, tt.args.branch)
 			if !errors.As(err, &db.ErrNotFound) {
 				t.Errorf("Branch should not be found after delete, got err=%s", err)
 				return

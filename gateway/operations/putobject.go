@@ -19,17 +19,17 @@ import (
 
 const (
 	CopySourceHeader     = "x-amz-copy-source"
-	QueryParamUploadId   = "uploadId"
+	QueryParamUploadID   = "uploadId"
 	QueryParamPartNumber = "partNumber"
 )
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermissions(_ *http.Request, repoId, _, path string) ([]permissions.Permission, error) {
+func (controller *PutObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }
@@ -82,7 +82,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	o.Incr("put_mpu_part")
 	query := o.Request.URL.Query()
-	uploadID := query.Get(QueryParamUploadId)
+	uploadID := query.Get(QueryParamUploadID)
 	partNumberStr := query.Get(QueryParamPartNumber)
 
 	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
@@ -114,12 +114,12 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 
 	// validate branch
-	_, err := o.Cataloger.GetBranch(o.Context(), o.Repository.Name, o.Reference)
-	if err != nil {
-		o.Log().WithError(err).Debug("trying to write to invalid branch")
-		o.ResponseWriter.WriteHeader(http.StatusNotFound)
-		return
-	}
+	//_, err := o.Cataloger.GetBranch(o.Context(), o.Repository.Name, o.Reference)
+	//if err != nil {
+	//	o.Log().WithError(err).Debug("trying to write to invalid branch")
+	//	o.ResponseWriter.WriteHeader(http.StatusNotFound)
+	//	return
+	//}
 
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
@@ -130,8 +130,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		// storage class, subsequent PUT operations of the
 		// same file continue to use that storage class.
 
-		// TODO(ariels): Add a counter for how often a copy
-		//     has different options.
+		// TODO(ariels): Add a counter for how often a copy has different options
 		controller.HandleCopy(o, copySource)
 		return
 	}
@@ -139,8 +138,8 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	query := o.Request.URL.Query()
 
 	// check if this is a multipart upload creation call
-	_, hasUploadId := query[QueryParamUploadId]
-	if hasUploadId {
+	_, hasUploadID := query[QueryParamUploadID]
+	if hasUploadID {
 		controller.HandleUploadPart(o)
 		return
 	}

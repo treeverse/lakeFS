@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var (
@@ -12,8 +11,6 @@ var (
 
 	validBranchNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
 	validRepoIDRegexp     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-	validBucketNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]+[a-z0-9]$`)
-	validIPv4Regexp       = regexp.MustCompile(`/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/`)
 	validHexRegexp        = regexp.MustCompile(`^[a-fA-F0-9]+$`)
 )
 
@@ -119,29 +116,9 @@ func ValidateCommitter(name string) ValidateFunc {
 	}
 }
 
-func IsValidBucketName(bucket string) bool {
-	if len(bucket) < 3 || len(bucket) > 63 {
-		return false
-	}
-	// bucket with successive periods is invalid.
-	if strings.Contains(bucket, "..") {
-		return false
-	}
-	// bucket cannot have ip address style.
-	if validIPv4Regexp.MatchString(bucket) {
-		return false
-	}
-	// bucket should begin with alphabet/number and end with alphabet/number,
-	// with alphabet/number/.- in the middle.
-	if !validBucketNameRegexp.MatchString(bucket) {
-		return false
-	}
-	return true
-}
-
 func ValidateBucketName(bucket string) ValidateFunc {
 	return func() bool {
-		return IsValidBucketName(bucket)
+		return IsNonEmptyString(bucket)
 	}
 }
 

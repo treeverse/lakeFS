@@ -26,7 +26,7 @@ import (
 )
 
 const (
-	DefaultUserId = "example_user"
+	DefaultUserID = "example_user"
 )
 
 var (
@@ -69,19 +69,16 @@ type mockCollector struct{}
 func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	cataloger := catalog.NewCataloger(mdb)
+	cdb, catalogURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog, opts...)
+	cataloger := catalog.NewCataloger(cdb)
 
 	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 
-	_, catalogURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog, opts...)
-
 	migrator := db.NewDatabaseMigrator().
 		AddDB(config.SchemaCatalog, catalogURI).
-		AddDB(config.SchemaMetadata, mdbURI).
 		AddDB(config.SchemaAuth, adbURI)
 
 	server := api.NewServer(
