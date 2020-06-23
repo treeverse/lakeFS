@@ -36,8 +36,8 @@ var runCmd = &cobra.Command{
 type LakeFSServices uint8
 
 const (
-	LakeFSService_API LakeFSServices = 1 << iota
-	LakeFSService_S3Gateway
+	LakeFSServiceAPI LakeFSServices = 1 << iota
+	LakeFSServiceS3Gateway
 )
 
 func runLakeFSServices(services LakeFSServices) {
@@ -79,7 +79,7 @@ func runLakeFSServices(services LakeFSServices) {
 	signal.Notify(quit, os.Interrupt)
 
 	var apiServer *api.Server
-	if services&LakeFSService_API != 0 {
+	if services&LakeFSServiceAPI != 0 {
 		apiServer = api.NewServer(meta, blockStore, authService, stats, migrator)
 		go func() {
 			if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
@@ -90,7 +90,7 @@ func runLakeFSServices(services LakeFSServices) {
 	}
 
 	var gatewayServer *gateway.Server
-	if services&LakeFSService_S3Gateway != 0 {
+	if services&LakeFSServiceS3Gateway != 0 {
 		// init gateway server
 		gatewayServer = gateway.NewServer(
 			cfg.GetS3GatewayRegion(),

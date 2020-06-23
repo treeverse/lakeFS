@@ -12,7 +12,7 @@ var s3gatewayCmd = &cobra.Command{
 	Short: "Run a lakeFS S3 Gateway",
 	Run: func(cmd *cobra.Command, args []string) {
 		logging.Default().WithField("version", config.Version).Info("lakeFS run S3 Gateway")
-		runLakeFSServices(LakeFSService_S3Gateway)
+		runLakeFSServices(LakeFSServiceS3Gateway)
 	},
 }
 
