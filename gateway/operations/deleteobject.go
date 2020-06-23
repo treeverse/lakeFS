@@ -24,7 +24,7 @@ func (controller *DeleteObject) RequiredPermissions(_ *http.Request, repoID, _, 
 func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 	o.Incr("abort_mpu")
 	query := o.Request.URL.Query()
-	uploadID := query.Get(QueryParamUploadId)
+	uploadID := query.Get(QueryParamUploadID)
 	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: o.Path}, uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
@@ -38,7 +38,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 func (controller *DeleteObject) Handle(o *PathOperation) {
 	query := o.Request.URL.Query()
 
-	_, hasUploadID := query[QueryParamUploadId]
+	_, hasUploadID := query[QueryParamUploadID]
 	if hasUploadID {
 		controller.HandleAbortMultipartUpload(o)
 		return

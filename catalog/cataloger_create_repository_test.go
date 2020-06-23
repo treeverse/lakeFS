@@ -30,12 +30,6 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			asErr:   nil,
 		},
 		{
-			name:    "invalid bucket",
-			args:    args{name: "repo2", bucket: "b", branch: "master"},
-			wantErr: true,
-			asErr:   ErrInvalidValue,
-		},
-		{
 			name:    "unknown branch",
 			args:    args{name: "repo3", bucket: "bucket3", branch: ""},
 			wantErr: true,

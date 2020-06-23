@@ -82,12 +82,12 @@ func TestCataloger_CreateBranchOfBranch(t *testing.T) {
 		if err != nil {
 			t.Fatalf("failed to create branch '%s' based on '%s': %s", branchName, sourceBranchName, err)
 		}
-		b, err := c.GetBranch(ctx, repository, branchName)
+		reference, err := c.GetBranchReference(ctx, repository, branchName)
 		if err != nil {
 			t.Error("Branch not found after create:", err)
 		}
-		if b.Name != branchName {
-			t.Errorf("Created branch name doesn't match %s: expected %s", b.Name, branchName)
+		if reference != "" {
+			t.Errorf("Created branch '%s' was empty, reference: %s - expected no reference", branchName, reference)
 		}
 	}
 }

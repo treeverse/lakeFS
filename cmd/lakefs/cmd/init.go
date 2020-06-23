@@ -6,6 +6,8 @@ import (
 	"os"
 	"time"
 
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -18,7 +20,7 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a LakeFS instance, and setup an admin credential",
 	Run: func(cmd *cobra.Command, args []string) {
-		adb := cfg.ConnectAuthDatabase()
+		adb := cfg.ConnectDatabase(config.DBKeyAuth)
 		defer func() { _ = adb.Close() }()
 
 		userName, _ := cmd.Flags().GetString("user-name")

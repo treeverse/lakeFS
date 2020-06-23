@@ -90,31 +90,23 @@ func setDefaults() {
 }
 
 const (
-	DBKeyAuth    = "auth"
-	DBKeyIndex   = "metadata"
+	DBKeyAuth = "auth"
+	//DBKeyIndex   = "metadata"
 	DBKeyCatalog = "catalog"
 )
 
 var SchemaDBKeys = map[string]string{
-	SchemaAuth:     DBKeyAuth,
-	SchemaMetadata: DBKeyIndex,
-	SchemaCatalog:  DBKeyCatalog,
+	SchemaAuth: DBKeyAuth,
+	//SchemaMetadata: DBKeyIndex,
+	SchemaCatalog: DBKeyCatalog,
 }
 
 func (c *Config) GetDatabaseURI(key string) string {
 	return viper.GetString(key + ".db.uri")
 }
 
-func (c *Config) ConnectMetadataDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyIndex))
-	if err != nil {
-		panic(err)
-	}
-	return database
-}
-
-func (c *Config) ConnectAuthDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyAuth))
+func (c *Config) ConnectDatabase(dbKey string) db.Database {
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(dbKey))
 	if err != nil {
 		panic(err)
 	}
@@ -152,7 +144,7 @@ func (c *Config) buildLocalAdapter() block.Adapter {
 	location := viper.GetString("blockstore.local.path")
 	location, err := homedir.Expand(location)
 	if err != nil {
-		panic(fmt.Errorf("could not parse metadata location URI: %s\n", err))
+		panic(fmt.Errorf("could not parse blockstore location URI: %w", err))
 	}
 
 	adapter, err := local.NewAdapter(location)

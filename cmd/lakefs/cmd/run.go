@@ -8,6 +8,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/spf13/cobra"
@@ -17,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
-	"github.com/treeverse/lakefs/index"
 )
 
 const (
@@ -33,19 +34,19 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logging.Default().WithField("version", config.Version).Info("lakeFS run")
 
-		mdb := cfg.ConnectMetadataDatabase()
-		adb := cfg.ConnectAuthDatabase()
+		cdb := cfg.ConnectDatabase(config.DBKeyCatalog)
+		adb := cfg.ConnectDatabase(config.DBKeyAuth)
 		defer func() {
 			_ = adb.Close()
-			_ = mdb.Close()
+			_ = cdb.Close()
 		}()
 		migrator := db.NewDatabaseMigrator()
 		for name, key := range config.SchemaDBKeys {
 			migrator.AddDB(name, cfg.GetDatabaseURI(key))
 		}
 
-		// init index
-		meta := index.NewDBIndex(mdb)
+		// init catalog
+		cataloger := catalog.NewCataloger(cdb)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
@@ -57,7 +58,7 @@ var runCmd = &cobra.Command{
 		stats := cfg.BuildStats(getInstallationID(authService))
 
 		// start API server
-		apiServer := api.NewServer(meta, blockStore, authService, stats, migrator)
+		apiServer := api.NewServer(cataloger, blockStore, authService, stats, migrator)
 
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
@@ -73,7 +74,7 @@ var runCmd = &cobra.Command{
 		// init gateway server
 		gatewayServer := gateway.NewServer(
 			cfg.GetS3GatewayRegion(),
-			meta,
+			cataloger,
 			blockStore,
 			authService,
 			cfg.GetS3GatewayListenAddress(),
