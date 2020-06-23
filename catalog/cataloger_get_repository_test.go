@@ -13,40 +13,40 @@ func TestCataloger_GetRepo(t *testing.T) {
 	// create test data
 	for i := 1; i < 3; i++ {
 		repoName := fmt.Sprintf("repo%d", i)
-		bucketName := fmt.Sprintf("bucket%d", i)
+		storage := fmt.Sprintf("s3://bucket%d", i)
 		branchName := fmt.Sprintf("branch%d", i)
-		if err := c.CreateRepository(ctx, repoName, bucketName, branchName); err != nil {
+		if err := c.CreateRepository(ctx, repoName, storage, branchName); err != nil {
 			t.Fatal("create repository for testing failed", err)
 		}
 	}
 
 	tests := []struct {
-		name       string
-		repository string
-		wantBucket string
-		wantBranch string
-		wantErr    bool
+		name                 string
+		repository           string
+		wantStorageNamespace string
+		wantBranch           string
+		wantErr              bool
 	}{
 		{
-			name:       "found",
-			repository: "repo2",
-			wantBucket: "bucket2",
-			wantBranch: "branch2",
-			wantErr:    false,
+			name:                 "found",
+			repository:           "repo2",
+			wantStorageNamespace: "s3://bucket2",
+			wantBranch:           "branch2",
+			wantErr:              false,
 		},
 		{
-			name:       "not found",
-			repository: "repo4",
-			wantBucket: "bucket4",
-			wantBranch: "branch4",
-			wantErr:    true,
+			name:                 "not found",
+			repository:           "repo4",
+			wantStorageNamespace: "s3://bucket4",
+			wantBranch:           "branch4",
+			wantErr:              true,
 		},
 		{
-			name:       "missing repository name",
-			repository: "",
-			wantBucket: "bucket4",
-			wantBranch: "branch4",
-			wantErr:    true,
+			name:                 "missing repository name",
+			repository:           "",
+			wantStorageNamespace: "s3://bucket4",
+			wantBranch:           "branch4",
+			wantErr:              true,
 		},
 	}
 	for _, tt := range tests {
@@ -65,8 +65,8 @@ func TestCataloger_GetRepo(t *testing.T) {
 			if got.DefaultBranch != tt.wantBranch {
 				t.Errorf("GetRepository() got DefaultBranch = %v, want %v", got.DefaultBranch, tt.wantBranch)
 			}
-			if got.StorageNamespace != tt.wantBucket {
-				t.Errorf("GetRepository() got StorageNamespace = %v, want %v", got.StorageNamespace, tt.wantBucket)
+			if got.StorageNamespace != tt.wantStorageNamespace {
+				t.Errorf("GetRepository() got StorageNamespace = %v, want %v", got.StorageNamespace, tt.wantStorageNamespace)
 			}
 		})
 	}

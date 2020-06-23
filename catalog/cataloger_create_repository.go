@@ -7,10 +7,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) CreateRepository(ctx context.Context, repository string, bucket string, branch string) error {
+func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "bucket", IsValid: ValidateBucketName(bucket)},
+		{Name: "storageNamespace", IsValid: ValidateStorageNamespace(storageNamespace)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
@@ -34,7 +34,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, buc
 		// create repository with ref to branch
 		creationDate := c.Clock.Now()
 		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
-			VALUES ($1, $2, $3, $4, $5)`, repoID, repository, bucket, creationDate, branchID); err != nil {
+			VALUES ($1, $2, $3, $4, $5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
 			return nil, err
 		}
 		// create branch with ref to repository

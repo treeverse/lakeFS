@@ -32,7 +32,7 @@ func testCatalogerUniqueID() string {
 
 func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix string, branch string) string {
 	name := prefix + "-" + testCatalogerUniqueID()
-	if err := c.CreateRepository(ctx, name, "bucket", branch); err != nil {
+	if err := c.CreateRepository(ctx, name, "s3://bucket", branch); err != nil {
 		t.Fatalf("create repository %s, branch %s, failed: %s", name, branch, err)
 	}
 	return name

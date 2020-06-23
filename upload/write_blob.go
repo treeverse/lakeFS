@@ -14,9 +14,9 @@ import (
 func WriteBlob(ctx context.Context, deduper catalog.Deduper, repository, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64, opts block.PutOpts) (string, string, int64, error) {
 	// handle the upload itself
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
-	uuidBytes := [16]byte(uuid.New())
-	objName := hex.EncodeToString(uuidBytes[:])
-	err := adapter.Put(block.ObjectPointer{Repo: bucketName, Identifier: objName}, contentLength, hashReader, opts)
+	UUIDbytes := [16]byte(uuid.New())
+	objName := hex.EncodeToString(UUIDbytes[:])
+	err := adapter.Put(block.ObjectPointer{StorageNamespace: bucketName, Identifier: objName}, contentLength, hashReader, opts)
 	if err != nil {
 		return "", "", -1, err
 	}
@@ -26,8 +26,9 @@ func WriteBlob(ctx context.Context, deduper catalog.Deduper, repository, bucketN
 	if err != nil {
 		return "", "", -1, err
 	}
-	if existingName != objName { // object already exists
-		adapter.Remove(block.ObjectPointer{Repo: bucketName, Identifier: objName})
+	if existingName != objName {
+		// object already exists
+		_ = adapter.Remove(block.ObjectPointer{StorageNamespace: bucketName, Identifier: objName})
 		objName = existingName
 	}
 	return checksum, objName, hashReader.CopiedSize, nil

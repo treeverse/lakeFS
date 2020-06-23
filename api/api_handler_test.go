@@ -344,9 +344,9 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 	t.Run("create repo success", func(t *testing.T) {
 		resp, err := clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
-				BucketName:    swag.String("foo-bucket"),
-				ID:            swag.String("my-new-repo"),
-				DefaultBranch: "master",
+				StorageNamespace: swag.String("s3://foo-bucket/"),
+				ID:               swag.String("my-new-repo"),
+				DefaultBranch:    "master",
 			},
 		}, bauth)
 
@@ -361,15 +361,15 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 
 	t.Run("create repo duplicate", func(t *testing.T) {
 		ctx := context.Background()
-		err := deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo1", "master")
+		err := deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo1/", "master")
 		if err != nil {
 			t.Fatal(err)
 		}
 		_, err = clt.Repositories.CreateRepository(&repositories.CreateRepositoryParams{
 			Repository: &models.RepositoryCreation{
-				BucketName:    swag.String("foo-bucket"),
-				ID:            swag.String("repo2"),
-				DefaultBranch: "master",
+				StorageNamespace: swag.String("s3://foo-bucket/"),
+				ID:               swag.String("repo2"),
+				DefaultBranch:    "master",
 			},
 		}, bauth)
 
@@ -392,7 +392,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 
 	ctx := context.Background()
 	t.Run("delete repo success", func(t *testing.T) {
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master"))
+		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master"))
 
 		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
 			RepositoryID: "my-new-repo",

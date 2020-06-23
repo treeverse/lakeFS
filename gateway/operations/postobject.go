@@ -39,7 +39,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	objName := hex.EncodeToString(uuidBytes[:])
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
-	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: objName}, o.Request, opts)
+	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, o.Request, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -56,7 +56,6 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 		Key:      o.Path,
 		UploadId: uploadId,
 	}, http.StatusOK)
-
 }
 
 func trimQuotes(s string) string {
@@ -72,15 +71,20 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	var etag *string
 	var size int64
 	o.Incr("complete_mpu")
-	uploadId := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
-	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadId)
+	uploadID := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
+	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
-		o.Log().WithError(err).Error("could not read  multipart record")
+		o.Log().WithError(err).Error("could not read multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	objName := multiPart.PhysicalAddress
 	xmlMultipartComplete, err := ioutil.ReadAll(o.Request.Body)
+	if err != nil {
+		o.Log().WithError(err).Error("could not read request body")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
 	var MultipartList block.MultipartUploadCompletion
 	err = xml.Unmarshal(xmlMultipartComplete, &MultipartList)
 	if err != nil {
@@ -88,7 +92,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	etag, size, err = o.BlockStore.CompleteMultiPartUpload(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: objName}, uploadId, &MultipartList)
+	etag, size, err = o.BlockStore.CompleteMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, uploadID, &MultipartList)
 	if err != nil {
 		o.Log().WithError(err).Error("could not complete multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -104,7 +108,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 
 	if existingName != objName { // object already exist
-		err := o.BlockStore.Remove(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: objName})
+		err := o.BlockStore.Remove(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName})
 		if err != nil {
 			o.Log().WithError(err).WithField("identifier", objName).Error("failed to remove object")
 		}
@@ -115,7 +119,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	err = o.Cataloger.DeleteMultipartUpload(o.Context(), o.Repository.Name, uploadId)
+	err = o.Cataloger.DeleteMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
 		o.Log().WithError(err).Warn("could not delete  multipart record")
 	}

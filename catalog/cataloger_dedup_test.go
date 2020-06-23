@@ -10,7 +10,7 @@ func TestCataloger_Dedup(t *testing.T) {
 	c := testCataloger(t)
 
 	// setup test data
-	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
+	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
 		t.Fatal("create repository for testing failed", err)
 	}
 	_, _ = c.Dedup(ctx, "repo1", "dede", "/file9")

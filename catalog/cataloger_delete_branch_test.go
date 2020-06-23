@@ -15,7 +15,7 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
-	if err := c.CreateRepository(ctx, "repo1", "bucket1", "master"); err != nil {
+	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
 		t.Fatal("create repository for testing", err)
 	}
 	for i := 0; i < 3; i++ {
@@ -98,7 +98,7 @@ func TestCataloger_DeleteBranchTwice(t *testing.T) {
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	c := NewCataloger(cdb)
 
-	if err := c.CreateRepository(ctx, "repo1", "bucket1", "branch0"); err != nil {
+	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "branch0"); err != nil {
 		t.Fatal("create repository for testing", err)
 	}
 
