@@ -116,9 +116,9 @@ func ValidateCommitter(name string) ValidateFunc {
 	}
 }
 
-func ValidateBucketName(bucket string) ValidateFunc {
+func ValidateStorageNamespace(storageNamespace string) ValidateFunc {
 	return func() bool {
-		return IsNonEmptyString(bucket)
+		return IsNonEmptyString(storageNamespace)
 	}
 }
 

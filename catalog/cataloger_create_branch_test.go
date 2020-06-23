@@ -13,7 +13,7 @@ func TestCataloger_CreateBranch(t *testing.T) {
 	c := testCataloger(t)
 
 	testutil.MustDo(t, "test repository for create branch",
-		c.CreateRepository(ctx, "repo1", "bucket1", "master"))
+		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
 	err := c.CreateBranch(ctx, "repo1", "master2", "master")
 	testutil.MustDo(t, "create test branch for create branch test", err)
 

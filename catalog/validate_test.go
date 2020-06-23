@@ -88,7 +88,7 @@ func TestIsValidBucketName(t *testing.T) {
 		input string
 		want  bool
 	}{
-		{name: "simple", input: "bucket1", want: true},
+		{name: "simple", input: "s3://bucket1", want: true},
 		{name: "empty", input: "", want: false},
 		{name: "short", input: "a", want: false},
 		{name: "space", input: "got space", want: false},

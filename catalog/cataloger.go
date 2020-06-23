@@ -10,7 +10,7 @@ import (
 )
 
 type RepositoryCataloger interface {
-	CreateRepository(ctx context.Context, repository string, bucket string, branch string) error
+	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
 	DeleteRepository(ctx context.Context, repository string) error
 	ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error)

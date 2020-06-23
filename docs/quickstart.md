@@ -8,7 +8,7 @@ has_children: false
 # Quick Start
 {: .no_toc }
 
-**Warning:** lakeFS is currently in POC - this is a pre-alpha version that *should not be used in production*. The API and data model are likely to change.
+**Disclaimer:** This is an early access version intended for collecting feedback and should not be used in production. API and data model are expected to change.
 {: .note .pb-3 }
 
 ## Table of contents

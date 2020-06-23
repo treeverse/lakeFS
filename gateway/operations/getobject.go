@@ -20,11 +20,11 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermissions(_ *http.Request, repoId, _, path string) ([]permissions.Permission, error) {
+func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }
@@ -89,10 +89,10 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
 		expected = ent.Size
-		data, err = o.BlockStore.Get(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress})
+		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress})
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-		data, err = o.BlockStore.GetRange(block.ObjectPointer{Repo: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
