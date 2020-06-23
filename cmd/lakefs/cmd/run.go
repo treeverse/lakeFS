@@ -27,18 +27,18 @@ const (
 	defaultInstallationID = "anon@example.com"
 )
 
-// runCmd represents the run command
-var runCmd = &cobra.Command{
-	Use:   "run",
-	Short: "Run a LakeFS",
-}
-
 type LakeFSServices uint8
 
 const (
 	LakeFSServiceAPI LakeFSServices = 1 << iota
 	LakeFSServiceS3Gateway
 )
+
+// runCmd represents the run command
+var runCmd = &cobra.Command{
+	Use:   "run",
+	Short: "Run a LakeFS",
+}
 
 func runLakeFSServices(services LakeFSServices) {
 	logger := logging.Default()
