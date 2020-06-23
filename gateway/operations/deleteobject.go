@@ -25,7 +25,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 	o.Incr("abort_mpu")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
-	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{Repo: o.Repo.StorageNamespace, Identifier: o.Path}, uploadId)
+	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: o.Path}, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
