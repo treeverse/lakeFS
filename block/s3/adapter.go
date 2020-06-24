@@ -303,13 +303,20 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 		StorageClass: opts.StorageClass,
 	}
 	resp, err := s.s3.CreateMultipartUpload(input)
-	if err == nil {
-		uploadId := *resp.UploadId
-		uploadId = s.uploadIdTranslator.SetUploadId(uploadId)
-		return uploadId, err
-	} else {
+	if err != nil {
 		return "", err
+
 	}
+	uploadId := *resp.UploadId
+	uploadId = s.uploadIdTranslator.SetUploadId(uploadId)
+	s.log().WithFields(logging.Fields{
+		"upload_id":            *resp.UploadId,
+		"translated_upload_id": uploadId,
+		"qualified_ns":         qualifiedKey.StorageNamespace,
+		"qualified_key":        qualifiedKey.Key,
+		"key":                  obj.Identifier,
+	}).Debug("created multipart upload")
+	return uploadId, err
 }
 func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	qualifiedKey, err := resolveNamespace(obj)
@@ -324,6 +331,12 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	}
 	_, err = s.s3.AbortMultipartUpload(input)
 	s.uploadIdTranslator.RemoveUploadId(uploadId)
+	s.log().WithFields(logging.Fields{
+		"upload_id":     uploadId,
+		"qualified_ns":  qualifiedKey.StorageNamespace,
+		"qualified_key": qualifiedKey.Key,
+		"key":           obj.Identifier,
+	}).Debug("aborted multipart upload")
 	return err
 }
 
@@ -333,24 +346,33 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 		return nil, 0, err
 	}
 	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Part}
-	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
+	translatedUploadId := s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),
 		Key:             aws.String(qualifiedKey.Key),
-		UploadId:        aws.String(uploadId),
+		UploadId:        aws.String(translatedUploadId),
 		MultipartUpload: cmpu,
 	}
+	lg := s.log().WithFields(logging.Fields{
+		"upload_id":            uploadId,
+		"translated_upload_id": translatedUploadId,
+		"qualified_ns":         qualifiedKey.StorageNamespace,
+		"qualified_key":        qualifiedKey.Key,
+		"key":                  obj.Identifier,
+	})
 	resp, err := s.s3.CompleteMultipartUpload(input)
-	if err == nil {
-		s.uploadIdTranslator.RemoveUploadId(uploadId)
-		headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
-		headResp, err := s.s3.HeadObject(headInput)
-		if err != nil {
-			return nil, -1, err
-		} else {
-			return resp.ETag, *headResp.ContentLength, err
-		}
-	} else {
+
+	if err != nil {
+		lg.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, -1, err
+	}
+	lg.Debug("completed multipart upload")
+	s.uploadIdTranslator.RemoveUploadId(translatedUploadId)
+	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
+	headResp, err := s.s3.HeadObject(headInput)
+	if err != nil {
+		return nil, -1, err
+	} else {
+		return resp.ETag, *headResp.ContentLength, err
 	}
 }
