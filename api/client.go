@@ -6,21 +6,19 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/treeverse/lakefs/catalog"
-
-	"github.com/treeverse/lakefs/api/gen/client/auth"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
 	genclient "github.com/treeverse/lakefs/api/gen/client"
+	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/catalog"
 )
 
 type AuthClient interface {
@@ -55,30 +53,30 @@ type AuthClient interface {
 
 type RepositoryClient interface {
 	ListRepositories(ctx context.Context, after string, amount int) ([]*models.Repository, *models.Pagination, error)
-	GetRepository(ctx context.Context, repoId string) (*models.Repository, error)
+	GetRepository(ctx context.Context, repository string) (*models.Repository, error)
 	CreateRepository(ctx context.Context, repository *models.RepositoryCreation) error
-	DeleteRepository(ctx context.Context, repoId string) error
+	DeleteRepository(ctx context.Context, repository string) error
 
-	ListBranches(ctx context.Context, repoId string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
-	GetBranch(ctx context.Context, repoId, branchId string) (*models.Ref, error)
-	CreateBranch(ctx context.Context, repoId string, branch *models.BranchCreation) (*models.Ref, error)
-	DeleteBranch(ctx context.Context, repoId, branchId string) error
-	RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error
+	ListBranches(ctx context.Context, repository string, from string, amount int) ([]*models.Ref, *models.Pagination, error)
+	GetBranch(ctx context.Context, repository, branchId string) (*models.Ref, error)
+	CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (*models.Ref, error)
+	DeleteBranch(ctx context.Context, repository, branchId string) error
+	RevertBranch(ctx context.Context, repository, branchId string, revertProps *models.RevertCreation) error
 
-	Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error)
-	GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error)
-	GetCommitLog(ctx context.Context, repoId, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error)
+	Commit(ctx context.Context, repository, branchId, message string, metadata map[string]string) (*models.Commit, error)
+	GetCommit(ctx context.Context, repository, commitId string) (*models.Commit, error)
+	GetCommitLog(ctx context.Context, repository, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error)
 
-	StatObject(ctx context.Context, repoId, ref, path string, readUncommitted bool) (*models.ObjectStats, error)
-	ListObjects(ctx context.Context, repoId, ref, tree, from string, amount int, readUncommitted bool) ([]*models.ObjectStats, *models.Pagination, error)
-	GetObject(ctx context.Context, repoId, ref, path string, readUncommitted bool, w io.Writer) (*objects.GetObjectOK, error)
-	UploadObject(ctx context.Context, repoId, branchId, path string, r io.Reader) (*models.ObjectStats, error)
-	DeleteObject(ctx context.Context, repoId, branchId, path string) error
+	StatObject(ctx context.Context, repository, ref, path string) (*models.ObjectStats, error)
+	ListObjects(ctx context.Context, repository, ref, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
+	GetObject(ctx context.Context, repository, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
+	UploadObject(ctx context.Context, repository, branchId, path string, r io.Reader) (*models.ObjectStats, error)
+	DeleteObject(ctx context.Context, repository, branchId, path string) error
 
-	DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error)
-	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error)
+	DiffRefs(ctx context.Context, repository, leftRef, rightRef string) ([]*models.Diff, error)
+	Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error)
 
-	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
+	DiffBranch(ctx context.Context, repository, branch string) ([]*models.Diff, error)
 }
 
 type Client interface {
@@ -397,10 +395,10 @@ func (c *client) ListRepositories(ctx context.Context, after string, amount int)
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repository, error) {
+func (c *client) GetRepository(ctx context.Context, repository string) (*models.Repository, error) {
 	resp, err := c.remote.Repositories.GetRepository(&repositories.GetRepositoryParams{
-		RepositoryID: repoId,
-		Context:      ctx,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -408,12 +406,12 @@ func (c *client) GetRepository(ctx context.Context, repoId string) (*models.Repo
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListBranches(ctx context.Context, repoId string, after string, amount int) ([]*models.Ref, *models.Pagination, error) {
+func (c *client) ListBranches(ctx context.Context, repository string, after string, amount int) ([]*models.Ref, *models.Pagination, error) {
 	resp, err := c.remote.Branches.ListBranches(&branches.ListBranchesParams{
-		After:        swag.String(after),
-		Amount:       swag.Int64(int64(amount)),
-		RepositoryID: repoId,
-		Context:      ctx,
+		After:      swag.String(after),
+		Amount:     swag.Int64(int64(amount)),
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, nil, err
@@ -429,19 +427,19 @@ func (c *client) CreateRepository(ctx context.Context, repository *models.Reposi
 	return err
 }
 
-func (c *client) DeleteRepository(ctx context.Context, repoId string) error {
+func (c *client) DeleteRepository(ctx context.Context, repository string) error {
 	_, err := c.remote.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-		RepositoryID: repoId,
-		Context:      ctx,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*models.Ref, error) {
+func (c *client) GetBranch(ctx context.Context, repository, branchId string) (*models.Ref, error) {
 	resp, err := c.remote.Branches.GetBranch(&branches.GetBranchParams{
-		BranchID:     branchId,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Branch:     branchId,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -449,11 +447,11 @@ func (c *client) GetBranch(ctx context.Context, repoId, branchId string) (*model
 	return resp.GetPayload(), nil
 }
 
-func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models.BranchCreation) (*models.Ref, error) {
+func (c *client) CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (*models.Ref, error) {
 	resp, err := c.remote.Branches.CreateBranch(&branches.CreateBranchParams{
-		Branch:       branch,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Branch:     branch,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -461,34 +459,34 @@ func (c *client) CreateBranch(ctx context.Context, repoId string, branch *models
 	return resp.GetPayload(), nil
 }
 
-func (c *client) DeleteBranch(ctx context.Context, repoId, branchId string) error {
+func (c *client) DeleteBranch(ctx context.Context, repository, branchId string) error {
 	_, err := c.remote.Branches.DeleteBranch(&branches.DeleteBranchParams{
-		BranchID:     branchId,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Branch:     branchId,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) RevertBranch(ctx context.Context, repoId, branchId string, revertProps *models.RevertCreation) error {
+func (c *client) RevertBranch(ctx context.Context, repository, branchId string, revertProps *models.RevertCreation) error {
 	_, err := c.remote.Branches.RevertBranch(&branches.RevertBranchParams{
-		BranchID:     branchId,
-		Revert:       revertProps,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Branch:     branchId,
+		Revert:     revertProps,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) Commit(ctx context.Context, repoId, branchId, message string, metadata map[string]string) (*models.Commit, error) {
+func (c *client) Commit(ctx context.Context, repository, branchId, message string, metadata map[string]string) (*models.Commit, error) {
 	commit, err := c.remote.Commits.Commit(&commits.CommitParams{
-		BranchID: branchId,
+		Branch: branchId,
 		Commit: &models.CommitCreation{
 			Message:  &message,
 			Metadata: metadata,
 		},
-		RepositoryID: repoId,
-		Context:      ctx,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -496,11 +494,11 @@ func (c *client) Commit(ctx context.Context, repoId, branchId, message string, m
 	return commit.GetPayload(), nil
 }
 
-func (c *client) GetCommit(ctx context.Context, repoId, commitId string) (*models.Commit, error) {
+func (c *client) GetCommit(ctx context.Context, repository, commitId string) (*models.Commit, error) {
 	commit, err := c.remote.Commits.GetCommit(&commits.GetCommitParams{
-		CommitID:     commitId,
-		RepositoryID: repoId,
-		Context:      ctx,
+		CommitID:   commitId,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -508,13 +506,13 @@ func (c *client) GetCommit(ctx context.Context, repoId, commitId string) (*model
 	return commit.GetPayload(), nil
 }
 
-func (c *client) GetCommitLog(ctx context.Context, repoId, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error) {
+func (c *client) GetCommitLog(ctx context.Context, repository, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error) {
 	resp, err := c.remote.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
-		Amount:       swag.Int64(int64(amount)),
-		After:        swag.String(after),
-		BranchID:     branchId,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Amount:     swag.Int64(int64(amount)),
+		After:      swag.String(after),
+		Branch:     branchId,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, nil, err
@@ -522,12 +520,12 @@ func (c *client) GetCommitLog(ctx context.Context, repoId, branchId, after strin
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.Diff, error) {
+func (c *client) DiffRefs(ctx context.Context, repository, leftRef, rightRef string) ([]*models.Diff, error) {
 	diff, err := c.remote.Refs.DiffRefs(&refs.DiffRefsParams{
-		LeftRef:      leftRef,
-		RightRef:     rightRef,
-		RepositoryID: repoId,
-		Context:      ctx,
+		LeftRef:    leftRef,
+		RightRef:   rightRef,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -535,11 +533,11 @@ func (c *client) DiffRefs(ctx context.Context, repoId, leftRef, rightRef string)
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error) {
+func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error) {
 	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
 		DestinationRef: leftRef,
 		SourceRef:      rightRef,
-		RepositoryID:   repoId,
+		Repository:     repository,
 		Context:        ctx,
 	}, c.auth)
 
@@ -556,9 +554,9 @@ func (c *client) Merge(ctx context.Context, repoId, leftRef, rightRef string) ([
 
 func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*models.Diff, error) {
 	diff, err := c.remote.Branches.DiffBranch(&branches.DiffBranchParams{
-		BranchID:     branch,
-		RepositoryID: repoID,
-		Context:      ctx,
+		Branch:     branch,
+		Repository: repoID,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -566,13 +564,12 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*mode
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) StatObject(ctx context.Context, repoID, ref, path string, readUncommitted bool) (*models.ObjectStats, error) {
+func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
-		Ref:             ref,
-		Path:            path,
-		RepositoryID:    repoID,
-		Context:         ctx,
-		ReadUncommitted: swag.Bool(readUncommitted),
+		Ref:        ref,
+		Path:       path,
+		Repository: repoID,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -580,15 +577,14 @@ func (c *client) StatObject(ctx context.Context, repoID, ref, path string, readU
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListObjects(ctx context.Context, repoID, ref, tree, after string, amount int, readUncommitted bool) ([]*models.ObjectStats, *models.Pagination, error) {
+func (c *client) ListObjects(ctx context.Context, repoID, ref, tree, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
 	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
-		After:           swag.String(after),
-		Amount:          swag.Int64(int64(amount)),
-		Ref:             ref,
-		RepositoryID:    repoID,
-		Tree:            swag.String(tree),
-		Context:         ctx,
-		ReadUncommitted: swag.Bool(readUncommitted),
+		After:      swag.String(after),
+		Amount:     swag.Int64(int64(amount)),
+		Ref:        ref,
+		Repository: repoID,
+		Tree:       swag.String(tree),
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, nil, err
@@ -596,13 +592,12 @@ func (c *client) ListObjects(ctx context.Context, repoID, ref, tree, after strin
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) GetObject(ctx context.Context, repoID, ref, path string, readUncommitted bool, writer io.Writer) (*objects.GetObjectOK, error) {
+func (c *client) GetObject(ctx context.Context, repoID, ref, path string, writer io.Writer) (*objects.GetObjectOK, error) {
 	params := &objects.GetObjectParams{
-		Ref:             ref,
-		Path:            path,
-		RepositoryID:    repoID,
-		Context:         ctx,
-		ReadUncommitted: swag.Bool(readUncommitted),
+		Ref:        ref,
+		Path:       path,
+		Repository: repoID,
+		Context:    ctx,
 	}
 	resp, err := c.remote.Objects.GetObject(params, c.auth, writer)
 	if err != nil {
@@ -613,11 +608,11 @@ func (c *client) GetObject(ctx context.Context, repoID, ref, path string, readUn
 
 func (c *client) UploadObject(ctx context.Context, repoID, branchId, path string, r io.Reader) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.UploadObject(&objects.UploadObjectParams{
-		BranchID:     branchId,
-		Content:      runtime.NamedReader("content", r),
-		Path:         path,
-		RepositoryID: repoID,
-		Context:      ctx,
+		Branch:     branchId,
+		Content:    runtime.NamedReader("content", r),
+		Path:       path,
+		Repository: repoID,
+		Context:    ctx,
 	}, c.auth)
 	if err != nil {
 		return nil, err
@@ -625,12 +620,12 @@ func (c *client) UploadObject(ctx context.Context, repoID, branchId, path string
 	return resp.GetPayload(), nil
 }
 
-func (c *client) DeleteObject(ctx context.Context, repoId, branchId, path string) error {
+func (c *client) DeleteObject(ctx context.Context, repository, branchId, path string) error {
 	_, err := c.remote.Objects.DeleteObject(&objects.DeleteObjectParams{
-		BranchID:     branchId,
-		Path:         path,
-		RepositoryID: repoId,
-		Context:      ctx,
+		Branch:     branchId,
+		Path:       path,
+		Repository: repository,
+		Context:    ctx,
 	}, c.auth)
 	return err
 }

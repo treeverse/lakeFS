@@ -1,3 +1,5 @@
+//go:generate swagger generate client -q -A lakefs -f ../swagger.yml -P models.User -t gen
+//go:generate swagger generate server -q -A lakefs -f ../swagger.yml -P models.User -t gen --exclude-main
 package api
 
 import (

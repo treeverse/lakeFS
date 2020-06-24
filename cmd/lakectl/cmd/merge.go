@@ -52,7 +52,7 @@ var mergeCmd = &cobra.Command{
 		} else if err == catalog.ErrConflictFound {
 			_, _ = os.Stdout.WriteString(" Conflicts:\n")
 			for _, line := range result {
-				if line.Direction == models.DiffDirectionCONFLICT {
+				if line.Type == models.DiffTypeCONFLICT {
 					FmtMerge(line)
 				}
 			}

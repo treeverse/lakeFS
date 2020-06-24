@@ -246,7 +246,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadRepositoryAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -254,7 +254,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 		}
 		a.incrStat("get_repo")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		repo, err := cataloger.GetRepository(a.Context(), params.RepositoryID)
+		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -279,7 +279,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadCommitAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -287,7 +287,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		}
 		a.incrStat("get_commit")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		commit, err := cataloger.GetCommit(a.Context(), params.RepositoryID, params.CommitID)
+		commit, err := cataloger.GetCommit(a.Context(), params.Repository, params.CommitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
@@ -310,7 +310,7 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
-				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
@@ -323,8 +323,8 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		}
 		committer := userModel.DisplayName
 		commitMessage := swag.StringValue(params.Commit.Message)
-		commit, err := a.ForRequest(params.HTTPRequest).Cataloger.Commit(a.Context(), params.RepositoryID,
-			params.BranchID, commitMessage, committer, params.Commit.Metadata)
+		commit, err := a.ForRequest(params.HTTPRequest).Cataloger.Commit(a.Context(), params.Repository,
+			params.Branch, commitMessage, committer, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -344,7 +344,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
-				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
@@ -355,7 +355,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.RepositoryID, params.BranchID, after, amount)
+		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.Repository, params.Branch, after, amount)
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -456,7 +456,7 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.DeleteRepositoryAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -464,7 +464,7 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		}
 		a.incrStat("delete_repo")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		err = cataloger.DeleteRepository(a.Context(), params.RepositoryID)
+		err = cataloger.DeleteRepository(a.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -483,7 +483,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListBranchesAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -494,7 +494,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		res, hasMore, err := cataloger.ListBranches(a.Context(), params.RepositoryID, "", amount, after)
+		res, hasMore, err := cataloger.ListBranches(a.Context(), params.Repository, "", amount, after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches: %s", err))
@@ -503,10 +503,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		branchList := make([]*models.Ref, len(res))
 		var lastId string
 		for i, branch := range res {
-			branchList[i] = &models.Ref{
-				CommitID: &branch.Name,
-				ID:       &branch.Repository,
-			}
+			branchList[i] = &models.Ref{Reference: swag.String(branch.Name)}
 			lastId = branch.Name
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
@@ -531,7 +528,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
-				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
@@ -539,7 +536,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		}
 		a.incrStat("get_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		reference, err := cataloger.GetBranchReference(a.Context(), params.RepositoryID, params.BranchID)
+		reference, err := cataloger.GetBranchReference(a.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -550,17 +547,14 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		}
 
 		return branches.NewGetBranchOK().
-			WithPayload(&models.Ref{
-				CommitID: swag.String(reference),
-				ID:       swag.String(params.RepositoryID),
-			})
+			WithPayload(&models.Ref{Reference: swag.String(reference)})
 	})
 }
 
 func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
-		repository := params.RepositoryID
-		branch := swag.StringValue(params.Branch.ID)
+		repository := params.Repository
+		branch := swag.StringValue(params.Branch.Name)
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.CreateBranchAction,
@@ -572,7 +566,7 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		}
 		a.incrStat("create_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		sourceBranch := swag.StringValue(params.Branch.SourceRefID)
+		sourceBranch := swag.StringValue(params.Branch.Source)
 		err = cataloger.CreateBranch(a.Context(),
 			repository,
 			branch,
@@ -582,8 +576,7 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		}
 
 		return branches.NewCreateBranchCreated().WithPayload(&models.Ref{
-			CommitID: swag.String(branch),
-			ID:       swag.String(repository),
+			Reference: swag.String(branch),
 		})
 	})
 }
@@ -593,7 +586,7 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.DeleteBranchAction,
-				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
@@ -601,7 +594,7 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 		a.incrStat("delete_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		err = cataloger.DeleteBranch(a.Context(), params.RepositoryID, params.BranchID)
+		err = cataloger.DeleteBranch(a.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewDeleteBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -620,7 +613,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
-				Resource: permissions.BranchArn(params.RepositoryID, params.DestinationRef),
+				Resource: permissions.BranchArn(params.Repository, params.DestinationRef),
 			},
 		})
 		if err != nil {
@@ -632,7 +625,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		res, err := a.context.Cataloger.Merge(a.Context(),
-			params.RepositoryID, params.SourceRef, params.DestinationRef,
+			params.Repository, params.SourceRef, params.DestinationRef,
 			userModel.DisplayName,
 			swag.StringValue(params.Merge.Message),
 			params.Merge.Metadata)
@@ -672,7 +665,7 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -680,7 +673,7 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		}
 		a.incrStat("diff_workspace")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		diff, err := cataloger.DiffUncommitted(a.Context(), params.RepositoryID, params.BranchID)
+		diff, err := cataloger.DiffUncommitted(a.Context(), params.Repository, params.Branch)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -700,7 +693,7 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -708,7 +701,7 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		}
 		a.incrStat("diff_refs")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		diff, err := cataloger.Diff(a.Context(), params.RepositoryID, params.LeftRef, params.RightRef)
+		diff, err := cataloger.Diff(a.Context(), params.Repository, params.LeftRef, params.RightRef)
 		if err != nil {
 			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff references: %s", err))
@@ -727,7 +720,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
-				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
 			},
 		})
 		if err != nil {
@@ -736,7 +729,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		a.incrStat("stat_object")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
 
-		entry, err := cataloger.GetEntry(a.Context(), params.RepositoryID, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(a.Context(), params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -760,7 +753,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
-				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
 			},
 		})
 		if err != nil {
@@ -771,7 +764,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		cataloger := ctx.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.RepositoryID)
+		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -780,7 +773,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		}
 
 		entry, err := cataloger.GetEntry(a.Context(),
-			params.RepositoryID, params.Ref, params.Path)
+			params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -806,7 +799,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
-				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
 			},
 		})
 		if err != nil {
@@ -817,7 +810,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		cataloger := ctx.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.RepositoryID)
+		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -826,7 +819,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(a.Context(), params.RepositoryID, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(a.Context(), params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -857,7 +850,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
-				Resource: permissions.RepoArn(params.RepositoryID),
+				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
 		if err != nil {
@@ -870,7 +863,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 
 		res, hasMore, err := cataloger.ListEntries(
 			a.Context(),
-			params.RepositoryID,
+			params.Repository,
 			params.Ref,
 			swag.StringValue(params.Tree),
 			after,
@@ -921,7 +914,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
-				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
 			},
 		})
 		if err != nil {
@@ -931,7 +924,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		ctx := a.ForRequest(params.HTTPRequest)
 		cataloger := ctx.Cataloger
 
-		repo, err := cataloger.GetRepository(a.Context(), params.RepositoryID)
+		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -961,7 +954,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:            size,
 			Checksum:        checksum,
 		}
-		err = cataloger.CreateEntry(a.Context(), repo.Name, params.BranchID, entry)
+		err = cataloger.CreateEntry(a.Context(), repo.Name, params.Branch, entry)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -980,7 +973,7 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.DeleteObjectAction,
-				Resource: permissions.ObjectArn(params.RepositoryID, params.Path),
+				Resource: permissions.ObjectArn(params.Repository, params.Path),
 			},
 		})
 		if err != nil {
@@ -989,7 +982,7 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		a.incrStat("delete_object")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
 
-		err = cataloger.DeleteEntry(a.Context(), params.RepositoryID, params.BranchID, params.Path)
+		err = cataloger.DeleteEntry(a.Context(), params.Repository, params.Branch, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -1005,7 +998,7 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.RevertBranchAction,
-				Resource: permissions.BranchArn(params.RepositoryID, params.BranchID),
+				Resource: permissions.BranchArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
@@ -1016,13 +1009,13 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
-			err = cataloger.RollbackCommit(a.Context(), params.RepositoryID, params.Revert.Commit)
+			err = cataloger.RollbackCommit(a.Context(), params.Repository, params.Revert.Commit)
 		case models.RevertCreationTypeTREE:
-			err = cataloger.ResetEntries(a.Context(), params.RepositoryID, params.BranchID, params.Revert.Path)
+			err = cataloger.ResetEntries(a.Context(), params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeRESET:
-			err = cataloger.ResetBranch(a.Context(), params.RepositoryID, params.BranchID)
+			err = cataloger.ResetBranch(a.Context(), params.Repository, params.Branch)
 		case models.RevertCreationTypeOBJECT:
-			err = cataloger.ResetEntry(a.Context(), params.RepositoryID, params.BranchID, params.Revert.Path)
+			err = cataloger.ResetEntry(a.Context(), params.Repository, params.Branch, params.Revert.Path)
 		default:
 			return branches.NewRevertBranchNotFound().
 				WithPayload(responseError("revert type not found"))

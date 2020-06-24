@@ -9,9 +9,9 @@ import (
 var (
 	ErrInvalidValue = errors.New("invalid value")
 
-	validBranchNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
-	validRepoIDRegexp     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-	validHexRegexp        = regexp.MustCompile(`^[a-fA-F0-9]+$`)
+	validBranchNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
+	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
+	validHexRegexp            = regexp.MustCompile(`^[a-fA-F0-9]+$`)
 )
 
 type ValidateFunc func() bool
@@ -53,7 +53,7 @@ func ValidateRepositoryName(repository string) ValidateFunc {
 }
 
 func IsValidRepositoryName(repository string) bool {
-	return validRepoIDRegexp.MatchString(repository)
+	return validRepositoryNameRegexp.MatchString(repository)
 }
 
 func ValidateReference(reference string) ValidateFunc {

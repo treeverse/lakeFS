@@ -55,27 +55,29 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			return nil, err
 		}
 
-		// add commit record
-		creationDate := c.Clock.Now()
-		if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
-			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone); err != nil {
-			return nil, err
-		}
-		reference := MakeReference(branch, commitID)
 		commitLog := &CommitLog{
-			Reference:    reference,
 			Committer:    committer,
 			Message:      message,
-			CreationDate: creationDate,
+			CreationDate: c.Clock.Now(),
 			Metadata:     metadata,
 			Parents:      nil,
 		}
+		if err := commitInsertCommitLog(tx, branchID, commitID, commitLog); err != nil {
+			return nil, err
+		}
+		commitLog.Reference = MakeReference(branch, commitID)
 		return commitLog, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
 	}
 	return res.(*CommitLog), nil
+}
+
+func commitInsertCommitLog(tx db.Tx, branchID int, commitID CommitID, commitLog *CommitLog) error {
+	_, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
+		branchID, commitID, commitLog.Committer, commitLog.Message, commitLog.CreationDate, commitLog.Metadata, RelationTypeNone)
+	return err
 }
 
 func commitIncrementCommitID(tx sqlx.Execer, branchID int, commitID CommitID) error {
