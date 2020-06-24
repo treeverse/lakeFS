@@ -292,9 +292,13 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 }
 
 func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return "", err
+	}
 	input := &s3.CreateMultipartUploadInput{
-		Bucket:       aws.String(obj.StorageNamespace),
-		Key:          aws.String(obj.Identifier),
+		Bucket:       aws.String(qualifiedKey.StorageNamespace),
+		Key:          aws.String(qualifiedKey.Key),
 		ContentType:  aws.String(""),
 		StorageClass: opts.StorageClass,
 	}
@@ -308,30 +312,38 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	}
 }
 func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return err
+	}
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.AbortMultipartUploadInput{
-		Bucket:   aws.String(obj.StorageNamespace),
-		Key:      aws.String(obj.Identifier),
+		Bucket:   aws.String(qualifiedKey.StorageNamespace),
+		Key:      aws.String(qualifiedKey.Key),
 		UploadId: aws.String(uploadId),
 	}
-	_, err := s.s3.AbortMultipartUpload(input)
+	_, err = s.s3.AbortMultipartUpload(input)
 	s.uploadIdTranslator.RemoveUploadId(uploadId)
 	return err
 }
 
 func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return nil, 0, err
+	}
 	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Part}
 	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.CompleteMultipartUploadInput{
-		Bucket:          aws.String(obj.StorageNamespace),
-		Key:             aws.String(obj.Identifier),
+		Bucket:          aws.String(qualifiedKey.StorageNamespace),
+		Key:             aws.String(qualifiedKey.Key),
 		UploadId:        aws.String(uploadId),
 		MultipartUpload: cmpu,
 	}
 	resp, err := s.s3.CompleteMultipartUpload(input)
 	if err == nil {
 		s.uploadIdTranslator.RemoveUploadId(uploadId)
-		headInput := &s3.HeadObjectInput{Bucket: &obj.StorageNamespace, Key: &obj.Identifier}
+		headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
 		headResp, err := s.s3.HeadObject(headInput)
 		if err != nil {
 			return nil, -1, err
