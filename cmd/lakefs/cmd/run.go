@@ -154,9 +154,9 @@ func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutte
 	ctx, cancel := context.WithTimeout(context.Background(), gracefulShutdownTimeout)
 	defer cancel()
 
-	for _, server := range servers {
+	for i, server := range servers {
 		if err := server.Shutdown(ctx); err != nil {
-			fmt.Printf("Cloud not shutdown the gateway server: %s\n", err)
+			fmt.Printf("Error while shutdown a service (%d): %s\n", i, err)
 			os.Exit(1)
 		}
 	}
