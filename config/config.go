@@ -90,14 +90,12 @@ func setDefaults() {
 }
 
 const (
-	DBKeyAuth = "auth"
-	//DBKeyIndex   = "metadata"
+	DBKeyAuth    = "auth"
 	DBKeyCatalog = "catalog"
 )
 
 var SchemaDBKeys = map[string]string{
-	SchemaAuth: DBKeyAuth,
-	//SchemaMetadata: DBKeyIndex,
+	SchemaAuth:    DBKeyAuth,
 	SchemaCatalog: DBKeyCatalog,
 }
 

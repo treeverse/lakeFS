@@ -8,13 +8,19 @@ import (
 	"strconv"
 	"strings"
 	"testing"
+	"time"
+
+	"github.com/benbjohnson/clock"
 
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_Commit(t *testing.T) {
 	ctx := context.Background()
-	c := testCataloger(t)
+	now := time.Now().Round(time.Minute)
+	fakeClock := clock.NewMock()
+	fakeClock.Set(now)
+	c := testCatalogerWithClock(t, fakeClock)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 	meta := Metadata{"key1": "val1", "key2": "val2"}
 	for i := 0; i < 3; i++ {
@@ -41,37 +47,37 @@ func TestCataloger_Commit(t *testing.T) {
 	tests := []struct {
 		name    string
 		args    args
-		want    string
+		want    *CommitLog
 		wantErr bool
 	}{
 		{
 			name:    "simple",
 			args:    args{repository: repository, branch: "master", message: "merge to master", committer: "tester", metadata: meta},
-			want:    MakeReference("master", 1),
+			want:    &CommitLog{Reference: MakeReference("master", 1), Committer: "tester", Message: "merge to master", CreationDate: now, Metadata: meta},
 			wantErr: false,
 		},
 		{
 			name:    "no repository",
 			args:    args{repository: "repoX", branch: "master", message: "merge to master", committer: "tester", metadata: meta},
-			want:    "",
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "no branch",
 			args:    args{repository: repository, branch: "shifu", message: "merge to shifu", committer: "tester", metadata: meta},
-			want:    "",
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "no message",
 			args:    args{repository: repository, branch: "master", message: "", committer: "tester", metadata: meta},
-			want:    "",
+			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "no committer",
 			args:    args{repository: repository, branch: "master", message: "merge to master", committer: "", metadata: meta},
-			want:    "",
+			want:    nil,
 			wantErr: true,
 		},
 	}
@@ -113,14 +119,14 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Error("create entry for commit twice", err)
 				return
 			}
-			ref, err := c.Commit(ctx, repository, "master", "commit"+strconv.Itoa(i+1), "tester", nil)
+			commitLog, err := c.Commit(ctx, repository, "master", "commit"+strconv.Itoa(i+1), "tester", nil)
 			if err != nil {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
 			expectedRef := MakeReference("master", CommitID(i+1))
-			if ref != expectedRef {
-				t.Errorf("Commit got ID %s, expected %s", ref, expectedRef)
+			if commitLog.Reference != expectedRef {
+				t.Errorf("Commit got ID %s, expected %s", commitLog, expectedRef)
 				return
 			}
 			ent, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)
@@ -152,14 +158,14 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Error("create entry for file per commit", err)
 				return
 			}
-			ref, err := c.Commit(ctx, repository, "master", "commit"+strconv.Itoa(i+1), "tester", nil)
+			commitLog, err := c.Commit(ctx, repository, "master", "commit"+strconv.Itoa(i+1), "tester", nil)
 			if err != nil {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
 			expectedRef := MakeReference("master", CommitID(i+1))
-			if ref != expectedRef {
-				t.Errorf("Commit got ID %s, expected %s", ref, expectedRef)
+			if commitLog.Reference != expectedRef {
+				t.Errorf("Commit got ID %s, expected %s", commitLog, expectedRef)
 				return
 			}
 			ent, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)

@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"path/filepath"
 	"time"
 
 	"github.com/go-openapi/runtime"
@@ -31,7 +32,7 @@ import (
 )
 
 const (
-	// Maximum a/mount of results returned for paginated queries to the API
+	// Maximum amount of results returned for paginated queries to the API
 	MaxResultsPerPage int64 = 1000
 )
 
@@ -299,7 +300,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 			ID:           params.CommitID,
 			Message:      commit.Message,
 			Metadata:     commit.Metadata,
-			//Parents:      commit.Parents, // TODO(barak): parents?
+			Parents:      commit.Parents,
 		})
 	})
 }
@@ -322,19 +323,18 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		}
 		committer := userModel.DisplayName
 		commitMessage := swag.StringValue(params.Commit.Message)
-		reference, err := a.ForRequest(params.HTTPRequest).Cataloger.Commit(a.Context(), params.RepositoryID,
+		commit, err := a.ForRequest(params.HTTPRequest).Cataloger.Commit(a.Context(), params.RepositoryID,
 			params.BranchID, commitMessage, committer, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		return commits.NewCommitCreated().WithPayload(&models.Commit{
-			Committer: committer,
-			//CreationDate: reference.CreationDate.Unix(), // TODO(barak): read the commit information or return the new created commit
-			CreationDate: time.Now().Unix(),
-			ID:           reference,
-			Message:      commitMessage,
-			Metadata:     params.Commit.Metadata,
-			//Parents:      reference.Parents, TODO(barak): parents
+			Committer:    commit.Committer,
+			CreationDate: commit.CreationDate.Unix(),
+			ID:           commit.Reference,
+			Message:      commit.Message,
+			Metadata:     commit.Metadata,
+			Parents:      commit.Parents,
 		})
 	})
 }
@@ -353,15 +353,6 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		a.incrStat("get_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
 
-		// read branch
-		//branch, err := cataloger.GetBranch(a.Context(), params.RepositoryID, params.BranchID)
-		//if errors.Is(err, db.ErrNotFound) {
-		//	return commits.NewGetBranchCommitLogNotFound().WithPayload(responseErrorFrom(err))
-		//}
-		//if err != nil {
-		//	return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
-		//}
-
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.RepositoryID, params.BranchID, after, amount)
@@ -378,7 +369,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 				ID:           commit.Reference,
 				Message:      commit.Message,
 				Metadata:     commit.Metadata,
-				//Parents:      commit.Parents, // TODO(barak): call your parents
+				Parents:      commit.Parents,
 			}
 			lastId = commit.Reference
 		}
@@ -536,7 +527,6 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 }
 
 func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
-	// TODO(barak): do we need branch branch handler as the branch name say it all, or do we need to get reference to committed data on branch
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{
 			{
@@ -549,7 +539,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		}
 		a.incrStat("get_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		_, err = cataloger.GetBranchReference(a.Context(), params.RepositoryID, params.BranchID)
+		reference, err := cataloger.GetBranchReference(a.Context(), params.RepositoryID, params.BranchID)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -561,7 +551,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 
 		return branches.NewGetBranchOK().
 			WithPayload(&models.Ref{
-				CommitID: swag.String(params.BranchID),
+				CommitID: swag.String(reference),
 				ID:       swag.String(params.RepositoryID),
 			})
 	})
@@ -641,9 +631,11 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		committer := userModel.DisplayName
 		res, err := a.context.Cataloger.Merge(a.Context(),
-			params.RepositoryID, params.SourceRef, params.DestinationRef, committer, nil)
+			params.RepositoryID, params.SourceRef, params.DestinationRef,
+			userModel.DisplayName,
+			swag.StringValue(params.Merge.Message),
+			params.Merge.Metadata)
 
 		// convert merge differences into merge results
 		var mergeResults []*models.MergeResult
@@ -834,8 +826,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(a.Context(),
-			params.RepositoryID, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(a.Context(), params.RepositoryID, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -846,7 +837,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		res := objects.NewGetObjectOK()
 		res.ETag = httputil.ETag(entry.Checksum)
 		res.LastModified = httputil.HeaderTimestamp(entry.CreationDate)
-		res.ContentDisposition = fmt.Sprintf("filename=\"%s\"", entry.Path) // TODO(barak): do we need to extract name?
+		res.ContentDisposition = fmt.Sprintf("filename=\"%s\"", filepath.Base(entry.Path))
 
 		// build a response as a multi-reader
 		res.ContentLength = entry.Size
@@ -895,10 +886,6 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		objList := make([]*models.ObjectStats, len(res))
 		var lastId string
 		for i, entry := range res {
-			//typ := models.ObjectStatsPathTypeTREE
-			//if entry.GetType() == model.EntryTypeObject {
-			//	typ = models.ObjectStatsPathTypeOBJECT
-			//}
 			typ := models.ObjectStatsPathTypeOBJECT
 			mtime := entry.CreationDate.Unix()
 			if entry.CreationDate.IsZero() {
@@ -907,7 +894,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			objList[i] = &models.ObjectStats{
 				Checksum:  entry.Checksum,
 				Mtime:     mtime,
-				Path:      entry.Path, // TODO(barak): do we need to extract the name?
+				Path:      entry.Path,
 				PathType:  typ,
 				SizeBytes: entry.Size,
 			}
@@ -967,23 +954,12 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 
 		// write metadata
 		writeTime := time.Now()
-		//obj := &model.Object{
-		//	RepositoryId:    repo.Id,
-		//	PhysicalAddress: physicalAddress,
-		//	Checksum:        checksum,
-		//	Size:            size,
-		//}
-
-		//p := pth.New(params.Path, model.EntryTypeObject)
-
 		entry := catalog.Entry{
 			Path:            params.Path,
 			PhysicalAddress: physicalAddress,
-			//EntryType:    model.EntryTypeObject,
-			CreationDate: writeTime,
-			Size:         size,
-			Checksum:     checksum,
-			//ObjectCount:  1,
+			CreationDate:    writeTime,
+			Size:            size,
+			Checksum:        checksum,
 		}
 		err = cataloger.CreateEntry(a.Context(), repo.Name, params.BranchID, entry)
 		if err != nil {

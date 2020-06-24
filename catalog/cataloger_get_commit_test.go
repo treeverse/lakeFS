@@ -7,20 +7,18 @@ import (
 	"testing"
 	"time"
 
-	"code.cloudfoundry.org/clock/fakeclock"
-	"github.com/treeverse/lakefs/logging"
+	"github.com/benbjohnson/clock"
+
+	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_GetCommit(t *testing.T) {
 	ctx := context.Background()
-	db, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	now := time.Now().Round(time.Minute)
-	c := &cataloger{
-		Clock: fakeclock.NewFakeClock(now),
-		log:   logging.Default().WithField("service_name", "cataloger"),
-		db:    db,
-	}
+	mockClock := clock.NewMock()
+	mockClock.Set(now)
+	c := testCatalogerWithClock(t, mockClock)
 
 	// test data
 	const testBranch = "master"
@@ -34,11 +32,9 @@ func TestCataloger_GetCommit(t *testing.T) {
 		msg := "Commit" + n
 		committer := "tester" + n
 		testCatalogerCreateEntry(t, ctx, c, repository, testBranch, testPath, meta, "")
-		var err error
-		refs[i], err = c.Commit(ctx, repository, testBranch, msg, committer, meta)
-		if err != nil {
-			t.Fatalf("GetCommit commit msg='%s' failed with error: %s", msg, err)
-		}
+		commitLog, err := c.Commit(ctx, repository, testBranch, msg, committer, meta)
+		testutil.MustDo(t, "commit "+msg, err)
+		refs[i] = commitLog.Reference
 	}
 
 	tests := []struct {
@@ -86,7 +82,7 @@ func TestCataloger_GetCommit(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("GetCommit() got = %v, want %v", got, tt.want)
+				t.Errorf("GetCommit() got = %s, want %s", spew.Sdump(got), spew.Sdump(tt.want))
 			}
 		})
 	}

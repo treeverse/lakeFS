@@ -50,7 +50,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	}
 
 	// merge master to branch1
-	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	if err != nil {
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
@@ -113,7 +113,7 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", overFilename, nil, "seed2")
 
 	// merge should identify conflicts on pending changes
-	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	// expected to find 2 conflicts on the files we update/created with the same path
 	if !errors.Is(err, ErrConflictFound) {
 		t.Errorf("Merge err = %s, expected conflict with err = %s", err, ErrConflictFound)
@@ -135,7 +135,7 @@ func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
-	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	expectedErr := ErrNoDifferenceWasFound
 	if !errors.Is(err, expectedErr) {
 		t.Errorf("Merge err = %s, expected %s", err, expectedErr)
@@ -188,7 +188,7 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 	testutil.MustDo(t, "first commit on branch1", err)
 
 	// merge should work and grab all the changes from master
-	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	if err != nil {
 		t.Fatal("Merge from master to branch1 failed:", err)
 	}
@@ -251,10 +251,10 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "second commit to master", err)
 
 	// merge the above down (from master) to branch1
-	_, err = c.Merge(ctx, repository, "master", "branch1", "tester", nil)
+	_, err = c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from master to branch1", err)
 	// merge the changes from branch1 to branch2
-	res, err := c.Merge(ctx, repository, "branch1", "branch2", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch1", "branch2", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from master to branch1", err)
 
 	// verify valid commit id
@@ -293,7 +293,7 @@ func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
 	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
 
 	// merge empty branch into master
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	expectedErr := ErrNoDifferenceWasFound
 	if !errors.Is(err, expectedErr) {
 		t.Fatalf("Merge from branch1 to master err=%s, expected=%s", err, expectedErr)
@@ -336,7 +336,7 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 	testutil.MustDo(t, "First commit to branch1", err)
 
 	// merge empty branch into master
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
@@ -397,7 +397,7 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "second commit to branch2", err)
 
 	// merge the above up to master (from branch2)
-	res, err := c.Merge(ctx, repository, "branch2", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch2", "branch1", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch2 to branch1", err)
 
 	if !IsValidReference(res.Reference) {
@@ -425,7 +425,7 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 	})
 
 	// merge the changes from branch1 to master
-	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
 	// verify valid commit id
@@ -471,7 +471,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	testutil.MustDo(t, "add new file to branch", err)
 
 	// merge branch to master
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
@@ -493,7 +493,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	testutil.MustDo(t, "Commit with deleted file", err)
 
 	// merge branch to master
-	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	if err != nil {
 		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
 	}
@@ -532,7 +532,7 @@ func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 	testutil.MustDo(t, "Commit with deleted file", err)
 
 	// merge changes from branch2 to branch1
-	res, err := c.Merge(ctx, repository, "branch2", "branch1", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch2", "branch1", "tester", "", nil)
 	if err != nil {
 		t.Fatalf("Merge from branch2 to branch1 err=%s, expected none", err)
 	}
@@ -575,7 +575,7 @@ func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
 	testutil.MustDo(t, "modify /file0 on master", err)
 
 	// merge changes from branch to master should find the conflict
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	if !errors.Is(err, ErrConflictFound) {
 		t.Fatalf("Merge from branch1 to master err=%s, expected conflict", err)
 	}

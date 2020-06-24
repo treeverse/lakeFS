@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"code.cloudfoundry.org/clock"
+	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -44,7 +44,7 @@ type Deduper interface {
 }
 
 type Committer interface {
-	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (string, error)
+	Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error)
 	GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error)
 	ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error)
 	RollbackCommit(ctx context.Context, repository, reference string) error
@@ -61,7 +61,7 @@ type MergeResult struct {
 }
 
 type Merger interface {
-	Merge(ctx context.Context, repository, sourceBranch, destinationBranch string, committer string, metadata Metadata) (*MergeResult, error)
+	Merge(ctx context.Context, repository, sourceBranch, destinationBranch string, committer string, message string, metadata Metadata) (*MergeResult, error)
 }
 
 type Cataloger interface {
@@ -84,7 +84,7 @@ type cataloger struct {
 
 func NewCataloger(db db.Database) Cataloger {
 	return &cataloger{
-		Clock: clock.NewClock(),
+		Clock: clock.New(),
 		log:   logging.Default().WithField("service_name", "cataloger"),
 		db:    db,
 	}

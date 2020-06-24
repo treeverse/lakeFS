@@ -41,11 +41,15 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 }
 
 func convertRawCommit(branch string, raw *commitLogRaw) *CommitLog {
-	return &CommitLog{
+	c := &CommitLog{
 		Reference:    MakeReference(branch, raw.CommitID),
 		Committer:    raw.Committer,
 		Message:      raw.Message,
 		CreationDate: raw.CreationDate,
 		Metadata:     raw.Metadata,
 	}
+	if raw.MergeSourceBranchName != "" {
+		c.Parents = []string{MakeReference(raw.MergeSourceBranchName, CommitID(raw.MergeSourceCommit))}
+	}
+	return c
 }

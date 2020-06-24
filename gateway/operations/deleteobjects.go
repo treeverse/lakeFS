@@ -6,9 +6,7 @@ import (
 	"net/http"
 
 	"github.com/treeverse/lakefs/auth"
-
 	"github.com/treeverse/lakefs/db"
-
 	gerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"

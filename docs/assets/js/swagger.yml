@@ -70,7 +70,7 @@ definitions:
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED]
+        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
       direction:
         type: string
         enum: [LEFT, RIGHT, CONFLICT]
@@ -137,7 +137,7 @@ definitions:
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED]
+        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
       direction:
         type: string
         enum: [LEFT, RIGHT, CONFLICT]
@@ -1383,6 +1383,11 @@ paths:
         - refs
       operationId: mergeIntoBranch
       summary: merge references
+      parameters:
+        - in: body
+          name: merge
+          schema:
+            $ref: "#/definitions/commit_creation"
       responses:
         200:
           description: merge completed
