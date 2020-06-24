@@ -41,7 +41,7 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
-		services, err := cmd.Flags().GetStringArray("services")
+		services, err := cmd.Flags().GetStringArray("service")
 		if err != nil {
 			fmt.Printf("Failed to get value for 'services': %s\n", err)
 			os.Exit(1)
@@ -175,5 +175,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	runCmd.Flags().StringArrayP("services", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
+	runCmd.Flags().StringArrayP("service", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
 }
