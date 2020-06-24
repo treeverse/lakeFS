@@ -9,21 +9,19 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
-var commitsTemplate = `{{ range $val := .Commits }}
-{{ if gt  ($val.Parents|len) 0 -}}
+const commitsTemplate = `
+{{ range $val := .Commits }}
 commit {{ $val.ID|yellow }}
 Author: {{ $val.Committer }}
 Date: {{ $val.CreationDate|date }}
-{{ if gt ($val.Parents|len) 1 -}}
+	{{ if gt ($val.Parents|len) 1 -}}
 Merge: {{ $val.Parents|join ", "|bold }}
-{{ end }}
-
-    {{ $val.Message }}
-
-    {{ range $key, $value := $val.Metadata }}
-    {{ $key }} = {{ $value }}
+	{{ end }}
+	{{ $val.Message }}
+	
+	{{ range $key, $value := $val.Metadata }}
+		{{ $key }} = {{ $value }}
 	{{ end -}}
-{{ end -}}
 {{ end }}
 {{.Pagination | paginate }}
 `
