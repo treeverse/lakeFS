@@ -25,102 +25,116 @@ const (
 	gracefulShutdownTimeout = 30 * time.Second
 
 	defaultInstallationID = "anon@example.com"
+
+	serviceAPIServer = "api"
+	serviceS3Gateway = "s3gateway"
 )
 
 type Shutter interface {
 	Shutdown(context.Context) error
 }
 
-type LakeFSServices uint8
-
-const (
-	LakeFSServiceAPI LakeFSServices = 1 << iota
-	LakeFSServiceS3Gateway
-)
-
 // runCmd represents the run command
 var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
-}
+	Run: func(cmd *cobra.Command, args []string) {
+		logger := logging.Default()
+		logger.WithField("version", config.Version).Infof("lakeFS run")
+		services, err := cmd.Flags().GetStringArray("services")
+		if err != nil {
+			fmt.Printf("Failed to get value for 'services': %s\n", err)
+			os.Exit(1)
+		}
 
-func runLakeFSServices(services LakeFSServices) {
-	logger := logging.Default()
-	logger.WithField("version", config.Version).Infof("lakeFS run")
-
-	if services == 0 {
-		logger.Info("nothing to run!")
-		return
-	}
-
-	mdb := cfg.ConnectMetadataDatabase()
-	adb := cfg.ConnectAuthDatabase()
-	defer func() {
-		_ = adb.Close()
-		_ = mdb.Close()
-	}()
-	migrator := db.NewDatabaseMigrator()
-	for name, key := range config.SchemaDBKeys {
-		migrator.AddDB(name, cfg.GetDatabaseURI(key))
-	}
-
-	// init index
-	meta := index.NewDBIndex(mdb)
-
-	// init block store
-	blockStore := cfg.BuildBlockAdapter()
-
-	// init authentication
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
-
-	ctx, cancelFn := context.WithCancel(context.Background())
-	stats := cfg.BuildStats(getInstallationID(authService))
-
-	// start API server
-	done := make(chan bool, 1)
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt)
-
-	var apiServer *api.Server
-	if services&LakeFSServiceAPI != 0 {
-		apiServer = api.NewServer(meta, blockStore, authService, stats, migrator)
-		go func() {
-			if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
-				fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
+		// validate service names and turn on the right flags
+		var runS3Gateway bool
+		var runAPIService bool
+		for _, service := range services {
+			switch service {
+			case serviceS3Gateway:
+				runS3Gateway = true
+			case serviceAPIServer:
+				runAPIService = true
+			default:
+				fmt.Printf("Unknown service: %s\n", service)
 				os.Exit(1)
 			}
+		}
+		if !runS3Gateway && !runAPIService {
+			fmt.Printf("No service to run\n")
+			os.Exit(1)
+		}
+
+		mdb := cfg.ConnectMetadataDatabase()
+		adb := cfg.ConnectAuthDatabase()
+		defer func() {
+			_ = adb.Close()
+			_ = mdb.Close()
 		}()
-	}
+		migrator := db.NewDatabaseMigrator()
+		for name, key := range config.SchemaDBKeys {
+			migrator.AddDB(name, cfg.GetDatabaseURI(key))
+		}
 
-	var gatewayServer *gateway.Server
-	if services&LakeFSServiceS3Gateway != 0 {
-		// init gateway server
-		gatewayServer = gateway.NewServer(
-			cfg.GetS3GatewayRegion(),
-			meta,
-			blockStore,
-			authService,
-			cfg.GetS3GatewayListenAddress(),
-			cfg.GetS3GatewayDomainName(),
-			stats,
-		)
-	}
+		// init index
+		meta := index.NewDBIndex(mdb)
 
-	go stats.Run(ctx)
-	stats.Collect("global", "run")
+		// init block store
+		blockStore := cfg.BuildBlockAdapter()
 
-	if gatewayServer != nil {
-		go func() {
-			if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
-				fmt.Printf("Gateway server failed to listen on %s: %v\n", cfg.GetS3GatewayListenAddress(), err)
-				os.Exit(1)
-			}
-		}()
-	}
-	go gracefulShutdown(quit, done, apiServer, gatewayServer)
-	<-done
-	cancelFn()
-	<-stats.Done()
+		// init authentication
+		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+
+		ctx, cancelFn := context.WithCancel(context.Background())
+		stats := cfg.BuildStats(getInstallationID(authService))
+
+		// start API server
+		done := make(chan bool, 1)
+		quit := make(chan os.Signal, 1)
+		signal.Notify(quit, os.Interrupt)
+
+		var apiServer *api.Server
+		if runAPIService {
+			apiServer = api.NewServer(meta, blockStore, authService, stats, migrator)
+			go func() {
+				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
+					fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
+					os.Exit(1)
+				}
+			}()
+		}
+
+		var gatewayServer *gateway.Server
+		if runS3Gateway {
+			// init gateway server
+			gatewayServer = gateway.NewServer(
+				cfg.GetS3GatewayRegion(),
+				meta,
+				blockStore,
+				authService,
+				cfg.GetS3GatewayListenAddress(),
+				cfg.GetS3GatewayDomainName(),
+				stats,
+			)
+		}
+
+		go stats.Run(ctx)
+		stats.Collect("global", "run")
+
+		if gatewayServer != nil {
+			go func() {
+				if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
+					fmt.Printf("Gateway server failed to listen on %s: %v\n", cfg.GetS3GatewayListenAddress(), err)
+					os.Exit(1)
+				}
+			}()
+		}
+		go gracefulShutdown(quit, done, apiServer, gatewayServer)
+		<-done
+		cancelFn()
+		<-stats.Done()
+	},
 }
 
 func getInstallationID(authService auth.Service) string {
@@ -161,4 +175,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	runCmd.Flags().StringArrayP("services", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
 }
