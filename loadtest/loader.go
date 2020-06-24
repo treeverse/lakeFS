@@ -31,12 +31,12 @@ type Loader struct {
 }
 
 type Config struct {
-	FreqPerSecond     int
-	Duration          time.Duration
-	BucketNameForRepo string
-	KeepRepo          bool
-	Credentials       model.Credential
-	ServerAddress     string
+	FreqPerSecond    int
+	Duration         time.Duration
+	StorageNamespace string
+	KeepRepo         bool
+	Credentials      model.Credential
+	ServerAddress    string
 }
 
 func NewLoader(config Config) *Loader {
@@ -52,7 +52,7 @@ func (t *Loader) Run() error {
 	if err != nil {
 		return err
 	}
-	repoName, err := t.createRepo(apiClient, t.Config.BucketNameForRepo)
+	repoName, err := t.createRepo(apiClient, t.Config.StorageNamespace)
 	if err != nil {
 		return err
 	}
@@ -83,11 +83,11 @@ func (t *Loader) Run() error {
 	return nil
 }
 
-func (t *Loader) createRepo(apiClient api.Client, bucketName string) (string, error) {
+func (t *Loader) createRepo(apiClient api.Client, storageNamespace string) (string, error) {
 	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
 		DefaultBranch:    "master",
 		ID:               &t.NewRepoName,
-		StorageNamespace: swag.String("s3://" + bucketName),
+		StorageNamespace: swag.String(storageNamespace),
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)

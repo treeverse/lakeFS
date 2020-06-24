@@ -13,10 +13,10 @@ import (
 )
 
 const (
-	DurationFlag   = "duration"
-	FrequencyFlag  = "freq"
-	BucketNameFlag = "bucket"
-	KeepFlag       = "keep"
+	DurationFlag         = "duration"
+	FrequencyFlag        = "freq"
+	StorageNamespaceFlag = "storage-namespace"
+	KeepFlag             = "keep"
 )
 
 // runCmd represents the run command
@@ -25,7 +25,7 @@ var runCmd = &cobra.Command{
 	Short: "Run a loadtest on a lakeFS instance",
 	Long:  `Run a loadtest on a lakeFS instance. It can either be on a running lakeFS instance, or you can choose to start a dedicated lakeFS server as part of the test.`,
 	Run: func(cmd *cobra.Command, args []string) {
-		bucketName, err := cmd.Flags().GetString(BucketNameFlag)
+		storageNamespace, err := cmd.Flags().GetString(StorageNamespaceFlag)
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -34,10 +34,10 @@ var runCmd = &cobra.Command{
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
 		testConfig := loadtest.Config{
-			FreqPerSecond:     requestsPerSeq,
-			Duration:          duration,
-			BucketNameForRepo: bucketName,
-			KeepRepo:          isKeep,
+			FreqPerSecond:    requestsPerSeq,
+			Duration:         duration,
+			StorageNamespace: storageNamespace,
+			KeepRepo:         isKeep,
 			Credentials: model.Credential{
 				AccessKeyId:     viper.GetString(ConfigAccessKeyId),
 				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
@@ -55,8 +55,7 @@ var runCmd = &cobra.Command{
 
 func init() {
 	rootCmd.AddCommand(runCmd)
-	runCmd.Flags().StringP(BucketNameFlag, "r", "", "Bucket to create the test repo in")
-	_ = runCmd.MarkFlagRequired(BucketNameFlag)
+	runCmd.Flags().StringP(StorageNamespaceFlag, "n", "local://", "Storage namespace to create the test repo in, e.g. s3://example-bucket/. Required if your instance uses S3 storage.")
 	runCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
 	runCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
 	runCmd.Flags().DurationP(DurationFlag, "d", 30*time.Second, "Duration of test")
