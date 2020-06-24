@@ -65,20 +65,14 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
 
-  mergeResult:
+  merge_result:
     type: object
     properties:
       type:
         type: string
         enum: [ADDED, REMOVED, CHANGED, CONFLICT]
-      direction:
-        type: string
-        enum: [LEFT, RIGHT, CONFLICT]
       path:
         type: string
-      path_type:
-        type: string
-        enum: [TREE, OBJECT]
 
   repository_creation:
     type: object
@@ -138,14 +132,8 @@ definitions:
       type:
         type: string
         enum: [ADDED, REMOVED, CHANGED, CONFLICT]
-      direction:
-        type: string
-        enum: [LEFT, RIGHT, CONFLICT]
       path:
         type: string
-      path_type:
-        type: string
-        enum: [TREE, OBJECT]
 
   revert_creation:
     type: object
@@ -1397,7 +1385,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/mergeResult"
+                  $ref: "#/definitions/merge_result"
         401:
           description: Unauthorized
           schema:
@@ -1414,7 +1402,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/mergeResult"
+                  $ref: "#/definitions/merge_result"
         default:
           description: generic error response
           schema:

@@ -19,16 +19,17 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 		if err != nil {
 			return "", err
 		}
-		nextCommitID, err := getNextCommitID(tx, branchID)
+
+		var commitID CommitID
+		err = tx.Get(&commitID, `SELECT COALESCE(MAX(commit_id),0) as commit_id FROM commits WHERE branch_id=$1`, branchID)
 		if err != nil {
 			return "", err
 		}
-		commitID := nextCommitID - 1
-		if commitID <= 0 {
+		if commitID == 0 {
+			// TODO(barak): recursive search for parent commit - if none, return ErrReferenceNotFound
 			return "", nil
 		}
-		reference := MakeReference(branch, commitID)
-		return reference, nil
+		return MakeReference(branch, commitID), nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return "", err

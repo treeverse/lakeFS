@@ -43,7 +43,7 @@ var branchListCmd = &cobra.Command{
 
 		rows := make([][]interface{}, len(response))
 		for i, row := range response {
-			rows[i] = []interface{}{*row.ID, *row.CommitID}
+			rows[i] = []interface{}{*row.Reference}
 		}
 
 		ctx := struct {
@@ -51,7 +51,7 @@ var branchListCmd = &cobra.Command{
 			Pagination  *Pagination
 		}{
 			BranchTable: &Table{
-				Headers: []interface{}{"Ref Name", "Commit ID"},
+				Headers: []interface{}{"Branch"},
 				Rows:    rows,
 			},
 		}
@@ -87,14 +87,14 @@ var branchCreateCmd = &cobra.Command{
 		}
 
 		ref, err := client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
-			ID:          swag.String(u.Ref),
-			SourceRefID: swag.String(sourceURI.Ref),
+			Name:   swag.String(u.Ref),
+			Source: swag.String(sourceURI.Ref),
 		})
 		if err != nil {
 			DieErr(err)
 		}
 
-		Fmt("created branch '%s', pointing to commit ID: '%s'\n", *ref.ID, *ref.CommitID)
+		Fmt("created branch '%s'\n", *ref.Reference)
 	},
 }
 
@@ -222,7 +222,7 @@ var branchShowCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		Fmt("%s\t%s\n", *resp.ID, *resp.CommitID)
+		Fmt("%s\n", *resp.Reference)
 	},
 }
 

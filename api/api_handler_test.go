@@ -138,7 +138,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 
 	t.Run("get missing repo", func(t *testing.T) {
 		_, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
-			RepositoryID: "foo1",
+			Repository: "foo1",
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
 		if err == nil {
@@ -155,7 +155,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 		testutil.Must(t,
 			deps.cataloger.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName))
 		resp, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
-			RepositoryID: "foo1",
+			Repository: "foo1",
 		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
 
 		if err != nil {
@@ -188,8 +188,8 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		_, err = clt.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
-			BranchID:     "otherbranch",
-			RepositoryID: "repo1",
+			Branch:     "otherbranch",
+			Repository: "repo1",
 		}, bauth)
 		if err == nil {
 			t.Fatalf("expected error getting a branch that doesn't exist")
@@ -212,8 +212,8 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 			}
 		}
 		resp, err := clt.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
-			BranchID:     "master",
-			RepositoryID: "repo2",
+			Branch:     "master",
+			Repository: "repo2",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
@@ -225,7 +225,6 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 }
 
 func TestHandler_GetCommitHandler(t *testing.T) {
-
 	handler, deps := getHandler(t)
 
 	// create user
@@ -238,8 +237,8 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 
 	t.Run("get missing commit", func(t *testing.T) {
 		_, err := clt.Commits.GetCommit(&commits.GetCommitParams{
-			CommitID:     "b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa",
-			RepositoryID: "foo1",
+			CommitID:   "b0a989d946dca26496b8280ca2bb0a96131a48b362e72f1789e498815992fffa",
+			Repository: "foo1",
 		}, bauth)
 		if err == nil {
 			t.Fatalf("expected err calling missing commit")
@@ -266,8 +265,8 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
 		}
 		resp, err := clt.Commits.GetCommit(&commits.GetCommitParams{
-			CommitID:     commit1.Reference,
-			RepositoryID: "foo1",
+			CommitID:   commit1.Reference,
+			Repository: "foo1",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("unexpected err calling commit: %s", err)
@@ -293,12 +292,12 @@ func TestHandler_CommitHandler(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	t.Run("commit non-existent commit", func(t *testing.T) {
 		_, err := clt.Commits.Commit(&commits.CommitParams{
-			BranchID: "master",
+			Branch: "master",
 			Commit: &models.CommitCreation{
 				Message:  swag.String("some message"),
 				Metadata: nil,
 			},
-			RepositoryID: "foo1",
+			Repository: "foo1",
 		}, bauth)
 
 		if err == nil {
@@ -317,12 +316,12 @@ func TestHandler_CommitHandler(t *testing.T) {
 		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
 			catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
 		_, err := clt.Commits.Commit(&commits.CommitParams{
-			BranchID: "master",
+			Branch: "master",
 			Commit: &models.CommitCreation{
 				Message:  swag.String("some message"),
 				Metadata: nil,
 			},
-			RepositoryID: "foo1",
+			Repository: "foo1",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("unexpected error on commit: %s", err)
@@ -395,7 +394,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1/", "master"))
 
 		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-			RepositoryID: "my-new-repo",
+			Repository: "my-new-repo",
 		}, bauth)
 
 		if err != nil {
@@ -410,7 +409,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 
 	t.Run("delete repo doesnt exist", func(t *testing.T) {
 		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-			RepositoryID: "my-other-repo",
+			Repository: "my-other-repo",
 		}, bauth)
 
 		if err == nil {
@@ -424,7 +423,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "rr11", "s3://foo1", "master"))
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "rr2", "s3://foo1", "master"))
 		_, err := clt.Repositories.DeleteRepository(&repositories.DeleteRepositoryParams{
-			RepositoryID: "rr1",
+			Repository: "rr1",
 		}, bauth)
 
 		if err != nil {
@@ -463,8 +462,8 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		ctx := context.Background()
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:       swag.Int64(-1),
-			RepositoryID: "repo1",
+			Amount:     swag.Int64(-1),
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("unexpected error listing branches: %s", err)
@@ -483,8 +482,8 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 				deps.cataloger.CreateBranch(ctx, "repo2", branchName, "master"))
 		}
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:       swag.Int64(2),
-			RepositoryID: "repo2",
+			Amount:     swag.Int64(2),
+			Repository: "repo2",
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -494,9 +493,9 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		}
 
 		resp, err = clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:       swag.Int64(2),
-			After:        swag.String("master1"),
-			RepositoryID: "repo2",
+			Amount:     swag.Int64(2),
+			After:      swag.String("master1"),
+			Repository: "repo2",
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -505,15 +504,16 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		if swag.StringValue(results[0].CommitID) != "master2" {
-			t.Fatalf("expected master3 as the first result for the second page, got %s instead", swag.StringValue(results[0].ID))
+		retReference := swag.StringValue(results[0].Reference)
+		if retReference != "master2" {
+			t.Fatalf("expected master3 as the first result for the second page, got %s instead", retReference)
 		}
 	})
 
 	t.Run("list branches repo doesnt exist", func(t *testing.T) {
 		_, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
-			Amount:       swag.Int64(2),
-			RepositoryID: "repoX",
+			Amount:     swag.Int64(2),
+			Repository: "repoX",
 		}, bauth)
 		if err == nil {
 			t.Fatal("expected error calling list branches on repo that doesnt exist")
@@ -534,24 +534,25 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 
 	t.Run("get default branch", func(t *testing.T) {
 		ctx := context.Background()
+		const testBranch = "master"
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
 		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
-			BranchID:     "master",
-			RepositoryID: "repo1",
+			Branch:     testBranch,
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("unexpected error getting branch: %s", err)
 		}
-		branch := swag.StringValue(resp.GetPayload().CommitID)
-		if branch != "master" {
-			t.Fatalf("got unexpected branch %s", branch)
+		reference := swag.StringValue(resp.GetPayload().Reference)
+		if reference != "" {
+			t.Fatalf("got unexpected reference '%s' for branch '%s'", reference, testBranch)
 		}
 	})
 
 	t.Run("get missing branch", func(t *testing.T) {
 		_, err := clt.Branches.GetBranch(&branches.GetBranchParams{
-			BranchID:     "master333",
-			RepositoryID: "repo1",
+			Branch:     "master333",
+			Repository: "repo1",
 		}, bauth)
 		if err == nil {
 			t.Fatal("expected error getting branch that doesnt exist")
@@ -560,8 +561,8 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 
 	t.Run("get branch for missing repo", func(t *testing.T) {
 		_, err := clt.Branches.GetBranch(&branches.GetBranchParams{
-			BranchID:     "master",
-			RepositoryID: "repo3",
+			Branch:     "master",
+			Repository: "repo3",
 		}, bauth)
 		if err == nil {
 			t.Fatal("expected error getting branch for repo that doesnt exist")
@@ -585,15 +586,15 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
 		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
-				ID:          swag.String("master2"),
-				SourceRefID: swag.String("master"),
+				Name:   swag.String("master2"),
+				Source: swag.String("master"),
 			},
-			RepositoryID: "repo1",
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("unexpected error creating branch: %s", err)
 		}
-		branch := swag.StringValue(resp.GetPayload().CommitID)
+		branch := swag.StringValue(resp.GetPayload().Reference)
 		if branch != "master2" {
 			t.Fatalf("got unexpected branch %s", branch)
 		}
@@ -602,10 +603,10 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	t.Run("create branch missing commit", func(t *testing.T) {
 		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
-				SourceRefID: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
-				ID:          swag.String("master3"),
+				Source: swag.String("a948904f2f0f479b8f8197694b30184b0d2ed1c1cd2a1ec0fb85d299a192a447"),
+				Name:   swag.String("master3"),
 			},
-			RepositoryID: "repo1",
+			Repository: "repo1",
 		}, bauth)
 		if err == nil {
 			t.Fatal("expected error creating branch with a commit that doesnt exist")
@@ -615,10 +616,10 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	t.Run("create branch missing repo", func(t *testing.T) {
 		_, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
-				SourceRefID: swag.String("master"),
-				ID:          swag.String("master8"),
+				Source: swag.String("master"),
+				Name:   swag.String("master8"),
 			},
-			RepositoryID: "repo5",
+			Repository: "repo5",
 		}, bauth)
 		if err == nil {
 			t.Fatal("expected error creating branch with a repo that doesnt exist")
@@ -646,8 +647,8 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 		}
 
 		_, err = clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
-			BranchID:     "master2",
-			RepositoryID: "my-new-repo",
+			Branch:     "master2",
+			Repository: "my-new-repo",
 		}, bauth)
 
 		if err != nil {
@@ -662,8 +663,8 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 
 	t.Run("delete branch doesnt exist", func(t *testing.T) {
 		_, err := clt.Branches.DeleteBranch(&branches.DeleteBranchParams{
-			BranchID:     "master5",
-			RepositoryID: "my-new-repo",
+			Branch:     "master5",
+			Repository: "my-new-repo",
 		}, bauth)
 
 		if err == nil {
@@ -701,9 +702,9 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:          "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 
 		if err != nil {
@@ -717,9 +718,9 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 		}
 
 		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:          "master:HEAD",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master:HEAD",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 
 		if _, ok := err.(*objects.StatObjectNotFound); !ok {
@@ -778,9 +779,9 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 	t.Run("get object list", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
-			Ref:          "master",
-			RepositoryID: "repo1",
-			Tree:         swag.String("foo/"),
+			Ref:        "master",
+			Repository: "repo1",
+			Tree:       swag.String("foo/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -791,9 +792,9 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		}
 
 		resp, err = clt.Objects.ListObjects(&objects.ListObjectsParams{
-			Ref:          "master:HEAD",
-			RepositoryID: "repo1",
-			Tree:         swag.String("/"),
+			Ref:        "master:HEAD",
+			Repository: "repo1",
+			Tree:       swag.String("/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -805,10 +806,10 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 	t.Run("get object list paginated", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
-			Amount:       swag.Int64(2),
-			Ref:          "master",
-			RepositoryID: "repo1",
-			Tree:         swag.String("foo/"),
+			Amount:     swag.Int64(2),
+			Ref:        "master",
+			Repository: "repo1",
+			Tree:       swag.String("foo/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -864,9 +865,9 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
 		resp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:          "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth, buf)
 		if err != nil {
 			t.Fatal(err)
@@ -885,9 +886,9 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		}
 
 		_, err = clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:          "master:HEAD",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master:HEAD",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth, buf)
 		if _, ok := err.(*objects.GetObjectNotFound); !ok {
 			t.Fatalf("expected object not found error, got %v", err)
@@ -896,9 +897,9 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	t.Run("get properties", func(t *testing.T) {
 		properties, err := clt.Objects.GetUnderlyingProperties(&objects.GetUnderlyingPropertiesParams{
-			Ref:          "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatalf("expected to get underlying properties, got %v", err)
@@ -929,10 +930,10 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		buf := new(bytes.Buffer)
 		buf.WriteString("hello world this is my awesome content")
 		resp, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			BranchID:     "master",
-			Content:      runtime.NamedReader("content", buf),
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", buf),
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -945,9 +946,9 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		// download it
 		rbuf := new(bytes.Buffer)
 		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:          "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth, rbuf)
 		if err != nil {
 			t.Fatal(err)
@@ -982,10 +983,10 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		buf := new(bytes.Buffer)
 		buf.WriteString("hello world this is my awesome content")
 		resp, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
-			BranchID:     "master",
-			Content:      runtime.NamedReader("content", buf),
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", buf),
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -998,9 +999,9 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		// download it
 		rbuf := new(bytes.Buffer)
 		rresp, err := clt.Objects.GetObject(&objects.GetObjectParams{
-			Ref:          "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth, rbuf)
 		if err != nil {
 			t.Fatal(err)
@@ -1015,9 +1016,9 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// delete it
 		_, err = clt.Objects.DeleteObject(&objects.DeleteObjectParams{
-			BranchID:     "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Branch:     "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -1025,9 +1026,9 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 
 		// get it
 		_, err = clt.Objects.StatObject(&objects.StatObjectParams{
-			Ref:          "master",
-			Path:         "foo/bar",
-			RepositoryID: "repo1",
+			Ref:        "master",
+			Path:       "foo/bar",
+			Repository: "repo1",
 		}, bauth)
 		if err == nil {
 			t.Fatalf("expected file to be gone now")
