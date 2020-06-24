@@ -25,6 +25,9 @@ type Ref struct {
 }
 
 func (r Ref) String() string {
+	if r.Branch == "" {
+		return ""
+	}
 	switch r.CommitID {
 	case CommittedID:
 		return r.Branch + CommittedSuffix

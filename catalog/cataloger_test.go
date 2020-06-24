@@ -9,9 +9,10 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/benbjohnson/clock"
 	"github.com/google/uuid"
-
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -24,6 +25,15 @@ type testEntryInfo struct {
 func testCataloger(t *testing.T) Cataloger {
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	return NewCataloger(cdb)
+}
+
+func testCatalogerWithClock(t *testing.T, tellTime clock.Clock) Cataloger {
+	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
+	return &cataloger{
+		Clock: tellTime,
+		log:   logging.Default().WithField("service_name", "cataloger"),
+		db:    cdb,
+	}
 }
 
 func testCatalogerUniqueID() string {

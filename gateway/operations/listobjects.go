@@ -71,21 +71,6 @@ func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.E
 			Size:         entry.Size,
 			StorageClass: "STANDARD",
 		})
-		// TODO(barak): catalog API missing for list entries with common prefix support
-		/*
-			switch entry.GetType() {
-			case model.EntryTypeTree:
-				dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef(entry.GetName(), ref)})
-			case model.EntryTypeObject:
-				files = append(files, serde.Contents{
-					Key:          path.WithRef(entry.GetName(), ref),
-					LastModified: serde.Timestamp(entry.CreationDate),
-					ETag:         httputil.ETag(entry.Checksum),
-					Size:         entry.Size,
-					StorageClass: "STANDARD",
-				})
-			}
-		*/
 	}
 	return dirs, files, lastKey
 }

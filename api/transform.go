@@ -17,7 +17,7 @@ func transformDifferenceToMergeResult(difference catalog.Difference) *models.Mer
 	case catalog.DifferenceTypeChanged:
 		mr.Type = models.MergeResultTypeCHANGED
 	case catalog.DifferenceTypeConflict:
-		mr.Type = "CONFLICT" // TODO(barak): add new type of merge result
+		mr.Type = models.MergeResultTypeCONFLICT
 	}
 	return mr
 }
@@ -34,7 +34,7 @@ func transformDifferenceToDiff(difference catalog.Difference) *models.Diff {
 	case catalog.DifferenceTypeChanged:
 		d.Type = models.DiffTypeCHANGED
 	case catalog.DifferenceTypeConflict:
-		d.Type = "CONFLICT" // TODO(barak): add new type of diff
+		d.Type = models.DiffTypeCONFLICT
 	}
 	return d
 }

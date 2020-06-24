@@ -43,7 +43,6 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	// make sure we work on uncommitted data
 	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
 	metaTook := time.Since(beforeMeta)
 	o.Log().

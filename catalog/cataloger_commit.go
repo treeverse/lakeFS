@@ -7,66 +7,75 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (string, error) {
+func (c *cataloger) Commit(ctx context.Context, repository, branch string, message string, committer string, metadata Metadata) (*CommitLog, error) {
 	if err := Validate(ValidateFields{
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
 		{Name: "message", IsValid: ValidateCommitMessage(message)},
 		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
-		return "", err
+		return nil, err
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := getBranchID(tx, repository, branch, LockTypeUpdate)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		commitID, err := getNextCommitID(tx, branchID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		committedAffected, err := commitUpdateCommittedEntriesWithMaxCommit(tx, branchID, commitID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		_, err = commitDeleteUncommittedTombstones(tx, branchID, commitID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		affectedTombstone, err := commitTombstones(tx, branchID, commitID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 
 		// uncommitted to committed entries
 		affectedNew, err := commitEntries(tx, branchID, commitID)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if (affectedNew + affectedTombstone + committedAffected) == 0 {
-			return 0, ErrNothingToCommit
+			return nil, ErrNothingToCommit
 		}
 
 		if err := commitIncrementCommitID(tx, branchID, commitID); err != nil {
-			return "", err
+			return nil, err
 		}
 
 		// add commit record
 		creationDate := c.Clock.Now()
 		if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type) VALUES ($1,$2,$3,$4,$5,$6,$7)`,
 			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone); err != nil {
-			return "", err
+			return nil, err
 		}
-		return commitID, nil
+		reference := MakeReference(branch, commitID)
+		commitLog := &CommitLog{
+			Reference:    reference,
+			Committer:    committer,
+			Message:      message,
+			CreationDate: creationDate,
+			Metadata:     metadata,
+			Parents:      nil,
+		}
+		return commitLog, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
-	return MakeReference(branch, res.(CommitID)), nil
+	return res.(*CommitLog), nil
 }
 
 func commitIncrementCommitID(tx sqlx.Execer, branchID int, commitID CommitID) error {

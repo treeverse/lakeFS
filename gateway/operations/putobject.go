@@ -113,15 +113,6 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a copy operation (i.e. https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
-
-	// validate branch
-	//_, err := o.Cataloger.GetBranch(o.Context(), o.Repository.Name, o.Reference)
-	//if err != nil {
-	//	o.Log().WithError(err).Debug("trying to write to invalid branch")
-	//	o.ResponseWriter.WriteHeader(http.StatusNotFound)
-	//	return
-	//}
-
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
 

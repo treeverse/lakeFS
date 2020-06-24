@@ -13,22 +13,13 @@ import (
 const (
 	Separator = "/"
 
-	CreateRepoMatch = "{repo:[^\\/]+}"
-
-	RepoMatch   = "{repo:[a-zA-Z0-9\\-]+}"
-	RepoReMatch = "(?P<repo>[a-zA-Z0-9\\-]+)"
-
-	PathMatch   = "{path:.*}"
-	PathReMatch = "(?P<path>.*)"
-
-	RefMatch   = "{ref:[a-z0-9\\-]+}"
-	RefReMatch = "(?P<ref>[a-z0-9\\-]+)"
+	rePath      = "(?P<path>.*)"
+	reReference = "(?P<ref>[a-z0-9\\-]+)"
 )
 
 var (
-	EncodedPathRe    = regexp.MustCompile(fmt.Sprintf("/?%s/%s", RefReMatch, PathReMatch))
-	EncodedPathRefRe = regexp.MustCompile(fmt.Sprintf("/?%s", RefReMatch))
-	EncodedAbsPathRe = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefReMatch, PathReMatch))
+	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("/?%s/%s", reReference, rePath))
+	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("/?%s", reReference))
 
 	ErrPathMalformed = errors.New("encoded path is malformed")
 )
@@ -49,50 +40,6 @@ type ResolvedAbsolutePath struct {
 	Reference string
 	Path      string
 }
-
-//func ResolveRef(ref string) (Ref, error) {
-//	if !strings.HasPrefix(ref, "#") {
-//		return Ref{Branch: ref}, nil
-//	}
-//	refData, err := base58.Decode(ref[1:])
-//	if err != nil {
-//		return Ref{}, fmt.Errorf("%w: ref decode", ErrPathMalformed)
-//	}
-//	if !utf8.Valid(refData) {
-//		return Ref{}, fmt.Errorf("%w: ref utf8", ErrPathMalformed)
-//	}
-//	const refPartsCount = 2
-//	parts := strings.SplitN(string(refData), ":", refPartsCount)
-//	if len(parts) != refPartsCount {
-//		return Ref{}, fmt.Errorf("%w: missing commit id", ErrPathMalformed)
-//	}
-//	id, err := strconv.Atoi(parts[1])
-//	if err != nil {
-//		return Ref{}, fmt.Errorf("%w: invalid commit id", ErrPathMalformed)
-//	}
-//	return Ref{
-//		Branch:   parts[0],
-//		CommitID: catalog.CommitID(id),
-//	}, nil
-//}
-
-//func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
-//	r := ResolvedAbsolutePath{}
-//	match := EncodedAbsPathRe.FindStringSubmatch(encodedPath)
-//	if len(match) == 0 {
-//		return r, ErrPathMalformed
-//	}
-//	result := make(map[string]string)
-//	for i, name := range EncodedAbsPathRe.SubexpNames() {
-//		if i != 0 && name != "" {
-//			result[name] = match[i]
-//		}
-//	}
-//	r.Repo = result["repo"]
-//	r.Path = result["path"]
-//	r.Ref = result["ref"]
-//	return r, nil
-//}
 
 func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
 	const encodedPartsCount = 3
@@ -117,9 +64,9 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 	match := EncodedPathRe.FindStringSubmatch(encodedPath)
 	if len(match) == 0 {
 		// attempt to see if this is a ref only
-		match = EncodedPathRefRe.FindStringSubmatch(encodedPath)
+		match = EncodedPathReferenceRe.FindStringSubmatch(encodedPath)
 		if len(match) > 0 {
-			for i, name := range EncodedPathRefRe.SubexpNames() {
+			for i, name := range EncodedPathReferenceRe.SubexpNames() {
 				if i != 0 && name != "" {
 					result[name] = match[i]
 				}

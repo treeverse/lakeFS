@@ -46,10 +46,10 @@ func TestCataloger_Diff_FromSonThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "second commit to branch2", err)
 
 	// merge the above up to master (from branch2)
-	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", nil)
+	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch2 to branch1", err)
 	// merge the changes from branch1 to master
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", nil)
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
 	if !IsValidReference(res.Reference) {
