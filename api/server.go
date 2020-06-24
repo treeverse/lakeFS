@@ -206,6 +206,9 @@ func (s *Server) Listen(listenAddr string) error {
 }
 
 func (s *Server) Shutdown(ctx context.Context) error {
+	if s == nil {
+		return nil
+	}
 	s.server.SetKeepAlivesEnabled(false)
 	return s.server.Shutdown(ctx)
 }
