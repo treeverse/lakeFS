@@ -262,11 +262,11 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if reference1 != commit1 {
+		if reference1 != commit1.Reference {
 			t.Fatalf("Commit reference %s, not equals to branch reference %s", commit1, reference1)
 		}
 		resp, err := clt.Commits.GetCommit(&commits.GetCommitParams{
-			CommitID:     reference1,
+			CommitID:     commit1.Reference,
 			RepositoryID: "foo1",
 		}, bauth)
 		if err != nil {
