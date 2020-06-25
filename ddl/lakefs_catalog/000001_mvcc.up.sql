@@ -44,7 +44,7 @@ CREATE TABLE commits (
 CREATE TABLE entries (
     branch_id integer NOT NULL,
     path character varying NOT NULL,
-    physical_address character varying(64),
+    physical_address text,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     size bigint NOT NULL,
     checksum character varying(64) NOT NULL,
