@@ -500,10 +500,10 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 				WithPayload(responseError("could not list branches: %s", err))
 		}
 
-		branchList := make([]*models.Ref, len(res))
+		branchList := make([]string, len(res))
 		var lastId string
 		for i, branch := range res {
-			branchList[i] = &models.Ref{Reference: swag.String(branch.Name)}
+			branchList[i] = branch.Name
 			lastId = branch.Name
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
@@ -546,8 +546,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 				WithPayload(responseError("error fetching branch: %s", err))
 		}
 
-		return branches.NewGetBranchOK().
-			WithPayload(&models.Ref{Reference: swag.String(reference)})
+		return branches.NewGetBranchOK().WithPayload(reference)
 	})
 }
 
@@ -567,17 +566,12 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		a.incrStat("create_branch")
 		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
 		sourceBranch := swag.StringValue(params.Branch.Source)
-		err = cataloger.CreateBranch(a.Context(),
-			repository,
-			branch,
-			sourceBranch)
+		err = cataloger.CreateBranch(a.Context(), repository, branch, sourceBranch)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-
-		return branches.NewCreateBranchCreated().WithPayload(&models.Ref{
-			Reference: swag.String(branch),
-		})
+		// TODO(barak): create branch should return the reference of the new branch's commit
+		return branches.NewCreateBranchCreated().WithPayload(branch)
 	})
 }
 
@@ -624,11 +618,17 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
+		var message string
+		var metadata map[string]string
+		if params.Merge != nil {
+			message = swag.StringValue(params.Merge.Message)
+			metadata = params.Merge.Metadata
+		}
 		res, err := a.context.Cataloger.Merge(a.Context(),
 			params.Repository, params.SourceRef, params.DestinationRef,
 			userModel.DisplayName,
-			swag.StringValue(params.Merge.Message),
-			params.Merge.Metadata)
+			message,
+			metadata)
 
 		// convert merge differences into merge results
 		var mergeResults []*models.MergeResult

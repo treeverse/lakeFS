@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 
@@ -15,8 +16,8 @@ import (
 
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
-	Use:   "merge",
-	Short: "merge  [source ref] [destination ref] ",
+	Use:   "merge <source ref> <destination ref>",
+	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: ValidationChain(
 		HasRangeArgs(2, 2),
@@ -36,29 +37,30 @@ var mergeCmd = &cobra.Command{
 		}
 
 		result, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
-		if err == nil {
-			var added, changed, removed int
-			for _, r := range result {
-				switch r.Type {
-				case models.DiffTypeADDED:
-					added++
-				case models.DiffTypeCHANGED:
-					changed++
-				case models.DiffTypeREMOVED:
-					removed++
-				}
-			}
-			_, _ = os.Stdout.WriteString(fmt.Sprintf("new: %d modified: %d removed: %d \n", added, changed, removed))
-		} else if err == catalog.ErrConflictFound {
-			_, _ = os.Stdout.WriteString(" Conflicts:\n")
+		if errors.Is(err, catalog.ErrConflictFound) {
+			_, _ = os.Stdout.WriteString("Conflicts:\n")
 			for _, line := range result {
 				if line.Type == models.DiffTypeCONFLICT {
 					FmtMerge(line)
 				}
 			}
-		} else {
+			return
+		}
+		if err != nil {
 			DieErr(err)
 		}
+		var added, changed, removed int
+		for _, r := range result {
+			switch r.Type {
+			case models.DiffTypeADDED:
+				added++
+			case models.DiffTypeCHANGED:
+				changed++
+			case models.DiffTypeREMOVED:
+				removed++
+			}
+		}
+		_, _ = os.Stdout.WriteString(fmt.Sprintf("new: %d modified: %d removed: %d\n", added, changed, removed))
 	},
 }
 
@@ -73,14 +75,18 @@ func FmtMerge(diff *models.MergeResult) {
 	case models.DiffTypeREMOVED:
 		color = text.FgRed
 		action = "- removed"
-	default:
+	case models.DiffTypeCHANGED:
 		color = text.FgYellow
 		action = "~ modified"
+	case models.DiffTypeCONFLICT:
+		color = text.FgHiYellow
+		action = "* conflict"
+	default:
+		color = text.FgHiRed
+		action = ". other"
 	}
 
-	_, _ = os.Stdout.WriteString(
-		color.Sprintf("    %s %s \n", action, diff.Path),
-	)
+	_, _ = os.Stdout.WriteString(color.Sprintf("    %s %s\n", action, diff.Path))
 }
 
 func init() {
