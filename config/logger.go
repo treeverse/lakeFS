@@ -42,9 +42,11 @@ func setupLogger() {
 	// set output format
 	if strings.EqualFold(viper.GetString("logging.format"), "text") {
 		log.SetFormatter(&log.TextFormatter{
-			ForceColors:      true,
-			FullTimestamp:    true,
-			CallerPrettyfier: logPrettyfier,
+			FullTimestamp:          true,
+			DisableLevelTruncation: true,
+			PadLevelText:           true,
+			QuoteEmptyFields:       true,
+			CallerPrettyfier:       logPrettyfier,
 		})
 	} else if strings.EqualFold(viper.GetString("logging.format"), "json") {
 		log.SetFormatter(&log.JSONFormatter{
