@@ -107,13 +107,18 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
        uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_auth&sslmode=disable"
    ```
 
-5. Run the server:
+6. Create a local directory to store objects.  In a production system this
+   will probably be a bucket on S3:
+
+   ```sh
+   mkdir ~/lakefs_data
+   ```
+
+7. Run the server:
     
    ```bash
    $ ./lakefs --config /path/to/config.yaml run
    ```
-
-6. 
 
 ## Setting up a Repository
 
