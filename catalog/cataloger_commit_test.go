@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 

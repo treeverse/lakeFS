@@ -11,7 +11,7 @@ import (
 
 const commitsTemplate = `
 {{ range $val := .Commits }}
-commit {{ $val.ID|yellow }}
+ID: {{ $val.ID|yellow }}
 Author: {{ $val.Committer }}
 Date: {{ $val.CreationDate|date }}
 	{{ if gt ($val.Parents|len) 1 -}}
@@ -28,7 +28,7 @@ Merge: {{ $val.Parents|join ", "|bold }}
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:   "log [branch uri]",
+	Use:   "log <branch uri>",
 	Short: "show log of commits for the given branch",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -50,8 +50,7 @@ var logCmd = &cobra.Command{
 			Commits    []*models.Commit
 			Pagination *Pagination
 		}{
-			commits,
-			nil,
+			Commits: commits,
 		}
 		if pagination != nil && swag.BoolValue(pagination.HasMore) {
 			ctx.Pagination = &Pagination{
