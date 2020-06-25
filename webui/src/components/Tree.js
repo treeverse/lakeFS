@@ -91,8 +91,6 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
 
     const baseUrl = `/repositories/${repo.id}/tree`;
 
-    const refIdDisplay = (refId.type === 'commit') ? refId.id.substr(0, 16) : refId.id;
-
     const refWithPath = (path, name) => {
         const refQuery = (refId.type === 'commit') ? qs({path, commit: refId.id}) : qs({path, branch: refId.id});
         const refUrl = `${baseUrl}${refQuery}`;
@@ -104,7 +102,7 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
             <strong>{'lakefs://'}</strong>
             <Link to={baseUrl}>{repo.id}</Link>
             <strong>{'@'}</strong>
-            {refWithPath("", refIdDisplay)}
+            {refWithPath("", refId.id)}
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
@@ -199,11 +197,9 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 </span>
             </OverlayTrigger>
         );
-    } else {
-        diffIndicator = (<span/>);
     }
 
-    let objectDropdown = (<span/>);
+    let objectDropdown;
     if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
         objectDropdown = (
             <Dropdown alignRight onToggle={setDropdownOpen}>
@@ -213,7 +209,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                             <Button variant="link" onClick={(e) => { e.preventDefault(); onClick(e); }} ref={ref}>
                                 {children}
                             </Button>
-                            );
+                               );
                     })}>
                     {(isDropdownOpen) ?  ChevronUpIcon : ChevronDownIcon}
                 </Dropdown.Toggle>
@@ -227,6 +223,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     return (
+        <>
         <tr className={rowClass}>
             <td className="diff-indicator">
                 {diffIndicator}
@@ -245,6 +242,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {objectDropdown}
             </td>
         </tr>
+        </>
     );
 };
 
