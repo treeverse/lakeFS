@@ -28,7 +28,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
 		return c.doDiff(tx, leftID, rightID)
-	}, c.txOpts(ctx, db.ReadOnly())...)
+	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
 	}
