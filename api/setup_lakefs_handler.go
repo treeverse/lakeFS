@@ -3,7 +3,12 @@ package api
 import (
 	"encoding/json"
 	"net/http"
+	"runtime"
 	"time"
+
+	"github.com/treeverse/lakefs/config"
+
+	"github.com/google/uuid"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
@@ -24,13 +29,19 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			return
 		}
 
-		// skip migrate in case we have a user
-		if _, err := authService.GetFirstUser(); err == nil {
+		// skip migrate in case we have an active installation
+		if _, err := authService.GetAccountMetadataKey("installation_id"); err == nil {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
 
 		err := migrator.Migrate(r.Context())
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		err = WriteInitialMetadata(authService)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -243,4 +254,37 @@ func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credenti
 
 	// Generate and return a key pair
 	return authService.CreateCredentials(user.DisplayName)
+}
+
+func WriteInitialMetadata(authService auth.Service) error {
+	metadata := make(map[string]string)
+
+	metadata["setup_time"] = time.Now().Format(time.RFC3339)
+	metadata["installation_id"] = uuid.Must(uuid.NewUUID()).String()
+	metadata["lakefs_version"] = config.Version
+	metadata["golang_version"] = runtime.Version()
+	metadata["architecture"] = runtime.GOARCH
+	metadata["os"] = runtime.GOOS
+
+	type HasDatabase interface {
+		DB() db.Database
+	}
+	if d, ok := authService.(HasDatabase); ok {
+		conn := d.DB()
+		dbMeta, err := conn.Metadata()
+		if err == nil {
+			for k, v := range dbMeta {
+				metadata[k] = v
+			}
+		}
+	}
+
+	for k, v := range metadata {
+		err := authService.SetAccountMetadataKey(k, v)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
