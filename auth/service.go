@@ -75,6 +75,11 @@ type Service interface {
 
 	// authorize user for an action
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
+
+	// account metadata management
+	SetAccountMetadataKey(key, value string) error
+	GetAccountMetadataKey(key string) (string, error)
+	GetAccountMetadata() (map[string]string, error)
 }
 
 func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
@@ -156,6 +161,10 @@ func (s *DBAuthService) encryptSecret(secretAccessKey string) ([]byte, error) {
 
 func (s *DBAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
+}
+
+func (s *DBAuthService) DB() db.Database {
+	return s.db
 }
 
 func (s *DBAuthService) CreateUser(user *model.User) error {
@@ -918,4 +927,53 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 
 	// we're allowed!
 	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+func (s *DBAuthService) SetAccountMetadataKey(key, value string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return tx.Exec(`
+			INSERT INTO account_metadata (key_name, key_value)
+			VALUES ($1, $2)
+			ON CONFLICT (key_name) DO UPDATE set key_value = $2`,
+			key, value)
+	})
+	return err
+}
+
+func (s *DBAuthService) GetAccountMetadataKey(key string) (string, error) {
+	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		type value struct {
+			Value string `db:"key_value"`
+		}
+		var val value
+		err := tx.Get(&val, `SELECT key_value FROM account_metadata WHERE key_name = $1`, key)
+		return val.Value, err
+	}, db.ReadOnly())
+	if err != nil {
+		return "", err
+	}
+	return val.(string), nil
+}
+
+func (s *DBAuthService) GetAccountMetadata() (map[string]string, error) {
+	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		type value struct {
+			Key   string `db:"key_name"`
+			Value string `db:"key_value"`
+		}
+		values := make([]value, 0)
+		err := tx.Select(&values, `SELECT key_name, key_value FROM account_metadata`)
+		if err != nil {
+			return nil, err
+		}
+		metadata := make(map[string]string)
+		for _, v := range values {
+			metadata[v.Key] = v.Value
+		}
+		return metadata, nil
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	return val.(map[string]string), nil
 }
