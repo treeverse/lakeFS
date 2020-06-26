@@ -61,3 +61,8 @@ CREATE TABLE IF NOT EXISTS credentials (
     user_id integer REFERENCES users (id) ON DELETE CASCADE
 );
 CREATE INDEX idx_credentials_user_id ON credentials (user_id); -- list credentials per user
+
+CREATE TABLE IF NOT EXISTS account_metadata (
+    key_name text NOT NULL PRIMARY KEY,
+    key_value text NOT NULL
+);
