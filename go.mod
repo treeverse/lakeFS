@@ -3,6 +3,7 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
+	github.com/Masterminds/squirrel v1.4.0
 	github.com/aws/aws-sdk-go v1.30.14
 	github.com/benbjohnson/clock v1.0.3
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
