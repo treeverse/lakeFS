@@ -58,13 +58,13 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 	}
 }
 
-func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int64) (Differences, error) {
+func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences, error) {
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int64
 	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
 											From("commits").
-											Where("branch_id = ? AND merge_type = 'from_father'", rightID).
+											Where("branch_id = ? AND merge_type = 'from_father'", sonID).
 											PlaceholderFormat(sq.Dollar).MustSql()
 	err := tx.Get(&maxSonMerge, maxSonQuery, args...)
 	//err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
@@ -73,7 +73,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int64) (Differences
 		return nil, err
 	}
 
-	s, args := diffFromFatherV(tx, leftID, rightID, maxSonMerge).PlaceholderFormat(sq.Dollar).MustSql()
+	s, args := diffFromFatherV(tx, fatherID, sonID, maxSonMerge).PlaceholderFormat(sq.Dollar).MustSql()
 
 	diffFromFatherSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 
@@ -92,7 +92,7 @@ func diffReadDifferences(tx db.Tx) (Differences, error) {
 	return result, nil
 }
 
-func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int64) (Differences, error) {
+func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, error) {
 	// read last merge commit numbers from commit table
 	// if it is the first son-to-father commit, than those commit numbers are calculated as follows:
 	// the son is 0, as any change in the some was never merged to the father.
@@ -105,7 +105,7 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int64) (Differences, e
 
 	effectiveCommitsQuery, args := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
 		From("commits").
-		Where("branch_id = ? AND merge_type = 'from_son'", rightID).
+		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", fatherID, sonID).
 		OrderBy(`commit_id DESC`).
 		Limit(1).PlaceholderFormat(sq.Dollar).
 		MustSql()
@@ -115,16 +115,16 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int64) (Differences, e
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1
 		FatherEffectiveQuery, args := sq.Select("effective_commit").From("lineage").
-			Where("branch_id = ? AND ancestor_branch = ?", leftID, rightID).
+			Where("branch_id = ? AND ancestor_branch = ?", sonID, fatherID).
 			OrderBy("min_commit DESC").Limit(1).PlaceholderFormat(sq.Dollar).MustSql()
-		//err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, leftID, rightID)
+		//err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, sonID, fatherID)
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	s, args := diffFromSonV(tx, rightID, leftID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit).PlaceholderFormat(sq.Dollar).MustSql()
+	s, args := diffFromSonV(tx, fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit).PlaceholderFormat(sq.Dollar).MustSql()
 
 	diffFromSonSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 

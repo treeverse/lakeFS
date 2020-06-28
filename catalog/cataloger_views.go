@@ -100,7 +100,7 @@ func EntriesLineageFullV(tx db.Tx, branchID int64, requestedCommit CommitID) sq.
 		FromSelect(entriesV(tx, requestedCommit), "e\n").
 		Where(lineageFilter).
 		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
-		Column("? AS displayed_branch", branchID).
+		Column("? AS displayed_branch", strconv.FormatInt(branchID, 10)).
 		Columns("e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
 			"e.creation_date", "e.size", "e.checksum", "e.metadata",
