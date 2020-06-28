@@ -37,7 +37,7 @@ type InventoryRow struct {
 	IsDeleteMarker bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
 }
 
-func fetchManifest(svc s3iface.S3API, manifestURL string) (*S3Manifest, error) {
+func FetchManifest(svc s3iface.S3API, manifestURL string) (*S3Manifest, error) {
 	u, err := url.Parse(manifestURL)
 	if err != nil {
 		return nil, err
@@ -58,7 +58,7 @@ func fetchManifest(svc s3iface.S3API, manifestURL string) (*S3Manifest, error) {
 }
 
 func FetchInventory(ctx context.Context, svc s3iface.S3API, manifestURL string) (<-chan InventoryRow, error) {
-	manifest, err := fetchManifest(svc, manifestURL)
+	manifest, err := FetchManifest(svc, manifestURL)
 	if err != nil {
 		return nil, err
 	}

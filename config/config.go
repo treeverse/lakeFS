@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -111,7 +112,7 @@ func (c *Config) ConnectDatabase(dbKey string) db.Database {
 	return database
 }
 
-func (c *Config) BuildS3Service() *s3.S3 {
+func (c *Config) BuildS3Service() s3iface.S3API {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},

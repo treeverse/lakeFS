@@ -39,7 +39,7 @@ func (m *mockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput,
 
 func TestFetchManifest(t *testing.T) {
 	svc := &mockS3Client{}
-	manifest, err := fetchManifest(svc, "s3://example-bucket/example-path/manifest.json")
+	manifest, err := FetchManifest(svc, "s3://example-bucket/example-path/manifest.json")
 	if err != nil {
 		t.Fatalf("failed to fetch manifest: %v", err)
 	}

@@ -1,6 +1,7 @@
 package api_test
 
 import (
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -68,6 +69,10 @@ type mockCollector struct{}
 
 func (m *mockCollector) Collect(_, _ string) {}
 
+type mockS3Client struct {
+	s3iface.S3API
+}
+
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
@@ -80,13 +85,13 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	migrator := db.NewDatabaseMigrator().
 		AddDB(config.SchemaCatalog, catalogURI).
 		AddDB(config.SchemaAuth, adbURI)
-
 	server := api.NewServer(
 		cataloger,
 		blockAdapter,
 		authService,
 		&mockCollector{},
 		migrator,
+		mockS3Client{},
 	)
 
 	handler, err := server.Handler()

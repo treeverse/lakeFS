@@ -5,6 +5,7 @@ package api
 import (
 	"context"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"net/http"
 
 	"github.com/treeverse/lakefs/catalog"
@@ -44,6 +45,7 @@ type Server struct {
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
 	server      *http.Server
+	s3          s3iface.S3API
 }
 
 func NewServer(
@@ -52,6 +54,7 @@ func NewServer(
 	authService auth.Service,
 	stats stats.Collector,
 	migrator db.Migrator,
+	s3 s3iface.S3API,
 ) *Server {
 	logging.Default().Info("initialized OpenAPI server")
 	return &Server{
@@ -60,6 +63,7 @@ func NewServer(
 		authService: authService,
 		stats:       stats,
 		migrator:    migrator,
+		s3:          s3,
 	}
 }
 
@@ -150,7 +154,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats).Configure(api)
+	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.s3).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

@@ -5,6 +5,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/import_tool"
+	"github.com/treeverse/lakefs/onboard"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -42,6 +45,7 @@ type HandlerContext struct {
 	Auth         auth.Service
 	BlockAdapter block.Adapter
 	Stats        stats.Collector
+	S3           s3iface.S3API
 }
 
 func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
@@ -51,6 +55,7 @@ func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
 		Auth:         c.Auth, // TODO: pass context
 		BlockAdapter: c.BlockAdapter.WithContext(ctx),
 		Stats:        c.Stats,
+		S3:           c.S3,
 	}
 }
 
@@ -58,13 +63,14 @@ type Handler struct {
 	context *HandlerContext
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector) *Handler {
+func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, s3 s3iface.S3API) *Handler {
 	return &Handler{
 		context: &HandlerContext{
 			Cataloger:    cataloger,
 			Auth:         auth,
 			BlockAdapter: blockAdapter,
 			Stats:        stats,
+			S3:           s3,
 		},
 	}
 }
@@ -139,6 +145,8 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
 	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
+
+	api.ImportToolImportFromS3InventoryHandler = a.ImportFromS3InventoryHandler()
 }
 
 func (a *Handler) incrStat(action string) {
@@ -1878,5 +1886,32 @@ func (a *Handler) DetachPolicyFromGroupHandler() authentication.DetachPolicyFrom
 		}
 
 		return authentication.NewDetachPolicyFromGroupNoContent()
+	})
+}
+
+func (a *Handler) ImportFromS3InventoryHandler() import_tool.ImportFromS3InventoryHandler {
+	return import_tool.ImportFromS3InventoryHandlerFunc(func(params import_tool.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.CreateRepositoryAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return import_tool.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		a.incrStat("import_from_s3_inventory")
+		ctx := a.ForRequest(params.HTTPRequest)
+		_, err = onboard.FetchManifest(ctx.S3, params.ManifestURL)
+		if err != nil {
+			return import_tool.NewImportFromS3InventoryBadRequest().
+				WithPayload(responseErrorFrom(err))
+		}
+		err = onboard.Import(params.HTTPRequest.Context(), ctx.S3, ctx.Cataloger, params.ManifestURL, params.Repository)
+		if err != nil {
+			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return import_tool.NewImportFromS3InventoryCreated()
 	})
 }
