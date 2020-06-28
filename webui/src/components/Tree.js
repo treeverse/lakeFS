@@ -91,8 +91,6 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
 
     const baseUrl = `/repositories/${repo.id}/tree`;
 
-    const refIdDisplay = (refId.type === 'commit') ? refId.id.substr(0, 16) : refId.id;
-
     const refWithPath = (path, name) => {
         const refQuery = (refId.type === 'commit') ? qs({path, commit: refId.id}) : qs({path, branch: refId.id});
         const refUrl = `${baseUrl}${refQuery}`;
@@ -104,7 +102,7 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
             <strong>{'lakefs://'}</strong>
             <Link to={baseUrl}>{repo.id}</Link>
             <strong>{'@'}</strong>
-            {refWithPath("", refIdDisplay)}
+            {refWithPath("", refId.id)}
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
@@ -199,11 +197,9 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 </span>
             </OverlayTrigger>
         );
-    } else {
-        diffIndicator = (<span/>);
     }
 
-    let objectDropdown = (<span/>);
+    let objectDropdown;
     if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
         objectDropdown = (
             <Dropdown alignRight onToggle={setDropdownOpen}>
@@ -213,20 +209,21 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                             <Button variant="link" onClick={(e) => { e.preventDefault(); onClick(e); }} ref={ref}>
                                 {children}
                             </Button>
-                            );
+                               );
                     })}>
-                    {(isDropdownOpen) ?  ChevronUpIcon : ChevronDownIcon}
+                    {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
                     <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are  you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
+                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
                 </Dropdown.Menu>
             </Dropdown>
         );
     }
 
     return (
+        <>
         <tr className={rowClass}>
             <td className="diff-indicator">
                 {diffIndicator}
@@ -245,6 +242,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {objectDropdown}
             </td>
         </tr>
+        </>
     );
 };
 
@@ -273,7 +271,6 @@ const merge = (path, entriesAtPath, diffResults) => {
             if (entry.path === diff.path) {
                 // if there's an exact 'CHANGE' or 'ADD' diff for it, color it that way.
                 return {...entry,  diff_type: diff.type};
-
             }
             if (diff.path_type === 'TREE' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
                 // for any entry descendant from a TREE event that was ADD, color it as ADD
