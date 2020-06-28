@@ -4,6 +4,8 @@ import (
 	"errors"
 	"net/http"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
@@ -25,6 +27,7 @@ func (controller *DeleteObject) HandleAbortMultipartUpload(o *PathOperation) {
 	o.Incr("abort_mpu")
 	query := o.Request.URL.Query()
 	uploadId := query.Get(QueryParamUploadId)
+	o.AddLogFields(logging.Fields{"upload_id": uploadId})
 	err := o.BlockStore.AbortMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: o.Path}, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not abort multipart upload")

@@ -25,7 +25,8 @@ import (
 )
 
 const (
-	StreamingDefaultChunkSize = 2 << 19 // 1MiB by default per chunk
+	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
+	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 )
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
@@ -40,11 +41,12 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 }
 
 type Adapter struct {
-	s3                 s3iface.S3API
-	httpClient         *http.Client
-	ctx                context.Context
-	uploadIdTranslator block.UploadIdTranslator
-	streamingChunkSize int
+	s3                    s3iface.S3API
+	httpClient            *http.Client
+	ctx                   context.Context
+	uploadIdTranslator    block.UploadIdTranslator
+	streamingChunkSize    int
+	streamingChunkTimeout time.Duration
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -56,6 +58,12 @@ func WithHTTPClient(c *http.Client) func(a *Adapter) {
 func WithStreamingChunkSize(sz int) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.streamingChunkSize = sz
+	}
+}
+
+func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.streamingChunkTimeout = d
 	}
 }
 
@@ -73,11 +81,12 @@ func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
 
 func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
 	a := &Adapter{
-		s3:                 s3,
-		httpClient:         http.DefaultClient,
-		ctx:                context.Background(),
-		uploadIdTranslator: &block.NoOpTranslator{},
-		streamingChunkSize: StreamingDefaultChunkSize,
+		s3:                    s3,
+		httpClient:            http.DefaultClient,
+		ctx:                   context.Background(),
+		uploadIdTranslator:    &block.NoOpTranslator{},
+		streamingChunkSize:    DefaultStreamingChunkSize,
+		streamingChunkTimeout: DefaultStreamingChunkTimeout,
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -87,11 +96,12 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
 
 func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
-		s3:                 s.s3,
-		httpClient:         s.httpClient,
-		ctx:                ctx,
-		uploadIdTranslator: s.uploadIdTranslator,
-		streamingChunkSize: s.streamingChunkSize,
+		s3:                    s.s3,
+		httpClient:            s.httpClient,
+		ctx:                   ctx,
+		uploadIdTranslator:    s.uploadIdTranslator,
+		streamingChunkSize:    s.streamingChunkSize,
+		streamingChunkTimeout: s.streamingChunkTimeout,
 	}
 }
 
@@ -156,10 +166,10 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 
 	req, _ := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
 	req.Header.Set("Content-Encoding", StreamingContentEncoding)
+	req.Header.Set("Transfer-Encoding", "chunked")
 	req.Header.Set("x-amz-content-sha256", StreamingSha256)
 	req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", sizeBytes))
 	req.Header.Set("Expect", "100-Continue")
-	req.ContentLength = int64(CalculateStreamSizeForPayload(sizeBytes, s.streamingChunkSize))
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
 
@@ -185,7 +195,8 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			sigSeed,
 			sdkRequest.Config.Credentials,
 		),
-		ChunkSize: s.streamingChunkSize,
+		ChunkSize:    s.streamingChunkSize,
+		ChunkTimeout: s.streamingChunkTimeout,
 	})
 
 	resp, err := s.httpClient.Do(req)
@@ -285,8 +296,8 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 		return err
 	}
 	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
-		Bucket: aws.String(obj.StorageNamespace),
-		Key:    aws.String(obj.Identifier),
+		Bucket: aws.String(qualifiedKey.StorageNamespace),
+		Key:    aws.String(qualifiedKey.Key),
 	})
 	return err
 }
