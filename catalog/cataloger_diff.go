@@ -37,7 +37,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 	return differences.(Differences), nil
 }
 
-func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int) (Differences, error) {
+func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int64) (Differences, error) {
 	relation, err := getBranchesRelationType(tx, leftID, rightID)
 	if err != nil {
 		return nil, err
@@ -45,7 +45,7 @@ func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int) (Differences, error) {
 	return c.doDiffByRelation(tx, relation, leftID, rightID)
 }
 
-func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int) (Differences, error) {
+func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int64) (Differences, error) {
 	switch relation {
 	case RelationTypeFromFather:
 		return c.diffFromFather(tx, leftID, rightID)
@@ -58,10 +58,10 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 	}
 }
 
-func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int) (Differences, error) {
+func (c *cataloger) diffFromFather(tx db.Tx, leftID, rightID int64) (Differences, error) {
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
-	var maxSonMerge int
+	var maxSonMerge int64
 	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
 											From("commits").
 											Where("branch_id = ? AND merge_type = 'from_father'", rightID).
@@ -92,15 +92,15 @@ func diffReadDifferences(tx db.Tx) (Differences, error) {
 	return result, nil
 }
 
-func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, error) {
+func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int64) (Differences, error) {
 	// read last merge commit numbers from commit table
 	// if it is the first son-to-father commit, than those commit numbers are calculated as follows:
 	// the son is 0, as any change in the some was never merged to the father.
 	// the father is lhe effective commit number of the first lineage record of the son that points to the father
 	// it is possible that the son the have already done from_father merge. so we have to take the minimal effective commit
 	effectiveCommits := struct {
-		FatherEffectiveCommit int `db:"father_effective_commit"`
-		SonEffectiveCommit    int `db:"son_effective_commit"`
+		FatherEffectiveCommit int64 `db:"father_effective_commit"`
+		SonEffectiveCommit    int64 `db:"son_effective_commit"`
 	}{}
 
 	effectiveCommitsQuery, args := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
@@ -134,6 +134,6 @@ func (c *cataloger) diffFromSon(tx db.Tx, leftID, rightID int) (Differences, err
 	return diffReadDifferences(tx)
 }
 
-func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int) (Differences, error) {
+func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int64) (Differences, error) {
 	panic("not implemented - Someday is not a day of the week")
 }

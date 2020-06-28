@@ -9,7 +9,7 @@ import (
 	"github.com/mr-tron/base58"
 )
 
-type CommitID int
+type CommitID int64
 
 const (
 	CommittedID   CommitID = -1
@@ -18,6 +18,7 @@ const (
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
 )
+const MaxCommitID = 1_000_000_000_000_000_000
 
 type Ref struct {
 	Branch   string
