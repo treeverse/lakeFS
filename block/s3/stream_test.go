@@ -94,6 +94,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 				StreamSigner: v4.NewStreamSigner("us-east-1", s3.ServiceName, sigSeed, creds),
 				Time:         sigTime,
 				ChunkSize:    cas.ChunkSize,
+				ChunkTimeout: time.Second * 300,
 			}
 
 			out, err := ioutil.ReadAll(data)
@@ -102,7 +103,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 			}
 
 			if !bytes.Equal(out, cas.Expected) {
-				t.Fatalf("got wrong chunked data")
+				t.Fatalf("got wrong chunked data. Got:\n%s\nExpected:\n%s\n", out, cas.Expected)
 			}
 
 			if int64(len(cas.Expected)) != contentLength {
