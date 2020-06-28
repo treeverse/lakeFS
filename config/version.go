@@ -1,3 +1,6 @@
 package config
 
-var Version = "dev"
+var (
+	UnreleasedVersion = "dev"
+	Version           = UnreleasedVersion
+)
