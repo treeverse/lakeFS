@@ -9,11 +9,12 @@ import (
 	"github.com/mr-tron/base58"
 )
 
-type CommitID int
+type CommitID int64
 
 const (
 	CommittedID   CommitID = -1
 	UncommittedID CommitID = 0
+	MaxCommitID   CommitID = 1_000_000_000_000_000_000
 
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
@@ -34,7 +35,7 @@ func (r Ref) String() string {
 	case UncommittedID:
 		return r.Branch
 	default:
-		ref := r.Branch + ":" + strconv.Itoa(int(r.CommitID))
+		ref := strconv.Itoa(int(r.CommitID))
 		encRef := base58.Encode([]byte(ref))
 		return CommitPrefix + encRef
 	}
@@ -42,6 +43,10 @@ func (r Ref) String() string {
 
 func MakeReference(branch string, commitID CommitID) string {
 	return Ref{Branch: branch, CommitID: commitID}.String()
+}
+
+func MakeCommitReference(commitID CommitID) string {
+	return Ref{CommitID: commitID}.String()
 }
 
 func ParseRef(ref string) (*Ref, error) {
@@ -67,17 +72,11 @@ func ParseRef(ref string) (*Ref, error) {
 	if !utf8.Valid(refData) {
 		return nil, fmt.Errorf("%w: ref utf8", ErrInvalidReference)
 	}
-	const refPartsCount = 2
-	parts := strings.SplitN(string(refData), ":", refPartsCount)
-	if len(parts) != refPartsCount {
-		return nil, fmt.Errorf("%w: missing commit id", ErrInvalidReference)
-	}
-	id, err := strconv.Atoi(parts[1])
+	id, err := strconv.Atoi(string(refData))
 	if err != nil {
 		return nil, fmt.Errorf("%w: invalid commit id", ErrInvalidReference)
 	}
 	return &Ref{
-		Branch:   parts[0],
 		CommitID: CommitID(id),
 	}, nil
 }

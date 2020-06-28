@@ -28,7 +28,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		}
 
 		// next id for branch
-		var branchID int
+		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq');`); err != nil {
 			return nil, err
 		}

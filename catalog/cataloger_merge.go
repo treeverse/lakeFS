@@ -66,16 +66,16 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 	return fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 }
 
-func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID int, rightID int, committer string, msg string, metadata Metadata) (CommitID, error) {
+func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID int64, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
 	// get source commit id on destination
-	sourceCommitID, err := getNextCommitID(tx, leftID)
+	sourceCommitID, err := getNextCommitID(tx)
 	if err != nil {
 		return 0, err
 	}
 	sourceCommitID -= 1 // move next current to current source commit id
 
 	// get destination commit id on destination
-	commitID, err := getNextCommitID(tx, rightID)
+	commitID, err := getNextCommitID(tx)
 	if err != nil {
 		return 0, err
 	}
@@ -95,11 +95,6 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 		return 0, err
 	}
 
-	// update next commit ID
-	if err := commitIncrementCommitID(tx, rightID, commitID); err != nil {
-		return 0, err
-	}
-
 	// add commit record
 	if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
@@ -109,7 +104,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 	return commitID, nil
 }
 
-func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID int, rightID int) error {
+func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID int64, rightID int64) error {
 	// set current lineages max commit to current one
 	if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`,
 		rightID, commitID, MaxCommitID); err != nil {
@@ -143,7 +138,7 @@ func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID in
 	return err
 }
 
-func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int, rightID int) error {
+func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int64, rightID int64) error {
 	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries
 	_, err := tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
 			WHERE branch_id = $1 AND max_commit = $3
@@ -171,6 +166,6 @@ func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int, right
 	return err
 }
 
-func (c *cataloger) mergeNonDirect(tx sqlx.Execer, commitID CommitID, leftID int, rightID int) error {
+func (c *cataloger) mergeNonDirect(tx sqlx.Execer, commitID CommitID, leftID int64, rightID int64) error {
 	panic("not implemented - Someday is not a day of the week")
 }
