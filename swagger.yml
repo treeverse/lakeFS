@@ -119,14 +119,6 @@ definitions:
         x-nullable: true
         type: string
 
-  ref:
-    type: object
-    required:
-      - reference
-    properties:
-      reference:
-        type: string
-
   diff:
     type: object
     properties:
@@ -1172,7 +1164,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/ref"
+                  type: string
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -1193,7 +1185,7 @@ paths:
         201:
           description: branch
           schema:
-            $ref: "#/definitions/ref"
+            type: string
         400:
           description: validation error
           schema:
@@ -1295,7 +1287,7 @@ paths:
         200:
           description: branch
           schema:
-            $ref: "#/definitions/ref"
+            type: string
         401:
           $ref: "#/responses/Unauthorized"
         404:

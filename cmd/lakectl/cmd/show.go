@@ -12,7 +12,7 @@ import (
 
 // showCmd represents the show command
 var showCmd = &cobra.Command{
-	Use:   "show [repository uri]",
+	Use:   "show <repository uri>",
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),
@@ -45,7 +45,13 @@ var showCmd = &cobra.Command{
 			if err != nil {
 				DieErr(err)
 			}
-			Write(commitsTemplate, []*models.Commit{commit})
+			commits := struct {
+				Commits    []*models.Commit
+				Pagination *Pagination
+			}{
+				Commits: []*models.Commit{commit},
+			}
+			Write(commitsTemplate, commits)
 		}
 	},
 }
@@ -53,5 +59,5 @@ var showCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(showCmd)
 
-	showCmd.Flags().String("commit", "", "commit id to show")
+	showCmd.Flags().String("commit", "c", "commit id to show")
 }

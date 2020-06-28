@@ -12,7 +12,7 @@ import (
 )
 
 var diffCmd = &cobra.Command{
-	Use:   "diff [ref uri] <other ref uri>",
+	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
 	Args: cmdGen.ValidationChain(

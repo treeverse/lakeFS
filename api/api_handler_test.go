@@ -504,9 +504,11 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		if len(results) != 2 {
 			t.Fatalf("expected 2 branches to return, got %d", len(results))
 		}
-		retReference := swag.StringValue(results[0].Reference)
-		if retReference != "master2" {
-			t.Fatalf("expected master3 as the first result for the second page, got %s instead", retReference)
+		const expectedReference = "master2"
+		retReference := results[0]
+		if retReference != expectedReference {
+			t.Fatalf("expected '%s' as the first result for the second page, got '%s' instead",
+				expectedReference, retReference)
 		}
 	})
 
@@ -543,7 +545,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting branch: %s", err)
 		}
-		reference := swag.StringValue(resp.GetPayload().Reference)
+		reference := resp.GetPayload()
 		if reference != "" {
 			t.Fatalf("got unexpected reference '%s' for branch '%s'", reference, testBranch)
 		}
@@ -594,7 +596,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error creating branch: %s", err)
 		}
-		branch := swag.StringValue(resp.GetPayload().Reference)
+		branch := resp.GetPayload()
 		if branch != "master2" {
 			t.Fatalf("got unexpected branch %s", branch)
 		}

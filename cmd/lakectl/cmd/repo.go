@@ -71,7 +71,7 @@ var repoListCmd = &cobra.Command{
 // lakectl create lakefs://myrepo s3://my-bucket/
 // not verifying bucket name in order not to bind to s3
 var repoCreateCmd = &cobra.Command{
-	Use:   "create  [repository uri] [storage namespace]",
+	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(2),
@@ -106,7 +106,7 @@ var repoCreateCmd = &cobra.Command{
 // repoDeleteCmd represents the delete repo command
 // lakectl delete lakefs://myrepo
 var repoDeleteCmd = &cobra.Command{
-	Use:   "delete [repository uri]",
+	Use:   "delete <repository uri>",
 	Short: "delete existing repository",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),

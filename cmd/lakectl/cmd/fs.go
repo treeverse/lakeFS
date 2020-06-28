@@ -19,7 +19,7 @@ Checksum: {{.Checksum}}
 `
 
 var fsStatCmd = &cobra.Command{
-	Use:   "stat [path uri]",
+	Use:   "stat <path uri>",
 	Short: "view object metadata",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),
@@ -43,7 +43,7 @@ const fsLsTemplate = `{{ range $val := . -}}
 `
 
 var fsListCmd = &cobra.Command{
-	Use:   "ls [path uri]",
+	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),
@@ -64,7 +64,7 @@ var fsListCmd = &cobra.Command{
 }
 
 var fsCatCmd = &cobra.Command{
-	Use:   "cat [path uri]",
+	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),
@@ -81,7 +81,7 @@ var fsCatCmd = &cobra.Command{
 }
 
 var fsUploadCmd = &cobra.Command{
-	Use:   "upload [path uri]",
+	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),
@@ -116,7 +116,7 @@ var fsUploadCmd = &cobra.Command{
 }
 
 var fsRmCmd = &cobra.Command{
-	Use:   "rm [path uri]",
+	Use:   "rm <path uri>",
 	Short: "delete object",
 	Args: cmd.ValidationChain(
 		cmd.HasNArgs(1),
