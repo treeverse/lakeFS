@@ -211,7 +211,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                             </Button>
                                );
                     })}>
-                    {(isDropdownOpen) ?  ChevronUpIcon : ChevronDownIcon}
+                    {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Dropdown.Toggle>
 
                 <Dropdown.Menu>
@@ -271,7 +271,6 @@ const merge = (path, entriesAtPath, diffResults) => {
             if (entry.path === diff.path) {
                 // if there's an exact 'CHANGE' or 'ADD' diff for it, color it that way.
                 return {...entry,  diff_type: diff.type};
-
             }
             if (diff.path_type === 'TREE' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
                 // for any entry descendant from a TREE event that was ADD, color it as ADD
