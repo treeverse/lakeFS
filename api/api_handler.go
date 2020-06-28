@@ -621,7 +621,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		var message string
 		var metadata map[string]string
 		if params.Merge != nil {
-			message = swag.StringValue(params.Merge.Message)
+			message = params.Merge.Message
 			metadata = params.Merge.Metadata
 		}
 		res, err := a.context.Cataloger.Merge(a.Context(),

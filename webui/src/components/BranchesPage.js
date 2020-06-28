@@ -109,7 +109,6 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
     }, [listBranches, createStatus.done, repo.id]);
 
 
-
     let body;
     if (branches.loading) {
         body = (<Alert variant="info">Loading</Alert>);
@@ -124,24 +123,24 @@ const BranchesPage = ({repo, branches, listBranches, listBranchesPaginate, creat
                             <div className="clearfix">
                                 <div className="float-left">
                                     <h6>
-                                        <Link to={`/repositories/${repo.id}/tree?branch=${branch.reference}`}>{branch.reference}</Link>
+                                        <Link to={`/repositories/${repo.id}/tree?branch=${branch}`}>{branch}</Link>
                                         {' '}
-                                        {(repo.default_branch === branch.reference) ? (<Badge variant="info">Default</Badge> ) : (<span/>)}
+                                        {(repo.default_branch === branch) ? (<Badge variant="info">Default</Badge> ) : (<span/>)}
                                     </h6>
                                 </div>
                                 <div className="float-right">
                                     <ButtonGroup className="branch-actions">
-                                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch.reference}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
-                                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch.reference}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
-                                        <ClipboardButton variant={buttonVariant} text={branch.reference} tooltip="copy ID to clipboard"/>
+                                        <ClipboardButton variant={buttonVariant} text={`s3://${repo.id}/${branch}/`} tooltip="copy S3 URI to clipboard" icon={<LinkExternalIcon/>}/>
+                                        <ClipboardButton variant={buttonVariant} text={`lakefs://${repo.id}@${branch}`} tooltip="copy URI to clipboard" icon={<LinkIcon/>}/>
+                                        <ClipboardButton variant={buttonVariant} text={branch} tooltip="copy ID to clipboard"/>
                                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects</Tooltip>}>
-                                            <Button href={`/repositories/${repo.id}/tree?branch=${branch.reference}`} variant={buttonVariant}>
+                                            <Button href={`/repositories/${repo.id}/tree?branch=${branch}`} variant={buttonVariant}>
                                                 <BrowserIcon/>
                                             </Button>
                                         </OverlayTrigger>
                                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at last commit</Tooltip>}>
-                                            <Button href={`/repositories/${repo.id}/tree?commit=${branch.reference}`} variant={buttonVariant}>
-                                                {branch.reference}
+                                            <Button href={`/repositories/${repo.id}/tree?commit=${branch}`} variant={buttonVariant}>
+                                                {branch}
                                             </Button>
                                         </OverlayTrigger>
                                     </ButtonGroup>
