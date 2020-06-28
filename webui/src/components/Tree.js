@@ -216,7 +216,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
 
                 <Dropdown.Menu>
                     <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are  you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
+                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
                 </Dropdown.Menu>
             </Dropdown>
         );
