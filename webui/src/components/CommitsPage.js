@@ -61,7 +61,7 @@ const CommitWidget = ({repo, commit, previous}) => {
                         <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at commit</Tooltip>}>
                             <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
-                                {(commit.id.length > 16) ? commit.id.substr(0, 16) : commit.id}
+                                {commit.id}
                             </Button>
                         </OverlayTrigger>
                         {(!!previous && !!previous.parents) ? (
