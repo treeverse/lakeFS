@@ -396,10 +396,10 @@ class Branches {
         return await response.json();
     }
 
-    async create(repoId, id, sourceRefId) {
+    async create(repoId, name, source) {
         const response = await apiRequest(`/repositories/${repoId}/branches`, {
             method: 'POST',
-            body: json({id, sourceRefId}),
+            body: json({name, source}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
