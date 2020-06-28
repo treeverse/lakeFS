@@ -30,7 +30,7 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
 
 1. Ensure you have Docker installed on your computer. The MacOS and Windows installations include [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} by default.
 
-2. Create a `docker-compose.yaml` file, containing the following configuration:
+1. Create a `docker-compose.yaml` file, containing the following configuration:
 
    ```yaml
    ---
@@ -58,13 +58,13 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
          LC_COLLATE: C
    ```
 
-3. From the directory that contains our new `docker-compose.yaml` file, run the following command:
+1. From the directory that contains our new `docker-compose.yaml` file, run the following command:
 
    ```bash
    $ docker-compose up
    ```
 
-4. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
+1. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
 
 ### Manual Installation 
@@ -75,9 +75,9 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    [Download lakefs](downloads.md){: .btn .btn-green target="_blank"}
 
-2. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
+1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
-3. Create a PostgreSQL database:
+1. Create a PostgreSQL database:
 
    ```sh
    $ psql postgres
@@ -87,7 +87,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    CREATE DATABASE lakefsdb LC_COLLATE='C' TEMPLATE template0;
    ```
 
-4. Create a configuration file:
+1. Create a configuration file:
     
    ```yaml
    ---
@@ -107,13 +107,17 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
        uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_auth&sslmode=disable"
    ```
 
-5. Run the server:
+1. Create a local directory to store objects:
+
+   ```sh
+   mkdir ~/lakefs_data
+   ```
+
+1. Run the server:
     
    ```bash
    $ ./lakefs --config /path/to/config.yaml run
    ```
-
-6. 
 
 ## Setting up a Repository
 
@@ -121,16 +125,16 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    ![Setup](assets/img/setup.png)
 
-2. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
+1. Follow the steps to create an initial administrator user. Save the credentials you've received somewhere safe, you won't be able to see them again!
 
    ![Setup Done](assets/img/setup_done.png)
 
-3. Follow the link and go to the login screen
+1. Follow the link and go to the login screen
 
    ![Login Screen](assets/img/login.png)
 
-4. Use the credentials from step #2 to login as an administrator
-5. Click `Create Repository`
+1. Use the credentials from step #2 to login as an administrator
+1. Click `Create Repository`
     
    ![Create Repository](assets/img/repo_create.png)
 
@@ -144,7 +148,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 ## Copying files into our local installation using the AWS CLI
 
 1. If you don't have the AWS CLI installed, follow the [instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html){:target="_blank"}.
-2. Configure a new connection profile using the credentials we generated earlier:
+1. Configure a new connection profile using the credentials we generated earlier:
 
    ```bash
    $ aws configure --profile local
@@ -153,7 +157,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    Default region name [None]:
    Default output format [None]:
    ```
-3. Let's test to see that it works. We'll do that by calling `s3 ls` which should list our repositories for us:
+1. Let's test to see that it works. We'll do that by calling `s3 ls` which should list our repositories for us:
    
    ```bash
    $ aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 ls
@@ -164,14 +168,14 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    Since S3's API uses [subdomains for bucket addressing](https://aws.amazon.com/blogs/aws/amazon-s3-path-deprecation-plan-the-rest-of-the-story/){: target="_blank"}, simply using `localhost:8000` as an endpoint URL will not work.
    {: .note .note-info }
 
-4. Great, now let's copy some files. We'll write to the master branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
+1. Great, now let's copy some files. We'll write to the master branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
 
    ```bash
    $ aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example/master/
    upload: ./foo.txt to s3://example/master/foo.txt
    ```
 
-5. Back in the lakeFS UI, we should be able to see our file added to the master branch!
+1. Back in the lakeFS UI, we should be able to see our file added to the master branch!
 
    ![Object Added](assets/img/object_added.png)
 
@@ -188,8 +192,8 @@ Here's how to get started with the CLI:
    [Download lakectl](downloads.md){: .btn .btn-green target="_blank"}
 
 
-2. It's recommended that you place it somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet).
-3. configure the CLI to use the credentials you've created earlier:
+1. It's recommended that you place it somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet).
+1. configure the CLI to use the credentials you've created earlier:
 
    ```bash
    $ lakectl config
@@ -199,7 +203,7 @@ Here's how to get started with the CLI:
    Server endpoint URL: http://localhost:8001/api/v1
    ```
 
-4. Now that we've configured it, let's run a few sample commands:
+1. Now that we've configured it, let's run a few sample commands:
 
    ```bash
    $ lakectl branch list lakefs://example
