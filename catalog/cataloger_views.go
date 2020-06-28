@@ -1,24 +1,26 @@
 package catalog
 
 import (
+	"strconv"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
 func entriesV(tx db.Tx, requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
-		"min_commit < 0 AS is_committed",
+		"min_commit > 0 AS is_committed",
 		"max_commit = 0 AS is_tombstone",
-		"ctid AS entry_ctid",
+		"ctid AS entry_ctid\n",
 		"max_commit < max_commit_id() AS is_deleted",
-		"CASE min_commit WHEN 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
+		"CASE  WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
 		From("entries")
 	switch requestedCommit {
-	case UncommittedID:
+	case UncommittedID: // no further filtering is required
 	case CommittedID:
 		entriesQ = sq.Select("*").FromSelect(entriesQ, "t2").Where("is_committed")
 	default:
-		entriesQ = sq.Select("*").FromSelect(entriesQ, "t2").Where("? >=  min_commit and min_commit > 0", requestedCommit)
+		entriesQ = sq.Select("*").FromSelect(entriesQ, "t2").Where("? >=  min_commit and is_committed", requestedCommit)
 	}
 	return (entriesQ)
 }
@@ -28,15 +30,14 @@ type lineageCommit struct {
 	CommitID int64
 }
 
-func getLineage(tx db.Tx, branchID int64, requestedCommit CommitID) ([]lineageCommit, error) {
+func getLineage(tx db.Tx, branchID int64, effectiveCommit int64) ([]lineageCommit, error) {
 	var requestedLineage []lineageCommit
-	//sql := `select * from (select * from unnest((select a from t where key=1),(select a from t where key=2))) as t(c1,c2)`
 	sql := `select * from (select * from unnest(
 				(select lineage from branches where id=$1),
 				(select  lineage_commits from commits 
 						where branch_id=$1 and merge_type='from_father' and commit_id <= $2
 							order by commit_id desc limit 1))) as t(BranchID,CommitID)`
-	err := tx.Select(&requestedLineage, sql, 3, 100)
+	err := tx.Select(&requestedLineage, sql, branchID, effectiveCommit)
 	if err != nil {
 		panic(err)
 	}
@@ -70,38 +71,47 @@ func getLineage(tx db.Tx, branchID int64, requestedCommit CommitID) ([]lineageCo
 	return lineageBase.Suffix("UNION ALL "+sql, args...)
 }*/
 
-func entriesLineageFullV(tx db.Tx, branchID int64, requestedCommit CommitID) sq.SelectBuilder {
-	lineage, err := getLineage(tx, branchID, requestedCommit)
-	return sq.Select("l.branch_id AS displayed_branch",
-		"e.branch_id AS source_branch",
-		"e.path", "e.min_commit", "e.physical_address",
-		"e.creation_date", "e.size", "e.checksum", "e.metadata", "l.precedence",
-		"l.min_commit AS branch_min_commit",
-		"l.max_commit AS branch_max_commit",
-		"e.is_committed", "l.active_lineage", "l.effective_commit",
-		"e.is_tombstone", "e.entry_ctid").
-		Column(sq.Alias(sq.Case().
-			When("l.main_branch", "e.max_commit").
-			When("e.max_commit < l.effective_commit", "e.max_commit").
-			Else("max_commit_id()"), "max_commit")).
-		Column(`row_number() OVER (PARTITION BY l.branch_id, e.path 
-							ORDER BY l.precedence, 
-							(CASE
-						WHEN l.main_branch AND e.min_commit = 0 THEN max_commit_id()
-						ELSE e.min_commit
-						END) DESC) AS rank`).
-		Column(`CASE
-		   WHEN l.main_branch THEN e.is_deleted
-		   ELSE e.max_commit < l.effective_commit
-		END AS is_deleted`).
-		FromSelect(entriesV(tx, requestedCommit), "e").
-		Join("(" + lineageSQL + ") AS l ON l.ancestor_branch = e.branch_id").
-		Where("(l.main_branch OR e.min_commit <= l.effective_commit AND e.is_committed)").
-		Where("l.active_lineage")
+func EntriesLineageFullV(tx db.Tx, branchID int64, requestedCommit CommitID) sq.SelectBuilder {
+	effectiveCommit := int64(requestedCommit)
+	if requestedCommit <= 0 {
+		effectiveCommit = MaxCommitID
+	}
+	lineage, err := getLineage(tx, branchID, effectiveCommit)
+	if err != nil {
+		panic(err)
+	}
+	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
+	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
+	isDeletedExper := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
+	lineageFilter := "(" + isDisplayedBranch + ")\n"
+	for _, lc := range lineage {
+		branchCond := "e.branch_id = " + strconv.FormatInt(lc.BranchID, 10)
+		commitStr := strconv.FormatInt(lc.CommitID, 10)
+		ancestorCond := branchCond + " and e.max_commit <= " + commitStr
+		maxCommitExpr = maxCommitExpr.When(ancestorCond, "e.max_commit\n")
+		isDeletedExper = isDeletedExper.When(ancestorCond, "e.is_deleted\n")
+		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
+	}
+	maxCommitExpr = maxCommitExpr.Else("max_commit_id()")
+	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
+	isDeletedExper = isDeletedExper.Else("false")
+	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
+	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
+		FromSelect(entriesV(tx, requestedCommit), "e\n").
+		Where(lineageFilter).
+		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
+		Column("? AS displayed_branch", branchID).
+		Columns("e.path", "e.branch_id AS source_branch",
+			"e.min_commit", "e.physical_address",
+			"e.creation_date", "e.size", "e.checksum", "e.metadata",
+			"e.is_committed", "e.is_tombstone", "e.entry_ctid").
+		Column(maxCommitAlias).Column(isDeletedAlias)
+
+	return baseSelect
 }
 
-func diffFromSonV(tx db.Tx, fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int) sq.SelectBuilder {
-	fatherSQL, fatherArgs := sq.Select("*").FromSelect(entriesLineageFullV(tx, false), "z").
+func diffFromSonV(tx db.Tx, fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int64) sq.SelectBuilder {
+	fatherSQL, fatherArgs := sq.Select("*").FromSelect(EntriesLineageFullV(tx, int64(fatherID), UncommittedID), "z").
 		Where("displayed_branch = ? AND rank=1", fatherID).MustSql()
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
@@ -129,7 +139,7 @@ func diffFromSonV(tx db.Tx, fatherID, sonID, fatherEffectiveCommit, sonEffective
 										   ))) 
 											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit,
 			fatherID, sonID, sonEffectiveCommit).
-		FromSelect(entriesV(tx, true).
+		FromSelect(entriesV(tx, CommittedID).
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
 		LeftJoin("("+fatherSQL+") AS f ON f.path = s.path", fatherArgs...)
 	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromSonInternalQ, "t").Where("NOT (same_object OR both_deleted)")
@@ -147,11 +157,11 @@ func diffFromSonV(tx db.Tx, fatherID, sonID, fatherEffectiveCommit, sonEffective
 
 }
 
-func diffFromFatherV(tx db.Tx, fatherID, sonID, lastSonCommit int) sq.SelectBuilder {
-	sonSQL, sonArgs := sq.Select("*").FromSelect(entriesLineageFullV(tx, false), "s").
+func diffFromFatherV(tx db.Tx, fatherID, sonID, lastSonCommit int64) sq.SelectBuilder {
+	sonSQL, sonArgs := sq.Select("*").FromSelect(EntriesLineageFullV(tx, sonID, UncommittedID), "s").
 		Where("displayed_branch = ? and rank=1", sonID).MustSql()
-	lineageSQL, lineageArgs := sq.Select("*").FromSelect(lineageV(tx), "l").
-		Where("l.branch_id = ? AND l.active_lineage", sonID).MustSql()
+	//lineageSQL, lineageArgs := sq.Select("*").FromSelect(lineageV(tx), "l").
+	//	Where("l.branch_id = ? AND l.active_lineage", sonID).MustSql()
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",
@@ -168,10 +178,10 @@ func diffFromFatherV(tx db.Tx, fatherID, sonID, lastSonCommit int) sq.SelectBuil
 							 OR s.min_commit > ? -- created after last commit
                            OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
 						  AS DifferenceTypeConflict`, sonID, lastSonCommit, lastSonCommit).
-		FromSelect(entriesLineageFullV(tx, CommittedID), "f").
+		FromSelect(EntriesLineageFullV(tx, fatherID, CommittedID), "f").
 		Where("f.displayed_branch = ? AND f.rank=1", fatherID).
-		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...).
-		Join("("+lineageSQL+") AS l ON f.source_branch = l.ancestor_branch", lineageArgs...)
+		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...)
+	//Join("("+lineageSQL+") AS l ON f.source_branch = l.ancestor_branch", lineageArgs...)
 	RemoveNonRelevantQ := sq.Select("*").FromSelect(internalV, "t").Where("father_changed AND NOT (same_object OR both_deleted)")
 
 	return sq.Select().
