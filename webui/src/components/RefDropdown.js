@@ -227,7 +227,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
         return (
             <>
                 <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                    {emptyText} {show ? ChevronUpIcon : ChevronDownIcon}
+                    {emptyText} {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Button>
                 {cancelButton}
                 {popover}
@@ -236,11 +236,10 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     }
 
     const title = prefix + ((selected.type === 'branch') ? 'Branch: ' : 'Commit: ');
-
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                {title} <strong>{selected.id}</strong> {show ? ChevronUpIcon : ChevronDownIcon}
+                {title} <strong>{selected.id}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
             </Button>
             {cancelButton}
             {popover}
