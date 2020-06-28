@@ -14,9 +14,7 @@ const (
 	LockTypeUpdate
 )
 
-const MaxCommitID = 0x7FFFFFFF
-
-func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (int, error) {
+func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (int64, error) {
 	const b = `SELECT b.id FROM branches b join repositories r 
 					ON r.id = b.repository_id
 					WHERE r.name = $1 AND b.name = $2`
@@ -32,7 +30,7 @@ func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (
 		return 0, ErrInvalidLockValue
 	}
 	// will block merges, commits and diffs on this branch
-	var branchID int
+	var branchID int64
 	err := tx.Get(&branchID, q, repository, branch)
 	return branchID, err
 }
@@ -43,13 +41,13 @@ func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	return repoID, err
 }
 
-func getNextCommitID(tx db.Tx, branchID int) (CommitID, error) {
+func getNextCommitID(tx db.Tx) (CommitID, error) {
 	var commitID CommitID
-	err := tx.Get(&commitID, `SELECT next_commit FROM branches WHERE id = $1`, branchID)
+	err := tx.Get(&commitID, `SELECT nextval('commit_id_seq');`)
 	return commitID, err
 }
 
-func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int) (RelationType, error) {
+func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64) (RelationType, error) {
 	if sourceBranchID == destinationBranchID {
 		return RelationTypeNone, nil
 	}
@@ -88,4 +86,22 @@ func paginateSlice(s interface{}, limit int) bool {
 		return true
 	}
 	return false
+}
+
+func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, error) {
+	effectiveCommit := commitID
+	if commitID <= 0 {
+		effectiveCommit = MaxCommitID
+	}
+	sql := `select * from (select * from unnest(
+				(select lineage from branches where id=$1),
+				(select  lineage_commits from commits 
+						where branch_id=$1 and merge_type='from_father' and commit_id <= $2
+							order by commit_id desc limit 1))) as t(BranchID,CommitID)`
+	var requestedLineage []lineageCommit
+	err := tx.Select(&requestedLineage, sql, branchID, effectiveCommit)
+	if err != nil {
+		return nil, err
+	}
+	return requestedLineage, nil
 }

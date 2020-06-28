@@ -1,9 +1,19 @@
 CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
 
+CREATE FUNCTION max_commit_id() RETURNS bigint
+    LANGUAGE sql IMMUTABLE COST 1
+AS $$ select 1000000000000000000::bigint $$;
+
+
 CREATE TYPE commit_status AS ENUM (
     'not_committed',
     'committed',
     'deleted'
+);
+
+CREATE TYPE lineage_rec AS (
+	branch_id bigint,
+	commit_id bigint
 );
 
 CREATE TYPE merge_type AS ENUM (
@@ -25,34 +35,59 @@ CREATE TABLE branches (
     repository_id integer NOT NULL,
     id integer DEFAULT nextval('branches_id_seq'::regclass) NOT NULL,
     name character varying(64) NOT NULL,
-    next_commit integer DEFAULT 1 NOT NULL
+    lineage bigint[]
 );
 
+CREATE SEQUENCE commit_id_seq
+    AS integer
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 10;
+
 CREATE TABLE commits (
-    branch_id integer NOT NULL,
-    commit_id integer NOT NULL,
+    branch_id bigint NOT NULL,
+    commit_id bigint NOT NULL,
     committer character varying,
     message character varying,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     metadata jsonb,
-    merge_source_branch integer,
-    merge_source_commit integer,
-    merge_type merge_type DEFAULT 'none'::merge_type NOT NULL,
+    merge_source_branch bigint,
+    merge_source_commit bigint,
+    merge_type merge_type DEFAULT 'none'::merge_type,
+    lineage_commits bigint[],
     CONSTRAINT merge_check CHECK ((((merge_type = 'none'::merge_type) AND (merge_source_branch IS NULL) AND (merge_source_commit IS NULL)) OR ((merge_type <> 'none'::merge_type) AND (merge_source_branch IS NOT NULL) AND (merge_source_commit IS NOT NULL))))
 );
 
+CREATE VIEW commits_v AS
+ SELECT commits.branch_id,
+    commits.commit_id,
+    commits.merge_source_branch,
+    commits.merge_source_commit,
+    commits.merge_type,
+    commits.lineage_commits
+   FROM commits;
+
 CREATE TABLE entries (
-    branch_id integer NOT NULL,
+    branch_id bigint NOT NULL,
     path character varying NOT NULL,
-    physical_address text,
+    physical_address character varying(64),
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     size bigint NOT NULL,
     checksum character varying(64) NOT NULL,
     metadata jsonb,
-    min_commit integer DEFAULT 0 NOT NULL,
-    max_commit integer DEFAULT ('01111111111111111111111111111111'::"bit")::integer NOT NULL
+    min_commit bigint DEFAULT 0 NOT NULL,
+    max_commit bigint DEFAULT max_commit_id() NOT NULL
 );
 ALTER TABLE ONLY entries ALTER COLUMN path SET STATISTICS 10000;
+
+CREATE VIEW e_v AS
+ SELECT e.branch_id,
+    e.path,
+    e.min_commit,
+    e.max_commit
+   FROM entries e;
 
 CREATE VIEW entries_v AS
  SELECT e.branch_id,
@@ -65,9 +100,13 @@ CREATE VIEW entries_v AS
     e.min_commit,
     e.max_commit,
     (e.min_commit <> 0) AS is_committed,
-    (e.max_commit <> ('01111111111111111111111111111111'::"bit")::integer) AS is_deleted,
+    (e.max_commit < max_commit_id()) AS is_deleted,
     ((e.max_commit < e.min_commit) OR (e.max_commit = 0)) AS is_tombstone,
-    e.ctid AS entry_ctid
+    e.ctid AS entry_ctid,
+        CASE e.min_commit
+            WHEN 0 THEN max_commit_id()
+            ELSE e.min_commit
+        END AS commit_weight
    FROM entries e;
 
 CREATE TABLE lineage (
@@ -94,7 +133,7 @@ UNION ALL
     true AS main_branch,
     0 AS precedence,
     branches.id AS ancestor_branch,
-    (branches.next_commit - 1) AS effective_commit,
+    10000 AS effective_commit,
     0 AS min_commit,
     ('01111111111111111111111111111111'::"bit")::integer AS max_commit,
     true AS active_lineage
@@ -107,8 +146,8 @@ CREATE VIEW entries_lineage_full_v AS
     e.min_commit,
         CASE
             WHEN l.main_branch THEN e.max_commit
-            WHEN (e.max_commit < l.effective_commit) THEN e.max_commit
-            ELSE ('01111111111111111111111111111111'::"bit")::integer
+            WHEN (e.max_commit <= l.effective_commit) THEN e.max_commit
+            ELSE max_commit_id()
         END AS max_commit,
     e.physical_address,
     e.creation_date,
@@ -118,7 +157,7 @@ CREATE VIEW entries_lineage_full_v AS
     l.precedence,
     row_number() OVER (PARTITION BY l.branch_id, e.path ORDER BY l.precedence,
         CASE
-            WHEN (l.main_branch AND (e.min_commit = 0)) THEN ('01111111111111111111111111111111'::"bit")::integer
+            WHEN (l.main_branch AND (e.min_commit = 0)) THEN max_commit_id()
             ELSE e.min_commit
         END DESC) AS rank,
     l.min_commit AS branch_min_commit,
@@ -126,7 +165,7 @@ CREATE VIEW entries_lineage_full_v AS
     e.is_committed,
         CASE
             WHEN l.main_branch THEN e.is_deleted
-            ELSE (e.max_commit < l.effective_commit)
+            ELSE (e.max_commit <= l.effective_commit)
         END AS is_deleted,
     l.active_lineage,
     l.effective_commit,
@@ -196,6 +235,33 @@ CREATE VIEW entries_lineage_full_no_rank_v AS
              JOIN lineage_v l1 ON (((e1.branch_id = l1.ancestor_branch) AND (l1.branch_id = l.branch_id) AND (l1.effective_commit >= e1.min_commit) AND (l1.effective_commit >= e1.min_commit))))
           WHERE (((e.path)::text = (e1.path)::text) AND (l1.precedence < l.precedence))))));
 
+CREATE VIEW entries_lineage_full_v_2 AS
+ SELECT count(*) AS count
+   FROM ( SELECT DISTINCT ON (e.path) 6 AS displayed_branch,
+            e.is_deleted,
+            e.branch_id AS source_branch,
+            e.path,
+            e.min_commit,
+                CASE
+                    WHEN (e.branch_id = 6) THEN e.max_commit
+                    WHEN ((e.branch_id = 5) AND (e.max_commit <= 6)) THEN e.max_commit
+                    WHEN ((e.branch_id = 4) AND (e.max_commit <= 6)) THEN e.max_commit
+                    WHEN ((e.branch_id = 3) AND (e.max_commit <= 6)) THEN e.max_commit
+                    WHEN ((e.branch_id = 2) AND (e.max_commit <= 6)) THEN e.max_commit
+                    WHEN ((e.branch_id = 1) AND (e.max_commit <= 6)) THEN e.max_commit
+                    ELSE max_commit_id()
+                END AS max_commit,
+            e.physical_address,
+            e.creation_date,
+            e.size,
+            e.checksum,
+            e.metadata,
+            e.is_committed,
+            e.entry_ctid
+           FROM entries_v e
+          WHERE (((e.branch_id = 6) OR ((e.branch_id = 5) AND (e.min_commit <= 6)) OR ((e.branch_id = 4) AND (e.min_commit <= 6)) OR ((e.branch_id = 3) AND (e.min_commit <= 6)) OR ((e.branch_id = 2) AND (e.min_commit <= 6)) OR ((e.branch_id = 1) AND (e.min_commit <= 6))) AND ((e.path)::text ~~ '300/aaaaaaaaaaaaaaaaaaaaaaaaaa0000%'::text))
+          ORDER BY e.path, e.branch_id DESC, e.commit_weight DESC) t;
+
 CREATE VIEW entries_lineage_v AS
  SELECT t.displayed_branch,
     t.source_branch,
@@ -239,8 +305,7 @@ CREATE TABLE repositories (
     name character varying(64) NOT NULL,
     storage_namespace character varying NOT NULL,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
-    default_branch integer NOT NULL,
-    deleted boolean DEFAULT false NOT NULL
+    default_branch integer NOT NULL
 );
 
 CREATE SEQUENCE repositories_id_seq
@@ -292,13 +357,30 @@ CREATE VIEW top_committed_entries_v AS
             e.is_tombstone,
             row_number() OVER (PARTITION BY e.branch_id, e.path ORDER BY
                 CASE
-                    WHEN (e.min_commit = 0) THEN ('01111111111111111111111111111111'::"bit")::integer
+                    WHEN (e.min_commit = 0) THEN max_commit_id()
                     ELSE e.min_commit
                 END DESC) AS rank,
             e.entry_ctid
            FROM entries_v e
           WHERE e.is_committed) t
   WHERE (t.rank = 1);
+
+CREATE TABLE tt (
+    displayed_branch text,
+    path character varying,
+    source_branch bigint,
+    min_commit bigint,
+    physical_address character varying(64),
+    creation_date timestamp with time zone,
+    size bigint,
+    checksum character varying(64),
+    metadata jsonb,
+    is_committed boolean,
+    is_tombstone boolean,
+    entry_ctid tid,
+    max_commit bigint,
+    is_deleted boolean
+);
 
 ALTER TABLE ONLY branches
     ADD CONSTRAINT branches_pk PRIMARY KEY (id);
@@ -341,7 +423,7 @@ ALTER TABLE ONLY commits
     ADD CONSTRAINT commits_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY entries
-    ADD CONSTRAINT entries_branches_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE NOT VALID;
+    ADD CONSTRAINT entries_branches_fk FOREIGN KEY (branch_id) REFERENCES branches(id) NOT VALID;
 
 ALTER TABLE ONLY lineage
     ADD CONSTRAINT lineage_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
@@ -386,3 +468,4 @@ SELECT *
 FROM dir_list d
 WHERE d.marker IS NOT NULL;
 $_$;
+

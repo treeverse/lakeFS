@@ -7,6 +7,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	createRepositoryCommitMessage = "Repository created"
+	createRepositoryCommitter     = ""
+)
+
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
@@ -18,34 +23,46 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for branch
-		var branchID int
+		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq')`); err != nil {
 			return nil, err
 		}
 
 		// next id for repository
-		var repoID int
+		var repoID int64
 		if err := tx.Get(&repoID, `SELECT nextval('repositories_id_seq')`); err != nil {
 			return nil, err
 		}
 		if _, err := tx.Exec(`SET CONSTRAINTS repositories_branches_id_fkey DEFERRED`); err != nil {
 			return nil, err
 		}
+
 		// create repository with ref to branch
 		creationDate := c.Clock.Now()
 		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
 			VALUES ($1, $2, $3, $4, $5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
 			return nil, err
 		}
+
 		// create branch with ref to repository
 		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name)
 			VALUES ($1, $2, $3)`, repoID, branchID, branch); err != nil {
 			return nil, err
 		}
 
+		// create initial commit
+		commitID, err := getNextCommitID(tx)
+		if err != nil {
+			return nil, err
+		}
+
+		if _, err := commitCommitLog(tx, branchID, commitID,
+			createRepositoryCommitter, createRepositoryCommitMessage, c.Clock.Now(), nil); err != nil {
+			return nil, err
+		}
 		c.log.WithContext(ctx).
 			WithFields(logging.Fields{"branch_id": branchID, "branch": branch, "repo_id": repoID, "repository": repository}).
-			Debug("Repository created")
+			Debug(createRepositoryCommitMessage)
 		return repoID, nil
 	}, c.txOpts(ctx)...)
 	return err
