@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -73,6 +75,9 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	var size int64
 	o.Incr("complete_mpu")
 	uploadId := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
+
+	o.AddLogFields(logging.Fields{"upload_id": uploadId})
+
 	multiPart, err := o.Index.ReadMultiPartUpload(o.Repo.Id, uploadId)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read  multipart record")
@@ -80,6 +85,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		return
 	}
 	objName := multiPart.PhysicalAddress
+	o.AddLogFields(logging.Fields{"physical_address": objName})
 	XMLmultiPartComplete, err := ioutil.ReadAll(o.Request.Body)
 	var MultipartList block.MultipartUploadCompletion
 	err = xml.Unmarshal([]byte(XMLmultiPartComplete), &MultipartList)
@@ -114,7 +120,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	err = o.Index.DeleteMultiPartUpload(o.Repo.Id, uploadId)
 	if err != nil {
-		o.Log().WithError(err).Warn("could not delete  multipart record")
+		o.Log().WithError(err).Warn("could not delete multipart record")
 	}
 
 	// TODO: pass scheme instead of hard-coding http instead of https
