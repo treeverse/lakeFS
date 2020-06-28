@@ -341,7 +341,7 @@ class Repositories {
         if (!from) {
             return await this.list(from, amount);
         }
-        const response = await this.list(from, 1000);
+        const response = await this.list(from, amount);
         let self;
         try {
             self = await this.get(from);
@@ -350,16 +350,16 @@ class Repositories {
                 throw error;
             }
         }
-        let results = response.results.filter(repo => repo.id.indexOf(from) === 0);
-        let hasMore = (results.length === 1000 && response.pagination.has_more);
-        if (!!self) results = [self, ...results];
+        const results = response.results.filter(repo => repo.id.indexOf(from) === 0);
+        if (self) results.unshift(from);
+        const hasMore = response.pagination.has_more;
 
         let returnVal = {
             results,
             pagination: {
                 has_more: hasMore,
-                max_per_page: 1000,
-                results: results.length + 1,
+                max_per_page: amount,
+                results: results.length,
             },
         };
         return returnVal;
@@ -396,10 +396,10 @@ class Branches {
         return await response.json();
     }
 
-    async create(repoId, id, sourceRefId) {
+    async create(repoId, name, source) {
         const response = await apiRequest(`/repositories/${repoId}/branches`, {
             method: 'POST',
-            body: json({id, sourceRefId}),
+            body: json({name, source}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
@@ -407,8 +407,8 @@ class Branches {
         return await response.json();
     }
 
-    async revert(repoId, branchId, options) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`, {
+    async revert(repoId, branch, options) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branch}`, {
             method: 'PUT',
             body: json(options),
         });
@@ -442,16 +442,16 @@ class Branches {
                 }
             }
         }
-        let results = response.results.filter(branch => branch.id.indexOf(from) === 0);
-        let hasMore = (results.length === amount && response.pagination.has_more);
-        if (!!self) results = [self, ...results];
+        const results = response.results.filter(branch => branch.indexOf(from) === 0);
+        if (self) results.unshift(from);
+        const hasMore = response.pagination.has_more;
 
-        let returnVal = {
+        const returnVal = {
             results,
             pagination: {
                 has_more: hasMore,
-                max_per_page: 1000,
-                results: results.length + (!!self) ? 1 : 0,
+                max_per_page: amount,
+                results: results.length,
             },
         };
         return returnVal;
