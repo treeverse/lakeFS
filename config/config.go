@@ -225,7 +225,7 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
 	sender := stats.NewDummySender()
-	if c.GetStatsEnabled() && Version != NonReleaseVersion {
+	if c.GetStatsEnabled() {
 		sender = stats.NewHTTPSender(installationID, uuid.New().String(), c.GetStatsAddress(), time.Now)
 	}
 	return stats.NewBufferedCollector(
