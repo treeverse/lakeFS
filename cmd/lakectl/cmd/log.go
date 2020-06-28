@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/cmd"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -30,9 +31,9 @@ Merge: {{ $val.Parents|join ", "|bold }}
 var logCmd = &cobra.Command{
 	Use:   "log [branch uri]",
 	Short: "show log of commits for the given branch",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, err := cmd.Flags().GetInt("amount")

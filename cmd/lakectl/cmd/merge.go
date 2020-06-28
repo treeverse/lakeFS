@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	cmdGen "github.com/treeverse/lakefs/cmd"
 	"os"
 
 	"github.com/treeverse/lakefs/catalog"
@@ -18,14 +19,14 @@ var mergeCmd = &cobra.Command{
 	Use:   "merge",
 	Short: "merge  [source ref] [destination ref] ",
 	Long:  "merge & commit changes from source branch into destination branch",
-	Args: ValidationChain(
-		HasRangeArgs(2, 2),
-		IsRefURI(0),
-		IsRefURI(1),
+	Args: cmdGen.ValidationChain(
+		cmdGen.HasRangeArgs(2, 2),
+		cmdGen.IsRefURI(0),
+		cmdGen.IsRefURI(1),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		if err := IsRefURI(1)(args); err != nil {
+		if err := cmdGen.IsRefURI(1)(args); err != nil {
 			DieErr(err)
 		}
 		rightRefURI := uri.Must(uri.Parse(args[0]))

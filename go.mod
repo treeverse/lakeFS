@@ -3,7 +3,7 @@ module github.com/treeverse/lakefs
 go 1.12
 
 require (
-	github.com/aws/aws-sdk-go v1.30.14
+	github.com/aws/aws-sdk-go v1.32.9
 	github.com/benbjohnson/clock v1.0.3
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/continuity v0.0.0-20200228182428-0f16d7a0959c // indirect
@@ -34,6 +34,8 @@ require (
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/viper v1.4.0
 	github.com/tsenart/vegeta/v12 v12.8.3
+	github.com/xitongsys/parquet-go v1.5.2
+	github.com/xitongsys/parquet-go-source v0.0.0-20200611103345-88e6b030070d
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect

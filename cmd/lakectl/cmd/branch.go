@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/treeverse/lakefs/cmd"
 	"strings"
 
 	"github.com/go-openapi/swag"
@@ -26,9 +27,9 @@ var branchListCmd = &cobra.Command{
 	Use:     "list [repository uri]",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://myrepo",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRepoURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRepoURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -70,9 +71,9 @@ var branchListCmd = &cobra.Command{
 var branchCreateCmd = &cobra.Command{
 	Use:   "create [ref uri]",
 	Short: "create a new branch in a repository",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -101,9 +102,9 @@ var branchCreateCmd = &cobra.Command{
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete [branch uri]",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		sure, err := cmd.Flags().GetBool("sure")
@@ -141,9 +142,9 @@ var branchRevertCmd = &cobra.Command{
 				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
 				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
 				4. revert uncommitted changes for specific object  - revert lakefs://myrepo@master  --object path`,
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -211,9 +212,9 @@ var branchRevertCmd = &cobra.Command{
 var branchShowCmd = &cobra.Command{
 	Use:   "show [branch uri]",
 	Short: "show branch metadata",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

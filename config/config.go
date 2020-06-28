@@ -111,7 +111,7 @@ func (c *Config) ConnectDatabase(dbKey string) db.Database {
 	return database
 }
 
-func (c *Config) buildS3Adapter() block.Adapter {
+func (c *Config) BuildS3Service() *s3.S3 {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
@@ -130,7 +130,11 @@ func (c *Config) buildS3Adapter() block.Adapter {
 
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
+	return s3.New(sess)
+}
+
+func (c *Config) buildS3Adapter() block.Adapter {
+	svc := c.BuildS3Service()
 	adapter := s3a.NewAdapter(svc, s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")))
 	log.WithFields(log.Fields{
 		"type": "s3",

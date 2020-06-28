@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/cmd"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -13,9 +14,9 @@ import (
 var showCmd = &cobra.Command{
 	Use:   "show [repository uri]",
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRepoURI(0),
+	Args: cmd.ValidationChain(
+		cmd.HasNArgs(1),
+		cmd.IsRepoURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
