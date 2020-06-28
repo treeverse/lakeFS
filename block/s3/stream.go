@@ -51,9 +51,6 @@ func (s *StreamingReader) GetLastChunk() []byte {
 // ReadAllWithTimeout is taken from io.ReadAtLeast and adapted to support a timeout
 func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration) (n int, err error) {
 	desired := len(buf)
-	if len(buf) < desired {
-		return 0, io.ErrShortBuffer
-	}
 
 	lg := logging.Default().WithFields(logging.Fields{
 		"timeout":      timeout,
