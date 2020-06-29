@@ -3,17 +3,11 @@ package api
 import (
 	"encoding/json"
 	"net/http"
-	"runtime"
 	"time"
-
-	"github.com/treeverse/lakefs/config"
-
-	"github.com/google/uuid"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/permissions"
 )
 
 const SetupLakeFSRoute = "/setup_lakefs"
@@ -41,7 +35,7 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			return
 		}
 
-		err = WriteInitialMetadata(authService)
+		err = auth.WriteInitialMetadata(authService)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -62,7 +56,7 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			CreatedAt:   time.Now(),
 			DisplayName: req.DisplayName,
 		}
-		cred, err := SetupAdminUser(authService, user)
+		cred, err := auth.SetupAdminUser(authService, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -80,211 +74,4 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(respJSON)
 	})
-}
-
-func createGroups(authService auth.Service, groups []*model.Group) error {
-	for _, group := range groups {
-		err := authService.CreateGroup(group)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func createPolicies(authService auth.Service, policies []*model.Policy) error {
-	for _, policy := range policies {
-		err := authService.WritePolicy(policy)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func attachPolicies(authService auth.Service, groupId string, policyIds []string) error {
-	for _, policyId := range policyIds {
-		err := authService.AttachPolicyToGroup(policyId, groupId)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func SetupBaseGroups(authService auth.Service, ts time.Time) error {
-	var err error
-
-	err = createGroups(authService, []*model.Group{
-		{CreatedAt: ts, DisplayName: "Admins"},
-		{CreatedAt: ts, DisplayName: "SuperUsers"},
-		{CreatedAt: ts, DisplayName: "Developers"},
-		{CreatedAt: ts, DisplayName: "Viewers"},
-	})
-	if err != nil {
-		return err
-	}
-
-	err = createPolicies(authService, []*model.Policy{
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSFullAccess",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSReadWriteAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						permissions.ListRepositoriesAction,
-						permissions.ReadRepositoryAction,
-						permissions.ReadCommitAction,
-						permissions.ListBranchesAction,
-						permissions.ListObjectsAction,
-						permissions.ReadObjectAction,
-						permissions.WriteObjectAction,
-						permissions.DeleteObjectAction,
-						permissions.RevertBranchAction,
-						permissions.ReadBranchAction,
-						permissions.CreateBranchAction,
-						permissions.DeleteBranchAction,
-						permissions.CreateCommitAction,
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSReadAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:List*",
-						"fs:Read*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "AuthFullAccess",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"auth:*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "AuthManageOwnCredentials",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						permissions.CreateCredentialsAction,
-						permissions.DeleteCredentialsAction,
-						permissions.ListCredentialsAction,
-						permissions.ReadCredentialsAction,
-					},
-					Resource: permissions.UserArn("${user}"),
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess"})
-	if err != nil {
-		return err
-	}
-	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials"})
-	if err != nil {
-		return err
-	}
-	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials"})
-	if err != nil {
-		return err
-	}
-	err = attachPolicies(authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
-	now := time.Now()
-	var err error
-
-	// Setup the basic groups and policies
-	err = SetupBaseGroups(authService, now)
-	if err != nil {
-		return nil, err
-	}
-
-	// create admin user
-	err = authService.CreateUser(user)
-	if err != nil {
-		return nil, err
-	}
-	err = authService.AddUserToGroup(user.DisplayName, "Admins")
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate and return a key pair
-	return authService.CreateCredentials(user.DisplayName)
-}
-
-func WriteInitialMetadata(authService auth.Service) error {
-	metadata := make(map[string]string)
-
-	metadata["setup_time"] = time.Now().Format(time.RFC3339)
-	metadata["installation_id"] = uuid.Must(uuid.NewUUID()).String()
-	metadata["lakefs_version"] = config.Version
-	metadata["golang_version"] = runtime.Version()
-	metadata["architecture"] = runtime.GOARCH
-	metadata["os"] = runtime.GOOS
-
-	type HasDatabase interface {
-		DB() db.Database
-	}
-	if d, ok := authService.(HasDatabase); ok {
-		conn := d.DB()
-		dbMeta, err := conn.Metadata()
-		if err == nil {
-			for k, v := range dbMeta {
-				metadata[k] = v
-			}
-		}
-	}
-
-	for k, v := range metadata {
-		err := authService.SetAccountMetadataKey(k, v)
-		if err != nil {
-			return err
-		}
-	}
-
-	return nil
 }
