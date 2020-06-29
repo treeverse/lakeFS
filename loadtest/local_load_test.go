@@ -1,6 +1,12 @@
 package loadtest
 
 import (
+	"log"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -11,11 +17,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
-	"log"
-	"net/http/httptest"
-	"os"
-	"testing"
-	"time"
 )
 
 var (
@@ -72,7 +73,7 @@ func TestLocalLoad(t *testing.T) {
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
 	}
-	credentials, err := api.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 
 	testConfig := Config{
