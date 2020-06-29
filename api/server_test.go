@@ -1,6 +1,14 @@
 package api_test
 
 import (
+	"log"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -15,13 +23,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
-	"log"
-	"net/http"
-	"net/http/httptest"
-	"os"
-	"strings"
-	"testing"
-	"time"
 )
 
 const (
@@ -58,7 +59,7 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 		DisplayName: "admin",
 	}
 
-	creds, err := api.SetupAdminUser(authService, user)
+	creds, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 	return creds
 }
