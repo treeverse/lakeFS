@@ -19,12 +19,15 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, err
 		}
+		return nil, insertNewEntry(tx, branchID, &entry)
+	}, c.txOpts(ctx)...)
+	return err
+}
 
-		_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
+func insertNewEntry(tx db.Tx, branchID int, entry *Entry) error {
+	_, err := tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
 			ON CONFLICT (branch_id,path,min_commit)
 			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, max_commit=$7`,
-			branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, MaxCommitID)
-		return nil, err
-	}, c.txOpts(ctx)...)
+		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, MaxCommitID)
 	return err
 }
