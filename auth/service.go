@@ -34,7 +34,6 @@ type Service interface {
 	DeleteUser(userDisplayName string) error
 	GetUserById(userId int) (*model.User, error)
 	GetUser(userDisplayName string) (*model.User, error)
-	GetFirstUser() (*model.User, error)
 	ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
@@ -199,21 +198,6 @@ func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
 	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
 		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, userId)
-		if err != nil {
-			return nil, err
-		}
-		return user, nil
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-	return user.(*model.User), nil
-}
-
-func (s *DBAuthService) GetFirstUser() (*model.User, error) {
-	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM users ORDER BY id LIMIT 1`)
 		if err != nil {
 			return nil, err
 		}
