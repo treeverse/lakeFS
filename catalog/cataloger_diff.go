@@ -73,7 +73,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 		return nil, err
 	}
 
-	s, args := diffFromFatherV(tx, fatherID, sonID, maxSonMerge).PlaceholderFormat(sq.Dollar).MustSql()
+	s, args := diffFromFatherV(fatherID, sonID, maxSonMerge).PlaceholderFormat(sq.Dollar).MustSql()
 
 	diffFromFatherSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 
