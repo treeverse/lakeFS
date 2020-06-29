@@ -22,6 +22,7 @@ type ManifestFile struct {
 
 type S3Manifest struct {
 	InventoryBucketArn string         `json:"destinationBucket"`
+	SourceBucket       string         `json:"sourceBucket"`
 	Files              []ManifestFile `json:"files"`
 	Format             string         `json:"fileFormat"`
 }
@@ -57,11 +58,7 @@ func FetchManifest(svc s3iface.S3API, manifestURL string) (*S3Manifest, error) {
 	return manifest, err
 }
 
-func FetchInventory(ctx context.Context, svc s3iface.S3API, manifestURL string) (<-chan InventoryRow, error) {
-	manifest, err := FetchManifest(svc, manifestURL)
-	if err != nil {
-		return nil, err
-	}
+func FetchInventory(ctx context.Context, svc s3iface.S3API, manifest S3Manifest) (<-chan InventoryRow, error) {
 	res := make(chan InventoryRow)
 	go func() {
 		defer close(res)
