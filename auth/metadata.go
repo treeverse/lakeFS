@@ -89,6 +89,13 @@ func (m *MetadataRefresher) Start() {
 			"interval": m.interval,
 		})
 		log.Trace("starting metadata refresher")
+		select {
+		case <-m.stop:
+			m.done <- true
+			return
+		case <-time.After(splayRandDuration):
+			m.update()
+		}
 		time.Sleep(splayRandDuration)
 		m.update()
 		stillRunning := true
