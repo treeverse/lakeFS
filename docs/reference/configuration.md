@@ -23,8 +23,7 @@ This reference uses `.` to denote the nesting of values.
 * `logging.format` `(one of ["json", "text"] : "text")` - Format to output log message in
 * `logging.level` `(one of ["DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
 * `logging.output` `(string : "-")` - Path name to write logs to. `"-"` means Standard Output
-* `metadata.db.uri` `(string : "postgres://localhost:5432/postgres?search_path=lakefs_index&sslmode=disable")` - PostgresSQL connection string to use for storing repository metadata
-* `auth.db.uri` `(string : "postgres://localhost:5432/postgres?search_path=lakefs_auth&sslmode=disable")` - PostgresSQL connection string to use for authentication and authorization information
+* `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
 * `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing  
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
@@ -62,16 +61,12 @@ logging:
   level: DEBUG
   output: "-"
 
-metadata:
-  db:
-    uri: "postgres://localhost:5432/lakefs?search_path=lakefs_index&sslmode=disable"
+database:
+  connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
 
 auth:
-  db:
-    uri: "postgres://localhost:5432/lakefs?search_path=lakefs_auth&sslmode=disable"
   encrypt:
     secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc09e90b6641"
-
 
 blockstore:
   type: local
@@ -98,17 +93,13 @@ logging:
   level: WARN
   output: "-"
 
-metadata:
-  db:
-    uri: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/lakefsdb?search_path=lakefs_index"
+database:
+  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
 
 auth:
-  db:
-    uri: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/lakefsdb?search_path=lakefs_auth"
   encrypt:
-    secret_key: 10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
     
-
 blockstore:
   type: s3
   s3:
@@ -119,7 +110,7 @@ blockstore:
 gateways:
   s3:
     listen_address: "0.0.0.0:80"
-    domain_name: s3.local.lakefs.io
+    domain_name: s3.my-company.com
     region: us-east-1
 
 api:

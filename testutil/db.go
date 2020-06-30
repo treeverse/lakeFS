@@ -111,7 +111,7 @@ func WithGetDBApplyDDL(apply bool) GetDBOption {
 	}
 }
 
-func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) (db.Database, string) {
+func GetDB(t *testing.T, uri string, opts ...GetDBOption) (db.Database, string) {
 	options := &GetDBOptions{
 		ApplyDDL: true,
 	}
@@ -134,20 +134,20 @@ func GetDB(t *testing.T, uri, schemaName string, opts ...GetDBOption) (db.Databa
 		_ = conn.Close()
 	})
 
-	if options.ApplyDDL {
-		// do the actual migration
-		err := db.MigrateUp(schemaName, connURI)
-		if err != nil {
-			t.Fatal("could not create schema:", err)
-		}
-	}
-
 	database := db.NewSqlxDatabase(conn)
 	_, err = database.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec("CREATE SCHEMA IF NOT EXISTS " + generatedSchema)
 	})
 	if err != nil {
 		t.Fatalf("could not create schema: %v", err)
+	}
+
+	if options.ApplyDDL {
+		// do the actual migration
+		err := db.MigrateUp(connURI)
+		if err != nil {
+			t.Fatal("could not create schema:", err)
+		}
 	}
 
 	// return DB

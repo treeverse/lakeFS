@@ -66,25 +66,22 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		mdb := cfg.ConnectMetadataDatabase()
-		adb := cfg.ConnectAuthDatabase()
+		dbConnString := cfg.GetDatabaseURI()
+		dbPool := cfg.BuildDatabaseConnection()
+
 		defer func() {
-			_ = adb.Close()
-			_ = mdb.Close()
+			_ = dbPool.Close()
 		}()
-		migrator := db.NewDatabaseMigrator()
-		for name, key := range config.SchemaDBKeys {
-			migrator.AddDB(name, cfg.GetDatabaseURI(key))
-		}
+		migrator := db.NewDatabaseMigrator(dbConnString)
 
 		// init index
-		meta := index.NewDBIndex(mdb)
+		meta := index.NewDBIndex(dbPool)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
 
 		// init authentication
-		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+		authService := auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 		stats := cfg.BuildStats(getInstallationID(authService))
