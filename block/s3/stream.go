@@ -61,14 +61,14 @@ func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration) (n int, 
 	timedOut := false
 	for n < desired && err == nil {
 
-		if time.Since(start) > timeout && n > 0 {
-			timedOut = true
-			break
-		}
-
 		var nn int
 		nn, err = r.Read(buf[n:])
 		n += nn
+
+		if time.Since(start) > timeout {
+			timedOut = true
+			break
+		}
 	}
 	if n >= desired {
 		err = nil
