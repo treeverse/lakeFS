@@ -4,9 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/catalog"
-	"time"
+	"strconv"
 )
 
 const (
@@ -14,60 +13,86 @@ const (
 	LauncherCommitMsgTemplate = "Import from %s"
 )
 
-func Import(ctx context.Context, svc s3iface.S3API, cataloger catalog.Cataloger, manifestURL string, repository string) error {
-	repo, err := cataloger.GetRepository(ctx, repository)
+type Importer struct {
+	s3               s3iface.S3API
+	repository       string
+	inventory        IInventory
+	batchSize        int
+	inventoryCreator func(s3 s3iface.S3API, manifestURL string) IInventory
+	inventoryDiffer  func(leftInv []FileRow, rightInv []FileRow) Diff
+	catalogActions   ICatalogActions
+}
+
+func NewImporter(s3 s3iface.S3API, cataloger catalog.Cataloger, manifestURL string, repository string) *Importer {
+	res := &Importer{s3: s3, repository: repository, inventory: NewInventory(s3, manifestURL), batchSize: DefaultBatchSize, inventoryCreator: NewInventory, inventoryDiffer: InventoryDiff}
+	res.catalogActions = NewCatalogActions(cataloger, repository)
+	return res
+}
+
+func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog) (diff Diff, err error) {
+	previousManifestURL := commit.Metadata["manifest_url"]
+	if previousManifestURL == "" {
+		err = fmt.Errorf("no manifest_url in commit Metadata. commit_ref=%s", commit.Reference)
+		return
+	}
+	previousInv := s.inventoryCreator(s.s3, previousManifestURL)
+	err = previousInv.LoadManifest()
+	if err != nil {
+		return
+	}
+	err = previousInv.Fetch(ctx, true)
+	if err != nil {
+		return
+	}
+	err = s.inventory.Fetch(ctx, true)
+	if err != nil {
+		return
+	}
+	diff = s.inventoryDiffer(previousInv.Rows(), s.inventory.Rows())
+	return
+}
+
+func (s *Importer) createMetadata(addedCount, deletedCount int) catalog.Metadata {
+	return catalog.Metadata{
+		"manifest_url":             s.inventory.ManifestURL(),
+		"source_bucket":            s.inventory.Manifest().SourceBucket,
+		"added_or_changed_objects": strconv.Itoa(addedCount),
+		"deleted_objects":          strconv.Itoa(deletedCount),
+	}
+}
+
+func (s *Importer) Import(ctx context.Context) error {
+	var rows, rowsToDelete []FileRow
+	var diff Diff
+	commit, err := s.catalogActions.getPreviousCommit(ctx)
+	if err != nil {
+		return err
+	}
+	err = s.inventory.LoadManifest()
 	if err != nil {
 		return err
 	}
 
-	err = cataloger.CreateBranch(ctx, repository, LauncherBranchName, repo.DefaultBranch)
-	hasPreviousCommit := false
-	if err != nil {
-		commits, _, err := cataloger.ListCommits(ctx, repository, LauncherBranchName, LauncherBranchName+":HEAD", 1)
-		if err == nil && len(commits) > 0 {
-			hasPreviousCommit = true
-		}
-	}
-	manifest, err := FetchManifest(svc, manifestURL)
-	if err != nil {
-		return err
-	}
-	rowsChan, err := FetchInventory(ctx, svc, *manifest)
-	if err != nil {
-		return err
-	}
-
-	for row := range rowsChan {
-		if row.Error != nil {
-			log.Errorf("failed to read row from inventory: %v", row.Error)
-			continue
-		}
-		if !row.IsLatest || row.IsDeleteMarker {
-			continue
-		}
-		if hasPreviousCommit {
-			//prevEntry, err := cataloger.GetEntry(ctx, repository, LauncherBranchName+":HEAD", row.Key)
-			//if err != nil && !errors.Is(err, db.ErrNotFound) {
-			//	log.Errorf("failed to get previous state of entry: %v", err)
-			//} else if prevEntry.Checksum == row.ETag {
-			//	log.Info("Entry already done, skipping")
-			//	continue
-			//}
-		}
-		entry := catalog.Entry{
-			Path:            row.Key,
-			PhysicalAddress: "s3://" + row.Bucket + "/" + row.Key,
-			CreationDate:    time.Unix(0, row.LastModified*int64(time.Millisecond)),
-			Size:            *row.Size,
-			Checksum:        row.ETag,
-			Metadata:        nil,
-		}
-		err = cataloger.CreateEntry(ctx, repository, LauncherBranchName, entry)
+	if commit == nil {
+		// no previous commit, add whole inventory
+		err = s.inventory.Fetch(ctx, false)
 		if err != nil {
-			log.Errorf("failed to create entry %s (%v)", row.Key, err)
+			return err
 		}
+		rows = s.inventory.Rows()
+	} else {
+		// has previous commit, add/delete according to diff
+		diff, err = s.diffFromCommit(ctx, *commit)
+		if err != nil {
+			return err
+		}
+		rows = diff.AddedOrChanged
+		rowsToDelete = diff.Deleted
 	}
-
-	_, err = cataloger.Commit(ctx, repository, LauncherBranchName, fmt.Sprintf(LauncherCommitMsgTemplate, manifest.SourceBucket), "lakeFS", catalog.Metadata{"manifest_url": manifestURL, "source_bucket": manifest.SourceBucket})
-	return err
+	err = s.catalogActions.createAndDeleteObjects(ctx, rows, rowsToDelete)
+	if err != nil {
+		return err
+	}
+	commitMetadata := s.createMetadata(len(rows), len(rowsToDelete))
+	return s.catalogActions.commit(ctx, fmt.Sprintf(LauncherCommitMsgTemplate, s.inventory.Manifest().SourceBucket), commitMetadata)
 }

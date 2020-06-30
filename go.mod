@@ -28,6 +28,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/ory/dockertest/v3 v3.6.0
+	github.com/pkg/errors v0.9.1
 	github.com/rakyll/statik v0.1.7
 	github.com/schollz/progressbar/v3 v3.3.3
 	github.com/sirupsen/logrus v1.5.0

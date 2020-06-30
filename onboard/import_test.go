@@ -1,49 +1,132 @@
 package onboard
 
 import (
-	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"io/ioutil"
-	"strings"
+	"context"
+	"reflect"
+	"strconv"
 	"testing"
 )
 
-type mockS3Client struct {
-	s3iface.S3API
-}
-
-func (m *mockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput, error) {
-	output := s3.GetObjectOutput{}
-	if *input.Bucket != "example-bucket" {
-		return &output, nil
+func TestImport(t *testing.T) {
+	testdata := []struct {
+		NewInventory                []string
+		PreviousInventory           []string
+		ExpectedAdded               []string
+		ExpectedDeleted             []string
+		ExpectedErr                 bool
+		OverrideNewManifestURL      string
+		OverridePreviousManifestURL string
+	}{
+		{
+			NewInventory:  []string{"f1", "f2"},
+			ExpectedAdded: []string{"f1", "f2"},
+		},
+		{
+			NewInventory:      []string{"f1", "f2"},
+			PreviousInventory: []string{"f1", "f2"},
+		},
+		{
+			NewInventory:      []string{"f1", "f2", "f4", "f3"},
+			PreviousInventory: []string{"f1", "f2"},
+			ExpectedAdded:     []string{"f3", "f4"},
+			ExpectedDeleted:   nil,
+		},
+		{
+			NewInventory:      []string{"f1", "f2"},
+			PreviousInventory: []string{"f1", "f2", "f3", "f4"},
+			ExpectedAdded:     nil,
+			ExpectedDeleted:   []string{"f3", "f4"},
+		},
+		{
+			NewInventory:      []string{"f1", "f2", "s1"},
+			PreviousInventory: []string{"f4", "f3", "f2", "f1"},
+			ExpectedAdded:     []string{"s1"},
+			ExpectedDeleted:   []string{"f3", "f4"},
+		},
+		{
+			NewInventory:      []string{},
+			PreviousInventory: []string{"f4", "f3", "f2", "f1"},
+			ExpectedAdded:     nil,
+			ExpectedDeleted:   []string{"f1", "f2", "f3", "f4"},
+		},
+		{
+			NewInventory:           []string{"f1", "f2", "f3", "f4"},
+			PreviousInventory:      []string{"f1", "f2", "f3", "f4"},
+			OverrideNewManifestURL: "s3://non-existing.json",
+			ExpectedErr:            true,
+		},
+		{
+			NewInventory:                []string{"f1", "f2", "f3", "f4"},
+			PreviousInventory:           []string{"f1", "f2", "f3", "f4"},
+			OverridePreviousManifestURL: "s3://non-existing.json",
+			ExpectedErr:                 true,
+		},
+		{
+			// do nothing, expect no errors
+		},
+		{
+			OverridePreviousManifestURL: "s3://non-existing.json",
+			ExpectedErr:                 true,
+		},
+		{
+			NewInventory:      []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
+			PreviousInventory: []string{"a9", "a10", "a2", "a4", "a1", "a8"},
+			ExpectedDeleted:   []string{"a10", "a8", "a9"},
+			ExpectedAdded:     []string{"a3", "a5", "a6", "a7"},
+		},
+		{
+			// do not sort when no need to delete
+			NewInventory:  []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
+			ExpectedAdded: []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
+		},
 	}
-	if *input.Key != "/example-path/manifest.json" {
-		return &output, nil
-	}
-	reader := strings.NewReader(`{
-  "sourceBucket" : "lakefs-example-data",
-  "destinationBucket" : "arn:aws:s3:::yoni-test3",
-  "version" : "2016-11-30",
-  "creationTimestamp" : "1593216000000",
-  "fileFormat" : "Parquet",
-  "fileSchema" : "message s3.inventory {  required binary bucket (STRING);  required binary key (STRING);  optional binary version_id (STRING);  optional boolean is_latest;  optional boolean is_delete_marker;  optional int64 size;  optional int64 last_modified_date (TIMESTAMP(MILLIS,true));  optional binary e_tag (STRING);  optional binary storage_class (STRING);  optional boolean is_multipart_uploaded;}",
-  "files" : [ {
-    "key" : "inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet",
-    "size" : 46473,
-    "MD5checksum" : "f92e97e547625c91737495137cd306c7"
-  } ]
-}`)
+	for _, test := range testdata {
+		newManifestURL := NewManifestURL
+		previousManifestURL := PreviousManifestURL
+		if test.OverrideNewManifestURL != "" {
+			newManifestURL = test.OverrideNewManifestURL
+		}
+		if test.OverridePreviousManifestURL != "" {
+			newManifestURL = test.OverridePreviousManifestURL
+		}
+		importer := NewImporter(mockS3Client{}, nil, newManifestURL, "example-repo")
+		catalogActionsMock := mockCatalogActions{}
+		if len(test.PreviousInventory) > 0 {
+			catalogActionsMock = mockCatalogActions{
+				previousCommitManifest: previousManifestURL,
+			}
+		}
+		importer.catalogActions = &catalogActionsMock
+		importer.inventoryCreator = getInventoryCreator(newManifestURL, previousManifestURL, test.NewInventory, test.PreviousInventory)
+		importer.inventory = &mockInventory{manifestURL: newManifestURL, rows: test.NewInventory}
+		importer.inventoryDiffer = getSimpleDiffer(t)
+		err := importer.Import(context.Background())
 
-	return output.SetBody(ioutil.NopCloser(reader)), nil
-}
-
-func TestFetchManifest(t *testing.T) {
-	svc := &mockS3Client{}
-	manifest, err := FetchManifest(svc, "s3://example-bucket/example-path/manifest.json")
-	if err != nil {
-		t.Fatalf("failed to fetch manifest: %v", err)
-	}
-	if len(manifest.Files) == 0 {
-		t.Fatalf("could not find files in manifest")
+		if !test.ExpectedErr && err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if test.ExpectedErr && err == nil {
+			t.Fatalf("error was expected but none was returned")
+		}
+		if test.ExpectedErr {
+			continue // error was expected, no need to check further
+		}
+		if !reflect.DeepEqual(catalogActionsMock.objectActions.Added, test.ExpectedAdded) {
+			t.Fatalf("added objects different than expected. expected=%v, got=%v.", test.ExpectedAdded, catalogActionsMock.objectActions.Added)
+		}
+		if !reflect.DeepEqual(catalogActionsMock.objectActions.Deleted, test.ExpectedDeleted) {
+			t.Fatalf("deleted objects different than expected. expected=%v, got=%v.", test.ExpectedDeleted, catalogActionsMock.objectActions.Deleted)
+		}
+		if catalogActionsMock.lastCommitMetadata["manifest_url"] != newManifestURL {
+			t.Fatalf("unexpected manifest_url in commit metadata. expected=%s, got=%s", newManifestURL, catalogActionsMock.lastCommitMetadata["manifest_url"])
+		}
+		addedOrChangedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])
+		if err != nil || addedOrChangedCount != len(test.ExpectedAdded) {
+			t.Fatalf("unexpected added_or_changed_objects in commit metadata. expected=%d, got=%s", len(test.ExpectedAdded), catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])
+		}
+		deletedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["deleted_objects"])
+		if err != nil || deletedCount != len(test.ExpectedDeleted) {
+			t.Fatalf("unexpected deleted_objects in commit metadata. expected=%d, got=%s", len(test.ExpectedDeleted), catalogActionsMock.lastCommitMetadata["deleted_objects"])
+		}
 	}
 }
