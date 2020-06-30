@@ -2,7 +2,8 @@ package catalog
 
 import (
 	"context"
-	"errors"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -27,29 +28,27 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 			return nil, err
 		}
 
-		var q string
-		switch ref.CommitID {
-		case UncommittedID:
-			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
-					FROM entries_lineage_v
-					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
-					ORDER BY path`
-		case CommittedID:
-			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
-					FROM entries_lineage_committed_v
-					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
-					ORDER BY path`
-		default:
-			return nil, errors.New("TBD")
+		likePath := db.Prefix(prefix)
+
+		lineage, err := getLineage(tx, branchID, ref.CommitID)
+		if err != nil {
+			return nil, err
 		}
-		args := []interface{}{branchID, db.Prefix(prefix), after}
+		q := psql.
+			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+			Where(sq.And{sq.Like{"path": likePath}, sq.Eq{"is_deleted": false}, sq.Gt{"path": after}}).
+			OrderBy("path")
 		if limit >= 0 {
-			q += " LIMIT $4"
-			args = append(args, limit+1)
+			q.Limit(uint64(limit) + 1)
 		}
 
+		sql, args, err := q.ToSql()
+		if err != nil {
+			return nil, err
+		}
 		var entries []*Entry
-		if err := tx.Select(&entries, q, args...); err != nil {
+		if err := tx.Select(&entries, sql, args...); err != nil {
 			return nil, err
 		}
 		return entries, nil

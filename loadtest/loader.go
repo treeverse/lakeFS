@@ -116,13 +116,17 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 func (t *Loader) doAttack() (hasErrors bool) {
 	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
 		http.Header{"Authorization": []string{"Basic " + getAuth(&t.Config.Credentials)}})
-	attacker := vegeta.NewAttacker()
+	attacker := vegeta.NewAttacker(vegeta.MaxWorkers(30))
 	t.Metrics = make(map[string]*vegeta.Metrics)
 	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
 		if len(res.Error) > 0 {
-			log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
+			if len(t.History) < int(res.Seq) {
+				log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
+			} else {
+				log.Debugf("Error in request - error: %s, status: %d", res.Error, res.Code)
+			}
 			hasErrors = true
 		}
 		typeMetrics := t.Metrics[t.History[res.Seq].Type]

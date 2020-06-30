@@ -160,12 +160,14 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 }
 
 func Must(t *testing.T, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("error returned for operation: %v", err)
 	}
 }
 
 func MustDo(t *testing.T, what string, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("%s, expected no error, got err=%s", what, err)
 	}

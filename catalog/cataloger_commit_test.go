@@ -10,6 +10,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -36,6 +38,8 @@ func TestCataloger_Commit(t *testing.T) {
 		}
 	}
 
+	const nextCommitID = 2 // first commit was used to setup the repository
+
 	type args struct {
 		repository string
 		branch     string
@@ -51,19 +55,19 @@ func TestCataloger_Commit(t *testing.T) {
 	}{
 		{
 			name:    "simple",
-			args:    args{repository: repository, branch: "master", message: "merge to master", committer: "tester", metadata: meta},
-			want:    &CommitLog{Reference: MakeReference("master", 1), Committer: "tester", Message: "merge to master", CreationDate: now, Metadata: meta},
+			args:    args{repository: repository, branch: "master", message: "Simple commit", committer: "tester", metadata: meta},
+			want:    &CommitLog{Reference: MakeReference("master", nextCommitID), Committer: "tester", Message: "Simple commit", CreationDate: now, Metadata: meta},
 			wantErr: false,
 		},
 		{
 			name:    "no repository",
-			args:    args{repository: "repoX", branch: "master", message: "merge to master", committer: "tester", metadata: meta},
+			args:    args{repository: "repoX", branch: "master", message: "commit message", committer: "tester", metadata: meta},
 			want:    nil,
 			wantErr: true,
 		},
 		{
 			name:    "no branch",
-			args:    args{repository: repository, branch: "shifu", message: "merge to shifu", committer: "tester", metadata: meta},
+			args:    args{repository: repository, branch: "shifu", message: "commit message", committer: "tester", metadata: meta},
 			want:    nil,
 			wantErr: true,
 		},
@@ -75,7 +79,7 @@ func TestCataloger_Commit(t *testing.T) {
 		},
 		{
 			name:    "no committer",
-			args:    args{repository: repository, branch: "master", message: "merge to master", committer: "", metadata: meta},
+			args:    args{repository: repository, branch: "master", message: "commit message", committer: "", metadata: meta},
 			want:    nil,
 			wantErr: true,
 		},
@@ -88,7 +92,7 @@ func TestCataloger_Commit(t *testing.T) {
 				return
 			}
 			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Commit() got = %v, want %v", got, tt.want)
+				t.Errorf("Commit() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
 			}
 		})
 	}
@@ -108,6 +112,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 
 	t.Run("same file more than once", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+		var previousCommitID CommitID
 		for i := 0; i < 3; i++ {
 			if err := c.CreateEntry(ctx, repository, "master", Entry{
 				Path:            "/file1",
@@ -123,28 +128,27 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
-			expectedRef := MakeReference("master", CommitID(i+1))
-			if commitLog.Reference != expectedRef {
-				t.Errorf("Commit got ID %s, expected %s", commitLog, expectedRef)
-				return
+
+			// parse commit log and check that the commit id goes up
+			r, err := ParseRef(commitLog.Reference)
+			testutil.Must(t, err)
+			if r.CommitID <= previousCommitID {
+				t.Fatalf("Commit ID should go up - %d, previous was %d", r.CommitID, previousCommitID)
 			}
-			ent, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)
-			if err != nil {
-				t.Errorf("List committed data failed on iterations %d: %s", i+1, err)
-				return
-			}
-			if len(ent) != 1 {
-				t.Error("List committed data should list one element")
-				return
-			}
-			if ent[0].Size != int64(i+1) {
-				t.Errorf("Commited file size %d, expected %d", ent[0].Size, i+1)
+			previousCommitID = r.CommitID
+
+			// verify that committed data is found
+			ent, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1")
+			testutil.MustDo(t, "Get entry we just committed", err)
+			if ent.Size != int64(i+1) {
+				t.Errorf("Commited file size %d, expected %d", ent.Size, i+1)
 			}
 		}
 	})
 
 	t.Run("file per commit", func(t *testing.T) {
 		repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+		var previousCommitID CommitID
 		for i := 0; i < 3; i++ {
 			fileName := fmt.Sprintf("/file%d", i+1)
 			addrName := fmt.Sprintf("/addr%d", i+1)
@@ -162,11 +166,14 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Errorf("Commit got error on iteration %d: %s", i+1, err)
 				return
 			}
-			expectedRef := MakeReference("master", CommitID(i+1))
-			if commitLog.Reference != expectedRef {
-				t.Errorf("Commit got ID %s, expected %s", commitLog, expectedRef)
-				return
+
+			// check that commit id goes up
+			ref, err := ParseRef(commitLog.Reference)
+			testutil.Must(t, err)
+			if ref.CommitID <= previousCommitID {
+				t.Fatalf("Commit new commit ID %d, should go up - previous %d", ref.CommitID, previousCommitID)
 			}
+
 			ent, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)
 			if err != nil {
 				t.Errorf("List committed data failed on iterations %d: %s", i+1, err)

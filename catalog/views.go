@@ -4,10 +4,9 @@ import (
 	"strconv"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/treeverse/lakefs/db"
 )
 
-func entriesV(requestedCommit CommitID) sq.SelectBuilder {
+func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
 		"min_commit > 0 AS is_committed",
 		"max_commit = 0 AS is_tombstone",
@@ -25,19 +24,14 @@ func entriesV(requestedCommit CommitID) sq.SelectBuilder {
 	return entriesQ
 }
 
-type lineageCommit struct {
-	BranchID int64
-	CommitID int64
-}
-
-func entriesLineage(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
 	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
 	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
 	isDeletedExpr := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
 	lineageFilter := "(" + isDisplayedBranch + ")\n"
 	for _, lc := range lineage {
 		branchCond := "e.branch_id = " + strconv.FormatInt(lc.BranchID, 10)
-		commitStr := strconv.FormatInt(lc.CommitID, 10)
+		commitStr := strconv.FormatInt(int64(lc.CommitID), 10)
 		ancestorCond := branchCond + " and e.max_commit <= " + commitStr
 		maxCommitExpr = maxCommitExpr.When(ancestorCond, "e.max_commit\n")
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
@@ -48,21 +42,20 @@ func entriesLineage(branchID int64, requestedCommit CommitID, lineage []lineageC
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
 	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
-		FromSelect(entriesV(requestedCommit), "e\n").
+		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
 		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
-		Column("? AS displayed_branch", branchID).
-		Columns("e.path", "e.branch_id AS source_branch",
+		Columns(strconv.FormatInt(branchID, 10)+" AS displayed_branch",
+			"e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
 			"e.creation_date", "e.size", "e.checksum", "e.metadata",
 			"e.is_committed", "e.is_tombstone", "e.entry_ctid").
 		Column(maxCommitAlias).Column(isDeletedAlias)
-
 	return baseSelect
 }
 
-func diffFromSonV(tx db.Tx, fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit) sq.SelectBuilder {
-	lineage := entriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
+func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit) sq.SelectBuilder {
+	lineage := sqEntriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
 	fatherSQL, fatherArgs := sq.Select("*").FromSelect(lineage, "z").
 		Where("displayed_branch = ? AND rank=1", fatherID).MustSql()
 	fromSonInternalQ := sq.Select("s.path",
@@ -91,7 +84,7 @@ func diffFromSonV(tx db.Tx, fatherID, sonID int64, fatherEffectiveCommit, sonEff
 										   ))) 
 											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit,
 			fatherID, sonID, sonEffectiveCommit).
-		FromSelect(entriesV(CommittedID).
+		FromSelect(sqEntriesV(CommittedID).
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
 		LeftJoin("("+fatherSQL+") AS f ON f.path = s.path", fatherArgs...)
 	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromSonInternalQ, "t").Where("NOT (same_object OR both_deleted)")
@@ -109,12 +102,12 @@ func diffFromSonV(tx db.Tx, fatherID, sonID int64, fatherEffectiveCommit, sonEff
 
 }
 
-func diffFromFatherV(tx db.Tx, fatherID, sonID, lastSonCommit int64, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
-	sonLineage := entriesLineage(sonID, UncommittedID, sonUncommittedLineage)
+func sqDiffFromFatherV(fatherID, sonID, lastSonCommit int64, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
+	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
 	sonSQL, sonArgs := sq.Select("*").FromSelect(sonLineage, "s").
 		Where("displayed_branch = ? and rank=1", sonID).MustSql()
 
-	fatherLineage := entriesLineage(fatherID, CommittedID, fatherUncommittedLineage)
+	fatherLineage := sqEntriesLineage(fatherID, CommittedID, fatherUncommittedLineage)
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",

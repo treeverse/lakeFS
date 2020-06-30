@@ -2,7 +2,8 @@ package catalog
 
 import (
 	"context"
-	"errors"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -26,21 +27,21 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 			return nil, err
 		}
 
-		var q string
-		switch ref.CommitID {
-		case CommittedID:
-			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
-					FROM entries_lineage_committed_v
-					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
-		case UncommittedID:
-			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
-					FROM entries_lineage_v
-					WHERE displayed_branch = $1 AND path = $2 AND NOT is_deleted`
-		default:
-			return nil, errors.New("TBD")
+		lineage, err := getLineage(tx, branchID, ref.CommitID)
+		if err != nil {
+			return nil, err
 		}
+		sql, args, err := psql.
+			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+			Where(sq.And{sq.Eq{"path": path}, sq.Eq{"is_deleted": false}}).
+			ToSql()
+		if err != nil {
+			return nil, err
+		}
+
 		var ent Entry
-		if err := tx.Get(&ent, q, branchID, path); err != nil {
+		if err := tx.Get(&ent, sql, args...); err != nil {
 			return nil, err
 		}
 		return &ent, nil
