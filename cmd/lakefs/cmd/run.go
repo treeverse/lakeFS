@@ -122,7 +122,7 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.Collect("global", "run")
 
-		metaUpdater := auth.NewMetadataRefresher(time.Minute*5, time.Hour*24, authService)
+		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService)
 		metaUpdater.Start()
 
 		if gatewayServer != nil {
@@ -141,11 +141,11 @@ var runCmd = &cobra.Command{
 }
 
 func getInstallationID(authService auth.Service) string {
-	installId, err := authService.GetAccountMetadataKey("installation_id")
+	installID, err := authService.GetAccountMetadataKey("installation_id")
 	if err != nil {
 		return defaultInstallationID
 	}
-	return installId
+	return installID
 }
 
 func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
