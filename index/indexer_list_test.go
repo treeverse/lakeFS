@@ -636,7 +636,7 @@ func TestKVIndex_ListObjectsByPrefix(t *testing.T) {
 	for _, tc := range testTable {
 
 		t.Run(tc.Name, func(t *testing.T) {
-			mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+			mdb, _ := testutil.GetDB(t, databaseUri)
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 			var err error
 			var retVal, commitId string

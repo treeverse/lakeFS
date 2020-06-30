@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/db"
+
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/treeverse/lakefs/block/local"
@@ -22,14 +24,11 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/block"
 	s3a "github.com/treeverse/lakefs/block/s3"
-	"github.com/treeverse/lakefs/db"
 )
 
 const (
-	DefaultDatabaseDriver = "pgx"
-	DefaultCatalogDBUri   = "postgres://localhost:5432/postgres?search_path=lakefs_catalog&sslmode=disable"
-	DefaultMetadataDBUri  = "postgres://localhost:5432/postgres?search_path=lakefs_index&sslmode=disable"
-	DefaultAuthDBUri      = "postgres://localhost:5432/postgres?search_path=lakefs_auth&sslmode=disable"
+	DefaultDatabaseDriver     = "pgx"
+	DefaultDatabaseConnString = "postgres://localhost:5432/postgres?sslmode=disable"
 
 	DefaultBlockStoreType                    = "local"
 	DefaultBlockStoreLocalPath               = "~/lakefs/data"
@@ -69,10 +68,7 @@ func setDefaults() {
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
-	viper.SetDefault("catalog.db.uri", DefaultCatalogDBUri)
-	viper.SetDefault("metadata.db.uri", DefaultMetadataDBUri)
-
-	viper.SetDefault("auth.db.uri", DefaultAuthDBUri)
+	viper.SetDefault("database.connection_string", DefaultDatabaseConnString)
 
 	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
 	viper.SetDefault("blockstore.local.path", DefaultBlockStoreLocalPath)
@@ -91,32 +87,12 @@ func setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-const (
-	DBKeyAuth    = "auth"
-	DBKeyIndex   = "metadata"
-	DBKeyCatalog = "catalog"
-)
-
-var SchemaDBKeys = map[string]string{
-	SchemaAuth:     DBKeyAuth,
-	SchemaMetadata: DBKeyIndex,
-	SchemaCatalog:  DBKeyCatalog,
+func (c *Config) GetDatabaseURI() string {
+	return viper.GetString("database.connection_string")
 }
 
-func (c *Config) GetDatabaseURI(key string) string {
-	return viper.GetString(key + ".db.uri")
-}
-
-func (c *Config) ConnectMetadataDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyIndex))
-	if err != nil {
-		panic(err)
-	}
-	return database
-}
-
-func (c *Config) ConnectAuthDatabase() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI(DBKeyAuth))
+func (c *Config) BuildDatabaseConnection() db.Database {
+	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI())
 	if err != nil {
 		panic(err)
 	}

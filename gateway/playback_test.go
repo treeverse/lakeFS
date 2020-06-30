@@ -98,7 +98,7 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		T:          t,
 	}
 
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	meta := index.NewDBIndex(mdb)
 
 	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)

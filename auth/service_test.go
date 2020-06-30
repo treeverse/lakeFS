@@ -13,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -37,7 +36,7 @@ func TestMain(m *testing.M) {
 }
 
 func setupService(t *testing.T, opts ...testutil.GetDBOption) auth.Service {
-	adb, _ := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
+	adb, _ := testutil.GetDB(t, databaseUri, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
 	return authService
 }

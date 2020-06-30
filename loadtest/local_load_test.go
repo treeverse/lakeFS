@@ -1,21 +1,21 @@
 package loadtest
 
 import (
+	"log"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
-	"log"
-	"net/http/httptest"
-	"os"
-	"testing"
-	"time"
 )
 
 var (
@@ -44,16 +44,13 @@ func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
-	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata)
+	conn, _ := testutil.GetDB(t, databaseUri)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(mdb)
+	meta := index.NewDBIndex(conn)
 
-	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaMetadata, mdbURI).
-		AddDB(config.SchemaAuth, adbURI)
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
+	migrator := db.NewDatabaseMigrator(databaseUri)
 	server := api.NewServer(
 		meta,
 		blockAdapter,

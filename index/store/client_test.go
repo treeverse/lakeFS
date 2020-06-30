@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestReadRepo(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	str := store.NewDBStore(mdb)
 
 	n := time.Now()
@@ -74,7 +74,7 @@ func TestReadRepo(t *testing.T) {
 }
 
 func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	str := store.NewDBStore(mdb)
 	now := time.Now()
 
@@ -134,7 +134,7 @@ func TestKVClientReadOnlyOperations_ListRepos(t *testing.T) {
 	}
 }
 func TestKVClientOperations_DeleteRepo(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	str := store.NewDBStore(mdb)
 
 	now := time.Now()
@@ -195,7 +195,7 @@ func TestKVClientOperations_DeleteRepo(t *testing.T) {
 }
 
 func TestKVClientOperations_WriteRepo(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	str := store.NewDBStore(mdb)
 
 	now := time.Now()
