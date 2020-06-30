@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 	"time"
 
@@ -112,30 +113,29 @@ func (d *SqlxDatabase) Metadata() (map[string]string, error) {
 		err = tx.Select(&pgs,
 			`SELECT name, setting FROM pg_settings
 					WHERE name IN ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')`)
-		if err == nil {
-			for _, setting := range pgs {
-				if setting.Name == "data_directory" {
-					if strings.HasPrefix(setting.Setting, "/rdsdata") {
-						metadata["postgresql_setting_is_rds"] = "true"
-					} else {
-						metadata["postgresql_setting_is_rds"] = "false"
-					}
-					continue
-				}
-				metadata[fmt.Sprintf("postgresql_setting_%s", setting.Name)] = setting.Setting
+		if err != nil {
+			return nil, err
+		}
+		for _, setting := range pgs {
+			if setting.Name == "data_directory" {
+				isRDS := strings.HasPrefix(setting.Setting, "/rdsdata")
+				metadata["postgresql_setting_is_rds"] = strconv.FormatBool(isRDS)
+				continue
 			}
+			metadata[fmt.Sprintf("postgresql_setting_%s", setting.Name)] = setting.Setting
 		}
 
 		return metadata, nil
 
 	}, ReadOnly())
-	if err == nil {
-		settings := m.(map[string]string)
-		for k, v := range settings {
-			metadata[k] = v
-		}
+	if err != nil {
+		return metadata, nil
 	}
 
+	settings := m.(map[string]string)
+	for k, v := range settings {
+		metadata[k] = v
+	}
 	return metadata, nil
 }
 
@@ -160,15 +160,12 @@ func (d *SqlxDatabase) getVersion() (string, error) {
 
 func (d *SqlxDatabase) getAuroraVersion() (string, error) {
 	v, err := d.Transact(func(tx Tx) (interface{}, error) {
-		type ver struct {
-			Version string `db:"aurora_version"`
-		}
-		var v ver
+		var v string
 		err := tx.Get(&v, "SELECT aurora_version()")
 		if err != nil {
 			return "", err
 		}
-		return v.Version, nil
+		return v, nil
 	}, ReadOnly(), WithLogger(logging.Dummy()))
 	if err != nil {
 		return "", err
