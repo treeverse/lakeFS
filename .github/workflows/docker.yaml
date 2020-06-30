@@ -57,6 +57,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.output.tag }} --build-arg VERSION=${{ steps.version.output.tag }} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.output.tag }}
 
+
       ‐ name: docker hub push
         uses: docker/build-push-action@v1
         with:
