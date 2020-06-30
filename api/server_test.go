@@ -58,7 +58,7 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 		DisplayName: "admin",
 	}
 
-	creds, err := api.SetupAdminUser(authService, user)
+	creds, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 	return creds
 }

@@ -62,7 +62,10 @@ CREATE TABLE IF NOT EXISTS auth_credentials (
 );
 CREATE INDEX idx_auth_credentials_user_id ON auth_credentials (user_id); -- list credentials per user
 
-
+CREATE TABLE IF NOT EXISTS auth_account_metadata (
+    key_name text NOT NULL PRIMARY KEY,
+    key_value text NOT NULL
+);
 
 -- index schema, containing information about lakeFS filesystem data
 CREATE TABLE IF NOT EXISTS index_repositories(
