@@ -18,7 +18,7 @@ type DBClientOperations struct {
 
 func (c *DBClientOperations) ReadRepo(repoId string) (*model.Repo, error) {
 	repo := &model.Repo{}
-	err := c.tx.Get(repo, `SELECT * FROM repositories WHERE id = $1`, repoId)
+	err := c.tx.Get(repo, `SELECT * FROM index_repositories WHERE id = $1`, repoId)
 	return repo, err
 }
 
@@ -27,9 +27,9 @@ func (c *DBClientOperations) ListRepos(amount int, after string) ([]*model.Repo,
 	var hasMore bool
 	var err error
 	if amount < 0 {
-		err = c.tx.Select(&repos, `SELECT * FROM repositories WHERE id > $1 ORDER BY id ASC`, after)
+		err = c.tx.Select(&repos, `SELECT * FROM index_repositories WHERE id > $1 ORDER BY id ASC`, after)
 	} else {
-		err = c.tx.Select(&repos, `SELECT * FROM repositories WHERE id > $1 ORDER BY id ASC LIMIT $2`, after, amount+1)
+		err = c.tx.Select(&repos, `SELECT * FROM index_repositories WHERE id > $1 ORDER BY id ASC LIMIT $2`, after, amount+1)
 	}
 	if err != nil {
 		return nil, false, err
@@ -44,14 +44,14 @@ func (c *DBClientOperations) ListRepos(amount int, after string) ([]*model.Repo,
 func (c *DBClientOperations) DeleteRepo(repoId string) error {
 	// clear all workspaces, branches, entries, etc.
 	queries := []string{
-		`DELETE FROM multipart_uploads WHERE repository_id = $1`,
-		`DELETE FROM workspace_entries WHERE repository_id = $1`,
-		`DELETE FROM branches WHERE repository_id = $1`,
-		`DELETE FROM commits WHERE repository_id = $1`,
-		`DELETE FROM entries WHERE repository_id = $1`,
-		`DELETE FROM objects WHERE repository_id = $1`,
-		`DELETE FROM object_dedup WHERE repository_id = $1`,
-		`DELETE FROM repositories WHERE id = $1`,
+		`DELETE FROM index_multipart_uploads WHERE repository_id = $1`,
+		`DELETE FROM index_workspace_entries WHERE repository_id = $1`,
+		`DELETE FROM index_branches WHERE repository_id = $1`,
+		`DELETE FROM index_commits WHERE repository_id = $1`,
+		`DELETE FROM index_entries WHERE repository_id = $1`,
+		`DELETE FROM index_objects WHERE repository_id = $1`,
+		`DELETE FROM index_object_dedup WHERE repository_id = $1`,
+		`DELETE FROM index_repositories WHERE id = $1`,
 	}
 
 	for _, q := range queries {
@@ -65,7 +65,7 @@ func (c *DBClientOperations) DeleteRepo(repoId string) error {
 
 func (c *DBClientOperations) WriteRepo(repo *model.Repo) error {
 	_, err := c.tx.Exec(
-		`INSERT INTO repositories (id, creation_date, default_branch, storage_namespace) VALUES ($1, $2, $3, $4)`,
+		`INSERT INTO index_repositories (id, creation_date, default_branch, storage_namespace) VALUES ($1, $2, $3, $4)`,
 		repo.Id,
 		repo.CreationDate,
 		repo.DefaultBranch,
