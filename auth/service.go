@@ -34,7 +34,6 @@ type Service interface {
 	DeleteUser(userDisplayName string) error
 	GetUserById(userId int) (*model.User, error)
 	GetUser(userDisplayName string) (*model.User, error)
-	GetFirstUser() (*model.User, error)
 	ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
@@ -75,6 +74,11 @@ type Service interface {
 
 	// authorize user for an action
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
+
+	// account metadata management
+	SetAccountMetadataKey(key, value string) error
+	GetAccountMetadataKey(key string) (string, error)
+	GetAccountMetadata() (map[string]string, error)
 }
 
 func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
@@ -158,6 +162,10 @@ func (s *DBAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
 
+func (s *DBAuthService) DB() db.Database {
+	return s.db
+}
+
 func (s *DBAuthService) CreateUser(user *model.User) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityId(user.DisplayName); err != nil {
@@ -190,21 +198,6 @@ func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
 	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
 		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, userId)
-		if err != nil {
-			return nil, err
-		}
-		return user, nil
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-	return user.(*model.User), nil
-}
-
-func (s *DBAuthService) GetFirstUser() (*model.User, error) {
-	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM users ORDER BY id LIMIT 1`)
 		if err != nil {
 			return nil, err
 		}
@@ -918,4 +911,49 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 
 	// we're allowed!
 	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+func (s *DBAuthService) SetAccountMetadataKey(key, value string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return tx.Exec(`
+			INSERT INTO account_metadata (key_name, key_value)
+			VALUES ($1, $2)
+			ON CONFLICT (key_name) DO UPDATE set key_value = $2`,
+			key, value)
+	})
+	return err
+}
+
+func (s *DBAuthService) GetAccountMetadataKey(key string) (string, error) {
+	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var value string
+		err := tx.Get(&value, `SELECT key_value FROM account_metadata WHERE key_name = $1`, key)
+		return value, err
+	}, db.ReadOnly())
+	if err != nil {
+		return "", err
+	}
+	return val.(string), nil
+}
+
+func (s *DBAuthService) GetAccountMetadata() (map[string]string, error) {
+	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var values []struct {
+			Key   string `db:"key_name"`
+			Value string `db:"key_value"`
+		}
+		err := tx.Select(&values, `SELECT key_name, key_value FROM account_metadata`)
+		if err != nil {
+			return nil, err
+		}
+		metadata := make(map[string]string)
+		for _, v := range values {
+			metadata[v.Key] = v.Value
+		}
+		return metadata, nil
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	return val.(map[string]string), nil
 }

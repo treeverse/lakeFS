@@ -74,7 +74,7 @@ func TestLocalLoad(t *testing.T) {
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
 	}
-	credentials, err := api.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 
 	testConfig := Config{
