@@ -5,6 +5,7 @@ DROP TABLE IF EXISTS auth_user_groups;
 DROP TABLE IF EXISTS auth_policies;
 DROP TABLE IF EXISTS auth_groups;
 DROP TABLE IF EXISTS auth_users;
+DROP TABLE IF EXISTS auth_account_metadata;
 DROP TABLE IF EXISTS index_multipart_uploads;
 DROP INDEX IF EXISTS index_idx_workspace_entries_parent_path;
 DROP TABLE IF EXISTS index_workspace_entries;

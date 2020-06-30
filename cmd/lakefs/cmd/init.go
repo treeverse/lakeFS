@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
@@ -28,7 +27,14 @@ var initCmd = &cobra.Command{
 			CreatedAt:   time.Now(),
 			DisplayName: userName,
 		}
-		creds, err := api.SetupAdminUser(authService, user)
+
+		err := auth.WriteInitialMetadata(authService)
+		if err != nil {
+			fmt.Printf("failed to write initial setup metadata: %s\n", err)
+			os.Exit(1)
+		}
+
+		creds, err := auth.SetupAdminUser(authService, user)
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
 			os.Exit(1)

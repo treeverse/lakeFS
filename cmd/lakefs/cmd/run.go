@@ -24,7 +24,7 @@ import (
 const (
 	gracefulShutdownTimeout = 30 * time.Second
 
-	defaultInstallationID = "anon@example.com"
+	defaultInstallationID = "unknown"
 
 	serviceAPIServer = "api"
 	serviceS3Gateway = "s3gateway"
@@ -119,6 +119,9 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.Collect("global", "run")
 
+		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService)
+		metaUpdater.Start()
+
 		if gatewayServer != nil {
 			go func() {
 				if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
@@ -127,7 +130,7 @@ var runCmd = &cobra.Command{
 				}
 			}()
 		}
-		go gracefulShutdown(quit, done, apiServer, gatewayServer)
+		go gracefulShutdown(quit, done, apiServer, gatewayServer, metaUpdater)
 		<-done
 		cancelFn()
 		<-stats.Done()
@@ -135,11 +138,11 @@ var runCmd = &cobra.Command{
 }
 
 func getInstallationID(authService auth.Service) string {
-	user, err := authService.GetFirstUser()
+	installID, err := authService.GetAccountMetadataKey("installation_id")
 	if err != nil {
 		return defaultInstallationID
 	}
-	return user.DisplayName
+	return installID
 }
 
 func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
