@@ -4,12 +4,10 @@ import (
 	"context"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
 const (
 	createRepositoryCommitMessage = "Repository created"
-	createRepositoryCommitter     = ""
 )
 
 func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error {
@@ -40,29 +38,23 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		// create repository with ref to branch
 		creationDate := c.Clock.Now()
 		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
-			VALUES ($1, $2, $3, $4, $5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
+			VALUES ($1,$2,$3,$4,$5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
 			return nil, err
 		}
 
 		// create branch with ref to repository
 		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name)
-			VALUES ($1, $2, $3)`, repoID, branchID, branch); err != nil {
+			VALUES ($1,$2,$3)`, repoID, branchID, branch); err != nil {
 			return nil, err
 		}
 
 		// create initial commit
-		commitID, err := getNextCommitID(tx)
+		_, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date)
+			VALUES ($1,nextval('commit_id_seq'),$2,$3,$4)`,
+			branchID, CatalogerCommitter, createRepositoryCommitMessage, creationDate)
 		if err != nil {
 			return nil, err
 		}
-
-		if _, err := commitCommitLog(tx, branchID, commitID,
-			createRepositoryCommitter, createRepositoryCommitMessage, c.Clock.Now(), nil); err != nil {
-			return nil, err
-		}
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{"branch_id": branchID, "branch": branch, "repo_id": repoID, "repository": repository}).
-			Debug(createRepositoryCommitMessage)
 		return repoID, nil
 	}, c.txOpts(ctx)...)
 	return err

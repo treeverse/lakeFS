@@ -9,6 +9,8 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const CatalogerCommitter = ""
+
 type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
 	GetRepository(ctx context.Context, repository string) (*Repository, error)

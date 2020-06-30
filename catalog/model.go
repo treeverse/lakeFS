@@ -56,6 +56,11 @@ type commitLogRaw struct {
 	MergeSourceCommit     int       `db:"merge_source_commit"`
 }
 
+type lineageCommit struct {
+	BranchID int64    `db:"branch_id"`
+	CommitID CommitID `db:"commit_id"`
+}
+
 type Branch struct {
 	Repository string `db:"repository"`
 	Name       string `db:"name"`

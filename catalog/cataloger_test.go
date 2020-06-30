@@ -23,11 +23,13 @@ type testEntryInfo struct {
 }
 
 func testCataloger(t *testing.T) Cataloger {
+	t.Helper()
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	return NewCataloger(cdb)
 }
 
 func testCatalogerWithClock(t *testing.T, tellTime clock.Clock) Cataloger {
+	t.Helper()
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	return &cataloger{
 		Clock: tellTime,
@@ -41,6 +43,7 @@ func testCatalogerUniqueID() string {
 }
 
 func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix string, branch string) string {
+	t.Helper()
 	name := prefix + "-" + testCatalogerUniqueID()
 	if err := c.CreateRepository(ctx, name, "s3://bucket", branch); err != nil {
 		t.Fatalf("create repository %s, branch %s, failed: %s", name, branch, err)
@@ -49,6 +52,7 @@ func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix st
 }
 
 func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repository, name, source string) {
+	t.Helper()
 	err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
 		t.Fatalf("failed to create branch %s (%s) on %s: %s", name, source, repository, err)
@@ -56,6 +60,7 @@ func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, reposit
 }
 
 func testCatalogerCreateEntry(t *testing.T, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
+	t.Helper()
 	checksum := testCreateEntryCalcChecksum(path, seed)
 	var size int64
 	for i := range checksum {

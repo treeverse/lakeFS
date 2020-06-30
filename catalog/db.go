@@ -3,6 +3,8 @@ package catalog
 import (
 	"reflect"
 
+	sq "github.com/Masterminds/squirrel"
+
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -14,31 +16,64 @@ const (
 	LockTypeUpdate
 )
 
-func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (int64, error) {
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+func getBranchIDByRef(tx db.Tx, repository string, ref Ref, lockType LockType) (int64, error) {
+	if ref.Branch != "" {
+		return getBranchID(tx, repository, ref.Branch, lockType)
+	}
+	const b = `SELECT branch_id FROM commits c JOIN branches b 
+		ON c.branch_id=b.id
+		JOIN repositories r ON b.repository_id=r.id
+		WHERE c.commit_id=$1 AND r.name=$2`
+
+	q, err := formatSqlWithLockType(b, lockType)
+	if err != nil {
+		return 0, err
+	}
+	var branchID int64
+	err = tx.Get(&branchID, q, ref.CommitID, repository)
+	return branchID, err
+}
+
+func getBranchID(tx db.Tx, repository, branch string, lockType LockType) (int64, error) {
 	const b = `SELECT b.id FROM branches b join repositories r 
 					ON r.id = b.repository_id
 					WHERE r.name = $1 AND b.name = $2`
-	var q string
-	switch branchLockType {
-	case LockTypeNone:
-		q = b
-	case LockTypeShare:
-		q = b + " FOR SHARE"
-	case LockTypeUpdate:
-		q = b + " FOR UPDATE"
-	default:
-		return 0, ErrInvalidLockValue
+	q, err := formatSqlWithLockType(b, lockType)
+	if err != nil {
+		return 0, err
 	}
-	// will block merges, commits and diffs on this branch
 	var branchID int64
-	err := tx.Get(&branchID, q, repository, branch)
+	err = tx.Get(&branchID, q, repository, branch)
 	return branchID, err
+}
+
+func formatSqlWithLockType(sql string, lockType LockType) (string, error) {
+	var q string
+	switch lockType {
+	case LockTypeNone:
+		q = sql
+	case LockTypeShare:
+		q = sql + " FOR SHARE"
+	case LockTypeUpdate:
+		q = sql + " FOR UPDATE"
+	default:
+		return "", ErrInvalidLockValue
+	}
+	return q, nil
 }
 
 func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	var repoID int
 	err := tx.Get(&repoID, `SELECT id FROM repositories WHERE name=$1`, repository)
 	return repoID, err
+}
+
+func getLastCommitIDByBranchID(tx db.Tx, branchID int64) (CommitID, error) {
+	var commitID CommitID
+	err := tx.Get(&commitID, `SELECT max(commit_id) FROM commits where branch_id=$1`, branchID)
+	return commitID, err
 }
 
 func getNextCommitID(tx db.Tx) (CommitID, error) {
@@ -93,11 +128,10 @@ func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, e
 	if commitID <= 0 {
 		effectiveCommit = MaxCommitID
 	}
-	sql := `select * from (select * from unnest(
-				(select lineage from branches where id=$1),
-				(select  lineage_commits from commits 
-						where branch_id=$1 and merge_type='from_father' and commit_id <= $2
-							order by commit_id desc limit 1))) as t(BranchID,CommitID)`
+	sql := `SELECT * FROM UNNEST(
+				(SELECT lineage from branches WHERE id=$1),
+				(SELECT lineage_commits FROM commits WHERE branch_id=$1 AND merge_type='from_father' AND commit_id <= $2 ORDER BY commit_id DESC LIMIT 1)
+			) as t(branch_id, commit_id)`
 	var requestedLineage []lineageCommit
 	err := tx.Select(&requestedLineage, sql, branchID, effectiveCommit)
 	if err != nil {
