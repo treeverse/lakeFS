@@ -1,10 +1,8 @@
 package db_test
 
 import (
-	"strings"
 	"testing"
 
-	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -39,26 +37,4 @@ func TestConnectDB(t *testing.T) {
 			}
 		})
 	}
-
-	t.Run("collate", func(t *testing.T) {
-		// create database with non "C" collate
-		conn, err := sqlx.Connect("pgx", databaseURI)
-		if err != nil {
-			t.Fatal("Failed to connect to DB", err)
-		}
-		defer conn.Close()
-		const testDBName = dbName + "_non_c"
-		_, err = conn.Exec("CREATE DATABASE " + testDBName + " LC_COLLATE='en_US.utf8' TEMPLATE template0")
-		if err != nil {
-			t.Fatal("Failed to create non C collate database", err)
-		}
-		testDBURI := strings.Replace(databaseURI, dbName, testDBName, 1)
-		idxDB, err := db.ConnectDB("pgx", testDBURI+"&search_path=lakefs_index")
-		if err == nil {
-			t.Error("Connect to database with unexpected collate should fail")
-		}
-		if idxDB != nil {
-			_ = idxDB.Close()
-		}
-	})
 }

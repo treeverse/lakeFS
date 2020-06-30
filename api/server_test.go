@@ -19,7 +19,6 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
@@ -69,21 +68,14 @@ type mockCollector struct{}
 func (m *mockCollector) Collect(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata, opts...)
+	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(mdb)
+	meta := index.NewDBIndex(conn)
 
-	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
 
-	_, catalogURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog, opts...)
-
-	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaCatalog, catalogURI).
-		AddDB(config.SchemaMetadata, mdbURI).
-		AddDB(config.SchemaAuth, adbURI)
-
+	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 	server := api.NewServer(
 		meta,
 		blockAdapter,
