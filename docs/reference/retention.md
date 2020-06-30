@@ -70,13 +70,13 @@ matches only objects inside "directory" `/master/logs`, but prefix
 
 ## Action
 
-These 2 action types are supported:
-- `expiration`: The "current" (currently visible) object with that
-  prefix will expire after the given length of time, whether committed
-  or not.
+These action types are supported:
+- `expiration`: All currently _committed_ objects (whether latest or
+  not) with that prefix will expire after the given length of time.
+- `uncommitted_expiration`: Any _uncommitted_ objects with that prefix
+  will expire after the given length of time.
 - `noncurrent_expiration`: Any "previous" (_not_ currently visible)
-  objects that would previously have been visible will expire after
-  the given length of time.
+  objects will expire after the given length of time.
 
 Each action takes a time specification.  These two time specification
 types are supported:
