@@ -74,7 +74,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
-2. Create a configuration file:
+1. Create a configuration file:
     
    ```yaml
    ---
@@ -91,13 +91,13 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
        secret_key: "a random string that should be kept secret"
    ```
 
-3. Create a local directory to store objects:
+1. Create a local directory to store objects:
 
    ```sh
    mkdir ~/lakefs_data
    ```
 
-4. Run the server:
+1. Run the server:
     
    ```bash
    $ ./lakefs --config /path/to/config.yaml run
