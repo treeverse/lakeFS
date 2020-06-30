@@ -2,6 +2,7 @@ package loadtest
 
 import (
 	"log"
+	"math"
 	"net/http/httptest"
 	"os"
 	"testing"
@@ -75,6 +76,7 @@ func TestLocalLoad(t *testing.T) {
 	testConfig := Config{
 		FreqPerSecond: 6,
 		Duration:      10 * time.Second,
+		MaxWorkers:    math.MaxInt64,
 		KeepRepo:      false,
 		Credentials:   *credentials,
 		ServerAddress: ts.URL,
