@@ -926,12 +926,9 @@ func (s *DBAuthService) SetAccountMetadataKey(key, value string) error {
 
 func (s *DBAuthService) GetAccountMetadataKey(key string) (string, error) {
 	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		type value struct {
-			Value string `db:"key_value"`
-		}
-		var val value
-		err := tx.Get(&val, `SELECT key_value FROM account_metadata WHERE key_name = $1`, key)
-		return val.Value, err
+		var value string
+		err := tx.Get(&value, `SELECT key_value FROM account_metadata WHERE key_name = $1`, key)
+		return value, err
 	}, db.ReadOnly())
 	if err != nil {
 		return "", err
@@ -941,11 +938,10 @@ func (s *DBAuthService) GetAccountMetadataKey(key string) (string, error) {
 
 func (s *DBAuthService) GetAccountMetadata() (map[string]string, error) {
 	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		type value struct {
+		var values []struct {
 			Key   string `db:"key_name"`
 			Value string `db:"key_value"`
 		}
-		values := make([]value, 0)
 		err := tx.Select(&values, `SELECT key_name, key_value FROM account_metadata`)
 		if err != nil {
 			return nil, err
