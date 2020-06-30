@@ -62,24 +62,15 @@ var gotoCmd = &cobra.Command{
 	Use:   "goto",
 	Short: "Migrate to version V.",
 	Run: func(cmd *cobra.Command, args []string) {
-		schemaName, err := cmd.Flags().GetString("schema")
-		if err != nil {
-			fmt.Printf("Failed to get value for 'schema': %s\n", err)
-			os.Exit(1)
-		}
 		version, err := cmd.Flags().GetUint("version")
 		if err != nil {
 			fmt.Printf("Failed to get value for 'version': %s\n", err)
 			os.Exit(1)
 		}
 		uri := cfg.GetDatabaseURI()
-		if len(uri) == 0 {
-			fmt.Printf("Unknown schema: %s\n", schemaName)
-			os.Exit(1)
-		}
 		err = db.MigrateTo(uri, version)
 		if err != nil {
-			fmt.Printf("Failed to migrate schema: %s to version %d.\n%s\n", schemaName, version, err)
+			fmt.Printf("Failed to migrate to version %d.\n%s\n", version, err)
 			os.Exit(1)
 		}
 	},
@@ -91,8 +82,6 @@ func init() {
 	migrateCmd.AddCommand(upCmd)
 	migrateCmd.AddCommand(downCmd)
 	migrateCmd.AddCommand(gotoCmd)
-	_ = gotoCmd.Flags().String("schema", "", "schema name")
-	_ = gotoCmd.MarkFlagRequired("schema")
 	_ = gotoCmd.Flags().Uint("version", 0, "version number")
 	_ = gotoCmd.MarkFlagRequired("version")
 }
