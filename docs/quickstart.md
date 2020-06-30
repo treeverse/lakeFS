@@ -44,9 +44,8 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
        links:
          - postgres
        environment:
-         LAKEFS_AUTH_DB_URI: postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_auth
          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
-         LAKEFS_METADATA_DB_URI: postgres://lakefs:lakefs@postgres/lakefsdb?search_path=lakefs_index
+         LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres
          LAKEFS_BLOCKSTORE_TYPE: mem
        entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
      postgres:
@@ -54,8 +53,6 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
        environment:
          POSTGRES_USER: lakefs
          POSTGRES_PASSWORD: lakefs
-         POSTGRES_DB: lakefsdb
-         LC_COLLATE: C
    ```
 
 1. From the directory that contains our new `docker-compose.yaml` file, run the following command:
@@ -77,23 +74,12 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 1. Install and configure [PostgreSQL](https://www.postgresql.org/download/){:target="_blank"}
 
-1. Create a PostgreSQL database:
-
-   ```sh
-   $ psql postgres
-   ``` 
-
-   ```sql
-   CREATE DATABASE lakefsdb LC_COLLATE='C' TEMPLATE template0;
-   ```
-
-1. Create a configuration file:
+2. Create a configuration file:
     
    ```yaml
    ---
-   metadata:
-     db:
-       uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_index&sslmode=disable"
+   database:
+     connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
     
    blockstore: 
      type: "local"
@@ -103,17 +89,15 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    auth:
      encrypt:
        secret_key: "a random string that should be kept secret"
-     db:
-       uri: "postgres://localhost:5432/lakefsdb?search_path=lakefs_auth&sslmode=disable"
    ```
 
-1. Create a local directory to store objects:
+3. Create a local directory to store objects:
 
    ```sh
    mkdir ~/lakefs_data
    ```
 
-1. Run the server:
+4. Run the server:
     
    ```bash
    $ ./lakefs --config /path/to/config.yaml run

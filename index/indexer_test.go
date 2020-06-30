@@ -47,7 +47,7 @@ func TestMain(m *testing.M) {
 }
 
 func TestKVIndex_GetCommit(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
 	commit, err := kvIndex.Commit(repo.Id, repo.DefaultBranch, "test msg", "committer", nil)
@@ -80,7 +80,7 @@ func TestKVIndex_GetCommit(t *testing.T) {
 }
 
 func TestKVIndex_RevertCommit(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
 	firstEntry := &model.Entry{
@@ -256,7 +256,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.Name, func(t *testing.T) {
-			mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+			mdb, _ := testutil.GetDB(t, databaseUri)
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
 			var err error
@@ -293,7 +293,7 @@ func TestKVIndex_RevertPath(t *testing.T) {
 }
 
 func TestKVIndex_DiffWorkspace(t *testing.T) {
-	mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+	mdb, _ := testutil.GetDB(t, databaseUri)
 	kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 
 	err := kvIndex.WriteEntry(repo.Id, repo.DefaultBranch, "foo/bar", &model.Entry{
@@ -418,7 +418,7 @@ func TestKVIndex_DeleteObject(t *testing.T) {
 
 	for _, tc := range testData {
 		t.Run(tc.Name, func(t *testing.T) {
-			mdb, _ := testutil.GetDB(t, databaseUri, "lakefs_index")
+			mdb, _ := testutil.GetDB(t, databaseUri)
 			kvIndex, repo := testutil.GetIndexWithRepo(t, mdb)
 			var err error
 			for _, action := range tc.Actions {
