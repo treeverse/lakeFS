@@ -57,8 +57,7 @@ jobs:
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
 
-
-      ‐ name: docker hub push
+      - name: docker hub push
         uses: docker/build-push-action@v1
         with:
           username: ${{ DOCKER_USERNAME }}
@@ -68,7 +67,7 @@ jobs:
           repository: treeverse/lakectl
           tag_with_ref: true
 
-      ‐ name: docker hub push
+      - name: docker hub push
         uses: docker/build-push-action@v1
         with:
           username: ${{ DOCKER_USERNAME }}
