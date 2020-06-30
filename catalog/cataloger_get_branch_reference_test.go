@@ -16,9 +16,9 @@ func TestCataloger_GetBranch(t *testing.T) {
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testutil.MustDo(t, "create branch1",
 		c.CreateBranch(ctx, repo, "branch1", "master"))
-	testCatalogerCreateEntry(t, ctx, c, repo, "master", "stam/file", nil, "")
-	_, err := c.Commit(ctx, repo, "master", "commit stam file", "tester", nil)
-	testutil.MustDo(t, "commit stam file", err)
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "a/file", nil, "")
+	_, err := c.Commit(ctx, repo, "master", "commit a file", "tester", nil)
+	testutil.MustDo(t, "commit a file", err)
 
 	type args struct {
 		repository string
@@ -31,15 +31,15 @@ func TestCataloger_GetBranch(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "with commits",
+			name:    "branch with commits",
 			args:    args{repository: repo, branch: "master"},
-			want:    "~KJ8Wd1Rs96Y",
+			want:    "~KJ8Wd1Rs96a",
 			wantErr: false,
 		},
 		{
-			name:    "no commits",
+			name:    "branch without commits",
 			args:    args{repository: repo, branch: "branch1"},
-			want:    "",
+			want:    "~2FgRfNLHmSmvR",
 			wantErr: false,
 		},
 		{
