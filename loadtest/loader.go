@@ -33,6 +33,7 @@ type Loader struct {
 type Config struct {
 	FreqPerSecond int
 	Duration      time.Duration
+	MaxWorkers    uint64
 	RepoName      string
 	KeepRepo      bool
 	Credentials   model.Credential
@@ -116,7 +117,7 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 func (t *Loader) doAttack() (hasErrors bool) {
 	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
 		http.Header{"Authorization": []string{"Basic " + getAuth(&t.Config.Credentials)}})
-	attacker := vegeta.NewAttacker()
+	attacker := vegeta.NewAttacker(vegeta.MaxWorkers(t.Config.MaxWorkers))
 	t.Metrics = make(map[string]*vegeta.Metrics)
 	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}

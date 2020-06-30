@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"time"
 
@@ -13,10 +14,11 @@ import (
 )
 
 const (
-	DurationFlag  = "duration"
-	FrequencyFlag = "freq"
-	RepoNameFlag  = "repo"
-	KeepFlag      = "keep"
+	DurationFlag   = "duration"
+	FrequencyFlag  = "freq"
+	RepoNameFlag   = "repo"
+	KeepFlag       = "keep"
+	MaxWorkersFlag = "max-workers"
 )
 
 // runCmd represents the run command
@@ -33,9 +35,11 @@ var runCmd = &cobra.Command{
 		duration, _ := cmd.Flags().GetDuration(DurationFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
+		maxWorkers, _ := cmd.Flags().GetUint64(MaxWorkersFlag)
 		testConfig := loadtest.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      duration,
+			MaxWorkers:    maxWorkers,
 			RepoName:      repoName,
 			KeepRepo:      isKeep,
 			Credentials: model.Credential{
@@ -59,4 +63,5 @@ func init() {
 	runCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
 	runCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
 	runCmd.Flags().DurationP(DurationFlag, "d", 30*time.Second, "Duration of test")
+	runCmd.Flags().Uint64(MaxWorkersFlag, math.MaxInt64, "Max workers used in the test")
 }
