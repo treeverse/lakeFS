@@ -17,12 +17,12 @@ var initCmd = &cobra.Command{
 	Use:   "init",
 	Short: "Initialize a LakeFS instance, and setup an admin credential",
 	Run: func(cmd *cobra.Command, args []string) {
-		adb := cfg.ConnectAuthDatabase()
-		defer func() { _ = adb.Close() }()
+		dbPool := cfg.BuildDatabaseConnection()
+		defer func() { _ = dbPool.Close() }()
 
 		userName, _ := cmd.Flags().GetString("user-name")
 
-		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+		authService := auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
 		user := &model.User{
 			CreatedAt:   time.Now(),
 			DisplayName: userName,
