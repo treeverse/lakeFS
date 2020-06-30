@@ -1,8 +1,0 @@
-DROP TABLE IF EXISTS credentials;
-DROP TABLE IF EXISTS group_policies;
-DROP TABLE IF EXISTS user_policies;
-DROP TABLE IF EXISTS user_groups;
-DROP TABLE IF EXISTS policies;
-DROP TABLE IF EXISTS groups;
-DROP TABLE IF EXISTS users;
-DROP TABLE IF EXISTS account_metadata;

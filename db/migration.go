@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"os"
+	"time"
 
 	"github.com/golang-migrate/migrate/v4/source"
 
@@ -21,43 +22,42 @@ type Migrator interface {
 }
 
 type DatabaseMigrator struct {
-	databases map[string]string
+	connectionString string
 }
 
-func NewDatabaseMigrator() *DatabaseMigrator {
+func NewDatabaseMigrator(connectionString string) *DatabaseMigrator {
 	return &DatabaseMigrator{
-		databases: make(map[string]string),
+		connectionString: connectionString,
 	}
-}
-
-func (d *DatabaseMigrator) AddDB(schema string, url string) *DatabaseMigrator {
-	d.databases[schema] = url
-	return d
 }
 
 func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	log := logging.FromContext(ctx)
-	for schema, url := range d.databases {
-		err := MigrateUp(schema, url)
-		if err != nil {
-			log.WithError(err).WithField("url", url).Error("Failed to migrate")
-			return err
-		}
+	start := time.Now()
+	lg := log.WithFields(logging.Fields{
+		"direction": "up",
+	})
+	err := MigrateUp(d.connectionString)
+	if err != nil {
+		lg.WithError(err).Error("Failed to migrate")
+		return err
+	} else {
+		lg.WithField("took", time.Since(start)).Info("schema migrated")
 	}
 	return nil
 }
 
-func getStatikSrc(schema string) (source.Driver, error) {
+func getStatikSrc() (source.Driver, error) {
 	// statik fs to our migrate source
 	migrationFs, err := fs.NewWithNamespace(ddl.Ddl)
 	if err != nil {
 		return nil, err
 	}
-	return httpfs.New(migrationFs, "/"+schema+"/")
+	return httpfs.New(migrationFs, "/")
 }
 
-func GetLastMigrationAvailable(schema string, from uint) (uint, error) {
-	src, err := getStatikSrc(schema)
+func GetLastMigrationAvailable(from uint) (uint, error) {
+	src, err := getStatikSrc()
 	if err != nil {
 		return 0, err
 	}
@@ -77,8 +77,8 @@ func GetLastMigrationAvailable(schema string, from uint) (uint, error) {
 	}
 }
 
-func getMigrate(schema string, url string) (*migrate.Migrate, error) {
-	src, err := getStatikSrc(schema)
+func getMigrate(connectionString string) (*migrate.Migrate, error) {
+	src, err := getStatikSrc()
 	if err != nil {
 		return nil, err
 	}
@@ -86,7 +86,7 @@ func getMigrate(schema string, url string) (*migrate.Migrate, error) {
 		_ = src.Close()
 	}()
 
-	m, err := migrate.NewWithSourceInstance("httpfs", src, url)
+	m, err := migrate.NewWithSourceInstance("httpfs", src, connectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -96,23 +96,23 @@ func getMigrate(schema string, url string) (*migrate.Migrate, error) {
 func closeMigrate(m *migrate.Migrate) {
 	srcErr, dbErr := m.Close()
 	if srcErr != nil {
-		logging.Default().WithError(srcErr).Error("Migrate close source driver")
+		logging.Default().WithError(srcErr).Error("failed to close source driver")
 	}
 	if dbErr != nil {
-		logging.Default().WithError(dbErr).Error("Migrate close database connection")
+		logging.Default().WithError(dbErr).Error("failed to close database connection")
 	}
 }
 
-func MigrateUp(schema, url string) error {
+func MigrateUp(connectionString string) error {
 	//make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", url)
+	mdb, err := ConnectDB("pgx", connectionString)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-	m, err := getMigrate(schema, url)
+	m, err := getMigrate(connectionString)
 	if err != nil {
 		return err
 	}
@@ -124,8 +124,8 @@ func MigrateUp(schema, url string) error {
 	return nil
 }
 
-func MigrateDown(schema, url string) error {
-	m, err := getMigrate(schema, url)
+func MigrateDown(connectionString string) error {
+	m, err := getMigrate(connectionString)
 	if err != nil {
 		return err
 	}
@@ -137,16 +137,16 @@ func MigrateDown(schema, url string) error {
 	return nil
 }
 
-func MigrateTo(schema, url string, version uint) error {
+func MigrateTo(connectionString string, version uint) error {
 	//make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", url)
+	mdb, err := ConnectDB("pgx", connectionString)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-	m, err := getMigrate(schema, url)
+	m, err := getMigrate(connectionString)
 	if err != nil {
 		return err
 	}
@@ -158,8 +158,8 @@ func MigrateTo(schema, url string, version uint) error {
 	return nil
 }
 
-func MigrateVersion(schema, url string) (uint, bool, error) {
-	m, err := getMigrate(schema, url)
+func MigrateVersion(connectionString string) (uint, bool, error) {
+	m, err := getMigrate(connectionString)
 	if err != nil {
 		return 0, false, err
 	}
