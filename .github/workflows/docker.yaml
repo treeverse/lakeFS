@@ -73,6 +73,6 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
           build_args: VERSION=${{ steps.version.outputs.tag }}
-          target: lakectl
+          target: lakefs
           repository: treeverse/lakefs
           tags: ${{ steps.version.outputs.tag }}
