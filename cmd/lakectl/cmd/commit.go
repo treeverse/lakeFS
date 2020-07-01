@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/cmd"
 	"strings"
 
 	"github.com/spf13/cobra"
@@ -23,9 +22,9 @@ Parents: {{.Commit.Parents|join ", "}}
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
 	Short: "commit changes on a given branch",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.IsRefURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message

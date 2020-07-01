@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	cmdGen "github.com/treeverse/lakefs/cmd"
 	"os"
 
 	"github.com/jedib0t/go-pretty/text"
@@ -15,9 +14,9 @@ var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
-	Args: cmdGen.ValidationChain(
-		cmdGen.HasRangeArgs(1, 2),
-		cmdGen.IsRefURI(0),
+	Args: ValidationChain(
+		HasRangeArgs(1, 2),
+		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -25,7 +24,7 @@ var diffCmd = &cobra.Command{
 		var diff []*models.Diff
 		var err error
 		if len(args) == 2 {
-			if err := cmdGen.IsRefURI(1)(args); err != nil {
+			if err := IsRefURI(1)(args); err != nil {
 				DieErr(err)
 			}
 			leftRefURI := uri.Must(uri.Parse(args[0]))

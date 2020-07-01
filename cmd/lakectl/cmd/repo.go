@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/cmd"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -73,9 +72,9 @@ var repoListCmd = &cobra.Command{
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(2),
-		cmd.IsRepoURI(0),
+	Args: ValidationChain(
+		HasNArgs(2),
+		IsRepoURI(0),
 	),
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -108,9 +107,9 @@ var repoCreateCmd = &cobra.Command{
 var repoDeleteCmd = &cobra.Command{
 	Use:   "delete <repository uri>",
 	Short: "delete existing repository",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.IsRepoURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsRepoURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()

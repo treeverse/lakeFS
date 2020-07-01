@@ -2,7 +2,6 @@ package cmd
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/cmd"
 	"io"
 	"os"
 	"strings"
@@ -21,9 +20,9 @@ Checksum: {{.Checksum}}
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
 	Short: "view object metadata",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.IsPathURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
@@ -45,11 +44,11 @@ const fsLsTemplate = `{{ range $val := . -}}
 var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.Or(
-			cmd.IsPathURI(0),
-			cmd.IsRefURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		Or(
+			IsPathURI(0),
+			IsRefURI(0),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -66,9 +65,9 @@ var fsListCmd = &cobra.Command{
 var fsCatCmd = &cobra.Command{
 	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.IsPathURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -83,9 +82,9 @@ var fsCatCmd = &cobra.Command{
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.IsPathURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -118,9 +117,9 @@ var fsUploadCmd = &cobra.Command{
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "delete object",
-	Args: cmd.ValidationChain(
-		cmd.HasNArgs(1),
-		cmd.IsPathURI(0),
+	Args: ValidationChain(
+		HasNArgs(1),
+		IsPathURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
