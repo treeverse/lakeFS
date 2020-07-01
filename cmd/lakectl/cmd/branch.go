@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -199,8 +198,8 @@ var branchRevertCmd = &cobra.Command{
 }
 
 var branchShowCmd = &cobra.Command{
-	Use:   "show [branch uri]",
-	Short: "show branch metadata",
+	Use:   "show <branch uri>",
+	Short: "show branch latest commit reference",
 	Args: ValidationChain(
 		HasNArgs(1),
 		IsRefURI(0),
