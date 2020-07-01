@@ -65,7 +65,7 @@ jobs:
           build_args: VERSION=${{ steps.version.outputs.tag }}
           target: lakectl
           repository: treeverse/lakectl
-          tags: ${{ steps.version.outputs.tag }}
+          tags: ${{ steps.version.outputs.tag }},latest
 
       - name: Build and push lakefs to Docker hub
         uses: docker/build-push-action@v1
@@ -75,4 +75,4 @@ jobs:
           build_args: VERSION=${{ steps.version.outputs.tag }}
           target: lakefs
           repository: treeverse/lakefs
-          tags: ${{ steps.version.outputs.tag }}
+          tags: ${{ steps.version.outputs.tag }},latest
