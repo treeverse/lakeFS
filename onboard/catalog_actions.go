@@ -12,7 +12,7 @@ import (
 const DefaultBatchSize = 500
 
 type ICatalogActions interface {
-	createAndDeleteObjects(ctx context.Context, objects []FileRow, objectsToDelete []FileRow) (err error)
+	createAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error)
 	getPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
 }
@@ -27,7 +27,7 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string) ICatalogA
 	return &CatalogActions{cataloger: cataloger, batchSize: DefaultBatchSize, repository: repository}
 }
 
-func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []FileRow, objectsToDelete []FileRow) (err error) {
+func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error) {
 	currentBatch := make([]catalog.Entry, 0, c.batchSize)
 	for _, row := range objects {
 		if row.Error != nil {

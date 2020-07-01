@@ -89,7 +89,7 @@ func TestImport(t *testing.T) {
 		if test.OverridePreviousManifestURL != "" {
 			newManifestURL = test.OverridePreviousManifestURL
 		}
-		importer := NewImporter(mockS3Client{}, nil, newManifestURL, "example-repo")
+		importer := &Importer{s3: &mockS3Client{}, repository: "example-repo"}
 		catalogActionsMock := mockCatalogActions{}
 		if len(test.PreviousInventory) > 0 {
 			catalogActionsMock = mockCatalogActions{
@@ -98,7 +98,7 @@ func TestImport(t *testing.T) {
 		}
 		importer.catalogActions = &catalogActionsMock
 		importer.inventoryCreator = getInventoryCreator(newManifestURL, previousManifestURL, test.NewInventory, test.PreviousInventory)
-		importer.inventory = &mockInventory{manifestURL: newManifestURL, rows: test.NewInventory}
+		importer.inventory = &mockInventory{manifest: &Manifest{URL: newManifestURL}, rows: test.NewInventory}
 		importer.inventoryDiffer = getSimpleDiffer(t)
 		err := importer.Import(context.Background())
 

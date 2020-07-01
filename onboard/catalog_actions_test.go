@@ -86,7 +86,7 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		catalogCallData.callLog = make(map[string]int)
 		err := catalogActions.createAndDeleteObjects(context.Background(), rows(test.AddedRows...), rows(test.DeletedRows...))
 		if err != nil {
-			t.Fatalf("failed to create/delete rows: %v", err)
+			t.Fatalf("failed to create/delete objects: %v", err)
 		}
 		if catalogCallData.callLog["CreateEntries"] != test.ExpectedAddCalls {
 			t.Fatalf("unexpected number of CreateEntries calls. expected=%d, got=%d", test.ExpectedAddCalls, catalogCallData.callLog["CreateEntries"])

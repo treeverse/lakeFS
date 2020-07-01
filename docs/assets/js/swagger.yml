@@ -1148,6 +1148,10 @@ paths:
         name: manifest_url
         required: true
         type: string
+      - in: query
+        name: skip_branch_creation
+        default: false
+        type: boolean
     post:
       tags:
         - import_tool
@@ -1162,6 +1166,10 @@ paths:
             $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
+        404:
+          description: "repository not found"
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:

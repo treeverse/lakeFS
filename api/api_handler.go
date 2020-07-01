@@ -1902,12 +1902,29 @@ func (a *Handler) ImportFromS3InventoryHandler() import_tool.ImportFromS3Invento
 		}
 		a.incrStat("import_from_s3_inventory")
 		ctx := a.ForRequest(params.HTTPRequest)
-		_, err = onboard.FetchManifest(ctx.S3, params.ManifestURL)
+		_, err = onboard.LoadManifest(params.ManifestURL, ctx.S3)
 		if err != nil {
 			return import_tool.NewImportFromS3InventoryBadRequest().
 				WithPayload(responseErrorFrom(err))
 		}
-		err = onboard.Import(params.HTTPRequest.Context(), ctx.S3, ctx.Cataloger, params.ManifestURL, params.Repository)
+		repo, err := ctx.Cataloger.GetRepository(a.Context(), params.Repository)
+		if err != nil {
+			return import_tool.NewImportFromS3InventoryNotFound().
+				WithPayload(responseErrorFrom(err))
+		}
+		if !*params.SkipBranchCreation {
+			err = ctx.Cataloger.CreateBranch(ctx.ctx, params.Repository, onboard.LauncherBranchName, repo.DefaultBranch)
+			if err != nil {
+				return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+		}
+		importer, err := onboard.CreateImporter(ctx.S3, ctx.Cataloger, params.ManifestURL, params.Repository)
+		if err != nil {
+			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		err = importer.Import(params.HTTPRequest.Context())
 		if err != nil {
 			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
