@@ -22,9 +22,9 @@ has_children: false
 
 ###  Using Docker Compose
 
-**Note** This configuration stores data in-memory.
+**Note** This configuration stores data locally inside the container.
 It is only intended for testing purposes
-{: .note .note-danger }
+{: .note }
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
@@ -45,8 +45,9 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
          - postgres
        environment:
          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
-         LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres
-         LAKEFS_BLOCKSTORE_TYPE: mem
+         LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+         LAKEFS_BLOCKSTORE_TYPE: local
+         LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
        entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
      postgres:
        image: "postgres:11"
