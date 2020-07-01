@@ -60,8 +60,8 @@ jobs:
       - name: docker hub push
         uses: docker/build-push-action@v1
         with:
-          username: ${{ DOCKER_USERNAME }}
-          password: ${{ DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
           build_args: VERSION=${{ steps.version.outputs.tag }}
           target: lakectl
           repository: treeverse/lakectl
@@ -70,8 +70,8 @@ jobs:
       - name: docker hub push
         uses: docker/build-push-action@v1
         with:
-          username: ${{ DOCKER_USERNAME }}
-          password: ${{ DOCKER_PASSWORD }}
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
           build_args: VERSION=${{ steps.version.outputs.tag }}
           target: lakectl
           repository: treeverse/lakectl
