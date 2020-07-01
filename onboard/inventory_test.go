@@ -2,15 +2,15 @@ package onboard
 
 import (
 	"context"
+	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/pkg/errors"
 	"reflect"
 	"testing"
 )
 
 func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, file ManifestFile) ([]InventoryObject, error) {
 	if inventoryBucketName != "example-bucket" {
-		return nil, errors.Errorf("wrong bucket name: %s", inventoryBucketName)
+		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
 	}
 	return rows(fileContents[file.Key]...), nil
 }

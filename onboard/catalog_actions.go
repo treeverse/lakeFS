@@ -3,7 +3,7 @@ package onboard
 import (
 	"context"
 	"errors"
-	errors2 "github.com/pkg/errors"
+	"fmt"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"time"
@@ -31,7 +31,7 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 	currentBatch := make([]catalog.Entry, 0, c.batchSize)
 	for _, row := range objects {
 		if row.Error != nil {
-			return errors2.Errorf("failed to read row from inventory: %v", row.Error)
+			return fmt.Errorf("failed to read row from inventory: %v", row.Error)
 		}
 		entry := catalog.Entry{
 			Path:            row.Key,
@@ -44,7 +44,7 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 		if len(currentBatch) >= c.batchSize {
 			err = c.cataloger.CreateEntries(ctx, c.repository, LauncherBranchName, currentBatch)
 			if err != nil {
-				return errors2.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
+				return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
 			}
 			currentBatch = make([]catalog.Entry, 0, c.batchSize)
 		}
@@ -52,13 +52,13 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 	if len(currentBatch) > 0 {
 		err = c.cataloger.CreateEntries(ctx, c.repository, LauncherBranchName, currentBatch)
 		if err != nil {
-			return errors2.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
+			return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
 		}
 	}
 	for _, row := range objectsToDelete {
 		err = c.cataloger.DeleteEntry(ctx, c.repository, LauncherBranchName, row.Key)
 		if err != nil {
-			return errors2.Errorf("failed to delete entry %s: %v", row.Key, err)
+			return fmt.Errorf("failed to delete entry %s: %v", row.Key, err)
 		}
 	}
 	return nil
