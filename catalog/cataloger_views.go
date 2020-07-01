@@ -71,7 +71,7 @@ func GetLineage(tx db.Tx, branchID int64, requestedCommit CommitID) (*[]LineageC
 
 }
 
-func lineageConditions(branchID int64, requestedCommit CommitID, lineage []LineageCommit) {
+func lineageConditions(branchID int64, lineage []LineageCommit) (string, sq.Sqlizer, sq.Sqlizer) {
 	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
 	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
 	isDeletedExper := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
@@ -88,26 +88,29 @@ func lineageConditions(branchID int64, requestedCommit CommitID, lineage []Linea
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExper = isDeletedExper.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
+	return lineageFilter, maxCommitAlias, isDeletedAlias
+}
+
+func TopEntryV(branchID int64, requestedCommit CommitID, lineage []LineageCommit) sq.SelectBuilder {
+	lineageFilter,
+		_,
+		isDeletedAlias := lineageConditions(branchID, lineage)
+	baseSelect := sq.Select().
+		FromSelect(entriesV(requestedCommit), "e\n").
+		Where(lineageFilter).
+		Columns("e.path", "e.branch_id AS source_branch",
+			"e.is_committed", "e.is_tombstone").
+		Column(isDeletedAlias)
+	minSelect := sq.Select(" path").
+		FromSelect(baseSelect, "e").
+		Where("not e.is_deleted")
+	return minSelect
 }
 
 func EntriesLineageV(branchID int64, requestedCommit CommitID, lineage []LineageCommit) sq.SelectBuilder {
-
-	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
-	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
-	isDeletedExper := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
-	lineageFilter := "(" + isDisplayedBranch + ")\n"
-	for _, lc := range lineage {
-		branchCond := "e.branch_id = " + strconv.FormatInt(*lc.BranchID, 10)
-		commitStr := strconv.FormatInt(*lc.CommitID, 10)
-		ancestorCond := branchCond + " and e.max_commit <= " + commitStr
-		maxCommitExpr = maxCommitExpr.When(ancestorCond, "e.max_commit\n")
-		isDeletedExper = isDeletedExper.When(ancestorCond, "e.is_deleted\n")
-		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
-	}
-	maxCommitExpr = maxCommitExpr.Else("max_commit_id()")
-	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
-	isDeletedExper = isDeletedExper.Else("false")
-	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
+	lineageFilter,
+		maxCommitAlias,
+		isDeletedAlias := lineageConditions(branchID, lineage)
 	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
 		FromSelect(entriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
@@ -212,22 +215,19 @@ func ListByPrefix(prefix, delimiter string, branchID int64, maxLines int, reques
 	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
 	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
 	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")
-	getNextMarkerV := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1024*1024) \n")).
+	tmp := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1024*1024) \n")).
 		Else(pathWithOutPrefixV)
-	cteStart := sq.Select("1 as num").
-		Column(sq.Alias(getNextMarkerV, "marker")).
-		FromSelect(topEntryV(branchID, requestedCommit, lineage), "e").
-		Where("e.displayed_branch = ? and e.path > ? and e.path < ? ", branchID, prefix, endOfPrefixRange).
-		OrderBy("e.path").Limit(1)
-	nextMarkerSelect := sq.Select().FromSelect(topEntryV(branchID, requestedCommit, lineage), "e").
-		Column(getNextMarkerV).
-		Where("e.displayed_branch = ? and e.path > ?  || d.marker and e.path < ? ", branchID, prefix, endOfPrefixRange).
-		OrderBy("e.path").Limit(1)
-	//markerField := sq.Select().
-	//	Column(nextMarkerSelect).
-	//	From("dir_list as d").
-	//	Where("num =< ? and and d.marker is not null and length(d.marker) > 0", maxLines).
-	//	OrderBy("e.path").Limit(1)
+	getNextMarkerV := sq.ConcatExpr("\n", tmp, "\n")
+	cteStart := sq.Select("1 as num").Column(sq.Alias(getNextMarkerV, "marker")).
+		FromSelect(sq.Select("min(path) as path").
+			FromSelect(TopEntryV(branchID, requestedCommit, lineage), "e").
+			Where(" e.path > ? and e.path < ? ", prefix, endOfPrefixRange), "e")
+	nextMarkerSelect := sq.Select().FromSelect(
+		sq.Select("min(path) as path").FromSelect(
+			sq.Select("path").FromSelect(
+				TopEntryV(branchID, requestedCommit, lineage), "e").
+				Where(" e.path > ?  || d.marker and e.path < ? ", prefix, endOfPrefixRange), "e"), "e").
+		Column(getNextMarkerV)
 
 	dirListV := sq.ConcatExpr(`WITH RECURSIVE dir_list AS (`,
 		sq.Select("1 as num", "marker").
@@ -238,8 +238,8 @@ func ListByPrefix(prefix, delimiter string, branchID int64, maxLines int, reques
 			From("dir_list as d").
 			Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
 		")",
-		`SELECT *
-			FROM dir_list d
-  				WHERE d.marker IS NOT NULL`)
+		"\n SELECT *",
+		"\nFROM dir_list d",
+		"\nWHERE d.marker IS NOT NULL")
 	return dirListV
 }
