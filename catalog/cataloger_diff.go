@@ -62,18 +62,26 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int64
+	sonLineage, err := GetLineage(tx, sonID, UncommittedID)
+	if err == nil {
+		return nil, fmt.Errorf("Son lineage failed: %w", err)
+	}
+	fatherLineage, err := GetLineage(tx, fatherID, CommittedID)
+	if err == nil {
+		return nil, fmt.Errorf("Father lineage failed: %w", err)
+	}
 	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
 											From("commits").
 											Where("branch_id = ? AND merge_type = 'from_father'", sonID).
 											PlaceholderFormat(sq.Dollar).MustSql()
-	err := tx.Get(&maxSonMerge, maxSonQuery, args...)
+	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
 	//err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
 	//		WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("Failed getting son last commit number : %w", err)
 	}
 
-	s, args := diffFromFatherV(fatherID, sonID, maxSonMerge).PlaceholderFormat(sq.Dollar).MustSql()
+	s, args := diffFromFatherV(fatherID, sonID, maxSonMerge, *fatherLineage, *sonLineage).PlaceholderFormat(sq.Dollar).MustSql()
 
 	diffFromFatherSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 
@@ -124,7 +132,12 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 		return nil, err
 	}
 
-	s, args := diffFromSonV(tx, fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit).PlaceholderFormat(sq.Dollar).MustSql()
+	fatherLineage, err := GetLineage(tx, fatherID, UncommittedID)
+	if err == nil {
+		return nil, fmt.Errorf("Father lineage failed: %w", err)
+	}
+
+	s, args := diffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, *fatherLineage).PlaceholderFormat(sq.Dollar).MustSql()
 
 	diffFromSonSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 

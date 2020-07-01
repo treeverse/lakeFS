@@ -25,19 +25,19 @@ func entriesV(requestedCommit CommitID) sq.SelectBuilder {
 	return (entriesQ)
 }
 
-type lineageCommit struct {
+type LineageCommit struct {
 	BranchID *int64
 	CommitID *int64
 }
 
-func getLineage(tx db.Tx, branchID int64, requestedCommit CommitID) (*[]lineageCommit, error) {
-	t := make([]lineageCommit, 5)
+func GetLineage(tx db.Tx, branchID int64, requestedCommit CommitID) (*[]LineageCommit, error) {
+	t := make([]LineageCommit, 0)
 	requestedLineage := &t
 	effectiveCommit := int64(requestedCommit)
 	if requestedCommit <= 0 {
 		effectiveCommit = MaxCommitID
 	}
-	sql := `select * from (select * from unnest(
+	sql := `select * from unnest(
 				(select lineage from branches where id=$1),
 				(select  lineage_commits from commits 
 						where branch_id=$1 and merge_type='from_father' and commit_id <= $2
@@ -71,7 +71,26 @@ func getLineage(tx db.Tx, branchID int64, requestedCommit CommitID) (*[]lineageC
 
 }
 
-func EntriesLineageV(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+func lineageConditions(branchID int64, requestedCommit CommitID, lineage []LineageCommit) {
+	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
+	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
+	isDeletedExper := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
+	lineageFilter := "(" + isDisplayedBranch + ")\n"
+	for _, lc := range lineage {
+		branchCond := "e.branch_id = " + strconv.FormatInt(*lc.BranchID, 10)
+		commitStr := strconv.FormatInt(*lc.CommitID, 10)
+		ancestorCond := branchCond + " and e.max_commit <= " + commitStr
+		maxCommitExpr = maxCommitExpr.When(ancestorCond, "e.max_commit\n")
+		isDeletedExper = isDeletedExper.When(ancestorCond, "e.is_deleted\n")
+		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
+	}
+	maxCommitExpr = maxCommitExpr.Else("max_commit_id()")
+	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
+	isDeletedExper = isDeletedExper.Else("false")
+	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
+}
+
+func EntriesLineageV(branchID int64, requestedCommit CommitID, lineage []LineageCommit) sq.SelectBuilder {
 
 	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
 	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
@@ -103,9 +122,9 @@ func EntriesLineageV(branchID int64, requestedCommit CommitID, lineage []lineage
 	return baseSelect
 }
 
-func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int64, lineage []lineageCommit) sq.SelectBuilder {
-	fatherSQL, fatherArgs := sq.Select("*").FromSelect(EntriesLineageV(fatherID, UncommittedID, lineage), "z").
-		Where("displayed_branch = ? AND rank=1", fatherID).MustSql()
+func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int64, fatherLineage []LineageCommit) sq.SelectBuilder {
+	fatherSQL, fatherArgs := sq.Select("*").FromSelect(EntriesLineageV(fatherID, UncommittedID, fatherLineage), "z").
+		Where("displayed_branch = ? ", fatherID).MustSql()
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
 		"f.path IS NOT NULL AS DifferenceTypeChanged",
@@ -150,8 +169,8 @@ func diffFromSonV(fatherID, sonID, fatherEffectiveCommit, sonEffectiveCommit int
 
 }
 
-func diffFromFatherV(fatherID, sonID, lastSonCommit int64, lineage []lineageCommit) sq.SelectBuilder {
-	sonSQL, sonArgs := sq.Select("*").FromSelect(EntriesLineageV(sonID, UncommittedID, lineage), "s").
+func diffFromFatherV(fatherID, sonID, lastSonCommit int64, fatherLineage, sonLineage []LineageCommit) sq.SelectBuilder {
+	sonSQL, sonArgs := sq.Select("*").FromSelect(EntriesLineageV(sonID, UncommittedID, sonLineage), "s").
 		Where("displayed_branch = ? and rank=1", sonID).MustSql()
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
@@ -169,7 +188,7 @@ func diffFromFatherV(fatherID, sonID, lastSonCommit int64, lineage []lineageComm
 							 OR s.min_commit > ? -- created after last commit
                            OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
 						  AS DifferenceTypeConflict`, sonID, lastSonCommit, lastSonCommit).
-		FromSelect(EntriesLineageV(fatherID, CommittedID, lineage), "f").
+		FromSelect(EntriesLineageV(fatherID, CommittedID, fatherLineage), "f").
 		Where("f.displayed_branch = ? AND f.rank=1", fatherID).
 		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...)
 	//Join("("+lineageSQL+") AS l ON f.source_branch = l.ancestor_branch", lineageArgs...)
@@ -185,4 +204,42 @@ func diffFromFatherV(fatherID, sonID, lastSonCommit int64, lineage []lineageComm
 			When("DifferenceTypeChanged AND entry_in_son", "entry_ctid").
 			Else("NULL"), "entry_ctid")).
 		FromSelect(RemoveNonRelevantQ, "t1")
+}
+
+func ListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []LineageCommit) sq.Sqlizer {
+	prefixLen := len(prefix) + 1
+	endOfPrefixRange := prefix + string(1_000_000)
+	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
+	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
+	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")
+	getNextMarkerV := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1024*1024) \n")).
+		Else(pathWithOutPrefixV)
+	cteStart := sq.Select("1 as num").
+		Column(sq.Alias(getNextMarkerV, "marker")).
+		FromSelect(topEntryV(branchID, requestedCommit, lineage), "e").
+		Where("e.displayed_branch = ? and e.path > ? and e.path < ? ", branchID, prefix, endOfPrefixRange).
+		OrderBy("e.path").Limit(1)
+	nextMarkerSelect := sq.Select().FromSelect(topEntryV(branchID, requestedCommit, lineage), "e").
+		Column(getNextMarkerV).
+		Where("e.displayed_branch = ? and e.path > ?  || d.marker and e.path < ? ", branchID, prefix, endOfPrefixRange).
+		OrderBy("e.path").Limit(1)
+	//markerField := sq.Select().
+	//	Column(nextMarkerSelect).
+	//	From("dir_list as d").
+	//	Where("num =< ? and and d.marker is not null and length(d.marker) > 0", maxLines).
+	//	OrderBy("e.path").Limit(1)
+
+	dirListV := sq.ConcatExpr(`WITH RECURSIVE dir_list AS (`,
+		sq.Select("1 as num", "marker").
+			FromSelect(cteStart, "t"),
+		"\nUNION ALL\n",
+		sq.Select("d.num + 1 as num").
+			Column(sq.ConcatExpr("(", nextMarkerSelect, ")")).
+			From("dir_list as d").
+			Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
+		")",
+		`SELECT *
+			FROM dir_list d
+  				WHERE d.marker IS NOT NULL`)
+	return dirListV
 }
