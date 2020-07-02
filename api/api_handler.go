@@ -400,7 +400,7 @@ func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) er
 		return err
 	}
 
-	_, err = adapter.Get(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey})
+	_, err = adapter.Get(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}, int64(len(dummyData)))
 	if err != nil {
 		return err
 	}
@@ -834,7 +834,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = entry.Size
-		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
+		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
