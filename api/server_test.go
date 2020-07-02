@@ -65,7 +65,15 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)

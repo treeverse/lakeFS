@@ -39,7 +39,15 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
