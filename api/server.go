@@ -168,7 +168,7 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			setupLakeFSHandler(s.authService, s.migrator),
+			setupLakeFSHandler(s.authService, s.migrator, s.stats),
 		),
 	)
 

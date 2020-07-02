@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/google/uuid"
+
 	"github.com/treeverse/lakefs/db"
 
 	"github.com/treeverse/lakefs/logging"
@@ -11,7 +13,6 @@ import (
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
 
-	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/stats"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -202,9 +203,11 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
 	sender := stats.NewDummySender()
 	if c.GetStatsEnabled() && Version != UnreleasedVersion {
-		sender = stats.NewHTTPSender(installationID, uuid.New().String(), c.GetStatsAddress(), time.Now)
+		sender = stats.NewHTTPSender(c.GetStatsAddress(), time.Now)
 	}
 	return stats.NewBufferedCollector(
+		installationID,
+		uuid.Must(uuid.NewUUID()).String(),
 		stats.WithSender(sender),
 		stats.WithFlushInterval(c.GetStatsFlushInterval()))
 }
