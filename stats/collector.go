@@ -137,7 +137,7 @@ func NewBufferedCollector(installationID, processID string, opts ...BufferedColl
 }
 func (s *BufferedCollector) getInstallationID() string {
 	s.mutex.RLock()
-	s.mutex.RUnlock()
+	defer s.mutex.RUnlock()
 	return s.installationID
 }
 
@@ -155,7 +155,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.Send(ctx, s.getInstallationID(), s.processID, metrics)
+	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
 	if err != nil {
 		logging.Default().
 			WithError(err).
