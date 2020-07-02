@@ -16,7 +16,7 @@ import (
 var ErrSendError = errors.New("stats: send error")
 
 type Sender interface {
-	Send(ctx context.Context, installationId, processId string, m []Metric) error
+	SendEvent(ctx context.Context, installationId, processId string, m []Metric) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
 }
 
@@ -55,7 +55,7 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	return nil
 }
 
-func (s *HTTPSender) Send(ctx context.Context, installationID, processID string, metrics []Metric) error {
+func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
 	event := &InputEvent{
 		InstallationID: installationID,
 		ProcessID:      processID,
@@ -85,7 +85,7 @@ func (s *HTTPSender) Send(ctx context.Context, installationID, processID string,
 
 type dummySender struct{}
 
-func (s *dummySender) Send(ctx context.Context, installationID, processID string, metrics []Metric) error {
+func (s *dummySender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
 	logging.Default().WithFields(logging.Fields{
 		"installation_id": installationID,
 		"process_id":      processID,
