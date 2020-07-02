@@ -138,7 +138,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 }
 
 func (a *Handler) incrStat(action string) {
-	a.context.Stats.Collect("api_server", action)
+	a.context.Stats.CollectEvent("api_server", action)
 }
 
 func (a *Handler) authorize(user *models.User, permissions []permissions.Permission) error {

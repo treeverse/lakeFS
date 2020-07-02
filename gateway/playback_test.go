@@ -86,7 +86,15 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(class, action string) {
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(class, action string) {
 
 }
 
