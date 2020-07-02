@@ -3,6 +3,7 @@ package stats
 import (
 	"context"
 	"fmt"
+	"sync"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -15,7 +16,9 @@ const (
 )
 
 type Collector interface {
-	Collect(class, action string)
+	SetInstallationID(installationID string)
+	CollectEvent(class, action string)
+	CollectMetadata(accountMetadata map[string]string)
 }
 
 type Metric struct {
@@ -25,10 +28,20 @@ type Metric struct {
 }
 
 type InputEvent struct {
-	Email     string   `json:"email"`
-	ProcessId string   `json:"process_id"`
-	Time      string   `json:"time"`
-	Metrics   []Metric `json:"metrics"`
+	InstallationID string   `json:"installation_id"`
+	ProcessID      string   `json:"process_id"`
+	Time           string   `json:"time"`
+	Metrics        []Metric `json:"metrics"`
+}
+
+type MetadataEntry struct {
+	Name  string `json:"name"`
+	Value string `json:"value"`
+}
+
+type Metadata struct {
+	InstallationID string          `json:"installation_id"`
+	Entries        []MetadataEntry `json:"entries"`
 }
 
 type primaryKey struct {
@@ -60,12 +73,15 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 }
 
 type BufferedCollector struct {
-	cache       keyIndex
-	writes      chan primaryKey
-	sender      Sender
-	sendTimeout time.Duration
-	flushTicker FlushTicker
-	done        chan bool
+	cache          keyIndex
+	writes         chan primaryKey
+	sender         Sender
+	sendTimeout    time.Duration
+	flushTicker    FlushTicker
+	done           chan bool
+	mutex          *sync.RWMutex
+	installationID string
+	processID      string
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -100,14 +116,17 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(opts ...BufferedCollectorOpts) *BufferedCollector {
+func NewBufferedCollector(installationID, processID string, opts ...BufferedCollectorOpts) *BufferedCollector {
 	s := &BufferedCollector{
-		cache:       make(keyIndex),
-		writes:      make(chan primaryKey, DefaultCollectorEventBufferSize),
-		done:        make(chan bool),
-		sender:      NewDummySender(),
-		sendTimeout: DefaultSendTimeout,
-		flushTicker: &TimeTicker{ticker: time.NewTicker(DefaultFlushInterval)},
+		cache:          make(keyIndex),
+		writes:         make(chan primaryKey, DefaultCollectorEventBufferSize),
+		done:           make(chan bool),
+		sender:         NewDummySender(),
+		sendTimeout:    DefaultSendTimeout,
+		flushTicker:    &TimeTicker{ticker: time.NewTicker(DefaultFlushInterval)},
+		installationID: installationID,
+		mutex:          &sync.RWMutex{},
+		processID:      processID,
 	}
 
 	for _, opt := range opts {
@@ -115,6 +134,11 @@ func NewBufferedCollector(opts ...BufferedCollectorOpts) *BufferedCollector {
 	}
 
 	return s
+}
+func (s *BufferedCollector) getInstallationID() string {
+	s.mutex.RLock()
+	s.mutex.RUnlock()
+	return s.installationID
 }
 
 func (s *BufferedCollector) incr(k primaryKey) {
@@ -131,7 +155,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.Send(ctx, metrics)
+	err := s.sender.Send(ctx, s.getInstallationID(), s.processID, metrics)
 	if err != nil {
 		logging.Default().
 			WithError(err).
@@ -141,7 +165,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 
 }
 
-func (s *BufferedCollector) Collect(class, action string) {
+func (s *BufferedCollector) CollectEvent(class, action string) {
 	s.writes <- primaryKey{
 		class:  class,
 		action: action,
@@ -182,4 +206,31 @@ func makeMetrics(counters keyIndex) []Metric {
 		i++
 	}
 	return metrics
+}
+
+func (s *BufferedCollector) SetInstallationID(installationID string) {
+	s.mutex.Lock()
+	defer s.mutex.Unlock()
+	s.installationID = installationID
+}
+
+func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
+	entries := make([]MetadataEntry, len(accountMetadata))
+	i := 0
+	for k, v := range accountMetadata {
+		entries[i] = MetadataEntry{Name: k, Value: v}
+		i++
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
+	defer cancel()
+	err := s.sender.UpdateMetadata(ctx, Metadata{
+		InstallationID: s.getInstallationID(),
+		Entries:        entries,
+	})
+	if err != nil {
+		logging.Default().
+			WithError(err).
+			WithField("service", "stats_collector").
+			Debug("could not update metadata")
+	}
 }
