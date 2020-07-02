@@ -37,7 +37,7 @@ func TestCataloger_Dedup(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := c.Dedup(ctx, tt.args.repository, tt.args.dedupID, tt.args.physicalAddress)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("cataloger.Dedup() error = %v, wantErr %v", err, tt.wantErr)
+				t.Errorf("cataloger.Dedup() error = %s, wantErr %t", err, tt.wantErr)
 				return
 			}
 			if got != tt.want {

@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"errors"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -22,23 +21,26 @@ func (c *cataloger) Dedup(ctx context.Context, repository string, dedupID string
 			return physicalAddress, err
 		}
 
-		var dedupAddress string
-		err = tx.Get(&dedupAddress, `SELECT physical_address
-			FROM object_dedup
-			WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
-			repoID, dedupID)
-		if err == nil {
-			return dedupAddress, nil
-		}
-		if !errors.Is(err, db.ErrNotFound) {
-			return physicalAddress, err
-		}
-
-		// add dedup record in case of not found
-		_, err = tx.Exec(`INSERT INTO object_dedup (repository_id, dedup_id, physical_address) values ($1, decode($2,'hex'), $3)`,
+		// add dedup record and return on success
+		res, err := tx.Exec(`INSERT INTO object_dedup (repository_id, dedup_id, physical_address) values ($1, decode($2,'hex'), $3)
+			ON CONFLICT DO NOTHING`,
 			repoID, dedupID, physicalAddress)
+		if err != nil {
+			return nil, err
+		}
+		if rowsAffected, err := res.RowsAffected(); err != nil {
+			return nil, err
+		} else if rowsAffected == 1 {
+			return physicalAddress, nil
+		}
 
-		return physicalAddress, err
+		var addr string
+		err = tx.Get(&addr, `SELECT physical_address FROM object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+			repoID, dedupID)
+		if err != nil {
+			return nil, err
+		}
+		return addr, nil
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return "", err
