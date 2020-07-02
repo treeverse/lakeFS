@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -23,7 +24,8 @@ import (
 
 type Loader struct {
 	History      []Request
-	Buffer       SafeBuffer
+	Reader       *io.PipeReader
+	Writer       *io.PipeWriter
 	Config       Config
 	NewRepoName  string
 	Metrics      map[string]*vegeta.Metrics
@@ -41,8 +43,11 @@ type Config struct {
 }
 
 func NewLoader(config Config) *Loader {
+	reader, writer := io.Pipe()
 	res := &Loader{
 		Config: config,
+		Reader: reader,
+		Writer: writer,
 	}
 	if config.RepoName == "" {
 		res.NewRepoName = uuid.New().String()
@@ -65,7 +70,14 @@ func (t *Loader) Run() error {
 	errs := t.streamRequests(out)
 	hasErrors := t.doAttack()
 	close(stopCh)
-
+	err = t.Writer.Close()
+	if err != nil {
+		return err
+	}
+	err = t.Reader.Close()
+	if err != nil {
+		return err
+	}
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
 		err = apiClient.DeleteRepository(context.Background(), t.NewRepoName)
 		if err != nil {
@@ -73,6 +85,9 @@ func (t *Loader) Run() error {
 		}
 	}
 	for err := range errs {
+		if errors.Is(err, io.ErrClosedPipe) {
+			continue
+		}
 		log.Errorf("error during request pipeline: %s", err)
 		return err
 	}
@@ -115,7 +130,7 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 }
 
 func (t *Loader) doAttack() (hasErrors bool) {
-	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
+	targeter := vegeta.NewJSONTargeter(t.Reader, nil,
 		http.Header{"Authorization": []string{"Basic " + getAuth(&t.Config.Credentials)}})
 	attacker := vegeta.NewAttacker(vegeta.MaxWorkers(t.Config.MaxWorkers))
 	t.Metrics = make(map[string]*vegeta.Metrics)
@@ -173,7 +188,7 @@ func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metri
 
 func (t *Loader) streamRequests(in <-chan Request) <-chan error {
 	errs := make(chan error, 1)
-	encoder := vegeta.NewJSONTargetEncoder(&t.Buffer)
+	encoder := vegeta.NewJSONTargetEncoder(t.Writer)
 	go func() {
 		defer close(errs)
 		for tgt := range in {
