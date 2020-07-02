@@ -125,7 +125,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Index:      s.meta,
 		BlockStore: s.blockStore,
 		Auth:       s.authService,
-		Incr:       func(action string) { s.stats.Collect("s3_gateway", action) },
+		Incr:       func(action string) { s.stats.CollectEvent("s3_gateway", action) },
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
@@ -210,7 +210,7 @@ func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Req
 		Index:      ctx.meta,
 		BlockStore: ctx.blockStore,
 		Auth:       ctx.authService,
-		Incr:       func(action string) { ctx.stats.Collect("s3_gateway", action) },
+		Incr:       func(action string) { ctx.stats.CollectEvent("s3_gateway", action) },
 	}
 }
 

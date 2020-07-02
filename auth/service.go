@@ -916,7 +916,7 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 func (s *DBAuthService) SetAccountMetadataKey(key, value string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec(`
-			INSERT INTO auth_account_metadata (key_name, key_value)
+			INSERT INTO auth_installation_metadata (key_name, key_value)
 			VALUES ($1, $2)
 			ON CONFLICT (key_name) DO UPDATE set key_value = $2`,
 			key, value)
@@ -927,7 +927,7 @@ func (s *DBAuthService) SetAccountMetadataKey(key, value string) error {
 func (s *DBAuthService) GetAccountMetadataKey(key string) (string, error) {
 	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		var value string
-		err := tx.Get(&value, `SELECT key_value FROM auth_account_metadata WHERE key_name = $1`, key)
+		err := tx.Get(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`, key)
 		return value, err
 	}, db.ReadOnly())
 	if err != nil {
@@ -942,7 +942,7 @@ func (s *DBAuthService) GetAccountMetadata() (map[string]string, error) {
 			Key   string `db:"key_name"`
 			Value string `db:"key_value"`
 		}
-		err := tx.Select(&values, `SELECT key_name, key_value FROM auth_account_metadata`)
+		err := tx.Select(&values, `SELECT key_name, key_value FROM auth_installation_metadata`)
 		if err != nil {
 			return nil, err
 		}
