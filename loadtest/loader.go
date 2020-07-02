@@ -23,7 +23,6 @@ import (
 )
 
 type Loader struct {
-	History      []Request
 	Reader       *io.PipeReader
 	Writer       *io.PipeWriter
 	Config       Config
@@ -137,14 +136,15 @@ func (t *Loader) doAttack() (hasErrors bool) {
 	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
+		typ := GetRequestType(*res)
 		if len(res.Error) > 0 {
-			log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
+			log.Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
 			hasErrors = true
 		}
-		typeMetrics := t.Metrics[t.History[res.Seq].Type]
+		typeMetrics := t.Metrics[typ]
 		if typeMetrics == nil {
 			typeMetrics = new(vegeta.Metrics)
-			t.Metrics[t.History[res.Seq].Type] = typeMetrics
+			t.Metrics[typ] = typeMetrics
 		}
 		typeMetrics.Add(res)
 		t.TotalMetrics.Add(res)
@@ -186,14 +186,13 @@ func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metri
 	return nil
 }
 
-func (t *Loader) streamRequests(in <-chan Request) <-chan error {
+func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 	errs := make(chan error, 1)
 	encoder := vegeta.NewJSONTargetEncoder(t.Writer)
 	go func() {
 		defer close(errs)
 		for tgt := range in {
-			err := encoder.Encode(&tgt.Target)
-			t.History = append(t.History, tgt)
+			err := encoder.Encode(&tgt)
 			if err != nil {
 				errs <- err
 				return
