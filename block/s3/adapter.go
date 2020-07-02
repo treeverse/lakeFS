@@ -25,6 +25,8 @@ import (
 )
 
 const (
+	BlockstoreType = "s3"
+
 	StreamingDefaultChunkSize = 2 << 19 // 1MiB by default per chunk
 )
 
@@ -214,7 +216,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	return resp, nil
 }
 
-func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
+func (s *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err

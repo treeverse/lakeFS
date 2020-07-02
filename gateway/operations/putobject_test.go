@@ -54,7 +54,7 @@ func (a *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, op
 	a.lastStorageClass = opts.StorageClass
 	return nil
 }
-func (a *mockAdapter) Get(_ block.ObjectPointer) (io.ReadCloser, error) {
+func (a *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	return nil, nil
 }
 func (a *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {

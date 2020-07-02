@@ -16,6 +16,8 @@ import (
 	"github.com/treeverse/lakefs/block"
 )
 
+const BlockstoreType = "mem"
+
 type mpu struct {
 	id    string
 	parts map[int64][]byte
@@ -100,7 +102,7 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	return nil
 }
 
-func (a *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
+func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
