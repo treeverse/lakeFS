@@ -119,7 +119,7 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.CollectEvent("global", "run")
 
-		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService)
+		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService, stats)
 		metaUpdater.Start()
 
 		if gatewayServer != nil {
