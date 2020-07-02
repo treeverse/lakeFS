@@ -44,14 +44,18 @@ users.  However nothing changes on S3.
 
 Results of the expiration query are passed to an AWS S3 [Batch Tagging
 operation][batch tagging] with a special tag `lakefs-expire-now` (name
-configurable and TBD).  (There is no batch delete that we can use, and
-bulk delete works for only up to 1000 objects per API call...).
+configurable and TBD).
 
 Objects are actually deleted by S3 Object Lifecycle Management, using
 a rule to delete objects with this tag.  We shall document the
 required S3 lifecycle policy to use, as well as provide a single file
 and commandline to apply it to an entire bucket _if_ that bucket is
 solely used by LakeFS.
+
+This part is constrained by AWS S3 peculiarities.  S3 has no batch
+deletion API.  There is a "bulk delete" API, but it only works for up
+to 1000 objects per API call.  The easy way to delete many objects is
+to use AWS Lifecycle Management, and there is a batch tagging API.
 
 ## Nongoals
 
