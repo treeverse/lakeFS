@@ -6,6 +6,8 @@ import (
 	"runtime"
 	"time"
 
+	"github.com/treeverse/lakefs/stats"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -70,17 +72,19 @@ type MetadataRefresher struct {
 	splay       time.Duration
 	interval    time.Duration
 	authService Service
+	sink        stats.Collector
 	stop        chan bool
 	done        chan bool
 }
 
-func NewMetadataRefresher(splay, interval time.Duration, authService Service) *MetadataRefresher {
+func NewMetadataRefresher(splay, interval time.Duration, authService Service, sink stats.Collector) *MetadataRefresher {
 	return &MetadataRefresher{
 		splay:       splay,
 		interval:    interval,
 		authService: authService,
 		stop:        make(chan bool),
 		done:        make(chan bool),
+		sink:        sink,
 	}
 }
 
@@ -118,16 +122,14 @@ func (m *MetadataRefresher) Start() {
 }
 
 func (m *MetadataRefresher) update() {
-	_, err := UpdateMetadataValues(m.authService)
+	metadata, err := UpdateMetadataValues(m.authService)
 	if err != nil {
 		logging.Default().WithError(err).Debug("failed refreshing local metadata values")
 		return
 	}
-	_, err = m.authService.GetAccountMetadataKey("installation_id")
-	if err != nil {
-		logging.Default().WithError(err).Debug("failed fetching installation ID")
-		return
-	}
+
+	m.sink.CollectMetadata(metadata)
+
 	logging.Default().Trace("local metadata refreshed")
 }
 
