@@ -12,7 +12,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func UpdateMetadataValues(authService Service) error {
+func UpdateMetadataValues(authService Service) (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = config.Version
 	metadata["golang_version"] = runtime.Version()
@@ -37,27 +37,33 @@ func UpdateMetadataValues(authService Service) error {
 	for k, v := range metadata {
 		err := authService.SetAccountMetadataKey(k, v)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	return nil
+	return metadata, nil
 
 }
 
-func WriteInitialMetadata(authService Service) error {
+func WriteInitialMetadata(authService Service) (string, map[string]string, error) {
 
 	err := authService.SetAccountMetadataKey("setup_time", time.Now().Format(time.RFC3339))
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
-	err = authService.SetAccountMetadataKey("installation_id", uuid.Must(uuid.NewUUID()).String())
+	installationID := uuid.Must(uuid.NewUUID()).String()
+	err = authService.SetAccountMetadataKey("installation_id", installationID)
 	if err != nil {
-		return err
+		return "", nil, err
 	}
 
-	return UpdateMetadataValues(authService)
+	meta, err := UpdateMetadataValues(authService)
+	if err != nil {
+		return "", nil, err
+	}
+
+	return installationID, meta, nil
 }
 
 type MetadataRefresher struct {
@@ -112,9 +118,14 @@ func (m *MetadataRefresher) Start() {
 }
 
 func (m *MetadataRefresher) update() {
-	err := UpdateMetadataValues(m.authService)
+	_, err := UpdateMetadataValues(m.authService)
 	if err != nil {
 		logging.Default().WithError(err).Debug("failed refreshing local metadata values")
+		return
+	}
+	_, err = m.authService.GetAccountMetadataKey("installation_id")
+	if err != nil {
+		logging.Default().WithError(err).Debug("failed fetching installation ID")
 		return
 	}
 	logging.Default().Trace("local metadata refreshed")
