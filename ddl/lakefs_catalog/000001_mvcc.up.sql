@@ -419,7 +419,7 @@ ALTER TABLE ONLY commits
     ADD CONSTRAINT commits_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
 
 ALTER TABLE ONLY entries
-    ADD CONSTRAINT entries_branches_fk FOREIGN KEY (branch_id) REFERENCES branches(id) NOT VALID;
+    ADD CONSTRAINT entries_branches_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE NOT VALID;
 
 -- ALTER TABLE ONLY lineage
 --     ADD CONSTRAINT lineage_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
