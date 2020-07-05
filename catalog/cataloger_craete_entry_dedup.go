@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedupID string, dedupResultCh chan<- *DedupResult) error {
+func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedupID string, dedupResultCh chan *DedupResult) error {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},

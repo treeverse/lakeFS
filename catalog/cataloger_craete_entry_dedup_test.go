@@ -48,7 +48,7 @@ func TestCataloger_CreateEntryDedup(t *testing.T) {
 		Size:            0,
 		Checksum:        "aa",
 	}
-	testutil.MustDo(t, "create first entry no dups",
+	testutil.MustDo(t, "create first entry no dup",
 		c.CreateEntryDedup(ctx, repo, testBranch, ent2, "aa", dedupCh))
 	res2 := <-dedupCh
 	if !reflect.DeepEqual(res2.Entry, &ent2) {

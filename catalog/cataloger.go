@@ -15,7 +15,7 @@ const (
 	CatalogerCommitter = ""
 
 	dedupBatchSize    = 10
-	dedupBatchTimeout = 2 * time.Second
+	dedupBatchTimeout = 1000 * time.Millisecond
 	dedupChannelSize  = 1000
 )
 
@@ -44,7 +44,7 @@ type BranchCataloger interface {
 type EntryCataloger interface {
 	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
-	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedupID string, dedupResultCh chan<- *DedupResult) error
+	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedupID string, dedupResultCh chan *DedupResult) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
@@ -102,7 +102,7 @@ type dedupRequest struct {
 	DedupID       string
 	Entry         *Entry
 	EntryCTID     string
-	DedupResultCh chan<- *DedupResult
+	DedupResultCh chan *DedupResult
 }
 
 // cataloger main catalog implementation based on mvcc

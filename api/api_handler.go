@@ -939,8 +939,8 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// read the content
-		checksum, physicalAddress, size, err := upload.WriteBlob(a.Context(),
-			cataloger, repo.Name, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize, block.PutOpts{StorageClass: params.StorageClass})
+		blob, err := upload.WriteBlob(repo.StorageNamespace, params.Content, ctx.BlockAdapter,
+			byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -949,21 +949,26 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		writeTime := time.Now()
 		entry := catalog.Entry{
 			Path:            params.Path,
-			PhysicalAddress: physicalAddress,
+			PhysicalAddress: blob.PhysicalAddress,
 			CreationDate:    writeTime,
-			Size:            size,
-			Checksum:        checksum,
+			Size:            blob.Size,
+			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntry(a.Context(), repo.Name, params.Branch, entry)
+		dedupCh := make(chan *catalog.DedupResult)
+		err = cataloger.CreateEntryDedup(a.Context(), repo.Name, params.Branch, entry, blob.DedupID, dedupCh)
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+		dedupResult := <-dedupCh
+		if dedupResult.NewPhysicalAddress != "" {
+			_ = ctx.BlockAdapter.Remove(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: blob.PhysicalAddress})
+		}
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  checksum,
+			Checksum:  blob.Checksum,
 			Mtime:     writeTime.Unix(),
 			Path:      params.Path,
 			PathType:  models.ObjectStatsPathTypeOBJECT,
-			SizeBytes: size,
+			SizeBytes: blob.Size,
 		})
 	})
 }

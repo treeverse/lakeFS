@@ -839,7 +839,6 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
-	deduper := testutil.NewMockDedup()
 
 	// setup client
 	clt := client.Default
@@ -853,16 +852,16 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	checksum, physicalAddress, size, err := upload.WriteBlob(ctx, deduper, "ns1", "ns1", buf, deps.blocks, 37, block.PutOpts{StorageClass: &expensiveString})
+	blob, err := upload.WriteBlob("ns1", buf, deps.blocks, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
 	entry := catalog.Entry{
 		Path:            "foo/bar",
-		PhysicalAddress: physicalAddress,
+		PhysicalAddress: blob.PhysicalAddress,
 		CreationDate:    time.Now(),
-		Size:            size,
-		Checksum:        checksum,
+		Size:            blob.Size,
+		Checksum:        blob.Checksum,
 	}
 	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry)
 
@@ -963,6 +962,38 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		}
 		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
 			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		}
+	})
+
+	t.Run("upload objects dedup", func(t *testing.T) {
+		const content = "They do not love that do not show their love"
+		resp1, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", strings.NewReader(content)),
+			Path:       "dd/bar1",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp2, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", strings.NewReader(content)),
+			Path:       "dd/bar2",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ent1, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp1.Payload.Path)
+		testutil.MustDo(t, "get first entry", err)
+		ent2, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp2.Payload.Path)
+		testutil.MustDo(t, "get second entry", err)
+		if ent1.PhysicalAddress != ent2.PhysicalAddress {
+			t.Fatalf("First entry address '%s' should match the second '%s' - check dedup",
+				ent1.PhysicalAddress, ent2.PhysicalAddress)
 		}
 	})
 }
