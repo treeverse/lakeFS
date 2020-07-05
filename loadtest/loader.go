@@ -69,14 +69,8 @@ func (t *Loader) Run() error {
 	errs := t.streamRequests(out)
 	hasErrors := t.doAttack()
 	close(stopCh)
-	err = t.Writer.Close()
-	if err != nil {
-		return err
-	}
-	err = t.Reader.Close()
-	if err != nil {
-		return err
-	}
+	_ = t.Writer.Close()
+	_ = t.Reader.Close()
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
 		err = apiClient.DeleteRepository(context.Background(), t.NewRepoName)
 		if err != nil {
