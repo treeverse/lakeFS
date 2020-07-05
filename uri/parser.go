@@ -5,6 +5,8 @@ import (
 	"strings"
 )
 
+type state int
+
 const (
 	ProtocolSeparator = "://"
 	LakeFSProtocol    = "lakefs"
@@ -12,7 +14,7 @@ const (
 	RefSeparator  = '@'
 	PathSeparator = '/'
 
-	stateInRepo = iota
+	stateInRepo state = iota
 	stateInRef
 	stateInPath
 )
