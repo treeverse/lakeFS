@@ -41,6 +41,7 @@ type Server struct {
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
 	server      *http.Server
+	logger      logging.Logger
 }
 
 func NewServer(
@@ -49,14 +50,16 @@ func NewServer(
 	authService auth.Service,
 	stats stats.Collector,
 	migrator db.Migrator,
+	logger logging.Logger,
 ) *Server {
-	logging.Default().Info("initialized OpenAPI server")
+	logger.Info("initialized OpenAPI server")
 	return &Server{
 		meta:        meta,
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
 		migrator:    migrator,
+		logger:      logger,
 	}
 }
 
@@ -147,7 +150,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.meta, s.authService, s.blockStore, s.stats).Configure(api)
+	NewHandler(s.meta, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

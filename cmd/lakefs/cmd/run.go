@@ -93,7 +93,9 @@ var runCmd = &cobra.Command{
 
 		var apiServer *api.Server
 		if runAPIService {
-			apiServer = api.NewServer(meta, blockStore, authService, stats, migrator)
+			apiServer = api.NewServer(
+				meta, blockStore, authService, stats, migrator,
+				logger.WithField("service", "api_gateway"))
 			go func() {
 				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
 					fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)

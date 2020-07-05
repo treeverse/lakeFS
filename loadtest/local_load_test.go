@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -60,12 +62,13 @@ func TestLocalLoad(t *testing.T) {
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
 	migrator := db.NewDatabaseMigrator(databaseUri)
-	server := api.NewServer(
+	server := *api.NewServer(
 		meta,
 		blockAdapter,
 		authService,
 		&mockCollector{},
 		migrator,
+		logging.Default(),
 	)
 	handler, err := server.Handler()
 	if err != nil {
