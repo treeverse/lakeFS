@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"time"
@@ -22,8 +23,8 @@ import (
 )
 
 type Loader struct {
-	History      []Request
-	Buffer       SafeBuffer
+	Reader       *io.PipeReader
+	Writer       *io.PipeWriter
 	Config       Config
 	NewRepoName  string
 	Metrics      map[string]*vegeta.Metrics
@@ -41,8 +42,11 @@ type Config struct {
 }
 
 func NewLoader(config Config) *Loader {
+	reader, writer := io.Pipe()
 	res := &Loader{
 		Config: config,
+		Reader: reader,
+		Writer: writer,
 	}
 	if config.RepoName == "" {
 		res.NewRepoName = uuid.New().String()
@@ -65,7 +69,8 @@ func (t *Loader) Run() error {
 	errs := t.streamRequests(out)
 	hasErrors := t.doAttack()
 	close(stopCh)
-
+	_ = t.Writer.Close()
+	_ = t.Reader.Close()
 	if t.Config.RepoName == "" && !t.Config.KeepRepo {
 		err = apiClient.DeleteRepository(context.Background(), t.NewRepoName)
 		if err != nil {
@@ -73,6 +78,9 @@ func (t *Loader) Run() error {
 		}
 	}
 	for err := range errs {
+		if errors.Is(err, io.ErrClosedPipe) {
+			continue
+		}
 		log.Errorf("error during request pipeline: %s", err)
 		return err
 	}
@@ -115,21 +123,22 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 }
 
 func (t *Loader) doAttack() (hasErrors bool) {
-	targeter := vegeta.NewJSONTargeter(&t.Buffer, nil,
+	targeter := vegeta.NewJSONTargeter(t.Reader, nil,
 		http.Header{"Authorization": []string{"Basic " + getAuth(&t.Config.Credentials)}})
 	attacker := vegeta.NewAttacker(vegeta.MaxWorkers(t.Config.MaxWorkers))
 	t.Metrics = make(map[string]*vegeta.Metrics)
 	t.TotalMetrics = new(vegeta.Metrics)
 	rate := vegeta.Rate{Freq: t.Config.FreqPerSecond, Per: time.Second}
 	for res := range attacker.Attack(targeter, rate, t.Config.Duration, "lakeFS loadtest test") {
+		typ := GetRequestType(*res)
 		if len(res.Error) > 0 {
-			log.Debugf("Error in request type %s, error: %s, status: %d", t.History[res.Seq].Type, res.Error, res.Code)
+			log.Debugf("Error in request type %s, error: %s, status: %d", typ, res.Error, res.Code)
 			hasErrors = true
 		}
-		typeMetrics := t.Metrics[t.History[res.Seq].Type]
+		typeMetrics := t.Metrics[typ]
 		if typeMetrics == nil {
 			typeMetrics = new(vegeta.Metrics)
-			t.Metrics[t.History[res.Seq].Type] = typeMetrics
+			t.Metrics[typ] = typeMetrics
 		}
 		typeMetrics.Add(res)
 		t.TotalMetrics.Add(res)
@@ -171,14 +180,13 @@ func printResults(metrics map[string]*vegeta.Metrics, metricsTotal *vegeta.Metri
 	return nil
 }
 
-func (t *Loader) streamRequests(in <-chan Request) <-chan error {
+func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 	errs := make(chan error, 1)
-	encoder := vegeta.NewJSONTargetEncoder(&t.Buffer)
+	encoder := vegeta.NewJSONTargetEncoder(t.Writer)
 	go func() {
 		defer close(errs)
 		for tgt := range in {
-			err := encoder.Encode(&tgt.Target)
-			t.History = append(t.History, tgt)
+			err := encoder.Encode(&tgt)
 			if err != nil {
 				errs <- err
 				return
