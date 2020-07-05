@@ -872,6 +872,7 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		After:  "", // all
 		Amount: -1, // all
 	})
+
 	if err != nil {
 		return nil, err
 	}
