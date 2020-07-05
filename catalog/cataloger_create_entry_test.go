@@ -2,7 +2,10 @@ package catalog
 
 import (
 	"context"
+	"fmt"
+	"math/rand"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/treeverse/lakefs/testutil"
@@ -170,5 +173,26 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				t.Fatalf("entry metadata %+v, expected %+v", ent.Metadata, tt.args.metadata)
 			}
 		})
+	}
+}
+
+func randomFilepath(basename string) string {
+	var sb strings.Builder
+	depth := rand.Intn(10)
+	for i := 0; i < depth; i++ {
+		level := fmt.Sprintf("dir%d/", rand.Intn(3))
+		sb.WriteString(level)
+	}
+	sb.WriteString(basename)
+	return sb.String()
+}
+
+func BenchmarkCataloger_CreateEntry(b *testing.B) {
+	ctx := context.Background()
+	c := testCataloger(b)
+	repo := testCatalogerRepo(b, ctx, c, "repo", "master")
+	for i := 0; i < b.N; i++ {
+		entPath := randomFilepath("test_entry")
+		testCatalogerCreateEntry(b, ctx, c, repo, "master", entPath, nil, "")
 	}
 }

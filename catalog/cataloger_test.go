@@ -22,13 +22,13 @@ type testEntryInfo struct {
 	Deleted bool
 }
 
-func testCataloger(t *testing.T) Cataloger {
+func testCataloger(t testing.TB) Cataloger {
 	t.Helper()
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	return NewCataloger(cdb)
 }
 
-func testCatalogerWithClock(t *testing.T, tellTime clock.Clock) Cataloger {
+func testCatalogerWithClock(t testing.TB, tellTime clock.Clock) Cataloger {
 	t.Helper()
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	return &cataloger{
@@ -42,7 +42,7 @@ func testCatalogerUniqueID() string {
 	return strings.ReplaceAll(uuid.New().String(), "-", "")[0:7]
 }
 
-func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix string, branch string) string {
+func testCatalogerRepo(t testing.TB, ctx context.Context, c Cataloger, prefix string, branch string) string {
 	t.Helper()
 	name := prefix + "-" + testCatalogerUniqueID()
 	if err := c.CreateRepository(ctx, name, "s3://bucket", branch); err != nil {
@@ -51,7 +51,7 @@ func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix st
 	return name
 }
 
-func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repository, name, source string) {
+func testCatalogerBranch(t testing.TB, ctx context.Context, c Cataloger, repository, name, source string) {
 	t.Helper()
 	err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
@@ -59,7 +59,7 @@ func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, reposit
 	}
 }
 
-func testCatalogerCreateEntry(t *testing.T, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
+func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
 	t.Helper()
 	checksum := testCreateEntryCalcChecksum(path, seed)
 	var size int64
@@ -86,7 +86,7 @@ func testCreateEntryCalcChecksum(key string, seed string) string {
 	return checksum
 }
 
-func testVerifyEntries(t *testing.T, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
+func testVerifyEntries(t testing.TB, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
 	for _, entry := range entries {
 		ent, err := c.GetEntry(ctx, repository, reference, entry.Path)
 		if entry.Deleted {
