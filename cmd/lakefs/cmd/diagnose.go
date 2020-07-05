@@ -12,7 +12,7 @@ import (
 
 // diagnoseCmd implements the diagnose command
 var diagnoseCmd = &cobra.Command{
-	Use: "diagnose",
+	Use:   "diagnose",
 	Short: "Diagnose underlying infrastructure configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
@@ -30,12 +30,12 @@ var diagnoseCmd = &cobra.Command{
 			logger.WithField("error", err).Fatal("Failed to list repositories")
 			numFailures += 1
 		}
-		for _, repo := range(repos) {
+		for _, repo := range repos {
 			parsedRepo, err := url.ParseRequestURI(repo.StorageNamespace)
 			if err != nil {
 				logger.WithFields(logging.Fields{
 					"error": err,
-					"repo": repo,
+					"repo":  repo,
 				})
 				numFailures += 1
 				continue
@@ -44,7 +44,7 @@ var diagnoseCmd = &cobra.Command{
 			err = adapter.ValidateConfiguration(bucket)
 			if err != nil {
 				logger.WithFields(logging.Fields{
-					"error": err,
+					"error":      err,
 					"repository": repo,
 				}).Error("Configuration error found in repository")
 				numFailures += 1

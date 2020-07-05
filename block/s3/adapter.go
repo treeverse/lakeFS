@@ -397,7 +397,7 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 	config, err := s.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("Bucket %s has no lifecycle configuration", storageNamespace)			
+			return fmt.Errorf("Bucket %s has no lifecycle configuration", storageNamespace)
 		}
 		return err
 	}
