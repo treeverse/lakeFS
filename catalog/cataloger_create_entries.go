@@ -27,7 +27,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 			if !IsNonEmptyString(entries[i].Path) {
 				return nil, fmt.Errorf("entry at pos %d, path: %w", i, ErrInvalidValue)
 			}
-			if err := insertNewEntry(tx, branchID, &entries[i]); err != nil {
+			if _, err := insertNewEntry(tx, branchID, &entries[i]); err != nil {
 				return nil, fmt.Errorf("entry at pos %d: %w", i, err)
 			}
 		}

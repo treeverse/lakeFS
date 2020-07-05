@@ -2,6 +2,8 @@ package catalog
 
 import (
 	"context"
+	"io"
+	"sync"
 	"time"
 
 	"github.com/benbjohnson/clock"
@@ -9,7 +11,20 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const CatalogerCommitter = ""
+const (
+	CatalogerCommitter = ""
+
+	dedupBatchSize    = 10
+	dedupBatchTimeout = 2 * time.Second
+	dedupChannelSize  = 1000
+)
+
+type DedupResult struct {
+	Repository         string
+	DedupID            string
+	Entry              *Entry
+	NewPhysicalAddress string
+}
 
 type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
@@ -29,6 +44,7 @@ type BranchCataloger interface {
 type EntryCataloger interface {
 	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
+	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedupID string, dedupResultCh chan<- *DedupResult) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
@@ -76,21 +92,37 @@ type Cataloger interface {
 	Differ
 	Merger
 	Deduper
+	io.Closer
+}
+
+type DedupFoundCallback func(repository string, dedupID string, previousAddress, newAddress string)
+
+type dedupRequest struct {
+	Repository    string
+	DedupID       string
+	Entry         *Entry
+	EntryCTID     string
+	DedupResultCh chan<- *DedupResult
 }
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	Clock clock.Clock
-	log   logging.Logger
-	db    db.Database
+	Clock   clock.Clock
+	log     logging.Logger
+	db      db.Database
+	dedupCh chan *dedupRequest
+	wg      sync.WaitGroup
 }
 
 func NewCataloger(db db.Database) Cataloger {
-	return &cataloger{
-		Clock: clock.New(),
-		log:   logging.Default().WithField("service_name", "cataloger"),
-		db:    db,
+	c := &cataloger{
+		Clock:   clock.New(),
+		log:     logging.Default().WithField("service_name", "cataloger"),
+		db:      db,
+		dedupCh: make(chan *dedupRequest, dedupChannelSize),
 	}
+	go c.processDedups()
+	return c
 }
 
 func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
@@ -99,6 +131,14 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 		db.WithLogger(c.log),
 	}
 	return append(o, opts...)
+}
+
+func (c *cataloger) Close() error {
+	if c != nil {
+		close(c.dedupCh)
+		c.wg.Wait()
+	}
+	return nil
 }
 
 func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference string) error {
