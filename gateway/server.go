@@ -128,7 +128,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
-				WithField("massage_type", "action").
+				WithField("message_type", "action").
 				Debug("performing S3 action")
 			s.stats.CollectEvent("s3_gateway", action)
 		},
@@ -222,7 +222,7 @@ func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Req
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
-				WithField("massage_type", "action").
+				WithField("message_type", "action").
 				Debug("performing S3 action")
 			ctx.stats.CollectEvent("s3_gateway", action)
 		},
