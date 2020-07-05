@@ -66,7 +66,7 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 	return fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 }
 
-func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID int64, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
+func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
 	// get source commit id on destination
 	sourceCommitID, err := getNextCommitID(tx)
 	if err != nil {
@@ -104,7 +104,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID in
 	return commitID, nil
 }
 
-func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID int64, rightID int64) error {
+func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID, rightID int64) error {
 	// set current lineages max commit to current one
 	if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`,
 		rightID, commitID, MaxCommitID); err != nil {
@@ -166,6 +166,6 @@ func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int64, rig
 	return err
 }
 
-func (c *cataloger) mergeNonDirect(tx sqlx.Execer, commitID CommitID, leftID int64, rightID int64) error {
+func (c *cataloger) mergeNonDirect(tx sqlx.Execer, commitID CommitID, leftID, rightID int64) error {
 	panic("not implemented - Someday is not a day of the week")
 }

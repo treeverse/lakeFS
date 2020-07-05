@@ -19,6 +19,7 @@ const (
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
 )
+const MaxCommitID = 1_000_000_000_000_000_000
 
 type Ref struct {
 	Branch   string
