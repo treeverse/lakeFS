@@ -28,7 +28,6 @@ var diagnoseCmd = &cobra.Command{
 		if err != nil {
 			// Cannot advance last so fail everything
 			logger.WithField("error", err).Fatal("Failed to list repositories")
-			numFailures += 1
 		}
 		for _, repo := range repos {
 			parsedRepo, err := url.ParseRequestURI(repo.StorageNamespace)
@@ -36,7 +35,7 @@ var diagnoseCmd = &cobra.Command{
 				logger.WithFields(logging.Fields{
 					"error": err,
 					"repo":  repo,
-				})
+				}).Error("Failed to parse repo to get bucket")
 				numFailures += 1
 				continue
 			}

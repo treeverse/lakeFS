@@ -379,15 +379,6 @@ func isExpirationRule(rule s3.LifecycleRule) bool {
 			)
 }
 
-func anyRule(array []*s3.LifecycleRule, pred func(rule s3.LifecycleRule) bool) bool {
-	for _, a := range array {
-		if pred(*a) {
-			return true
-		}
-	}
-	return false
-}
-
 // ValidateConfiguration on an S3 adapter checks for a usable bucket
 // lifecycle policy: the storageNamespace bucket should expire objects
 // marked with ExpireObjectS3Tag (with _some_ duration, even if
@@ -407,7 +398,15 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 		"LifecyclePolicy": config.GoString(),
 	}).Info("S3 bucket lifecycle policy")
 
-	if !anyRule(config.Rules, isExpirationRule) {
+	hasMatchingRule := false
+	for _, a := range config.Rules {
+		if isExpirationRule(*a) {
+			hasMatchingRule = true
+			break
+		}
+	}
+
+	if !hasMatchingRule {
 		// TODO(oz): Add a "to fix, ..." message?
 		return fmt.Errorf("Bucket %s lifecycle rules not configured to expire objects tagged \"%s\"", storageNamespace, ExpireObjectS3Tag)
 	}
