@@ -218,8 +218,10 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
-		if len(resp.GetPayload().Results) != commitsLen {
-			t.Fatalf("expected a log of %d commits, got %d instead", commitsLen, len(resp.GetPayload().Results))
+		const expectedCommits = commitsLen + 1 // one for the branch creation
+		commitsLog := resp.GetPayload().Results
+		if len(commitsLog) != expectedCommits {
+			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
 		}
 	})
 }
@@ -537,7 +539,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	t.Run("get default branch", func(t *testing.T) {
 		ctx := context.Background()
 		const testBranch = "master"
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
+		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch))
 		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			Branch:     testBranch,
 			Repository: "repo1",
@@ -546,8 +548,8 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 			t.Fatalf("unexpected error getting branch: %s", err)
 		}
 		reference := resp.GetPayload()
-		if reference != "" {
-			t.Fatalf("got unexpected reference '%s' for branch '%s'", reference, testBranch)
+		if reference == "" {
+			t.Fatalf("Got no reference for branch '%s'", testBranch)
 		}
 	})
 

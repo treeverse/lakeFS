@@ -19,7 +19,6 @@ const (
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
 )
-const MaxCommitID = 1_000_000_000_000_000_000
 
 type Ref struct {
 	Branch   string
@@ -34,7 +33,6 @@ func (r Ref) String() string {
 		return r.Branch
 	default:
 		ref := r.Branch + ":" + strconv.Itoa(int(r.CommitID))
-		//ref := strconv.Itoa(int(r.CommitID))
 		encRef := base58.Encode([]byte(ref))
 		return CommitPrefix + encRef
 	}
@@ -43,10 +41,6 @@ func (r Ref) String() string {
 func MakeReference(branch string, commitID CommitID) string {
 	return Ref{Branch: branch, CommitID: commitID}.String()
 }
-
-//func MakeCommitReference(commitID CommitID) string {
-//	return Ref{CommitID: commitID}.String()
-//}
 
 func ParseRef(ref string) (*Ref, error) {
 	// committed branch
@@ -63,23 +57,6 @@ func ParseRef(ref string) (*Ref, error) {
 			CommitID: UncommittedID,
 		}, nil
 	}
-	// specific commit
-	/*
-		refData, err := base58.Decode(ref[1:])
-		if err != nil {
-			return nil, fmt.Errorf("%w: ref decode", ErrInvalidReference)
-		}
-		if !utf8.Valid(refData) {
-			return nil, fmt.Errorf("%w: ref utf8", ErrInvalidReference)
-		}
-		id, err := strconv.Atoi(string(refData))
-		if err != nil {
-			return nil, fmt.Errorf("%w: invalid commit id", ErrInvalidReference)
-		}
-		return &Ref{
-			CommitID: CommitID(id),
-		}, nil
-	*/
 	// specific commit
 	refData, err := base58.Decode(ref[1:])
 	if err != nil {
