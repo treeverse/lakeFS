@@ -84,6 +84,10 @@ func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadId st
 	panic("try to complete multipart in mock adaptor ")
 }
 
+func (s *mockAdapter) ValidateConfiguration(_ string) error {
+	return nil
+}
+
 var (
 	expensiveString    = "EXPENSIVE"
 	cheapString        = "CHEAP"

@@ -195,3 +195,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	a.data[getKey(obj)] = data
 	return &hex, int64(len(data)), nil
 }
+
+func (a *Adapter) ValidateConfiguration(_ string) error {
+	return nil
+}
