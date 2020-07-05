@@ -125,7 +125,13 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Index:      s.meta,
 		BlockStore: s.blockStore,
 		Auth:       s.authService,
-		Incr:       func(action string) { s.stats.CollectEvent("s3_gateway", action) },
+		Incr: func(action string) {
+			logging.FromContext(request.Context()).
+				WithField("action", action).
+				WithField("massage_type", "action").
+				Debug("performing S3 action")
+			s.stats.CollectEvent("s3_gateway", action)
+		},
 	}
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
@@ -175,6 +181,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Operation: o,
 		Principal: user.DisplayName,
 	}
+
+	op.AddLogFields(logging.Fields{"user": user.DisplayName})
+
 	if perms == nil {
 		// no special permissions required, no need to authorize (used for delete-objects, where permissions are checked separately)
 		return op
@@ -210,7 +219,13 @@ func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Req
 		Index:      ctx.meta,
 		BlockStore: ctx.blockStore,
 		Auth:       ctx.authService,
-		Incr:       func(action string) { ctx.stats.CollectEvent("s3_gateway", action) },
+		Incr: func(action string) {
+			logging.FromContext(request.Context()).
+				WithField("action", action).
+				WithField("massage_type", "action").
+				Debug("performing S3 action")
+			ctx.stats.CollectEvent("s3_gateway", action)
+		},
 	}
 }
 
