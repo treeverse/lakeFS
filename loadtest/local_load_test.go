@@ -2,10 +2,15 @@ package loadtest
 
 import (
 	"log"
+	"math"
 	"net/http/httptest"
 	"os"
 	"testing"
 	"time"
+
+	"github.com/treeverse/lakefs/catalog"
+
+	"github.com/treeverse/lakefs/config"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
@@ -13,8 +18,6 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -79,6 +82,7 @@ func TestLocalLoad(t *testing.T) {
 	testConfig := Config{
 		FreqPerSecond: 6,
 		Duration:      10 * time.Second,
+		MaxWorkers:    math.MaxInt64,
 		KeepRepo:      false,
 		Credentials:   *credentials,
 		ServerAddress: ts.URL,
