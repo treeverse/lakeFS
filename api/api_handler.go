@@ -65,7 +65,7 @@ func (c *HandlerDependencies) WithContext(ctx context.Context) *HandlerDependenc
 func (c *HandlerDependencies) LogAction(action string) {
 	logging.FromContext(c.ctx).
 		WithField("action", action).
-		WithField("massage_type", "action").
+		WithField("message_type", "action").
 		Debug("performing API action")
 	c.Stats.CollectEvent("api_server", action)
 }
