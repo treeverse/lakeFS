@@ -59,6 +59,10 @@ according to the branch to which they were committed:
   `master/`, but _not_ for prefix `staging/`.  After expiring, no
   object will be visible with that name.
 
+  Attempting to open an expired object will fail with HTTP status code
+  [410 Gone][http-gone].  This can happen e.g. via using an
+  already-known path.
+
 ## Filters
 
 Filters consist currently of a two types, `prefix` and `uncommitted`.
@@ -97,3 +101,4 @@ types are supported:
 [s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html
 [s3-lifecycle-specific-date]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html#intro-lifecycle-rules-date
 [yaml-ref]: https://yaml.org/spec/1.2/spec.html
+[http-gone]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
