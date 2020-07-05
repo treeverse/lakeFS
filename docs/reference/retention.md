@@ -17,7 +17,8 @@ class transition.
 
 ## Configuration
 
-Configuration uses a [YAML configuration][yaml-ref] file.  For example:
+Configuration uses a [YAML configuration][yaml-ref] input, for example:
+
 ```yaml
 ---
 rules:
@@ -25,14 +26,37 @@ rules:
       prefix: master/logs/
     status: enabled
     expiration:
-      weeks: 2
-    noncurrent_expiration:
-      days: 7
+      all:
+        # "2 weeks and a day"
+        weeks: 2
+        days: 1
+      noncurrent:
+        days: 7
   - filter:
       prefix: users/
     expiration:
-      days: 3
+      all:
+        days: 3
 ```
+
+To view the retention policy for a bucket, use:
+
+```sh
+lakectl repo retention --get lakefs://repo/
+```
+
+To load a new retention policy for a bucket, use:
+
+```sh
+lakectl repo retention --set lakefs://repo/ --policy-file /path/to/policy.yml
+```
+
+You can also set policy in JSON format.
+
+### Format
+
+Exact format is given in `swagger.yml` in the definition of
+`retention_policy`.  *TODO(ariels):* Document this format properly!
 
 ## Operation
 
@@ -65,12 +89,11 @@ according to the branch to which they were committed:
 
 ## Filters
 
-Filters consist currently of a two types, `prefix` and `uncommitted`.
-This is a filename prefix that must match the object name.  Trailing
-slashes are treated as part of the filename, so prefix `/master/logs/`
-matches only objects inside "directory" `/master/logs`, but prefix
-`/master/logs` will also match objects inside "directory"
-`/master/logstash/`.
+Filters consist currently a single type `prefix`.  These is a filename
+prefix that must match the object name.  Trailing slashes are treated
+as part of the filename, so prefix `/master/logs/` matches only
+objects inside "directory" `/master/logs`, but prefix `/master/logs`
+will also match objects inside "directory" `/master/logstash/`.
 
 ## Action
 
