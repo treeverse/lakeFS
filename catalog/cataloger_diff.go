@@ -6,7 +6,6 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -30,7 +29,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
 		return c.doDiff(tx, leftID, rightID)
-	}, c.txOpts(ctx, db.ReadOnly())...)
+	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, err
 	}
@@ -62,12 +61,12 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
 	var maxSonMerge int64
-	sonLineage, err := GetLineage(tx, sonID, UncommittedID)
-	if err == nil {
+	sonLineage, err := getLineage(tx, sonID, UncommittedID)
+	if err != nil {
 		return nil, fmt.Errorf("Son lineage failed: %w", err)
 	}
-	fatherLineage, err := GetLineage(tx, fatherID, CommittedID)
-	if err == nil {
+	fatherLineage, err := getLineage(tx, fatherID, CommittedID)
+	if err != nil {
 		return nil, fmt.Errorf("Father lineage failed: %w", err)
 	}
 	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
@@ -75,13 +74,16 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 											Where("branch_id = ? AND merge_type = 'from_father'", sonID).
 											PlaceholderFormat(sq.Dollar).MustSql()
 	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
-	//err := tx.Get(&maxSonMerge, `SELECT COALESCE(MAX(commit_id),0) FROM commits
-	//		WHERE branch_id = $1 AND merge_type = 'from_father'`, rightID)
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting son last commit number : %w", err)
 	}
 
-	s, args := diffFromFatherV(fatherID, sonID, maxSonMerge, *fatherLineage, *sonLineage).PlaceholderFormat(sq.Dollar).MustSql()
+	s, args, err := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	diffFromFatherSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 
@@ -89,7 +91,6 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 		return nil, err
 	}
 	return diffReadDifferences(tx)
-
 }
 
 func diffReadDifferences(tx db.Tx) (Differences, error) {
@@ -107,37 +108,43 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	// the father is lhe effective commit number of the first lineage record of the son that points to the father
 	// it is possible that the son the have already done from_father merge. so we have to take the minimal effective commit
 	effectiveCommits := struct {
-		FatherEffectiveCommit int64 `db:"father_effective_commit"`
-		SonEffectiveCommit    int64 `db:"son_effective_commit"`
+		FatherEffectiveCommit CommitID `db:"father_effective_commit"`
+		SonEffectiveCommit    CommitID `db:"son_effective_commit"`
 	}{}
 
-	effectiveCommitsQuery, args := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
+	effectiveCommitsQuery, args, err := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
 		From("commits").
 		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", fatherID, sonID).
 		OrderBy(`commit_id DESC`).
 		Limit(1).PlaceholderFormat(sq.Dollar).
-		MustSql()
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
 
-	err := tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
-
+	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1
 		FatherEffectiveQuery, args := sq.Select("effective_commit").From("lineage").
 			Where("branch_id = ? AND ancestor_branch = ?", sonID, fatherID).
 			OrderBy("min_commit DESC").Limit(1).PlaceholderFormat(sq.Dollar).MustSql()
-		//err = tx.Get(&effectiveCommits.FatherEffectiveCommit, `SELECT effective_commit FROM lineage WHERE branch_id = $1 AND ancestor_branch = $2 ORDER BY min_commit DESC LIMIT 1`, sonID, fatherID)
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
 	if err != nil {
 		return nil, err
 	}
 
-	fatherLineage, err := GetLineage(tx, fatherID, UncommittedID)
-	if err == nil {
-		return nil, fmt.Errorf("Father lineage failed: %w", err)
+	fatherLineage, err := getLineage(tx, fatherID, UncommittedID)
+	if err != nil {
+		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
 
-	s, args := diffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, *fatherLineage).PlaceholderFormat(sq.Dollar).MustSql()
+	s, args, err := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
 
 	diffFromSonSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
 
