@@ -33,6 +33,9 @@ const (
 )
 
 func TestGatewayRecording(t *testing.T) {
+	if !*integrationTest {
+		t.Skip("Not running integration tests")
+	}
 	testData := []string{
 		"s3://lakefs-recordings/presto.zip",
 		"s3://lakefs-recordings/aws.zip",
