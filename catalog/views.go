@@ -6,6 +6,8 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+const DirectoryTeminationChar = string(rune(1_000_000))
+
 func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
 		"min_commit > 0 AS is_committed",
@@ -196,13 +198,13 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 	return minSelect
 }
 
-func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.Sqlizer {
+func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
 	prefixLen := len(prefix) + 1
-	endOfPrefixRange := prefix + string(rune(1_000_000))
+	endOfPrefixRange := prefix + DirectoryTeminationChar
 	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
 	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
 	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")
-	tmp := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1024*1024) \n")).
+	tmp := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1000000) \n")).
 		Else(pathWithOutPrefixV)
 	getNextMarkerV := sq.ConcatExpr("\n", tmp, "\n")
 	cteStart := sq.Select("1 as num").Column(sq.Alias(getNextMarkerV, "marker")).
@@ -216,17 +218,32 @@ func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requ
 				Where(" e.path > ?  || d.marker and e.path < ? ", prefix, endOfPrefixRange), "e"), "e").
 		Column(getNextMarkerV)
 
-	dirListV := sq.ConcatExpr(`WITH RECURSIVE dir_list AS (`,
-		sq.Select("1 as num", "marker").
-			FromSelect(cteStart, "t"),
-		"\nUNION ALL\n",
-		sq.Select("d.num + 1 as num").
-			Column(sq.ConcatExpr("(", nextMarkerSelect, ")")).
-			From("dir_list as d").
-			Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
-		")",
-		"\n SELECT *",
-		"\nFROM dir_list d",
-		"\nWHERE d.marker IS NOT NULL")
+	//dirListV := sq.ConcatExpr(`WITH RECURSIVE dir_list AS (`,
+	//	sq.Select("1 as num", "marker").
+	//		FromSelect(cteStart, "t"),
+	//	"\nUNION ALL\n",
+	//	sq.Select("d.num + 1 as num").
+	//		Column(sq.ConcatExpr("(", nextMarkerSelect, ")")).
+	//		From("dir_list as d").
+	//		Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
+	//	")",
+	//	"\n SELECT *",
+	//	"\nFROM dir_list d",
+	//	"\nWHERE d.marker IS NOT NULL")
+	dirListV := sq.Select("1 as num", "marker").
+		Prefix(`WITH RECURSIVE dir_list AS (`).
+		FromSelect(cteStart, "t").
+		SuffixExpr(
+			sq.ConcatExpr("\nUNION ALL\n",
+				sq.Select("d.num + 1 as num").
+					Column( // calculate the next entry
+						sq.ConcatExpr("(", nextMarkerSelect, ")")).
+					From("dir_list as d").
+					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
+				")",
+				"\n SELECT *",
+				"\nFROM dir_list d",
+				"\nWHERE d.marker IS NOT NULL"))
+
 	return dirListV
 }
