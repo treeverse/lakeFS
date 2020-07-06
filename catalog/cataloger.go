@@ -17,6 +17,11 @@ const (
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 1000 * time.Millisecond
 	dedupChannelSize  = 1000
+
+	dbBatchSize        = 10
+	dbBatchTimeout     = 1000 * time.Millisecond
+	dbChannelSize      = 1000
+	catalogerDBWorkers = 10
 )
 
 type DedupResult struct {
@@ -107,21 +112,55 @@ type dedupRequest struct {
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	Clock   clock.Clock
+	clock   clock.Clock
 	log     logging.Logger
 	db      db.Database
 	dedupCh chan *dedupRequest
 	wg      sync.WaitGroup
+	dbCh    chan dbJobTask
 }
 
-func NewCataloger(db db.Database) Cataloger {
+type dbJob interface {
+	Execute(tx db.Tx) (interface{}, error)
+}
+
+type dbJobFunc func(tx db.Tx) (interface{}, error)
+
+func (f dbJobFunc) Execute(tx db.Tx) (interface{}, error) {
+	return f(tx)
+}
+
+type dbResult struct {
+	Result interface{}
+	Err    error
+}
+
+type dbJobTask struct {
+	Job      dbJob
+	ResultCh chan dbResult
+}
+
+type CatalogerOption func(*cataloger)
+
+func WithClock(newClock clock.Clock) CatalogerOption {
+	return func(c *cataloger) {
+		c.clock = newClock
+	}
+}
+
+func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
-		Clock:   clock.New(),
+		clock:   clock.New(),
 		log:     logging.Default().WithField("service_name", "cataloger"),
 		db:      db,
 		dedupCh: make(chan *dedupRequest, dedupChannelSize),
+		dbCh:    make(chan dbJobTask, dbChannelSize),
 	}
-	go c.processDedups()
+	for _, opt := range options {
+		opt(c)
+	}
+	c.processDedups()
+	c.processDBJobs()
 	return c
 }
 
@@ -135,6 +174,7 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 
 func (c *cataloger) Close() error {
 	if c != nil {
+		close(c.dbCh)
 		close(c.dedupCh)
 		c.wg.Wait()
 	}
@@ -143,4 +183,134 @@ func (c *cataloger) Close() error {
 
 func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference string) error {
 	panic("implement me")
+}
+
+func (c *cataloger) dedupBatch(batch []*dedupRequest) {
+	ctx := context.Background()
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		addresses := make([]string, len(batch))
+		for i, r := range batch {
+			// get repository ID
+			repoID, err := getRepositoryID(tx, r.Repository)
+			if err != nil {
+				return nil, err
+			}
+			// add dedup record
+			res, err := tx.Exec(`INSERT INTO object_dedup (repository_id, dedup_id, physical_address) values ($1, decode($2,'hex'), $3)
+				ON CONFLICT DO NOTHING`,
+				repoID, r.DedupID, r.Entry.PhysicalAddress)
+			if err != nil {
+				return nil, err
+			}
+			if rowsAffected, err := res.RowsAffected(); err != nil {
+				return nil, err
+			} else if rowsAffected == 1 {
+				// new address was added - continue
+				continue
+			}
+
+			// fill the address into the right location
+			err = tx.Get(&addresses[i], `SELECT physical_address FROM object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+				repoID, r.DedupID)
+			if err != nil {
+				return nil, err
+			}
+
+			// update the entry with new address physical address
+			_, err = tx.Exec(`UPDATE entries SET physical_address=$2 WHERE ctid=$1 AND physical_address=$3`,
+				r.EntryCTID, addresses[i], r.Entry.PhysicalAddress)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return addresses, nil
+	}, c.txOpts(ctx)...)
+	if err != nil {
+		c.log.WithError(err).Errorf("Dedup batch failed (%d requests)", len(batch))
+		return
+	}
+
+	// call callbacks for each entry we updated
+	addresses := res.([]string)
+	for i, r := range batch {
+		if r.DedupResultCh != nil {
+			r.DedupResultCh <- &DedupResult{
+				Repository:         r.Repository,
+				Entry:              r.Entry,
+				DedupID:            r.DedupID,
+				NewPhysicalAddress: addresses[i],
+			}
+		}
+	}
+}
+
+func (c *cataloger) processDBJobs() {
+	c.wg.Add(catalogerDBWorkers)
+	for i := 0; i < catalogerDBWorkers; i++ {
+		go func() {
+			defer c.wg.Done()
+			var batch []dbJobTask
+			for {
+				processBatch := false
+				select {
+				case job, ok := <-c.dbCh:
+					if !ok {
+						return
+					}
+					batch = append(batch, job)
+					if len(batch) == dbBatchSize {
+						processBatch = true
+					}
+				case <-time.After(dbBatchTimeout):
+					if len(batch) > 0 {
+						processBatch = true
+					}
+				}
+				if processBatch {
+					c.dbBatch(context.Background(), batch)
+					batch = nil
+				}
+			}
+		}()
+	}
+}
+
+func (c *cataloger) dbBatch(ctx context.Context, batch []dbJobTask) {
+	results := make([]interface{}, len(batch))
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var err error
+		for i, task := range batch {
+			results[i], err = task.Job.Execute(tx)
+			if err != nil {
+				return nil, err
+			}
+		}
+		return nil, nil
+	}, c.txOpts(ctx)...)
+	for i, job := range batch {
+		if job.ResultCh == nil {
+			continue
+		}
+		if err != nil {
+			job.ResultCh <- dbResult{Err: err}
+		} else {
+			job.ResultCh <- dbResult{Result: results[i]}
+		}
+	}
+}
+
+func (c *cataloger) postDBJob(job dbJob) {
+	c.dbCh <- dbJobTask{
+		Job: job,
+	}
+}
+
+func (c *cataloger) runDBJob(job dbJob) (interface{}, error) {
+	ch := make(chan dbResult)
+	c.dbCh <- dbJobTask{
+		Job:      job,
+		ResultCh: ch,
+	}
+	res := <-ch
+	return res.Result, res.Err
 }

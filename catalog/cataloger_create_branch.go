@@ -46,7 +46,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		}
 
 		// create initial commit
-		creationDate := c.Clock.Now()
+		creationDate := c.clock.Now()
 		_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, merge_type, lineage_commits)
 			VALUES ($1,nextval('commit_id_seq'),$2,$3,$4,'from_father',
 				(select (select max(commit_id) from commits where branch_id=$5)|| 
