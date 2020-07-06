@@ -295,9 +295,9 @@ definitions:
       rules:
         type: array
         items:
-          $ref: "#/definitions/retention_policy_filter"
+          $ref: "#/definitions/retention_policy_rule"
 
-  retention_policy_filter:
+  retention_policy_rule:
     type: object
     required:
       - status
@@ -326,9 +326,11 @@ definitions:
     type: object
     properties:
       weeks:
-        type: number
+        type: integer
+        format: int32
       days:
-        type: number
+        type: integer
+        format: int32
     minProperties: 1
 
 paths:
@@ -1806,6 +1808,7 @@ paths:
     put:
       tags:
         - retention
+      operationId: updateRetentionPolicy
       description: set retention policy for repository
       parameters:
         - in: body
@@ -1823,6 +1826,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
     get:
+      operationId: getRetentionPolicy
       tags:
         - retention
       description: get retention policy for repository
