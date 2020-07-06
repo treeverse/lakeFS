@@ -28,6 +28,9 @@ const (
 	RevertBranchAction     = "fs:RevertBranch"
 	ListBranchesAction     = "fs:ListBranches"
 
+	RetentionReadPolicyAction  = "retention:GetPolicy"
+	RetentionWritePolicyAction = "retention:WritePolicy"
+
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"
 	DeleteUserAction        = "auth:DeleteUser"

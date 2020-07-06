@@ -1802,10 +1802,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/retention:
+  /repositories/{repository}/retention:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
     put:
