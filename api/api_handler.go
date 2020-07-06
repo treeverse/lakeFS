@@ -57,6 +57,7 @@ func (c *HandlerDependencies) WithContext(ctx context.Context) *HandlerDependenc
 		Auth:         c.Auth, // TODO: pass context
 		BlockAdapter: c.BlockAdapter.WithContext(ctx),
 		Stats:        c.Stats,
+		Retention:    c.Retention,
 		logger:       c.logger.WithContext(ctx),
 	}
 }
@@ -1952,18 +1953,21 @@ func (a *Handler) DetachPolicyFromGroupHandler() authentication.DetachPolicyFrom
 
 func (a *Handler) RetentionGetRetentionPolicyHandler() retention_api.GetRetentionPolicyHandler {
 	return retention_api.GetRetentionPolicyHandlerFunc(func(params retention_api.GetRetentionPolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RetentionReadPolicyAction,
 				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
+
 		if err != nil {
 			return retention_api.NewGetRetentionPolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		policy, err := a.context.Retention.GetPolicy(params.Repository)
+		deps.LogAction("get_retention_policy")
+
+		policy, err := deps.Retention.GetPolicy(params.Repository)
 		if err != nil {
 			return retention_api.NewGetRetentionPolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
@@ -1974,7 +1978,7 @@ func (a *Handler) RetentionGetRetentionPolicyHandler() retention_api.GetRetentio
 
 func (a *Handler) RetentionUpdateRetentionPolicyHandler() retention_api.UpdateRetentionPolicyHandler {
 	return retention_api.UpdateRetentionPolicyHandlerFunc(func(params retention_api.UpdateRetentionPolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RetentionWritePolicyAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -1985,7 +1989,7 @@ func (a *Handler) RetentionUpdateRetentionPolicyHandler() retention_api.UpdateRe
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Retention.UpdatePolicy(params.Repository, params.Policy)
+		err = deps.Retention.UpdatePolicy(params.Repository, params.Policy)
 		if err != nil {
 			return retention_api.NewUpdateRetentionPolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

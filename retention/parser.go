@@ -1,6 +1,9 @@
 package retention
 
 import (
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -10,14 +13,14 @@ import (
 type TimePeriodHours int
 
 type Expiration struct {
-	All         *TimePeriodHours
-	Uncommitted *TimePeriodHours
-	Noncurrent  *TimePeriodHours
+	All         *TimePeriodHours `json:",omitempty"`
+	Uncommitted *TimePeriodHours `json:",omitempty"`
+	Noncurrent  *TimePeriodHours `json:",omitempty"`
 }
 
 type Rule struct {
 	Enabled      bool
-	FilterPrefix string
+	FilterPrefix string `json:",omitempty"`
 	Expiration   Expiration
 }
 
@@ -25,9 +28,17 @@ type Policy struct {
 	Rules []Rule
 }
 
-type Service interface {
-	GetPolicy(repositoryId string) (*models.RetentionPolicy, error)
-	UpdatePolicy(repositoryId string, modelPolicy *models.RetentionPolicy) error
+func (a *Policy) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *Policy) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+
+	return json.Unmarshal(b, &a)
 }
 
 func ParseTimePeriod(model models.TimePeriod) (TimePeriodHours, error) {
@@ -139,10 +150,10 @@ func ParsePolicy(model models.RetentionPolicy) (*Policy, error) {
 	return &Policy{Rules: rules}, nil
 }
 
-func UnparsePolicy(policy *Policy) models.RetentionPolicy {
+func UnparsePolicy(policy *Policy) *models.RetentionPolicy {
 	modelRules := make([]*models.RetentionPolicyRule, 0, len(policy.Rules))
 	for _, rule := range policy.Rules {
 		modelRules = append(modelRules, UnparseRule(&rule))
 	}
-	return models.RetentionPolicy{Rules: modelRules}
+	return &models.RetentionPolicy{Rules: modelRules}
 }

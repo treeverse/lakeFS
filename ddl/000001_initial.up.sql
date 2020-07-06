@@ -198,6 +198,17 @@ CREATE SEQUENCE repositories_id_seq
     NO MAXVALUE
     CACHE 1;
 
+CREATE TABLE IF NOT EXISTS repositories_config
+(
+    repository_id integer  REFERENCES repositories (id) NOT NULL,
+    key           varchar                               NOT NULL,
+    value         jsonb                                 NOT NULL,
+    comment       varchar,
+    creation_date timestamptz                           NOT NULL,
+
+    PRIMARY KEY (repository_id, key)
+);
+
 ALTER TABLE ONLY branches
     ADD CONSTRAINT branches_pk PRIMARY KEY (id);
 

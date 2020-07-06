@@ -137,7 +137,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess"})
+	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoFullaccess"})
 	if err != nil {
 		return err
 	}

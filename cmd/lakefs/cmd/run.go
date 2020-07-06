@@ -69,6 +69,7 @@ var runCmd = &cobra.Command{
 		defer func() {
 			_ = dbPool.Close()
 		}()
+		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbConnString)
 
 		// init catalog
