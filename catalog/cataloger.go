@@ -15,20 +15,27 @@ const (
 	CatalogerCommitter = ""
 
 	dedupBatchSize    = 10
-	dedupBatchTimeout = 1000 * time.Millisecond
+	dedupBatchTimeout = 100 * time.Millisecond
 	dedupChannelSize  = 1000
 
 	dbBatchSize        = 10
-	dbBatchTimeout     = 1000 * time.Millisecond
-	dbChannelSize      = 1000
+	dbBatchTimeout     = 20 * time.Millisecond
+	dbChannelSize      = 500 * catalogerDBWorkers
 	catalogerDBWorkers = 10
 )
 
 type DedupResult struct {
 	Repository         string
+	StorageNamespace   string
 	DedupID            string
 	Entry              *Entry
 	NewPhysicalAddress string
+}
+
+type DedupParams struct {
+	ID               string
+	Ch               chan *DedupResult
+	StorageNamespace string
 }
 
 type RepositoryCataloger interface {
@@ -49,7 +56,7 @@ type BranchCataloger interface {
 type EntryCataloger interface {
 	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
-	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedupID string, dedupResultCh chan *DedupResult) error
+	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedup DedupParams) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
@@ -61,10 +68,6 @@ type MultipartUpdateCataloger interface {
 	CreateMultipartUpload(ctx context.Context, repository, uploadID, path, physicalAddress string, creationTime time.Time) error
 	GetMultipartUpload(ctx context.Context, repository, uploadID string) (*MultipartUpload, error)
 	DeleteMultipartUpload(ctx context.Context, repository, uploadID string) error
-}
-
-type Deduper interface {
-	Dedup(ctx context.Context, repository string, dedupID string, physicalAddress string) (string, error)
 }
 
 type Committer interface {
@@ -96,18 +99,18 @@ type Cataloger interface {
 	MultipartUpdateCataloger
 	Differ
 	Merger
-	Deduper
 	io.Closer
 }
 
 type DedupFoundCallback func(repository string, dedupID string, previousAddress, newAddress string)
 
 type dedupRequest struct {
-	Repository    string
-	DedupID       string
-	Entry         *Entry
-	EntryCTID     string
-	DedupResultCh chan *DedupResult
+	Repository       string
+	StorageNamespace string
+	DedupID          string
+	Entry            *Entry
+	EntryCTID        string
+	DedupResultCh    chan *DedupResult
 }
 
 // cataloger main catalog implementation based on mvcc
@@ -181,8 +184,38 @@ func (c *cataloger) Close() error {
 	return nil
 }
 
-func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference string) error {
-	panic("implement me")
+func (c *cataloger) processDedups() {
+	c.wg.Add(1)
+	go func() {
+		defer c.wg.Done()
+		batch := make([]*dedupRequest, 0, dedupBatchSize)
+		timer := time.NewTimer(dedupBatchTimeout)
+		for {
+			processBatch := false
+			select {
+			case req, ok := <-c.dedupCh:
+				if !ok {
+					return
+				}
+				batch = append(batch, req)
+				l := len(batch)
+				if l == 1 {
+					timer.Reset(dedupBatchTimeout)
+				}
+				if l == dedupBatchSize {
+					processBatch = true
+				}
+			case <-timer.C:
+				if len(batch) > 0 {
+					processBatch = true
+				}
+			}
+			if processBatch {
+				c.dedupBatch(batch)
+				batch = batch[:0]
+			}
+		}
+	}()
 }
 
 func (c *cataloger) dedupBatch(batch []*dedupRequest) {
@@ -236,6 +269,7 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 		if r.DedupResultCh != nil {
 			r.DedupResultCh <- &DedupResult{
 				Repository:         r.Repository,
+				StorageNamespace:   r.StorageNamespace,
 				Entry:              r.Entry,
 				DedupID:            r.DedupID,
 				NewPhysicalAddress: addresses[i],
@@ -249,7 +283,8 @@ func (c *cataloger) processDBJobs() {
 	for i := 0; i < catalogerDBWorkers; i++ {
 		go func() {
 			defer c.wg.Done()
-			var batch []dbJobTask
+			batch := make([]dbJobTask, 0, dbBatchSize)
+			timer := time.NewTimer(dbBatchTimeout)
 			for {
 				processBatch := false
 				select {
@@ -258,17 +293,21 @@ func (c *cataloger) processDBJobs() {
 						return
 					}
 					batch = append(batch, job)
-					if len(batch) == dbBatchSize {
+					l := len(batch)
+					if l == 1 {
+						timer.Reset(dbBatchTimeout)
+					}
+					if l == dbBatchSize {
 						processBatch = true
 					}
-				case <-time.After(dbBatchTimeout):
+				case <-timer.C:
 					if len(batch) > 0 {
 						processBatch = true
 					}
 				}
 				if processBatch {
 					c.dbBatch(context.Background(), batch)
-					batch = nil
+					batch = batch[:0]
 				}
 			}
 		}()

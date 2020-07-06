@@ -30,8 +30,13 @@ func TestCataloger_CreateEntryDedup(t *testing.T) {
 		Size:            0,
 		Checksum:        "aa",
 	}
+	dedup1 := DedupParams{
+		ID:               "aa",
+		Ch:               dedupCh,
+		StorageNamespace: "s1",
+	}
 	testutil.MustDo(t, "create first entry no dups",
-		c.CreateEntryDedup(ctx, repo, testBranch, ent1, "aa", dedupCh))
+		c.CreateEntryDedup(ctx, repo, testBranch, ent1, dedup1))
 	res1 := <-dedupCh
 	if !reflect.DeepEqual(*res1.Entry, ent1) {
 		t.Errorf("Dedup entry = %s, expected %s", spew.Sdump(*res1.Entry), spew.Sdump(ent1))
@@ -39,8 +44,16 @@ func TestCataloger_CreateEntryDedup(t *testing.T) {
 	if res1.NewPhysicalAddress != "" {
 		t.Fatalf("Dedup new address: %s, expected none", res1.NewPhysicalAddress)
 	}
+	if res1.StorageNamespace != dedup1.StorageNamespace {
+		t.Fatalf("Dedup storage namespace: %s, expected %s", res1.StorageNamespace, dedup1.StorageNamespace)
+	}
 
 	// add second entry with the same dedup id
+	dedup2 := DedupParams{
+		ID:               "aa",
+		Ch:               dedupCh,
+		StorageNamespace: "s2",
+	}
 	ent2 := Entry{
 		Path:            "file2",
 		PhysicalAddress: secondAddr,
@@ -49,12 +62,15 @@ func TestCataloger_CreateEntryDedup(t *testing.T) {
 		Checksum:        "aa",
 	}
 	testutil.MustDo(t, "create first entry no dup",
-		c.CreateEntryDedup(ctx, repo, testBranch, ent2, "aa", dedupCh))
+		c.CreateEntryDedup(ctx, repo, testBranch, ent2, dedup2))
 	res2 := <-dedupCh
 	if !reflect.DeepEqual(res2.Entry, &ent2) {
 		t.Errorf("Dedup entry = %s, expected %s", spew.Sdump(*res2.Entry), spew.Sdump(ent2))
 	}
-	if res1.NewPhysicalAddress == firstAddr {
-		t.Fatalf("Dedup new address: %s, expected %s", res1.NewPhysicalAddress, firstAddr)
+	if res2.NewPhysicalAddress != firstAddr {
+		t.Fatalf("Dedup new address: %s, expected %s", res2.NewPhysicalAddress, firstAddr)
+	}
+	if res2.StorageNamespace != dedup2.StorageNamespace {
+		t.Fatalf("Dedup storage namespace: %s, expected %s", res2.StorageNamespace, dedup2.StorageNamespace)
 	}
 }

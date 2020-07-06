@@ -14,7 +14,6 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 
-	"github.com/treeverse/lakefs/testutil"
 	"github.com/treeverse/lakefs/upload"
 )
 
@@ -103,9 +102,6 @@ func TestReadBlob(t *testing.T) {
 		{"2 blocks and 1 bytes", ObjectBlockSize*2 + 1, nil},
 		{"1000 blocks", ObjectBlockSize * 1000, nil},
 	}
-	differentOpts := block.PutOpts{StorageClass: &neverCreatedString}
-	deduper := testutil.NewMockDedup()
-	ctx := context.Background()
 	for _, tc := range tt {
 		t.Run(tc.name, func(t *testing.T) {
 			data := make([]byte, tc.size)
@@ -117,7 +113,7 @@ func TestReadBlob(t *testing.T) {
 			reader := bytes.NewReader(data)
 			adapter := newMockAdapter()
 			opts := block.PutOpts{StorageClass: tc.storageClass}
-			checksum, physicalAddress_1, size, err := upload.WriteBlob(ctx, deduper, bucketName, bucketName, reader, adapter, tc.size, opts)
+			blob, err := upload.WriteBlob(adapter, bucketName, reader, tc.size, opts)
 			if err != nil {
 				t.Fatal(err)
 			}
@@ -128,11 +124,11 @@ func TestReadBlob(t *testing.T) {
 			}
 			// test data size
 			expectedSize := int64(len(data))
-			if expectedSize != size {
+			if expectedSize != blob.Size {
 				t.Fatalf("expected sent size to be equal to adapter read size, got: sent:%d , adapter:%d", expectedSize, adapter.totalSize)
 			}
-			if adapter.totalSize != size {
-				t.Fatalf("expected blob size to be equal to adapter read size, got: blob:%d , adapter:%d", size, adapter.totalSize)
+			if adapter.totalSize != blob.Size {
+				t.Fatalf("expected blob size to be equal to adapter read size, got: blob:%d , adapter:%d", blob.Size, adapter.totalSize)
 			}
 			// test storage class
 			if adapter.lastStorageClass != tc.storageClass {
@@ -143,18 +139,8 @@ func TestReadBlob(t *testing.T) {
 
 			// test checksum
 			expectedMD5 := fmt.Sprintf("%x", md5.Sum(data))
-			if checksum != expectedMD5 {
-				t.Fatalf("expected blob checksum to be equal to data checksum, got: blob:%s , data:%s", checksum, expectedMD5)
-			}
-			// write the same data again - make sure it is de-duped
-			reader.Reset(data)
-			adapter = newMockAdapter()
-			_, physicalAddress_2, _, err := upload.WriteBlob(ctx, deduper, bucketName, bucketName, reader, adapter, tc.size, differentOpts)
-			if err != nil {
-				t.Fatal(err)
-			}
-			if physicalAddress_1 != physicalAddress_2 {
-				t.Fatalf("duplocate data not identified, got: first: %s , second: %s", physicalAddress_1, physicalAddress_2)
+			if blob.Checksum != expectedMD5 {
+				t.Fatalf("expected blob checksum to be equal to data checksum, got: blob:%s , data:%s", blob.Checksum, expectedMD5)
 			}
 		})
 	}

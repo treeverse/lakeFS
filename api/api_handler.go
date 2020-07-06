@@ -939,8 +939,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// read the content
-		blob, err := upload.WriteBlob(repo.StorageNamespace, params.Content, ctx.BlockAdapter,
-			byteSize, block.PutOpts{StorageClass: params.StorageClass})
+		blob, err := upload.WriteBlob(ctx.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -955,7 +954,11 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Checksum:        blob.Checksum,
 		}
 		dedupCh := make(chan *catalog.DedupResult)
-		err = cataloger.CreateEntryDedup(a.Context(), repo.Name, params.Branch, entry, blob.DedupID, dedupCh)
+		err = cataloger.CreateEntryDedup(a.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
+			ID:               blob.DedupID,
+			Ch:               dedupCh,
+			StorageNamespace: repo.StorageNamespace,
+		})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

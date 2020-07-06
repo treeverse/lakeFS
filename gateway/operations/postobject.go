@@ -100,7 +100,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	err = o.finishUpload(checksum, objName, size)
+	err = o.finishUpload(o.BlockStore, o.Repository.StorageNamespace, checksum, objName, size)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

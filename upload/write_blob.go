@@ -15,7 +15,7 @@ type Blob struct {
 	Size            int64
 }
 
-func WriteBlob(bucketName string, body io.Reader, adapter block.Adapter, contentLength int64, opts block.PutOpts) (*Blob, error) {
+func WriteBlob(adapter block.Adapter, bucketName string, body io.Reader, contentLength int64, opts block.PutOpts) (*Blob, error) {
 	// handle the upload itself
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
 	uid := uuid.New()
