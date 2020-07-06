@@ -241,7 +241,7 @@ func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requ
 					From("dir_list as d").
 					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
 				")",
-				"\n SELECT *",
+				"\n SELECT marker as path",
 				"\nFROM dir_list d",
 				"\nWHERE d.marker IS NOT NULL"))
 

@@ -14,7 +14,7 @@ type listResultStruct struct {
 	Entry *Entry
 }
 
-func (c *cataloger) ListEntriesByLevel(ctx context.Context, prefix, delimiter, repository, branchName string, maxLines int, requestedCommit CommitID) (interface{}, error) {
+func (c *cataloger) ListEntriesByLevel(ctx context.Context, prefix, delimiter, repository, branchName string, maxLines int, requestedCommit CommitID) ([]listResultStruct, error) {
 	if err := Validate(ValidateFields{
 		{Name: "branchName", IsValid: ValidateBranchName(branchName)},
 	}); err != nil {
@@ -104,7 +104,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, prefix, delimiter, r
 		}
 		return markerList, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
-	return markers, err
+	return markers.([]listResultStruct), err
 }
 
 //func trimLastChar(s string) string {
