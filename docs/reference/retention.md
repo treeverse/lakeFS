@@ -17,41 +17,54 @@ class transition.
 
 ## Configuration
 
-Configuration uses a [YAML configuration][yaml-ref] input, for example:
+Configuration uses a [JSON configuration][json-ref] input (which can
+also be specified in more readable [YAML][yaml-ref]).  For example:
 
-```yaml
----
-rules:
-  - filter:
-      prefix: master/logs/
-    status: enabled
-    expiration:
-      all:
-        # "2 weeks and a day"
-        weeks: 2
-        days: 1
-      noncurrent:
-        days: 7
-  - filter:
-      prefix: users/
-    expiration:
-      all:
-        days: 3
+```json
+{
+  "rules": [
+	{
+	  "filter": {
+		"prefix": "master/logs/"
+      },
+      "status": "enabled",
+      "expiration": {
+        "all": {
+          "weeks": 2,
+          "days": 1
+        },
+        "noncurrent": {
+          "days": 7
+        }
+      }
+    },
+    {
+      "filter": {
+        "prefix": "users/"
+      },
+      "expiration": {
+        "all": {
+          "days": 3
+        }
+      }
+    }
+  ]
+}
 ```
 
 To view the retention policy for a bucket, use:
 
 ```sh
-lakectl repo retention --get lakefs://repo/
+lakectl repo retention get lakefs://repo/
 ```
 
 To load a new retention policy for a bucket, use:
 
 ```sh
-lakectl repo retention --set lakefs://repo/ --policy-file /path/to/policy.yml
+lakectl repo retention set lakefs://repo/ --policy-file /path/to/policy.yml
 ```
 
-You can also set policy in JSON format.
+You can also specify [YAML format][yaml-ref] with the `--yaml` flag.
 
 ### Format
 
@@ -114,14 +127,16 @@ types are supported:
 
 1. Object lifecycles respect the underlying branch model.
 1. Only expiration is supported.
-1. Lifecycle is configured in YAML format, not XML.
+1. Lifecycle is configured in JSON (or YAML) format, not XML.
 1. S3 object versioning is not supported by LakeFS (however _LakeFS_
    versions are of course supported).
 1. Expiration on a [specific date][s3-lifecycle-specific-date] is not
    supported.
-1. Tags are not currently supported on LakeFS.
+1. Retention filtering on LakeFS currently supports only prefixes; S3
+   has additional tag support.
 
 [s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html
 [s3-lifecycle-specific-date]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html#intro-lifecycle-rules-date
+[json-ref]: https://www.json.org/json-en.html
 [yaml-ref]: https://yaml.org/spec/1.2/spec.html
 [http-gone]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
