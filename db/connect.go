@@ -3,10 +3,10 @@ package db
 import (
 	"fmt"
 	"net/url"
-
-	"github.com/treeverse/lakefs/logging"
+	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/treeverse/lakefs/logging"
 )
 
 func extractSchemaFromURI(uri string) (string, error) {
@@ -31,6 +31,12 @@ func ConnectDB(driver string, uri string) (Database, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
+
+	// TODO(barak): viper configuration with defaults
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(25)
+	conn.SetConnMaxLifetime(5 * time.Minute)
+
 	tx, err := conn.Beginx()
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)

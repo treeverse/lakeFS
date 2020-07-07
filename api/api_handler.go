@@ -909,8 +909,19 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	})
 }
 
+const noop = false
+
 func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
+		if noop {
+			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+				Checksum:  "cc",
+				Mtime:     time.Now().UTC().Unix(),
+				Path:      params.Path,
+				PathType:  models.ObjectStatsPathTypeOBJECT,
+				SizeBytes: 1,
+			})
+		}
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -962,10 +973,15 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		dedupResult := <-dedupCh
-		if dedupResult.NewPhysicalAddress != "" {
-			_ = ctx.BlockAdapter.Remove(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: blob.PhysicalAddress})
-		}
+		go func() {
+			dedupResult := <-dedupCh
+			if dedupResult.NewPhysicalAddress != "" {
+				_ = ctx.BlockAdapter.Remove(block.ObjectPointer{
+					StorageNamespace: dedupResult.StorageNamespace,
+					Identifier:       dedupResult.Entry.PhysicalAddress,
+				})
+			}
+		}()
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
 			Checksum:  blob.Checksum,
 			Mtime:     writeTime.Unix(),

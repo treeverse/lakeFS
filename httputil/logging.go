@@ -5,9 +5,8 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -80,7 +79,12 @@ func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, n
 	})
 }
 
+const noop = false
+
 func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+	if noop {
+		return next
+	}
 	if logging.Level() == "trace" {
 		return TracingMiddleware(requestIdHeaderName, fields, next)
 	}

@@ -19,11 +19,7 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 		if err != nil {
 			return nil, err
 		}
-		ctid, err := insertNewEntry(tx, branchID, &entry)
-		if err != nil {
-			return nil, err
-		}
-		return ctid, nil
+		return insertNewEntry(tx, branchID, &entry)
 	}))
 	if err != nil {
 		return err

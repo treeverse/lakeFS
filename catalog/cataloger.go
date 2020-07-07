@@ -15,13 +15,14 @@ const (
 	CatalogerCommitter = ""
 
 	dedupBatchSize    = 10
-	dedupBatchTimeout = 100 * time.Millisecond
+	dedupBatchTimeout = 50 * time.Millisecond
 	dedupChannelSize  = 1000
 
-	dbBatchSize        = 10
-	dbBatchTimeout     = 20 * time.Millisecond
-	dbChannelSize      = 500 * catalogerDBWorkers
-	catalogerDBWorkers = 10
+	dbBatchEnabled = true
+	dbBatchSize    = 10
+	dbBatchTimeout = 50 * time.Millisecond
+	dbChannelSize  = 500 * dbWorkers
+	dbWorkers      = 5
 )
 
 type DedupResult struct {
@@ -279,8 +280,11 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 }
 
 func (c *cataloger) processDBJobs() {
-	c.wg.Add(catalogerDBWorkers)
-	for i := 0; i < catalogerDBWorkers; i++ {
+	if !dbBatchEnabled {
+		return
+	}
+	c.wg.Add(dbWorkers)
+	for i := 0; i < dbWorkers; i++ {
 		go func() {
 			defer c.wg.Done()
 			batch := make([]dbJobTask, 0, dbBatchSize)
@@ -338,18 +342,18 @@ func (c *cataloger) dbBatch(ctx context.Context, batch []dbJobTask) {
 	}
 }
 
-func (c *cataloger) postDBJob(job dbJob) {
-	c.dbCh <- dbJobTask{
-		Job: job,
-	}
-}
-
 func (c *cataloger) runDBJob(job dbJob) (interface{}, error) {
-	ch := make(chan dbResult)
-	c.dbCh <- dbJobTask{
-		Job:      job,
-		ResultCh: ch,
+	if dbBatchEnabled {
+		ch := make(chan dbResult)
+		c.dbCh <- dbJobTask{
+			Job:      job,
+			ResultCh: ch,
+		}
+		res := <-ch
+		return res.Result, res.Err
 	}
-	res := <-ch
-	return res.Result, res.Err
+
+	return c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return job.Execute(tx)
+	}, c.txOpts(context.Background())...)
 }

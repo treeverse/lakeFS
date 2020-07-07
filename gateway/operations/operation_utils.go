@@ -4,9 +4,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
-
 	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -32,10 +30,15 @@ func (o *PathOperation) finishUpload(blockAdapter block.Adapter, storageNamespac
 		o.Log().WithError(err).Error("could not update metadata")
 		return err
 	}
-	dedupResult := <-dedupCh
-	if dedupResult.NewPhysicalAddress != "" {
-		_ = blockAdapter.Remove(block.ObjectPointer{StorageNamespace: dedupResult.StorageNamespace, Identifier: dedupResult.Entry.PhysicalAddress})
-	}
+	go func() {
+		dedupResult := <-dedupCh
+		if dedupResult.NewPhysicalAddress != "" {
+			_ = blockAdapter.Remove(block.ObjectPointer{
+				StorageNamespace: dedupResult.StorageNamespace,
+				Identifier:       dedupResult.Entry.PhysicalAddress,
+			})
+		}
+	}()
 	tookMeta := time.Since(writeTime)
 	o.Log().WithFields(logging.Fields{
 		"took": tookMeta,

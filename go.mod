@@ -31,6 +31,7 @@ require (
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mr-tron/base58 v1.2.0
 	github.com/ory/dockertest/v3 v3.6.0
+	github.com/prometheus/client_golang v1.7.1
 	github.com/rakyll/statik v0.1.7
 	github.com/schollz/progressbar/v3 v3.3.3
 	github.com/sirupsen/logrus v1.5.0
@@ -39,9 +40,9 @@ require (
 	github.com/tsenart/vegeta/v12 v12.8.3
 	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
-	golang.org/x/sys v0.0.0-20200409092240-59c9f1ba88fa // indirect
+	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543
-	gopkg.in/check.v1 v1.0.0-20190902080502-41f04d3bba15 // indirect
+	google.golang.org/protobuf v1.25.0 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/yaml.v2 v2.2.8 // indirect
 )
