@@ -42,7 +42,7 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 		}
 		currentBatch = append(currentBatch, entry)
 		if len(currentBatch) >= c.batchSize {
-			err = c.cataloger.CreateEntries(ctx, c.repository, LauncherBranchName, currentBatch)
+			err = c.cataloger.CreateEntries(ctx, c.repository, DefaultLauncherBranchName, currentBatch)
 			if err != nil {
 				return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
 			}
@@ -50,13 +50,13 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 		}
 	}
 	if len(currentBatch) > 0 {
-		err = c.cataloger.CreateEntries(ctx, c.repository, LauncherBranchName, currentBatch)
+		err = c.cataloger.CreateEntries(ctx, c.repository, DefaultLauncherBranchName, currentBatch)
 		if err != nil {
 			return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
 		}
 	}
 	for _, row := range objectsToDelete {
-		err = c.cataloger.DeleteEntry(ctx, c.repository, LauncherBranchName, row.Key)
+		err = c.cataloger.DeleteEntry(ctx, c.repository, DefaultLauncherBranchName, row.Key)
 		if err != nil {
 			return fmt.Errorf("failed to delete entry %s: %v", row.Key, err)
 		}
@@ -65,7 +65,7 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 }
 
 func (c *CatalogActions) getPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
-	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, LauncherBranchName)
+	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, DefaultLauncherBranchName)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		return nil, err
 	}
@@ -79,7 +79,7 @@ func (c *CatalogActions) getPreviousCommit(ctx context.Context) (commit *catalog
 }
 
 func (c *CatalogActions) commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
-	_, err := c.cataloger.Commit(ctx, c.repository, LauncherBranchName,
+	_, err := c.cataloger.Commit(ctx, c.repository, DefaultLauncherBranchName,
 		commitMsg,
 		"lakeFS", // TODO get actual user
 		metadata)

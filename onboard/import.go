@@ -6,12 +6,20 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/catalog"
 	"strconv"
+	"time"
 )
 
 const (
-	LauncherBranchName        = "launcher"
+	DefaultLauncherBranchName = "launcher"
 	LauncherCommitMsgTemplate = "Import from %s"
 )
+
+type DataToImport struct {
+	ToAdd              []InventoryObject
+	ToDelete           []InventoryObject
+	PreviousManifest   string
+	PreviousImportDate time.Time
+}
 
 type Importer struct {
 	s3               s3iface.S3API
@@ -67,32 +75,43 @@ func (s *Importer) createMetadata(addedCount, deletedCount int) catalog.Metadata
 }
 
 func (s *Importer) Import(ctx context.Context) error {
-	var rows, rowsToDelete []InventoryObject
+	dataToImport, err := s.DataToImport(ctx)
+	if err != nil {
+		return err
+	}
+	err = s.catalogActions.createAndDeleteObjects(ctx, dataToImport.ToAdd, dataToImport.ToDelete)
+	if err != nil {
+		return err
+	}
+	commitMetadata := s.createMetadata(len(dataToImport.ToAdd), len(dataToImport.ToDelete))
+	return s.catalogActions.commit(ctx, fmt.Sprintf(LauncherCommitMsgTemplate, s.inventory.Manifest().SourceBucket), commitMetadata)
+}
+
+func (s *Importer) DataToImport(ctx context.Context) (dataToImport DataToImport, err error) {
 	var diff Diff
 	commit, err := s.catalogActions.getPreviousCommit(ctx)
 	if err != nil {
-		return err
+		return
 	}
 	if commit == nil {
 		// no previous commit, add whole inventory
 		err = s.inventory.Fetch(ctx, false)
 		if err != nil {
-			return err
+			return
 		}
-		rows = s.inventory.Objects()
+		dataToImport = DataToImport{ToAdd: s.inventory.Objects()}
 	} else {
 		// has previous commit, add/delete according to diff
 		diff, err = s.diffFromCommit(ctx, *commit)
 		if err != nil {
-			return err
+			return
 		}
-		rows = diff.AddedOrChanged
-		rowsToDelete = diff.Deleted
+		dataToImport = DataToImport{
+			ToAdd:              diff.AddedOrChanged,
+			ToDelete:           diff.Deleted,
+			PreviousManifest:   commit.Metadata["manifest_url"],
+			PreviousImportDate: commit.CreationDate,
+		}
 	}
-	err = s.catalogActions.createAndDeleteObjects(ctx, rows, rowsToDelete)
-	if err != nil {
-		return err
-	}
-	commitMetadata := s.createMetadata(len(rows), len(rowsToDelete))
-	return s.catalogActions.commit(ctx, fmt.Sprintf(LauncherCommitMsgTemplate, s.inventory.Manifest().SourceBucket), commitMetadata)
+	return
 }

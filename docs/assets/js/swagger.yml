@@ -1145,19 +1145,35 @@ paths:
         required: true
         type: string
       - in: query
-        name: manifest_url
+        name: manifestUrl
         required: true
         type: string
       - in: query
-        name: skip_branch_creation
-        default: false
+        name: dryRun
         type: boolean
+        default: false
     post:
       tags:
         - import_tool
       operationId: importFromS3Inventory
       summary: import metadata for an existing bucket in S3
       responses:
+        200:
+          description: dry run results
+          schema:
+            type: object
+            properties:
+              rows_to_add:
+                type: integer
+                format: int64
+              rows_to_delete:
+                type: integer
+                format: int64
+              previous_manifest:
+                type: string
+              previous_import_date:
+                type: integer
+                format: int64
         201:
           description: metadata imported successfully
         400:

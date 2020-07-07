@@ -1902,6 +1902,24 @@ func (a *Handler) ImportFromS3InventoryHandler() import_tool.ImportFromS3Invento
 		}
 		a.incrStat("import_from_s3_inventory")
 		ctx := a.ForRequest(params.HTTPRequest)
+		importer, err := onboard.CreateImporter(ctx.S3, ctx.Cataloger, params.ManifestURL, params.Repository)
+		if err != nil {
+			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		if *params.DryRun {
+			dataToImport, err := importer.DataToImport(ctx.ctx)
+			if err != nil {
+				return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+			return import_tool.NewImportFromS3InventoryOK().WithPayload(&import_tool.ImportFromS3InventoryOKBody{
+				PreviousManifest:   dataToImport.PreviousManifest,
+				RowsToAdd:          int64(len(dataToImport.ToAdd)),
+				RowsToDelete:       int64(len(dataToImport.ToDelete)),
+				PreviousImportDate: dataToImport.PreviousImportDate.Unix(),
+			})
+		}
 		_, err = onboard.LoadManifest(params.ManifestURL, ctx.S3)
 		if err != nil {
 			return import_tool.NewImportFromS3InventoryBadRequest().
@@ -1912,17 +1930,17 @@ func (a *Handler) ImportFromS3InventoryHandler() import_tool.ImportFromS3Invento
 			return import_tool.NewImportFromS3InventoryNotFound().
 				WithPayload(responseErrorFrom(err))
 		}
-		if !*params.SkipBranchCreation {
-			err = ctx.Cataloger.CreateBranch(ctx.ctx, params.Repository, onboard.LauncherBranchName, repo.DefaultBranch)
+		_, err = ctx.Cataloger.GetBranchReference(ctx.ctx, params.Repository, onboard.DefaultLauncherBranchName)
+		if errors.Is(err, db.ErrNotFound) {
+			err = ctx.Cataloger.CreateBranch(ctx.ctx, params.Repository, onboard.DefaultLauncherBranchName, repo.DefaultBranch)
 			if err != nil {
 				return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-		}
-		importer, err := onboard.CreateImporter(ctx.S3, ctx.Cataloger, params.ManifestURL, params.Repository)
-		if err != nil {
+		} else if err != nil {
 			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
+		} else {
 		}
 		err = importer.Import(params.HTTPRequest.Context())
 		if err != nil {
