@@ -6,23 +6,23 @@ import (
 	"context"
 	"fmt"
 	"net/http"
-
-	"github.com/treeverse/lakefs/catalog"
-
-	"gopkg.in/dgrijalva/jwt-go.v3"
+	"net/http/pprof"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 const (
@@ -100,6 +100,11 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
+		if noop {
+			return &models.User{
+				ID: "barak.amar",
+			}, nil
+		}
 		credentials, err := s.authService.GetCredentials(accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
@@ -122,6 +127,15 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 
 func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
+	// pprof
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	// promethues
+	mux.Handle("/metrics", promhttp.Handler())
+
 	// api handler
 	mux.Handle("/api/", api)
 	// swagger
@@ -161,7 +175,11 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			cookieToAPIHeader(s.apiServer.GetHandler()),
+			promhttp.InstrumentHandlerCounter(requestCounter,
+				cookieToAPIHeader(
+					s.apiServer.GetHandler(),
+				),
+			),
 		),
 
 		// ui handler

@@ -100,21 +100,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	existingName, err := o.Cataloger.Dedup(o.Context(), o.Repository.Name, checksum, multiPart.PhysicalAddress)
-	if err != nil {
-		o.Log().WithError(err).Error("failed checking for duplicate content")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
-	}
-
-	if existingName != objName { // object already exist
-		err := o.BlockStore.Remove(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName})
-		if err != nil {
-			o.Log().WithError(err).WithField("identifier", objName).Error("failed to remove object")
-		}
-		objName = existingName
-	}
-	err = o.finishUpload(checksum, objName, size)
+	err = o.finishUpload(o.BlockStore, o.Repository.StorageNamespace, checksum, objName, size)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

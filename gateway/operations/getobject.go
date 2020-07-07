@@ -88,7 +88,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
 		expected = ent.Size
-		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress})
+		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, ent.Size)
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
 		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, rng.StartOffset, rng.EndOffset)

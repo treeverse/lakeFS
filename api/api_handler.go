@@ -400,7 +400,7 @@ func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) er
 		return err
 	}
 
-	_, err = adapter.Get(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey})
+	_, err = adapter.Get(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}, int64(len(dummyData)))
 	if err != nil {
 		return err
 	}
@@ -834,7 +834,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = entry.Size
-		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
+		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -909,8 +909,19 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	})
 }
 
+const noop = false
+
 func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
+		if noop {
+			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+				Checksum:  "cc",
+				Mtime:     time.Now().UTC().Unix(),
+				Path:      params.Path,
+				PathType:  models.ObjectStatsPathTypeOBJECT,
+				SizeBytes: 1,
+			})
+		}
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -939,8 +950,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// read the content
-		checksum, physicalAddress, size, err := upload.WriteBlob(a.Context(),
-			cataloger, repo.Name, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize, block.PutOpts{StorageClass: params.StorageClass})
+		blob, err := upload.WriteBlob(ctx.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -949,21 +959,35 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		writeTime := time.Now()
 		entry := catalog.Entry{
 			Path:            params.Path,
-			PhysicalAddress: physicalAddress,
+			PhysicalAddress: blob.PhysicalAddress,
 			CreationDate:    writeTime,
-			Size:            size,
-			Checksum:        checksum,
+			Size:            blob.Size,
+			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntry(a.Context(), repo.Name, params.Branch, entry)
+		dedupCh := make(chan *catalog.DedupResult)
+		err = cataloger.CreateEntryDedup(a.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
+			ID:               blob.DedupID,
+			Ch:               dedupCh,
+			StorageNamespace: repo.StorageNamespace,
+		})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+		go func() {
+			dedupResult := <-dedupCh
+			if dedupResult.NewPhysicalAddress != "" {
+				_ = ctx.BlockAdapter.Remove(block.ObjectPointer{
+					StorageNamespace: dedupResult.StorageNamespace,
+					Identifier:       dedupResult.Entry.PhysicalAddress,
+				})
+			}
+		}()
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  checksum,
+			Checksum:  blob.Checksum,
 			Mtime:     writeTime.Unix(),
 			Path:      params.Path,
 			PathType:  models.ObjectStatsPathTypeOBJECT,
-			SizeBytes: size,
+			SizeBytes: blob.Size,
 		})
 	})
 }

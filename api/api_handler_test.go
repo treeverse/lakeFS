@@ -218,8 +218,10 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error getting log of commits: %s", err)
 		}
-		if len(resp.GetPayload().Results) != commitsLen {
-			t.Fatalf("expected a log of %d commits, got %d instead", commitsLen, len(resp.GetPayload().Results))
+		const expectedCommits = commitsLen + 1 // one for the branch creation
+		commitsLog := resp.GetPayload().Results
+		if len(commitsLog) != expectedCommits {
+			t.Fatalf("Log %d commits, expected %d", len(commitsLog), expectedCommits)
 		}
 	})
 }
@@ -537,7 +539,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 	t.Run("get default branch", func(t *testing.T) {
 		ctx := context.Background()
 		const testBranch = "master"
-		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
+		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", testBranch))
 		resp, err := clt.Branches.GetBranch(&branches.GetBranchParams{
 			Branch:     testBranch,
 			Repository: "repo1",
@@ -546,8 +548,8 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 			t.Fatalf("unexpected error getting branch: %s", err)
 		}
 		reference := resp.GetPayload()
-		if reference != "" {
-			t.Fatalf("got unexpected reference '%s' for branch '%s'", reference, testBranch)
+		if reference == "" {
+			t.Fatalf("Got no reference for branch '%s'", testBranch)
 		}
 	})
 
@@ -837,7 +839,6 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
-	deduper := testutil.NewMockDedup()
 
 	// setup client
 	clt := client.Default
@@ -851,16 +852,16 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	checksum, physicalAddress, size, err := upload.WriteBlob(ctx, deduper, "ns1", "ns1", buf, deps.blocks, 37, block.PutOpts{StorageClass: &expensiveString})
+	blob, err := upload.WriteBlob(deps.blocks, "ns1", buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
 	entry := catalog.Entry{
 		Path:            "foo/bar",
-		PhysicalAddress: physicalAddress,
+		PhysicalAddress: blob.PhysicalAddress,
 		CreationDate:    time.Now(),
-		Size:            size,
-		Checksum:        checksum,
+		Size:            blob.Size,
+		Checksum:        blob.Checksum,
 	}
 	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry)
 
@@ -961,6 +962,38 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		}
 		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
 			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		}
+	})
+
+	t.Run("upload objects dedup", func(t *testing.T) {
+		const content = "They do not love that do not show their love"
+		resp1, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", strings.NewReader(content)),
+			Path:       "dd/bar1",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp2, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", strings.NewReader(content)),
+			Path:       "dd/bar2",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ent1, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp1.Payload.Path)
+		testutil.MustDo(t, "get first entry", err)
+		ent2, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp2.Payload.Path)
+		testutil.MustDo(t, "get second entry", err)
+		if ent1.PhysicalAddress != ent2.PhysicalAddress {
+			t.Fatalf("First entry address '%s' should match the second '%s' - check dedup",
+				ent1.PhysicalAddress, ent2.PhysicalAddress)
 		}
 	})
 }

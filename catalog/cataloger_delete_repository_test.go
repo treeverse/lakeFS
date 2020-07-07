@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func TestCataloger_DeleteRepo(t *testing.T) {
+func TestCataloger_DeleteRepository(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 

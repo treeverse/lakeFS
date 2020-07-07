@@ -9,14 +9,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/testutil"
+
 	"github.com/davecgh/go-spew/spew"
 )
 
 func TestCataloger_ListCommits(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
+
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	setupListCommitsByBranchData(t, ctx, c, repository, "master")
+
+	initialCommitReference, err := c.GetBranchReference(ctx, repository, "master")
+	testutil.MustDo(t, "get master branch reference", err)
+
+	commits := setupListCommitsByBranchData(t, ctx, c, repository, "master")
 
 	type args struct {
 		repository    string
@@ -40,9 +47,10 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Reference: MakeReference("master", 1), Committer: "tester", Message: "commit1", Metadata: Metadata{}},
-				{Reference: MakeReference("master", 2), Committer: "tester", Message: "commit2", Metadata: Metadata{}},
-				{Reference: MakeReference("master", 3), Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -56,8 +64,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         2,
 			},
 			want: []*CommitLog{
-				{Reference: MakeReference("master", 1), Committer: "tester", Message: "commit1", Metadata: Metadata{}},
-				{Reference: MakeReference("master", 2), Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -67,11 +75,11 @@ func TestCataloger_ListCommits(t *testing.T) {
 			args: args{
 				repository:    repository,
 				branch:        "master",
-				fromReference: MakeReference("master", 2),
+				fromReference: MakeReference("master", 3),
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: MakeReference("master", 3), Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -81,11 +89,11 @@ func TestCataloger_ListCommits(t *testing.T) {
 			args: args{
 				repository:    repository,
 				branch:        "master",
-				fromReference: MakeReference("master", 1),
+				fromReference: MakeReference("master", 2),
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: MakeReference("master", 2), Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -149,7 +157,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 	}
 }
 
-func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository, branch string) {
+func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository, branch string) []*CommitLog {
+	var commits []*CommitLog
 	for i := 0; i < 3; i++ {
 		fileName := fmt.Sprintf("/file%d", i)
 		fileAddr := fmt.Sprintf("/addr%d", i)
@@ -162,9 +171,11 @@ func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger
 			t.Fatal("Write entry for list repository commits failed", err)
 		}
 		message := "commit" + strconv.Itoa(i+1)
-		_, err := c.Commit(ctx, repository, branch, message, "tester", nil)
+		commitLog, err := c.Commit(ctx, repository, branch, message, "tester", nil)
 		if err != nil {
 			t.Fatalf("Commit for list repository commits failed '%s': %s", message, err)
 		}
+		commits = append(commits, commitLog)
 	}
+	return commits
 }
