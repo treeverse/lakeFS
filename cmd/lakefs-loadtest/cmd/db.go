@@ -19,9 +19,9 @@ func init() {
 	// and all subcommands, e.g.:
 	// dbCmd.PersistentFlags().String("foo", "", "A help for foo")
 	dbCmd.PersistentFlags().String("db", "postgres://localhost:5432/postgres?sslmode=disable&search_path=lakefs_catalog", "Database connection string")
-	dbCmd.PersistentFlags().IntP("requests", "r", 100, "Number of requests to performs")
+	dbCmd.PersistentFlags().Int("requests", 1000, "Number of requests to performs")
 	dbCmd.PersistentFlags().Float64("sample", 0.5, "Measure sample ratio (between 0 and 1)")
-	dbCmd.PersistentFlags().IntP("concurrency", "c", 1, "Number of concurrent workers")
+	dbCmd.PersistentFlags().Int("concurrency", 1, "Number of concurrent workers")
 	dbCmd.PersistentFlags().String("repository", "", "Name of the repository (empty will create random one)")
 
 	// Cobra supports local flags which will only run when this command
