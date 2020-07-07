@@ -15,8 +15,7 @@ import (
 
 const BlockstoreType = "transient"
 
-type Adapter struct {
-}
+type Adapter struct{}
 
 func New() *Adapter {
 	return &Adapter{}
@@ -91,4 +90,8 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	code := h.Sum(nil)
 	codeHex := hex.EncodeToString(code)
 	return &codeHex, dataSize, nil
+}
+
+func (a *Adapter) ValidateConfiguration(_ string) error {
+	return nil
 }
