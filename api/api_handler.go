@@ -912,11 +912,11 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	})
 }
 
-const noop = false
+const noopUploadObject = false
 
 func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
-		if noop {
+		if noopUploadObject {
 			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
 				Checksum:  "cc",
 				Mtime:     time.Now().UTC().Unix(),

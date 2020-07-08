@@ -118,8 +118,6 @@ func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gat
 	}
 }
 
-const noop = false
-
 func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request *http.Request, perms []permissions.Permission) *operations.AuthenticatedOperation {
 	o := &operations.Operation{
 		Request:        request,
@@ -136,12 +134,6 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 				Debug("performing S3 action")
 			s.stats.CollectEvent("s3_gateway", action)
 		},
-	}
-	if noop {
-		return &operations.AuthenticatedOperation{
-			Operation: o,
-			Principal: "barak.amar",
-		}
 	}
 
 	// authenticate
