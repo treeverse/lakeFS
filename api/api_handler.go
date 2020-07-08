@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
+
 	authmodel "github.com/treeverse/lakefs/auth/model"
 
 	authentication "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
@@ -135,6 +137,8 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
 	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
+
+	api.MetadataCreateSymlinkHandler = a.MetadataCreateSymlinkHandler()
 }
 
 func (a *Handler) incrStat(action string) {
@@ -852,6 +856,32 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	})
 }
 
+func (a *Handler) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
+	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *models.User) middleware.Responder {
+		err := a.authorize(user, []permissions.Permission{
+			{
+				Action:   permissions.WriteObjectAction,
+				Resource: permissions.ObjectArn(params.RepositoryID, params.Ref),
+			},
+		})
+		if err != nil {
+			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		a.incrStat("create_symlink")
+		ctx := a.ForRequest(params.HTTPRequest)
+		index := ctx.Index
+
+		_, err = index.GetRepo(params.RepositoryID)
+		if errors.Is(err, db.ErrNotFound) {
+			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
+		}
+		if err != nil {
+			return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		//TODO - need to implement this. for now, do nothing
+		return metadata.NewCreateSymlinkCreated()
+	})
+}
 func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{

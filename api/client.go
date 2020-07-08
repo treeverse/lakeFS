@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"path"
 
+	"github.com/treeverse/lakefs/api/gen/client/metadata"
+
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 
 	"github.com/go-openapi/runtime"
@@ -78,6 +80,8 @@ type RepositoryClient interface {
 	Merge(ctx context.Context, repoId, leftRef, rightRef string) ([]*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repoId, branch string) ([]*models.Diff, error)
+
+	Symlink(ctx context.Context, repoId, ref, path string) (string, error)
 }
 
 type Client interface {
@@ -565,6 +569,18 @@ func (c *client) DiffBranch(ctx context.Context, repoId, branch string) ([]*mode
 	return diff.GetPayload().Results, nil
 }
 
+func (c *client) Symlink(ctx context.Context, repoId, ref, path string) (string, error) {
+	resp, err := c.remote.Metadata.CreateSymlink(&metadata.CreateSymlinkParams{
+		Location:     swag.String(path),
+		Ref:          ref,
+		RepositoryID: repoId,
+		Context:      ctx,
+	}, c.auth)
+	if err != nil {
+		return "", nil
+	}
+	return resp.GetPayload(), nil
+}
 func (c *client) StatObject(ctx context.Context, repoId, ref, path string, readUncommitted bool) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
 		Ref:             ref,
