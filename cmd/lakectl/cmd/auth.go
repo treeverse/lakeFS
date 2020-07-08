@@ -532,21 +532,21 @@ var authPoliciesCreate = &cobra.Command{
 			}
 		}
 
-		var policy *models.Policy
-		err = json.NewDecoder(fp).Decode(policy)
+		var policy models.Policy
+		err = json.NewDecoder(fp).Decode(&policy)
 		if err != nil {
 			DieFmt("could not parse policy document: %v", err)
 		}
 
-		policy, err = clt.CreatePolicy(context.Background(), policy)
+		createdPolicy, err := clt.CreatePolicy(context.Background(), &policy)
 		if err != nil {
 			DieErr(err)
 		}
 
-		Write(policyCreatedTemplate, policy)
+		Write(policyCreatedTemplate, createdPolicy)
 
 		rows := make([][]interface{}, 0)
-		for i, statement := range policy.Statement {
+		for i, statement := range createdPolicy.Statement {
 			ts := time.Unix(policy.CreationDate, 0).String()
 			rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
 		}
