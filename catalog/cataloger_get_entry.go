@@ -31,6 +31,11 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 		if err != nil {
 			return nil, err
 		}
+		z := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+			Where(sq.And{sq.Eq{"path": path}, sq.Eq{"is_deleted": false}})
+		s := sq.DebugSqlizer(z)
+		_ = s
 		sql, args, err := psql.
 			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
 			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
