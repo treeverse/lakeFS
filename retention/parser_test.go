@@ -43,7 +43,7 @@ func TestUnparseTimePeriod(t *testing.T) {
 		Input  retention.TimePeriodHours
 		Output models.TimePeriod
 	}{
-		{Output: models.TimePeriod{Days: 2}, Input: retention.TimePeriodHours(2 * 24 - 20)},
+		{Output: models.TimePeriod{Days: 2}, Input: retention.TimePeriodHours(2*24 - 20)},
 		{Output: models.TimePeriod{Weeks: 5}, Input: retention.TimePeriodHours(5 * 24 * 7)},
 		{Output: models.TimePeriod{Weeks: 1, Days: 3}, Input: retention.TimePeriodHours(10 * 24)},
 	}
@@ -114,21 +114,21 @@ func TestUnParseExpiration(t *testing.T) {
 		return &ret
 	}
 	cases := []struct {
-		Output  models.RetentionPolicyRuleExpiration
-		Input retention.Expiration
+		Output models.RetentionPolicyRuleExpiration
+		Input  retention.Expiration
 	}{
 		{
-			Output:  models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
-			Input: retention.Expiration{All: hours(3 * 24)},
+			Output: models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
+			Input:  retention.Expiration{All: hours(3 * 24)},
 		}, {
-			Output:  models.RetentionPolicyRuleExpiration{Noncurrent: &models.TimePeriod{Days: 3}},
-			Input: retention.Expiration{Noncurrent: hours(3 * 24)},
+			Output: models.RetentionPolicyRuleExpiration{Noncurrent: &models.TimePeriod{Days: 3}},
+			Input:  retention.Expiration{Noncurrent: hours(3 * 24)},
 		}, {
-			Output:  models.RetentionPolicyRuleExpiration{Uncommitted: &models.TimePeriod{Days: 3}},
-			Input: retention.Expiration{Uncommitted: hours(3 * 24)},
+			Output: models.RetentionPolicyRuleExpiration{Uncommitted: &models.TimePeriod{Days: 3}},
+			Input:  retention.Expiration{Uncommitted: hours(3 * 24)},
 		}, {
-			Output:  models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
-			Input: retention.Expiration{All: hours(3 * 24)},
+			Output: models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
+			Input:  retention.Expiration{All: hours(3 * 24)},
 		}, {
 			Output: models.RetentionPolicyRuleExpiration{
 				All:         &models.TimePeriod{Days: 3},
@@ -204,14 +204,14 @@ func TestUnparsePolicy(t *testing.T) {
 	pathB := "/bucket/b"
 	day := retention.TimePeriodHours(24)
 	ruleA := retention.Rule{
-		Enabled: true,
+		Enabled:      true,
 		FilterPrefix: pathA,
-		Expiration: retention.Expiration{All: &day},
+		Expiration:   retention.Expiration{All: &day},
 	}
 	ruleB := retention.Rule{
-		Enabled: false,
+		Enabled:      false,
 		FilterPrefix: pathB,
-		Expiration: retention.Expiration{Uncommitted: &day},
+		Expiration:   retention.Expiration{Uncommitted: &day},
 	}
 
 	cases := []struct {

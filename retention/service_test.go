@@ -9,7 +9,6 @@ import (
 	"github.com/go-test/deep"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
@@ -35,7 +34,7 @@ func TestMain(m *testing.M) {
 
 func setupService(t *testing.T, opts ...testutil.GetDBOption) *retention.DBRetentionService {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseUri, config.SchemaCatalog, opts...)
+	cdb, _ := testutil.GetDB(t, databaseUri, opts...)
 	cataloger := catalog.NewCataloger(cdb)
 
 	cataloger.CreateRepository(ctx, "repo", "s3://repo", "master")
@@ -49,8 +48,9 @@ func TestDBRetentionService_Config(t *testing.T) {
 	period := retention.TimePeriodHours(48)
 
 	policy := retention.Policy{
+		Description: "Retention policy for testing",
 		Rules: []retention.Rule{
-			retention.Rule{
+			{
 				Enabled:      true,
 				FilterPrefix: "/foo/path",
 				Expiration:   retention.Expiration{All: &period},
@@ -58,7 +58,9 @@ func TestDBRetentionService_Config(t *testing.T) {
 		},
 	}
 
-	err := s.SetPolicy("repo", &policy, "comment", time.Now())
+	before := time.Now()
+	err := s.SetPolicy("repo", &policy, time.Now())
+	after := time.Now()
 	if err != nil {
 		t.Fatalf("failed to set policy %v: %s", policy, err)
 	}
@@ -68,8 +70,13 @@ func TestDBRetentionService_Config(t *testing.T) {
 		t.Fatalf("failed to get policy: %s", err)
 	}
 
-	diff := deep.Equal(policy, *returnedPolicy)
+	diff := deep.Equal(policy, returnedPolicy.Policy)
 	if diff != nil {
-		t.Fatalf("policy round-trip: %s.  Wrote %v, read %v", diff, policy, returnedPolicy)
+		t.Errorf("policy round-trip: %s.  Wrote %v, read %v", diff, policy, returnedPolicy)
+	}
+	// Fuzz "before" and "after" times, Postgres rounds times to
+	// microsecond precision (and even less accuracy).
+	if !(before.Before(returnedPolicy.CreatedAt.Add(time.Millisecond)) && after.After(returnedPolicy.CreatedAt.Add(-1*time.Millisecond))) {
+		t.Errorf("expected policy creation date between %v and %v, got %v", before, after, returnedPolicy.CreatedAt)
 	}
 }

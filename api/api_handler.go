@@ -74,13 +74,14 @@ type Handler struct {
 	deps *HandlerDependencies
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, logger logging.Logger) *Handler {
+func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, logger logging.Logger) *Handler {
 	return &Handler{
 		deps: &HandlerDependencies{
 			Cataloger:    cataloger,
 			Auth:         auth,
 			BlockAdapter: blockAdapter,
 			Stats:        stats,
+			Retention:    retention,
 			ctx:          context.Background(),
 			logger:       logger,
 		},

@@ -5,7 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"time"
 
+	"github.com/go-openapi/strfmt"
 	"github.com/treeverse/lakefs/api/gen/models"
 )
 
@@ -24,21 +26,34 @@ type Rule struct {
 	Expiration   Expiration
 }
 
+type Rules []Rule
+
 type Policy struct {
-	Rules []Rule
+	Rules       Rules
+	Description string
 }
 
-func (a *Policy) Value() (driver.Value, error) {
+type PolicyWithCreationTime struct {
+	Policy
+	CreatedAt time.Time `db:"created_at"`
+}
+
+// RulesHolder is a dummy struct for helping pg serialization: it has
+// poor support for passing an array-valued parameter.
+type RulesHolder struct {
+	Rules Rules
+}
+
+func (a *RulesHolder) Value() (driver.Value, error) {
 	return json.Marshal(a)
 }
 
-func (a *Policy) Scan(value interface{}) error {
+func (a *Rules) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
 		return errors.New("type assertion to []byte failed")
 	}
-
-	return json.Unmarshal(b, &a)
+	return json.Unmarshal(b, a)
 }
 
 func ParseTimePeriod(model models.TimePeriod) (TimePeriodHours, error) {
@@ -147,7 +162,7 @@ func ParsePolicy(model models.RetentionPolicy) (*Policy, error) {
 		rules = append(rules, *rule)
 	}
 
-	return &Policy{Rules: rules}, nil
+	return &Policy{Description: model.Description, Rules: rules}, nil
 }
 
 func UnparsePolicy(policy *Policy) *models.RetentionPolicy {
@@ -155,5 +170,14 @@ func UnparsePolicy(policy *Policy) *models.RetentionPolicy {
 	for _, rule := range policy.Rules {
 		modelRules = append(modelRules, UnparseRule(&rule))
 	}
-	return &models.RetentionPolicy{Rules: modelRules}
+	return &models.RetentionPolicy{Description: policy.Description, Rules: modelRules}
+}
+
+// PolicyWithCreationDate never converted in, only out
+func UnparsePolicyWithCreationDate(policy *PolicyWithCreationTime) *models.RetentionPolicyWithCreationDate {
+	serializableCreationDate := strfmt.DateTime(policy.CreatedAt)
+	return &models.RetentionPolicyWithCreationDate{
+		RetentionPolicy: *UnparsePolicy(&policy.Policy),
+		CreationDate:    &serializableCreationDate,
+	}
 }

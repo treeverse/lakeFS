@@ -105,6 +105,32 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		},
 		{
 			CreatedAt:   ts,
+			DisplayName: "RepoFullAccess",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"retention:*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
+			},
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "RepoReadAll",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"retention:Get*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
+			},
+		},
+		{
+			CreatedAt:   ts,
 			DisplayName: "AuthFullAccess",
 			Statement: model.Statements{
 				{
@@ -137,7 +163,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoFullaccess"})
+	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoFullAccess"})
 	if err != nil {
 		return err
 	}
