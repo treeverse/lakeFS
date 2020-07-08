@@ -2,8 +2,6 @@ package cmd
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"math/rand"
 	"os"
@@ -12,7 +10,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/docker/docker/testutil"
 	"github.com/google/uuid"
 	"github.com/jamiealquiza/tachymeter"
 	"github.com/schollz/progressbar/v3"
@@ -20,17 +17,16 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 )
 
-// entryCmd represents the entry command
-var entryCmd = &cobra.Command{
-	Use:   "entry",
-	Short: "Load test database with entries",
+// repoCmd represents the repo command
+var repoCmd = &cobra.Command{
+	Use:   "repo",
+	Short: "Load test database with repository calls",
 	Run: func(cmd *cobra.Command, args []string) {
 		connectionString, _ := cmd.Flags().GetString("db")
 		requests, _ := cmd.Flags().GetInt("requests")
 		repository, _ := cmd.Flags().GetString("repository")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
 		sampleRatio, _ := cmd.Flags().GetFloat64("sample")
-		createRepository := repository == ""
 
 		if concurrency < 1 {
 			fmt.Printf("Concurrency must be above 1! (%d)\n", concurrency)
@@ -47,16 +43,10 @@ var entryCmd = &cobra.Command{
 		database := connectToDB(connectionString)
 
 		c := catalog.NewCataloger(database)
-		if createRepository {
-			// create repository
-			repository = "repo-" + strings.ToLower(testutil.GenerateRandomAlphaOnlyString(10))
-			err := c.CreateRepository(ctx, repository, fmt.Sprintf("s3://test-bucket/%s/", repository), "master")
-			if err != nil {
-				fmt.Printf("Failed to create repository %s: %s\n", repository, err)
-			} else {
-				fmt.Printf("Repository created: %s\n", repository)
-			}
+		if repository == "" {
+			repository = "repo-" + strings.ToLower(uuid.New().String())
 		}
+		fmt.Printf("Repository: %s\n", repository)
 		fmt.Printf("Concurrency: %d\n", concurrency)
 		fmt.Printf("Requests: %d\n", requests)
 
@@ -71,29 +61,12 @@ var entryCmd = &cobra.Command{
 				defer wg.Done()
 				<-startingLine
 				for reqID := 0; reqID < requests; reqID++ {
-					addr := uuid.New().String()
-					prefix := ""
-					levels := rand.Intn(10)
-					for i := 0; i < levels; i++ {
-						prefix += fmt.Sprintf("folder%d/", i)
-					}
-					entPath := prefix + addr
-					entChecksum := sha256.Sum256([]byte(entPath))
-					creationDate := time.Now()
-					ent := catalog.Entry{
-						Path:            entPath,
-						PhysicalAddress: "a" + addr,
-						CreationDate:    creationDate,
-						Size:            int64(rand.Intn(1024*1024)) + 1,
-						Checksum:        hex.EncodeToString(entChecksum[:]),
-						Metadata:        nil,
-					}
-					err := c.CreateEntry(ctx, repository, "master", ent)
+					startTime := time.Now()
+					_, err := c.GetRepository(ctx, repository)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
-						fmt.Printf("Request failed - %s: %s", entPath, err)
 					} else {
-						t.AddTime(time.Since(creationDate))
+						t.AddTime(time.Since(startTime))
 					}
 					_ = bar.Add64(1)
 				}
@@ -103,7 +76,7 @@ var entryCmd = &cobra.Command{
 		wallTimeStart := time.Now()
 		close(startingLine)
 
-		// generate entries and wait for workers to complete
+		// generate repository calls and wait for workers to complete
 		wg.Wait()
 		_ = bar.Finish()
 		t.SetWallTime(time.Since(wallTimeStart))
@@ -115,16 +88,16 @@ var entryCmd = &cobra.Command{
 }
 
 func init() {
-	dbCmd.AddCommand(entryCmd)
+	dbCmd.AddCommand(repoCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// entryCmd.PersistentFlags().String("foo", "", "A help for foo")
+	// repoCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// entryCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// repoCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 
 }
