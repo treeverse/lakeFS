@@ -139,11 +139,13 @@ func (lf logrusCallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 
 func Default() Logger {
 	// wrap formatter with our own formatter that overrides caller
+	logger := logrus.StandardLogger()
+	logger.SetNoLock()
 	formatterInitOnce.Do(func() {
-		logrus.StandardLogger().Formatter = logrusCallerFormatter{logrus.StandardLogger().Formatter}
+		logger.Formatter = logrusCallerFormatter{logger.Formatter}
 	})
 	return &logrusEntryWrapper{
-		e: logrus.NewEntry(logrus.StandardLogger()),
+		e: logrus.NewEntry(logger),
 	}
 }
 
