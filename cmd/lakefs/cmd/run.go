@@ -80,7 +80,7 @@ var runCmd = &cobra.Command{
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
 
-		s3svc := cfg.BuildS3Service()
+		s3InventoryFactory := cfg.BuildS3InventoryFactory()
 
 		// init authentication
 		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
@@ -95,7 +95,7 @@ var runCmd = &cobra.Command{
 
 		var apiServer *api.Server
 		if runAPIService {
-			apiServer = api.NewServer(cataloger, blockStore, authService, stats, migrator, s3svc)
+			apiServer = api.NewServer(cataloger, blockStore, authService, stats, migrator, s3InventoryFactory)
 			go func() {
 				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
 					fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)

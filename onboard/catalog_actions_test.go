@@ -1,8 +1,9 @@
-package onboard
+package onboard_test
 
 import (
 	"context"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/onboard"
 	"testing"
 )
 
@@ -28,9 +29,9 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := NewCatalogActions(mockCataloger{}, "example-repo")
-	catalogActions, _ := c.(*CatalogActions)
-	catalogActions.batchSize = 5
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo")
+	catalogActions, _ := c.(*onboard.CatalogRepoActions)
+	catalogActions.BatchSize = 5
 	testdata := []struct {
 		AddedRows           []string
 		DeletedRows         []string
@@ -84,7 +85,7 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		catalogCallData.addedEntries = []catalog.Entry{}
 		catalogCallData.deletedEntries = []string{}
 		catalogCallData.callLog = make(map[string]int)
-		err := catalogActions.createAndDeleteObjects(context.Background(), rows(test.AddedRows...), rows(test.DeletedRows...))
+		err := catalogActions.CreateAndDeleteObjects(context.Background(), rows(test.AddedRows...), rows(test.DeletedRows...))
 		if err != nil {
 			t.Fatalf("failed to create/delete objects: %v", err)
 		}

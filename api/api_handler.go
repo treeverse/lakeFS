@@ -5,8 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/import_tool"
 	"github.com/treeverse/lakefs/onboard"
 	"net/http"
 	"path/filepath"
@@ -40,22 +38,22 @@ const (
 )
 
 type HandlerContext struct {
-	ctx          context.Context
-	Cataloger    catalog.Cataloger
-	Auth         auth.Service
-	BlockAdapter block.Adapter
-	Stats        stats.Collector
-	S3           s3iface.S3API
+	ctx                context.Context
+	Cataloger          catalog.Cataloger
+	Auth               auth.Service
+	BlockAdapter       block.Adapter
+	Stats              stats.Collector
+	S3InventoryFactory onboard.S3InventoryFactory
 }
 
 func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
 	return &HandlerContext{
-		ctx:          ctx,
-		Cataloger:    c.Cataloger,
-		Auth:         c.Auth, // TODO: pass context
-		BlockAdapter: c.BlockAdapter.WithContext(ctx),
-		Stats:        c.Stats,
-		S3:           c.S3,
+		ctx:                ctx,
+		Cataloger:          c.Cataloger,
+		Auth:               c.Auth, // TODO: pass context
+		BlockAdapter:       c.BlockAdapter.WithContext(ctx),
+		Stats:              c.Stats,
+		S3InventoryFactory: c.S3InventoryFactory,
 	}
 }
 
@@ -63,14 +61,14 @@ type Handler struct {
 	context *HandlerContext
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, s3 s3iface.S3API) *Handler {
+func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, s3InventoryFactory onboard.S3InventoryFactory) *Handler {
 	return &Handler{
 		context: &HandlerContext{
-			Cataloger:    cataloger,
-			Auth:         auth,
-			BlockAdapter: blockAdapter,
-			Stats:        stats,
-			S3:           s3,
+			Cataloger:          cataloger,
+			Auth:               auth,
+			BlockAdapter:       blockAdapter,
+			Stats:              stats,
+			S3InventoryFactory: s3InventoryFactory,
 		},
 	}
 }
@@ -124,6 +122,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
 	api.RepositoriesDeleteRepositoryHandler = a.DeleteRepositoryHandler()
+	api.RepositoriesImportFromS3InventoryHandler = a.ImportFromS3InventoryHandler()
 
 	api.BranchesListBranchesHandler = a.ListBranchesHandler()
 	api.BranchesGetBranchHandler = a.GetBranchHandler()
@@ -146,7 +145,6 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
 	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
 
-	api.ImportToolImportFromS3InventoryHandler = a.ImportFromS3InventoryHandler()
 }
 
 func (a *Handler) incrStat(action string) {
@@ -1889,8 +1887,8 @@ func (a *Handler) DetachPolicyFromGroupHandler() authentication.DetachPolicyFrom
 	})
 }
 
-func (a *Handler) ImportFromS3InventoryHandler() import_tool.ImportFromS3InventoryHandler {
-	return import_tool.ImportFromS3InventoryHandlerFunc(func(params import_tool.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
+func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3InventoryHandler {
+	return repositories.ImportFromS3InventoryHandlerFunc(func(params repositories.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
 		err := a.authorize(user, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
@@ -1898,55 +1896,51 @@ func (a *Handler) ImportFromS3InventoryHandler() import_tool.ImportFromS3Invento
 			},
 		})
 		if err != nil {
-			return import_tool.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
+			return repositories.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		a.incrStat("import_from_s3_inventory")
 		ctx := a.ForRequest(params.HTTPRequest)
-		importer, err := onboard.CreateImporter(ctx.S3, ctx.Cataloger, params.ManifestURL, params.Repository)
+		importer, err := onboard.CreateImporter(ctx.Cataloger, &ctx.S3InventoryFactory, params.ManifestURL, params.Repository)
 		if err != nil {
-			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
+		var diff *onboard.InventoryDiff
 		if *params.DryRun {
-			dataToImport, err := importer.DataToImport(ctx.ctx)
+			diff, err = importer.DataToImport(ctx.ctx, true)
 			if err != nil {
-				return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-			return import_tool.NewImportFromS3InventoryOK().WithPayload(&import_tool.ImportFromS3InventoryOKBody{
-				PreviousManifest:   dataToImport.PreviousManifest,
-				RowsToAdd:          int64(len(dataToImport.ToAdd)),
-				RowsToDelete:       int64(len(dataToImport.ToDelete)),
-				PreviousImportDate: dataToImport.PreviousImportDate.Unix(),
-			})
-		}
-		_, err = onboard.LoadManifest(params.ManifestURL, ctx.S3)
-		if err != nil {
-			return import_tool.NewImportFromS3InventoryBadRequest().
-				WithPayload(responseErrorFrom(err))
-		}
-		repo, err := ctx.Cataloger.GetRepository(a.Context(), params.Repository)
-		if err != nil {
-			return import_tool.NewImportFromS3InventoryNotFound().
-				WithPayload(responseErrorFrom(err))
-		}
-		_, err = ctx.Cataloger.GetBranchReference(ctx.ctx, params.Repository, onboard.DefaultLauncherBranchName)
-		if errors.Is(err, db.ErrNotFound) {
-			err = ctx.Cataloger.CreateBranch(ctx.ctx, params.Repository, onboard.DefaultLauncherBranchName, repo.DefaultBranch)
-			if err != nil {
-				return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-					WithPayload(responseErrorFrom(err))
-			}
-		} else if err != nil {
-			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
 		} else {
+			repo, err := ctx.Cataloger.GetRepository(a.Context(), params.Repository)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+			_, err = ctx.Cataloger.GetBranchReference(ctx.ctx, params.Repository, onboard.DefaultBranchName)
+			if errors.Is(err, db.ErrNotFound) {
+				err = ctx.Cataloger.CreateBranch(ctx.ctx, params.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
+				if err != nil {
+					return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+						WithPayload(responseErrorFrom(err))
+				}
+			} else if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+			diff, err = importer.Import(params.HTTPRequest.Context())
+			if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
 		}
-		err = importer.Import(params.HTTPRequest.Context())
-		if err != nil {
-			return import_tool.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
-				WithPayload(responseErrorFrom(err))
-		}
-		return import_tool.NewImportFromS3InventoryCreated()
+		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
+			IsDryRun:           *params.DryRun,
+			PreviousImportDate: diff.PreviousImportDate.Unix(),
+			PreviousManifest:   diff.PreviousInventoryURL,
+			RowsToAdd:          int64(len(diff.AddedOrChanged)),
+			RowsToDelete:       int64(len(diff.Deleted)),
+		})
 	})
 }

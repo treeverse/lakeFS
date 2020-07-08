@@ -1,6 +1,7 @@
 package loadtest
 
 import (
+	"github.com/treeverse/lakefs/onboard"
 	"log"
 	"net/http/httptest"
 	"os"
@@ -61,6 +62,7 @@ func TestLocalLoad(t *testing.T) {
 		authService,
 		&mockCollector{},
 		migrator,
+		*onboard.NewS3InventoryFactory(nil),
 	)
 	handler, err := server.Handler()
 	if err != nil {

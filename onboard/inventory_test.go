@@ -1,22 +1,19 @@
-package onboard
+package onboard_test
 
 import (
 	"context"
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/onboard"
 	"reflect"
 	"testing"
 )
 
-func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, file ManifestFile) ([]InventoryObject, error) {
+func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, file onboard.ManifestFile) ([]onboard.InventoryObject, error) {
 	if inventoryBucketName != "example-bucket" {
 		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
 	}
 	return rows(fileContents[file.Key]...), nil
-}
-
-func newMockInventory(s3 s3iface.S3API) *Inventory {
-	return &Inventory{s3: s3, rowReader: mockReadRows}
 }
 
 var fileContents = map[string][]string{
@@ -29,7 +26,7 @@ var fileContents = map[string][]string{
 }
 
 func TestFetch(t *testing.T) {
-	manifest := Manifest{
+	manifest := onboard.Manifest{
 		InventoryBucketArn: "arn:aws:s3:::example-bucket",
 	}
 	testdata := []struct {
@@ -68,27 +65,35 @@ func TestFetch(t *testing.T) {
 			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 		},
 	}
-	inv := newMockInventory(&mockS3Client{})
-	inv.manifest = &manifest
+
+	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
+		inv, err := onboard.NewS3InventoryFactory(&mockS3Client{
+			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
+			DestBucket:         "example-bucket",
+		}).NewInventory(manifestURL)
+		if err != nil {
+			t.Fatalf("failed to create inventory: %v", err)
+		}
+		inv.(*onboard.S3Inventory).RowReader = mockReadRows
 		manifest.Files = files(test.InventoryFiles...)
-		err := inv.Fetch(context.Background(), test.Sort)
+		err = inv.Fetch(context.Background(), test.Sort)
 		if err != nil {
 			t.Fatalf("error: %v", err)
 		}
-		if len(inv.objects) != len(test.ExpectedObjects) {
-			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(inv.objects))
+		if len(inv.Objects()) != len(test.ExpectedObjects) {
+			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(inv.Objects()))
 		}
-		if !reflect.DeepEqual(keys(inv.objects), test.ExpectedObjects) {
-			t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, keys(inv.objects))
+		if !reflect.DeepEqual(keys(inv.Objects()), test.ExpectedObjects) {
+			t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, keys(inv.Objects()))
 		}
 	}
 }
 
 func TestDiff(t *testing.T) {
 	data := []struct {
-		LeftInv             []InventoryObject
-		RightInv            []InventoryObject
+		LeftInv             []onboard.InventoryObject
+		RightInv            []onboard.InventoryObject
 		ExpectedDiffAdded   []string
 		ExpectedDiffDeleted []string
 	}{
@@ -142,7 +147,7 @@ func TestDiff(t *testing.T) {
 		},
 	}
 	for _, test := range data {
-		diff := CalcDiff(test.LeftInv, test.RightInv)
+		diff := onboard.CalcDiff(test.LeftInv, test.RightInv)
 		if !reflect.DeepEqual(keys(diff.AddedOrChanged), test.ExpectedDiffAdded) {
 			t.Fatalf("diff added object different than expected. expected: %v, got: %v", test.ExpectedDiffAdded, keys(diff.AddedOrChanged))
 		}

@@ -3,6 +3,7 @@ package config
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/onboard"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -112,7 +113,7 @@ func (c *Config) ConnectDatabase(dbKey string) db.Database {
 	return database
 }
 
-func (c *Config) BuildS3Service() s3iface.S3API {
+func (c *Config) buildS3Service() s3iface.S3API {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
@@ -134,8 +135,12 @@ func (c *Config) BuildS3Service() s3iface.S3API {
 	return s3.New(sess)
 }
 
+func (c *Config) BuildS3InventoryFactory() onboard.S3InventoryFactory {
+	return *onboard.NewS3InventoryFactory(c.buildS3Service())
+}
+
 func (c *Config) buildS3Adapter() block.Adapter {
-	svc := c.BuildS3Service()
+	svc := c.buildS3Service()
 	adapter := s3a.NewAdapter(svc, s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")))
 	log.WithFields(log.Fields{
 		"type": "s3",

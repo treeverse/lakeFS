@@ -5,7 +5,7 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/onboard"
 	"net/http"
 
 	"github.com/treeverse/lakefs/catalog"
@@ -37,15 +37,15 @@ var (
 )
 
 type Server struct {
-	cataloger   catalog.Cataloger
-	blockStore  block.Adapter
-	authService auth.Service
-	stats       stats.Collector
-	migrator    db.Migrator
-	apiServer   *restapi.Server
-	handler     *http.ServeMux
-	server      *http.Server
-	s3          s3iface.S3API
+	cataloger          catalog.Cataloger
+	blockStore         block.Adapter
+	authService        auth.Service
+	stats              stats.Collector
+	migrator           db.Migrator
+	apiServer          *restapi.Server
+	handler            *http.ServeMux
+	server             *http.Server
+	s3InventoryFactory onboard.S3InventoryFactory
 }
 
 func NewServer(
@@ -54,16 +54,16 @@ func NewServer(
 	authService auth.Service,
 	stats stats.Collector,
 	migrator db.Migrator,
-	s3 s3iface.S3API,
+	s3InventoryFactory onboard.S3InventoryFactory,
 ) *Server {
 	logging.Default().Info("initialized OpenAPI server")
 	return &Server{
-		cataloger:   cataloger,
-		blockStore:  blockStore,
-		authService: authService,
-		stats:       stats,
-		migrator:    migrator,
-		s3:          s3,
+		cataloger:          cataloger,
+		blockStore:         blockStore,
+		authService:        authService,
+		stats:              stats,
+		migrator:           migrator,
+		s3InventoryFactory: s3InventoryFactory,
 	}
 }
 
@@ -154,7 +154,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.s3).Configure(api)
+	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.s3InventoryFactory).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

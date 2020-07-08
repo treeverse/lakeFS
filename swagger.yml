@@ -1138,7 +1138,7 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repository}/import:
+  /repositories/{repository}/inventory/s3/import:
     parameters:
       - in: path
         name: repository
@@ -1154,19 +1154,21 @@ paths:
         default: false
     post:
       tags:
-        - import_tool
+        - repositories
       operationId: importFromS3Inventory
       summary: import metadata for an existing bucket in S3
       responses:
-        200:
-          description: dry run results
+        201:
+          description: import results
           schema:
             type: object
             properties:
-              rows_to_add:
+              is_dry_run:
+                type: boolean
+              added_or_changed:
                 type: integer
                 format: int64
-              rows_to_delete:
+              deleted:
                 type: integer
                 format: int64
               previous_manifest:
@@ -1174,12 +1176,6 @@ paths:
               previous_import_date:
                 type: integer
                 format: int64
-        201:
-          description: metadata imported successfully
-        400:
-          description: bad manifest URL
-          schema:
-            $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
         404:

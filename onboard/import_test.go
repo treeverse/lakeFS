@@ -1,7 +1,8 @@
-package onboard
+package onboard_test
 
 import (
 	"context"
+	"github.com/treeverse/lakefs/onboard"
 	"reflect"
 	"strconv"
 	"testing"
@@ -89,18 +90,25 @@ func TestImport(t *testing.T) {
 		if test.OverridePreviousManifestURL != "" {
 			newManifestURL = test.OverridePreviousManifestURL
 		}
-		importer := &Importer{s3: &mockS3Client{}, repository: "example-repo"}
 		catalogActionsMock := mockCatalogActions{}
 		if len(test.PreviousInventory) > 0 {
 			catalogActionsMock = mockCatalogActions{
 				previousCommitManifest: previousManifestURL,
 			}
 		}
-		importer.catalogActions = &catalogActionsMock
-		importer.inventoryCreator = getInventoryCreator(newManifestURL, previousManifestURL, test.NewInventory, test.PreviousInventory)
-		importer.inventory = &mockInventory{manifest: &Manifest{URL: newManifestURL}, rows: test.NewInventory}
-		importer.inventoryDiffer = getSimpleDiffer(t)
-		err := importer.Import(context.Background())
+		importer, err := onboard.CreateImporter(nil, &mockInventoryFactory{
+			newManifestURL:      newManifestURL,
+			previousManifestURL: previousManifestURL,
+			newInventory:        test.NewInventory,
+			previousInventory:   test.PreviousInventory,
+			sourceBucket:        "example-repo",
+		}, newManifestURL, "example-repo")
+		if err != nil {
+			t.Fatalf("failed to create importer: %v", err)
+		}
+		importer.CatalogActions = &catalogActionsMock
+		importer.InventoryDiffer = getSimpleDiffer(t)
+		_, err = importer.Import(context.Background())
 
 		if !test.ExpectedErr && err != nil {
 			t.Fatalf("unexpected error: %v", err)

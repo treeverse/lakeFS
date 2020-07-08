@@ -5,9 +5,12 @@ import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/catalog"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
 	"sort"
+	"strconv"
+	"time"
 )
 
 func CompareKeys(row1 *InventoryObject, row2 *InventoryObject) bool {
@@ -17,14 +20,17 @@ func CompareKeys(row1 *InventoryObject, row2 *InventoryObject) bool {
 	return row1.Key < row2.Key
 }
 
-type Diff struct {
-	AddedOrChanged []InventoryObject
-	Deleted        []InventoryObject
+type InventoryDiff struct {
+	DryRun               bool
+	AddedOrChanged       []InventoryObject
+	Deleted              []InventoryObject
+	PreviousInventoryURL string
+	PreviousImportDate   time.Time
 }
 
 // CalcDiff returns a diff between two sorted arrays of InventoryObject
-func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) Diff {
-	res := Diff{}
+func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) *InventoryDiff {
+	res := InventoryDiff{}
 	var leftIdx, rightIdx int
 	for leftIdx < len(leftInv) || rightIdx < len(rightInv) {
 		var leftRow, rightRow *InventoryObject
@@ -48,21 +54,43 @@ func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) Diff {
 			rightIdx++
 		}
 	}
-	return res
+	return &res
 }
 
 // IInventory represents all objects referenced by a single manifest
-type IInventory interface {
+type Inventory interface {
 	Fetch(ctx context.Context, sorted bool) error
 	Objects() []InventoryObject
-	Manifest() *Manifest
+	SourceName() string
+	CreateCommitMetadata(diff InventoryDiff) catalog.Metadata
 }
 
-type Inventory struct {
-	s3        s3iface.S3API
-	rowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
-	objects   []InventoryObject
-	manifest  *Manifest
+type InventoryFactory interface {
+	NewInventory(inventoryURL string) (Inventory, error)
+}
+
+type S3InventoryFactory struct {
+	s3 s3iface.S3API
+}
+
+func (s *S3InventoryFactory) NewInventory(manifestURL string) (Inventory, error) {
+	manifest, err := LoadManifest(manifestURL, s.s3)
+	if err != nil {
+		return nil, err
+	}
+	return &S3Inventory{S3: s.s3, manifest: manifest, RowReader: readRows}, nil
+}
+
+func NewS3InventoryFactory(s3 s3iface.S3API) *S3InventoryFactory {
+	return &S3InventoryFactory{s3: s3}
+}
+
+type S3Inventory struct {
+	S3          s3iface.S3API
+	RowReader   func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
+	ManifestURL string
+	objects     []InventoryObject
+	manifest    *Manifest
 }
 
 type InventoryObject struct {
@@ -78,10 +106,6 @@ type InventoryObject struct {
 
 func (s *InventoryObject) String() string {
 	return s.Key
-}
-
-func NewInventory(s3 s3iface.S3API, manifest *Manifest) IInventory {
-	return &Inventory{s3: s3, manifest: manifest, rowReader: readRows}
 }
 
 func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error) {
@@ -105,7 +129,7 @@ func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file Man
 }
 
 // FetchInventory reads the parquet files specified in the given manifest, and unifies them to an array of InventoryObject
-func (i *Inventory) Fetch(ctx context.Context, sorted bool) error {
+func (i *S3Inventory) Fetch(ctx context.Context, sorted bool) error {
 	i.objects = nil
 	inventoryBucketArn, err := arn.Parse(i.manifest.InventoryBucketArn)
 	if err != nil {
@@ -113,7 +137,7 @@ func (i *Inventory) Fetch(ctx context.Context, sorted bool) error {
 	}
 	invBucket := inventoryBucketArn.Resource
 	for _, file := range i.manifest.Files {
-		currentRows, err := i.rowReader(ctx, i.s3, invBucket, file)
+		currentRows, err := i.RowReader(ctx, i.S3, invBucket, file)
 		if err != nil {
 			return err
 		}
@@ -131,10 +155,23 @@ func (i *Inventory) Fetch(ctx context.Context, sorted bool) error {
 	return nil
 }
 
-func (i *Inventory) Objects() []InventoryObject {
+func (i *S3Inventory) Objects() []InventoryObject {
 	return i.objects
 }
 
-func (i *Inventory) Manifest() *Manifest {
-	return i.manifest
+func (i *S3Inventory) SourceName() string {
+	return i.manifest.SourceBucket
+}
+
+func (i *S3Inventory) CreateCommitMetadata(diff InventoryDiff) catalog.Metadata {
+	return catalog.Metadata{
+		"manifest_url":             i.ManifestURL,
+		"source_bucket":            i.manifest.SourceBucket,
+		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
+		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),
+	}
+}
+
+func ExtractInventoryURL(metadata catalog.Metadata) string {
+	return metadata["manifest_url"]
 }

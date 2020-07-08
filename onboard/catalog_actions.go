@@ -11,24 +11,24 @@ import (
 
 const DefaultBatchSize = 500
 
-type ICatalogActions interface {
-	createAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error)
-	getPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
-	commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
+type RepoActions interface {
+	CreateAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error)
+	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
+	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
 }
 
-type CatalogActions struct {
+type CatalogRepoActions struct {
 	cataloger  catalog.Cataloger
-	batchSize  int
+	BatchSize  int
 	repository string
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string) ICatalogActions {
-	return &CatalogActions{cataloger: cataloger, batchSize: DefaultBatchSize, repository: repository}
+func NewCatalogActions(cataloger catalog.Cataloger, repository string) RepoActions {
+	return &CatalogRepoActions{cataloger: cataloger, BatchSize: DefaultBatchSize, repository: repository}
 }
 
-func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error) {
-	currentBatch := make([]catalog.Entry, 0, c.batchSize)
+func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error) {
+	currentBatch := make([]catalog.Entry, 0, c.BatchSize)
 	for _, row := range objects {
 		if row.Error != nil {
 			return fmt.Errorf("failed to read row from inventory: %v", row.Error)
@@ -41,22 +41,22 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 			Checksum:        row.ETag,
 		}
 		currentBatch = append(currentBatch, entry)
-		if len(currentBatch) >= c.batchSize {
-			err = c.cataloger.CreateEntries(ctx, c.repository, DefaultLauncherBranchName, currentBatch)
+		if len(currentBatch) >= c.BatchSize {
+			err = c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 			if err != nil {
 				return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
 			}
-			currentBatch = make([]catalog.Entry, 0, c.batchSize)
+			currentBatch = make([]catalog.Entry, 0, c.BatchSize)
 		}
 	}
 	if len(currentBatch) > 0 {
-		err = c.cataloger.CreateEntries(ctx, c.repository, DefaultLauncherBranchName, currentBatch)
+		err = c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 		if err != nil {
 			return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
 		}
 	}
 	for _, row := range objectsToDelete {
-		err = c.cataloger.DeleteEntry(ctx, c.repository, DefaultLauncherBranchName, row.Key)
+		err = c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, row.Key)
 		if err != nil {
 			return fmt.Errorf("failed to delete entry %s: %v", row.Key, err)
 		}
@@ -64,8 +64,8 @@ func (c *CatalogActions) createAndDeleteObjects(ctx context.Context, objects []I
 	return nil
 }
 
-func (c *CatalogActions) getPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
-	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, DefaultLauncherBranchName)
+func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
+	branchRef, err := c.cataloger.GetBranchReference(ctx, c.repository, DefaultBranchName)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		return nil, err
 	}
@@ -78,8 +78,8 @@ func (c *CatalogActions) getPreviousCommit(ctx context.Context) (commit *catalog
 	return commit, nil
 }
 
-func (c *CatalogActions) commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
-	_, err := c.cataloger.Commit(ctx, c.repository, DefaultLauncherBranchName,
+func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
+	_, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
 		"lakeFS", // TODO get actual user
 		metadata)
