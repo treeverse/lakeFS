@@ -14,23 +14,47 @@ type listResultStruct struct {
 	Entry *Entry
 }
 
-func (c *cataloger) ListEntriesByLevel(ctx context.Context, prefix, delimiter, repository, branchName string, maxLines int, requestedCommit CommitID) ([]listResultStruct, error) {
+/*
+unc (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
-		{Name: "branchName", IsValid: ValidateBranchName(branchName)},
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
 	}); err != nil {
-		return nil, err
+		return nil, false, err
 	}
+
+	ref, err := ParseRef(reference)
+	if err != nil {
+		return nil, false, err
+	}
+
+*/
+
+func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int, requestedCommit CommitID) ([]listResultStruct, bool, error) {
+	if err := Validate(ValidateFields{
+		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
+		{Name: "reference", IsValid: ValidateReference(reference)},
+	}); err != nil {
+		return nil, false, err
+	}
+	ref, err := ParseRef(reference)
+	if err != nil {
+		return nil, false, err
+	}
+	branchName := ref.Branch
+	commitID := ref.CommitID
 	markers, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := getBranchID(tx, repository, branchName, LockTypeNone)
 		if err != nil {
 			return nil, fmt.Errorf("ListEntriesByLevel - get branch ID failed: %w", err)
 		}
-		lineage, err := getLineage(tx, branchID, UncommittedID)
+		lineage, err := getLineage(tx, branchID, commitID)
 		if err != nil {
 			return nil, fmt.Errorf(" ListEntriesByLevel -lineage failed: %w", err)
 		}
-		prefixQuery := sqListByPrefix(prefix, delimiter, branchID, maxLines, requestedCommit, lineage)
-
+		prefixQuery := sqListByPrefix(prefix, delimiter, branchID, limit, requestedCommit, lineage)
+		debugSQL := sq.DebugSqlizer(prefixQuery)
+		_ = debugSQL
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf(" ListEntriesByLevel - dirlist ToSql failed : %w", err)
@@ -104,13 +128,5 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, prefix, delimiter, r
 		}
 		return markerList, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
-	return markers.([]listResultStruct), err
+	return markers.([]listResultStruct), false, err
 }
-
-//func trimLastChar(s string) string {
-//	r, size := utf8.DecodeLastRuneInString(s)
-//	if r == utf8.RuneError && (size == 0 || size == 1) {
-//		size = 0
-//	}
-//	return s[:len(s)-size]
-//}

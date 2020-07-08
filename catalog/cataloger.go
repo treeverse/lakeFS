@@ -34,7 +34,7 @@ type EntryCataloger interface {
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-	ListEntriesByLevel(ctx context.Context, prefix, delimiter, repository, branchName string, maxLines int, requestedCommit CommitID) ([]listResultStruct, error)
+	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int, requestedCommit CommitID) ([]listResultStruct, bool, error)
 }
 
 type MultipartUpdateCataloger interface {
