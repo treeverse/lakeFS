@@ -30,7 +30,8 @@ unc (c *cataloger) ListEntries(ctx context.Context, repository, reference string
 
 */
 
-func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int, requestedCommit CommitID) ([]listResultStruct, bool, error) {
+func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]listResultStruct, bool, error) {
+	var moreToRead bool
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
@@ -52,7 +53,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf(" ListEntriesByLevel -lineage failed: %w", err)
 		}
-		prefixQuery := sqListByPrefix(prefix, delimiter, branchID, limit, requestedCommit, lineage)
+		prefixQuery := sqListByPrefix(prefix, after, delimiter, branchID, limit, commitID, lineage)
 		debugSQL := sq.DebugSqlizer(prefixQuery)
 		_ = debugSQL
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
@@ -63,6 +64,10 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		err = tx.Select(&markerList, sql, args...)
 		if err != nil {
 			return nil, fmt.Errorf(" ListEntriesByLevel - dirList query failed : %w", err)
+		}
+		if len(markerList) > limit { // remove last entry that indicates there are more
+			markerList = markerList[:limit]
+			moreToRead = true
 		}
 		type entryRun struct {
 			startRunIndex, runLength   int
@@ -105,7 +110,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 			run.endEntryRun = PreviousInRun
 			entryRuns = append(entryRuns, *run)
 		}
-		entriesReader := sqEntriesLineageV(branchID, requestedCommit, lineage)
+		entriesReader := sqEntriesLineageV(branchID, commitID, lineage)
 		for _, r := range entryRuns {
 			entriesList := make([]Entry, 0)
 			rangeReader := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
@@ -128,5 +133,5 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		}
 		return markerList, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
-	return markers.([]listResultStruct), false, err
+	return markers.([]listResultStruct), moreToRead, err
 }

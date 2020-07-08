@@ -24,7 +24,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		fileChecksum := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := int64(n) * 10
-		if n <= 6 {
+		if n >= 6 {
 			filePath += "/xx" + strconv.Itoa(n)
 		}
 		testutil.MustDo(t, "create test entry",
@@ -127,7 +127,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, tt.args.limit)
+			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, "/", tt.args.after, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -135,10 +135,10 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			var gotEntries []Entry
 			for _, ent := range got {
 				gotEntries = append(gotEntries, Entry{
-					Path:            ent.Path,
-					PhysicalAddress: ent.PhysicalAddress,
-					Size:            ent.Size,
-					Checksum:        ent.Checksum,
+					Path:            ent.Entry.Path,
+					PhysicalAddress: ent.Entry.PhysicalAddress,
+					Size:            ent.Entry.Size,
+					Checksum:        ent.Entry.Checksum,
 				})
 			}
 
