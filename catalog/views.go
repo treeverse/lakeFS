@@ -198,7 +198,10 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 	return minSelect
 }
 
-func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+	if len(after) > 0 {
+		after += DirectoryTeminationChar
+	}
 	prefixLen := len(prefix) + 1
 	endOfPrefixRange := prefix + DirectoryTeminationChar
 	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
@@ -210,7 +213,7 @@ func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requ
 	cteStart := sq.Select("1 as num").Column(sq.Alias(getNextMarkerV, "marker")).
 		FromSelect(sq.Select("min(path) as path").
 			FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e").
-			Where(" e.path > ? and e.path < ? ", prefix, endOfPrefixRange), "e")
+			Where(" e.path > ? and e.path < ? ", prefix+after, endOfPrefixRange), "e")
 	nextMarkerSelect := sq.Select().FromSelect(
 		sq.Select("min(path) as path").FromSelect(
 			sq.Select("path").FromSelect(
@@ -218,18 +221,6 @@ func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requ
 				Where(" e.path > ?  || d.marker and e.path < ? ", prefix, endOfPrefixRange), "e"), "e").
 		Column(getNextMarkerV)
 
-	//dirListV := sq.ConcatExpr(`WITH RECURSIVE dir_list AS (`,
-	//	sq.Select("1 as num", "marker").
-	//		FromSelect(cteStart, "t"),
-	//	"\nUNION ALL\n",
-	//	sq.Select("d.num + 1 as num").
-	//		Column(sq.ConcatExpr("(", nextMarkerSelect, ")")).
-	//		From("dir_list as d").
-	//		Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
-	//	")",
-	//	"\n SELECT *",
-	//	"\nFROM dir_list d",
-	//	"\nWHERE d.marker IS NOT NULL")
 	dirListV := sq.Select("1 as num", "marker").
 		Prefix(`WITH RECURSIVE dir_list AS (`).
 		FromSelect(cteStart, "t").
@@ -239,7 +230,7 @@ func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requ
 					Column( // calculate the next entry
 						sq.ConcatExpr("(", nextMarkerSelect, ")")).
 					From("dir_list as d").
-					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
+					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines+1),
 				")",
 				"\n SELECT marker as path",
 				"\nFROM dir_list d",
