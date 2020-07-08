@@ -6,7 +6,6 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -17,10 +16,8 @@ var diagnoseCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		logger := logging.Default().WithContext(ctx)
-
 		adapter := cfg.BuildBlockAdapter()
-
-		dbPool := cfg.ConnectDatabase(config.DBKeyCatalog)
+		dbPool := cfg.BuildDatabaseConnection()
 		cataloger := catalog.NewCataloger(dbPool)
 
 		numFailures := 0

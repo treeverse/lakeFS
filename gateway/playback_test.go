@@ -36,6 +36,9 @@ const (
 )
 
 func TestGatewayRecording(t *testing.T) {
+	if !*integrationTest {
+		t.Skip("Not running integration tests")
+	}
 	testData := []string{
 		"s3://lakefs-recordings/presto.zip",
 		"s3://lakefs-recordings/aws.zip",
@@ -89,7 +92,15 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(class, action string) {
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(class, action string) {
 
 }
 
@@ -101,8 +112,8 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		T:          t,
 	}
 
-	cdb, _ := testutil.GetDB(t, databaseUri, "lakefs_catalog")
-	cataloger := catalog.NewCataloger(cdb)
+	conn, _ := testutil.GetDB(t, databaseUri)
+	cataloger := catalog.NewCataloger(conn)
 
 	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
 

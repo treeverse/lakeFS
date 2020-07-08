@@ -1,3 +1,12 @@
+DROP TABLE IF EXISTS auth_credentials;
+DROP TABLE IF EXISTS auth_group_policies;
+DROP TABLE IF EXISTS auth_user_policies;
+DROP TABLE IF EXISTS auth_user_groups;
+DROP TABLE IF EXISTS auth_policies;
+DROP TABLE IF EXISTS auth_groups;
+DROP TABLE IF EXISTS auth_users;
+DROP TABLE IF EXISTS auth_account_metadata;
+
 SET CONSTRAINTS repositories_branches_id_fkey DEFERRED;
 DROP TABLE IF EXISTS repositories;
 DROP TABLE IF EXISTS object_dedup;

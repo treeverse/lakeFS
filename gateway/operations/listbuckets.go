@@ -14,7 +14,7 @@ type ListBuckets struct{}
 func (controller *ListBuckets) RequiredPermissions(_ *http.Request) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
-			Action:   permissions.ReadRepositoryAction,
+			Action:   permissions.ListRepositoriesAction,
 			Resource: "*",
 		},
 	}, nil

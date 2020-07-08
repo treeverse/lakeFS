@@ -8,17 +8,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog"
-
-	"github.com/treeverse/lakefs/config"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -42,28 +40,34 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
-	cdb, cdbURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog)
+	conn, _ := testutil.GetDB(t, databaseUri)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	cataloger := catalog.NewCataloger(cdb)
+	cataloger := catalog.NewCataloger(conn)
 
-	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaCatalog, cdbURI).
-		AddDB(config.SchemaAuth, adbURI)
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
+	migrator := db.NewDatabaseMigrator(databaseUri)
 	server := api.NewServer(
 		cataloger,
 		blockAdapter,
 		authService,
 		&mockCollector{},
 		migrator,
+		logging.Default(),
 	)
 	handler, err := server.Handler()
 	if err != nil {
@@ -76,7 +80,7 @@ func TestLocalLoad(t *testing.T) {
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
 	}
-	credentials, err := api.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 
 	testConfig := Config{

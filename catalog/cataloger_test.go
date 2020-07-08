@@ -22,8 +22,8 @@ type testEntryInfo struct {
 
 func testCataloger(t testing.TB, options ...CatalogerOption) Cataloger {
 	t.Helper()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	return NewCataloger(cdb, options...)
+	conn, _ := testutil.GetDB(t, databaseURI)
+	return NewCataloger(conn, options...)
 }
 
 func testCatalogerUniqueID() string {

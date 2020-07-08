@@ -8,12 +8,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -92,6 +92,12 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
 		return
 	}
+
+	o.AddLogFields(logging.Fields{
+		"part_number": partNumber,
+		"upload_id":   uploadID,
+	})
+
 	// handle the upload itself
 	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {

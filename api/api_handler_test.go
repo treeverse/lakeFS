@@ -966,6 +966,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 	})
 
 	t.Run("upload objects dedup", func(t *testing.T) {
+		t.Skip("api implements async dedup - consider removing the test code")
 		const content = "They do not love that do not show their love"
 		resp1, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
 			Branch:     "master",

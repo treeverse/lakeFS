@@ -34,7 +34,6 @@ type Service interface {
 	DeleteUser(userDisplayName string) error
 	GetUserById(userId int) (*model.User, error)
 	GetUser(userDisplayName string) (*model.User, error)
-	GetFirstUser() (*model.User, error)
 	ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
 	// groups
@@ -75,11 +74,16 @@ type Service interface {
 
 	// authorize user for an action
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
+
+	// account metadata management
+	SetAccountMetadataKey(key, value string) error
+	GetAccountMetadataKey(key string) (string, error)
+	GetAccountMetadata() (map[string]string, error)
 }
 
 func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
 	user := &model.User{}
-	err := tx.Get(user, `SELECT * FROM users WHERE display_name = $1`, userDisplayName)
+	err := tx.Get(user, `SELECT * FROM auth_users WHERE display_name = $1`, userDisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -88,7 +92,7 @@ func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
 
 func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 	group := &model.Group{}
-	err := tx.Get(group, `SELECT * FROM groups WHERE display_name = $1`, groupDisplayName)
+	err := tx.Get(group, `SELECT * FROM auth_groups WHERE display_name = $1`, groupDisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -97,7 +101,7 @@ func getGroup(tx db.Tx, groupDisplayName string) (*model.Group, error) {
 
 func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
 	policy := &model.Policy{}
-	err := tx.Get(policy, `SELECT * FROM policies WHERE display_name = $1`, policyDisplayName)
+	err := tx.Get(policy, `SELECT * FROM auth_policies WHERE display_name = $1`, policyDisplayName)
 	if err != nil {
 		return nil, err
 	}
@@ -158,12 +162,16 @@ func (s *DBAuthService) SecretStore() crypt.SecretStore {
 	return s.secretStore
 }
 
+func (s *DBAuthService) DB() db.Database {
+	return s.db
+}
+
 func (s *DBAuthService) CreateUser(user *model.User) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if err := model.ValidateAuthEntityId(user.DisplayName); err != nil {
 			return nil, err
 		}
-		err := tx.Get(user, `INSERT INTO users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.DisplayName, user.CreatedAt)
+		err := tx.Get(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.DisplayName, user.CreatedAt)
 		return nil, err
 	})
 	return err
@@ -171,7 +179,7 @@ func (s *DBAuthService) CreateUser(user *model.User) error {
 
 func (s *DBAuthService) DeleteUser(userDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `DELETE FROM users WHERE display_name = $1`, userDisplayName)
+		return nil, deleteOrNotFound(tx, `DELETE FROM auth_users WHERE display_name = $1`, userDisplayName)
 	})
 	return err
 }
@@ -189,22 +197,7 @@ func (s *DBAuthService) GetUser(userDisplayName string) (*model.User, error) {
 func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
 	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM users WHERE id = $1`, userId)
-		if err != nil {
-			return nil, err
-		}
-		return user, nil
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-	return user.(*model.User), nil
-}
-
-func (s *DBAuthService) GetFirstUser() (*model.User, error) {
-	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM users ORDER BY id LIMIT 1`)
+		err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userId)
 		if err != nil {
 			return nil, err
 		}
@@ -223,7 +216,7 @@ func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		users := make([]*model.User, 0)
-		err := tx.Select(&users, `SELECT * FROM users WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+		err := tx.Select(&users, `SELECT * FROM auth_users WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
 			params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
@@ -257,12 +250,12 @@ func (s *DBAuthService) ListUserCredentials(userDisplayName string, params *mode
 		}
 		credentials := make([]*model.Credential, 0)
 		err := tx.Select(&credentials, `
-			SELECT credentials.* FROM credentials
-				INNER JOIN users ON (credentials.user_id = users.id)
+			SELECT auth_credentials.* FROM auth_credentials
+				INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
 			WHERE
-				users.display_name = $1
-				AND credentials.access_key_id > $2
-			ORDER BY credentials.access_key_id
+				auth_users.display_name = $1
+				AND auth_credentials.access_key_id > $2
+			ORDER BY auth_credentials.access_key_id
 			LIMIT $3`,
 			userDisplayName, params.After, params.Amount+1)
 		if err != nil {
@@ -295,10 +288,10 @@ func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, userDisplayName st
 			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
 		}
 		_, err := tx.Exec(`
-			INSERT INTO user_policies (user_id, policy_id)
+			INSERT INTO auth_user_policies (user_id, policy_id)
 			VALUES (
-				(SELECT id FROM users WHERE display_name = $1),
-				(SELECT id FROM policies WHERE display_name = $2)
+				(SELECT id FROM auth_users WHERE display_name = $1),
+				(SELECT id FROM auth_policies WHERE display_name = $2)
 			)`, userDisplayName, policyDisplayName)
 		if db.IsUniqueViolation(err) {
 			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
@@ -317,11 +310,11 @@ func (s *DBAuthService) DetachPolicyFromUser(policyDisplayName, userDisplayName 
 			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
 		}
 		return nil, deleteOrNotFound(tx, `
-			DELETE FROM user_policies USING users, policies
-			WHERE user_policies.user_id = users.id
-				AND user_policies.policy_id = policies.id
-				AND users.display_name = $1
-				AND policies.display_name = $2`,
+			DELETE FROM auth_user_policies USING auth_users, auth_policies
+			WHERE auth_user_policies.user_id = auth_users.id
+				AND auth_user_policies.policy_id = auth_policies.id
+				AND auth_users.display_name = $1
+				AND auth_policies.display_name = $2`,
 			userDisplayName, policyDisplayName)
 	})
 	return err
@@ -338,13 +331,13 @@ func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.P
 		}
 		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
-			SELECT policies.* FROM policies
-				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
-				INNER JOIN users ON (user_policies.user_id = users.id)
+			SELECT auth_policies.* FROM auth_policies
+				INNER JOIN auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)
+				INNER JOIN auth_users ON (auth_user_policies.user_id = auth_users.id)
 			WHERE
-				users.display_name = $1
-				AND policies.display_name > $2
-			ORDER BY policies.display_name
+				auth_users.display_name = $1
+				AND auth_policies.display_name > $2
+			ORDER BY auth_policies.display_name
 			LIMIT $3`,
 			userDisplayName, params.After, params.Amount+1)
 		if err != nil {
@@ -384,20 +377,20 @@ func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *mo
 		const resolvePoliciesStmt = `
 		SELECT p.id, p.created_at, p.display_name, p.statement
 		FROM (
-			SELECT policies.id, policies.created_at, policies.display_name, policies.statement
-			FROM policies
-				INNER JOIN user_policies ON (policies.id = user_policies.policy_id)
-				INNER JOIN users ON (users.id = user_policies.user_id)
-			WHERE users.display_name = $1
+			SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement
+			FROM auth_policies
+				INNER JOIN auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)
+				INNER JOIN auth_users ON (auth_users.id = auth_user_policies.user_id)
+			WHERE auth_users.display_name = $1
 			UNION
-			SELECT policies.id, policies.created_at, policies.display_name, policies.statement
-			FROM policies
-				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
-				INNER JOIN groups ON (groups.id = group_policies.group_id)
-				INNER JOIN user_groups ON (user_groups.group_id = groups.id) 
-				INNER JOIN users ON (users.id = user_groups.user_id)
+			SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement
+			FROM auth_policies
+				INNER JOIN auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)
+				INNER JOIN auth_groups ON (auth_groups.id = auth_group_policies.group_id)
+				INNER JOIN auth_user_groups ON (auth_user_groups.group_id = auth_groups.id) 
+				INNER JOIN auth_users ON (auth_users.id = auth_user_groups.user_id)
 			WHERE
-				users.display_name = $1
+				auth_users.display_name = $1
 		) p `
 
 		const resolvePoliciesPaginated = resolvePoliciesStmt + `WHERE p.display_name > $2 ORDER BY p.display_name LIMIT $3`
@@ -442,13 +435,13 @@ func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model
 		}
 		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
-			SELECT policies.* FROM policies
-				INNER JOIN group_policies ON (policies.id = group_policies.policy_id)
-				INNER JOIN groups ON (group_policies.group_id = groups.id)
+			SELECT auth_policies.* FROM auth_policies
+				INNER JOIN auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)
+				INNER JOIN auth_groups ON (auth_group_policies.group_id = auth_groups.id)
 			WHERE
-				groups.display_name = $1
-				AND policies.display_name > $2
-			ORDER BY policies.display_name
+				auth_groups.display_name = $1
+				AND auth_policies.display_name > $2
+			ORDER BY auth_policies.display_name
 			LIMIT $3`,
 			groupDisplayName, params.After, params.Amount+1)
 		if err != nil {
@@ -478,7 +471,7 @@ func (s *DBAuthService) CreateGroup(group *model.Group) error {
 		if err := model.ValidateAuthEntityId(group.DisplayName); err != nil {
 			return nil, err
 		}
-		return nil, tx.Get(group, `INSERT INTO groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
+		return nil, tx.Get(group, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
 			group.DisplayName, group.CreatedAt)
 	})
 	return err
@@ -486,7 +479,7 @@ func (s *DBAuthService) CreateGroup(group *model.Group) error {
 
 func (s *DBAuthService) DeleteGroup(groupDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `DELETE FROM groups WHERE display_name = $1`, groupDisplayName)
+		return nil, deleteOrNotFound(tx, `DELETE FROM auth_groups WHERE display_name = $1`, groupDisplayName)
 	})
 	return err
 }
@@ -508,7 +501,7 @@ func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Gro
 	}
 	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		groups := make([]*model.Group, 0)
-		err := tx.Select(&groups, `SELECT * FROM groups WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
+		err := tx.Select(&groups, `SELECT * FROM auth_groups WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
 			params.After, params.Amount+1)
 		if err != nil {
 			return nil, err
@@ -540,10 +533,10 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
 		}
 		_, err := tx.Exec(`
-			INSERT INTO user_groups (user_id, group_id)
+			INSERT INTO auth_user_groups (user_id, group_id)
 			VALUES (
-				(SELECT id FROM users WHERE display_name = $1),
-				(SELECT id FROM groups WHERE display_name = $2)
+				(SELECT id FROM auth_users WHERE display_name = $1),
+				(SELECT id FROM auth_groups WHERE display_name = $2)
 			)`, userDisplayName, groupDisplayName)
 		if db.IsUniqueViolation(err) {
 			return nil, fmt.Errorf("group membership: %w", db.ErrAlreadyExists)
@@ -563,11 +556,11 @@ func (s *DBAuthService) RemoveUserFromGroup(userDisplayName, groupDisplayName st
 			return nil, fmt.Errorf("%s: %w", groupDisplayName, err)
 		}
 		return nil, deleteOrNotFound(tx, `
-			DELETE FROM user_groups USING users, groups
-			WHERE user_groups.user_id = users.id
-				AND user_groups.group_id = groups.id
-				AND users.display_name = $1
-				AND groups.display_name = $2`,
+			DELETE FROM auth_user_groups USING auth_users, auth_groups
+			WHERE auth_user_groups.user_id = auth_users.id
+				AND auth_user_groups.group_id = auth_groups.id
+				AND auth_users.display_name = $1
+				AND auth_groups.display_name = $2`,
 			userDisplayName, groupDisplayName)
 	})
 	return err
@@ -584,13 +577,13 @@ func (s *DBAuthService) ListUserGroups(userDisplayName string, params *model.Pag
 		}
 		groups := make([]*model.Group, 0)
 		err := tx.Select(&groups, `
-			SELECT groups.* FROM groups
-				INNER JOIN user_groups ON (groups.id = user_groups.group_id)
-				INNER JOIN users ON (user_groups.user_id = users.id)
+			SELECT auth_groups.* FROM auth_groups
+				INNER JOIN auth_user_groups ON (auth_groups.id = auth_user_groups.group_id)
+				INNER JOIN auth_users ON (auth_user_groups.user_id = auth_users.id)
 			WHERE
-				users.display_name = $1
-				AND groups.display_name > $2
-			ORDER BY groups.display_name
+				auth_users.display_name = $1
+				AND auth_groups.display_name > $2
+			ORDER BY auth_groups.display_name
 			LIMIT $3`,
 			userDisplayName, params.After, params.Amount+1)
 		if err != nil {
@@ -625,13 +618,13 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 		}
 		users := make([]*model.User, 0)
 		err := tx.Select(&users, `
-			SELECT users.* FROM users
-				INNER JOIN user_groups ON (users.id = user_groups.user_id)
-				INNER JOIN groups ON (user_groups.group_id = groups.id)
+			SELECT auth_users.* FROM auth_users
+				INNER JOIN auth_user_groups ON (auth_users.id = auth_user_groups.user_id)
+				INNER JOIN auth_groups ON (auth_user_groups.group_id = auth_groups.id)
 			WHERE
-				groups.display_name = $1
-				AND users.display_name > $2
-			ORDER BY groups.display_name
+				auth_groups.display_name = $1
+				AND auth_users.display_name > $2
+			ORDER BY auth_groups.display_name
 			LIMIT $3`,
 			groupDisplayName, params.After, params.Amount+1)
 		if err != nil {
@@ -675,7 +668,7 @@ func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 		}
 
 		return nil, tx.Get(policy, `
-			INSERT INTO policies (display_name, created_at, statement)
+			INSERT INTO auth_policies (display_name, created_at, statement)
 			VALUES ($1, $2, $3)
 			ON CONFLICT (display_name) DO UPDATE SET statement = $3
 			RETURNING id`,
@@ -696,7 +689,7 @@ func (s *DBAuthService) GetPolicy(policyDisplayName string) (*model.Policy, erro
 
 func (s *DBAuthService) DeletePolicy(policyDisplayName string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return nil, deleteOrNotFound(tx, `DELETE FROM policies WHERE display_name = $1`, policyDisplayName)
+		return nil, deleteOrNotFound(tx, `DELETE FROM auth_policies WHERE display_name = $1`, policyDisplayName)
 	})
 	return err
 }
@@ -710,7 +703,7 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 		policies := make([]*model.Policy, 0)
 		err := tx.Select(&policies, `
 			SELECT *
-			FROM policies
+			FROM auth_policies
 			WHERE display_name > $1
 			ORDER BY display_name
 			LIMIT $2`,
@@ -758,7 +751,7 @@ func (s *DBAuthService) CreateCredentials(userDisplayName string) (*model.Creden
 			UserId:                        user.Id,
 		}
 		_, err = tx.Exec(`
-			INSERT INTO credentials (access_key_id, access_secret_key, issued_date, user_id)
+			INSERT INTO auth_credentials (access_key_id, access_secret_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
 			c.AccessKeyId,
 			encryptedKey,
@@ -776,10 +769,10 @@ func (s *DBAuthService) CreateCredentials(userDisplayName string) (*model.Creden
 func (s *DBAuthService) DeleteCredentials(userDisplayName, accessKeyId string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return nil, deleteOrNotFound(tx, `
-			DELETE FROM credentials USING users
-			WHERE credentials.user_id = users.id
-				AND users.display_name = $1
-				AND credentials.access_key_id = $2`,
+			DELETE FROM auth_credentials USING auth_users
+			WHERE auth_credentials.user_id = auth_users.id
+				AND auth_users.display_name = $1
+				AND auth_credentials.access_key_id = $2`,
 			userDisplayName, accessKeyId)
 	})
 	return err
@@ -794,10 +787,10 @@ func (s *DBAuthService) AttachPolicyToGroup(policyDisplayName, groupDisplayName 
 			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
 		}
 		_, err := tx.Exec(`
-			INSERT INTO group_policies (group_id, policy_id)
+			INSERT INTO auth_group_policies (group_id, policy_id)
 			VALUES (
-				(SELECT id FROM groups WHERE display_name = $1),
-				(SELECT id FROM policies WHERE display_name = $2)
+				(SELECT id FROM auth_groups WHERE display_name = $1),
+				(SELECT id FROM auth_policies WHERE display_name = $2)
 			)`, groupDisplayName, policyDisplayName)
 		if db.IsUniqueViolation(err) {
 			return nil, fmt.Errorf("policy attachment: %w", db.ErrAlreadyExists)
@@ -816,11 +809,11 @@ func (s *DBAuthService) DetachPolicyFromGroup(policyDisplayName, groupDisplayNam
 			return nil, fmt.Errorf("%s: %w", policyDisplayName, err)
 		}
 		return nil, deleteOrNotFound(tx, `
-			DELETE FROM group_policies USING groups, policies
-			WHERE group_policies.group_id = groups.id
-				AND group_policies.policy_id = policies.id
-				AND groups.display_name = $1
-				AND policies.display_name = $2`,
+			DELETE FROM auth_group_policies USING auth_groups, auth_policies
+			WHERE auth_group_policies.group_id = auth_groups.id
+				AND auth_group_policies.policy_id = auth_policies.id
+				AND auth_groups.display_name = $1
+				AND auth_policies.display_name = $2`,
 			groupDisplayName, policyDisplayName)
 	})
 	return err
@@ -833,11 +826,11 @@ func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId strin
 		}
 		credentials := &model.Credential{}
 		err := tx.Get(credentials, `
-			SELECT credentials.*
-			FROM credentials
-			INNER JOIN users ON (credentials.user_id = users.id)
-			WHERE credentials.access_key_id = $1
-				AND users.display_name = $2`, accessKeyId, userDisplayName)
+			SELECT auth_credentials.*
+			FROM auth_credentials
+			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
+			WHERE auth_credentials.access_key_id = $1
+				AND auth_users.display_name = $2`, accessKeyId, userDisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -853,7 +846,7 @@ func (s *DBAuthService) GetCredentials(accessKeyId string) (*model.Credential, e
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		credentials := &model.Credential{}
 		err := tx.Get(credentials, `
-			SELECT * FROM credentials WHERE credentials.access_key_id = $1`, accessKeyId)
+			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyId)
 		if err != nil {
 			return nil, err
 		}
@@ -879,6 +872,7 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 		After:  "", // all
 		Amount: -1, // all
 	})
+
 	if err != nil {
 		return nil, err
 	}
@@ -918,4 +912,49 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 
 	// we're allowed!
 	return &AuthorizationResponse{Allowed: true}, nil
+}
+
+func (s *DBAuthService) SetAccountMetadataKey(key, value string) error {
+	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return tx.Exec(`
+			INSERT INTO auth_installation_metadata (key_name, key_value)
+			VALUES ($1, $2)
+			ON CONFLICT (key_name) DO UPDATE set key_value = $2`,
+			key, value)
+	})
+	return err
+}
+
+func (s *DBAuthService) GetAccountMetadataKey(key string) (string, error) {
+	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var value string
+		err := tx.Get(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`, key)
+		return value, err
+	}, db.ReadOnly())
+	if err != nil {
+		return "", err
+	}
+	return val.(string), nil
+}
+
+func (s *DBAuthService) GetAccountMetadata() (map[string]string, error) {
+	val, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+		var values []struct {
+			Key   string `db:"key_name"`
+			Value string `db:"key_value"`
+		}
+		err := tx.Select(&values, `SELECT key_name, key_value FROM auth_installation_metadata`)
+		if err != nil {
+			return nil, err
+		}
+		metadata := make(map[string]string)
+		for _, v := range values {
+			metadata[v.Key] = v.Value
+		}
+		return metadata, nil
+	}, db.ReadOnly())
+	if err != nil {
+		return nil, err
+	}
+	return val.(map[string]string), nil
 }
