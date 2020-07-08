@@ -14,8 +14,9 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -39,7 +40,15 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
@@ -48,16 +57,17 @@ func TestLocalLoad(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseUri)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(conn)
+	cataloger := catalog.NewCataloger(conn)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
 	migrator := db.NewDatabaseMigrator(databaseUri)
 	server := api.NewServer(
-		meta,
+		cataloger,
 		blockAdapter,
 		authService,
 		&mockCollector{},
 		migrator,
+		logging.Default(),
 	)
 	handler, err := server.Handler()
 	if err != nil {

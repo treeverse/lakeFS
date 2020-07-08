@@ -65,20 +65,14 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
 
-  mergeResult:
+  merge_result:
     type: object
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED]
-      direction:
-        type: string
-        enum: [LEFT, RIGHT, CONFLICT]
+        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
       path:
         type: string
-      path_type:
-        type: string
-        enum: [TREE, OBJECT]
 
   repository_creation:
     type: object
@@ -121,31 +115,14 @@ definitions:
         x-nullable: true
         type: string
 
-  ref:
-    type: object
-    required:
-      - id
-      - commit_id
-    properties:
-      id:
-        type: string
-      commit_id:
-        type: string
-
   diff:
     type: object
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED]
-      direction:
-        type: string
-        enum: [LEFT, RIGHT, CONFLICT]
+        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
       path:
         type: string
-      path_type:
-        type: string
-        enum: [TREE, OBJECT]
 
   revert_creation:
     type: object
@@ -193,15 +170,25 @@ definitions:
         additionalProperties:
           type: string
 
+  merge:
+    type: object
+    properties:
+      message:
+        type: string
+      metadata:
+        type: object
+        additionalProperties:
+          type: string
+
   branch_creation:
     type: object
     required:
-      - id
-      - sourceRefId
+      - name
+      - source
     properties:
-      id:
+      name:
         type: string
-      sourceRefId:
+      source:
         type: string
 
   error:
@@ -1107,10 +1094,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}:
+  /repositories/{repository}:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
     get:
@@ -1152,10 +1139,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches:
+  /repositories/{repository}/branches:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
     get:
@@ -1183,7 +1170,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/ref"
+                  type: string
         401:
           $ref: "#/responses/Unauthorized"
         default:
@@ -1204,7 +1191,7 @@ paths:
         201:
           description: branch
           schema:
-            $ref: "#/definitions/ref"
+            type: string
         400:
           description: validation error
           schema:
@@ -1216,14 +1203,14 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/commits:
+  /repositories/{repository}/branches/{branch}/commits:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
-        name: branchId
+        name: branch
         required: true
         type: string
       - in: query
@@ -1287,14 +1274,14 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}:
+  /repositories/{repository}/branches/{branch}:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
-        name: branchId
+        name: branch
         required: true
         type: string
     get:
@@ -1306,7 +1293,7 @@ paths:
         200:
           description: branch
           schema:
-            $ref: "#/definitions/ref"
+            type: string
         401:
           $ref: "#/responses/Unauthorized"
         404:
@@ -1360,10 +1347,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/refs/{sourceRef}/merge/{destinationRef}:
+  /repositories/{repository}/refs/{sourceRef}/merge/{destinationRef}:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1383,6 +1370,11 @@ paths:
         - refs
       operationId: mergeIntoBranch
       summary: merge references
+      parameters:
+        - in: body
+          name: merge
+          schema:
+            $ref: "#/definitions/merge"
       responses:
         200:
           description: merge completed
@@ -1392,7 +1384,7 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/mergeResult"
+                  $ref: "#/definitions/merge_result"
         401:
           description: Unauthorized
           schema:
@@ -1409,20 +1401,20 @@ paths:
               results:
                 type: array
                 items:
-                  $ref: "#/definitions/mergeResult"
+                  $ref: "#/definitions/merge_result"
         default:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/diff:
+  /repositories/{repository}/branches/{branch}/diff:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
-        name: branchId
+        name: branch
         required: true
         type: string
     get:
@@ -1454,10 +1446,10 @@ paths:
             $ref: "#/definitions/error"
 
 
-  /repositories/{repositoryId}/refs/{leftRef}/diff/{rightRef}:
+  /repositories/{repository}/refs/{leftRef}/diff/{rightRef}:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1498,10 +1490,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/commits/{commitId}:
+  /repositories/{repository}/commits/{commitId}:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1529,10 +1521,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/refs/{ref}/objects:
+  /repositories/{repository}/refs/{ref}/objects:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1544,10 +1536,6 @@ paths:
         name: path
         required: true
         type: string
-      - in: query
-        name: readUncommitted
-        type: boolean
-        default: true
     get:
       tags:
         - objects
@@ -1581,14 +1569,14 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/branches/{branchId}/objects:
+  /repositories/{repository}/branches/{branch}/objects:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
-        name: branchId
+        name: branch
         required: true
         type: string
       - in: query
@@ -1645,10 +1633,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/refs/{ref}/objects/stat:
+  /repositories/{repository}/refs/{ref}/objects/stat:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1660,10 +1648,6 @@ paths:
         name: path
         required: true
         type: string
-      - in: query
-        name: readUncommitted
-        type: boolean
-        default: true
     get:
       tags:
         - objects
@@ -1685,10 +1669,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/refs/{ref}/objects/underlyingProperties/:
+  /repositories/{repository}/refs/{ref}/objects/underlyingProperties/:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1700,10 +1684,6 @@ paths:
         name: path
         required: true
         type: string
-      - in: query
-        name: readUncommitted
-        type: boolean
-        default: true
     get:
       tags:
         - objects
@@ -1725,10 +1705,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/refs/{ref}/objects/ls:
+  /repositories/{repository}/refs/{ref}/objects/ls:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
@@ -1746,10 +1726,6 @@ paths:
       - in: query
         name: amount
         type: integer
-      - in: query
-        name: readUncommitted
-        type: boolean
-        default: true
     get:
       tags:
         - objects

@@ -8,17 +8,15 @@ import (
 	"os/signal"
 	"time"
 
-	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
-
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -68,14 +66,13 @@ var runCmd = &cobra.Command{
 
 		dbConnString := cfg.GetDatabaseURI()
 		dbPool := cfg.BuildDatabaseConnection()
-
 		defer func() {
 			_ = dbPool.Close()
 		}()
 		migrator := db.NewDatabaseMigrator(dbConnString)
 
-		// init index
-		meta := index.NewDBIndex(dbPool)
+		// init catalog
+		cataloger := catalog.NewCataloger(dbPool)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
@@ -93,7 +90,8 @@ var runCmd = &cobra.Command{
 
 		var apiServer *api.Server
 		if runAPIService {
-			apiServer = api.NewServer(meta, blockStore, authService, stats, migrator)
+			apiServer = api.NewServer(cataloger, blockStore, authService, stats, migrator,
+				logger.WithField("service", "api_gateway"))
 			go func() {
 				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
 					fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
@@ -107,7 +105,7 @@ var runCmd = &cobra.Command{
 			// init gateway server
 			gatewayServer = gateway.NewServer(
 				cfg.GetS3GatewayRegion(),
-				meta,
+				cataloger,
 				blockStore,
 				authService,
 				cfg.GetS3GatewayListenAddress(),
@@ -117,9 +115,9 @@ var runCmd = &cobra.Command{
 		}
 
 		go stats.Run(ctx)
-		stats.Collect("global", "run")
+		stats.CollectEvent("global", "run")
 
-		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService)
+		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService, stats)
 		metaUpdater.Start()
 
 		if gatewayServer != nil {

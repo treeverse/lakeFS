@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -10,7 +11,10 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
+
+	"github.com/treeverse/lakefs/catalog"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/logging"
@@ -18,14 +22,13 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 type dependencies struct {
-	blocks block.Adapter
-	auth   simulator.GatewayAuthService
-	meta   index.Index
+	blocks    block.Adapter
+	auth      simulator.GatewayAuthService
+	cataloger catalog.Cataloger
 }
 
 const (
@@ -33,6 +36,9 @@ const (
 )
 
 func TestGatewayRecording(t *testing.T) {
+	if !*integrationTest {
+		t.Skip("Not running integration tests")
+	}
 	testData := []string{
 		"s3://lakefs-recordings/presto.zip",
 		"s3://lakefs-recordings/aws.zip",
@@ -48,7 +54,8 @@ func TestGatewayRecording(t *testing.T) {
 		}
 		basename := filepath.Base(s3Url.Path)
 		filename := filepath.Join(RecordingsDir, basename)
-		t.Run(basename, func(t *testing.T) {
+		testName := strings.TrimSuffix(basename, filepath.Ext(basename))
+		t.Run(testName, func(t *testing.T) {
 			// download record
 			err := downloader.DownloadRecording(s3Url.Host, basename, filename)
 			if err != nil {
@@ -61,7 +68,6 @@ func TestGatewayRecording(t *testing.T) {
 			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
 			handler, _ := getBasicHandler(t, basename)
 			DoTestRun(handler, false, 1.0, t)
-
 		})
 	}
 }
@@ -86,7 +92,15 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(class, action string) {
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(class, action string) {
 
 }
 
@@ -98,24 +112,25 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		T:          t,
 	}
 
-	mdb, _ := testutil.GetDB(t, databaseUri)
-	meta := index.NewDBIndex(mdb)
+	conn, _ := testutil.GetDB(t, databaseUri)
+	cataloger := catalog.NewCataloger(conn)
 
 	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
 
 	authService := newGatewayAuth(t, simulator.PlaybackParams.RecordingDir)
 
-	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
+	ctx := context.Background()
+	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
 	server := gateway.NewServer(authService.Region,
-		meta,
+		cataloger,
 		blockAdapter,
 		authService,
 		authService.ListenAddress, authService.BareDomain, &mockCollector{})
 
 	return server.Server.Handler, &dependencies{
-		blocks: blockAdapter,
-		auth:   authService,
-		meta:   meta,
+		blocks:    blockAdapter,
+		auth:      authService,
+		cataloger: cataloger,
 	}
 }
 

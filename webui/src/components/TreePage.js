@@ -262,6 +262,7 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
 
     const paginator = (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const changes = diffResults.payload ? diffResults.payload.results.length : 0;
+
     return (
         <div className="mt-3">
             <div className="action-bar">

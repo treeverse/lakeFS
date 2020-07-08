@@ -103,7 +103,7 @@ func TracingMiddleware(requestIdHeaderName string, fields logging.Fields, next h
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
-		r, reqID := RequestId(r)
+		r, reqID := RequestID(r)
 
 		// add default fields to context
 		requestFields := logging.Fields{

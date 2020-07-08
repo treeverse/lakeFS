@@ -8,7 +8,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/permissions"
 )
 
@@ -25,7 +24,7 @@ func (controller *HeadObject) RequiredPermissions(request *http.Request, repoId,
 
 func (controller *HeadObject) Handle(o *PathOperation) {
 	o.Incr("stat_object")
-	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path, true)
+	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
 	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log().Debug("path not found")
@@ -35,11 +34,6 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	if err != nil {
 		o.Log().WithError(err).Error("failed querying path")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-		return
-	}
-	if entry.GetType() != model.EntryTypeObject {
-		// only objects should return a successful response
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
 	o.SetHeader("Accept-Ranges", "bytes")

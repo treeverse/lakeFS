@@ -19,13 +19,14 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 const (
-	DefaultUserId = "example_user"
+	DefaultUserID = "example_user"
 )
 
 var (
@@ -47,9 +48,9 @@ func TestMain(m *testing.M) {
 }
 
 type dependencies struct {
-	blocks block.Adapter
-	auth   auth.Service
-	meta   index.Index
+	blocks    block.Adapter
+	auth      auth.Service
+	cataloger catalog.Cataloger
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
@@ -65,23 +66,25 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
-
-	meta := index.NewDBIndex(conn)
-
+	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
-
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 	server := api.NewServer(
-		meta,
+		cataloger,
 		blockAdapter,
 		authService,
 		&mockCollector{},
 		migrator,
+		logging.Default(),
 	)
 
 	handler, err := server.Handler()
@@ -89,9 +92,9 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		t.Fatal(err)
 	}
 	return handler, &dependencies{
-		blocks: blockAdapter,
-		auth:   authService,
-		meta:   meta,
+		blocks:    blockAdapter,
+		auth:      authService,
+		cataloger: cataloger,
 	}
 }
 
