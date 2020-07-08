@@ -91,10 +91,8 @@ var entryCmd = &cobra.Command{
 					err := c.CreateEntry(ctx, repository, "master", ent)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
-						fmt.Printf("Request failed - %s: %s", entPath, err)
-					} else {
-						t.AddTime(time.Since(creationDate))
 					}
+					t.AddTime(time.Since(creationDate))
 					_ = bar.Add64(1)
 				}
 			}()

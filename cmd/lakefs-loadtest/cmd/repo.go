@@ -65,9 +65,8 @@ var repoCmd = &cobra.Command{
 					_, err := c.GetRepository(ctx, repository)
 					if err != nil {
 						atomic.AddInt64(&errCount, 1)
-					} else {
-						t.AddTime(time.Since(startTime))
 					}
+					t.AddTime(time.Since(startTime))
 					_ = bar.Add64(1)
 				}
 			}()
