@@ -1,4 +1,16 @@
 
+.logo {
+    height: 30px;
+}
+
+.navbar-brand {
+    padding: 0px;
+}
+
+.navbar > div {
+    padding-top: 7px;
+}
+
 .card.login-widget,.card.setup-widget {
     margin-top: 130px;
 }
