@@ -2,9 +2,11 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"reflect"
 	"strings"
 	"text/template"
 	"time"
@@ -73,6 +75,20 @@ func WriteTo(tpl string, ctx interface{}, w io.Writer) {
 		},
 		"ljust": func(length int, s string) string {
 			return text.AlignLeft.Apply(s, length)
+		},
+		"dereference": func(v interface{}) interface{} {
+			t := reflect.ValueOf(v)
+			if t.Kind() == reflect.Ptr {
+				return t.Elem()
+			}
+			return v
+		},
+		"json": func(v interface{}) string {
+			encoded, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				return "N/A"
+			}
+			return string(encoded)
 		},
 		"paginate": func(pag *Pagination) string {
 			if pag != nil && pag.HasNext && isTerminal {
