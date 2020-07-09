@@ -11,11 +11,7 @@ import (
 func TestCataloger_CreateBranch(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
-
-	testutil.MustDo(t, "test repository for create branch",
-		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
-	err := c.CreateBranch(ctx, "repo1", "master2", "master")
-	testutil.MustDo(t, "create test branch for create branch test", err)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 
 	type args struct {
 		repository   string
@@ -30,25 +26,19 @@ func TestCataloger_CreateBranch(t *testing.T) {
 	}{
 		{
 			name:           "new",
-			args:           args{repository: "repo1", branch: "b1", sourceBranch: "master"},
+			args:           args{repository: repo, branch: "b1", sourceBranch: "master"},
 			wantBranchName: "b1",
 			wantErr:        false,
 		},
 		{
 			name:           "self",
-			args:           args{repository: "repo1", branch: "master", sourceBranch: "master"},
-			wantBranchName: "",
-			wantErr:        true,
-		},
-		{
-			name:           "existing",
-			args:           args{repository: "repo1", branch: "master2", sourceBranch: "master"},
+			args:           args{repository: repo, branch: "master", sourceBranch: "master"},
 			wantBranchName: "",
 			wantErr:        true,
 		},
 		{
 			name:           "unknown source",
-			args:           args{repository: "repo1", branch: "b2", sourceBranch: "unknown"},
+			args:           args{repository: repo, branch: "b2", sourceBranch: "unknown"},
 			wantBranchName: "",
 			wantErr:        true,
 		},
@@ -63,17 +53,15 @@ func TestCataloger_CreateBranch(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			err := c.CreateBranch(ctx, tt.args.repository, tt.args.branch, tt.args.sourceBranch)
 			if (err != nil) != tt.wantErr {
-				t.Errorf("CreateBranch() error = %v, wantErr %v", err, tt.wantErr)
-				return
+				t.Fatalf("CreateBranch() error = %s, wantErr %t", err, tt.wantErr)
 			}
 		})
 	}
 }
 
-func TestCataloger_CreateBranchOfBranch(t *testing.T) {
+func TestCataloger_CreateBranch_OfBranch(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "branch0")
 	for i := 1; i < 3; i++ {
 		branchName := fmt.Sprintf("branch%d", i)
@@ -84,10 +72,24 @@ func TestCataloger_CreateBranchOfBranch(t *testing.T) {
 		}
 		reference, err := c.GetBranchReference(ctx, repository, branchName)
 		if err != nil {
-			t.Error("Branch not found after create:", err)
+			t.Fatal("Failed to get branch reference after creation:", err)
 		}
-		if reference != "" {
-			t.Errorf("Created branch '%s' was empty, reference: %s - expected no reference", branchName, reference)
+		if reference == "" {
+			t.Errorf("Created branch '%s' should have valid reference to initial commit", branchName)
 		}
+	}
+}
+
+func TestCataloger_CreateBranch_Existing(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	const branchName = "master2"
+	testutil.MustDo(t, "create test branch",
+		c.CreateBranch(ctx, repo, branchName, "master"))
+
+	err := c.CreateBranch(ctx, repo, branchName, "master")
+	if err == nil {
+		t.Fatalf("CreateBranch expected to fail on create branch '%s' already exists", branchName)
 	}
 }

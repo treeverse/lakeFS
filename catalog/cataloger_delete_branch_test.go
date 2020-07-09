@@ -7,8 +7,6 @@ import (
 	"testing"
 
 	"github.com/treeverse/lakefs/db"
-
-	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_DeleteBranch(t *testing.T) {
@@ -95,28 +93,24 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 
 func TestCataloger_DeleteBranchTwice(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
-
-	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "branch0"); err != nil {
-		t.Fatal("create repository for testing", err)
-	}
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "branch0")
 
 	const numBranches = 3
 	// create branches
 	for i := 0; i < numBranches; i++ {
 		sourceBranchName := fmt.Sprintf("branch%d", i)
 		branchName := fmt.Sprintf("branch%d", i+1)
-		testCatalogerBranch(t, ctx, c, "repo1", branchName, sourceBranchName)
+		testCatalogerBranch(t, ctx, c, repo, branchName, sourceBranchName)
 	}
 	// delete twice (checking double delete) in reverse order
 	for i := numBranches; i > 0; i-- {
 		branchName := fmt.Sprintf("branch%d", i)
-		err := c.DeleteBranch(ctx, "repo1", branchName)
+		err := c.DeleteBranch(ctx, repo, branchName)
 		if err != nil {
 			t.Fatal("Expected delete to succeed on", branchName, err)
 		}
-		err = c.DeleteBranch(ctx, "repo1", branchName)
+		err = c.DeleteBranch(ctx, repo, branchName)
 		if err == nil {
 			t.Fatal("Expected delete to fail on", branchName, err)
 		}

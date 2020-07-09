@@ -9,10 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/benbjohnson/clock"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -22,25 +20,18 @@ type testEntryInfo struct {
 	Deleted bool
 }
 
-func testCataloger(t *testing.T) Cataloger {
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	return NewCataloger(cdb)
-}
-
-func testCatalogerWithClock(t *testing.T, tellTime clock.Clock) Cataloger {
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	return &cataloger{
-		Clock: tellTime,
-		log:   logging.Default().WithField("service_name", "cataloger"),
-		db:    cdb,
-	}
+func testCataloger(t testing.TB, options ...CatalogerOption) Cataloger {
+	t.Helper()
+	conn, _ := testutil.GetDB(t, databaseURI)
+	return NewCataloger(conn, options...)
 }
 
 func testCatalogerUniqueID() string {
 	return strings.ReplaceAll(uuid.New().String(), "-", "")[0:7]
 }
 
-func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix string, branch string) string {
+func testCatalogerRepo(t testing.TB, ctx context.Context, c Cataloger, prefix string, branch string) string {
+	t.Helper()
 	name := prefix + "-" + testCatalogerUniqueID()
 	if err := c.CreateRepository(ctx, name, "s3://bucket", branch); err != nil {
 		t.Fatalf("create repository %s, branch %s, failed: %s", name, branch, err)
@@ -48,14 +39,16 @@ func testCatalogerRepo(t *testing.T, ctx context.Context, c Cataloger, prefix st
 	return name
 }
 
-func testCatalogerBranch(t *testing.T, ctx context.Context, c Cataloger, repository, name, source string) {
+func testCatalogerBranch(t testing.TB, ctx context.Context, c Cataloger, repository, name, source string) {
+	t.Helper()
 	err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
 		t.Fatalf("failed to create branch %s (%s) on %s: %s", name, source, repository, err)
 	}
 }
 
-func testCatalogerCreateEntry(t *testing.T, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
+func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, repository, branch, path string, metadata Metadata, seed string) {
+	t.Helper()
 	checksum := testCreateEntryCalcChecksum(path, seed)
 	var size int64
 	for i := range checksum {
@@ -81,7 +74,7 @@ func testCreateEntryCalcChecksum(key string, seed string) string {
 	return checksum
 }
 
-func testVerifyEntries(t *testing.T, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
+func testVerifyEntries(t testing.TB, ctx context.Context, c Cataloger, repository string, reference string, entries []testEntryInfo) {
 	for _, entry := range entries {
 		ent, err := c.GetEntry(ctx, repository, reference, entry.Path)
 		if entry.Deleted {

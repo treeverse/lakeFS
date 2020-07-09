@@ -73,6 +73,12 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			if rep.StorageNamespace != tt.args.storage {
 				t.Errorf("Create repository got branch = %s, expected = %s", rep.StorageNamespace, tt.args.storage)
 			}
+			// get initial commit record
+			ref, err := c.GetBranchReference(ctx, tt.args.name, tt.args.branch)
+			testutil.MustDo(t, "Get branch reference for new repository", err)
+			if ref == "" {
+				t.Fatal("Create repository should create commit with valid reference")
+			}
 		})
 	}
 }

@@ -9,11 +9,12 @@ import (
 	"github.com/mr-tron/base58"
 )
 
-type CommitID int
+type CommitID int64
 
 const (
 	CommittedID   CommitID = -1
 	UncommittedID CommitID = 0
+	MaxCommitID   CommitID = 1_000_000_000_000_000_000
 
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
@@ -25,9 +26,6 @@ type Ref struct {
 }
 
 func (r Ref) String() string {
-	if r.Branch == "" {
-		return ""
-	}
 	switch r.CommitID {
 	case CommittedID:
 		return r.Branch + CommittedSuffix

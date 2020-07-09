@@ -19,6 +19,8 @@ import (
 	"github.com/treeverse/lakefs/block"
 )
 
+const BlockstoreType = "local"
+
 type Adapter struct {
 	path               string
 	ctx                context.Context
@@ -83,7 +85,7 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 	return err
 }
 
-func (l *Adapter) Get(obj block.ObjectPointer) (reader io.ReadCloser, err error) {
+func (l *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (reader io.ReadCloser, err error) {
 	path := l.getPath(obj.Identifier)
 	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
@@ -235,4 +237,8 @@ func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	}
 	sort.Strings(names)
 	return names, nil
+}
+
+func (l *Adapter) ValidateConfiguration(_ string) error {
+	return nil
 }

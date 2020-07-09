@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestCataloger_ListRepos(t *testing.T) {
+func TestCataloger_ListRepositories(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 

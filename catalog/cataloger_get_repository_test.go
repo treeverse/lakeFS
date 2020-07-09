@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestCataloger_GetRepo(t *testing.T) {
+func TestCataloger_GetRepository(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -69,5 +69,14 @@ func TestCataloger_GetRepo(t *testing.T) {
 				t.Errorf("GetRepository() got StorageNamespace = %v, want %v", got.StorageNamespace, tt.wantStorageNamespace)
 			}
 		})
+	}
+}
+
+func BenchmarkCataloger_GetRepository(b *testing.B) {
+	ctx := context.Background()
+	c := testCataloger(b)
+	repo := testCatalogerRepo(b, ctx, c, "repo", "master")
+	for i := 0; i < b.N; i++ {
+		_, _ = c.GetRepository(ctx, repo)
 	}
 }
