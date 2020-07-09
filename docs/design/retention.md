@@ -49,7 +49,7 @@ configurable and TBD).
 Objects are actually deleted by S3 Object Lifecycle Management, using
 a rule to delete objects with this tag.  We shall document the
 required S3 lifecycle policy to use, as well as provide a single file
-and commandline to apply it to an entire bucket _if_ that bucket is
+and command line to apply it to an entire bucket _if_ that bucket is
 solely used by LakeFS.
 
 This part is constrained by AWS S3 peculiarities.  S3 has no batch
