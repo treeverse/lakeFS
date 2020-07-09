@@ -156,10 +156,3 @@ func getLineageAsValues(tx db.Tx, branchID int64, commitID CommitID) (string, er
 	return valTable, nil
 
 }
-
-/*
-type lineageCommit struct {
-	BranchID int64    `db:"branch_id"`
-	CommitID CommitID `db:"commit_id"`
-}
-*/
