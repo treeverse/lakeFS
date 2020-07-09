@@ -90,6 +90,7 @@ definitions:
       default_branch:
         example: "master"
         type: string
+
   object_stats:
     type: object
     properties:

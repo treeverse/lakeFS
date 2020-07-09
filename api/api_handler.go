@@ -153,7 +153,6 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
 	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
-
 }
 
 func (a *Handler) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*HandlerDependencies, error) {
