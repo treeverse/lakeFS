@@ -287,6 +287,55 @@ definitions:
       - id
       - statement
 
+  retention_policy:
+    type: object
+    required:
+      - rules
+    properties:
+      rules:
+        type: array
+        items:
+          $ref: "#/definitions/retention_policy_rule"
+
+  retention_policy_rule:
+    type: object
+    required:
+      - status
+      - filter
+    properties:
+      status:
+        type: string
+        enum: ["enabled", "disabled"]
+      filter:
+        type: object
+        properties:
+          prefix:
+            type: string
+      expiration:
+        type: object
+        minProperties: 1
+        properties:
+          all:
+            $ref: "#/definitions/time_period"
+          uncommitted:
+            $ref: "#/definitions/time_period"
+          noncurrent:
+            $ref: "#/definitions/time_period"
+
+  time_period:
+    type: object
+    description: |
+        a number of days, which can be broken up into a sum of weeks
+        and days
+    properties:
+      weeks:
+        type: integer
+        format: int32
+      days:
+        type: integer
+        format: int32
+    minProperties: 1
+
 paths:
 
   /user:
@@ -1364,7 +1413,6 @@ paths:
         type: string
         description: destination branch name
 
-
     post:
       tags:
         - refs
@@ -1747,6 +1795,49 @@ paths:
           description: tree or branch not found
           schema:
             $ref: "#/definitions/error"
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+  /repositories/{repositoryId}/retention:
+    parameters:
+      - in: path
+        name: repositoryId
+        required: true
+        type: string
+    put:
+      tags:
+        - retention
+      operationId: updateRetentionPolicy
+      description: set retention policy for repository
+      parameters:
+        - in: body
+          name: policy
+          required: true
+          schema:
+            $ref: "#/definitions/retention_policy"
+      responses:
+        201:
+          description: policy attached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    get:
+      operationId: getRetentionPolicy
+      tags:
+        - retention
+      description: get retention policy for repository
+      responses:
+        200:
+          description: retention policy
+          schema:
+            $ref: "#/definitions/retention_policy"
         401:
           $ref: "#/responses/Unauthorized"
         default:
