@@ -324,6 +324,9 @@ definitions:
 
   time_period:
     type: object
+    description: |
+        a number of days, which can be broken up into a sum of weeks
+        and days
     properties:
       weeks:
         type: integer
