@@ -72,7 +72,11 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 	if err == nil && branchRef != "" {
 		commit, err = c.cataloger.GetCommit(ctx, c.repository, branchRef)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
-			return nil, err
+			return
+		}
+		if err == nil && commit != nil && commit.Committer == catalog.CatalogerCommitter {
+			// branch initial commit, ignore
+			return nil, nil
 		}
 	}
 	return commit, nil

@@ -86,10 +86,11 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3://|mem://|local://).*$'
+        pattern: '^(s3|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
+
   object_stats:
     type: object
     properties:
@@ -1214,10 +1215,10 @@ paths:
             properties:
               is_dry_run:
                 type: boolean
-              rows_to_add:
+              added_or_changed:
                 type: integer
                 format: int64
-              rows_to_delete:
+              deleted:
                 type: integer
                 format: int64
               previous_manifest:
@@ -1225,11 +1226,6 @@ paths:
               previous_import_date:
                 type: integer
                 format: int64
-
-        400:
-          description: bad manifest URL
-          schema:
-            $ref: "#/definitions/error"
         401:
           $ref: "#/responses/Unauthorized"
         404:
