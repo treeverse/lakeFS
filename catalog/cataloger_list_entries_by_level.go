@@ -58,13 +58,14 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		var entryRuns []entryRun
 		var inRun bool
 		var PreviousInRun *string
-		var run *entryRun
-		for i, _ := range markerList {
+		run := new(entryRun)
+		var r rune
+		var size int
+		for i := range markerList {
 			p := markerList[i].Path
-			if len(*p) == 0 {
-				return nil, fmt.Errorf(" ListEntriesByLevel - an empty string returned as path : %w", err)
+			if len(*p) > 0 {
+				r, size = utf8.DecodeLastRuneInString(*p)
 			}
-			r, size := utf8.DecodeLastRuneInString(*p)
 			if string(r) == DirectoryTeminationChar { // unicode character of value 1_000_000 is an indication of a directory
 				// its absence indicates a leaf entry that has to be read from DB
 				*p = (*p)[:len(*p)-size]
@@ -78,7 +79,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 				PreviousInRun = p
 				if !inRun {
 					inRun = true
-					run = &entryRun{}
+					run = new(entryRun)
 					run.startEntryRun = p
 					run.runLength = 1
 					run.startRunIndex = i
