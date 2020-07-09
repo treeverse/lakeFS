@@ -14,22 +14,6 @@ type listResultStruct struct {
 	Entry *Entry
 }
 
-/*
-unc (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error) {
-	if err := Validate(ValidateFields{
-		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "reference", IsValid: ValidateReference(reference)},
-	}); err != nil {
-		return nil, false, err
-	}
-
-	ref, err := ParseRef(reference)
-	if err != nil {
-		return nil, false, err
-	}
-
-*/
-
 func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]listResultStruct, bool, error) {
 	var moreToRead bool
 	if err := Validate(ValidateFields{
