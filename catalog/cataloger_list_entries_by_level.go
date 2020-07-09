@@ -54,8 +54,6 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 			return nil, fmt.Errorf(" ListEntriesByLevel -lineage failed: %w", err)
 		}
 		prefixQuery := sqListByPrefix(prefix, after, delimiter, branchID, limit, commitID, lineage)
-		debugSQL := sq.DebugSqlizer(prefixQuery)
-		_ = debugSQL
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf(" ListEntriesByLevel - dirlist ToSql failed : %w", err)
@@ -133,5 +131,9 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		}
 		return markerList, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
-	return markers.([]listResultStruct), moreToRead, err
+	if markers != nil && err == nil {
+		return markers.([]listResultStruct), moreToRead, nil
+	} else {
+		return nil, false, err
+	}
 }
