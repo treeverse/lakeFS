@@ -913,6 +913,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 }
 
 const noopUploadObject = false
+const noopCreateEntry = false
 
 func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
@@ -957,6 +958,15 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
+		if noopCreateEntry {
+			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+				Checksum:  blob.Checksum,
+				Mtime:     time.Now().UTC().Unix(),
+				Path:      params.Path,
+				PathType:  models.ObjectStatsPathTypeOBJECT,
+				SizeBytes: blob.Size,
+			})
+		}
 		// write metadata
 		writeTime := time.Now()
 		entry := catalog.Entry{

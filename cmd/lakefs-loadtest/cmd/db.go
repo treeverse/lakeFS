@@ -38,7 +38,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// dbCmd.PersistentFlags().String("foo", "", "A help for foo")
-	dbCmd.PersistentFlags().String("db", "postgres://localhost:5432/postgres?sslmode=disable", "Database connection string")
+	dbCmd.PersistentFlags().String("db", "postgres://127.0.0.1:5432/postgres?sslmode=disable", "Database connection string")
 	dbCmd.PersistentFlags().Int("requests", 1000, "Number of requests to performs")
 	dbCmd.PersistentFlags().Float64("sample", 0.5, "Measure sample ratio (between 0 and 1)")
 	dbCmd.PersistentFlags().Int("concurrency", 1, "Number of concurrent workers")

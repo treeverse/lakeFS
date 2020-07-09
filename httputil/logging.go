@@ -48,7 +48,12 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
+const noopLoggingMiddleware = false
+
 func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+	if noopLoggingMiddleware {
+		return next
+	}
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}

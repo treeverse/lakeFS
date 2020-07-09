@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/rand"
 	"os"
+	"runtime/trace"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -27,6 +28,7 @@ var repoCmd = &cobra.Command{
 		repository, _ := cmd.Flags().GetString("repository")
 		concurrency, _ := cmd.Flags().GetInt("concurrency")
 		sampleRatio, _ := cmd.Flags().GetFloat64("sample")
+		runTrace, _ := cmd.Flags().GetBool("trace")
 
 		if concurrency < 1 {
 			fmt.Printf("Concurrency must be above 1! (%d)\n", concurrency)
@@ -49,6 +51,20 @@ var repoCmd = &cobra.Command{
 		fmt.Printf("Repository: %s\n", repository)
 		fmt.Printf("Concurrency: %d\n", concurrency)
 		fmt.Printf("Requests: %d\n", requests)
+
+		if runTrace {
+			f, err := os.Create("trace.out")
+			if err != nil {
+				fmt.Printf("failed to create trace output file: %s\n", err)
+				os.Exit(1)
+			}
+			defer f.Close()
+
+			if err := trace.Start(f); err != nil {
+				fmt.Printf("failed to start trace: %s\n", err)
+				os.Exit(1)
+			}
+		}
 
 		bar := progressbar.New(requests * concurrency)
 		t := tachymeter.New(&tachymeter.Config{Size: int(float64(requests) * sampleRatio)})
@@ -77,6 +93,9 @@ var repoCmd = &cobra.Command{
 
 		// generate repository calls and wait for workers to complete
 		wg.Wait()
+		if runTrace {
+			trace.Stop()
+		}
 		_ = bar.Finish()
 		t.SetWallTime(time.Since(wallTimeStart))
 		fmt.Printf("\n%s\n", t.Calc())
@@ -98,5 +117,6 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// repoCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	repoCmd.Flags().BoolP("trace", "t", false, "Run trace")
 
 }

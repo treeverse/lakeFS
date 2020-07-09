@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"io"
+	"strconv"
 	"sync"
 	"time"
 
@@ -19,10 +20,10 @@ const (
 	dedupChannelSize  = 1000
 
 	dbBatchEnabled = true
-	dbBatchSize    = 10
-	dbBatchTimeout = 50 * time.Millisecond
-	dbChannelSize  = 500 * dbWorkers
-	dbWorkers      = 5
+	dbBatchSize    = 100
+	dbBatchTimeout = 20 * time.Millisecond
+	dbChannelSize  = 1000 * dbWorkers
+	dbWorkers      = 1
 )
 
 type DedupResult struct {
@@ -311,6 +312,7 @@ func (c *cataloger) processDBJobs() {
 				}
 				if processBatch {
 					c.dbBatch(context.Background(), batch)
+					batchSizeCounter.WithLabelValues(strconv.Itoa(len(batch))).Inc()
 					batch = batch[:0]
 				}
 			}
