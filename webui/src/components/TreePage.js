@@ -1,24 +1,16 @@
-import React, {useEffect, useState, useCallback, useRef} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
-import {Tooltip, OverlayTrigger, ButtonToolbar, Button, Form, Row, Col, Modal} from "react-bootstrap";
-import {SyncIcon, GitCommitIcon, PlusIcon, XIcon, EllipsisIcon} from "@primer/octicons-react";
-import {
-    deleteObject,
-    importObjects, importObjectsDryRun,
-    listTree,
-    listTreePaginate, resetImportObjects, resetImportObjectsDryRun,
-    upload,
-    uploadDone
-} from "../actions/objects";
+import {Button, ButtonToolbar, Col, Form, Modal, OverlayTrigger, Row, Tooltip} from "react-bootstrap";
+import {GitCommitIcon, PlusIcon, SyncIcon, XIcon} from "@primer/octicons-react";
+import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import {doCommit, resetCommit} from "../actions/commits";
-import {revertBranch, resetRevertBranch, listBranches} from "../actions/branches";
+import {listBranches, resetRevertBranch, revertBranch} from "../actions/branches";
 import Alert from "react-bootstrap/Alert";
 import ConfirmationModal from "./ConfirmationModal";
-import {DataImportForm, IMPORT_FROM_S3_BRANCH_NAME} from "./DataImportForm";
 
 const RevertButton = connect(
     ({ branches }) => ({ status: branches.revert }),
@@ -250,143 +242,10 @@ const CommitButton = connect(
     );
 });
 
-
-const ImportButton = connect(
-    ({objects}) => ({
-        importState: objects.import,
-        importDryRunState: objects.importDryRun
-    }),
-    ({importObjects, importObjectsDryRun, resetImportObjects, resetImportObjectsDryRun})
-)(({repo, importObjects, importObjectsDryRun, importState, importDryRunState, resetImportObjects, resetImportObjectsDryRun, show, setShow}) => {
-    const disabled = importState.inProgress || importDryRunState.inProgress;
-    const history = useHistory();
-    const onHide = () => {
-        resetImportObjects();
-        resetImportObjectsDryRun();
-        setShow(false);
-    };
-
-    useEffect(() => {
-        if (importState.error) {
-        } else if (importState.done) {
-            history.push(`/repositories/${repo.id}/tree?branch=${IMPORT_FROM_S3_BRANCH_NAME}`)
-            setShow(false);
-        }
-    }, [setShow, importState, importDryRunState, repo.id, history]);
-
-    const onSubmit = (manifestUrl) => {
-        if (disabled) return;
-        importObjects(repo.id, manifestUrl);
-    };
-
-    const onTest = (manifestUrl) => {
-        if (disabled) return;
-        importObjectsDryRun(repo.id, manifestUrl);
-    }
-
-    return (
-        <>
-            <DataImportModal
-                show={show}
-                repoId={repo.id}
-                onSubmit={onSubmit}
-                onTest={onTest}
-                onCancel={onHide}
-            />
-            <Button variant="success" onClick={() => {
-                setShow(true)
-            }}>
-                <EllipsisIcon/> Import Data
-            </Button>
-        </>
-    );
-});
-const DataImportModal = ({show, repoId, onSubmit, onTest, onCancel}) => {
-    return (
-        <Modal show={show} onHide={onCancel} size="lg">
-            <Modal.Header closeButton>
-                <Modal.Title>Import Data from S3</Modal.Title>
-            </Modal.Header>
-            <Modal.Body>
-                <DataImportForm repoId={repoId} onSubmit={onSubmit} onTest={onTest} onCancel={onCancel}/>
-            </Modal.Body>
-        </Modal>
-    );
-}
-
-//
-// const UploadModal = connect(
-//     ({ objects }) => ({ uploadState: objects.upload }),
-//     ({ upload, uploadDone })
-// )(({ show, setShow, repo, refId, path, uploadState, upload, uploadDone }) => {
-//     const textRef = useRef(null);
-//     const fileRef = useRef(null);
-//
-//     useEffect(() => {
-//         if (uploadState.done) {
-//             setShow(false);
-//             uploadDone()
-//         }
-//     }, [uploadDone, uploadState.done]);
-//
-//     if (!refId || refId.type !== 'branch') {
-//         return <span/>;
-//     }
-//
-//     const disabled = uploadState.inProgress;
-//
-//     const onHide = () => {
-//         if (disabled) return; setShow(false);
-//     };
-//
-//     return (
-//         <>
-//             <Modal show={show} onHide={onHide}>
-//                 <Modal.Header closeButton>
-//                     <Modal.Title>Upload Object</Modal.Title>
-//                 </Modal.Header>
-//                 <Modal.Body>
-//                     <Form onSubmit={(e) => {
-//                         if (disabled) return;
-//                         upload(repo.id, refId.id, textRef.current.value, fileRef.current.files[0]);
-//                         e.preventDefault();
-//                     }}>
-//                         <Form.Group controlId="path">
-//                             <Form.Control type="text" placeholder="Object path" autoFocus name="text" ref={textRef} defaultValue={path}/>
-//                         </Form.Group>
-//
-//                         <Form.Group controlId="content">
-//                             <Form.Control type="file" name="content" ref={fileRef} onChange={(e) => {
-//                                 const currPath = textRef.current.value.substr(0, textRef.current.value.lastIndexOf('/')+1);
-//                                 const currName = e.currentTarget.files[0].name;
-//                                 textRef.current.value = currPath + currName;
-//                             }}/>
-//                         </Form.Group>
-//                     </Form>
-//                     {(!!uploadState.error) ? (<Alert variant="danger">{uploadState.error}</Alert>) : (<span/>)}
-//
-//                 </Modal.Body>
-//                 <Modal.Footer>
-//                     <Button variant="secondary"  disabled={disabled} onClick={onHide}>
-//                         Cancel
-//                     </Button>
-//                     <Button variant="success" disabled={disabled} onClick={() => {
-//                         if (disabled) return;
-//                         upload(repo.id, refId.id, textRef.current.value, fileRef.current.files[0]);
-//                     }}>
-//                         {(uploadState.inProgress)? 'Uploading...' : 'Upload'}
-//                     </Button>
-//                 </Modal.Footer>
-//             </Modal>
-//         </>
-//     );
-// });
-
-const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState, importState, listBranches, listBranchesState}) => {
+const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState, importState, listBranches, listBranchesState, setShowImportModal}) => {
     const history = useHistory();
     const location = useLocation();
     const[showUploadModal, setShowUploadModal] = useState(false)
-    const[showImportModal, setShowImportModal] = useState(false)
     const refreshData = useCallback(() => {
         listTree(repo.id, refId.id, path);
         if (refId.type === 'branch') {
@@ -430,7 +289,6 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                 </ButtonToolbar>
 
                 <ButtonToolbar className="float-right mb-2">
-                    <ImportButton repo={repo} show={showImportModal} setShow={setShowImportModal}/>
                     <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
                         <Button variant="light" disabled={list.loading} onClick={refreshData}><SyncIcon/></Button>
                     </OverlayTrigger>

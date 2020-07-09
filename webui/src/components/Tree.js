@@ -130,9 +130,6 @@ const PathLink = ({ repoId, refId, path, children, as = null }) => {
 const Na = () => (<span>&mdash;</span>);
 
 const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions }) => {
-
-    const [isDropdownOpen, setDropdownOpen] = useState(false);
-
     let rowClass = 'tree-row ';
     if (entry.diff_type === 'CHANGED') {
         rowClass += 'diff-changed';
@@ -202,27 +199,36 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
         );
     }
 
-    let objectDropdown;
+    let ObjectDropdown;
     if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
-        objectDropdown = (
-            <Dropdown alignRight onToggle={setDropdownOpen}>
-                <Dropdown.Toggle
-                    as={React.forwardRef(({onClick, children}, ref) => {
-                        return (
-                            <Button variant="link" onClick={(e) => { e.preventDefault(); onClick(e); }} ref={ref}>
-                                {children}
-                            </Button>
-                               );
-                    })}>
-                    {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-                </Dropdown.Toggle>
+        ObjectDropdown = () => {
+            const [isDropdownOpen, setDropdownOpen] = useState(false);
+            return (
+                <Dropdown alignRight onToggle={setDropdownOpen}>
+                    <Dropdown.Toggle
+                        as={React.forwardRef(({onClick, children}, ref) => {
+                            return (
+                                <Button variant="link" onClick={(e) => {
+                                    e.preventDefault();
+                                    onClick(e);
+                                }} ref={ref}>
+                                    {children}
+                                </Button>
+                            );
+                        })}>
+                        {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+                    </Dropdown.Toggle>
 
-                <Dropdown.Menu>
-                    <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
-                </Dropdown.Menu>
-            </Dropdown>
-        );
+                    <Dropdown.Menu>
+                        <PathLink path={entry.path} refId={refId} repoId={repo.id}
+                                  as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+                        <Dropdown.Item onClick={(e) => {
+                            e.preventDefault();
+                            if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
+                        }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
+                    </Dropdown.Menu>
+                </Dropdown>);
+        }
     }
 
     return (
@@ -242,7 +248,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {modified}
             </td>
             <td className={"tree-row-actions"}>
-                {objectDropdown}
+                <ObjectDropdown/>
             </td>
         </tr>
         </>
@@ -332,7 +338,7 @@ const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowI
     useEffect(() =>{
     }, [repo, list, listBranchesState])
     return <>{ (
-                <Container><h3>To get started with this repository, you can:</h3>
+                <Container className="m-3"><h3>To get started with this repository, you can:</h3>
                 <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowImportModal(true)}}>Import</a>&nbsp;data from S3</Row>
                 <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowUploadModal(true)}}>Upload</a>&nbsp;an object</Row>
                 <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/>See the&nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.</Row>

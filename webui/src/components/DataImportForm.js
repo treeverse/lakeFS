@@ -107,11 +107,11 @@ export const DataImportForm = connect(
                                 </tr></>}
                                 <tr>
                                     <td>Objects to add / change</td>
-                                    <td><code>{p["rows_to_add"] || 0}</code>{p["previous_manifest"] && " (diff only)"}</td>
+                                    <td><code>{p["added_or_changed"] || 0}</code>{p["previous_manifest"] && " (diff only)"}</td>
                                 </tr>
                                 <tr>
                                     <td>Objects to delete</td>
-                                    <td><code>{p["rows_to_delete"] || 0}</code>{p["previous_manifest"] && " (diff only)"}</td>
+                                    <td><code>{p["deleted"] || 0}</code>{p["previous_manifest"] && " (diff only)"}</td>
                                 </tr>
                             </tbody></Table>
                     </Col></Row>
