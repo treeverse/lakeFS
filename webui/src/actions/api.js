@@ -492,6 +492,17 @@ class Objects {
             throw new Error(await extractError(response));
         }
     }
+
+    async import(repoId, manifestUrl, dryRun) {
+        const query = qs({manifestUrl, dryRun});
+        const response = await apiRequest(`/repositories/${repoId}/inventory/s3/import?${query}`, {
+            method: 'POST',
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return await response.json()
+    }
 }
 
 class Commits {

@@ -268,3 +268,11 @@ textarea.form-control.policy-document:focus {
 td .form-group {
     margin-bottom: 0;
 }
+
+.section-title {
+    padding-bottom: 5px;
+    padding-top: 10px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    overflow: hidden;
+}

@@ -1,16 +1,17 @@
-import React, {useState} from "react";
+import React, {useEffect, useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
 import {
-    FileIcon,
-    FileDirectoryIcon,
-    PlusIcon,
-    TrashcanIcon,
-    PencilIcon,
     ChevronDownIcon,
     ChevronUpIcon,
-    DownloadIcon
+    DotIcon,
+    DownloadIcon,
+    FileDirectoryIcon,
+    FileIcon,
+    PencilIcon,
+    PlusIcon,
+    TrashcanIcon
 } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import * as moment from "moment";
@@ -19,6 +20,8 @@ import {Link} from "react-router-dom";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import Dropdown from "react-bootstrap/Dropdown";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
 
 
 const humanSize = (bytes) => {
@@ -286,13 +289,19 @@ const merge = (path, entriesAtPath, diffResults) => {
     });
 };
 
-export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions }) => {
+export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranchesState, setShowUploadModal, setShowImportModal }) => {
     let body;
+    const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0  && listBranchesState && listBranchesState.payload && listBranchesState.payload.results.length === 1;
+
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
     } else if (list.error) {
         body = <Alert variant="danger" className="tree-error">{list.error}</Alert>
-    } else {
+    } else if (showGetStarted) {
+        body = <GetStarted repo={repo} list={list} listBranchesState={listBranchesState}
+                           setShowUploadModal={setShowUploadModal} setShowImportModal={setShowImportModal}/>
+    }
+    else {
         const results = merge(path, list.payload.results, diffResults);
         body = (
             <Table borderless size="sm">
@@ -304,7 +313,6 @@ export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, sh
             </Table>
         );
     }
-
     return (
         <div className="tree-container">
             <Card>
@@ -318,3 +326,15 @@ export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, sh
         </div>
     );
 };
+
+
+const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowImportModal}) => {
+    useEffect(() =>{
+    }, [repo, list, listBranchesState])
+    return <>{ (
+                <Container><h3>To get started with this repository, you can:</h3>
+                <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowImportModal(true)}}>Import</a>&nbsp;data from S3</Row>
+                <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowUploadModal(true)}}>Upload</a>&nbsp;an object</Row>
+                <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/>See the&nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.</Row>
+</Container>    )}</>
+}

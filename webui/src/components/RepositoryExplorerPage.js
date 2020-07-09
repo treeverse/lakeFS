@@ -2,7 +2,7 @@ import React, {useEffect} from "react";
 import {useParams, useLocation, Switch, Route, useRouteMatch, Link, generatePath, Redirect} from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import {GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon} from "@primer/octicons-react";
+import {GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import CommitsPage from './CommitsPage';
@@ -12,6 +12,7 @@ import Nav from "react-bootstrap/Nav";
 import Alert from "react-bootstrap/Alert";
 import BranchesPage from "./BranchesPage";
 import ComparePage from "./ComparePage";
+import RepoSettingsPage from "./RepoSettingsPage";
 
 
 function useQuery() {
@@ -57,7 +58,10 @@ const RepositoryTabs = () => {
                 <RoutedTab url="/repositories/:repoId/branches"><GitBranchIcon/>  Branches</RoutedTab>
             </Nav.Item>
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/compare"><GitCompareIcon/>  Compare</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/compare" passInQuery={['branch']}><GitCompareIcon/>  Compare</RoutedTab>
+            </Nav.Item>
+            <Nav.Item>
+                <RoutedTab url="/repositories/:repoId/settings"><SettingsIcon/>  Settings</RoutedTab>
             </Nav.Item>
         </Nav>
     );
@@ -138,6 +142,9 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                 </Route>
                 <Route exact path="/repositories/:repoId/compare">
                     <ComparePage repo={repo.payload} refId={refId} compareRef={compareRef} path={query.get('path') || ""}/>
+                </Route>
+                <Route exact path="/repositories/:repoId/settings">
+                    <RepoSettingsPage repo={repo.payload}/>
                 </Route>
             </Switch>
         </div>
