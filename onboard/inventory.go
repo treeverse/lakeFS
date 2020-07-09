@@ -86,11 +86,10 @@ func NewS3InventoryFactory(s3 s3iface.S3API) *S3InventoryFactory {
 }
 
 type S3Inventory struct {
-	S3          s3iface.S3API
-	RowReader   func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
-	ManifestURL string
-	objects     []InventoryObject
-	manifest    *Manifest
+	S3        s3iface.S3API
+	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
+	objects   []InventoryObject
+	manifest  *Manifest
 }
 
 type InventoryObject struct {
@@ -165,7 +164,7 @@ func (i *S3Inventory) SourceName() string {
 
 func (i *S3Inventory) CreateCommitMetadata(diff InventoryDiff) catalog.Metadata {
 	return catalog.Metadata{
-		"manifest_url":             i.ManifestURL,
+		"manifest_url":             i.manifest.URL,
 		"source_bucket":            i.manifest.SourceBucket,
 		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
 		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),

@@ -7,7 +7,7 @@ import (
 )
 
 const (
-	DefaultBranchName = "import_from_inventory"
+	DefaultBranchName = "import-from-inventory"
 	CommitMsgTemplate = "Import from %s"
 )
 
