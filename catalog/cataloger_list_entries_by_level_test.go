@@ -5,7 +5,6 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"reflect"
-	"strconv"
 	"testing"
 
 	"github.com/treeverse/lakefs/testutil"
@@ -18,15 +17,14 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	// produce test data
 	testutil.MustDo(t, "create test repo",
 		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
-	for i := 0; i < 7; i++ {
+	suffixList := []string{"file1", "file2", "file2/xxx", "file3/", "file4", "file5", "file6/yyy", "file6/zzz/zzz", "file6/ccc", "file7", "file8", "file9", "filea",
+		"/fileb", "//filec", "///filed"}
+	for i, suffix := range suffixList {
 		n := i + 1
-		filePath := fmt.Sprintf("/file%d", n)
+		filePath := suffix
 		fileChecksum := fmt.Sprintf("%x", sha256.Sum256([]byte(filePath)))
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := int64(n) * 10
-		if n >= 6 {
-			filePath += "/xx" + strconv.Itoa(n)
-		}
 		testutil.MustDo(t, "create test entry",
 			c.CreateEntry(ctx, "repo1", "master", Entry{
 				Path:            filePath,
@@ -51,7 +49,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	tests := []struct {
 		name        string
 		args        args
-		wantEntries []Entry
+		wantEntries []string
 		wantMore    bool
 		wantErr     bool
 	}{
@@ -62,19 +60,11 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				reference:  "master",
 				path:       "",
 				after:      "",
-				limit:      -1,
+				limit:      100,
 			},
-			wantEntries: []Entry{
-				{Path: "/file1"},
-				{Path: "/file2"},
-				{Path: "/file2/"},
-				{Path: "/file3"},
-				{Path: "/file4"},
-				{Path: "/file5"},
-				{Path: "/file6/"},
-			},
-			wantMore: false,
-			wantErr:  false,
+			wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
+			wantMore:    false,
+			wantErr:     false,
 		},
 		{
 			name: "first 2 uncommitted",
@@ -85,28 +75,34 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      2,
 			},
-			wantEntries: []Entry{
-				{Path: "/file1"},
-				{Path: "/file2"},
-			},
-			wantMore: true,
-			wantErr:  false,
+			wantEntries: []string{"/", "file1"},
+			wantMore:    true,
+			wantErr:     false,
 		},
 		{
-			name: "last 3",
+			name: "2 after file3",
 			args: args{
 				repository: "repo1",
 				reference:  "master",
 				path:       "",
-				after:      "/file3",
+				after:      "file3",
 				limit:      2,
 			},
-			wantEntries: []Entry{
-				{Path: "/file4"},
-				{Path: "/file5"},
+			wantEntries: []string{"file4", "file5"},
+			wantMore:    true,
+			wantErr:     false,
+		}, {
+			name: "2 after file2/",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "",
+				after:      "file2/",
+				limit:      2,
 			},
-			wantMore: false,
-			wantErr:  false,
+			wantEntries: []string{"file3/", "file4"},
+			wantMore:    true,
+			wantErr:     false,
 		},
 		{
 			name: "committed",
@@ -114,36 +110,64 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				repository: "repo1",
 				reference:  "master:HEAD",
 				path:       "",
-				after:      "/file1",
-				limit:      -1,
+				after:      "file1",
+				limit:      100,
 			},
-			wantEntries: []Entry{
-				{Path: "/file2"},
-				{Path: "/file3"},
+			wantEntries: []string{"file2", "file2/"},
+			wantMore:    false,
+			wantErr:     false,
+		}, {
+			name: "slash",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "/",
+				after:      "",
+				limit:      100,
 			},
-			wantMore: false,
-			wantErr:  false,
+			wantEntries: []string{"/", "fileb"},
+			wantMore:    false,
+			wantErr:     false,
+		}, {
+			name: "double slash",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "//",
+				after:      "",
+				limit:      100,
+			},
+			wantEntries: []string{"/", "filec"},
+			wantMore:    false,
+			wantErr:     false,
+		}, {
+			name: "under file6",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "file6/",
+				after:      "",
+				limit:      100,
+			},
+			wantEntries: []string{"ccc", "yyy", "zzz/"},
+			wantMore:    false,
+			wantErr:     false,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, "/", tt.args.after, tt.args.limit)
+			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, "/", tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			// copy the Entry fields we like to compare
-			var gotEntries []Entry
+			var gotNames []string
 			for _, ent := range got {
-				gotEntries = append(gotEntries, Entry{
-					Path:            ent.Entry.Path,
-					PhysicalAddress: ent.Entry.PhysicalAddress,
-					Size:            ent.Entry.Size,
-					Checksum:        ent.Entry.Checksum,
-				})
+				gotNames = append(gotNames, *ent.Path)
 			}
 
-			if !reflect.DeepEqual(gotEntries, tt.wantEntries) {
-				t.Errorf("ListEntries() got = %+v, want = %+v", gotEntries, tt.wantEntries)
+			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
+				t.Errorf("ListEntries() got = %+v, want = %+v", gotNames, tt.wantEntries)
 			}
 			if gotMore != tt.wantMore {
 				t.Errorf("ListEntries() gotMore = %v, want = %v", gotMore, tt.wantMore)
