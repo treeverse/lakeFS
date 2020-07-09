@@ -1,7 +1,9 @@
 package catalog
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -139,3 +141,25 @@ func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, e
 	}
 	return requestedLineage, nil
 }
+
+func getLineageAsValues(tx db.Tx, branchID int64, commitID CommitID) (string, error) {
+	val, err := getLineage(tx, branchID, commitID)
+	if err != nil {
+		return "", err
+	}
+	valArray := make([]string, 1)
+	valArray[0] = fmt.Sprintf("(0,%d,%d)", branchID, MaxCommitID)
+	for precedence, lineageBranch := range val {
+		valArray = append(valArray, fmt.Sprintf("(%d, %d, %d)", precedence+1, lineageBranch.BranchID, lineageBranch.CommitID))
+	}
+	valTable := "(VALUES " + strings.Join(valArray, " , ") + ") as l(precedence,branch_id,commit_id) "
+	return valTable, nil
+
+}
+
+/*
+type lineageCommit struct {
+	BranchID int64    `db:"branch_id"`
+	CommitID CommitID `db:"commit_id"`
+}
+*/
