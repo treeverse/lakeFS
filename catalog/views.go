@@ -230,7 +230,7 @@ func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines in
 					Column( // calculate the next entry
 						sq.ConcatExpr("(", nextMarkerSelect, ")")).
 					From("dir_list as d").
-					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines+1),
+					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
 				")",
 				"\n SELECT marker as path",
 				"\nFROM dir_list d",
