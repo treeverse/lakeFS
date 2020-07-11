@@ -66,6 +66,11 @@ type Branch struct {
 	Name       string `db:"name"`
 }
 
+type LevelEntryResultStruct struct {
+	Path  *string `db:"path"`
+	Entry *Entry
+}
+
 type MultipartUpload struct {
 	Repository      string    `db:"repository"`
 	UploadID        string    `db:"upload_id"`

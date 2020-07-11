@@ -158,7 +158,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, "/", tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("listEntriesByLevel() error = %v, wantErr %v", err, tt.wantErr)
 			}
 			// copy the Entry fields we like to compare
 			var gotNames []string
@@ -167,10 +167,10 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("ListEntries() got = %+v, want = %+v", gotNames, tt.wantEntries)
+				t.Errorf("listEntriesByLevel() got = %+v, want = %+v", gotNames, tt.wantEntries)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListEntries() gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf("listEntriesByLevel() gotMore = %v, want = %v", gotMore, tt.wantMore)
 			}
 		})
 	}
