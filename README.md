@@ -1,16 +1,16 @@
 # lakeFS
--- badges --
 
 
 <p align="center">
-  <img src="logo_large.jpg"/>
+  <img src="logo_large.png"/>
 </p>
+
+![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg)
 
 ## What is lakeFS
 
 An open source platform that empowers your object storage data lake with ACID guarantees and Git-like capabilities.
 
-![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg)
 
 For more information see the [Official Documentation](https://docs.lakefs.io/).
 
