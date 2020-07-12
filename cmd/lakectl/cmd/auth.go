@@ -30,12 +30,16 @@ var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green
 {{ "Keep these somewhere safe since you will not be able to see the secret key again" | yellow }}
 `
 
-var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
+var policyDetailsTemplate = `
 ID: {{ .ID | bold }}
-Creation Date: {{  .CreationDate |date }}
+Creation Date: {{  .CreationDate | date }}
 Statements:
+{{ .StatementDoc | json }}
 
 `
+
+var policyCreatedTemplate = `{{ "Policy created successfully." | green }}
+` + policyDetailsTemplate
 
 var authCmd = &cobra.Command{
 	Use:   "auth [sub-command]",
@@ -501,16 +505,12 @@ var authPoliciesList = &cobra.Command{
 			DieErr(err)
 		}
 
-		rows := make([][]interface{}, 0)
-		for _, policy := range policies {
-			for i, statement := range policy.Statement {
-				ts := time.Unix(policy.CreationDate, 0).String()
-				rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
-			}
-
+		rows := make([][]interface{}, len(policies))
+		for i, policy := range policies {
+			ts := time.Unix(policy.CreationDate, 0).String()
+			rows[i] = []interface{}{*policy.ID, ts}
 		}
-
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, pagination, amount)
+		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, pagination, amount)
 	},
 }
 
@@ -518,7 +518,8 @@ var authPoliciesCreate = &cobra.Command{
 	Use:   "create",
 	Short: "create a policy",
 	Run: func(cmd *cobra.Command, args []string) {
-		document, _ := cmd.Flags().GetString("policy-document")
+		id, _ := cmd.Flags().GetString("id")
+		document, _ := cmd.Flags().GetString("statement-document")
 		clt := getClient()
 
 		var err error
@@ -532,26 +533,54 @@ var authPoliciesCreate = &cobra.Command{
 			}
 		}
 
-		var policy models.Policy
-		err = json.NewDecoder(fp).Decode(&policy)
+		var doc StatementDoc
+		err = json.NewDecoder(fp).Decode(&doc)
 		if err != nil {
-			DieFmt("could not parse policy document: %v", err)
+			DieFmt("could not parse statement JSON document: %v", err)
 		}
 
-		createdPolicy, err := clt.CreatePolicy(context.Background(), &policy)
+		createdPolicy, err := clt.CreatePolicy(context.Background(), &models.Policy{ID: &id, Statement: doc.Statement})
 		if err != nil {
 			DieErr(err)
 		}
 
-		Write(policyCreatedTemplate, createdPolicy)
+		Write(policyCreatedTemplate, struct {
+			ID           string
+			CreationDate int64
+			StatementDoc StatementDoc
+		}{
+			ID:           *createdPolicy.ID,
+			CreationDate: createdPolicy.CreationDate,
+			StatementDoc: StatementDoc{createdPolicy.Statement},
+		})
+	},
+}
 
-		rows := make([][]interface{}, 0)
-		for i, statement := range createdPolicy.Statement {
-			ts := time.Unix(policy.CreationDate, 0).String()
-			rows = append(rows, []interface{}{policy.ID, ts, i, statement.Resource, statement.Effect, strings.Join(statement.Action, ", ")})
+type StatementDoc struct {
+	Statement []*models.Statement `json:"statement"`
+}
+
+var authPoliciesShow = &cobra.Command{
+	Use:   "show",
+	Short: "show a policy",
+	Run: func(cmd *cobra.Command, args []string) {
+		id, _ := cmd.Flags().GetString("id")
+		clt := getClient()
+
+		policy, err := clt.GetPolicy(context.Background(), id)
+		if err != nil {
+			DieErr(err)
 		}
 
-		PrintTable(rows, []interface{}{"Policy ID", "Creation Date", "Statement #", "Resource", "Effect", "Actions"}, nil, 0)
+		Write(policyDetailsTemplate, struct {
+			ID           string
+			CreationDate int64
+			StatementDoc StatementDoc
+		}{
+			ID:           *policy.ID,
+			CreationDate: policy.CreationDate,
+			StatementDoc: StatementDoc{policy.Statement},
+		})
 	},
 }
 
@@ -685,16 +714,22 @@ func init() {
 	authCmd.AddCommand(authGroups)
 
 	// policies
-	authPoliciesCreate.Flags().String("policy-document", "", "policy document path (or \"-\" for stdin)")
-	_ = authPoliciesCreate.MarkFlagRequired("policy-document")
+	authPoliciesCreate.Flags().String("id", "", "policy identifier")
+	_ = authPoliciesCreate.MarkFlagRequired("id")
+	authPoliciesCreate.Flags().String("statement-document", "", "JSON statement document path (or \"-\" for stdin)")
+	_ = authPoliciesCreate.MarkFlagRequired("statement-document")
 
 	authPoliciesDelete.Flags().String("id", "", "policy identifier")
 	_ = authPoliciesDelete.MarkFlagRequired("id")
+
+	authPoliciesShow.Flags().String("id", "", "policy identifier")
+	_ = authPoliciesShow.MarkFlagRequired("id")
 
 	addPaginationFlags(authPoliciesList)
 
 	authPolicies.AddCommand(authPoliciesDelete)
 	authPolicies.AddCommand(authPoliciesCreate)
+	authPolicies.AddCommand(authPoliciesShow)
 	authPolicies.AddCommand(authPoliciesList)
 	authCmd.AddCommand(authPolicies)
 
