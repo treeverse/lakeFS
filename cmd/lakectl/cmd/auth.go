@@ -31,10 +31,10 @@ var credentialsCreatedTemplate = `{{ "Credentials created successfully." | green
 `
 
 var policyDetailsTemplate = `
-ID: {{ .ID | dereference | bold }}
-Creation Date: {{  .CreationDate |date }}
+ID: {{ .ID | bold }}
+Creation Date: {{  .CreationDate | date }}
 Statements:
-{{ .Statement | json }}
+{{ .StatementDoc | json }}
 
 `
 
@@ -505,10 +505,10 @@ var authPoliciesList = &cobra.Command{
 			DieErr(err)
 		}
 
-		rows := make([][]interface{}, 0)
-		for _, policy := range policies {
+		rows := make([][]interface{}, len(policies))
+		for i, policy := range policies {
 			ts := time.Unix(policy.CreationDate, 0).String()
-			rows = append(rows, []interface{}{*policy.ID, ts})
+			rows[i] = []interface{}{*policy.ID, ts}
 		}
 		PrintTable(rows, []interface{}{"Policy ID", "Creation Date"}, pagination, amount)
 	},
@@ -533,19 +533,31 @@ var authPoliciesCreate = &cobra.Command{
 			}
 		}
 
-		var statement []*models.Statement
-		err = json.NewDecoder(fp).Decode(&statement)
+		var doc StatementDoc
+		err = json.NewDecoder(fp).Decode(&doc)
 		if err != nil {
 			DieFmt("could not parse statement JSON document: %v", err)
 		}
 
-		createdPolicy, err := clt.CreatePolicy(context.Background(), &models.Policy{ID: &id, Statement: statement})
+		createdPolicy, err := clt.CreatePolicy(context.Background(), &models.Policy{ID: &id, Statement: doc.Statement})
 		if err != nil {
 			DieErr(err)
 		}
 
-		Write(policyCreatedTemplate, createdPolicy)
+		Write(policyCreatedTemplate, struct {
+			ID           string
+			CreationDate int64
+			StatementDoc StatementDoc
+		}{
+			ID:           *createdPolicy.ID,
+			CreationDate: createdPolicy.CreationDate,
+			StatementDoc: StatementDoc{createdPolicy.Statement},
+		})
 	},
+}
+
+type StatementDoc struct {
+	Statement []*models.Statement `json:"statement"`
 }
 
 var authPoliciesShow = &cobra.Command{
@@ -560,7 +572,15 @@ var authPoliciesShow = &cobra.Command{
 			DieErr(err)
 		}
 
-		Write(policyDetailsTemplate, policy)
+		Write(policyDetailsTemplate, struct {
+			ID           string
+			CreationDate int64
+			StatementDoc StatementDoc
+		}{
+			ID:           *policy.ID,
+			CreationDate: policy.CreationDate,
+			StatementDoc: StatementDoc{policy.Statement},
+		})
 	},
 }
 
