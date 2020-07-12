@@ -108,8 +108,8 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	// the father is lhe effective commit number of the first lineage record of the son that points to the father
 	// it is possible that the son the have already done from_father merge. so we have to take the minimal effective commit
 	effectiveCommits := struct {
-		FatherEffectiveCommit CommitID `db:"father_effective_commit"`
-		SonEffectiveCommit    CommitID `db:"son_effective_commit"`
+		FatherEffectiveCommit CommitID `db:"father_effective_commit"` // last commit father synchronized with son. If non - it is the commit where the son was branched
+		SonEffectiveCommit    CommitID `db:"son_effective_commit"`    // last commit son synchronized to father. if never - than it is 1 (everything in the son is a change)
 	}{}
 
 	effectiveCommitsQuery, args, err := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
@@ -121,13 +121,12 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	if err != nil {
 		return nil, err
 	}
-
 	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1
-		FatherEffectiveQuery, args := sq.Select("effective_commit").From("lineage").
-			Where("branch_id = ? AND ancestor_branch = ?", sonID, fatherID).
-			OrderBy("min_commit DESC").Limit(1).PlaceholderFormat(sq.Dollar).MustSql()
+		FatherEffectiveQuery, args := sq.Select("commit_id as father_effective_commit").From("commits").
+			Where("branch_id = ? AND merge_source_branch = ?", sonID, fatherID).
+			OrderBy("commit_id").Limit(1).PlaceholderFormat(sq.Dollar).MustSql()
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
 	if err != nil {
@@ -138,8 +137,10 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	if err != nil {
 		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
-
-	s, args, err := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage).
+	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage)
+	debSQL := sq.DebugSqlizer(diffExpr)
+	_ = debSQL
+	s, args, err := diffExpr.
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
