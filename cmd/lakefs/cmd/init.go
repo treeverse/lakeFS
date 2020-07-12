@@ -6,12 +6,12 @@ import (
 	"os"
 	"time"
 
-  "github.com/spf13/cobra"
+	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
-  "github.com/treeverse/lakefs/config"
-  "github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 )
 
 // initCmd represents the init command

@@ -63,7 +63,7 @@ func TestLocalLoad(t *testing.T) {
 	migrator := db.NewDatabaseMigrator(databaseUri)
 
 	server := api.NewServer(
-    "dev",
+		"dev",
 		cataloger,
 		blockAdapter,
 		authService,

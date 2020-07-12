@@ -13,7 +13,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-  "github.com/treeverse/lakefs/auth"
+	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
