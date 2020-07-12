@@ -158,7 +158,16 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, "/", tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("listEntriesByLevel() error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf(" error = %v, wantErr %v", err, tt.wantErr)
+			}
+			// test that directories have null entries, and vice versa
+			for _, res := range got {
+				resEnd := (*res.Path)[len(*res.Path)-1:]
+				if resEnd == "/" && res.Entry != nil {
+					t.Errorf("%s is a directory, pointer to entry is not nil", *res.Path)
+				} else if resEnd != "/" && res.Entry == nil {
+					t.Errorf("%s is an entry,but pointer to entry is nil", *res.Path)
+				}
 			}
 			// copy the Entry fields we like to compare
 			var gotNames []string
@@ -167,10 +176,10 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("listEntriesByLevel() got = %+v, want = %+v", gotNames, tt.wantEntries)
+				t.Errorf("got = %+v, want = %+v", gotNames, tt.wantEntries)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("listEntriesByLevel() gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf(" gotMore = %v, want = %v", gotMore, tt.wantMore)
 			}
 		})
 	}

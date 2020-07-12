@@ -11,7 +11,7 @@ import (
 
 const ListEntriesByLevelMaxLimit = 1000
 
-func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntryResultStruct, bool, error) {
+func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntryResult, bool, error) {
 	var moreToRead bool
 	if limit < 0 || limit > ListEntriesByLevelMaxLimit {
 		limit = ListEntriesByLevelMaxLimit
@@ -42,7 +42,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("listEntriesByLevel - dirlist ToSql failed : %w", err)
 		}
-		var markerList []LevelEntryResultStruct
+		var markerList []LevelEntryResult
 		err = tx.Select(&markerList, sql, args...)
 		if err != nil {
 			return nil, fmt.Errorf("listEntriesByLevel - dirList query failed : %w", err)
@@ -56,10 +56,10 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	if markers == nil || err != nil {
 		return nil, false, err
 	}
-	return markers.([]LevelEntryResultStruct), moreToRead, nil
+	return markers.([]LevelEntryResult), moreToRead, nil
 }
 
-func retrieveEntries(tx db.Tx, markerList []LevelEntryResultStruct, branchID int64, commitID CommitID, lineage []lineageCommit, prefix string) (interface{}, error) {
+func retrieveEntries(tx db.Tx, markerList []LevelEntryResult, branchID int64, commitID CommitID, lineage []lineageCommit, prefix string) (interface{}, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int
 		startEntryRun, endEntryRun *string
@@ -71,8 +71,8 @@ func retrieveEntries(tx db.Tx, markerList []LevelEntryResultStruct, branchID int
 	for i := range markerList {
 		p := markerList[i].Path
 		if len(*p) > 0 {
-			if strings.HasSuffix(*p, DirectoryTeminationChar) { // remove termination character, if present
-				*p = (*p)[:len(*p)-len(DirectoryTeminationChar)]
+			if strings.HasSuffix(*p, DirectoryTerminationChar) { // remove termination character, if present
+				*p = (*p)[:len(*p)-len(DirectoryTerminationChar)]
 			}
 		}
 		if (*p)[len(*p)-1] == "/"[0] { // terminating by '/'(slash) character is an indication of a directory
