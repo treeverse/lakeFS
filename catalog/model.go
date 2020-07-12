@@ -66,7 +66,7 @@ type Branch struct {
 	Name       string `db:"name"`
 }
 
-type LevelEntryResultStruct struct {
+type LevelEntryResult struct {
 	Path  *string `db:"path"`
 	Entry *Entry
 }
