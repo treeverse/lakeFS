@@ -29,9 +29,8 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo")
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", 5)
 	catalogActions, _ := c.(*onboard.CatalogRepoActions)
-	catalogActions.BatchSize = 5
 	testdata := []struct {
 		AddedRows           []string
 		DeletedRows         []string

@@ -9,29 +9,30 @@ import (
 const (
 	DefaultBranchName = "import-from-inventory"
 	CommitMsgTemplate = "Import from %s"
+	DefaultBatchSize  = 500
 )
 
 type Importer struct {
-	Repository       string
-	Inventory        Inventory
+	repository       string
+	inventory        Inventory
 	batchSize        int
-	InventoryFactory InventoryFactory
+	inventoryFactory InventoryFactory
 	InventoryDiffer  func(leftInv []InventoryObject, rightInv []InventoryObject) *InventoryDiff
 	CatalogActions   RepoActions
 }
 
 func CreateImporter(cataloger catalog.Cataloger, inventoryFactory InventoryFactory, inventoryURL string, repository string) (importer *Importer, err error) {
 	res := &Importer{
-		Repository:       repository,
+		repository:       repository,
 		batchSize:        DefaultBatchSize,
-		InventoryFactory: inventoryFactory,
+		inventoryFactory: inventoryFactory,
 		InventoryDiffer:  CalcDiff,
 	}
-	res.Inventory, err = inventoryFactory.NewInventory(inventoryURL)
+	res.inventory, err = inventoryFactory.NewInventory(inventoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
-	res.CatalogActions = NewCatalogActions(cataloger, repository)
+	res.CatalogActions = NewCatalogActions(cataloger, repository, DefaultBatchSize)
 	return res, nil
 }
 
@@ -41,7 +42,7 @@ func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog)
 		err = fmt.Errorf("no manifest_url in commit Metadata. commit_ref=%s", commit.Reference)
 		return
 	}
-	previousInv, err := s.InventoryFactory.NewInventory(previousInventoryURL)
+	previousInv, err := s.inventoryFactory.NewInventory(previousInventoryURL)
 	if err != nil {
 		err = fmt.Errorf("failed to create inventory for previous state: %w", err)
 		return
@@ -50,11 +51,11 @@ func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog)
 	if err != nil {
 		return
 	}
-	err = s.Inventory.Fetch(ctx, true)
+	err = s.inventory.Fetch(ctx, true)
 	if err != nil {
 		return
 	}
-	diff = s.InventoryDiffer(previousInv.Objects(), s.Inventory.Objects())
+	diff = s.InventoryDiffer(previousInv.Objects(), s.inventory.Objects())
 	diff.PreviousInventoryURL = previousInventoryURL
 	diff.PreviousImportDate = commit.CreationDate
 	return
@@ -73,8 +74,8 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryDiff, err
 	if err != nil {
 		return nil, err
 	}
-	commitMetadata := s.Inventory.CreateCommitMetadata(*diff)
-	err = s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.Inventory.SourceName()), commitMetadata)
+	commitMetadata := s.inventory.CreateCommitMetadata(*diff)
+	err = s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 	if err != nil {
 		return nil, err
 	}
@@ -88,11 +89,11 @@ func (s *Importer) dataToImport(ctx context.Context) (diff *InventoryDiff, err e
 	}
 	if commit == nil {
 		// no previous commit, add whole inventory
-		err = s.Inventory.Fetch(ctx, false)
+		err = s.inventory.Fetch(ctx, false)
 		if err != nil {
 			return
 		}
-		diff = &InventoryDiff{AddedOrChanged: s.Inventory.Objects()}
+		diff = &InventoryDiff{AddedOrChanged: s.inventory.Objects()}
 	} else {
 		// has previous commit, add/delete according to diff
 		diff, err = s.diffFromCommit(ctx, *commit)

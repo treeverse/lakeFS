@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-const DefaultBatchSize = 500
-
 type RepoActions interface {
 	CreateAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
@@ -19,16 +17,16 @@ type RepoActions interface {
 
 type CatalogRepoActions struct {
 	cataloger  catalog.Cataloger
-	BatchSize  int
+	batchSize  int
 	repository string
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string) RepoActions {
-	return &CatalogRepoActions{cataloger: cataloger, BatchSize: DefaultBatchSize, repository: repository}
+func NewCatalogActions(cataloger catalog.Cataloger, repository string, batchSize int) RepoActions {
+	return &CatalogRepoActions{cataloger: cataloger, batchSize: batchSize, repository: repository}
 }
 
 func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error) {
-	currentBatch := make([]catalog.Entry, 0, c.BatchSize)
+	currentBatch := make([]catalog.Entry, 0, c.batchSize)
 	for _, row := range objects {
 		if row.Error != nil {
 			return fmt.Errorf("failed to read row from inventory: %w", row.Error)
@@ -43,12 +41,12 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 			Checksum:        row.ETag,
 		}
 		currentBatch = append(currentBatch, entry)
-		if len(currentBatch) >= c.BatchSize {
+		if len(currentBatch) >= c.batchSize {
 			err = c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 			if err != nil {
 				return fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 			}
-			currentBatch = make([]catalog.Entry, 0, c.BatchSize)
+			currentBatch = make([]catalog.Entry, 0, c.batchSize)
 		}
 	}
 	if len(currentBatch) > 0 {

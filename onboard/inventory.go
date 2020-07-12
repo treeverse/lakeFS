@@ -57,7 +57,7 @@ func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) *InventoryD
 	return &res
 }
 
-// IInventory represents all objects referenced by a single manifest
+// Inventory represents all objects referenced by a single manifest
 type Inventory interface {
 	Fetch(ctx context.Context, sorted bool) error
 	Objects() []InventoryObject
@@ -78,7 +78,7 @@ func (s *S3InventoryFactory) NewInventory(manifestURL string) (Inventory, error)
 	if err != nil {
 		return nil, err
 	}
-	return &S3Inventory{S3: s.s3, manifest: manifest, RowReader: readRows}, nil
+	return &S3Inventory{s3: s.s3, manifest: manifest, RowReader: readRows}, nil
 }
 
 func NewS3InventoryFactory(s3 s3iface.S3API) *S3InventoryFactory {
@@ -86,8 +86,8 @@ func NewS3InventoryFactory(s3 s3iface.S3API) *S3InventoryFactory {
 }
 
 type S3Inventory struct {
-	S3        s3iface.S3API
 	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
+	s3        s3iface.S3API
 	objects   []InventoryObject
 	manifest  *Manifest
 }
@@ -112,20 +112,20 @@ func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file Man
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
+	defer func() {
+		_ = pf.Close()
+	}()
 	pr, err := reader.NewParquetReader(pf, new(InventoryObject), 4)
 	if err != nil {
-		_ = pf.Close()
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
 	num := int(pr.GetNumRows())
 	currentRows := make([]InventoryObject, num)
 	err = pr.Read(&currentRows)
 	if err != nil {
-		_ = pf.Close()
 		return nil, err
 	}
-	err = pf.Close()
-	return currentRows, err
+	return currentRows, nil
 }
 
 // FetchInventory reads the parquet files specified in the given manifest, and unifies them to an array of InventoryObject
@@ -137,7 +137,7 @@ func (i *S3Inventory) Fetch(ctx context.Context, sorted bool) error {
 	}
 	invBucket := inventoryBucketArn.Resource
 	for _, file := range i.manifest.Files {
-		currentRows, err := i.RowReader(ctx, i.S3, invBucket, file)
+		currentRows, err := i.RowReader(ctx, i.s3, invBucket, file)
 		if err != nil {
 			return err
 		}
