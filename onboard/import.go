@@ -29,7 +29,7 @@ func CreateImporter(cataloger catalog.Cataloger, inventoryFactory InventoryFacto
 	}
 	res.Inventory, err = inventoryFactory.NewInventory(inventoryURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create inventory: %v", err)
+		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
 	res.CatalogActions = NewCatalogActions(cataloger, repository)
 	return res, nil
@@ -43,7 +43,7 @@ func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog)
 	}
 	previousInv, err := s.InventoryFactory.NewInventory(previousInventoryURL)
 	if err != nil {
-		err = fmt.Errorf("failed to create inventory for previous state: %v", err)
+		err = fmt.Errorf("failed to create inventory for previous state: %w", err)
 		return
 	}
 	err = previousInv.Fetch(ctx, true)
@@ -60,10 +60,14 @@ func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog)
 	return
 }
 
-func (s *Importer) Import(ctx context.Context) (*InventoryDiff, error) {
-	diff, err := s.DataToImport(ctx, false)
+func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryDiff, error) {
+	diff, err := s.dataToImport(ctx)
 	if err != nil {
 		return nil, err
+	}
+	diff.DryRun = dryRun
+	if dryRun {
+		return diff, nil
 	}
 	err = s.CatalogActions.CreateAndDeleteObjects(ctx, diff.AddedOrChanged, diff.Deleted)
 	if err != nil {
@@ -77,7 +81,7 @@ func (s *Importer) Import(ctx context.Context) (*InventoryDiff, error) {
 	return diff, nil
 }
 
-func (s *Importer) DataToImport(ctx context.Context, dryRun bool) (diff *InventoryDiff, err error) {
+func (s *Importer) dataToImport(ctx context.Context) (diff *InventoryDiff, err error) {
 	commit, err := s.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
 		return
@@ -95,7 +99,6 @@ func (s *Importer) DataToImport(ctx context.Context, dryRun bool) (diff *Invento
 		if err != nil {
 			return nil, err
 		}
-		diff.DryRun = dryRun
 	}
 	return
 }

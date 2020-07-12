@@ -40,7 +40,7 @@ func TestFetch(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{},
-			ExpectedObjects: []string{},
+			ExpectedObjects: nil,
 		},
 		{
 			InventoryFiles:  []string{"f3", "f2", "f1"},
@@ -106,8 +106,8 @@ func TestDiff(t *testing.T) {
 		{
 			LeftInv:             rows("a1", "a2", "a3"),
 			RightInv:            rows("a1", "a2", "a3"),
-			ExpectedDiffAdded:   []string{},
-			ExpectedDiffDeleted: []string{},
+			ExpectedDiffAdded:   nil,
+			ExpectedDiffDeleted: nil,
 		},
 		{
 			LeftInv:             rows("a1", "a2", "a3"),
@@ -119,12 +119,12 @@ func TestDiff(t *testing.T) {
 			LeftInv:             rows("a1", "a3", "a4"),
 			RightInv:            rows("a1", "a2", "a3", "a4"),
 			ExpectedDiffAdded:   []string{"a2"},
-			ExpectedDiffDeleted: []string{},
+			ExpectedDiffDeleted: nil,
 		},
 		{
 			LeftInv:             rows("a1", "a2", "a3", "a4"),
 			RightInv:            rows("a1", "a2", "a4"),
-			ExpectedDiffAdded:   []string{},
+			ExpectedDiffAdded:   nil,
 			ExpectedDiffDeleted: []string{"a3"},
 		},
 		{
@@ -137,12 +137,12 @@ func TestDiff(t *testing.T) {
 			LeftInv:             rows(),
 			RightInv:            rows("b1", "b2"),
 			ExpectedDiffAdded:   []string{"b1", "b2"},
-			ExpectedDiffDeleted: []string{},
+			ExpectedDiffDeleted: nil,
 		},
 		{
 			LeftInv:             rows("b1", "b2"),
 			RightInv:            rows(),
-			ExpectedDiffAdded:   []string{},
+			ExpectedDiffAdded:   nil,
 			ExpectedDiffDeleted: []string{"b1", "b2"},
 		},
 	}

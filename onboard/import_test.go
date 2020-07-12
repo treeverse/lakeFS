@@ -81,60 +81,85 @@ func TestImport(t *testing.T) {
 			ExpectedAdded: []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
 		},
 	}
-	for _, test := range testdata {
-		newManifestURL := NewManifestURL
-		previousManifestURL := PreviousManifestURL
-		if test.OverrideNewManifestURL != "" {
-			newManifestURL = test.OverrideNewManifestURL
-		}
-		if test.OverridePreviousManifestURL != "" {
-			newManifestURL = test.OverridePreviousManifestURL
-		}
-		catalogActionsMock := mockCatalogActions{}
-		if len(test.PreviousInventory) > 0 {
-			catalogActionsMock = mockCatalogActions{
-				previousCommitManifest: previousManifestURL,
+	for _, dryRun := range []bool{true, false} {
+		for _, test := range testdata {
+			newManifestURL := NewManifestURL
+			previousManifestURL := PreviousManifestURL
+			if test.OverrideNewManifestURL != "" {
+				newManifestURL = test.OverrideNewManifestURL
 			}
-		}
-		importer, err := onboard.CreateImporter(nil, &mockInventoryFactory{
-			newManifestURL:      newManifestURL,
-			previousManifestURL: previousManifestURL,
-			newInventory:        test.NewInventory,
-			previousInventory:   test.PreviousInventory,
-			sourceBucket:        "example-repo",
-		}, newManifestURL, "example-repo")
-		if err != nil {
-			t.Fatalf("failed to create importer: %v", err)
-		}
-		importer.CatalogActions = &catalogActionsMock
-		importer.InventoryDiffer = getSimpleDiffer(t)
-		_, err = importer.Import(context.Background())
+			if test.OverridePreviousManifestURL != "" {
+				newManifestURL = test.OverridePreviousManifestURL
+			}
+			catalogActionsMock := mockCatalogActions{}
+			if len(test.PreviousInventory) > 0 {
+				catalogActionsMock = mockCatalogActions{
+					previousCommitManifest: previousManifestURL,
+				}
+			}
+			importer, err := onboard.CreateImporter(nil, &mockInventoryFactory{
+				newManifestURL:      newManifestURL,
+				previousManifestURL: previousManifestURL,
+				newInventory:        test.NewInventory,
+				previousInventory:   test.PreviousInventory,
+				sourceBucket:        "example-repo",
+			}, newManifestURL, "example-repo")
+			if err != nil {
+				t.Fatalf("failed to create importer: %v", err)
+			}
+			importer.CatalogActions = &catalogActionsMock
+			importer.InventoryDiffer = getSimpleDiffer(t)
+			diff, err := importer.Import(context.Background(), dryRun)
+			if err != nil {
+				if !test.ExpectedErr {
+					t.Fatalf("unexpected error: %v", err)
+				} else {
+					continue
+				}
+			}
+			if test.ExpectedErr {
+				t.Fatalf("error was expected but none was returned")
+			}
 
-		if !test.ExpectedErr && err != nil {
-			t.Fatalf("unexpected error: %v", err)
-		}
-		if test.ExpectedErr && err == nil {
-			t.Fatalf("error was expected but none was returned")
-		}
-		if test.ExpectedErr {
-			continue // error was expected, no need to check further
-		}
-		if !reflect.DeepEqual(catalogActionsMock.objectActions.Added, test.ExpectedAdded) {
-			t.Fatalf("added objects different than expected. expected=%v, got=%v.", test.ExpectedAdded, catalogActionsMock.objectActions.Added)
-		}
-		if !reflect.DeepEqual(catalogActionsMock.objectActions.Deleted, test.ExpectedDeleted) {
-			t.Fatalf("deleted objects different than expected. expected=%v, got=%v.", test.ExpectedDeleted, catalogActionsMock.objectActions.Deleted)
-		}
-		if catalogActionsMock.lastCommitMetadata["manifest_url"] != newManifestURL {
-			t.Fatalf("unexpected manifest_url in commit metadata. expected=%s, got=%s", newManifestURL, catalogActionsMock.lastCommitMetadata["manifest_url"])
-		}
-		addedOrChangedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])
-		if err != nil || addedOrChangedCount != len(test.ExpectedAdded) {
-			t.Fatalf("unexpected added_or_changed_objects in commit metadata. expected=%d, got=%s", len(test.ExpectedAdded), catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])
-		}
-		deletedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["deleted_objects"])
-		if err != nil || deletedCount != len(test.ExpectedDeleted) {
-			t.Fatalf("unexpected deleted_objects in commit metadata. expected=%d, got=%s", len(test.ExpectedDeleted), catalogActionsMock.lastCommitMetadata["deleted_objects"])
+			if !reflect.DeepEqual(keys(diff.AddedOrChanged), test.ExpectedAdded) {
+				t.Fatalf("added objects in return value different than expected. expected=%v, got=%v", test.ExpectedAdded, keys(diff.AddedOrChanged))
+			}
+			if !reflect.DeepEqual(keys(diff.Deleted), test.ExpectedDeleted) {
+				t.Fatalf("deleted objects in return value different than expected. expected=%v, got=%v", test.ExpectedDeleted, keys(diff.Deleted))
+			}
+			var expectedAddedToCatalog, expectedDeletedFromCatalog []string
+			if !dryRun {
+				expectedAddedToCatalog = test.ExpectedAdded
+				expectedDeletedFromCatalog = test.ExpectedDeleted
+			}
+			if !reflect.DeepEqual(catalogActionsMock.objectActions.Added, expectedAddedToCatalog) {
+				t.Fatalf("objects added to catalog different than expected. expected=%v, got=%v.", expectedAddedToCatalog, catalogActionsMock.objectActions.Added)
+			}
+			if !reflect.DeepEqual(catalogActionsMock.objectActions.Deleted, expectedDeletedFromCatalog) {
+				t.Fatalf("objects deleted from catalog different than expected. expected=%v, got=%v.", expectedDeletedFromCatalog, catalogActionsMock.objectActions.Deleted)
+			}
+			if diff.DryRun != dryRun {
+				t.Fatalf("dryRun boolean on return value different than expected, expected=%t, got=%t", dryRun, diff.DryRun)
+			}
+			if dryRun {
+				if len(catalogActionsMock.lastCommitMetadata) > 0 {
+					t.Fatalf("found commit metadata in dry run: %v", catalogActionsMock.lastCommitMetadata)
+				}
+
+				continue
+			}
+			if catalogActionsMock.lastCommitMetadata["manifest_url"] != newManifestURL {
+				t.Fatalf("unexpected manifest_url in commit metadata. expected=%s, got=%s", newManifestURL, catalogActionsMock.lastCommitMetadata["manifest_url"])
+			}
+
+			addedOrChangedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])
+			if err != nil || addedOrChangedCount != len(expectedAddedToCatalog) {
+				t.Fatalf("unexpected added_or_changed_objects in commit metadata. expected=%d, got=%d", len(expectedDeletedFromCatalog), addedOrChangedCount)
+			}
+			deletedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["deleted_objects"])
+			if err != nil || deletedCount != len(expectedDeletedFromCatalog) {
+				t.Fatalf("unexpected deleted_objects in commit metadata. expected=%d, got=%d", len(expectedDeletedFromCatalog), deletedCount)
+			}
 		}
 	}
 }

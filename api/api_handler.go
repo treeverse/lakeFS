@@ -1969,7 +1969,7 @@ func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3Invent
 		}
 		var diff *onboard.InventoryDiff
 		if *params.DryRun {
-			diff, err = importer.DataToImport(deps.ctx, true)
+			diff, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -1991,7 +1991,7 @@ func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3Invent
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-			diff, err = importer.Import(params.HTTPRequest.Context())
+			diff, err = importer.Import(params.HTTPRequest.Context(), false)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))

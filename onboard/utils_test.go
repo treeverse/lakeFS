@@ -42,7 +42,6 @@ func (m mockInventoryFactory) NewInventory(manifestURL string) (onboard.Inventor
 }
 
 type mockInventory struct {
-	onboard.Inventory
 	inventoryFetched bool
 	rows             []string
 	manifestURL      string
@@ -104,6 +103,9 @@ func (m *mockS3Client) GetObject(input *s3.GetObjectInput) (*s3.GetObjectOutput,
 
 // convenience converter functions
 func keys(rows []onboard.InventoryObject) []string {
+	if rows == nil {
+		return nil
+	}
 	res := make([]string, 0, len(rows))
 	for _, row := range rows {
 		res = append(res, row.Key)
@@ -120,6 +122,9 @@ func files(keys ...string) []onboard.ManifestFile {
 }
 
 func rows(keys ...string) []onboard.InventoryObject {
+	if keys == nil {
+		return nil
+	}
 	res := make([]onboard.InventoryObject, 0, len(keys))
 	for _, key := range keys {
 		res = append(res, onboard.InventoryObject{Key: key, IsLatest: true, IsDeleteMarker: false, Size: swag.Int64(0)})

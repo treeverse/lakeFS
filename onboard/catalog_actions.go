@@ -31,8 +31,10 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 	currentBatch := make([]catalog.Entry, 0, c.BatchSize)
 	for _, row := range objects {
 		if row.Error != nil {
-			return fmt.Errorf("failed to read row from inventory: %v", row.Error)
+			return fmt.Errorf("failed to read row from inventory: %w", row.Error)
 		}
+	}
+	for _, row := range objects {
 		entry := catalog.Entry{
 			Path:            row.Key,
 			PhysicalAddress: "s3://" + row.Bucket + "/" + row.Key,
@@ -44,7 +46,7 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 		if len(currentBatch) >= c.BatchSize {
 			err = c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 			if err != nil {
-				return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
+				return fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 			}
 			currentBatch = make([]catalog.Entry, 0, c.BatchSize)
 		}
@@ -52,13 +54,13 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 	if len(currentBatch) > 0 {
 		err = c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 		if err != nil {
-			return fmt.Errorf("failed to create batch of %d entries (%v)", len(currentBatch), err)
+			return fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
 	for _, row := range objectsToDelete {
 		err = c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, row.Key)
 		if err != nil {
-			return fmt.Errorf("failed to delete entry %s: %v", row.Key, err)
+			return fmt.Errorf("failed to delete entry %s: %w", row.Key, err)
 		}
 	}
 	return nil
@@ -85,7 +87,7 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
 	_, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
-		"lakeFS", // TODO get actual user
+		catalog.CatalogerCommitter,
 		metadata)
 	return err
 }

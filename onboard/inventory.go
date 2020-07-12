@@ -110,11 +110,12 @@ func (s *InventoryObject) String() string {
 func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error) {
 	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, file.Key)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create parquet file reader: %v", err)
+		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
 	pr, err := reader.NewParquetReader(pf, new(InventoryObject), 4)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create parquet reader: %v", err)
+		_ = pf.Close()
+		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
 	num := int(pr.GetNumRows())
 	currentRows := make([]InventoryObject, num)
@@ -132,7 +133,7 @@ func (i *S3Inventory) Fetch(ctx context.Context, sorted bool) error {
 	i.objects = nil
 	inventoryBucketArn, err := arn.Parse(i.manifest.InventoryBucketArn)
 	if err != nil {
-		return fmt.Errorf("failed to parse inventory bucket arn: %v", err)
+		return fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
 	invBucket := inventoryBucketArn.Resource
 	for _, file := range i.manifest.Files {
