@@ -93,7 +93,7 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 	return baseSelect
 }
 
-func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit) sq.SelectBuilder {
+func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit, sonLineageValues string) sq.SelectBuilder {
 	lineage := sqEntriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
 	fatherSQL, fatherArgs := sq.Select("*").FromSelect(lineage, "z").
 		Where("displayed_branch = ?", fatherID).MustSql()
@@ -114,15 +114,13 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 									OR (f.source_branch != ? AND  -- an entry from father lineage
 				-- negative proof - if the son could see this object - than this is NOT a conflict
 				-- done by examining the son lineage against the father object
-									 NOT EXISTS ( SELECT * FROM lineage l WHERE
-											l.branch_id = ? AND l.ancestor_branch = f.source_branch AND
+									 NOT EXISTS ( SELECT * FROM`+sonLineageValues+` WHERE
+											l.branch_id = f.source_branch AND
 										-- prove that ancestor entry  was observable by the son
-										  ( ? BETWEEN l.min_commit AND l.max_commit) AND -- effective lineage on last merge
-											(l.effective_commit >= f.min_commit AND
-											 (l.effective_commit > f.max_commit OR NOT f.is_deleted))
+											(l.commit_id >= f.min_commit AND
+											 (l.commit_id > f.max_commit OR NOT f.is_deleted))
 										   ))) 
-											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit,
-			fatherID, sonID, sonEffectiveCommit).
+											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
 		FromSelect(sqEntriesV(CommittedID).
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
 		LeftJoin("("+fatherSQL+") AS f ON f.path = s.path", fatherArgs...)
