@@ -23,7 +23,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 		return nil, false, err
 	}
 
-	if limit < 0 {
+	if limit < 0 || limit > ListEntriesMaxLimit {
 		limit = ListEntriesMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
