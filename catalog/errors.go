@@ -17,6 +17,7 @@ var (
 	ErrConflictFound              = errors.New("conflict found")
 	ErrUnsupportedRelation        = errors.New("unsupported relation")
 	ErrInvalidReference           = errors.New("invalid reference")
+	ErrReferenceNotFound          = fmt.Errorf("reference: %w", db.ErrNotFound)
 	ErrBranchNotFound             = fmt.Errorf("branch %w", db.ErrNotFound)
 	ErrRepoNotFound               = fmt.Errorf("repository %w", db.ErrNotFound)
 	ErrMultipartUploadNotFound    = fmt.Errorf("multipart upload %w", db.ErrNotFound)

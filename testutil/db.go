@@ -6,28 +6,19 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/treeverse/lakefs/block/mem"
-
-	"github.com/jmoiron/sqlx"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/ory/dockertest/v3"
-
-	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/db"
-
-	"github.com/treeverse/lakefs/block"
-	lakefsS3 "github.com/treeverse/lakefs/block/s3"
-
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/model"
+	"github.com/google/uuid"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/ory/dockertest/v3"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/mem"
+	lakefsS3 "github.com/treeverse/lakefs/block/s3"
+	"github.com/treeverse/lakefs/db"
 )
 
 const (
@@ -39,20 +30,6 @@ const (
 	AWS_SECRET                = "AWS_SECRET_ACCESS_KEY"
 	AWS_REGION                = "AWS_DEFAULT_REGION"
 )
-
-func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
-	repoCreateDate, _ := time.Parse(TimeFormat, "Apr 7 15:13:13 2005 -0700")
-	createIndex := index.NewDBIndex(conn, index.WithTimeGenerator(func() time.Time {
-		return repoCreateDate
-	}))
-	Must(t, createIndex.CreateRepo("example", "s3://example-tzahi", "master"))
-	return index.NewDBIndex(conn), &model.Repo{
-		Id:               "example",
-		StorageNamespace: " example-tzahi",
-		CreationDate:     repoCreateDate,
-		DefaultBranch:    "master",
-	}
-}
 
 func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	resource, err := pool.Run("postgres", "11", []string{
@@ -111,7 +88,7 @@ func WithGetDBApplyDDL(apply bool) GetDBOption {
 	}
 }
 
-func GetDB(t *testing.T, uri string, opts ...GetDBOption) (db.Database, string) {
+func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) {
 	options := &GetDBOptions{
 		ApplyDDL: true,
 	}
@@ -182,13 +159,15 @@ func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Ad
 	}
 }
 
-func Must(t *testing.T, err error) {
+func Must(t testing.TB, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("error returned for operation: %v", err)
 	}
 }
 
-func MustDo(t *testing.T, what string, err error) {
+func MustDo(t testing.TB, what string, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("%s, expected no error, got err=%s", what, err)
 	}

@@ -43,14 +43,22 @@ type CommitLog struct {
 	Message      string    `db:"message"`
 	CreationDate time.Time `db:"creation_date"`
 	Metadata     Metadata  `db:"metadata"`
+	Parents      []string
 }
 
 type commitLogRaw struct {
-	CommitID     CommitID  `db:"commit_id"`
-	Committer    string    `db:"committer"`
-	Message      string    `db:"message"`
-	CreationDate time.Time `db:"creation_date"`
-	Metadata     Metadata  `db:"metadata"`
+	CommitID              CommitID  `db:"commit_id"`
+	Committer             string    `db:"committer"`
+	Message               string    `db:"message"`
+	CreationDate          time.Time `db:"creation_date"`
+	Metadata              Metadata  `db:"metadata"`
+	MergeSourceBranchName string    `db:"merge_source_branch"`
+	MergeSourceCommit     int       `db:"merge_source_commit"`
+}
+
+type lineageCommit struct {
+	BranchID int64    `db:"branch_id"`
+	CommitID CommitID `db:"commit_id"`
 }
 
 type Branch struct {

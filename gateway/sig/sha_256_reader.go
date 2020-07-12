@@ -33,11 +33,13 @@ func NewSha265Reader(src io.ReadCloser, sha256Hex string) (io.ReadCloser, error)
 func (r *Sha256Reader) Read(p []byte) (int, error) {
 	n, err := r.src.Read(p)
 	if n > 0 {
-		r.hash.Write(p[:n])
+		if _, err := r.hash.Write(p[:n]); err != nil {
+			return n, err
+		}
 	}
 	if err == io.EOF {
-		if cerr := r.Verify(); cerr != nil {
-			return 0, cerr
+		if err := r.Verify(); err != nil {
+			return n, err
 		}
 	}
 	return n, err
@@ -49,6 +51,7 @@ func (r *Sha256Reader) Verify() error {
 	}
 	return nil
 }
+
 func (r *Sha256Reader) Close() error {
 	return r.src.Close()
 }

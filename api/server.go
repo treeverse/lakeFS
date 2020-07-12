@@ -1,25 +1,28 @@
+//go:generate swagger generate client -q -A lakefs -f ../swagger.yml -P models.User -t gen
+//go:generate swagger generate server -q -A lakefs -f ../swagger.yml -P models.User -t gen --exclude-main
 package api
 
 import (
 	"context"
 	"fmt"
 	"net/http"
-
-	"gopkg.in/dgrijalva/jwt-go.v3"
+	"net/http/pprof"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 const (
@@ -34,7 +37,7 @@ var (
 
 type Server struct {
 	version     string
-	meta        index.Index
+	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
@@ -47,7 +50,7 @@ type Server struct {
 
 func NewServer(
 	version string,
-	meta index.Index,
+	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,
@@ -57,7 +60,7 @@ func NewServer(
 	logger.Info("initialized OpenAPI server")
 	return &Server{
 		version:     version,
-		meta:        meta,
+		cataloger:   cataloger,
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
@@ -98,11 +101,18 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 	}
 }
 
+const noopBasicAuth = false
+
 // BasicAuth returns a function that hooks into Swagger's basic Auth provider
 // it uses the Auth.Service provided to ensure credentials are valid
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
+		if noopBasicAuth {
+			return &models.User{
+				ID: "barak.amar",
+			}, nil
+		}
 		credentials, err := s.authService.GetCredentials(accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
@@ -125,6 +135,15 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 
 func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
+	// pprof
+	mux.HandleFunc("/debug/pprof/", pprof.Index)
+	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
+	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
+	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
+	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
+	// promethues
+	mux.Handle("/metrics", promhttp.Handler())
+
 	// api handler
 	mux.Handle("/api/", api)
 	// swagger
@@ -153,7 +172,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.meta, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
+	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
@@ -164,7 +183,11 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			cookieToAPIHeader(s.apiServer.GetHandler()),
+			promhttp.InstrumentHandlerCounter(requestCounter,
+				cookieToAPIHeader(
+					s.apiServer.GetHandler(),
+				),
+			),
 		),
 
 		// ui handler

@@ -12,7 +12,7 @@ import ListGroup from "react-bootstrap/ListGroup";
 import ListGroupItem from "react-bootstrap/ListGroupItem";
 import ButtonGroup from "react-bootstrap/ButtonGroup";
 import Button from "react-bootstrap/Button";
-import  {LinkIcon, LinkExternalIcon, DiffIcon} from "@primer/octicons-react";
+import {LinkIcon, LinkExternalIcon, DiffIcon} from "@primer/octicons-react";
 import ClipboardButton from "./ClipboardButton";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
@@ -61,7 +61,7 @@ const CommitWidget = ({repo, commit, previous}) => {
                         <ClipboardButton variant={buttonVariant} text={commit.id} tooltip="copy ID to clipboard"/>
                         <OverlayTrigger placement="bottom" overlay={<Tooltip>Explore objects at commit</Tooltip>}>
                             <Button variant={buttonVariant} as={Link} to={`/repositories/${repo.id}/tree?commit=${commit.id}`}>
-                                {(commit.id.length > 16) ? commit.id.substr(0, 16) : commit.id}
+                                {commit.id}
                             </Button>
                         </OverlayTrigger>
                         {(!!previous && !!previous.parents) ? (
@@ -98,7 +98,7 @@ const CommitsPage = ({repo, refId, logCommits,logCommitsPaginate, log }) => {
         body = (
             <>
             <ListGroup className="commit-list pagination-group">
-                {log.payload.results.filter(commit => !!commit.parents).map((commit, i) => (
+                {log.payload.results.map((commit, i) => (
                     <CommitWidget key={commit.id} commit={commit} repo={repo} previous={(i < log.payload.results.length-1) ? log.payload[i+1] : null}/>
                 ))}
             </ListGroup>

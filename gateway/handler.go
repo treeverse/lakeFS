@@ -1,16 +1,15 @@
 package gateway
 
 import (
-	"fmt"
 	"net"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
-
-	"github.com/treeverse/lakefs/index"
 )
 
 const (
@@ -20,7 +19,7 @@ const (
 
 type Handler struct {
 	BareDomain string
-	ctx        *ServerContext
+	sc         *ServerContext
 
 	NotFoundHandler    http.Handler
 	ServerErrorHandler http.Handler
@@ -28,8 +27,7 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// pprof endpoints
-	var handler http.Handler
-	handler = h.serveHealthCheck(r)
+	handler := h.serveHealthCheck(r)
 
 	if handler == nil {
 		handler = h.servePprof(r)
@@ -81,25 +79,25 @@ func (h *Handler) servePprof(r *http.Request) http.Handler {
 }
 
 func (h *Handler) servePathBased(r *http.Request) http.Handler {
-	host := hostOnly(r.Host)
-
-	if !strings.EqualFold(host, hostOnly(h.BareDomain)) {
+	requestHost := hostOnly(r.Host)
+	ourHost := hostOnly(h.BareDomain)
+	if !strings.EqualFold(requestHost, ourHost) {
 		return nil // maybe it's a virtual host, but def not a path based request because the host is wrong
 	}
 
 	if parts, ok := SplitFirst(r.URL.Path, 3); ok {
-		repositoryId := parts[0]
+		repository := parts[0]
 		ref := parts[1]
 		key := parts[2]
-		if err := index.ValidateAll(
-			index.ValidateRepoId(repositoryId),
-			index.ValidateRef(ref),
-			index.ValidatePath(key),
-		); err != nil {
+		if err := catalog.Validate(catalog.ValidateFields{
+			{Name: "repository", IsValid: catalog.ValidateRepositoryName(repository)},
+			{Name: "reference", IsValid: catalog.ValidateReference(ref)},
+			{Name: "path", IsValid: catalog.ValidatePath(key)},
+		}); err != nil {
 			return h.NotFoundHandler
 		}
 
-		return h.pathBasedHandler(r.Method, repositoryId, ref, key)
+		return h.pathBasedHandler(r.Method, repository, ref, key)
 	}
 
 	// Paths for repository and ref only (none exist)
@@ -109,20 +107,18 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 
 	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
 		// Paths for bare repository
-		repositoryId := parts[0]
-		if err := index.ValidateAll(
-			index.ValidateRepoId(repositoryId),
-		); err != nil {
+		repository := parts[0]
+		if !catalog.IsValidRepositoryName(repository) {
 			return h.NotFoundHandler
 		}
 
-		return h.repositoryBasedHandler(r.Method, repositoryId)
+		return h.repositoryBasedHandler(r.Method, repository)
 	}
 
 	// no repository given
 	switch r.Method {
 	case http.MethodGet:
-		return OperationHandler(h.ctx, &operations.ListBuckets{})
+		return OperationHandler(h.sc, &operations.ListBuckets{})
 	}
 
 	return h.NotFoundHandler
@@ -130,16 +126,15 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 
 func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {
 	// is it a virtual host?
-	host := hostOnly(r.Host)
-
-	if !strings.HasSuffix(host, hostOnly(h.BareDomain)) {
+	requestHost := hostOnly(r.Host)
+	ourHost := hostOnly(h.BareDomain)
+	if !strings.HasSuffix(requestHost, ourHost) {
 		return nil
 	}
 
 	// remove bare domain suffix
-	repositoryId := strings.TrimSuffix(host, fmt.Sprintf(".%s", hostOnly(h.BareDomain)))
-
-	if err := index.ValidateRepoId(repositoryId); err != nil {
+	repository := strings.TrimSuffix(requestHost, "."+ourHost)
+	if !catalog.IsValidRepositoryName(repository) {
 		return h.NotFoundHandler
 	}
 
@@ -148,10 +143,13 @@ func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {
 		// validate ref, key
 		ref := parts[0]
 		key := parts[1]
-		if err := index.ValidateAll(index.ValidateRef(ref), index.ValidatePath(key)); err != nil {
+		if err := catalog.Validate(catalog.ValidateFields{
+			{Name: "reference", IsValid: catalog.ValidateReference(ref)},
+			{Name: "path", IsValid: catalog.ValidatePath(key)},
+		}); err != nil {
 			return h.NotFoundHandler
 		}
-		return h.pathBasedHandler(r.Method, repositoryId, ref, key)
+		return h.pathBasedHandler(r.Method, repository, ref, key)
 	}
 
 	// Paths that only have a repository and a refId (always 404)
@@ -159,10 +157,10 @@ func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {
 		return h.NotFoundHandler
 	}
 
-	return h.repositoryBasedHandler(r.Method, repositoryId)
+	return h.repositoryBasedHandler(r.Method, repository)
 }
 
-func (h *Handler) pathBasedHandler(method, repositoryId, ref, path string) http.Handler {
+func (h *Handler) pathBasedHandler(method, repository, ref, path string) http.Handler {
 	var handler operations.PathOperationHandler
 	switch method {
 	case http.MethodDelete:
@@ -179,10 +177,10 @@ func (h *Handler) pathBasedHandler(method, repositoryId, ref, path string) http.
 		return h.NotFoundHandler
 	}
 
-	return PathOperationHandler(h.ctx, repositoryId, ref, path, handler)
+	return PathOperationHandler(h.sc, repository, ref, path, handler)
 }
 
-func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handler {
+func (h *Handler) repositoryBasedHandler(method, repository string) http.Handler {
 	var handler operations.RepoOperationHandler
 	switch method {
 	case http.MethodDelete, http.MethodPut:
@@ -197,7 +195,7 @@ func (h *Handler) repositoryBasedHandler(method, repositoryId string) http.Handl
 		return h.NotFoundHandler
 	}
 
-	return RepoOperationHandler(h.ctx, repositoryId, handler)
+	return RepoOperationHandler(h.sc, repository, handler)
 }
 
 func SplitFirst(pth string, parts int) ([]string, bool) {

@@ -6,13 +6,13 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/treeverse/lakefs/catalog"
+
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
-	indexerrors "github.com/treeverse/lakefs/index/errors"
-	"github.com/treeverse/lakefs/index/model"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 )
@@ -58,34 +58,29 @@ func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
 	return maxKeys
 }
 
-func (controller *ListObjects) serializeEntries(ref string, entries []*model.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
+func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
 	dirs := make([]serde.CommonPrefixes, 0)
 	files := make([]serde.Contents, 0)
 	var lastKey string
 	for _, entry := range entries {
-		lastKey = entry.GetName()
-		switch entry.GetType() {
-		case model.EntryTypeTree:
-			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef(entry.GetName(), ref)})
-		case model.EntryTypeObject:
-			files = append(files, serde.Contents{
-				Key:          path.WithRef(entry.GetName(), ref),
-				LastModified: serde.Timestamp(entry.CreationDate),
-				ETag:         httputil.ETag(entry.Checksum),
-				Size:         entry.Size,
-				StorageClass: "STANDARD",
-			})
-		}
+		lastKey = entry.Path
+		files = append(files, serde.Contents{
+			Key:          path.WithRef(entry.Path, ref),
+			LastModified: serde.Timestamp(entry.CreationDate),
+			ETag:         httputil.ETag(entry.Checksum),
+			Size:         entry.Size,
+			StorageClass: "STANDARD",
+		})
 	}
 	return dirs, files, lastKey
 }
 
-func (controller *ListObjects) serializeBranches(branches []*model.Branch) ([]serde.CommonPrefixes, string) {
+func (controller *ListObjects) serializeBranches(branches []*catalog.Branch) ([]serde.CommonPrefixes, string) {
 	dirs := make([]serde.CommonPrefixes, 0)
 	var lastKey string
 	for _, branch := range branches {
-		lastKey = branch.Id
-		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef("", branch.Id)})
+		lastKey = branch.Name
+		dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef("", branch.Name)})
 	}
 	return dirs, lastKey
 }
@@ -113,22 +108,10 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 	maxKeys := controller.getMaxKeys(o)
 
-	// see if this is a recursive call`
-	descend := true
-	if len(delimiter) >= 1 {
-		if delimiter != path.Separator {
-			// we only support "/" as a delimiter
-			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
-			return
-		}
-		descend = false
-	}
-
-	var results []*model.Entry
+	var results []*catalog.Entry
 	hasMore := false
 
 	var ref string
-
 	// should we list branches?
 	prefix, err := path.ResolvePath(params.Get("prefix"))
 	if err != nil {
@@ -144,7 +127,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
 		o.Log().WithField("prefix", branchPrefix).Debug("listing branches with prefix")
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, branchPrefix, maxKeys, fromStr)
+		branches, hasMore, err := o.Cataloger.ListBranches(o.Context(), o.Repository.Name, branchPrefix, maxKeys, fromStr)
 		if err != nil {
 			o.Log().WithError(err).Error("could not list branches")
 			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -153,7 +136,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		// return branch response
 		dirs, lastKey := controller.serializeBranches(branches)
 		resp := serde.ListObjectsV2Output{
-			Name:           o.Repo.Id,
+			Name:           o.Repository.Name,
 			Prefix:         params.Get("prefix"),
 			Delimiter:      delimiter,
 			KeyCount:       len(dirs),
@@ -189,22 +172,18 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			}
 		}
 
-		results, hasMore, err = o.Index.ListObjectsByPrefix(
-			o.Repo.Id,
+		results, hasMore, err = o.Cataloger.ListEntries(
+			o.Context(),
+			o.Repository.Name,
 			prefix.Ref,
 			prefix.Path,
 			from.Path,
-			maxKeys,
-			descend,
-			true)
-		if errors.Is(err, db.ErrNotFound) {
-			if errors.Is(err, indexerrors.ErrBranchNotFound) {
-				o.Log().WithError(err).WithFields(logging.Fields{
-					"ref":  prefix.Ref,
-					"path": prefix.Path,
-				}).Debug("could not list objects in path")
-			}
-			results = make([]*model.Entry, 0) // no results found
+			maxKeys)
+		if errors.Is(err, catalog.ErrBranchNotFound) {
+			o.Log().WithError(err).WithFields(logging.Fields{
+				"ref":  prefix.Ref,
+				"path": prefix.Path,
+			}).Debug("could not list objects in path")
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"ref":  prefix.Ref,
@@ -218,7 +197,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
 
 	resp := serde.ListObjectsV2Output{
-		Name:           o.Repo.Id,
+		Name:           o.Repository.Name,
 		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		KeyCount:       len(results),
@@ -260,7 +239,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	maxKeys := controller.getMaxKeys(o)
 
-	var results []*model.Entry
+	var results []*catalog.Entry
 	hasMore := false
 
 	var ref string
@@ -277,7 +256,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	if !prefix.WithPath {
 		// list branches then.
-		branches, hasMore, err := o.Index.ListBranchesByPrefix(o.Repo.Id, prefix.Ref, maxKeys, params.Get("marker"))
+		branches, hasMore, err := o.Cataloger.ListBranches(o.Context(), o.Repository.Name, prefix.Ref, maxKeys, params.Get("marker"))
 		if err != nil {
 			// TODO incorrect error type
 			o.Log().WithError(err).Error("could not list branches")
@@ -287,7 +266,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 		// return branch response
 		dirs, lastKey := controller.serializeBranches(branches)
 		resp := serde.ListBucketResult{
-			Name:           o.Repo.Id,
+			Name:           o.Repository.Name,
 			Prefix:         params.Get("prefix"),
 			Delimiter:      delimiter,
 			Marker:         params.Get("marker"),
@@ -331,17 +310,16 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 			}
 		}
 
-		results, hasMore, err = o.Index.ListObjectsByPrefix(
-			o.Repo.Id,
+		results, hasMore, err = o.Cataloger.ListEntries(
+			o.Context(),
+			o.Repository.Name,
 			prefix.Ref,
 			prefix.Path,
 			marker.Path,
 			maxKeys,
-			descend,
-			true,
 		)
 		if errors.Is(err, db.ErrNotFound) {
-			results = make([]*model.Entry, 0) // no results found
+			results = make([]*catalog.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"branch": prefix.Ref,
@@ -355,7 +333,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	// build a response
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
 	resp := serde.ListBucketResult{
-		Name:           o.Repo.Id,
+		Name:           o.Repository.Name,
 		Prefix:         params.Get("prefix"),
 		Delimiter:      delimiter,
 		Marker:         params.Get("marker"),
@@ -393,17 +371,13 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 
 	// handle ListObjects versions
 	listType := o.Request.URL.Query().Get("list-type")
-	if strings.EqualFold(listType, "2") {
-		controller.ListV2(o)
-	} else if strings.EqualFold(listType, "1") {
+	switch listType {
+	case "", "1":
 		controller.ListV1(o)
-	} else if len(listType) > 0 {
+	case "2":
+		controller.ListV2(o)
+	default:
 		o.Log().WithField("list-type", listType).Error("listObjects version not supported")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
-		return
-	} else {
-		// otherwise, handle ListObjectsV1
-		controller.ListV1(o)
 	}
-
 }
