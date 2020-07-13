@@ -146,13 +146,11 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	}
 	sonLineageValues := getLineageAsValues(sonLineage, sonID)
 
-	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues).P
+	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues)
 
 	debSQL := sq.DebugSqlizer(diffExpr)
 	_ = debSQL
-	s, args, err := diffExpr.
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+	s, args, err := diffExpr.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}
