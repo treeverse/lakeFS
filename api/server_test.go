@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -80,6 +81,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
 		Enabled: false,
 	})
+	retention := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 	server := api.NewServer(
 		"dev",
@@ -87,6 +89,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		blockAdapter,
 		authService,
 		&mockCollector{},
+		retention,
 		migrator,
 		logging.Default(),
 	)

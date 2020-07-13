@@ -20,6 +20,9 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
+	"github.com/treeverse/lakefs/retention"
+
+	retention_api "github.com/treeverse/lakefs/api/gen/restapi/operations/retention"
 	"github.com/treeverse/lakefs/auth"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
@@ -43,6 +46,7 @@ type HandlerDependencies struct {
 	Auth         auth.Service
 	BlockAdapter block.Adapter
 	Stats        stats.Collector
+	Retention    retention.Service
 	logger       logging.Logger
 }
 
@@ -53,6 +57,7 @@ func (c *HandlerDependencies) WithContext(ctx context.Context) *HandlerDependenc
 		Auth:         c.Auth, // TODO: pass context
 		BlockAdapter: c.BlockAdapter.WithContext(ctx),
 		Stats:        c.Stats,
+		Retention:    c.Retention,
 		logger:       c.logger.WithContext(ctx),
 	}
 }
@@ -69,13 +74,14 @@ type Handler struct {
 	deps *HandlerDependencies
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, logger logging.Logger) *Handler {
+func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, logger logging.Logger) *Handler {
 	return &Handler{
 		deps: &HandlerDependencies{
 			Cataloger:    cataloger,
 			Auth:         auth,
 			BlockAdapter: blockAdapter,
 			Stats:        stats,
+			Retention:    retention,
 			ctx:          context.Background(),
 			logger:       logger,
 		},
@@ -148,6 +154,8 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
 	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
 	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
+	api.RetentionGetRetentionPolicyHandler = a.RetentionGetRetentionPolicyHandler()
+	api.RetentionUpdateRetentionPolicyHandler = a.RetentionUpdateRetentionPolicyHandler()
 }
 
 func (a *Handler) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*HandlerDependencies, error) {
@@ -1941,5 +1949,52 @@ func (a *Handler) DetachPolicyFromGroupHandler() authentication.DetachPolicyFrom
 		}
 
 		return authentication.NewDetachPolicyFromGroupNoContent()
+	})
+}
+
+func (a *Handler) RetentionGetRetentionPolicyHandler() retention_api.GetRetentionPolicyHandler {
+	return retention_api.GetRetentionPolicyHandlerFunc(func(params retention_api.GetRetentionPolicyParams, user *models.User) middleware.Responder {
+		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.RetentionReadPolicyAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+
+		if err != nil {
+			return retention_api.NewGetRetentionPolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		deps.LogAction("get_retention_policy")
+
+		policy, err := deps.Retention.GetPolicy(params.Repository)
+		if err != nil {
+			return retention_api.NewGetRetentionPolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return retention_api.NewGetRetentionPolicyOK().WithPayload(policy)
+	})
+}
+
+func (a *Handler) RetentionUpdateRetentionPolicyHandler() retention_api.UpdateRetentionPolicyHandler {
+	return retention_api.UpdateRetentionPolicyHandlerFunc(func(params retention_api.UpdateRetentionPolicyParams, user *models.User) middleware.Responder {
+		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.RetentionWritePolicyAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return retention_api.NewUpdateRetentionPolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = deps.Retention.UpdatePolicy(params.Repository, params.Policy)
+		if err != nil {
+			return retention_api.NewUpdateRetentionPolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return retention_api.NewUpdateRetentionPolicyCreated()
 	})
 }

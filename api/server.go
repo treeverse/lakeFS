@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
 	"gopkg.in/dgrijalva/jwt-go.v3"
@@ -41,6 +42,7 @@ type Server struct {
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
+	retention   retention.Service
 	migrator    db.Migrator
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
@@ -54,6 +56,7 @@ func NewServer(
 	blockStore block.Adapter,
 	authService auth.Service,
 	stats stats.Collector,
+	retention retention.Service,
 	migrator db.Migrator,
 	logger logging.Logger,
 ) *Server {
@@ -64,6 +67,7 @@ func NewServer(
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
+		retention:   retention,
 		migrator:    migrator,
 		logger:      logger,
 	}
@@ -165,7 +169,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
+	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

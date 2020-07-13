@@ -198,6 +198,17 @@ CREATE SEQUENCE repositories_id_seq
     NO MAXVALUE
     CACHE 1;
 
+CREATE TABLE IF NOT EXISTS repositories_config
+(
+    repository_id integer     NOT NULL,
+    key           varchar     NOT NULL,
+    value         jsonb       NOT NULL,
+    description   varchar,
+    created_at    timestamptz NOT NULL,
+
+    PRIMARY KEY (repository_id, key)
+);
+
 ALTER TABLE ONLY branches
     ADD CONSTRAINT branches_pk PRIMARY KEY (id);
 
@@ -215,6 +226,9 @@ ALTER TABLE ONLY object_dedup
 
 ALTER TABLE ONLY repositories
     ADD CONSTRAINT repositories_pk PRIMARY KEY (id);
+
+ALTER TABLE ONLY repositories_config
+    ADD CONSTRAINT repositories_config_fk FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE;
 
 CREATE UNIQUE INDEX branches_repository_name_uindex ON branches USING btree (name, repository_id);
 

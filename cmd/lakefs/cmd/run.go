@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 )
 
 const (
@@ -69,6 +70,7 @@ var runCmd = &cobra.Command{
 		defer func() {
 			_ = dbPool.Close()
 		}()
+		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbConnString)
 
 		// init catalog
@@ -93,7 +95,7 @@ var runCmd = &cobra.Command{
 
 		var apiServer *api.Server
 		if runAPIService {
-			apiServer = api.NewServer(config.Version, cataloger, blockStore, authService, stats, migrator,
+			apiServer = api.NewServer(config.Version, cataloger, blockStore, authService, stats, retention, migrator,
 				logger.WithField("service", "api_gateway"))
 			go func() {
 				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {

@@ -28,6 +28,9 @@ const (
 	RevertBranchAction     = "fs:RevertBranch"
 	ListBranchesAction     = "fs:ListBranches"
 
+	RetentionReadPolicyAction  = "retention:GetPolicy"
+	RetentionWritePolicyAction = "retention:WritePolicy"
+
 	ReadUserAction          = "auth:ReadUser"
 	CreateUserAction        = "auth:CreateUser"
 	DeleteUserAction        = "auth:DeleteUser"
@@ -52,8 +55,9 @@ const (
 )
 
 var serviceSet = map[string]struct{}{
-	"fs":   {},
-	"auth": {},
+	"fs":        {},
+	"auth":      {},
+	"retention": {},
 }
 
 func IsValidAction(name string) error {

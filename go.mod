@@ -17,6 +17,7 @@ require (
 	github.com/go-openapi/strfmt v0.19.4
 	github.com/go-openapi/swag v0.19.7
 	github.com/go-openapi/validate v0.19.6
+	github.com/go-test/deep v1.0.6
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/google/uuid v1.1.1
 	github.com/hnlq715/golang-lru v0.2.0
