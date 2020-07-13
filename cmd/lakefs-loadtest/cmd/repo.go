@@ -118,5 +118,4 @@ func init() {
 	// is called directly, e.g.:
 	// repoCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	repoCmd.Flags().BoolP("trace", "t", false, "Run trace")
-
 }
