@@ -63,7 +63,7 @@ func (ts *ModelService) GetPolicy(repositoryId string) (*models.RetentionPolicyW
 	if err != nil {
 		return nil, err
 	}
-	return UnparsePolicyWithCreationDate(dbPolicy), nil
+	return RenderPolicyWithCreationDate(dbPolicy), nil
 }
 
 func (ts *ModelService) UpdatePolicy(repositoryId string, modelPolicy *models.RetentionPolicy) error {

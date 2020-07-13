@@ -64,7 +64,7 @@ func ParseTimePeriod(model models.TimePeriod) (TimePeriodHours, error) {
 	return ret, nil
 }
 
-func UnparseTimePeriod(timePeriod TimePeriodHours) *models.TimePeriod {
+func RenderTimePeriod(timePeriod TimePeriodHours) *models.TimePeriod {
 	// Time periods are used for deletion, so safest to round them UP
 	totalDays := (timePeriod + 23) / 24
 	return &models.TimePeriod{Weeks: int32(totalDays / 7), Days: int32(totalDays % 7)}
@@ -99,16 +99,16 @@ func ParseExpiration(model models.RetentionPolicyRuleExpiration) (*Expiration, e
 	return &ret, nil
 }
 
-func UnparseExpiration(expiration *Expiration) *models.RetentionPolicyRuleExpiration {
+func RenderExpiration(expiration *Expiration) *models.RetentionPolicyRuleExpiration {
 	ret := models.RetentionPolicyRuleExpiration{}
 	if expiration.All != nil {
-		ret.All = UnparseTimePeriod(*expiration.All)
+		ret.All = RenderTimePeriod(*expiration.All)
 	}
 	if expiration.Noncurrent != nil {
-		ret.Noncurrent = UnparseTimePeriod(*expiration.Noncurrent)
+		ret.Noncurrent = RenderTimePeriod(*expiration.Noncurrent)
 	}
 	if expiration.Uncommitted != nil {
-		ret.Uncommitted = UnparseTimePeriod(*expiration.Uncommitted)
+		ret.Uncommitted = RenderTimePeriod(*expiration.Uncommitted)
 	}
 	return &ret
 }
@@ -137,7 +137,7 @@ var (
 	Disabled = "disabled"
 )
 
-func UnparseRule(rule *Rule) *models.RetentionPolicyRule {
+func RenderRule(rule *Rule) *models.RetentionPolicyRule {
 	ret := models.RetentionPolicyRule{}
 	if rule.Enabled {
 		ret.Status = &Enabled
@@ -147,7 +147,7 @@ func UnparseRule(rule *Rule) *models.RetentionPolicyRule {
 	if rule.FilterPrefix != "" {
 		ret.Filter = &models.RetentionPolicyRuleFilter{Prefix: rule.FilterPrefix}
 	}
-	ret.Expiration = UnparseExpiration(&rule.Expiration)
+	ret.Expiration = RenderExpiration(&rule.Expiration)
 	return &ret
 }
 
@@ -165,19 +165,19 @@ func ParsePolicy(model models.RetentionPolicy) (*Policy, error) {
 	return &Policy{Description: model.Description, Rules: rules}, nil
 }
 
-func UnparsePolicy(policy *Policy) *models.RetentionPolicy {
+func RenderPolicy(policy *Policy) *models.RetentionPolicy {
 	modelRules := make([]*models.RetentionPolicyRule, 0, len(policy.Rules))
 	for _, rule := range policy.Rules {
-		modelRules = append(modelRules, UnparseRule(&rule))
+		modelRules = append(modelRules, RenderRule(&rule))
 	}
 	return &models.RetentionPolicy{Description: policy.Description, Rules: modelRules}
 }
 
 // PolicyWithCreationDate never converted in, only out
-func UnparsePolicyWithCreationDate(policy *PolicyWithCreationTime) *models.RetentionPolicyWithCreationDate {
+func RenderPolicyWithCreationDate(policy *PolicyWithCreationTime) *models.RetentionPolicyWithCreationDate {
 	serializableCreationDate := strfmt.DateTime(policy.CreatedAt)
 	return &models.RetentionPolicyWithCreationDate{
-		RetentionPolicy: *UnparsePolicy(&policy.Policy),
+		RetentionPolicy: *RenderPolicy(&policy.Policy),
 		CreationDate:    &serializableCreationDate,
 	}
 }

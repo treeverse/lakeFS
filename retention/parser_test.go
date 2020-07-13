@@ -48,7 +48,7 @@ func TestUnparseTimePeriod(t *testing.T) {
 		{Output: models.TimePeriod{Weeks: 1, Days: 3}, Input: retention.TimePeriodHours(10 * 24)},
 	}
 	for _, c := range cases {
-		got := retention.UnparseTimePeriod(c.Input)
+		got := retention.RenderTimePeriod(c.Input)
 		if c.Output != *got {
 			t.Errorf("expected %d to return %#v, got %#v", c.Input, c.Output, got)
 		}
@@ -139,7 +139,7 @@ func TestUnParseExpiration(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		got := retention.UnparseExpiration(&c.Input)
+		got := retention.RenderExpiration(&c.Input)
 		diff := deep.Equal(got, &c.Output)
 		if diff != nil {
 			t.Errorf("%#v: difference %s (expected %#v, got %#v)", c.Input, diff, c.Output, got)
@@ -222,7 +222,7 @@ func TestUnparsePolicy(t *testing.T) {
 		{Input: retention.Policy{Rules: []retention.Rule{ruleA, ruleB}}, OutputPrefix: []string{pathA, pathB}},
 	}
 	for _, c := range cases {
-		got := retention.UnparsePolicy(&c.Input)
+		got := retention.RenderPolicy(&c.Input)
 		gotPrefix := make([]string, 0, len(got.Rules))
 		for _, rule := range got.Rules {
 			gotPrefix = append(gotPrefix, rule.Filter.Prefix)
