@@ -19,6 +19,7 @@ require (
 	github.com/go-openapi/validate v0.19.6
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/google/uuid v1.1.1
+	github.com/hnlq715/golang-lru v0.2.0
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.6.1
 	github.com/jackc/pgerrcode v0.0.0-20190803225404-afa3381909a6

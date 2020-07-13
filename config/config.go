@@ -13,6 +13,7 @@ import (
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
@@ -32,6 +33,11 @@ const (
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+
+	DefaultAuthCacheEnabled = true
+	DefaultAuthCacheSize    = 1024
+	DefaultAuthCacheTTL     = 20 * time.Second
+	DefaultAuthCacheJitter  = 3 * time.Second
 
 	DefaultS3GatewayListenAddr = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
@@ -66,6 +72,11 @@ func setDefaults() {
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
 
 	viper.SetDefault("database.connection_string", DefaultDatabaseConnString)
+
+	viper.SetDefault("auth.cache.enabled", DefaultAuthCacheEnabled)
+	viper.SetDefault("auth.cache.size", DefaultAuthCacheSize)
+	viper.SetDefault("auth.cache.ttl", DefaultAuthCacheTTL)
+	viper.SetDefault("auth.cache.jitter", DefaultAuthCacheJitter)
 
 	viper.SetDefault("blockstore.type", DefaultBlockStoreType)
 	viper.SetDefault("blockstore.local.path", DefaultBlockStoreLocalPath)
@@ -161,6 +172,15 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 		err := fmt.Errorf("BLockstore '%s' is not a valid type, please choose one of %s",
 			blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
 		panic(err)
+	}
+}
+
+func (c *Config) GetAuthCacheConfig() auth.ServiceCacheConfig {
+	return auth.ServiceCacheConfig{
+		Enabled:        viper.GetBool("auth.cache.enabled"),
+		Size:           viper.GetInt("auth.cache.size"),
+		TTL:            viper.GetDuration("auth.cache.ttl"),
+		EvictionJitter: viper.GetDuration("auth.cache.jitter"),
 	}
 }
 

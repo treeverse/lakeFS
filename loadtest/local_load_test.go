@@ -59,9 +59,11 @@ func TestLocalLoad(t *testing.T) {
 
 	cataloger := catalog.NewCataloger(conn)
 
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
 	migrator := db.NewDatabaseMigrator(databaseUri)
+
 	server := api.NewServer(
+		"dev",
 		cataloger,
 		blockAdapter,
 		authService,

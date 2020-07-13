@@ -135,11 +135,29 @@ func genAccessSecretKey() string {
 type DBAuthService struct {
 	db          db.Database
 	secretStore crypt.SecretStore
+	cache       Cache
 }
 
-func NewDBAuthService(db db.Database, secretStore crypt.SecretStore) *DBAuthService {
+type ServiceCacheConfig struct {
+	Enabled        bool
+	Size           int
+	TTL            time.Duration
+	EvictionJitter time.Duration
+}
+
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf ServiceCacheConfig) *DBAuthService {
 	logging.Default().Info("initialized Auth service")
-	return &DBAuthService{db: db, secretStore: secretStore}
+	var cache Cache
+	if cacheConf.Enabled {
+		cache = NewLRUCache(cacheConf.Size, cacheConf.TTL, cacheConf.EvictionJitter)
+	} else {
+		cache = &DummyCache{}
+	}
+	return &DBAuthService{
+		db:          db,
+		secretStore: secretStore,
+		cache:       cache,
+	}
 }
 
 func (s *DBAuthService) decryptSecret(value []byte) (string, error) {
@@ -185,28 +203,32 @@ func (s *DBAuthService) DeleteUser(userDisplayName string) error {
 }
 
 func (s *DBAuthService) GetUser(userDisplayName string) (*model.User, error) {
-	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return getUser(tx, userDisplayName)
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-	return user.(*model.User), nil
-}
-
-func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
-	user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		user := &model.User{}
-		err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userId)
+	return s.cache.GetUser(userDisplayName, func() (*model.User, error) {
+		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+			return getUser(tx, userDisplayName)
+		}, db.ReadOnly())
 		if err != nil {
 			return nil, err
 		}
-		return user, nil
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, err
-	}
-	return user.(*model.User), nil
+		return user.(*model.User), nil
+	})
+}
+
+func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
+	return s.cache.GetUserByID(userId, func() (*model.User, error) {
+		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+			user := &model.User{}
+			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userId)
+			if err != nil {
+				return nil, err
+			}
+			return user, nil
+		}, db.ReadOnly())
+		if err != nil {
+			return nil, err
+		}
+		return user.(*model.User), nil
+	})
 }
 
 func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
@@ -362,7 +384,7 @@ func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.P
 	return result.(*res).policies, result.(*res).paginator, nil
 }
 
-func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+func (s *DBAuthService) getEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
 	type res struct {
 		policies  []*model.Policy
 		paginator *model.Paginator
@@ -422,6 +444,22 @@ func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *mo
 		return nil, nil, err
 	}
 	return result.(*res).policies, result.(*res).paginator, nil
+}
+
+func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
+	if params.Amount == -1 {
+		// read through the cache when requesting the full list
+		policies, err := s.cache.GetUserPolicies(userDisplayName, func() ([]*model.Policy, error) {
+			policies, _, err := s.getEffectivePolicies(userDisplayName, params)
+			return policies, err
+		})
+		if err != nil {
+			return nil, nil, err
+		}
+		return policies, &model.Paginator{Amount: len(policies)}, nil
+	}
+
+	return s.getEffectivePolicies(userDisplayName, params)
 }
 
 func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
@@ -843,24 +881,26 @@ func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId strin
 }
 
 func (s *DBAuthService) GetCredentials(accessKeyId string) (*model.Credential, error) {
-	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		credentials := &model.Credential{}
-		err := tx.Get(credentials, `
+	return s.cache.GetCredential(accessKeyId, func() (*model.Credential, error) {
+		credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
+			credentials := &model.Credential{}
+			err := tx.Get(credentials, `
 			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyId)
+			if err != nil {
+				return nil, err
+			}
+			key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
+			if err != nil {
+				return nil, err
+			}
+			credentials.AccessSecretKey = key
+			return credentials, nil
+		})
 		if err != nil {
 			return nil, err
 		}
-		key, err := s.decryptSecret(credentials.AccessSecretKeyEncryptedBytes)
-		if err != nil {
-			return nil, err
-		}
-		credentials.AccessSecretKey = key
-		return credentials, nil
+		return credentials.(*model.Credential), nil
 	})
-	if err != nil {
-		return nil, err
-	}
-	return credentials.(*model.Credential), nil
 }
 
 func interpolateUser(resource string, userDisplayName string) string {

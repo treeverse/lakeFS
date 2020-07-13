@@ -78,7 +78,10 @@ var runCmd = &cobra.Command{
 		blockStore := cfg.BuildBlockAdapter()
 
 		// init authentication
-		authService := auth.NewDBAuthService(dbPool, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+		authService := auth.NewDBAuthService(
+			dbPool,
+			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+			cfg.GetAuthCacheConfig())
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 		stats := cfg.BuildStats(getInstallationID(authService))
@@ -90,7 +93,7 @@ var runCmd = &cobra.Command{
 
 		var apiServer *api.Server
 		if runAPIService {
-			apiServer = api.NewServer(cataloger, blockStore, authService, stats, migrator,
+			apiServer = api.NewServer(config.Version, cataloger, blockStore, authService, stats, migrator,
 				logger.WithField("service", "api_gateway"))
 			go func() {
 				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
@@ -117,7 +120,7 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.CollectEvent("global", "run")
 
-		metaUpdater := auth.NewMetadataRefresher(5*time.Minute, 24*time.Hour, authService, stats)
+		metaUpdater := auth.NewMetadataRefresher(config.Version, 5*time.Minute, 24*time.Hour, authService, stats)
 		metaUpdater.Start()
 
 		if gatewayServer != nil {

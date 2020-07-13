@@ -36,6 +36,7 @@ var (
 )
 
 type Server struct {
+	version     string
 	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService auth.Service
@@ -48,6 +49,7 @@ type Server struct {
 }
 
 func NewServer(
+	version string,
 	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
@@ -57,6 +59,7 @@ func NewServer(
 ) *Server {
 	logger.Info("initialized OpenAPI server")
 	return &Server{
+		version:     version,
 		cataloger:   cataloger,
 		blockStore:  blockStore,
 		authService: authService,
@@ -194,7 +197,7 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			setupLakeFSHandler(s.authService, s.migrator, s.stats),
+			setupLakeFSHandler(s.version, s.authService, s.migrator, s.stats),
 		),
 	)
 
