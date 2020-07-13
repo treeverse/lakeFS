@@ -4,8 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"io"
-	"os"
 	"time"
 
 	"github.com/go-openapi/swag"
@@ -167,28 +165,11 @@ var setPolicyCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
 
-		var (
-			fp  io.ReadCloser
-			err error
-		)
-		filename := args[1]
-		if filename == "-" {
-			fp = os.Stdin
-		} else {
-			fp, err = os.Open(filename)
-			if err != nil {
-				DieFmt("open policy file %s for read: %v", filename, err)
-			}
-		}
-
 		var policy models.RetentionPolicy
-		err = json.NewDecoder(fp).Decode(&policy)
-		if err != nil {
-			DieFmt("could not parse retention policy document: %v", err)
-		}
+		ParseDocument(&policy, args[1], "retention policy")
 
 		client := getClient()
-		err = client.UpdateRetentionPolicy(context.Background(), u.Repository, &policy)
+		err := client.UpdateRetentionPolicy(context.Background(), u.Repository, &policy)
 		if err != nil {
 			DieErr(err)
 		}
