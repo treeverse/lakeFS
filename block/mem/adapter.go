@@ -6,6 +6,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"github.com/go-openapi/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -200,4 +201,8 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 
 func (a *Adapter) ValidateConfiguration(_ string) error {
 	return nil
+}
+
+func (a *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, errors.NotImplemented("inventory feature not implemented for memory storage adapter")
 }

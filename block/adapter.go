@@ -49,6 +49,7 @@ type Properties struct {
 }
 
 type Adapter interface {
+	InventoryGenerator
 	WithContext(ctx context.Context) Adapter
 	Put(obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
 	Get(obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)

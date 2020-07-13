@@ -3,7 +3,6 @@ package config
 import (
 	"fmt"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/treeverse/lakefs/onboard"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -118,10 +117,6 @@ func (c *Config) buildS3Service() s3iface.S3API {
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig(s3.ServiceName)
 	return s3.New(sess)
-}
-
-func (c *Config) BuildS3InventoryFactory() onboard.S3InventoryFactory {
-	return *onboard.NewS3InventoryFactory(c.buildS3Service())
 }
 
 func (c *Config) buildS3Adapter() block.Adapter {

@@ -4,13 +4,14 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"time"
 )
 
 type RepoActions interface {
-	CreateAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error)
+	CreateAndDeleteObjects(ctx context.Context, objects []block.InventoryObject, objectsToDelete []block.InventoryObject) (err error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
 }
@@ -25,7 +26,7 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string, batchSize
 	return &CatalogRepoActions{cataloger: cataloger, batchSize: batchSize, repository: repository}
 }
 
-func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects []InventoryObject, objectsToDelete []InventoryObject) (err error) {
+func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects []block.InventoryObject, objectsToDelete []block.InventoryObject) (err error) {
 	currentBatch := make([]catalog.Entry, 0, c.batchSize)
 	for _, row := range objects {
 		if row.Error != nil {
@@ -35,10 +36,10 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 	for _, row := range objects {
 		entry := catalog.Entry{
 			Path:            row.Key,
-			PhysicalAddress: "s3://" + row.Bucket + "/" + row.Key,
+			PhysicalAddress: row.PhysicalAddress,
 			CreationDate:    time.Unix(0, row.LastModified*int64(time.Millisecond)),
 			Size:            *row.Size,
-			Checksum:        row.ETag,
+			Checksum:        row.Checksum,
 		}
 		currentBatch = append(currentBatch, entry)
 		if len(currentBatch) >= c.batchSize {

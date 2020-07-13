@@ -39,24 +39,22 @@ const (
 )
 
 type HandlerDependencies struct {
-	ctx                context.Context
-	Cataloger          catalog.Cataloger
-	Auth               auth.Service
-	BlockAdapter       block.Adapter
-	S3InventoryFactory onboard.S3InventoryFactory
-	Stats              stats.Collector
-	logger             logging.Logger
+	ctx          context.Context
+	Cataloger    catalog.Cataloger
+	Auth         auth.Service
+	BlockAdapter block.Adapter
+	Stats        stats.Collector
+	logger       logging.Logger
 }
 
 func (c *HandlerDependencies) WithContext(ctx context.Context) *HandlerDependencies {
 	return &HandlerDependencies{
-		ctx:                ctx,
-		Cataloger:          c.Cataloger,
-		Auth:               c.Auth, // TODO: pass context
-		BlockAdapter:       c.BlockAdapter.WithContext(ctx),
-		S3InventoryFactory: c.S3InventoryFactory,
-		Stats:              c.Stats,
-		logger:             c.logger.WithContext(ctx),
+		ctx:          ctx,
+		Cataloger:    c.Cataloger,
+		Auth:         c.Auth, // TODO: pass context
+		BlockAdapter: c.BlockAdapter.WithContext(ctx),
+		Stats:        c.Stats,
+		logger:       c.logger.WithContext(ctx),
 	}
 }
 
@@ -72,16 +70,15 @@ type Handler struct {
 	deps *HandlerDependencies
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, s3InventoryFactory onboard.S3InventoryFactory, stats stats.Collector, logger logging.Logger) *Handler {
+func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, logger logging.Logger) *Handler {
 	return &Handler{
 		deps: &HandlerDependencies{
-			Cataloger:          cataloger,
-			Auth:               auth,
-			BlockAdapter:       blockAdapter,
-			S3InventoryFactory: s3InventoryFactory,
-			Stats:              stats,
-			ctx:                context.Background(),
-			logger:             logger,
+			Cataloger:    cataloger,
+			Auth:         auth,
+			BlockAdapter: blockAdapter,
+			Stats:        stats,
+			ctx:          context.Background(),
+			logger:       logger,
 		},
 	}
 }
@@ -1962,7 +1959,7 @@ func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3Invent
 		}
 		deps.LogAction("import_from_s3_inventory")
 
-		importer, err := onboard.CreateImporter(deps.Cataloger, &deps.S3InventoryFactory, params.ManifestURL, params.Repository)
+		importer, err := onboard.CreateImporter(deps.Cataloger, deps.BlockAdapter, params.ManifestURL, params.Repository)
 		if err != nil {
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

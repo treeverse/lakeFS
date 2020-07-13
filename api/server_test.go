@@ -1,7 +1,6 @@
 package api_test
 
 import (
-	"github.com/treeverse/lakefs/onboard"
 	"log"
 	"net/http"
 	"net/http/httptest"
@@ -85,7 +84,6 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		authService,
 		&mockCollector{},
 		migrator,
-		*onboard.NewS3InventoryFactory(nil),
 		logging.Default(),
 	)
 

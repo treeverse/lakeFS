@@ -5,7 +5,6 @@ package api
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/onboard"
 	"net/http"
 	"net/http/pprof"
 
@@ -37,16 +36,15 @@ var (
 )
 
 type Server struct {
-	cataloger          catalog.Cataloger
-	blockStore         block.Adapter
-	authService        auth.Service
-	stats              stats.Collector
-	migrator           db.Migrator
-	apiServer          *restapi.Server
-	handler            *http.ServeMux
-	server             *http.Server
-	s3InventoryFactory onboard.S3InventoryFactory
-	logger             logging.Logger
+	cataloger   catalog.Cataloger
+	blockStore  block.Adapter
+	authService auth.Service
+	stats       stats.Collector
+	migrator    db.Migrator
+	apiServer   *restapi.Server
+	handler     *http.ServeMux
+	server      *http.Server
+	logger      logging.Logger
 }
 
 func NewServer(
@@ -55,18 +53,16 @@ func NewServer(
 	authService auth.Service,
 	stats stats.Collector,
 	migrator db.Migrator,
-	s3InventoryFactory onboard.S3InventoryFactory,
 	logger logging.Logger,
 ) *Server {
 	logger.Info("initialized OpenAPI server")
 	return &Server{
-		cataloger:          cataloger,
-		blockStore:         blockStore,
-		authService:        authService,
-		stats:              stats,
-		migrator:           migrator,
-		s3InventoryFactory: s3InventoryFactory,
-		logger:             logger,
+		cataloger:   cataloger,
+		blockStore:  blockStore,
+		authService: authService,
+		stats:       stats,
+		migrator:    migrator,
+		logger:      logger,
 	}
 }
 
@@ -173,7 +169,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.cataloger, s.authService, s.blockStore, s.s3InventoryFactory, s.stats, s.logger).Configure(api)
+	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

@@ -1,19 +1,13 @@
 package onboard
 
 import (
-	"context"
-	"fmt"
-	"github.com/aws/aws-sdk-go/aws/arn"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	s3parquet "github.com/xitongsys/parquet-go-source/s3"
-	"github.com/xitongsys/parquet-go/reader"
-	"sort"
 	"strconv"
 	"time"
 )
 
-func CompareKeys(row1 *InventoryObject, row2 *InventoryObject) bool {
+func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool {
 	if row1 == nil || row2 == nil {
 		return false
 	}
@@ -22,18 +16,18 @@ func CompareKeys(row1 *InventoryObject, row2 *InventoryObject) bool {
 
 type InventoryDiff struct {
 	DryRun               bool
-	AddedOrChanged       []InventoryObject
-	Deleted              []InventoryObject
+	AddedOrChanged       []block.InventoryObject
+	Deleted              []block.InventoryObject
 	PreviousInventoryURL string
 	PreviousImportDate   time.Time
 }
 
 // CalcDiff returns a diff between two sorted arrays of InventoryObject
-func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) *InventoryDiff {
+func CalcDiff(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *InventoryDiff {
 	res := InventoryDiff{}
 	var leftIdx, rightIdx int
 	for leftIdx < len(leftInv) || rightIdx < len(rightInv) {
-		var leftRow, rightRow *InventoryObject
+		var leftRow, rightRow *block.InventoryObject
 		if leftIdx < len(leftInv) {
 			leftRow = &leftInv[leftIdx]
 		}
@@ -47,7 +41,7 @@ func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) *InventoryD
 			res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			rightIdx++
 		} else if leftRow.Key == rightRow.Key {
-			if leftRow.ETag != rightRow.ETag {
+			if leftRow.Checksum != rightRow.Checksum {
 				res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			}
 			leftIdx++
@@ -57,121 +51,15 @@ func CalcDiff(leftInv []InventoryObject, rightInv []InventoryObject) *InventoryD
 	return &res
 }
 
-// Inventory represents all objects referenced by a single manifest
-type Inventory interface {
-	Fetch(ctx context.Context, sorted bool) error
-	Objects() []InventoryObject
-	SourceName() string
-	CreateCommitMetadata(diff InventoryDiff) catalog.Metadata
-}
-
-type InventoryFactory interface {
-	NewInventory(inventoryURL string) (Inventory, error)
-}
-
-type S3InventoryFactory struct {
-	s3 s3iface.S3API
-}
-
-func (s *S3InventoryFactory) NewInventory(manifestURL string) (Inventory, error) {
-	manifest, err := LoadManifest(manifestURL, s.s3)
-	if err != nil {
-		return nil, err
-	}
-	return &S3Inventory{s3: s.s3, manifest: manifest, RowReader: readRows}, nil
-}
-
-func NewS3InventoryFactory(s3 s3iface.S3API) *S3InventoryFactory {
-	return &S3InventoryFactory{s3: s3}
-}
-
-type S3Inventory struct {
-	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
-	s3        s3iface.S3API
-	objects   []InventoryObject
-	manifest  *Manifest
-}
-
-type InventoryObject struct {
-	Error          error
-	Bucket         string `parquet:"name=bucket, type=INTERVAL"`
-	Key            string `parquet:"name=key, type=INTERVAL"`
-	Size           *int64 `parquet:"name=size, type=INT_64"`
-	ETag           string `parquet:"name=e_tag, type=INTERVAL"`
-	LastModified   int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
-	IsLatest       bool   `parquet:"name=is_latest, type=BOOLEAN"`
-	IsDeleteMarker bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
-}
-
-func (s *InventoryObject) String() string {
-	return s.Key
-}
-
-func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, file.Key)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
-	}
-	defer func() {
-		_ = pf.Close()
-	}()
-	pr, err := reader.NewParquetReader(pf, new(InventoryObject), 4)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
-	}
-	num := int(pr.GetNumRows())
-	currentRows := make([]InventoryObject, num)
-	err = pr.Read(&currentRows)
-	if err != nil {
-		return nil, err
-	}
-	return currentRows, nil
-}
-
-// FetchInventory reads the parquet files specified in the given manifest, and unifies them to an array of InventoryObject
-func (i *S3Inventory) Fetch(ctx context.Context, sorted bool) error {
-	i.objects = nil
-	inventoryBucketArn, err := arn.Parse(i.manifest.InventoryBucketArn)
-	if err != nil {
-		return fmt.Errorf("failed to parse inventory bucket arn: %w", err)
-	}
-	invBucket := inventoryBucketArn.Resource
-	for _, file := range i.manifest.Files {
-		currentRows, err := i.RowReader(ctx, i.s3, invBucket, file)
-		if err != nil {
-			return err
-		}
-		for _, row := range currentRows {
-			if !row.IsDeleteMarker && row.IsLatest {
-				i.objects = append(i.objects, row)
-			}
-		}
-	}
-	if sorted {
-		sort.SliceStable(i.objects, func(i1, i2 int) bool {
-			return i.objects[i1].Key < i.objects[i2].Key
-		})
-	}
-	return nil
-}
-
-func (i *S3Inventory) Objects() []InventoryObject {
-	return i.objects
-}
-
-func (i *S3Inventory) SourceName() string {
-	return i.manifest.SourceBucket
-}
-
-func (i *S3Inventory) CreateCommitMetadata(diff InventoryDiff) catalog.Metadata {
+func CreateCommitMetadata(inv block.Inventory, diff InventoryDiff) catalog.Metadata {
 	return catalog.Metadata{
-		"manifest_url":             i.manifest.URL,
-		"source_bucket":            i.manifest.SourceBucket,
+		"inventory_url":            inv.InventoryURL(),
+		"source":                   inv.SourceName(),
 		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
 		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),
 	}
 }
 
 func ExtractInventoryURL(metadata catalog.Metadata) string {
-	return metadata["manifest_url"]
+	return metadata["inventory_url"]
 }

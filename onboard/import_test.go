@@ -10,13 +10,13 @@ import (
 
 func TestImport(t *testing.T) {
 	testdata := []struct {
-		NewInventory                []string
-		PreviousInventory           []string
-		ExpectedAdded               []string
-		ExpectedDeleted             []string
-		ExpectedErr                 bool
-		OverrideNewManifestURL      string
-		OverridePreviousManifestURL string
+		NewInventory                 []string
+		PreviousInventory            []string
+		ExpectedAdded                []string
+		ExpectedDeleted              []string
+		ExpectedErr                  bool
+		OverrideNewInventoryURL      string
+		OverridePreviousInventoryURL string
 	}{
 		{
 			NewInventory:  []string{"f1", "f2"},
@@ -51,23 +51,7 @@ func TestImport(t *testing.T) {
 			ExpectedDeleted:   []string{"f1", "f2", "f3", "f4"},
 		},
 		{
-			NewInventory:           []string{"f1", "f2", "f3", "f4"},
-			PreviousInventory:      []string{"f1", "f2", "f3", "f4"},
-			OverrideNewManifestURL: "s3://non-existing.json",
-			ExpectedErr:            true,
-		},
-		{
-			NewInventory:                []string{"f1", "f2", "f3", "f4"},
-			PreviousInventory:           []string{"f1", "f2", "f3", "f4"},
-			OverridePreviousManifestURL: "s3://non-existing.json",
-			ExpectedErr:                 true,
-		},
-		{
 			// do nothing, expect no errors
-		},
-		{
-			OverridePreviousManifestURL: "s3://non-existing.json",
-			ExpectedErr:                 true,
 		},
 		{
 			NewInventory:      []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
@@ -83,27 +67,27 @@ func TestImport(t *testing.T) {
 	}
 	for _, dryRun := range []bool{true, false} {
 		for _, test := range testdata {
-			newManifestURL := NewManifestURL
-			previousManifestURL := PreviousManifestURL
-			if test.OverrideNewManifestURL != "" {
-				newManifestURL = test.OverrideNewManifestURL
+			newInventoryURL := NewInventoryURL
+			previousInventoryURL := PreviousInventoryURL
+			if test.OverrideNewInventoryURL != "" {
+				newInventoryURL = test.OverrideNewInventoryURL
 			}
-			if test.OverridePreviousManifestURL != "" {
-				newManifestURL = test.OverridePreviousManifestURL
+			if test.OverridePreviousInventoryURL != "" {
+				newInventoryURL = test.OverridePreviousInventoryURL
 			}
 			catalogActionsMock := mockCatalogActions{}
 			if len(test.PreviousInventory) > 0 {
 				catalogActionsMock = mockCatalogActions{
-					previousCommitManifest: previousManifestURL,
+					previousCommitInventory: previousInventoryURL,
 				}
 			}
-			importer, err := onboard.CreateImporter(nil, &mockInventoryFactory{
-				newManifestURL:      newManifestURL,
-				previousManifestURL: previousManifestURL,
-				newInventory:        test.NewInventory,
-				previousInventory:   test.PreviousInventory,
-				sourceBucket:        "example-repo",
-			}, newManifestURL, "example-repo")
+			importer, err := onboard.CreateImporter(nil, &mockInventoryGenerator{
+				newInventoryURL:      newInventoryURL,
+				previousInventoryURL: previousInventoryURL,
+				newInventory:         test.NewInventory,
+				previousInventory:    test.PreviousInventory,
+				sourceBucket:         "example-repo",
+			}, newInventoryURL, "example-repo")
 			if err != nil {
 				t.Fatalf("failed to create importer: %v", err)
 			}
@@ -148,8 +132,8 @@ func TestImport(t *testing.T) {
 
 				continue
 			}
-			if catalogActionsMock.lastCommitMetadata["manifest_url"] != newManifestURL {
-				t.Fatalf("unexpected manifest_url in commit metadata. expected=%s, got=%s", newManifestURL, catalogActionsMock.lastCommitMetadata["manifest_url"])
+			if catalogActionsMock.lastCommitMetadata["inventory_url"] != newInventoryURL {
+				t.Fatalf("unexpected inventory_url in commit metadata. expected=%s, got=%s", newInventoryURL, catalogActionsMock.lastCommitMetadata["inventory_url"])
 			}
 
 			addedOrChangedCount, err := strconv.Atoi(catalogActionsMock.lastCommitMetadata["added_or_changed_objects"])

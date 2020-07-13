@@ -29,8 +29,8 @@ type mockAdapter struct {
 	lastStorageClass *string
 }
 
-func (a *mockAdapter) WithContext(ctx context.Context) block.Adapter {
-	return a
+func (s *mockAdapter) WithContext(ctx context.Context) block.Adapter {
+	return s
 }
 
 func newMockAdapter() *mockAdapter {
@@ -42,21 +42,21 @@ func newMockAdapter() *mockAdapter {
 	return &adapter
 }
 
-func (a *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
+func (s *mockAdapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return err
 	}
-	a.totalSize += int64(len(data))
-	a.count++
-	a.lastBucket = obj.StorageNamespace
-	a.lastStorageClass = opts.StorageClass
+	s.totalSize += int64(len(data))
+	s.count++
+	s.lastBucket = obj.StorageNamespace
+	s.lastStorageClass = opts.StorageClass
 	return nil
 }
-func (a *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
+func (s *mockAdapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	return nil, nil
 }
-func (a *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
+func (s *mockAdapter) GetRange(_ block.ObjectPointer, _ int64, _ int64) (io.ReadCloser, error) {
 	return nil, nil
 }
 
@@ -85,6 +85,10 @@ func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadId st
 
 func (s *mockAdapter) ValidateConfiguration(_ string) error {
 	return nil
+}
+
+func (s *mockAdapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, nil
 }
 
 var (
