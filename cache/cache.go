@@ -36,12 +36,6 @@ func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	}
 }
 
-func NewJitterFn(jitter time.Duration) JitterFn {
-	return func() time.Duration {
-		return time.Duration(rand.Intn(int(jitter)))
-	}
-}
-
 func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error) {
 	if v, ok := c.lru.Get(k); ok {
 		return v, nil
@@ -65,4 +59,10 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 	// someone else acquired the lock, but no key was found
 	// (most likely this value doesn't exist or the upstream fetch failed)
 	return nil, ErrCacheItemNotFound
+}
+
+func NewJitterFn(jitter time.Duration) JitterFn {
+	return func() time.Duration {
+		return time.Duration(rand.Intn(int(jitter)))
+	}
 }

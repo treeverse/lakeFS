@@ -6,29 +6,43 @@ import (
 	"github.com/treeverse/lakefs/cache"
 )
 
+type GetRepositoryFn func(repository string) (*Repository, error)
 type GetRepositoryIDFn func(repository string) (int, error)
 type GetBranchIDFn func(repository string, branch string) (int64, error)
 
 type Cache interface {
+	Repository(repository string, setFn GetRepositoryFn) (*Repository, error)
 	RepositoryID(repository string, setFn GetRepositoryIDFn) (int, error)
 	BranchID(repository string, branch string, setFn GetBranchIDFn) (int64, error)
 }
 
 type LRUCache struct {
-	repositoryCache cache.Cache
-	branchCache     cache.Cache
+	repository   cache.Cache
+	repositoryID cache.Cache
+	branchID     cache.Cache
 }
 
 func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
 	jitterFn := cache.NewJitterFn(jitter)
 	return &LRUCache{
-		repositoryCache: cache.NewCache(size, expiry, jitterFn),
-		branchCache:     cache.NewCache(size, expiry, jitterFn),
+		repository:   cache.NewCache(size, expiry, jitterFn),
+		repositoryID: cache.NewCache(size, expiry, jitterFn),
+		branchID:     cache.NewCache(size, expiry, jitterFn),
 	}
 }
 
+func (c *LRUCache) Repository(repository string, setFn GetRepositoryFn) (*Repository, error) {
+	v, err := c.repository.GetOrSet(repository, func() (interface{}, error) {
+		return setFn(repository)
+	})
+	if err != nil {
+		return nil, err
+	}
+	return v.(*Repository), nil
+}
+
 func (c *LRUCache) RepositoryID(repository string, setFn GetRepositoryIDFn) (int, error) {
-	v, err := c.repositoryCache.GetOrSet(repository, func() (interface{}, error) {
+	v, err := c.repositoryID.GetOrSet(repository, func() (interface{}, error) {
 		return setFn(repository)
 	})
 	if err != nil {
@@ -39,7 +53,7 @@ func (c *LRUCache) RepositoryID(repository string, setFn GetRepositoryIDFn) (int
 
 func (c *LRUCache) BranchID(repository string, branch string, setFn GetBranchIDFn) (int64, error) {
 	key := repository + "/" + branch
-	v, err := c.branchCache.GetOrSet(key, func() (interface{}, error) {
+	v, err := c.branchID.GetOrSet(key, func() (interface{}, error) {
 		return setFn(repository, branch)
 	})
 	if err != nil {
