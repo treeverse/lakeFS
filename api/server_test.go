@@ -83,10 +83,13 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 
 	meta := index.NewDBIndex(conn)
 
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
+		Enabled: false,
+	})
 
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 	server := api.NewServer(
+		"dev",
 		meta,
 		blockAdapter,
 		authService,
