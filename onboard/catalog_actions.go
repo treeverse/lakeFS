@@ -86,7 +86,7 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
 	_, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
-		catalog.CatalogerCommitter,
+		"lakeFS",
 		metadata)
 	return err
 }

@@ -15,12 +15,6 @@ import (
 	"sort"
 )
 
-type InventoryObject struct {
-	block.InventoryObject
-	IsDeleteMarker bool
-	IsLatest       bool
-}
-
 func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error) {
 	manifest, err := LoadManifest(manifestURL, s.s3)
 	if err != nil {
@@ -30,7 +24,7 @@ func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error)
 }
 
 type Inventory struct {
-	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error)
+	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]block.InventoryObject, error)
 	S3        s3iface.S3API
 	Manifest  *Manifest
 }
@@ -46,7 +40,7 @@ func (i *Inventory) Objects(ctx context.Context, sorted bool) (objects []block.I
 	}
 	invBucket := inventoryBucketArn.Resource
 	for _, file := range i.Manifest.Files {
-		var currentRows []InventoryObject
+		var currentRows []block.InventoryObject
 		currentRows, err = i.RowReader(ctx, i.S3, invBucket, file)
 		if err != nil {
 			return
@@ -54,7 +48,7 @@ func (i *Inventory) Objects(ctx context.Context, sorted bool) (objects []block.I
 		for _, row := range currentRows {
 			if !row.IsDeleteMarker && row.IsLatest {
 				row.PhysicalAddress = "s3://" + row.Bucket + "/" + row.Key
-				objects = append(objects, row.InventoryObject)
+				objects = append(objects, row)
 			}
 		}
 	}
@@ -94,7 +88,7 @@ func LoadManifest(manifestURL string, s3svc s3iface.S3API) (manifest *Manifest, 
 	return
 }
 
-func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]InventoryObject, error) {
+func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]block.InventoryObject, error) {
 	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, file.Key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
@@ -102,12 +96,12 @@ func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file Man
 	defer func() {
 		_ = pf.Close()
 	}()
-	pr, err := reader.NewParquetReader(pf, new(InventoryObject), 4)
+	pr, err := reader.NewParquetReader(pf, new(block.InventoryObject), 4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
 	num := int(pr.GetNumRows())
-	currentRows := make([]InventoryObject, num)
+	currentRows := make([]block.InventoryObject, num)
 	err = pr.Read(&currentRows)
 	if err != nil {
 		return nil, err
