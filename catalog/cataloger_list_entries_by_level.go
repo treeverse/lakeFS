@@ -53,7 +53,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	}
 	result := markers.([]LevelEntryResult)
 	moreToRead := paginateSlice(&result, limit)
-	return markers.([]LevelEntryResult), moreToRead, nil
+	return result, moreToRead, nil
 }
 
 func retrieveEntries(tx db.Tx, markerList []LevelEntryResult, branchID int64, commitID CommitID, lineage []lineageCommit, prefix string) (interface{}, error) {
