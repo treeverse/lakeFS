@@ -105,7 +105,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		},
 		{
 			CreatedAt:   ts,
-			DisplayName: "RepoFullAccess",
+			DisplayName: "RepoManagmentFullAccess",
 			Statement: model.Statements{
 				{
 					Action: []string{
@@ -118,7 +118,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		},
 		{
 			CreatedAt:   ts,
-			DisplayName: "RepoReadAll",
+			DisplayName: "RepoManagementReadAll",
 			Statement: model.Statements{
 				{
 					Action: []string{
@@ -163,15 +163,15 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoFullAccess"})
+	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagmentFullAccess"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials"})
+	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials"})
+	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
