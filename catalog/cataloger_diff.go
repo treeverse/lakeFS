@@ -69,18 +69,18 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	if err != nil {
 		return nil, fmt.Errorf("Father lineage failed: %w", err)
 	}
-	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
-											From("commits").
-											Where("branch_id = ? AND merge_type = 'from_father'", sonID).
-											PlaceholderFormat(sq.Dollar).MustSql()
+	maxSonQuery, args := sq.Select("MAX(commit_id) as max_son_commit").
+		From("commits").
+		Where("branch_id = ? AND merge_type = 'from_father'", sonID).
+		PlaceholderFormat(sq.Dollar).MustSql()
 	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("Failed getting son last commit number : %w", err)
 	}
-
-	s, args, err := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+	query := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage)
+	debSQL := sq.DebugSqlizer(query)
+	_ = debSQL
+	s, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}
@@ -146,13 +146,11 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	}
 	sonLineageValues := getLineageAsValues(sonLineage, sonID)
 
-	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues).P
+	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues)
 
 	debSQL := sq.DebugSqlizer(diffExpr)
 	_ = debSQL
-	s, args, err := diffExpr.
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+	s, args, err := diffExpr.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}
