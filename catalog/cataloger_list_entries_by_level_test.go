@@ -33,6 +33,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				Size:            fileSize,
 				Metadata:        nil,
 			}))
+
 		if i == 2 {
 			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
 			testutil.MustDo(t, "commit test files", err)
