@@ -3,12 +3,11 @@ package db
 import (
 	"context"
 	"database/sql"
-	"regexp"
+	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/jmoiron/sqlx"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -20,6 +19,7 @@ type Tx interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (sql.Result, error)
+	Preparex(query string) (*sqlx.Stmt, error)
 }
 
 type dbTx struct {
@@ -28,8 +28,7 @@ type dbTx struct {
 }
 
 func queryToString(q string) string {
-	r := regexp.MustCompile(`[\t\s\n]+`)
-	return r.ReplaceAllString(q, " ")
+	return strings.Join(strings.Fields(q), " ")
 }
 
 func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error {
@@ -85,6 +84,10 @@ func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
 	}
 	log.Trace("SQL query executed successfully")
 	return res, err
+}
+
+func (d *dbTx) Preparex(query string) (*sqlx.Stmt, error) {
+	return d.tx.Preparex(query)
 }
 
 type TxOpt func(*TxOptions)

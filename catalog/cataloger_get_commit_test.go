@@ -18,7 +18,8 @@ func TestCataloger_GetCommit(t *testing.T) {
 	now := time.Now().Round(time.Minute)
 	mockClock := clock.NewMock()
 	mockClock.Set(now)
-	c := testCatalogerWithClock(t, mockClock)
+	c := testCataloger(t, WithClock(mockClock))
+	defer c.Close()
 
 	// test data
 	const testBranch = "master"

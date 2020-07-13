@@ -9,10 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/benbjohnson/clock"
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -22,20 +20,10 @@ type testEntryInfo struct {
 	Deleted bool
 }
 
-func testCataloger(t testing.TB) Cataloger {
+func testCataloger(t testing.TB, options ...CatalogerOption) Cataloger {
 	t.Helper()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	return NewCataloger(cdb)
-}
-
-func testCatalogerWithClock(t testing.TB, tellTime clock.Clock) Cataloger {
-	t.Helper()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	return &cataloger{
-		Clock: tellTime,
-		log:   logging.Default().WithField("service_name", "cataloger"),
-		db:    cdb,
-	}
+	conn, _ := testutil.GetDB(t, databaseURI)
+	return NewCataloger(conn, options...)
 }
 
 func testCatalogerUniqueID() string {

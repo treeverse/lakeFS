@@ -13,6 +13,7 @@ import (
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -91,6 +92,12 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidPartNumberMarker))
 		return
 	}
+
+	o.AddLogFields(logging.Fields{
+		"part_number": partNumber,
+		"upload_id":   uploadID,
+	})
+
 	// handle the upload itself
 	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
@@ -138,8 +145,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 
 	o.Incr("put_object")
 	// handle the upload itself
-	checksum, physicalAddress, size, err := upload.WriteBlob(o.Context(), o.Cataloger, o.Repository.Name,
-		o.Repository.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength, opts)
+	blob, err := upload.WriteBlob(o.BlockStore, o.Repository.StorageNamespace, o.Request.Body, o.Request.ContentLength, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -147,11 +153,11 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// write metadata
-	err = o.finishUpload(checksum, physicalAddress, size)
-	if err == nil {
-		o.SetHeader("ETag", httputil.ETag(checksum))
-		o.ResponseWriter.WriteHeader(http.StatusOK)
-	} else {
+	err = o.finishUpload(o.BlockStore, o.Repository.StorageNamespace, blob.Checksum, blob.PhysicalAddress, blob.Size)
+	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
 	}
+	o.SetHeader("ETag", httputil.ETag(blob.Checksum))
+	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

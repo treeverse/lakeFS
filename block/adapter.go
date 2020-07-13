@@ -59,6 +59,9 @@ type Adapter interface {
 	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
 	AbortMultiPartUpload(obj ObjectPointer, uploadId string) error
 	CompleteMultiPartUpload(obj ObjectPointer, uploadId string, MultipartList *MultipartUploadCompletion) (*string, int64, error)
+	// ValidateConfiguration validates an appropriate bucket
+	// configuration and returns a validation error or nil.
+	ValidateConfiguration(storageNamespace string) error
 }
 
 type UploadIdTranslator interface {

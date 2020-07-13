@@ -9,18 +9,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/api/gen/client/retention"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/testutil"
@@ -839,7 +840,6 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
 	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
-	deduper := testutil.NewMockDedup()
 
 	// setup client
 	clt := client.Default
@@ -853,16 +853,16 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 
 	buf := new(bytes.Buffer)
 	buf.WriteString("this is file content made up of bytes")
-	checksum, physicalAddress, size, err := upload.WriteBlob(ctx, deduper, "ns1", "ns1", buf, deps.blocks, 37, block.PutOpts{StorageClass: &expensiveString})
+	blob, err := upload.WriteBlob(deps.blocks, "ns1", buf, 37, block.PutOpts{StorageClass: &expensiveString})
 	if err != nil {
 		t.Fatal(err)
 	}
 	entry := catalog.Entry{
 		Path:            "foo/bar",
-		PhysicalAddress: physicalAddress,
+		PhysicalAddress: blob.PhysicalAddress,
 		CreationDate:    time.Now(),
-		Size:            size,
-		Checksum:        checksum,
+		Size:            blob.Size,
+		Checksum:        blob.Checksum,
 	}
 	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry)
 
@@ -965,6 +965,39 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
 		}
 	})
+
+	t.Run("upload objects dedup", func(t *testing.T) {
+		t.Skip("api implements async dedup - consider removing the test code")
+		const content = "They do not love that do not show their love"
+		resp1, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", strings.NewReader(content)),
+			Path:       "dd/bar1",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp2, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "master",
+			Content:    runtime.NamedReader("content", strings.NewReader(content)),
+			Path:       "dd/bar2",
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		ent1, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp1.Payload.Path)
+		testutil.MustDo(t, "get first entry", err)
+		ent2, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp2.Payload.Path)
+		testutil.MustDo(t, "get second entry", err)
+		if ent1.PhysicalAddress != ent2.PhysicalAddress {
+			t.Fatalf("First entry address '%s' should match the second '%s' - check dedup",
+				ent1.PhysicalAddress, ent2.PhysicalAddress)
+		}
+	})
 }
 
 func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
@@ -1036,6 +1069,64 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		}, bauth)
 		if err == nil {
 			t.Fatalf("expected file to be gone now")
+		}
+	})
+}
+
+func TestHandler_RetentionPolicyHandlers(t *testing.T) {
+	handler, deps := getHandler(t)
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+	ctx := context.Background()
+	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	statusEnabled := "enabled"
+	policy1 := models.RetentionPolicy{
+		Description: "retention policy for API handler test",
+		Rules: []*models.RetentionPolicyRule{
+			{
+				Status: &statusEnabled,
+				Filter: &models.RetentionPolicyRuleFilter{
+					Prefix: "master/logs/",
+				},
+				Expiration: &models.RetentionPolicyRuleExpiration{
+					Uncommitted: &models.TimePeriod{Days: 6, Weeks: 2},
+				},
+			},
+		},
+	}
+
+	// TODO(ariels): Verify initial state before any retention policy is set
+
+	t.Run("Initialize a retention policy", func(t *testing.T) {
+		_, err := clt.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
+			Repository: "repo1",
+			Policy:     &policy1,
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := clt.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := resp.GetPayload()
+
+		diff := deep.Equal(policy1, got.RetentionPolicy)
+		if diff != nil {
+			t.Errorf("expected to read back the same policy, got %s", diff)
 		}
 	})
 }
