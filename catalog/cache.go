@@ -64,6 +64,10 @@ func (c *LRUCache) BranchID(repository string, branch string, setFn GetBranchIDF
 
 type DummyCache struct{}
 
+func (c *DummyCache) Repository(repository string, setFn GetRepositoryFn) (*Repository, error) {
+	return setFn(repository)
+}
+
 func (c *DummyCache) RepositoryID(repository string, setFn GetRepositoryIDFn) (int, error) {
 	return setFn(repository)
 }

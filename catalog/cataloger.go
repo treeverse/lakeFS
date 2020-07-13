@@ -18,10 +18,6 @@ const (
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 50 * time.Millisecond
 	dedupChannelSize  = 1000
-
-	CatalogerCacheSize   = 1024
-	CatalogerCacheExpiry = 20 * time.Second
-	CatalogerCacheJitter = 2 * time.Second
 )
 
 type DedupResult struct {
@@ -114,17 +110,32 @@ type dedupRequest struct {
 	DedupResultCh    chan *DedupResult
 }
 
+type CatalogerCacheConfig struct {
+	Enabled bool
+	Size    int
+	Expiry  time.Duration
+	Jitter  time.Duration
+}
+
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	clock   clock.Clock
-	log     logging.Logger
-	db      db.Database
-	dedupCh chan *dedupRequest
-	wg      sync.WaitGroup
-	cache   Cache
+	clock       clock.Clock
+	log         logging.Logger
+	db          db.Database
+	dedupCh     chan *dedupRequest
+	wg          sync.WaitGroup
+	cacheConfig *CatalogerCacheConfig
+	cache       Cache
 }
 
 type CatalogerOption func(*cataloger)
+
+var defaultCatalogerCacheConfig = &CatalogerCacheConfig{
+	Enabled: true,
+	Size:    1024,
+	Expiry:  20 * time.Second,
+	Jitter:  5 * time.Second,
+}
 
 func WithClock(newClock clock.Clock) CatalogerOption {
 	return func(c *cataloger) {
@@ -132,16 +143,27 @@ func WithClock(newClock clock.Clock) CatalogerOption {
 	}
 }
 
+func WithCacheConfig(config *CatalogerCacheConfig) CatalogerOption {
+	return func(c *cataloger) {
+		c.cacheConfig = config
+	}
+}
+
 func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
-		clock:   clock.New(),
-		log:     logging.Default().WithField("service_name", "cataloger"),
-		db:      db,
-		dedupCh: make(chan *dedupRequest, dedupChannelSize),
-		cache:   NewLRUCache(CatalogerCacheSize, CatalogerCacheExpiry, CatalogerCacheJitter),
+		clock:       clock.New(),
+		log:         logging.Default().WithField("service_name", "cataloger"),
+		db:          db,
+		dedupCh:     make(chan *dedupRequest, dedupChannelSize),
+		cacheConfig: defaultCatalogerCacheConfig,
 	}
 	for _, opt := range options {
 		opt(c)
+	}
+	if c.cacheConfig.Enabled {
+		c.cache = NewLRUCache(c.cacheConfig.Size, c.cacheConfig.Expiry, c.cacheConfig.Jitter)
+	} else {
+		c.cache = &DummyCache{}
 	}
 	c.processDedupBatches()
 	return c
