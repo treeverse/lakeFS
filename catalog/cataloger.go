@@ -10,6 +10,7 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 )
 
 const (
@@ -40,6 +41,13 @@ type DedupParams struct {
 	StorageNamespace string
 }
 
+type ExpireResult struct {
+	Repository   string
+	Branch       string
+	Path         string
+	PhysicalPath string `db:"physical_address"`
+}
+
 type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
@@ -65,6 +73,7 @@ type EntryCataloger interface {
 	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
+	ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan ExpireResult) error
 }
 
 type MultipartUpdateCataloger interface {
