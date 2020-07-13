@@ -1,7 +1,9 @@
 package catalog
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 
@@ -83,22 +85,28 @@ func getNextCommitID(tx db.Tx) (CommitID, error) {
 }
 
 func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64) (RelationType, error) {
+	var youngerBranch, olderBranch int64
+	var possibleRelation RelationType
 	if sourceBranchID == destinationBranchID {
 		return RelationTypeNone, nil
 	}
-	const directLinkQuery = `SELECT COUNT(*) FROM lineage WHERE branch_id=$2 AND ancestor_branch=$1 AND precedence=1`
-	var directLink int
-	if err := tx.Get(&directLink, directLinkQuery, sourceBranchID, destinationBranchID); err != nil {
+	if sourceBranchID > destinationBranchID {
+		possibleRelation = RelationTypeFromSon
+		youngerBranch = sourceBranchID
+		olderBranch = destinationBranchID
+	} else {
+		possibleRelation = RelationTypeFromFather
+		youngerBranch = destinationBranchID
+		olderBranch = sourceBranchID
+	}
+	var isDirectRelation bool
+	err := tx.Get(&isDirectRelation,
+		`select lineage[1]=$1 from branches where id=$2`, olderBranch, youngerBranch)
+	if err != nil {
 		return RelationTypeNone, err
 	}
-	if directLink > 0 {
-		return RelationTypeFromFather, nil
-	}
-	if err := tx.Get(&directLink, directLinkQuery, destinationBranchID, sourceBranchID); err != nil {
-		return RelationTypeNone, err
-	}
-	if directLink > 0 {
-		return RelationTypeFromSon, nil
+	if isDirectRelation {
+		return possibleRelation, nil
 	}
 	return RelationTypeNotDirect, nil
 }
@@ -138,4 +146,16 @@ func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, e
 		return nil, err
 	}
 	return requestedLineage, nil
+}
+
+func getLineageAsValues(lineage []lineageCommit, branchID int64) string {
+
+	valArray := make([]string, 1)
+	valArray[0] = fmt.Sprintf("(0,%d,%d)", branchID, MaxCommitID)
+	for precedence, lineageBranch := range lineage {
+		valArray = append(valArray, fmt.Sprintf("(%d, %d, %d)", precedence+1, lineageBranch.BranchID, lineageBranch.CommitID))
+	}
+	valTable := "(VALUES " + strings.Join(valArray, " ,\n ") + ") as l(precedence,branch_id,commit_id) "
+	return valTable
+
 }
