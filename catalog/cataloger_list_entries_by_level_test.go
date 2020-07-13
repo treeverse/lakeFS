@@ -162,17 +162,17 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			}
 			// test that directories have null entries, and vice versa
 			for _, res := range got {
-				resEnd := (*res.Path)[len(*res.Path)-1:]
+				resEnd := res.Path[len(res.Path)-1:]
 				if resEnd == "/" && res.Entry != nil {
-					t.Errorf("%s is a directory, pointer to entry is not nil", *res.Path)
+					t.Errorf("%s is a directory, pointer to entry is not nil", res.Path)
 				} else if resEnd != "/" && res.Entry == nil {
-					t.Errorf("%s is an entry,but pointer to entry is nil", *res.Path)
+					t.Errorf("%s is an entry,but pointer to entry is nil", res.Path)
 				}
 			}
 			// copy the Entry fields we like to compare
 			var gotNames []string
 			for _, ent := range got {
-				gotNames = append(gotNames, *ent.Path)
+				gotNames = append(gotNames, ent.Path)
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {

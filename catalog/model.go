@@ -67,7 +67,7 @@ type Branch struct {
 }
 
 type LevelEntryResult struct {
-	Path  *string `db:"path"`
+	Path  string `db:"path"`
 	Entry *Entry
 }
 
