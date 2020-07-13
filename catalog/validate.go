@@ -11,7 +11,6 @@ var (
 
 	validBranchNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
 	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-	validHexRegexp            = regexp.MustCompile(`^[a-fA-F0-9]+$`)
 )
 
 type ValidateFunc func() bool
@@ -80,16 +79,6 @@ func ValidateUploadID(uploadID string) ValidateFunc {
 	return func() bool {
 		return IsNonEmptyString(uploadID)
 	}
-}
-
-func ValidateDedupID(id string) ValidateFunc {
-	return func() bool {
-		return IsValidDedupID(id)
-	}
-}
-
-func IsValidDedupID(id string) bool {
-	return validHexRegexp.MatchString(id)
 }
 
 func ValidatePath(name string) ValidateFunc {

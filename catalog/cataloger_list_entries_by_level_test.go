@@ -177,10 +177,10 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("got = %+v, want = %+v", gotNames, tt.wantEntries)
+				t.Errorf("ListEntriesByLevel got = %+v, want = %+v", gotNames, tt.wantEntries)
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf(" gotMore = %v, want = %v", gotMore, tt.wantMore)
+				t.Errorf("ListEntriesByLevel gotMore = %t, want = %t", gotMore, tt.wantMore)
 			}
 		})
 	}

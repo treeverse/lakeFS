@@ -63,11 +63,11 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	var maxSonMerge int64
 	sonLineage, err := getLineage(tx, sonID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("Son lineage failed: %w", err)
+		return nil, fmt.Errorf("son lineage failed: %w", err)
 	}
 	fatherLineage, err := getLineage(tx, fatherID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("Father lineage failed: %w", err)
+		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
 	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
 											From("commits").
@@ -75,7 +75,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 											PlaceholderFormat(sq.Dollar).MustSql()
 	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed getting son last commit number : %w", err)
+		return nil, fmt.Errorf("get son last commit failed: %w", err)
 	}
 
 	s, args, err := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage).
@@ -127,8 +127,6 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 		query := sq.Select("commit_id as father_effective_commit").From("commits").
 			Where("branch_id = ? AND merge_source_branch = ?", sonID, fatherID).
 			OrderBy("commit_id").Limit(1)
-		s := sq.DebugSqlizer(query)
-		_ = s
 		FatherEffectiveQuery, args := query.PlaceholderFormat(sq.Dollar).MustSql()
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
@@ -148,8 +146,6 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 
 	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues)
 
-	debSQL := sq.DebugSqlizer(diffExpr)
-	_ = debSQL
 	s, args, err := diffExpr.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
