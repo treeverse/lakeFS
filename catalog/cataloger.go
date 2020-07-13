@@ -19,7 +19,7 @@ const (
 	dedupBatchTimeout = 50 * time.Millisecond
 	dedupChannelSize  = 1000
 
-	dbBatchEnabled = true
+	dbBatchEnabled = false
 	dbBatchSize    = 100
 	dbBatchTimeout = 20 * time.Millisecond
 	dbChannelSize  = 1000 * dbWorkers
