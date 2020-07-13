@@ -14,7 +14,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}); err != nil {
 		return nil, false, err
 	}
-	if limit < 0 {
+	if limit < 0 || limit > ListBranchesMaxLimit {
 		limit = ListBranchesMaxLimit
 	}
 	prefixCond := db.Prefix(prefix)

@@ -9,7 +9,7 @@ import (
 const ListRepositoriesMaxLimit = 10000
 
 func (c *cataloger) ListRepositories(ctx context.Context, limit int, after string) ([]*Repository, bool, error) {
-	if limit < 0 {
+	if limit < 0 || limit > ListRepositoriesMaxLimit {
 		limit = ListRepositoriesMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {

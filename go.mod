@@ -19,9 +19,11 @@ require (
 	github.com/go-openapi/validate v0.19.6
 	github.com/golang-migrate/migrate/v4 v4.11.0
 	github.com/google/uuid v1.1.1
+	github.com/hnlq715/golang-lru v0.2.0
 	github.com/influxdata/tdigest v0.0.1 // indirect
-	github.com/jackc/pgconn v1.5.0
-	github.com/jackc/pgx/v4 v4.6.0
+	github.com/jackc/pgconn v1.6.1
+	github.com/jackc/pgerrcode v0.0.0-20190803225404-afa3381909a6
+	github.com/jackc/pgx/v4 v4.7.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
 	github.com/jessevdk/go-flags v1.4.0
@@ -40,7 +42,7 @@ require (
 	github.com/tsenart/vegeta/v12 v12.8.3
 	github.com/xitongsys/parquet-go v1.5.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20200611103345-88e6b030070d
-	golang.org/x/crypto v0.0.0-20200323165209-0ec3e9974c59
+	golang.org/x/crypto v0.0.0-20200707235045-ab33eee955e0
 	golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 	golang.org/x/sys v0.0.0-20200625212154-ddb9806d33ae // indirect
 	golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543

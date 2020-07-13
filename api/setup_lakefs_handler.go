@@ -18,7 +18,7 @@ const SetupLakeFSRoute = "/setup_lakefs"
 //   returns 200 (ok) on creation with key/secret - content type json
 //   returns 409 (conflict) when user is found
 //   return 500 (internal error) if error during operation
-func setupLakeFSHandler(authService auth.Service, migrator db.Migrator, collector stats.Collector) http.Handler {
+func setupLakeFSHandler(version string, authService auth.Service, migrator db.Migrator, collector stats.Collector) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -37,7 +37,7 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator, collecto
 			return
 		}
 
-		installationID, metadata, err := auth.WriteInitialMetadata(authService)
+		installationID, metadata, err := auth.WriteInitialMetadata(version, authService)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

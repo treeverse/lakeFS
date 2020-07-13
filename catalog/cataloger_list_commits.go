@@ -20,7 +20,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 	if err != nil {
 		return nil, false, err
 	}
-	if limit < 0 {
+	if limit < 0 || limit > ListCommitsMaxLimit {
 		limit = ListCommitsMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {

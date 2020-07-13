@@ -3,7 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
-	"regexp"
+	"strings"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -28,8 +28,7 @@ type dbTx struct {
 }
 
 func queryToString(q string) string {
-	r := regexp.MustCompile(`[\t\s\n]+`)
-	return r.ReplaceAllString(q, " ")
+	return strings.Join(strings.Fields(q), " ")
 }
 
 func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error {

@@ -36,6 +36,7 @@ var (
 )
 
 type Server struct {
+	version     string
 	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService auth.Service
@@ -48,6 +49,7 @@ type Server struct {
 }
 
 func NewServer(
+	version string,
 	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
@@ -57,6 +59,7 @@ func NewServer(
 ) *Server {
 	logger.Info("initialized OpenAPI server")
 	return &Server{
+		version:     version,
 		cataloger:   cataloger,
 		blockStore:  blockStore,
 		authService: authService,
@@ -98,18 +101,11 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 	}
 }
 
-const noopBasicAuth = false
-
 // BasicAuth returns a function that hooks into Swagger's basic Auth provider
 // it uses the Auth.Service provided to ensure credentials are valid
 func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
-		if noopBasicAuth {
-			return &models.User{
-				ID: "barak.amar",
-			}, nil
-		}
 		credentials, err := s.authService.GetCredentials(accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
@@ -194,7 +190,7 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			setupLakeFSHandler(s.authService, s.migrator, s.stats),
+			setupLakeFSHandler(s.version, s.authService, s.migrator, s.stats),
 		),
 	)
 
