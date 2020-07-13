@@ -56,7 +56,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 		}
 
 		// insert commit record
-		creationDate := c.Clock.Now()
+		creationDate := c.clock.Now()
 		_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type)
 			VALUES ($1,$2,$3,$4,$5,$6,$7)`,
 			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone)

@@ -36,7 +36,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		}
 
 		// create repository with ref to branch
-		creationDate := c.Clock.Now()
+		creationDate := c.clock.Now()
 		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
 			VALUES ($1,$2,$3,$4,$5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
 			return nil, err

@@ -32,7 +32,7 @@ func testCatalogerWithClock(t testing.TB, tellTime clock.Clock) Cataloger {
 	t.Helper()
 	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
 	return &cataloger{
-		Clock: tellTime,
+		clock: tellTime,
 		log:   logging.Default().WithField("service_name", "cataloger"),
 		db:    cdb,
 	}

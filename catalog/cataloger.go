@@ -81,14 +81,14 @@ type Cataloger interface {
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	Clock clock.Clock
+	clock clock.Clock
 	log   logging.Logger
 	db    db.Database
 }
 
 func NewCataloger(db db.Database) Cataloger {
 	return &cataloger{
-		Clock: clock.New(),
+		clock: clock.New(),
 		log:   logging.Default().WithField("service_name", "cataloger"),
 		db:    db,
 	}
