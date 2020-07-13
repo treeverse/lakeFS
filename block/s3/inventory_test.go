@@ -15,11 +15,6 @@ import (
 	"testing"
 )
 
-const (
-	NewManifestURL      = "s3://example-bucket/manifest-new.json"
-	PreviousManifestURL = "s3://example-bucket/manifest-prev.json"
-)
-
 // convenience converter functions
 func keys(rows []block.InventoryObject) []string {
 	if rows == nil {
@@ -32,16 +27,16 @@ func keys(rows []block.InventoryObject) []string {
 	return res
 }
 
-func rows(keys ...string) []s3.InventoryObject {
+func rows(keys ...string) []block.InventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]s3.InventoryObject, 0, len(keys))
+	res := make([]block.InventoryObject, 0, len(keys))
 	for _, key := range keys {
-		res = append(res, s3.InventoryObject{
-			InventoryObject: block.InventoryObject{Key: key},
-			IsDeleteMarker:  false,
-			IsLatest:        true,
+		res = append(res, block.InventoryObject{
+			Key:            key,
+			IsDeleteMarker: false,
+			IsLatest:       true,
 		})
 	}
 	return res
@@ -54,7 +49,7 @@ func files(keys ...string) []s3.ManifestFile {
 	return res
 }
 
-func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, file s3.ManifestFile) ([]s3.InventoryObject, error) {
+func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, file s3.ManifestFile) ([]block.InventoryObject, error) {
 	if inventoryBucketName != "example-bucket" {
 		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
 	}
@@ -173,5 +168,5 @@ type mockS3Client struct {
 
 func manifestExists(manifestURL string) bool {
 	match, _ := regexp.MatchString("s3://example-bucket/manifest[0-9]+.json", manifestURL)
-	return match || manifestURL == NewManifestURL || manifestURL == PreviousManifestURL
+	return match
 }
