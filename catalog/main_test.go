@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"flag"
 	"log"
 	"os"
 	"testing"
@@ -16,8 +17,11 @@ var (
 )
 
 func TestMain(m *testing.M) {
-	// keep the log level calm
-	logrus.SetLevel(logrus.PanicLevel)
+	flag.Parse()
+	if !testing.Verbose() {
+		// keep the log level calm
+		logrus.SetLevel(logrus.PanicLevel)
+	}
 
 	// postgres container
 	var err error

@@ -238,3 +238,7 @@ func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	sort.Strings(names)
 	return names, nil
 }
+
+func (l *Adapter) ValidateConfiguration(_ string) error {
+	return nil
+}

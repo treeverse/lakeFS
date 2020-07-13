@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/api/gen/client/retention"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -77,6 +78,9 @@ type RepositoryClient interface {
 	Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repository, branch string) ([]*models.Diff, error)
+
+	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
+	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
 }
 
 type Client interface {
@@ -562,6 +566,26 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*mode
 		return nil, err
 	}
 	return diff.GetPayload().Results, nil
+}
+
+func (c *client) GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error) {
+	policy, err := c.remote.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return policy.GetPayload(), nil
+}
+
+func (c *client) UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error {
+	_, err := c.remote.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
+		Repository: repository,
+		Policy:     policy,
+		Context:    ctx,
+	}, c.auth)
+	return err
 }
 
 func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*models.ObjectStats, error) {
