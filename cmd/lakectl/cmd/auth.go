@@ -2,9 +2,6 @@ package cmd
 
 import (
 	"context"
-	"encoding/json"
-	"io"
-	"os"
 	"strings"
 	"time"
 
@@ -521,22 +518,8 @@ var authPoliciesCreate = &cobra.Command{
 		document, _ := cmd.Flags().GetString("policy-document")
 		clt := getClient()
 
-		var err error
-		var fp io.ReadCloser
-		if document == "-" {
-			fp = os.Stdin
-		} else {
-			fp, err = os.Open(document)
-			if err != nil {
-				DieFmt("could not open policy document: %v", err)
-			}
-		}
-
 		var policy models.Policy
-		err = json.NewDecoder(fp).Decode(&policy)
-		if err != nil {
-			DieFmt("could not parse policy document: %v", err)
-		}
+		ParseDocument(&policy, document, "policy document")
 
 		createdPolicy, err := clt.CreatePolicy(context.Background(), &policy)
 		if err != nil {

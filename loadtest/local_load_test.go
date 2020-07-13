@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -60,6 +61,7 @@ func TestLocalLoad(t *testing.T) {
 	cataloger := catalog.NewCataloger(conn)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
+	retention := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(databaseUri)
 
 	server := api.NewServer(
@@ -68,6 +70,7 @@ func TestLocalLoad(t *testing.T) {
 		blockAdapter,
 		authService,
 		&mockCollector{},
+		retention,
 		migrator,
 		logging.Default(),
 	)
