@@ -37,7 +37,9 @@ func TestMain(m *testing.M) {
 
 func setupService(t *testing.T, opts ...testutil.GetDBOption) auth.Service {
 	adb, _ := testutil.GetDB(t, databaseUri, opts...)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
+	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
+		Enabled: false,
+	})
 	return authService
 }
 

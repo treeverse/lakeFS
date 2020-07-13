@@ -9,14 +9,13 @@ import (
 	"github.com/treeverse/lakefs/stats"
 
 	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
 
-func UpdateMetadataValues(authService Service) (map[string]string, error) {
+func UpdateMetadataValues(version string, authService Service) (map[string]string, error) {
 	metadata := make(map[string]string)
-	metadata["lakefs_version"] = config.Version
+	metadata["lakefs_version"] = version
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
@@ -47,7 +46,7 @@ func UpdateMetadataValues(authService Service) (map[string]string, error) {
 
 }
 
-func WriteInitialMetadata(authService Service) (string, map[string]string, error) {
+func WriteInitialMetadata(version string, authService Service) (string, map[string]string, error) {
 
 	err := authService.SetAccountMetadataKey("setup_time", time.Now().Format(time.RFC3339))
 	if err != nil {
@@ -60,7 +59,7 @@ func WriteInitialMetadata(authService Service) (string, map[string]string, error
 		return "", nil, err
 	}
 
-	meta, err := UpdateMetadataValues(authService)
+	meta, err := UpdateMetadataValues(version, authService)
 	if err != nil {
 		return "", nil, err
 	}
@@ -69,6 +68,7 @@ func WriteInitialMetadata(authService Service) (string, map[string]string, error
 }
 
 type MetadataRefresher struct {
+	version     string
 	splay       time.Duration
 	interval    time.Duration
 	authService Service
@@ -77,8 +77,9 @@ type MetadataRefresher struct {
 	done        chan bool
 }
 
-func NewMetadataRefresher(splay, interval time.Duration, authService Service, sink stats.Collector) *MetadataRefresher {
+func NewMetadataRefresher(version string, splay, interval time.Duration, authService Service, sink stats.Collector) *MetadataRefresher {
 	return &MetadataRefresher{
+		version:     version,
 		splay:       splay,
 		interval:    interval,
 		authService: authService,
@@ -122,7 +123,7 @@ func (m *MetadataRefresher) Start() {
 }
 
 func (m *MetadataRefresher) update() {
-	metadata, err := UpdateMetadataValues(m.authService)
+	metadata, err := UpdateMetadataValues(m.version, m.authService)
 	if err != nil {
 		logging.Default().WithError(err).Debug("failed refreshing local metadata values")
 		return
