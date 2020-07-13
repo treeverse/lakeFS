@@ -15,16 +15,6 @@ import (
 // TODO(ariels) Move retention policy CRUD from retention service to
 // here.
 
-// queryPrefix is a prefix queries that adds a relation
-// ranked_entries.  That relation has the rank of each entry by
-// commit, the current entry has rank 0.
-var rankedEntriesPrefix = `
-  WITH ranked_entries AS (
-    SELECT
-      rank() OVER (PARTITION BY path, branch_id ORDER BY min_commit DESC),
-      *
-    FROM entries)`
-
 const entriesTable = "lakefs_catalog.entries"
 
 // escapeSqlPattern returns pattern with any special pattern
@@ -61,11 +51,11 @@ func byPathPrefix(pathPrefix string) sq.Sqlizer {
 }
 
 func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
-	return sq.Expr("NOW() - e.creation_date > make_interval(hours => ?)", int(hours))
+	return sq.Expr("NOW() - entries.creation_date > make_interval(hours => ?)", int(hours))
 }
 
 var (
-	byNoncurrent  = sq.Expr("rank > 0")
+	byNoncurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
 	byUncommitted = sq.Expr("min_commit = 0")
 )
 
@@ -74,7 +64,6 @@ func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention
 
 	// An expression to select for each rule.  Select by ORing all these.
 	ruleSelectors := make([]sq.Sqlizer, 0, len(policy.Rules))
-	needsRankedEntries := false
 	for _, rule := range policy.Rules {
 		if !rule.Enabled {
 			continue
@@ -90,7 +79,6 @@ func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention
 					byExpiration(*rule.Expiration.Noncurrent),
 					byNoncurrent,
 				})
-			needsRankedEntries = true
 		}
 		if rule.Expiration.Uncommitted != nil {
 			expirationExprs = append(expirationExprs,
@@ -107,13 +95,9 @@ func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention
 	}
 
 	query := psql.Select("physical_address", "branches.name AS branch", "path").
+		From("entries").
 		Where(sq.And{repositorySelector, sq.Or(ruleSelectors)})
-	if needsRankedEntries {
-		query = query.From("ranked_entries e").Prefix(rankedEntriesPrefix)
-	} else {
-		query = query.From("entries e")
-	}
-	query = query.Join("branches ON e.branch_id = branches.id").
+	query = query.Join("branches ON entries.branch_id = branches.id").
 		Join("repositories on branches.repository_id = repositories.id")
 	return query
 }
@@ -122,17 +106,17 @@ func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, poli
 	defer func() {
 		close(out)
 	}()
+	logger := logging.Default().WithContext(ctx).WithField("policy", *policy)
+
 	query := c.buildRetentionQuery(repositoryName, policy)
-
-	logger := logging.Default().WithContext(ctx).WithFields(logging.Fields{"policy": policy, "query": query})
-
-	logger.Info("retention query")
-
 	queryString, args, err := query.ToSql()
 	if err != nil {
 		logger.WithError(err).Error("building query")
 		return fmt.Errorf("building query: %s", err)
 	}
+
+	logger = logger.WithFields(logging.Fields{"query": queryString, "args": args})
+	logger.Info("retention query")
 
 	// TODO(ariels): Get lowest possible isolation level here.
 	_, err = c.db.Transact(func(tx db.Tx) (interface{}, error) {
