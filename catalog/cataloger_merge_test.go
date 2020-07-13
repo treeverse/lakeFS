@@ -12,7 +12,7 @@ import (
 )
 
 func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
-	//t.Skip("wait for catch up")
+	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -76,7 +76,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
