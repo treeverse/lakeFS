@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 	"strings"
 
@@ -140,6 +141,11 @@ func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, poli
 			out <- res
 		}
 		return nil, nil
-	})
+	},
+		// Long-running transaction returning old objects should use a low isolation
+		// level.  Even READ UNCOMMITTED might make sense here too, but is not available
+		// in Postgres.
+		db.WithIsolationLevel(sql.LevelReadCommitted),
+	)
 	return err
 }
