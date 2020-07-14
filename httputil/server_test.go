@@ -1,7 +1,6 @@
 package httputil
 
 import (
-	"reflect"
 	"testing"
 )
 
@@ -26,8 +25,8 @@ func TestSubdomainsOf(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := SubdomainsOf(tt.args.v)
-			if got := m(tt.host); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("SubdomainsOf() = %v, want %v", got, tt.want)
+			if got := m(tt.host); got != tt.want {
+				t.Errorf("SubdomainsOf() '%s' test with '%s' got = %t, want = %t", tt.args.v, tt.host, got, tt.want)
 			}
 		})
 	}
