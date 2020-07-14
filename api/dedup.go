@@ -9,7 +9,7 @@ import (
 
 const (
 	dedupWorkers     = 1
-	dedupChannelSize = 1000
+	dedupChannelSize = 5000
 )
 
 type DedupHandler struct {
@@ -18,6 +18,7 @@ type DedupHandler struct {
 	wg    sync.WaitGroup
 }
 
+// NewDedupHandler handles the delete of objects from block after dedup identified and updated by the cataloger
 func NewDedupHandler(adapter block.Adapter) *DedupHandler {
 	return &DedupHandler{
 		block: adapter,

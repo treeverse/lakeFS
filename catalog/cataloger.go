@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"errors"
 	"io"
 	"strconv"
 	"sync"
@@ -17,8 +16,8 @@ const (
 	CatalogerCommitter = ""
 
 	dedupBatchSize    = 10
-	dedupBatchTimeout = 100 * time.Millisecond
-	dedupChannelSize  = 1000
+	dedupBatchTimeout = 50 * time.Millisecond
+	dedupChannelSize  = 5000
 )
 
 type DedupResult struct {
@@ -247,21 +246,18 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 				continue
 			}
 
-			var address string
-			err = tx.Get(&address, `UPDATE entries SET physical_address=(
-					SELECT physical_address FROM object_dedup
-						WHERE repository_id=$2 AND dedup_id=decode($3,'hex')) 
-				WHERE ctid=$1 AND physical_address=$4
-				RETURNING physical_address`,
-				r.EntryCTID, repoID, r.DedupID, r.Entry.PhysicalAddress)
-			if errors.Is(err, db.ErrNotFound) {
-				continue
-			}
+			// fill the address into the right location
+			err = tx.Get(&addresses[i], `SELECT physical_address FROM object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+				repoID, r.DedupID)
 			if err != nil {
 				return nil, err
 			}
-			if address != "" && address != r.Entry.PhysicalAddress {
-				addresses[i] = address
+
+			// update the entry with new address physical address
+			_, err = tx.Exec(`UPDATE entries SET physical_address=$2 WHERE ctid=$1 AND physical_address=$3`,
+				r.EntryCTID, addresses[i], r.Entry.PhysicalAddress)
+			if err != nil {
+				return nil, err
 			}
 		}
 		return addresses, nil
