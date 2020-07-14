@@ -13,8 +13,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-var ErrSendError = errors.New("stats: send error")
-var ErrNoInstallationID = fmt.Errorf("installation ID is missing: %w", ErrSendError)
+var (
+	ErrSendError        = errors.New("stats: send error")
+	ErrNoInstallationID = fmt.Errorf("installation ID is missing: %w", ErrSendError)
+)
 
 type Sender interface {
 	SendEvent(ctx context.Context, installationId, processId string, m []Metric) error
