@@ -67,11 +67,11 @@ or to enter the lakeFS access key pair into the Rclone configuration.
 ### Syncing your data from S3 to lakeFS
 
 ``` bash
-$ rclone sync mys3remote://mybucket/path/ lakefs:my-lakefs-repo/master/path
+$ rclone sync mys3remote://mybucket/path/ lakefs:example-repo/master/path
 ```
 
 ### Syncing a local directory to lakeFS
 
 ```bash
-$ rclone sync /home/myuser/path/ lakefs:my-lakefs-repo/master/path
+$ rclone sync /home/myuser/path/ lakefs:example-repo/master/path
 ```
