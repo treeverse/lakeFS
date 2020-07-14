@@ -36,7 +36,7 @@ Add to ```/etc/catalog/hive.properties``` the lakeFS configurations in the corre
 ```
 hive.s3.aws-access-key=AKIAIOSFODNN7EXAMPLE
 hive.s3.aws-secret-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
-hive.s3.endpoint=https://example.lakefs.io
+hive.s3.endpoint=https://s3.lakefs.example.com
 ```
 
 ### Configure Hive
@@ -49,7 +49,7 @@ In file ``` hdfs-site.xml``` add to the configuration:
 ...
 <property><name>fs.s3a.access.key</name><value>AKIAIOSFODNN7EXAMPLE</value></property>
 <property><name>fs.s3a.secret.key</name><value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value></property>
-<property><name>fs.s3a.endpoint</name><value>https://example.lakefs.io</value></property>
+<property><name>fs.s3a.endpoint</name><value>https://s3.lakefs.example.com</value></property>
 </configuration>
 
 ```

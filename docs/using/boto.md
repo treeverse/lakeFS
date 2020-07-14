@@ -21,7 +21,7 @@ Create a Boto3 S3 client with your lakeFS endpoint and key-pair:
 ```python
 import boto3
 s3 = boto3.client('s3',
-    endpoint_url='https://example.lakefs.io',
+    endpoint_url='https://s3.lakefs.example.com',
     aws_access_key_id='AKIAIOSFODNN7EXAMPLE',
     aws_secret_access_key='wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY')
 ```
