@@ -41,7 +41,7 @@ For example if we would like to Specify the credentials at run time
 ```scala
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.access.key", "AKIAIOSFODNN7EXAMPLE")
 spark.sparkContext.hadoopConfiguration.set("fs.s3a.secret.key", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY")
-spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://example.lakefs.io")
+spark.sparkContext.hadoopConfiguration.set("fs.s3a.endpoint", "https://s3.lakefs.example.com")
 ```
 
    
@@ -51,8 +51,7 @@ In order for us to access objects in lakeFS we will need to use the lakeFS path 
     ```s3a://[REPOSITORY]/[BRANCH]/PATH/TO/OBJECT```
 
 For example: 
-Lets assume we want to read the parquet file: 
-   ``` title.basics.parquet ```
+Lets assume we want to read a parquet file: 
 
 from repository: ```example-repo```
 branch: ```master```
