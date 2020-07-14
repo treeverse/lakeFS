@@ -14,6 +14,7 @@ import (
 )
 
 var ErrSendError = errors.New("stats: send error")
+var ErrNoInstallationID = fmt.Errorf("installation ID is missing: %w", ErrSendError)
 
 type Sender interface {
 	SendEvent(ctx context.Context, installationId, processId string, m []Metric) error
@@ -35,6 +36,9 @@ func NewHTTPSender(addr string, timeFunc TimeFn) *HTTPSender {
 }
 
 func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
+	if len(m.InstallationID) == 0 {
+		return ErrNoInstallationID
+	}
 	serialized, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
 		return fmt.Errorf("failed to serialize account metadata: %v", err)
@@ -56,6 +60,10 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 }
 
 func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
+	if len(installationID) == 0 {
+		return ErrNoInstallationID
+	}
+
 	event := &InputEvent{
 		InstallationID: installationID,
 		ProcessID:      processID,

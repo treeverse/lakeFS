@@ -1,145 +1,94 @@
 package auth
 
 import (
-	"context"
-	"math/rand"
+	"errors"
 	"runtime"
 	"time"
 
-	"github.com/treeverse/lakefs/stats"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
-func UpdateMetadataValues(version string, authService Service) (map[string]string, error) {
+type MetadataManager interface {
+	InstallationID() (string, error)
+	Write() (map[string]string, error)
+}
+
+type DBMetadataManager struct {
+	version string
+	db      db.Database
+}
+
+func NewDBMetadataManager(version string, database db.Database) *DBMetadataManager {
+	return &DBMetadataManager{
+		version: version,
+		db:      database,
+	}
+}
+
+func getInstallationId(tx db.Tx) (string, error) {
+	const InstallationIDKeyName = "installation_id"
+	var installationID string
+	err := tx.Get(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
+		InstallationIDKeyName)
+	return installationID, err
+}
+
+func writeMetadata(tx db.Tx, items map[string]string) error {
+	for key, value := range items {
+		_, err := tx.Exec(`
+			INSERT INTO auth_installation_metadata (key_name, key_value)
+			VALUES ($1, $2)
+			ON CONFLICT (key_name) DO UPDATE set key_value = $2`,
+			key, value)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (d *DBMetadataManager) InstallationID() (string, error) {
+	installationID, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return getInstallationId(tx)
+	}, db.ReadOnly())
+	if err != nil {
+		return "", err
+	}
+	return installationID.(string), nil
+}
+
+func (d *DBMetadataManager) Write() (map[string]string, error) {
 	metadata := make(map[string]string)
-	metadata["lakefs_version"] = version
+	metadata["lakefs_version"] = d.version
 	metadata["golang_version"] = runtime.Version()
 	metadata["architecture"] = runtime.GOARCH
 	metadata["os"] = runtime.GOOS
-
-	// read all the DB values, if applicable
-	type HasDatabase interface {
-		DB() db.Database
-	}
-	if d, ok := authService.(HasDatabase); ok {
-		conn := d.DB()
-		dbMeta, err := conn.Metadata()
-		if err == nil {
-			for k, v := range dbMeta {
-				metadata[k] = v
-			}
+	dbMeta, err := d.db.Metadata()
+	if err == nil {
+		for k, v := range dbMeta {
+			metadata[k] = v
 		}
 	}
 
-	// write everything.
-	for k, v := range metadata {
-		err := authService.SetAccountMetadataKey(k, v)
-		if err != nil {
+	// see if we have existing metadata or we need to generate one
+	_, err = d.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// get installation ID - if we don't have one we'll generate one
+		installationID, err := getInstallationId(tx)
+		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			return nil, err
 		}
-	}
 
-	return metadata, nil
-
-}
-
-func WriteInitialMetadata(version string, authService Service) (string, map[string]string, error) {
-
-	err := authService.SetAccountMetadataKey("setup_time", time.Now().Format(time.RFC3339))
-	if err != nil {
-		return "", nil, err
-	}
-
-	installationID := uuid.Must(uuid.NewUUID()).String()
-	err = authService.SetAccountMetadataKey("installation_id", installationID)
-	if err != nil {
-		return "", nil, err
-	}
-
-	meta, err := UpdateMetadataValues(version, authService)
-	if err != nil {
-		return "", nil, err
-	}
-
-	return installationID, meta, nil
-}
-
-type MetadataRefresher struct {
-	version     string
-	splay       time.Duration
-	interval    time.Duration
-	authService Service
-	sink        stats.Collector
-	stop        chan bool
-	done        chan bool
-}
-
-func NewMetadataRefresher(version string, splay, interval time.Duration, authService Service, sink stats.Collector) *MetadataRefresher {
-	return &MetadataRefresher{
-		version:     version,
-		splay:       splay,
-		interval:    interval,
-		authService: authService,
-		stop:        make(chan bool),
-		done:        make(chan bool),
-		sink:        sink,
-	}
-}
-
-func (m *MetadataRefresher) Start() {
-	go func() {
-		// sleep random 0-splay
-		r := rand.New(rand.NewSource(time.Now().UnixNano()))
-		splayRandTime := rand.Intn(r.Intn(int(m.splay)))
-		splayRandDuration := time.Duration(splayRandTime)
-		log := logging.Default().WithFields(logging.Fields{
-			"splay":    splayRandDuration.String(),
-			"interval": m.interval,
-		})
-		log.Trace("starting metadata refresher")
-		stillRunning := true
-
-		select {
-		case <-m.stop:
-			stillRunning = false
-		case <-time.After(splayRandDuration):
-			m.update()
+		if err != nil { // i.e. err is db.ErrNotFound
+			// we don't have an installation ID - let's write one.
+			installationID = uuid.Must(uuid.NewUUID()).String()
+			metadata["installation_id"] = installationID
+			metadata["setup_time"] = time.Now().Format(time.RFC3339)
 		}
 
-		for stillRunning {
-			select {
-			case <-m.stop:
-				stillRunning = false
-				break
-			case <-time.After(m.interval):
-				m.update()
-			}
-		}
-		m.done <- true
-	}()
-}
+		err = writeMetadata(tx, metadata)
+		return nil, err
+	})
 
-func (m *MetadataRefresher) update() {
-	metadata, err := UpdateMetadataValues(m.version, m.authService)
-	if err != nil {
-		logging.Default().WithError(err).Debug("failed refreshing local metadata values")
-		return
-	}
-
-	m.sink.CollectMetadata(metadata)
-
-	logging.Default().Trace("local metadata refreshed")
-}
-
-func (m *MetadataRefresher) Shutdown(ctx context.Context) error {
-	go func() { m.stop <- true }()
-	select {
-	case <-ctx.Done():
-		return ctx.Err()
-	case <-m.done:
-		return nil
-	}
+	return metadata, err
 }

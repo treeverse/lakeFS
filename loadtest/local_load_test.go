@@ -58,15 +58,16 @@ func TestLocalLoad(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseUri)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(conn)
+	index := index.NewDBIndex(conn)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
+	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(databaseUri)
 	server := *api.NewServer(
-		"dev",
-		meta,
+		index,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
 		migrator,
 		logging.Default(),
