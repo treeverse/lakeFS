@@ -22,7 +22,7 @@ type Importer struct {
 	CatalogActions     RepoActions
 }
 
-func CreateImporter(cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, inventoryURL string, repository string) (importer *Importer, err error) {
+func CreateImporter(cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
 	res := &Importer{
 		repository:         repository,
 		batchSize:          DefaultBatchSize,
@@ -33,7 +33,7 @@ func CreateImporter(cataloger catalog.Cataloger, inventoryGenerator block.Invent
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
-	res.CatalogActions = NewCatalogActions(cataloger, repository, DefaultBatchSize)
+	res.CatalogActions = NewCatalogActions(cataloger, repository, username, DefaultBatchSize)
 	return res, nil
 }
 

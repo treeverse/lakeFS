@@ -242,21 +242,18 @@ const CommitButton = connect(
     );
 });
 
-const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState, importState, listBranches, listBranchesState, setShowImportModal}) => {
+const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState, importState, setShowImportModal}) => {
     const history = useHistory();
     const location = useLocation();
     const[showUploadModal, setShowUploadModal] = useState(false)
     const refreshData = useCallback(() => {
         listTree(repo.id, refId.id, path);
         if (refId.type === 'branch') {
-            if (refId.id === repo.default_branch) {
-                listBranches(repo.id, "", 2)
-            }
             diff(repo.id, refId.id, refId.id);
         } else {
             resetDiff();
         }
-    }, [repo.id, refId, path, listTree, diff, resetDiff, listBranches, repo.default_branch]);
+    }, [repo.id, refId, path, listTree, diff, resetDiff]);
 
     useEffect(() => {
         refreshData();
@@ -313,7 +310,6 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                 }}
                 diffResults={diffResults}
                 list={list}
-                listBranchesState={listBranchesState}
                 path={path}
                 setShowUploadModal={setShowUploadModal}
                 setShowImportModal={setShowImportModal}/>
@@ -340,7 +336,6 @@ export default connect(
         revertState: branches.revert,
         importState: objects.import,
         importDryRunState: objects.importDryRun,
-        listBranchesState: branches.list,
     }),
     ({listTree, listTreePaginate, diff, resetDiff, deleteObject, listBranches})
 )(TreePage);

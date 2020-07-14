@@ -2,7 +2,7 @@ import * as api from './api';
 import {AsyncActionType} from "./request";
 
 export const
-    PAGINATION_AMOUNT = 50,
+    PAGINATION_AMOUNT = 300,
     OBJECTS_LIST_TREE = new AsyncActionType('OBJECTS_GET_TREE'),
     OBJECTS_LIST_TREE_PAGINATE = new AsyncActionType('OBJECTS_GET_TREE_PAGINATE'),
     OBJECTS_UPLOAD = new AsyncActionType('OBJECTS_UPLOAD'),

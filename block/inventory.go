@@ -10,13 +10,12 @@ type InventoryGenerator interface {
 
 // Inventory represents a snapshot of the storage space
 type Inventory interface {
-	Objects(ctx context.Context, sorted bool) (objects []InventoryObject, err error)
+	Objects(ctx context.Context, sorted bool) ([]InventoryObject, error)
 	SourceName() string
 	InventoryURL() string
 }
 
 type InventoryObject struct {
-	Error          error
 	Bucket         string `parquet:"name=bucket, type=INTERVAL"`
 	Key            string `parquet:"name=key, type=INTERVAL"`
 	Size           *int64 `parquet:"name=size, type=INT_64"`

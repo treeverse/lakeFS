@@ -20,19 +20,15 @@ type CatalogRepoActions struct {
 	cataloger  catalog.Cataloger
 	batchSize  int
 	repository string
+	committer  string
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string, batchSize int) RepoActions {
-	return &CatalogRepoActions{cataloger: cataloger, batchSize: batchSize, repository: repository}
+func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, batchSize int) RepoActions {
+	return &CatalogRepoActions{cataloger: cataloger, batchSize: batchSize, repository: repository, committer: committer}
 }
 
 func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects []block.InventoryObject, objectsToDelete []block.InventoryObject) (err error) {
 	currentBatch := make([]catalog.Entry, 0, c.batchSize)
-	for _, row := range objects {
-		if row.Error != nil {
-			return fmt.Errorf("failed to read row from inventory: %w", row.Error)
-		}
-	}
 	for _, row := range objects {
 		entry := catalog.Entry{
 			Path:            row.Key,
@@ -86,7 +82,7 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
 	_, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
-		"lakeFS",
+		c.committer,
 		metadata)
 	return err
 }

@@ -7,10 +7,7 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 
 const RepoSettingsPage = ({repo, setShowImportModal}) => {
-
-
-    let body;
-    body = (
+    const body = (
         <>
             <div className="section-title"><h4>General</h4></div>
             <Container>

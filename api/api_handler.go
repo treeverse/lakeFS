@@ -2014,8 +2014,12 @@ func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3Invent
 			return repositories.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("import_from_s3_inventory")
-
-		importer, err := onboard.CreateImporter(deps.Cataloger, deps.BlockAdapter, params.ManifestURL, params.Repository)
+		userModel, err := a.deps.Auth.GetUser(user.ID)
+		username := "lakeFS"
+		if err == nil {
+			username = userModel.DisplayName
+		}
+		importer, err := onboard.CreateImporter(deps.Cataloger, deps.BlockAdapter, username, params.ManifestURL, params.Repository)
 		if err != nil {
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

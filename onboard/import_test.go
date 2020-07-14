@@ -87,7 +87,7 @@ func TestImport(t *testing.T) {
 				newInventory:         test.NewInventory,
 				previousInventory:    test.PreviousInventory,
 				sourceBucket:         "example-repo",
-			}, newInventoryURL, "example-repo")
+			}, "committer", newInventoryURL, "example-repo")
 			if err != nil {
 				t.Fatalf("failed to create importer: %v", err)
 			}

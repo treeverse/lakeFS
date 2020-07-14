@@ -41,19 +41,12 @@ func rows(keys ...string) []block.InventoryObject {
 	}
 	return res
 }
-func files(keys ...string) []s3.ManifestFile {
-	res := make([]s3.ManifestFile, 0, len(keys))
-	for _, key := range keys {
-		res = append(res, s3.ManifestFile{Key: key})
-	}
-	return res
-}
 
-func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, file s3.ManifestFile) ([]block.InventoryObject, error) {
+func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, manifestFileKey string) ([]block.InventoryObject, error) {
 	if inventoryBucketName != "example-bucket" {
 		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
 	}
-	return rows(fileContents[file.Key]...), nil
+	return rows(fileContents[manifestFileKey]...), nil
 }
 
 var fileContents = map[string][]string{
@@ -66,9 +59,6 @@ var fileContents = map[string][]string{
 }
 
 func TestFetch(t *testing.T) {
-	manifest := s3.Manifest{
-		InventoryBucketArn: "arn:aws:s3:::example-bucket",
-	}
 	testdata := []struct {
 		InventoryFiles  []string
 		Sort            bool
@@ -108,10 +98,14 @@ func TestFetch(t *testing.T) {
 
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
-		inv := s3.Inventory{RowReader: mockReadRows, S3: &mockS3Client{
+		inv, err := s3.GenerateInventory(manifestURL, &mockS3Client{
 			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-		}, Manifest: &manifest}
-		manifest.Files = files(test.InventoryFiles...)
+		})
+		s3Inv := inv.(*s3.Inventory)
+		s3Inv.RowReader = mockReadRows
+		if err != nil {
+			t.Fatalf("error: %v", err)
+		}
 		objects, err := inv.Objects(context.Background(), test.Sort)
 		if err != nil {
 			t.Fatalf("error: %v", err)
@@ -135,9 +129,11 @@ func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutpu
 	if manifestFileNames == nil {
 		manifestFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
 	}
-	manifestFiles := make([]s3.ManifestFile, len(manifestFileNames))
+	manifestFiles := make([]interface{}, len(manifestFileNames))
 	for _, filename := range manifestFileNames {
-		manifestFiles = append(manifestFiles, s3.ManifestFile{
+		manifestFiles = append(manifestFiles, struct {
+			Key string `json:"key"`
+		}{
 			Key: filename,
 		})
 	}
@@ -147,7 +143,7 @@ func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutpu
 	}
 	destBucket := m.DestBucket
 	if m.DestBucket == "" {
-		destBucket = "yoni-test3"
+		destBucket = "example-bucket"
 	}
 	reader := strings.NewReader(fmt.Sprintf(`{
   "sourceBucket" : "lakefs-example-data",

@@ -2,7 +2,6 @@ package config
 
 import (
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -108,7 +107,7 @@ func (c *Config) BuildDatabaseConnection() db.Database {
 	return database
 }
 
-func (c *Config) buildS3Service() s3iface.S3API {
+func (c *Config) buildS3Adapter() block.Adapter {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
@@ -127,11 +126,7 @@ func (c *Config) buildS3Service() s3iface.S3API {
 
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig(s3.ServiceName)
-	return s3.New(sess)
-}
-
-func (c *Config) buildS3Adapter() block.Adapter {
-	svc := c.buildS3Service()
+	svc := s3.New(sess)
 	adapter := s3a.NewAdapter(svc,
 		s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")),
 		s3a.WithStreamingChunkTimeout(viper.GetDuration("blockstore.s3.streaming_chunk_timeout")))

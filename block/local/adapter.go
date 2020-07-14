@@ -4,8 +4,8 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/go-openapi/errors"
 	"io"
 	"net/http"
 	"os"
@@ -245,5 +245,5 @@ func (l *Adapter) ValidateConfiguration(_ string) error {
 }
 
 func (l *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
-	return nil, errors.NotImplemented("inventory feature not implemented for local storage adapter")
+	return nil, errors.New("inventory feature not implemented for local storage adapter")
 }

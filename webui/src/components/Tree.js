@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
@@ -22,6 +22,8 @@ import Tooltip from "react-bootstrap/Tooltip";
 import Dropdown from "react-bootstrap/Dropdown";
 import Container from "react-bootstrap/Container";
 import Row from "react-bootstrap/Row";
+import {connect} from "react-redux";
+import {listBranches} from "../actions/branches";
 
 
 const humanSize = (bytes) => {
@@ -295,8 +297,19 @@ const merge = (path, entriesAtPath, diffResults) => {
     });
 };
 
-export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranchesState, setShowUploadModal, setShowImportModal }) => {
+const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal, setShowImportModal }) => {
     let body;
+    const refreshData = useCallback(() => {
+        if (refId.type === 'branch') {
+            if (refId.id === repo.default_branch) {
+                listBranches(repo.id, "", 2) // trigger list branches to
+            }
+        }
+    }, [repo.id, listBranches, refId, repo.default_branch]);
+    useEffect(() => {
+        refreshData();
+    }, [refreshData, repo.id, refId, path]);
+
     const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0  && listBranchesState && listBranchesState.payload && listBranchesState.payload.results.length === 1;
 
     if (list.loading) {
@@ -344,3 +357,10 @@ const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowI
                 <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/>See the&nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.</Row>
 </Container>    )}</>
 }
+
+export default connect(
+    ({branches}) => ({
+        listBranchesState: branches.list,
+    }),
+    ({listBranches})
+)(Tree);

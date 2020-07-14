@@ -15,18 +15,36 @@ import (
 	"sort"
 )
 
+type manifest struct {
+	URL                string         `json:"-"`
+	InventoryBucketArn string         `json:"destinationBucket"`
+	SourceBucket       string         `json:"sourceBucket"`
+	Files              []manifestFile `json:"files"`
+	Format             string         `json:"fileFormat"`
+}
+
+type manifestFile struct {
+	Key         string `json:"key"`
+	Size        int    `json:"size"`
+	MD5checksum string `json:"MD5checksum"`
+}
+
 func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error) {
-	manifest, err := LoadManifest(manifestURL, s.s3)
+	return GenerateInventory(manifestURL, s.s3)
+}
+
+func GenerateInventory(manifestURL string, s3 s3iface.S3API) (block.Inventory, error) {
+	manifest, err := loadManifest(manifestURL, s3)
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: manifest, S3: s.s3, RowReader: readRows}, nil
+	return &Inventory{Manifest: manifest, S3: s3, RowReader: readRows}, nil
 }
 
 type Inventory struct {
-	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]block.InventoryObject, error)
+	RowReader func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) ([]block.InventoryObject, error)
 	S3        s3iface.S3API
-	Manifest  *Manifest
+	Manifest  *manifest
 }
 
 func (i *Inventory) GetPhysicalAddress(object block.InventoryObject) string {
@@ -40,8 +58,12 @@ func (i *Inventory) Objects(ctx context.Context, sorted bool) (objects []block.I
 	}
 	invBucket := inventoryBucketArn.Resource
 	for _, file := range i.Manifest.Files {
+		err = ctx.Err()
+		if err != nil {
+			return
+		}
 		var currentRows []block.InventoryObject
-		currentRows, err = i.RowReader(ctx, i.S3, invBucket, file)
+		currentRows, err = i.RowReader(ctx, i.S3, invBucket, file.Key)
 		if err != nil {
 			return
 		}
@@ -67,29 +89,30 @@ func (i *Inventory) SourceName() string {
 func (i *Inventory) InventoryURL() string {
 	return i.Manifest.URL
 }
-func LoadManifest(manifestURL string, s3svc s3iface.S3API) (manifest *Manifest, err error) {
+
+func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 	u, err := url.Parse(manifestURL)
 	if err != nil {
-		return
+		return nil, err
 	}
 	output, err := s3svc.GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
 	if err != nil {
-		return
+		return nil, err
 	}
-	manifest = new(Manifest)
-	err = json.NewDecoder(output.Body).Decode(manifest)
+	var m manifest
+	err = json.NewDecoder(output.Body).Decode(&m)
 	if err != nil {
-		return
+		return nil, err
 	}
-	if manifest.Format != "Parquet" {
-		return nil, errors.New("currently only parquet inventories are supported. got: " + manifest.Format)
+	if m.Format != "Parquet" {
+		return nil, errors.New("currently only parquet inventories are supported. got: " + m.Format)
 	}
-	manifest.URL = manifestURL
-	return
+	m.URL = manifestURL
+	return &m, nil
 }
 
-func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file ManifestFile) ([]block.InventoryObject, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, file.Key)
+func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) ([]block.InventoryObject, error) {
+	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, manifestFileKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
@@ -107,18 +130,4 @@ func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, file Man
 		return nil, err
 	}
 	return currentRows, nil
-}
-
-type Manifest struct {
-	URL                string         `json:"-"`
-	InventoryBucketArn string         `json:"destinationBucket"`
-	SourceBucket       string         `json:"sourceBucket"`
-	Files              []ManifestFile `json:"files"`
-	Format             string         `json:"fileFormat"`
-}
-
-type ManifestFile struct {
-	Key         string `json:"key"`
-	Size        int    `json:"size"`
-	MD5checksum string `json:"MD5checksum"`
 }

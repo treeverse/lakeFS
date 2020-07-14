@@ -5,8 +5,8 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
-	"github.com/go-openapi/errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -204,5 +204,5 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 }
 
 func (a *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
-	return nil, errors.NotImplemented("inventory feature not implemented for memory storage adapter")
+	return nil, errors.New("inventory feature not implemented for memory storage adapter")
 }
