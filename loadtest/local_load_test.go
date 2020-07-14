@@ -63,7 +63,7 @@ func TestLocalLoad(t *testing.T) {
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(databaseUri)
-	handler := api.NewAPIHandler(
+	handler := api.NewHandler(
 		index,
 		blockAdapter,
 		authService,

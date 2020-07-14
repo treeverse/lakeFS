@@ -6,11 +6,9 @@ import (
 	"net/http/pprof"
 	"strings"
 
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
-
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
 )
 

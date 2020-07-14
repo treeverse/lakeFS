@@ -23,17 +23,13 @@ func Exact(v string) MatchFn {
 }
 
 func SubdomainsOf(v string) MatchFn {
+	subV := "." + v
 	return func(host string) bool {
-		subDomain := strings.TrimSuffix(host, v)
-		if subDomain == host {
-			// not a subdomain at all
+		if !strings.HasSuffix(host, subV) || len(host) < len(subV)+1 {
 			return false
 		}
-		subDomain = strings.TrimSuffix(subDomain, ".")
-		if len(subDomain) == 0 {
-			return false
-		}
-		if strings.IndexRune(subDomain, '.') != -1 {
+		dot := strings.IndexRune(host, '.')
+		if dot > -1 && dot < len(host)-len(subV) {
 			return false
 		}
 		return true // it is a direct sub-domain
@@ -59,9 +55,8 @@ func HostHandler(handler http.Handler, hostPatterns ...MatchFn) *HostMuxHandler 
 	}
 }
 
+// HostMux find the default handler
 func HostMux(handlers ...*HostMuxHandler) http.Handler {
-
-	// find the default handler
 	defaultHandler := handlers[0].Handler
 	for _, handler := range handlers {
 		if handler.isDefault {
@@ -72,7 +67,7 @@ func HostMux(handlers ...*HostMuxHandler) http.Handler {
 
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		host := HostOnly(r.Host)
-		var matchedHandler http.Handler
+		matchedHandler := defaultHandler
 		for _, handler := range handlers {
 			for _, matchFn := range handler.MatchFns {
 				if matchFn(host) {
@@ -81,11 +76,6 @@ func HostMux(handlers ...*HostMuxHandler) http.Handler {
 				}
 			}
 		}
-
-		if matchedHandler == nil {
-			matchedHandler = defaultHandler
-		}
-
 		matchedHandler.ServeHTTP(w, r) // do actual request
 	})
 }

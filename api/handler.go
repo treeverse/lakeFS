@@ -31,7 +31,7 @@ var (
 	ErrAuthenticationFailed = errors.New(http.StatusUnauthorized, "error authenticating request")
 )
 
-type APIHandler struct {
+type Handler struct {
 	meta        auth.MetadataManager
 	index       index.Index
 	blockStore  block.Adapter
@@ -44,7 +44,7 @@ type APIHandler struct {
 	logger      logging.Logger
 }
 
-func NewAPIHandler(
+func NewHandler(
 	index index.Index,
 	blockStore block.Adapter,
 	authService auth.Service,
@@ -54,7 +54,7 @@ func NewAPIHandler(
 	logger logging.Logger,
 ) http.Handler {
 	logger.Info("initialized OpenAPI handler")
-	s := &APIHandler{
+	s := &Handler{
 		index:       index,
 		blockStore:  blockStore,
 		authService: authService,
@@ -70,7 +70,7 @@ func NewAPIHandler(
 // JwtTokenAuth decodes, validates and authenticates a user that exists
 // in the X-JWT-Authorization header.
 // This header either exists natively, or is set using a token
-func (s *APIHandler) JwtTokenAuth() func(string) (*models.User, error) {
+func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 	logger := logging.Default().WithField("auth", "jwt")
 	return func(tokenString string) (*models.User, error) {
 		claims := &jwt.StandardClaims{}
@@ -101,7 +101,7 @@ func (s *APIHandler) JwtTokenAuth() func(string) (*models.User, error) {
 
 // BasicAuth returns a function that hooks into Swagger's basic Auth provider
 // it uses the Auth.Service provided to ensure credentials are valid
-func (s *APIHandler) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
+func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
 		credentials, err := s.authService.GetCredentials(accessKey)
@@ -124,7 +124,7 @@ func (s *APIHandler) BasicAuth() func(accessKey, secretKey string) (user *models
 	}
 }
 
-func (s *APIHandler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
+func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
 	// api handler
 	mux.Handle("/api/", api)
@@ -139,7 +139,7 @@ func (s *APIHandler) setupHandler(api http.Handler, ui http.Handler, setup http.
 }
 
 // buildAPI wires together the JWT and basic authenticator and registers all relevant API handlers
-func (s *APIHandler) buildAPI() {
+func (s *Handler) buildAPI() {
 	swaggerSpec, _ := loads.Analyzed(restapi.SwaggerJSON, "")
 
 	api := operations.NewLakefsAPI(swaggerSpec)

@@ -6,13 +6,11 @@ import (
 	"os"
 	"testing"
 
-	"github.com/treeverse/lakefs/block/local"
-
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/block/local"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func newConfigFromFile(fn string) *config.Config {
