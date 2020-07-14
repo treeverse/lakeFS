@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -23,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -67,13 +66,9 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) SetInstallationID(installationID string) {
+func (m *mockCollector) SetInstallationID(installationID string) {}
 
-}
-
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
-
-}
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
@@ -89,7 +84,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	meta := auth.NewDBMetadataManager("dev", conn)
 
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
-	server := api.NewServer(
+	handler := api.NewHandler(
 		index,
 		blockAdapter,
 		authService,
@@ -99,10 +94,6 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		logging.Default(),
 	)
 
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatal(err)
-	}
 	return handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,

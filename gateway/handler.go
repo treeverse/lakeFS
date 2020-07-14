@@ -2,14 +2,13 @@ package gateway
 
 import (
 	"fmt"
-	"net"
 	"net/http"
 	"net/http/pprof"
 	"strings"
 
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
-
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/index"
 )
 
@@ -81,9 +80,9 @@ func (h *Handler) servePprof(r *http.Request) http.Handler {
 }
 
 func (h *Handler) servePathBased(r *http.Request) http.Handler {
-	host := hostOnly(r.Host)
+	host := httputil.HostOnly(r.Host)
 
-	if !strings.EqualFold(host, hostOnly(h.BareDomain)) {
+	if !strings.EqualFold(host, httputil.HostOnly(h.BareDomain)) {
 		return nil // maybe it's a virtual host, but def not a path based request because the host is wrong
 	}
 
@@ -130,14 +129,14 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 
 func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {
 	// is it a virtual host?
-	host := hostOnly(r.Host)
+	host := httputil.HostOnly(r.Host)
 
-	if !strings.HasSuffix(host, hostOnly(h.BareDomain)) {
+	if !strings.HasSuffix(host, httputil.HostOnly(h.BareDomain)) {
 		return nil
 	}
 
 	// remove bare domain suffix
-	repositoryId := strings.TrimSuffix(host, fmt.Sprintf(".%s", hostOnly(h.BareDomain)))
+	repositoryId := strings.TrimSuffix(host, fmt.Sprintf(".%s", httputil.HostOnly(h.BareDomain)))
 
 	if err := index.ValidateRepoId(repositoryId); err != nil {
 		return h.NotFoundHandler
@@ -210,12 +209,4 @@ func SplitFirst(pth string, parts int) ([]string, bool) {
 		return []string{}, false
 	}
 	return pathParts, true
-}
-
-func hostOnly(hostname string) string {
-	if strings.Contains(hostname, ":") {
-		host, _, _ := net.SplitHostPort(hostname)
-		return host
-	}
-	return hostname
 }
