@@ -3,15 +3,14 @@ package config_test
 import (
 	"bufio"
 	"encoding/json"
-	"github.com/treeverse/lakefs/block/local"
 	"os"
 	"testing"
 
+	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/block/local"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
-
-	log "github.com/sirupsen/logrus"
 )
 
 func newConfigFromFile(fn string) *config.Config {
@@ -26,19 +25,16 @@ func newConfigFromFile(fn string) *config.Config {
 func TestConfig_Setup(t *testing.T) {
 	// test defaults
 	c := config.NewConfig()
-	if c.GetAPIListenAddress() != config.DefaultAPIListenAddr {
-		t.Fatalf("expected listen addr %s, got %s", config.DefaultAPIListenAddr, c.GetAPIListenAddress())
-	}
-	if c.GetS3GatewayDomainName() != config.DefaultS3GatewayDomainName {
-		t.Fatalf("expected domain name %s, got %s", config.DefaultS3GatewayDomainName, c.GetS3GatewayDomainName())
+	if c.GetListenAddress() != config.DefaultListenAddr {
+		t.Fatalf("expected listen addr %s, got %s", config.DefaultListenAddr, c.GetListenAddress())
 	}
 }
 
 func TestNewFromFile(t *testing.T) {
 	t.Run("valid config", func(t *testing.T) {
 		c := newConfigFromFile("testdata/valid_config.yaml")
-		if c.GetAPIListenAddress() != "0.0.0.0:8005" {
-			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.GetAPIListenAddress())
+		if c.GetListenAddress() != "0.0.0.0:8005" {
+			t.Fatalf("expected listen addr 0.0.0.0:8005, got %s", c.GetListenAddress())
 		}
 		if c.GetS3GatewayDomainName() != "s3.example.com" {
 			t.Fatalf("expected domain name s3.example.com, got %s", c.GetS3GatewayDomainName())

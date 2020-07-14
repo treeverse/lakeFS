@@ -16,7 +16,6 @@ import (
 )
 
 type PlayBackMockConf struct {
-	ListenAddress   string `json:"listen_address"`
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyId     string `json:"access_key_id"`
 	AccessSecretKey string `json:"access_secret_Key"`
