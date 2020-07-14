@@ -81,18 +81,19 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	meta := index.NewDBIndex(conn)
+	index := index.NewDBIndex(conn)
 
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
 		Enabled: false,
 	})
+	meta := auth.NewDBMetadataManager("dev", conn)
 
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 	server := api.NewServer(
-		"dev",
-		meta,
+		index,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
 		migrator,
 		logging.Default(),
@@ -105,7 +106,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	return handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
-		meta:   meta,
+		meta:   index,
 	}
 }
 

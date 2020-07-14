@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -75,7 +76,7 @@ var runCmd = &cobra.Command{
 		migrator := db.NewDatabaseMigrator(dbConnString)
 
 		// init index
-		meta := index.NewDBIndex(dbPool)
+		index := index.NewDBIndex(dbPool)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
@@ -86,8 +87,15 @@ var runCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 
+		meta := auth.NewDBMetadataManager(config.Version, dbPool)
+
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(getInstallationID(authService))
+
+		installationID, err := meta.InstallationID()
+		if err != nil {
+			installationID = "" // no installation ID is available
+		}
+		stats := cfg.BuildStats(installationID)
 
 		// start API server
 		done := make(chan bool, 1)
@@ -97,8 +105,7 @@ var runCmd = &cobra.Command{
 		var apiServer *api.Server
 		if runAPIService {
 			apiServer = api.NewServer(
-				config.Version,
-				meta, blockStore, authService, stats, migrator,
+				index, blockStore, authService, meta, stats, migrator,
 				logger.WithField("service", "api_gateway"))
 			go func() {
 				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
@@ -113,7 +120,7 @@ var runCmd = &cobra.Command{
 			// init gateway server
 			gatewayServer = gateway.NewServer(
 				cfg.GetS3GatewayRegion(),
-				meta,
+				index,
 				blockStore,
 				authService,
 				cfg.GetS3GatewayListenAddress(),
@@ -125,8 +132,20 @@ var runCmd = &cobra.Command{
 		go stats.Run(ctx)
 		stats.CollectEvent("global", "run")
 
-		metaUpdater := auth.NewMetadataRefresher(config.Version, 5*time.Minute, 24*time.Hour, authService, stats)
-		metaUpdater.Start()
+		// stagger a bit and update metadata
+		go func() {
+			// avoid a thundering herd in case we have many lakeFS instances starting together
+			const maxSplay = int(time.Second * 10)
+			randSource := rand.New(rand.NewSource(time.Now().UnixNano()))
+			time.Sleep(time.Duration(randSource.Intn(maxSplay)))
+
+			metadata, err := meta.Write()
+			if err != nil {
+				logger.WithError(err).Trace("failed to collect account metadata")
+				return
+			}
+			stats.CollectMetadata(metadata)
+		}()
 
 		if gatewayServer != nil {
 			go func() {
@@ -136,19 +155,11 @@ var runCmd = &cobra.Command{
 				}
 			}()
 		}
-		go gracefulShutdown(quit, done, apiServer, gatewayServer, metaUpdater)
+		go gracefulShutdown(quit, done, apiServer, gatewayServer)
 		<-done
 		cancelFn()
 		<-stats.Done()
 	},
-}
-
-func getInstallationID(authService auth.Service) string {
-	installID, err := authService.GetAccountMetadataKey("installation_id")
-	if err != nil {
-		return defaultInstallationID
-	}
-	return installID
 }
 
 func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {

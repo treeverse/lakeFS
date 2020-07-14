@@ -33,8 +33,8 @@ var (
 )
 
 type Server struct {
-	version     string
-	meta        index.Index
+	meta        auth.MetadataManager
+	index       index.Index
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
@@ -46,20 +46,20 @@ type Server struct {
 }
 
 func NewServer(
-	version string,
-	meta index.Index,
+	index index.Index,
 	blockStore block.Adapter,
 	authService auth.Service,
+	meta auth.MetadataManager,
 	stats stats.Collector,
 	migrator db.Migrator,
 	logger logging.Logger,
 ) *Server {
 	logger.Info("initialized OpenAPI server")
 	return &Server{
-		version:     version,
-		meta:        meta,
+		index:       index,
 		blockStore:  blockStore,
 		authService: authService,
+		meta:        meta,
 		stats:       stats,
 		migrator:    migrator,
 		logger:      logger,
@@ -153,7 +153,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.meta, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
+	NewHandler(s.index, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
@@ -174,7 +174,7 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			setupLakeFSHandler(s.version, s.authService, s.migrator, s.stats),
+			setupLakeFSHandler(s.authService, s.meta, s.migrator, s.stats),
 		),
 	)
 
