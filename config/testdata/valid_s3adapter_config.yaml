@@ -19,9 +19,7 @@ blockstore:
 
 gateways:
   s3:
-    listen_address: "0.0.0.0:8000"
     domain_name: s3.example.com
     region: us-east-1
 
-api:
-  listen_address: "0.0.0.0:8005"
+listen_address: "0.0.0.0:8005"

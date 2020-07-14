@@ -117,13 +117,13 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	authService := newGatewayAuth(t, simulator.PlaybackParams.RecordingDir)
 
 	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
-	server := gateway.NewServer(authService.Region,
+	handler := gateway.NewHandler(authService.Region,
 		meta,
 		blockAdapter,
 		authService,
-		authService.ListenAddress, authService.BareDomain, &mockCollector{})
+		authService.BareDomain, &mockCollector{})
 
-	return server.Server.Handler, &dependencies{
+	return handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
 		meta:   meta,

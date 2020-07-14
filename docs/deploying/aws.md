@@ -138,12 +138,10 @@ Depending on your runtime environment, running lakeFS using docker would look li
 $ docker run \
     --name lakefs \
     -p 8000:8000 \
-    -p 8001:8001 \
     -v <PATH_TO_CONFIG_FILE>:/home/lakefs/.lakefs.yaml \
     treeverse/lakefs:latest run
 ```
 
-You can choose to run only a single service (i.e. S3 Gateway or API server) by adding a `--service s3gateway` or `--service api` option.
 
 ##### Option #2: Fargate and other environments that make it harder to mount a configuration file:
 
@@ -154,15 +152,12 @@ Here's an example:
 $ docker run \
     --name lakefs \
     -p 8000:8000 \
-    -p 8001:8001 \
     -e LAKEFS_DATABASE_CONNECTION_STRING="postgres://user:pass@<RDS ENDPOINT>..." \
     -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="<RANDOM_GENERATED_STRING>" \
     -e LAKEFS_BLOCKSTORE_TYPE="s3" \
     -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="s3.lakefs.example.com" \
     treeverse/lakefs:latest run
 ```
-
-
 
 ##### Option #3: On a Linux EC2 server
 
@@ -183,17 +178,15 @@ Alternatively, you can run lakeFS directly on an EC2 machine:
 ### Load balancing with Amazon Application Load Balancer
 
 1. Make sure you configure your security group to allow the load balancer to talk to both the [S3 Gateway](../architecture.md#s3-gateway) and the [OpenAPI Server](../architecture.md#openapi-server)
-2. Create a new load balancer using the AWS console.
-3. Create a target group with a listener for port 8001 - this will be used for the OpenAPI Server.
-4. Create a target group with a listener for port 8000 - this will be used for the S3 Gateway.
-5. Setup TLS termination using the domain names you wish to use for both endpoints (i.e. `s3.lakefs.example.com` and `api.lakefs.example.com`).
-6. Configure routing rules by Host header: `s3.example.com` and `*.s3.example.com` should point at the S3 gateway target group. `lakefs.example.com` should route to the OpenAPI Server target group.
+1. Create a new load balancer using the AWS console.
+1. Create a target group with a listener for port 8000
+1. Setup TLS termination using the domain names you wish to use for both endpoints (i.e. `s3.lakefs.example.com`, `*.s3.lakefs.example.com`, `lakefs.example.com`).
 
 ### Setting up DNS names for the OpenAPI Server and the S3 Gateway
 
 1. Copy the load balancer's endpoint URL
-2. Configure this address in Route53 as an ALIAS record for both endpoints
-3. If you're using a DNS provider other than Route53, refer to its documentation on how to add CNAME records. In this case, it's recommended to use a short TTL value.
+1. Configure this address in Route53 as an ALIAS record the load balancer endpoint
+1. If you're using a DNS provider other than Route53, refer to its documentation on how to add CNAME records. In this case, it's recommended to use a short TTL value.
 
 ### Automatically setup an environment using Terraform
 

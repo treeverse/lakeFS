@@ -45,14 +45,14 @@ type Server struct {
 	bareDomain string
 }
 
-func NewServer(
+func NewHandler(
 	region string,
 	meta index.Index,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
-	listenAddr, bareDomain string,
+	bareDomain string,
 	stats stats.Collector,
-) *Server {
+) http.Handler {
 	ctx := &ServerContext{
 		meta:        meta,
 		region:      region,
@@ -72,38 +72,14 @@ func NewServer(
 	}
 	handler = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
-	), authService, region, bareDomain, listenAddr)
+	), authService, region, bareDomain)
 
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
 		"s3_region":      region,
-	}).Info("initialized S3 Gateway server")
+	}).Info("initialized S3 Gateway handler")
 
-	// assemble Server
-	return &Server{
-		ctx:        ctx,
-		bareDomain: bareDomain,
-		Server: &http.Server{
-			Handler: handler,
-			Addr:    listenAddr,
-		},
-	}
-}
-
-func (s *Server) Listen() error {
-	logging.Default().WithFields(logging.Fields{
-		"listen_address": s.Server.Addr,
-	}).Info("started S3 Gateway server")
-	return s.Server.ListenAndServe()
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	simulator.ShutdownRecorder()
-	if s == nil {
-		return nil
-	}
-	s.Server.SetKeepAlivesEnabled(false)
-	return s.Server.Shutdown(ctx)
+	return handler
 }
 
 func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
