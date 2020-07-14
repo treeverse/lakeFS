@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -200,4 +201,8 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 
 func (a *Adapter) ValidateConfiguration(_ string) error {
 	return nil
+}
+
+func (a *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, errors.New("inventory feature not implemented for memory storage adapter")
 }

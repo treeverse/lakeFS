@@ -5,6 +5,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/treeverse/lakefs/onboard"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -144,6 +145,7 @@ func (a *Handler) Configure(api *operations.LakefsAPI) {
 	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
 	api.RepositoriesDeleteRepositoryHandler = a.DeleteRepositoryHandler()
+	api.RepositoriesImportFromS3InventoryHandler = a.ImportFromS3InventoryHandler()
 
 	api.BranchesListBranchesHandler = a.ListBranchesHandler()
 	api.BranchesGetBranchHandler = a.GetBranchHandler()
@@ -1997,5 +1999,67 @@ func (a *Handler) RetentionUpdateRetentionPolicyHandler() retentionop.UpdateRete
 				WithPayload(responseErrorFrom(err))
 		}
 		return retentionop.NewUpdateRetentionPolicyCreated()
+	})
+}
+
+func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3InventoryHandler {
+	return repositories.ImportFromS3InventoryHandlerFunc(func(params repositories.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
+		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateRepositoryAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return repositories.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("import_from_s3_inventory")
+		userModel, err := a.deps.Auth.GetUser(user.ID)
+		username := "lakeFS"
+		if err == nil {
+			username = userModel.DisplayName
+		}
+		importer, err := onboard.CreateImporter(deps.Cataloger, deps.BlockAdapter, username, params.ManifestURL, params.Repository)
+		if err != nil {
+			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		var diff *onboard.InventoryDiff
+		if *params.DryRun {
+			diff, err = importer.Import(deps.ctx, true)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+		} else {
+			repo, err := deps.Cataloger.GetRepository(a.Context(), params.Repository)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+			_, err = deps.Cataloger.GetBranchReference(deps.ctx, params.Repository, onboard.DefaultBranchName)
+			if errors.Is(err, db.ErrNotFound) {
+				err = deps.Cataloger.CreateBranch(deps.ctx, params.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
+				if err != nil {
+					return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+						WithPayload(responseErrorFrom(err))
+				}
+			} else if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+			diff, err = importer.Import(params.HTTPRequest.Context(), false)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+		}
+		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
+			IsDryRun:           *params.DryRun,
+			PreviousImportDate: diff.PreviousImportDate.Unix(),
+			PreviousManifest:   diff.PreviousInventoryURL,
+			AddedOrChanged:     int64(len(diff.AddedOrChanged)),
+			Deleted:            int64(len(diff.Deleted)),
+		})
 	})
 }
