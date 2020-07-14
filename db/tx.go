@@ -19,7 +19,6 @@ type Tx interface {
 	Select(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (sql.Result, error)
-	Preparex(query string) (*sqlx.Stmt, error)
 }
 
 type dbTx struct {
@@ -41,6 +40,7 @@ func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error
 		"took":  time.Since(start),
 	})
 	if err != nil {
+		dbErrorsCounter.WithLabelValues("select").Inc()
 		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
@@ -62,6 +62,7 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		return ErrNotFound
 	}
 	if err != nil {
+		dbErrorsCounter.WithLabelValues("get").Inc()
 		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
@@ -79,15 +80,12 @@ func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
 		"took":  time.Since(start),
 	})
 	if err != nil {
+		dbErrorsCounter.WithLabelValues("exec").Inc()
 		log.WithError(err).Error("SQL query failed with error")
 		return res, err
 	}
 	log.Trace("SQL query executed successfully")
 	return res, err
-}
-
-func (d *dbTx) Preparex(query string) (*sqlx.Stmt, error) {
-	return d.tx.Preparex(query)
 }
 
 type TxOpt func(*TxOptions)

@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"database/sql"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -15,13 +16,13 @@ func (c *cataloger) CreateEntry(ctx context.Context, repository, branch string, 
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
 		if err != nil {
 			return nil, err
 		}
 		_, err = insertNewEntry(tx, branchID, &entry)
 		return nil, err
-	}, c.txOpts(ctx)...)
+	}, c.txOpts(ctx, db.WithIsolationLevel(sql.LevelRepeatableRead))...)
 	return err
 }
 

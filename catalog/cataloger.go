@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strconv"
 	"sync"
 	"time"
 
@@ -16,7 +17,7 @@ const (
 	CatalogerCommitter = ""
 
 	dedupBatchSize    = 10
-	dedupBatchTimeout = 50 * time.Millisecond
+	dedupBatchTimeout = 100 * time.Millisecond
 	dedupChannelSize  = 1000
 )
 
@@ -221,6 +222,7 @@ func (c *cataloger) processDedupBatches() {
 
 func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 	ctx := context.Background()
+	dedupBatchSizeCounter.WithLabelValues(strconv.Itoa(len(batch))).Inc()
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		addresses := make([]string, len(batch))
 		for i, r := range batch {
