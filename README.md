@@ -5,7 +5,8 @@
   <img src="logo_large.png"/>
 </p>
 
-![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg)
+[![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg)](https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster)
+[![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster)
 
 ## What is lakeFS
 
@@ -16,21 +17,21 @@ For more information see the [Official Documentation](https://docs.lakefs.io/).
 
 ## Capabilities
 
-#### ACID Guarantees 
+#### ACID Guarantees
 
 Simplifying the workflow between data producers and consumers, providing strong isolation and enabling data consistency, integrity and availability
 
 #### Data Versioning
- 
-Applying the power of branching, merging and reverting to your data lake. 
 
-#### Instant Revert 
+Applying the power of branching, merging and reverting to your data lake.
 
-Revert back if something goes wrong with your data. Increasing developer velocity while ensuring production safety and stability. 
+#### Instant Revert
+
+Revert back if something goes wrong with your data. Increasing developer velocity while ensuring production safety and stability.
 
 #### Data Deduplication
 
-Reduce the impact of redundant data on your storage manageability and governance. 
+Reduce the impact of redundant data on your storage manageability and governance.
 
 
 ## Getting Started
@@ -63,15 +64,15 @@ Reduce the impact of redundant data on your storage manageability and governance
           POSTGRES_USER: lakefs
           POSTGRES_PASSWORD: lakefs
     ```
-    
+
 3. From the directory that contains our new docker-compose.yaml file, run the following command:
 
    ```bash
    $ docker-compose up
    ```
 
-4. Open [http://localhost:8001/setup](http://localhost:8001/setup) in your web browser to set up an initial admin user, used to login and send API requests. 
-    
+4. Open [http://localhost:8001/setup](http://localhost:8001/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+
 #### Download the Binary
 
 Alternatively, you can download the lakeFS binaries and run them directly.
