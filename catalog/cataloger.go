@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"strconv"
 	"sync"
@@ -63,7 +64,11 @@ type BranchCataloger interface {
 	ResetBranch(ctx context.Context, repository, branch string) error
 }
 
+var ErrExpired = fmt.Errorf("expired from storage")
+
 type EntryCataloger interface {
+	// GetEntry returns the current entry for path in repository branch reference.  Returns
+	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
 	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedup DedupParams) error

@@ -689,12 +689,13 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
+	ctx := context.Background()
+	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	t.Run("get object stats", func(t *testing.T) {
-		ctx := context.Background()
-		err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
-		if err != nil {
-			t.Fatal(err)
-		}
 		err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 			Path:            "foo/bar",
 			PhysicalAddress: "this_is_bars_address",
@@ -732,6 +733,37 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			t.Fatalf("did expect object not found for stat, got %v", err)
 		}
 	})
+
+	t.Run("get expired object stats", func(t *testing.T) {
+		err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+			Path:            "foo/expired",
+			PhysicalAddress: "this_address_is_expired",
+			CreationDate:    time.Now(),
+			Size:            999999,
+			Checksum:        "eeee",
+			Metadata:        nil,
+			Expired:         true,
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		resp, err := clt.Objects.StatObject(&objects.StatObjectParams{
+			Ref:        "master",
+			Path:       "foo/expired",
+			Repository: "repo1",
+		}, bauth)
+
+		gone, ok := err.(*objects.StatObjectGone)
+		if !ok {
+			t.Fatalf("expected StatObjectGone error but got %#v (response %v)", err, resp)
+		}
+		if gone.Payload.Path != "foo/expired" {
+			t.Fatalf("expected to get back our path, got %s", gone.Payload.Path)
+		}
+		if gone.Payload.SizeBytes != 999999 {
+			t.Fatalf("expected correct size, got %d", gone.Payload.SizeBytes)
+		}
+	})
 }
 
 func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
@@ -759,6 +791,14 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+		Path:            "foo/quuux",
+		PhysicalAddress: "this_is_quuxs_address_expired",
+		CreationDate:    time.Now(),
+		Size:            9999999,
+		Checksum:        "quux_checksum",
+		Expired:         true,
+	})
 
 	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 		Path:            "foo/baz",
@@ -792,8 +832,8 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		if len(resp.Payload.Results) != 3 {
-			t.Fatalf("expected 3 entries, got back %d", len(resp.Payload.Results))
+		if len(resp.Payload.Results) != 4 {
+			t.Fatalf("expected 4 entries, got back %d", len(resp.Payload.Results))
 		}
 
 		resp, err = clt.Objects.ListObjects(&objects.ListObjectsParams{
@@ -865,6 +905,22 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Checksum:        blob.Checksum,
 	}
 	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expired := catalog.Entry{
+		Path:            "foo/expired",
+		PhysicalAddress: "an_expired_physical_address",
+		CreationDate:    time.Now(),
+		Size:            99999,
+		Checksum:        "b10b",
+		Expired:         true,
+	}
+	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", expired)
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
@@ -910,6 +966,18 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		}
 		if *properties.Payload.StorageClass != expensiveString {
 			t.Errorf("expected to get \"%s\" storage class, got %#v", expensiveString, properties)
+		}
+	})
+
+	t.Run("expired", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		_, err := clt.Objects.GetObject(&objects.GetObjectParams{
+			Ref:        "master",
+			Path:       "foo/expired",
+			Repository: "repo1",
+		}, bauth, buf)
+		if !strings.Contains(err.Error(), "resource expired") {
+			t.Errorf("expected \"resource expired\" error, got %s\n\t%s", err, buf.String())
 		}
 	})
 }
@@ -1048,7 +1116,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
 		}
 		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
-			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+			t.Fatalf("got unexpected etag: %s - expected %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
 		}
 
 		// delete it

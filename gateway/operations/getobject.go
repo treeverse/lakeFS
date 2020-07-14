@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/block"
@@ -55,6 +56,9 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
+	if err == catalog.ErrExpired {
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -65,6 +69,20 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
+<<<<<<< HEAD
+=======
+	// now we might need the object itself
+	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
+	if err == catalog.ErrExpired {
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+		return
+	}
+	if err != nil {
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
+		return
+	}
+
+>>>>>>> Handle expiry on entries in database
 	// range query
 	var expected int64
 	var data io.ReadCloser
