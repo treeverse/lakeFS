@@ -26,7 +26,7 @@ func NewDBMetadataManager(version string, database db.Database) *DBMetadataManag
 	}
 }
 
-func getInstallationId(tx db.Tx) (string, error) {
+func getInstallationID(tx db.Tx) (string, error) {
 	const InstallationIDKeyName = "installation_id"
 	var installationID string
 	err := tx.Get(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
@@ -50,7 +50,7 @@ func writeMetadata(tx db.Tx, items map[string]string) error {
 
 func (d *DBMetadataManager) InstallationID() (string, error) {
 	installationID, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return getInstallationId(tx)
+		return getInstallationID(tx)
 	}, db.ReadOnly())
 	if err != nil {
 		return "", err
@@ -74,7 +74,7 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 	// see if we have existing metadata or we need to generate one
 	_, err = d.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// get installation ID - if we don't have one we'll generate one
-		installationID, err := getInstallationId(tx)
+		installationID, err := getInstallationID(tx)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			return nil, err
 		}
