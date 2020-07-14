@@ -9,6 +9,8 @@ import (
 	"os/signal"
 	"time"
 
+	"github.com/treeverse/lakefs/httputil"
+
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -42,31 +44,8 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
-		services, err := cmd.Flags().GetStringArray("service")
-		if err != nil {
-			fmt.Printf("Failed to get value for 'services': %s\n", err)
-			os.Exit(1)
-		}
 
 		// validate service names and turn on the right flags
-		var runS3Gateway bool
-		var runAPIService bool
-		for _, service := range services {
-			switch service {
-			case serviceS3Gateway:
-				runS3Gateway = true
-			case serviceAPIServer:
-				runAPIService = true
-			default:
-				fmt.Printf("Unknown service: %s\n", service)
-				os.Exit(1)
-			}
-		}
-		if !runS3Gateway && !runAPIService {
-			fmt.Printf("No service to run\n")
-			os.Exit(1)
-		}
-
 		dbConnString := cfg.GetDatabaseURI()
 		dbPool := cfg.BuildDatabaseConnection()
 
@@ -102,32 +81,18 @@ var runCmd = &cobra.Command{
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, os.Interrupt)
 
-		var apiServer *api.Server
-		if runAPIService {
-			apiServer = api.NewServer(
-				index, blockStore, authService, meta, stats, migrator,
-				logger.WithField("service", "api_gateway"))
-			go func() {
-				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
-					fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
-					os.Exit(1)
-				}
-			}()
-		}
+		apiHandler := api.NewAPIHandler(
+			index, blockStore, authService, meta, stats, migrator,
+			logger.WithField("service", "api_gateway"))
 
-		var gatewayServer *gateway.Server
-		if runS3Gateway {
-			// init gateway server
-			gatewayServer = gateway.NewServer(
-				cfg.GetS3GatewayRegion(),
-				index,
-				blockStore,
-				authService,
-				cfg.GetS3GatewayListenAddress(),
-				cfg.GetS3GatewayDomainName(),
-				stats,
-			)
-		}
+		// init gateway server
+		s3gatewayHandler := gateway.NewHandler(
+			cfg.GetS3GatewayRegion(),
+			index,
+			blockStore,
+			authService,
+			cfg.GetS3GatewayDomainName(),
+			stats)
 
 		go stats.Run(ctx)
 		stats.CollectEvent("global", "run")
@@ -147,15 +112,25 @@ var runCmd = &cobra.Command{
 			stats.CollectMetadata(metadata)
 		}()
 
-		if gatewayServer != nil {
-			go func() {
-				if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
-					fmt.Printf("Gateway server failed to listen on %s: %v\n", cfg.GetS3GatewayListenAddress(), err)
-					os.Exit(1)
-				}
-			}()
+		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
+		server := &http.Server{
+			Addr: cfg.GetListenAddress(),
+			Handler: httputil.HostMux(
+				httputil.HostHandler(apiHandler).Default(), // api as default handler
+				httputil.HostHandler(s3gatewayHandler, // s3 gateway for its bare domain and sub-domains of that
+					httputil.Exact(cfg.GetS3GatewayDomainName()),
+					httputil.SubdomainsOf(cfg.GetS3GatewayDomainName())),
+			),
 		}
-		go gracefulShutdown(quit, done, apiServer, gatewayServer)
+
+		go func() {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
+				os.Exit(1)
+			}
+		}()
+
+		go gracefulShutdown(quit, done, server)
 		<-done
 		cancelFn()
 		<-stats.Done()

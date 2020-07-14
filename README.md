@@ -47,13 +47,10 @@ Reduce the impact of redundant data on your storage manageability and governance
     services:
       lakefs:
         image: "treeverse/lakefs:latest"
-        ports:
-          - "8000:8000"
-          - "8001:8001"
-        links:
-          - postgres
+        ports: ["8000:8000"]
+        links: ["postgres"]
         environment:
-          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
+          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: "some random secret string"
           LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
@@ -71,7 +68,7 @@ Reduce the impact of redundant data on your storage manageability and governance
    $ docker-compose up
    ```
 
-4. Open [http://localhost:8001/setup](http://localhost:8001/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+4. Open [http://localhost:8000/setup](http://localhost:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
 #### Download the Binary
 

@@ -24,6 +24,7 @@ This reference uses `.` to denote the nesting of values.
 * `logging.level` `(one of ["DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
 * `logging.output` `(string : "-")` - Path name to write logs to. `"-"` means Standard Output
 * `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
+* `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
@@ -42,10 +43,8 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.credentials.access_secret_key` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to S3 (use a lower value for less reliable networks). Minimum is 8192.
-* `gateways.s3.listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN representing the S3 endpoint used by S3 clients to call this server (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for local development
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
-* `api.listen_address` `(string : "0.0.0.0:8001")` - A `<host>:<port>` structured string representing the address to listen on
 {: .ref-list }
 
 ## Using Environment Variables
@@ -60,13 +59,15 @@ For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.re
 
 ```yaml
 ---
+listen_address: "0.0.0.0:8000"
+
+database:
+  connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
+
 logging:
   format: text
   level: DEBUG
   output: "-"
-
-database:
-  connection_string: "postgres://localhost:5432/postgres?sslmode=disable"
 
 auth:
   encrypt:
@@ -79,12 +80,8 @@ blockstore:
 
 gateways:
   s3:
-    listen_address: "0.0.0.0:80"
     domain_name: s3.local.lakefs.io
     region: us-east-1
-
-api:
-  listen_address: "0.0.0.0:8001"
 ```
 
 
@@ -113,10 +110,6 @@ blockstore:
 
 gateways:
   s3:
-    listen_address: "0.0.0.0:80"
     domain_name: s3.my-company.com
     region: us-east-1
-
-api:
-  listen_address: "0.0.0.0:8001"
 ```

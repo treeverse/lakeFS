@@ -89,7 +89,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	meta := auth.NewDBMetadataManager("dev", conn)
 
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
-	server := api.NewServer(
+	handler := api.NewAPIHandler(
 		index,
 		blockAdapter,
 		authService,
@@ -99,10 +99,6 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		logging.Default(),
 	)
 
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatal(err)
-	}
 	return handler, &dependencies{
 		blocks: blockAdapter,
 		auth:   authService,
