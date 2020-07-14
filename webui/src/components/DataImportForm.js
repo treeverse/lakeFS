@@ -56,7 +56,7 @@ export const DataImportForm = connect(
             </div>
             <div className="d-flex align-items-center">
                 <p><GitBranchIcon size="48" /></p>
-                <p className="mx-2">You will find your data in a dedicated lakeFS branch. Repeating the import process with newer inventories will add the diff as new commits to this branch. You can later merge this branch into your main branch.</p>
+                <p className="mx-2">You will find your data in a dedicated lakeFS branch. Repeating the import process with more recent inventories will add the diff as new commits to this branch. You can later merge this branch into your main branch.</p>
             </div>
             <Form.Group as={Row} controlId="repoId">
                 <Form.Label column sm={fieldNameOffset}>Repository ID</Form.Label>
