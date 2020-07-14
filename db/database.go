@@ -43,6 +43,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	for attempt < SerializationRetryMaxAttempts {
 		if attempt > 0 {
 			duration := time.Duration(int(SerializationRetryStartInterval) * attempt)
+			dbRetriesCount.Inc()
 			options.logger.
 				WithField("attempt", attempt).
 				WithField("sleep_interval", duration).

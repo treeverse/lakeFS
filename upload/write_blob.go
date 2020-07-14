@@ -27,10 +27,12 @@ func WriteBlob(adapter block.Adapter, bucketName string, body io.Reader, content
 	if err != nil {
 		return nil, err
 	}
+	checksum := hex.EncodeToString(hashReader.Md5.Sum(nil))
+	dedupID := hex.EncodeToString(hashReader.Sha256.Sum(nil))
 	return &Blob{
 		PhysicalAddress: address,
-		Checksum:        hex.EncodeToString(hashReader.Md5.Sum(nil)),
-		DedupID:         hex.EncodeToString(hashReader.Sha256.Sum(nil)),
+		Checksum:        checksum,
+		DedupID:         dedupID,
 		Size:            hashReader.CopiedSize,
 	}, nil
 }

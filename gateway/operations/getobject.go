@@ -65,13 +65,6 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
-	// now we might need the object itself
-	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
-	if err != nil {
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-		return
-	}
-
 	// range query
 	var expected int64
 	var data io.ReadCloser
@@ -80,18 +73,18 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		rng, err = ghttp.ParseHTTPRange(rangeSpec, ent.Size)
+		rng, err = ghttp.ParseHTTPRange(rangeSpec, entry.Size)
 		if err != nil {
 			o.Log().WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}
 	}
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
-		expected = ent.Size
-		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, ent.Size)
+		expected = entry.Size
+		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: ent.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -102,7 +95,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}()
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", expected))
 	if rng.StartOffset != -1 {
-		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, ent.Size))
+		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	}
 	_, err = io.Copy(o.ResponseWriter, data)
 	if err != nil {

@@ -24,7 +24,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 		return nil
 	}
 	// create entries
-	_, err := c.runDBJob(dbJobFunc(func(tx db.Tx) (interface{}, error) {
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
 		if err != nil {
 			return nil, err
@@ -35,6 +35,6 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 			}
 		}
 		return nil, nil
-	}))
+	}, c.txOpts(ctx)...)
 	return err
 }

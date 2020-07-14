@@ -14,13 +14,16 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 	}); err != nil {
 		return err
 	}
-	res, err := c.runDBJob(dbJobFunc(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		branchID, err := c.cache.BranchID(repository, branch, func(repository string, branch string) (int64, error) {
+			return getBranchID(tx, repository, branch, LockTypeNone)
+		})
 		if err != nil {
 			return nil, err
 		}
 		return insertNewEntry(tx, branchID, &entry)
-	}))
+	}, c.txOpts(ctx)...)
+
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,11 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
+const (
+	DirectoryTerminationValue = 1_000_000
+	DirectoryTermination      = string(rune(DirectoryTerminationValue))
+)
+
 func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
 		"min_commit > 0 AS is_committed",
@@ -91,7 +96,7 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 	return baseSelect
 }
 
-func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit) sq.SelectBuilder {
+func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit, sonLineageValues string) sq.SelectBuilder {
 	lineage := sqEntriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
 	fatherSQL, fatherArgs := sq.Select("*").FromSelect(lineage, "z").
 		Where("displayed_branch = ?", fatherID).MustSql()
@@ -112,15 +117,13 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 									OR (f.source_branch != ? AND  -- an entry from father lineage
 				-- negative proof - if the son could see this object - than this is NOT a conflict
 				-- done by examining the son lineage against the father object
-									 NOT EXISTS ( SELECT * FROM lineage l WHERE
-											l.branch_id = ? AND l.ancestor_branch = f.source_branch AND
+									 NOT EXISTS ( SELECT * FROM`+sonLineageValues+` WHERE
+											l.branch_id = f.source_branch AND
 										-- prove that ancestor entry  was observable by the son
-										  ( ? BETWEEN l.min_commit AND l.max_commit) AND -- effective lineage on last merge
-											(l.effective_commit >= f.min_commit AND
-											 (l.effective_commit > f.max_commit OR NOT f.is_deleted))
+											(l.commit_id >= f.min_commit AND
+											 (l.commit_id > f.max_commit OR NOT f.is_deleted))
 										   ))) 
-											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit,
-			fatherID, sonID, sonEffectiveCommit).
+											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
 		FromSelect(sqEntriesV(CommittedID).
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
 		LeftJoin("("+fatherSQL+") AS f ON f.path = s.path", fatherArgs...)
@@ -196,19 +199,22 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 	return minSelect
 }
 
-func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.Sqlizer {
+func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+	if len(after) > 0 {
+		after += DirectoryTermination
+	}
 	prefixLen := len(prefix) + 1
-	endOfPrefixRange := prefix + string(rune(1_000_000))
+	endOfPrefixRange := prefix + DirectoryTermination
 	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
 	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
 	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")
-	tmp := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1024*1024) \n")).
+	tmp := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1000000) \n")).
 		Else(pathWithOutPrefixV)
 	getNextMarkerV := sq.ConcatExpr("\n", tmp, "\n")
 	cteStart := sq.Select("1 as num").Column(sq.Alias(getNextMarkerV, "marker")).
 		FromSelect(sq.Select("min(path) as path").
 			FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e").
-			Where(" e.path > ? and e.path < ? ", prefix, endOfPrefixRange), "e")
+			Where(" e.path > ? and e.path < ? ", prefix+after, endOfPrefixRange), "e")
 	nextMarkerSelect := sq.Select().FromSelect(
 		sq.Select("min(path) as path").FromSelect(
 			sq.Select("path").FromSelect(
@@ -216,17 +222,20 @@ func sqListByPrefix(prefix, delimiter string, branchID int64, maxLines int, requ
 				Where(" e.path > ?  || d.marker and e.path < ? ", prefix, endOfPrefixRange), "e"), "e").
 		Column(getNextMarkerV)
 
-	dirListV := sq.ConcatExpr(`WITH RECURSIVE dir_list AS (`,
-		sq.Select("1 as num", "marker").
-			FromSelect(cteStart, "t"),
-		"\nUNION ALL\n",
-		sq.Select("d.num + 1 as num").
-			Column(sq.ConcatExpr("(", nextMarkerSelect, ")")).
-			From("dir_list as d").
-			Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
-		")",
-		"\n SELECT *",
-		"\nFROM dir_list d",
-		"\nWHERE d.marker IS NOT NULL")
+	dirListV := sq.Select("1 as num", "marker").
+		Prefix(`WITH RECURSIVE dir_list AS (`).
+		FromSelect(cteStart, "t").
+		SuffixExpr(
+			sq.ConcatExpr("\nUNION ALL\n",
+				sq.Select("d.num + 1 as num").
+					Column( // calculate the next entry
+						sq.ConcatExpr("(", nextMarkerSelect, ")")).
+					From("dir_list as d").
+					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
+				")",
+				"\n SELECT marker as path",
+				"\nFROM dir_list d",
+				"\nWHERE d.marker IS NOT NULL"))
+
 	return dirListV
 }

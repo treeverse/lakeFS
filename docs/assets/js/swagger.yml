@@ -296,6 +296,19 @@ definitions:
         type: array
         items:
           $ref: "#/definitions/retention_policy_rule"
+      description:
+        type: string
+
+  retention_policy_with_creation_date:
+    allOf:
+      - $ref: "#/definitions/retention_policy"
+      - type: object
+        properties:
+          creation_date:
+            type: string
+            format: date-time
+        required:
+          - creation_date
 
   retention_policy_rule:
     type: object
@@ -1850,10 +1863,10 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/retention:
+  /repositories/{repository}/retention:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
     put:
@@ -1885,7 +1898,7 @@ paths:
         200:
           description: retention policy
           schema:
-            $ref: "#/definitions/retention_policy"
+            $ref: "#/definitions/retention_policy_with_creation_date"
         401:
           $ref: "#/responses/Unauthorized"
         default:

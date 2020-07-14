@@ -2,6 +2,7 @@ package cache
 
 import (
 	"errors"
+	"math/rand"
 	"time"
 
 	lru "github.com/hnlq715/golang-lru"
@@ -21,6 +22,10 @@ type GetSetCache struct {
 	baseExpiry time.Duration
 }
 
+var (
+	ErrCacheItemNotFound = errors.New("cache item not found")
+)
+
 func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 	c, _ := lru.New(size)
 	return &GetSetCache{
@@ -30,10 +35,6 @@ func NewCache(size int, expiry time.Duration, jitterFn JitterFn) *GetSetCache {
 		baseExpiry: expiry,
 	}
 }
-
-var (
-	ErrCacheItemNotFound = errors.New("cache item not found")
-)
 
 func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err error) {
 	if v, ok := c.lru.Get(k); ok {
@@ -58,4 +59,10 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 	// someone else acquired the lock, but no key was found
 	// (most likely this value doesn't exist or the upstream fetch failed)
 	return nil, ErrCacheItemNotFound
+}
+
+func NewJitterFn(jitter time.Duration) JitterFn {
+	return func() time.Duration {
+		return time.Duration(rand.Intn(int(jitter)))
+	}
 }

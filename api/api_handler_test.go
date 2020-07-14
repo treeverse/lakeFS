@@ -9,18 +9,19 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/api/gen/client/retention"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/testutil"
@@ -1068,6 +1069,64 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 		}, bauth)
 		if err == nil {
 			t.Fatalf("expected file to be gone now")
+		}
+	})
+}
+
+func TestHandler_RetentionPolicyHandlers(t *testing.T) {
+	handler, deps := getHandler(t)
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+	ctx := context.Background()
+	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	statusEnabled := "enabled"
+	policy1 := models.RetentionPolicy{
+		Description: "retention policy for API handler test",
+		Rules: []*models.RetentionPolicyRule{
+			{
+				Status: &statusEnabled,
+				Filter: &models.RetentionPolicyRuleFilter{
+					Prefix: "master/logs/",
+				},
+				Expiration: &models.RetentionPolicyRuleExpiration{
+					Uncommitted: &models.TimePeriod{Days: 6, Weeks: 2},
+				},
+			},
+		},
+	}
+
+	// TODO(ariels): Verify initial state before any retention policy is set
+
+	t.Run("Initialize a retention policy", func(t *testing.T) {
+		_, err := clt.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
+			Repository: "repo1",
+			Policy:     &policy1,
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		resp, err := clt.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
+			Repository: "repo1",
+		}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+		got := resp.GetPayload()
+
+		diff := deep.Equal(policy1, got.RetentionPolicy)
+		if diff != nil {
+			t.Errorf("expected to read back the same policy, got %s", diff)
 		}
 	})
 }
