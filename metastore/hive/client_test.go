@@ -10,7 +10,7 @@ import (
 
 	"github.com/treeverse/lakefs/metastore/mock"
 
-	"github.com/treeverse/lakefs/metastore/hive/thrift/gen-go/hive_metastore"
+	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
 )
 
 type HiveMsMock struct {

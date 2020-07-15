@@ -5,7 +5,7 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/metastore"
-	"github.com/treeverse/lakefs/metastore/hive/thrift/gen-go/hive_metastore"
+	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
 )
 
 type PartitionIter struct {

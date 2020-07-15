@@ -7,7 +7,7 @@ import (
 	"github.com/apache/thrift/lib/go/thrift"
 
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/metastore/hive/thrift/gen-go/hive_metastore"
+	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
 
 	"github.com/treeverse/lakefs/metastore"
 )

@@ -7,7 +7,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/spf13/viper"
 
-	"github.com/treeverse/lakefs/metastore/glueClient"
+	"github.com/treeverse/lakefs/metastore/glue"
 
 	"github.com/treeverse/lakefs/metastore/hive"
 
@@ -139,8 +139,8 @@ var glueCopyCmd = &cobra.Command{
 
 		//copy := glueClient.GlueMSCopy{}.init (context.Background(), address, false)
 
-		svc := glueClient.GetGlueService(getGlueCfg())
-		msClient := glueClient.NewGlueMSClient(svc, catalog)
+		svc := glue.GetGlueService(getGlueCfg())
+		msClient := glue.NewGlueMSClient(svc, catalog)
 		var err error
 		if len(partition) > 0 {
 			err = msClient.CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, partition)
@@ -163,8 +163,8 @@ var glueDiffCmd = &cobra.Command{
 		toDB, _ := cmd.Flags().GetString("to-schema")
 		toTable, _ := cmd.Flags().GetString("to-table")
 
-		svc := glueClient.GetGlueService(getGlueCfg())
-		msClient := glueClient.NewGlueMSClient(svc, catalogID)
+		svc := glue.GetGlueService(getGlueCfg())
+		msClient := glue.NewGlueMSClient(svc, catalogID)
 
 		diff, err := msClient.Diff(fromDB, fromTable, toDB, toTable)
 		if err != nil {
@@ -210,8 +210,8 @@ var glueSymlinkCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		svc := glueClient.GetGlueService(getGlueCfg())
-		msClient := glueClient.NewGlueMSClient(svc, address)
+		svc := glue.GetGlueService(getGlueCfg())
+		msClient := glue.NewGlueMSClient(svc, address)
 		err = msClient.CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, location)
 		if err != nil {
 			DieErr(err)

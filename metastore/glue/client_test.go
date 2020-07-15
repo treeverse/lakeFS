@@ -1,4 +1,4 @@
-package glueClient
+package glue
 
 import (
 	"fmt"

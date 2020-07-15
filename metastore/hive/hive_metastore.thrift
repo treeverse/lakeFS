@@ -1,4 +1,4 @@
-#!/usr/local/bin/thrift -java
+/**/#!/usr/local/bin/thrift -java
 
 /**
  * Licensed to the Apache Software Foundation (ASF) under one
