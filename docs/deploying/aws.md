@@ -181,6 +181,7 @@ Alternatively, you can run lakeFS directly on an EC2 machine:
 1. Create a new load balancer using the AWS console.
 1. Create a target group with a listener for port 8000
 1. Setup TLS termination using the domain names you wish to use for both endpoints (i.e. `s3.lakefs.example.com`, `*.s3.lakefs.example.com`, `lakefs.example.com`).
+1. Configure the health-check to use the exposed `/_health` URL
 
 ### Setting up DNS names for the OpenAPI Server and the S3 Gateway
 
