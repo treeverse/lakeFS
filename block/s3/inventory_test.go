@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	s32 "github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/block/s3"
 	"io/ioutil"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+
+	s32 "github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/s3"
 )
 
 // convenience converter functions
@@ -33,10 +34,12 @@ func rows(keys ...string) []block.InventoryObject {
 	}
 	res := make([]block.InventoryObject, 0, len(keys))
 	for _, key := range keys {
+		deleteMarker := false
+		latest := true
 		res = append(res, block.InventoryObject{
 			Key:            key,
-			IsDeleteMarker: false,
-			IsLatest:       true,
+			IsDeleteMarker: &deleteMarker,
+			IsLatest:       &latest,
 		})
 	}
 	return res
