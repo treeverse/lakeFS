@@ -108,28 +108,28 @@ func MockToPartitions(mockPartitions []*mock.MockObject) []*hive_metastore.Parti
 	return partitions
 }
 
-func (h HiveMsMock) GetPartition(_ context.Context, db_name string, tbl_name string, part_vals []string) (r *hive_metastore.Partition, err error) {
-	partition, err := h.MockStore.GetPartition(db_name, tbl_name, part_vals)
+func (h HiveMsMock) GetPartition(_ context.Context, dbName string, tableName string, values []string) (r *hive_metastore.Partition, err error) {
+	partition, err := h.MockStore.GetPartition(dbName, tableName, values)
 	if err != nil {
 		return nil, err
 	}
 	return MockToPartition(partition), nil
 }
 
-func (h HiveMsMock) AlterPartition(_ context.Context, db_name string, tbl_name string, new_part *hive_metastore.Partition) (err error) {
-	return h.MockStore.AlterPartition(db_name, tbl_name, partitionToMock(new_part))
+func (h HiveMsMock) AlterPartition(_ context.Context, dbName string, tableName string, newPartitions *hive_metastore.Partition) (err error) {
+	return h.MockStore.AlterPartition(dbName, tableName, partitionToMock(newPartitions))
 }
 
-func (h HiveMsMock) AddPartition(_ context.Context, new_part *hive_metastore.Partition) (*hive_metastore.Partition, error) {
-	err := h.MockStore.AddPartition(partitionToMock(new_part))
+func (h HiveMsMock) AddPartition(_ context.Context, newPartitions *hive_metastore.Partition) (*hive_metastore.Partition, error) {
+	err := h.MockStore.AddPartition(partitionToMock(newPartitions))
 	if err != nil {
 		return nil, err
 	}
-	return new_part, nil
+	return newPartitions, nil
 }
 
-func (h HiveMsMock) DropPartition(_ context.Context, db_name string, tbl_name string, part_vals []string, _ bool) (r bool, err error) {
-	return true, h.MockStore.DropPartition(db_name, tbl_name, part_vals)
+func (h HiveMsMock) DropPartition(_ context.Context, dbName string, tableName string, values []string, _ bool) (r bool, err error) {
+	return true, h.MockStore.DropPartition(dbName, tableName, values)
 }
 
 func (h HiveMsMock) CreateTable(_ context.Context, tbl *hive_metastore.Table) (err error) {
@@ -144,8 +144,8 @@ func (h HiveMsMock) GetTable(_ context.Context, dbName string, tableName string)
 	return MockToTable(mockTable), nil
 }
 
-func (h HiveMsMock) AlterTable(_ context.Context, dbname string, tbl_name string, table *hive_metastore.Table) (err error) {
-	return h.MockStore.AlterTable(dbname, tbl_name, tableToMock(table))
+func (h HiveMsMock) AlterTable(_ context.Context, dbname string, tableName string, table *hive_metastore.Table) (err error) {
+	return h.MockStore.AlterTable(dbname, tableName, tableToMock(table))
 }
 
 func (h HiveMsMock) AddPartitions(_ context.Context, partitions []*hive_metastore.Partition) (r int32, err error) {

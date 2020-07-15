@@ -14,33 +14,33 @@ import (
 
 type ThriftHiveMetastoreClient interface {
 	CreateTable(ctx context.Context, tbl *hive_metastore.Table) (err error)
-	GetTable(ctx context.Context, dbname string, tbl_name string) (r *hive_metastore.Table, err error)
-	AlterTable(ctx context.Context, dbname string, tbl_name string, new_tbl *hive_metastore.Table) (err error)
+	GetTable(ctx context.Context, dbname string, tableName string) (r *hive_metastore.Table, err error)
+	AlterTable(ctx context.Context, dbname string, tableName string, newTable *hive_metastore.Table) (err error)
 	AddPartitions(ctx context.Context, new_parts []*hive_metastore.Partition) (r int32, err error)
-	GetPartitions(ctx context.Context, db_name string, tbl_name string, max_parts int16) (r []*hive_metastore.Partition, err error)
-	GetPartition(ctx context.Context, db_name string, tbl_name string, part_vals []string) (r *hive_metastore.Partition, err error)
-	AlterPartitions(ctx context.Context, db_name string, tbl_name string, new_parts []*hive_metastore.Partition) (err error)
-	AlterPartition(ctx context.Context, db_name string, tbl_name string, new_part *hive_metastore.Partition) (err error)
-	AddPartition(ctx context.Context, new_part *hive_metastore.Partition) (r *hive_metastore.Partition, err error)
-	DropPartition(ctx context.Context, db_name string, tbl_name string, part_vals []string, deleteData bool) (r bool, err error)
+	GetPartitions(ctx context.Context, dbName string, tableName string, maxPartitions int16) (r []*hive_metastore.Partition, err error)
+	GetPartition(ctx context.Context, dbName string, tableName string, values []string) (r *hive_metastore.Partition, err error)
+	AlterPartitions(ctx context.Context, dbName string, tableName string, newPartitions []*hive_metastore.Partition) (err error)
+	AlterPartition(ctx context.Context, dbName string, tableName string, values *hive_metastore.Partition) (err error)
+	AddPartition(ctx context.Context, newPartition *hive_metastore.Partition) (r *hive_metastore.Partition, err error)
+	DropPartition(ctx context.Context, dbName string, tableName string, values []string, deleteData bool) (r bool, err error)
 }
 
-type HiveClientWrapper struct {
+type ClientWrapper struct {
 	transport thrift.TTransport
 	addr      string
 	secure    bool
 	client    ThriftHiveMetastoreClient
 }
 
-func NewHiveClientWrapper(addr string, secure bool) *HiveClientWrapper {
-	return &HiveClientWrapper{
+func NewClientWrapper(addr string, secure bool) *ClientWrapper {
+	return &ClientWrapper{
 		transport: nil,
 		addr:      addr,
 		secure:    secure,
 	}
 }
 
-func (msc *HiveClientWrapper) Open() error {
+func (msc *ClientWrapper) Open() error {
 	transportFactory := thrift.NewTTransportFactory()
 	var err error
 	if msc.secure {
@@ -69,14 +69,14 @@ func (msc *HiveClientWrapper) Open() error {
 	return nil
 }
 
-func (msc *HiveClientWrapper) Close() error {
+func (msc *ClientWrapper) Close() error {
 	if msc.transport != nil {
 		return msc.transport.Close()
 	}
 	return nil
 }
 
-func (msc *HiveClientWrapper) GetClient() ThriftHiveMetastoreClient {
+func (msc *ClientWrapper) GetClient() ThriftHiveMetastoreClient {
 	return msc.client
 }
 
@@ -92,13 +92,13 @@ func NewMetastoreClient(ctx context.Context, client ThriftHiveMetastoreClient) *
 	}
 }
 
-func (msc *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, ToDB, toTable, toBranch, serde string) error {
-	table, _ := msc.client.GetTable(msc.context, ToDB, toTable)
+func (msc *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
+	table, _ := msc.client.GetTable(msc.context, toDB, toTable)
 
 	if table == nil {
-		return msc.Copy(fromDB, fromTable, fromBranch, ToDB, toTable, toBranch, serde)
+		return msc.Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
 	} else {
-		return msc.Merge(fromDB, fromTable, fromBranch, ToDB, toTable, toBranch, serde)
+		return msc.Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
 	}
 }
 
@@ -134,12 +134,12 @@ func (msc *MSClient) Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch
 	return nil
 }
 
-func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDBName, toTable, toBranch, serde string) error {
+func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
 	table, err := msc.client.GetTable(msc.context, fromDB, fromTable)
 	if err != nil {
 		return err
 	}
-	table.DbName = toDBName
+	table.DbName = toDB
 	table.TableName = toTable
 	if serde == "" {
 		serde = toTable
@@ -151,7 +151,7 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDBName, toTable, toB
 	if err != nil {
 		return err
 	}
-	toPartitions, err := msc.client.GetPartitions(msc.context, toDBName, toTable, -1)
+	toPartitions, err := msc.client.GetPartitions(msc.context, toDB, toTable, -1)
 	if err != nil {
 		return err
 	}
@@ -161,7 +161,7 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDBName, toTable, toB
 	var addPartitions, removePartitions, alterPartitions []*hive_metastore.Partition
 	metastore.Diff(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, iter metastore.ComparableIterator) {
 		partition := iter.(*PartitionIter).getCurrent()
-		partition.DbName = toDBName
+		partition.DbName = toDB
 		partition.TableName = toTable
 		partition.Sd.Location = metastore.TransformLocation(partition.Sd.Location, fromBranch, toBranch)
 		partition.Sd.SerdeInfo.Name = toTable
@@ -175,7 +175,7 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDBName, toTable, toB
 		}
 	})
 
-	err = msc.client.AlterTable(msc.context, toDBName, toTable, table)
+	err = msc.client.AlterTable(msc.context, toDB, toTable, table)
 	if err != nil {
 		return err
 	}
@@ -184,13 +184,13 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDBName, toTable, toB
 	if err != nil {
 		return err
 	}
-	err = msc.client.AlterPartitions(msc.context, toDBName, toTable, alterPartitions)
+	err = msc.client.AlterPartitions(msc.context, toDB, toTable, alterPartitions)
 	if err != nil {
 		return err
 	}
-	//drop one by one - todo - consider using drop partitionReq
+	//drop one by one
 	for _, partition := range removePartitions {
-		_, err = msc.client.DropPartition(msc.context, toDBName, toTable, partition.Values, true) //todo: check if deleteData
+		_, err = msc.client.DropPartition(msc.context, toDB, toTable, partition.Values, true)
 		if err != nil {
 			return err
 		}

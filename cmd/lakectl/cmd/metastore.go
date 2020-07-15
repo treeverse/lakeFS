@@ -35,7 +35,7 @@ var hiveCopyCmd = &cobra.Command{
 		serde, _ := cmd.Flags().GetString("serde")
 		partition, _ := cmd.Flags().GetStringArray("partition")
 
-		hiveClientWrapper := hive.NewHiveClientWrapper(address, false)
+		hiveClientWrapper := hive.NewClientWrapper(address, false)
 		err := hiveClientWrapper.Open()
 		if err != nil {
 			DieErr(err)
@@ -68,7 +68,7 @@ var hiveDiffCmd = &cobra.Command{
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		toDB, _ := cmd.Flags().GetString("to-schema")
 		toTable, _ := cmd.Flags().GetString("to-table")
-		hiveClientWrapper := hive.NewHiveClientWrapper(address, false)
+		hiveClientWrapper := hive.NewClientWrapper(address, false)
 		err := hiveClientWrapper.Open()
 		if err != nil {
 			DieErr(err)
