@@ -126,6 +126,10 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 
 func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
+	// health check
+	mux.Handle("/_health", httputil.ServeHealth())
+	// pprof endpoint
+	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
 	mux.Handle("/api/", api)
 	// swagger
