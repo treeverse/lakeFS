@@ -30,21 +30,21 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	markers, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branchName)
 		if err != nil {
-			return nil, fmt.Errorf(" get branch ID failed: %w", err)
+			return nil, err
 		}
 		lineage, err := getLineage(tx, branchID, commitID)
 		if err != nil {
-			return nil, fmt.Errorf("get lineage failed: %w", err)
+			return nil, fmt.Errorf("get lineage: %w", err)
 		}
 		prefixQuery := sqListByPrefix(prefix, after, delimiter, branchID, limit+1, commitID, lineage)
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
-			return nil, fmt.Errorf("list by level ToSql failed : %w", err)
+			return nil, fmt.Errorf("build sql: %w", err)
 		}
 		var markerList []LevelEntryResult
 		err = tx.Select(&markerList, sql, args...)
 		if err != nil {
-			return nil, fmt.Errorf("list by level query failed : %w", err)
+			return nil, fmt.Errorf("select: %w", err)
 		}
 		err = loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 		if err != nil {
@@ -53,7 +53,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		return markerList, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
-		return nil, false, err
+		return nil, false, fmt.Errorf("list entries by level: %w", err)
 	}
 	result := markers.([]LevelEntryResult)
 	moreToRead := paginateSlice(&result, limit)
@@ -104,12 +104,12 @@ func loadEntriesIntoMarkerList(markerList []LevelEntryResult, tx db.Tx, branchID
 			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).FromSelect(entriesReader, "e")
 		sql, args, err := rangeReader.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
-			return fmt.Errorf("format entries select sql failed: %w", err)
+			return fmt.Errorf("build entries sql: %w", err)
 		}
 		var entriesList []Entry
 		err = tx.Select(&entriesList, sql, args...)
 		if err != nil {
-			return fmt.Errorf("reading entries failed: %w", err)
+			return fmt.Errorf("select entries: %w", err)
 		}
 		if len(entriesList) != r.runLength {
 			return fmt.Errorf("expect to read %d entries, got %d", r.runLength, len(entriesList))

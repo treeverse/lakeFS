@@ -14,15 +14,19 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 	}); err != nil {
 		return err
 	}
-	// more validation
+
+	// nothing to do in case we don't have entries
+	if len(entries) == 0 {
+		return nil
+	}
+
+	// validate that we have path on each entry
 	for i := range entries {
 		if !IsNonEmptyString(entries[i].Path) {
 			return fmt.Errorf("entry at pos %d, path: %w", i, ErrInvalidValue)
 		}
 	}
-	if len(entries) == 0 {
-		return nil
-	}
+
 	// create entries
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
@@ -30,11 +34,14 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 			return nil, err
 		}
 		for i := range entries {
-			if _, err := insertNewEntry(tx, branchID, &entries[i]); err != nil {
-				return nil, fmt.Errorf("entry at pos %d: %w", i, err)
+			if _, err := insertEntry(tx, branchID, &entries[i]); err != nil {
+				return nil, fmt.Errorf("entry at %d: %w", i, err)
 			}
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)
-	return err
+	if err != nil {
+		return fmt.Errorf("create entries: %w", err)
+	}
+	return nil
 }
