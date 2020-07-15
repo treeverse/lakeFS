@@ -12,7 +12,7 @@ import (
 )
 
 func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -120,7 +120,9 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 	if !errors.Is(err, ErrConflictFound) {
 		t.Errorf("Merge err = %s, expected conflict with err = %s", err, ErrConflictFound)
 	}
-	if IsValidReference(res.Reference) {
+	if res == nil {
+		t.Errorf("Result is nil")
+	} else if IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	expectedDifferences := Differences{
@@ -133,7 +135,7 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -152,7 +154,7 @@ func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -219,7 +221,7 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -283,7 +285,7 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -310,7 +312,7 @@ func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -368,7 +370,7 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -468,7 +470,7 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -519,7 +521,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -564,7 +566,7 @@ func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
-	t.Skip("wait for catch up")
+	//t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")

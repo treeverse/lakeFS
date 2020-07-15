@@ -106,7 +106,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 
 func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID, rightID int64) error {
 	// set current lineages max commit to current one
-	if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`,
+	/*if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`,
 		rightID, commitID, MaxCommitID); err != nil {
 		return err
 	}
@@ -118,10 +118,10 @@ func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID, r
 			WHERE branch_id = $2 AND active_lineage`, rightID, leftID, commitID)
 	if err != nil {
 		return err
-	}
+	}*/
 
 	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries
-	_, err = tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
+	_, err := tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
 			WHERE branch_id = $1 AND max_commit = $3
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
 		rightID, commitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
