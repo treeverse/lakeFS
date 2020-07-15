@@ -20,21 +20,13 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// pprof endpoints
-	handler := h.serveHealthCheck(r)
-
-	if handler == nil {
-		handler = h.servePprof(r)
-	}
-	if handler == nil {
-		handler = h.servePathBased(r)
-	}
+	handler := h.servePathBased(r)
 	if handler == nil {
 		handler = h.serveVirtualHost(r)
 	}
 	if handler == nil {
 		handler = h.NotFoundHandler
 	}
-
 	handler.ServeHTTP(w, r)
 }
 
