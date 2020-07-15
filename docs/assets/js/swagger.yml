@@ -1754,14 +1754,14 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
-  /repositories/{repositoryId}/refs/{ref}/symlink:
+  /repositories/{repository}/refs/{branch}/symlink:
     parameters:
       - in: path
-        name: repositoryId
+        name: repository
         required: true
         type: string
       - in: path
-        name: ref
+        name: branch
         required: true
         type: string
       - in: query

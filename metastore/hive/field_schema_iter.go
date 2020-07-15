@@ -19,6 +19,9 @@ func NewFSIter(fsList []*hive_metastore.FieldSchema) *FSIter {
 	}
 }
 
+func FieldSchemaEqual(f1, f2 *hive_metastore.FieldSchema) bool {
+	return f1.GetType() == f2.GetType() && f1.GetComment() == f2.GetComment() && f1.GetName() == f2.GetName()
+}
 func (p FSIter) getCurrent() *hive_metastore.FieldSchema {
 	return p.fsList[p.current]
 }
@@ -54,5 +57,5 @@ func (p *FSIter) KeyEqual(b metastore.ComparableIterator) bool {
 func (p *FSIter) ValueEqual(b metastore.ComparableIterator) bool {
 	pCur := p.getCurrent()
 	bCur := b.(*FSIter).getCurrent()
-	return pCur.GetType() == bCur.GetType() && pCur.GetComment() == bCur.GetComment() && pCur.GetName() == bCur.GetName()
+	return FieldSchemaEqual(pCur, bCur)
 }

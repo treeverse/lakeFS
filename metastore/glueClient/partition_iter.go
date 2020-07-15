@@ -59,7 +59,7 @@ func (p *PartitionIter) KeyEqual(other metastore.ComparableIterator) bool {
 	return p.GetName() == other.GetName()
 }
 
-func partitionLength(partition *glue.Partition) int {
+func partitionColumnAmount(partition *glue.Partition) int {
 	if partition.StorageDescriptor == nil || partition.StorageDescriptor.Columns == nil {
 		return 0
 	}
@@ -72,5 +72,5 @@ func (p *PartitionIter) ValueEqual(other metastore.ComparableIterator) bool {
 	otherPartition := other.(*PartitionIter).getCurrent()
 	noAccessTime := partition.LastAccessTime == nil && otherPartition.LastAccessTime == nil
 	timeEqual := (partition.LastAccessTime != nil && aws.TimeValue(partition.LastAccessTime).Equal(aws.TimeValue(otherPartition.LastAccessTime))) || noAccessTime
-	return timeEqual && partitionLength(partition) == partitionLength(otherPartition)
+	return timeEqual && partitionColumnAmount(partition) == partitionColumnAmount(otherPartition)
 }

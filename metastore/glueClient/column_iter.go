@@ -39,10 +39,13 @@ func (c *ColumnIter) KeyEqual(other metastore.ComparableIterator) bool {
 	return c.GetName() == other.GetName()
 }
 
+func ColumnEqual(column, otherColumn *glue.Column) bool {
+	return aws.StringValue(column.Name) == aws.StringValue(otherColumn.Name) && aws.StringValue(column.Type) == aws.StringValue(otherColumn.Type) && aws.StringValue(column.Comment) == aws.StringValue(otherColumn.Comment)
+}
 func (c *ColumnIter) ValueEqual(other metastore.ComparableIterator) bool {
 	column := c.getCurrent()
 	otherColumn := other.(*ColumnIter).getCurrent()
-	return aws.StringValue(column.Name) == aws.StringValue(otherColumn.Name) && aws.StringValue(column.Type) == aws.StringValue(otherColumn.Type) && aws.StringValue(column.Comment) == aws.StringValue(otherColumn.Comment)
+	return ColumnEqual(column, otherColumn)
 }
 
 func NewColumnIter(columns []*glue.Column) *ColumnIter {

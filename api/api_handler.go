@@ -7,13 +7,14 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/block/s3"
+
+	"github.com/aws/aws-sdk-go/aws"
+
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
-
-	authmodel "github.com/treeverse/lakefs/auth/model"
-
-	authentication "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
@@ -858,28 +859,72 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 func (a *Handler) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
 	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+
+		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
-				Resource: permissions.ObjectArn(params.RepositoryID, params.Ref),
+				Resource: permissions.ObjectArn(params.Repository, params.Branch),
 			},
 		})
 		if err != nil {
-			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
+			return metadata.NewCreateSymlinkUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("create_symlink")
-		ctx := a.ForRequest(params.HTTPRequest)
-		index := ctx.Index
+		deps.LogAction("get_object")
+		cataloger := deps.Cataloger
 
-		_, err = index.GetRepo(params.RepositoryID)
+		// read repo
+		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
 			return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		//TODO - need to implement this. for now, do nothing
-		return metadata.NewCreateSymlinkCreated()
+
+		// list entries
+		entries, _, err := cataloger.ListEntries(
+			a.Context(),
+			params.Repository,
+			params.Branch,
+			swag.StringValue(params.Location),
+			"'",
+			-1)
+		if errors.Is(err, db.ErrNotFound) {
+			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
+		}
+		if err != nil {
+			return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+				WithPayload(responseError("error while listing objects: %s", err))
+		}
+		// loop all entries enter to map[path]physicalAdress
+		var symlinkMap map[string][]string
+		symlinkMap = make(map[string][]string, 0)
+		for _, entry := range entries {
+			path := filepath.Dir(entry.Path)
+			if symlinkMap[path] == nil {
+				symlinkMap[path] = make([]string, 0)
+			}
+			address := fmt.Sprintf("%s/%s", repo.StorageNamespace, entry.PhysicalAddress)
+			symlinkMap[path] = append(symlinkMap[path], address)
+		}
+		// go through map create symlinks
+		lakeFSPrefix := "lakefs" // todo consider making configurable
+		for path, addresses := range symlinkMap {
+			address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, params.Branch, path)
+			data := strings.Join(addresses, "\n")
+			symlinkReader := aws.ReadSeekCloser(bytes.NewReader([]byte(data)))
+			s3Adapter := deps.BlockAdapter
+			err := s3Adapter.(*s3.Adapter).PutWithoutStream(block.ObjectPointer{ //TODO: change to .Put without casting once bug is fixed
+				StorageNamespace: repo.StorageNamespace,
+				Identifier:       address,
+			}, int64(len(data)), symlinkReader, block.PutOpts{})
+			if err != nil {
+				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+					WithPayload(responseError("error while writing symlinks: %s", err))
+			}
+		}
+		metaLocation := fmt.Sprintf("%s/%s/%s/%s/%s", repo.StorageNamespace, lakeFSPrefix, params.Repository, params.Branch, *params.Location)
+		return metadata.NewCreateSymlinkCreated().WithPayload(metaLocation)
 	})
 }
 func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {

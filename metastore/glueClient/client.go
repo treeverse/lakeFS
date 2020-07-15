@@ -1,59 +1,36 @@
 package glueClient
 
 import (
-	"fmt"
-
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/metastore"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glue"
 	"github.com/aws/aws-sdk-go/service/glue/glueiface"
-	log "github.com/sirupsen/logrus"
-	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/metastore"
 )
 
 type GlueMSClient struct {
-	svc       glueiface.GlueAPI
-	catalogID *string
+	client    glueiface.GlueAPI
+	catalogID *string /**/
 }
 
-const MaxParts = 2 // max possible 1000
+const MaxParts = 1000 // max possible 1000
 
-func NewGlueMSClient() *GlueMSClient {
-	return &GlueMSClient{}
-}
-
-func (g *GlueMSClient) Open(catalogId string) error {
-	//sess := session.Must(session.NewSession()) TODO: use config!
-	cfg := &aws.Config{
-		Region: aws.String(viper.GetString("blockstore.s3.region")),
-		//Logger: &config.LogrusAWSAdapter{},
-	}
-	if viper.IsSet("blockstore.s3.profile") || viper.IsSet("blockstore.s3.credentials_file") {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("blockstore.s3.credentials_file"),
-			viper.GetString("blockstore.s3.profile"))
-	}
-	if viper.IsSet("blockstore.s3.credentials") {
-		cfg.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("blockstore.s3.credentials.access_key_id"),
-			viper.GetString("blockstore.s3.credentials.access_secret_key"),
-			viper.GetString("blockstore.s3.credentials.session_token"))
-	}
-
+func GetGlueService(cfg *aws.Config) *glue.Glue {
 	sess := session.Must(session.NewSession(cfg))
 	sess.ClientConfig("glue")
-
-	g.svc = glue.New(sess)
-	g.catalogID = aws.String(catalogId)
-	return nil
+	return glue.New(sess)
 }
 
-func (g *GlueMSClient) GetTable(dbName string, tblName string) (*glue.TableData, error) {
-	table, err := g.svc.GetTable(&glue.GetTableInput{
+func NewGlueMSClient(svc glueiface.GlueAPI, catalogID string) *GlueMSClient {
+	return &GlueMSClient{
+		client:    svc,
+		catalogID: aws.String(catalogID),
+	}
+}
+
+func (g *GlueMSClient) getTable(dbName string, tblName string) (*glue.TableData, error) {
+	table, err := g.client.GetTable(&glue.GetTableInput{
 		CatalogId:    g.catalogID,
 		DatabaseName: aws.String(dbName),
 		Name:         aws.String(tblName),
@@ -82,8 +59,18 @@ func getAsTableInput(t *glue.TableData) *glue.TableInput {
 	}
 }
 
+func getAsPartitionInput(t *glue.Partition) *glue.PartitionInput {
+	return &glue.PartitionInput{
+		LastAccessTime:    t.LastAccessTime,
+		LastAnalyzedTime:  t.LastAnalyzedTime,
+		Parameters:        t.Parameters,
+		StorageDescriptor: t.StorageDescriptor,
+		Values:            t.Values,
+	}
+}
+
 func (g *GlueMSClient) createTable(dbName string, tbl *glue.TableData) error {
-	_, err := g.svc.CreateTable(&glue.CreateTableInput{
+	_, err := g.client.CreateTable(&glue.CreateTableInput{
 		CatalogId:    g.catalogID,
 		DatabaseName: aws.String(dbName),
 		TableInput:   getAsTableInput(tbl),
@@ -92,27 +79,39 @@ func (g *GlueMSClient) createTable(dbName string, tbl *glue.TableData) error {
 }
 
 func (g *GlueMSClient) updateTable(dbName string, tbl *glue.TableData) error {
-	_, err := g.svc.UpdateTable(&glue.UpdateTableInput{
+	_, err := g.client.UpdateTable(&glue.UpdateTableInput{
 		CatalogId:    g.catalogID,
 		DatabaseName: aws.String(dbName),
 		TableInput:   getAsTableInput(tbl),
 	})
 	return err
 }
+func (g *GlueMSClient) getPartition(dbName, tableName string, partitionValues []string) (*glue.Partition, error) {
+	output, err := g.client.GetPartition(&glue.GetPartitionInput{
+		CatalogId:       g.catalogID,
+		DatabaseName:    aws.String(dbName),
+		PartitionValues: aws.StringSlice(partitionValues),
+		TableName:       aws.String(tableName),
+	})
+	if err != nil {
+		return nil, err
+	}
+	return output.Partition, nil
+}
 
 func (g *GlueMSClient) getPartitions(dbName, tableName string, nextToken *string, maxParts int16) (*glue.GetPartitionsOutput, error) {
-	return g.svc.GetPartitions(&glue.GetPartitionsInput{
+	return g.client.GetPartitions(&glue.GetPartitionsInput{
 		CatalogId:    g.catalogID,
 		DatabaseName: aws.String(dbName),
-		MaxResults:   aws.Int64(int64(maxParts)), // max possible 1000
-		NextToken:    nextToken,                  // todo: change this or the others
+		MaxResults:   aws.Int64(int64(maxParts)),
+		NextToken:    nextToken,
 		TableName:    aws.String(tableName),
 	})
 }
 
 func (g *GlueMSClient) getAllPartitions(dbName, tableName string) ([]*glue.Partition, error) {
 	var nextToken *string
-	gotPartitions := MaxParts // max possible 1000
+	gotPartitions := MaxParts
 	var allPartitions []*glue.Partition
 	for gotPartitions == MaxParts {
 		getPartitionsOutput, err := g.getPartitions(dbName, tableName, nextToken, MaxParts)
@@ -127,6 +126,16 @@ func (g *GlueMSClient) getAllPartitions(dbName, tableName string) ([]*glue.Parti
 	return allPartitions, nil
 }
 
+func (g *GlueMSClient) addPartition(dbName, tableName string, partition *glue.Partition) error {
+	_, err := g.client.CreatePartition(&glue.CreatePartitionInput{
+		CatalogId:      g.catalogID,
+		DatabaseName:   aws.String(dbName),
+		PartitionInput: getAsPartitionInput(partition),
+		TableName:      aws.String(tableName),
+	})
+	return err
+}
+
 func (g *GlueMSClient) addPartitions(dbName, tableName string, partitions []*glue.Partition) error {
 	var partitionList []*glue.PartitionInput
 	for _, partition := range partitions {
@@ -138,43 +147,46 @@ func (g *GlueMSClient) addPartitions(dbName, tableName string, partitions []*glu
 			Values:            partition.Values,
 		})
 	}
-	req, output := g.svc.BatchCreatePartitionRequest(&glue.BatchCreatePartitionInput{
+	_, err := g.client.BatchCreatePartition(&glue.BatchCreatePartitionInput{
 		CatalogId:          g.catalogID,
 		DatabaseName:       aws.String(dbName),
 		PartitionInputList: partitionList,
 		TableName:          aws.String(tableName),
 	})
-	if output.Errors != nil {
-		//todo : remove table
-		for _, glueErrors := range output.Errors {
-			log.Error(glueErrors.ErrorDetail) //todo: check what this returns
-		}
-		return fmt.Errorf("failed adding partitions")
+	return err
+}
+
+func (g *GlueMSClient) alterPartition(dbName, tableName string, partition *glue.Partition) error {
+	// No batch alter partitions we will need to do it one by one
+
+	_, err := g.client.UpdatePartition(&glue.UpdatePartitionInput{
+		CatalogId:    g.catalogID,
+		DatabaseName: aws.String(dbName),
+		PartitionInput: &glue.PartitionInput{
+			LastAccessTime:    partition.LastAccessTime,
+			LastAnalyzedTime:  partition.LastAnalyzedTime,
+			Parameters:        partition.Parameters,
+			StorageDescriptor: partition.StorageDescriptor,
+			Values:            partition.Values,
+		},
+		PartitionValueList: partition.Values,
+		TableName:          aws.String(tableName),
+	})
+
+	if err != nil {
+		return err
 	}
-	return req.Send()
+
+	return nil
 }
 
 func (g *GlueMSClient) alterPartitions(dbName, tableName string, partitions []*glue.Partition) error {
-	// no batch alter partitions we will need to do it one by one
+	// No batch alter partitions we will need to do it one by one
 	for _, partition := range partitions {
-		_, err := g.svc.UpdatePartition(&glue.UpdatePartitionInput{
-			CatalogId:    g.catalogID,
-			DatabaseName: aws.String(dbName),
-			PartitionInput: &glue.PartitionInput{
-				LastAccessTime:    partition.LastAccessTime, //TODO check this out... have no idea if this is the write value
-				LastAnalyzedTime:  partition.LastAnalyzedTime,
-				Parameters:        partition.Parameters,
-				StorageDescriptor: partition.StorageDescriptor,
-				Values:            partition.Values,
-			},
-			PartitionValueList: partition.Values,
-			TableName:          aws.String(tableName),
-		})
-
+		err := g.alterPartition(dbName, tableName, partition)
 		if err != nil {
 			return err
 		}
-
 	}
 	return nil
 }
@@ -185,7 +197,7 @@ func (g *GlueMSClient) removePartitions(dbName, tableName string, partitions []*
 	for _, partition := range partitions {
 		partitionsToDelete = append(partitionsToDelete, &glue.PartitionValueList{Values: partition.Values})
 	}
-	_, err := g.svc.BatchDeletePartition(&glue.BatchDeletePartitionInput{
+	_, err := g.client.BatchDeletePartition(&glue.BatchDeletePartitionInput{
 		CatalogId:          g.catalogID,
 		DatabaseName:       aws.String(dbName),
 		PartitionsToDelete: partitionsToDelete,
@@ -197,7 +209,7 @@ func (g *GlueMSClient) removePartitions(dbName, tableName string, partitions []*
 	return nil
 }
 
-func (g *GlueMSClient) copyPartitions(fromDBName, fromTable, fromBranch, toDBName, toTable, toBranch string) error {
+func (g *GlueMSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable string, transformLocation func(location string) string, symlink bool) error {
 	var nextToken *string
 	gotPartitions := MaxParts
 	for gotPartitions == MaxParts {
@@ -209,7 +221,11 @@ func (g *GlueMSClient) copyPartitions(fromDBName, fromTable, fromBranch, toDBNam
 		partitions := getPartitionsOutput.Partitions
 		gotPartitions = len(partitions)
 		for _, partition := range partitions {
-			partition.StorageDescriptor.SetLocation(metastore.TransformLocation(aws.StringValue(partition.StorageDescriptor.Location), fromBranch, toBranch))
+			if symlink {
+				partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+			}
+
+			partition.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(partition.StorageDescriptor.Location)))
 			partition.SetTableName(toTable)
 			partition.StorageDescriptor.SerdeInfo.SetName(toTable)
 			partition.SetDatabaseName(toDBName)
@@ -223,8 +239,8 @@ func (g *GlueMSClient) copyPartitions(fromDBName, fromTable, fromBranch, toDBNam
 	return nil
 }
 
-func (g *GlueMSClient) copyTable(fromDBName, fromTable, fromBranch, toDBName, toTable, toBranch string) error {
-	t, err := g.svc.GetTable(&glue.GetTableInput{
+func (g *GlueMSClient) copyTable(fromDBName, fromTable, toDBName, toTable string, transformLocation func(loaction string) string, symlink bool) error {
+	t, err := g.client.GetTable(&glue.GetTableInput{
 		CatalogId:    g.catalogID,
 		DatabaseName: aws.String(fromDBName),
 		Name:         aws.String(fromTable),
@@ -236,7 +252,11 @@ func (g *GlueMSClient) copyTable(fromDBName, fromTable, fromBranch, toDBName, to
 	table.SetDatabaseName(toDBName)
 	table.SetName(toTable)
 	table.StorageDescriptor.SerdeInfo.SetName(toTable) //todo double check this, maybe serde should be somehting else
-	table.StorageDescriptor.SetLocation(metastore.TransformLocation(aws.StringValue(table.StorageDescriptor.Location), fromBranch, toBranch))
+	table.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(table.StorageDescriptor.Location)))
+	if symlink {
+		table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+		table.StorageDescriptor.SetLocation(transformLocation(""))
+	}
 	t.SetTable(table)
 	err = g.createTable(toDBName, table)
 	if err != nil {
@@ -245,52 +265,50 @@ func (g *GlueMSClient) copyTable(fromDBName, fromTable, fromBranch, toDBName, to
 	return nil
 }
 
-func (g *GlueMSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch string) error {
-	table, err := g.GetTable(toDB, toTable)
+func (g *GlueMSClient) copy(fromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
+
+	err := g.copyTable(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
 	if err != nil {
 		return err
 	}
-	if table != nil {
-		return g.Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch)
-	}
-	return g.Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch)
-}
-
-func (g *GlueMSClient) Copy(fromDBName, fromTable, fromBranch, toDBName, toTable, toBranch string) error {
-
-	err := g.copyTable(fromDBName, fromTable, fromBranch, toDBName, toTable, toBranch)
-	if err != nil {
-		return err
-	}
-	err = g.copyPartitions(fromDBName, fromTable, fromBranch, toDBName, toTable, toBranch)
+	err = g.copyPartitions(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
 	return err
 }
 
-func (g *GlueMSClient) Merge(FromDBName, fromTable, fromBranch, toDBName, toTable, toBranch string) error {
+func (g *GlueMSClient) merge(FromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
 
-	table, err := g.GetTable(FromDBName, fromTable)
+	table, err := g.getTable(FromDB, fromTable)
 	if err != nil {
 		return err
 	}
-	table.SetDatabaseName(toDBName)
+	table.SetDatabaseName(toDB)
 	table.SetName(toTable)
 	table.StorageDescriptor.SerdeInfo.SetName(toTable) //todo double check this, maybe serde should be somehting else
-	table.StorageDescriptor.SetLocation(metastore.TransformLocation(aws.StringValue(table.StorageDescriptor.Location), fromBranch, toBranch))
-
-	partitions, err := g.getAllPartitions(FromDBName, fromTable)
+	table.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(table.StorageDescriptor.Location)))
+	if symlink {
+		table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+	}
+	partitions, err := g.getAllPartitions(FromDB, fromTable)
 	if err != nil {
 		return err
 	}
-	toPartitions, err := g.getAllPartitions(toDBName, toTable)
+	toPartitions, err := g.getAllPartitions(toDB, toTable)
 	if err != nil {
 		return err
 	}
 
-	//addPartitions, removePartitions, alterPartitions := diffPartitions(partitions, toPartitions, toDBName, toTable, toBranch, fromBranch)
 	partitionIter := NewPartitionIter(partitions)
 	toPartitionIter := NewPartitionIter(toPartitions)
 	var addPartitions, removePartitions, alterPartitions []*glue.Partition
 	metastore.Diff(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, iter metastore.ComparableIterator) {
+		partition := iter.(*PartitionIter).getCurrent()
+		partition.SetDatabaseName(toDB)
+		partition.SetTableName(toTable)
+		partition.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(partition.StorageDescriptor.Location)))
+		partition.StorageDescriptor.SerdeInfo.SetName(toTable)
+		if symlink {
+			partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+		}
 		switch difference {
 		case catalog.DifferenceTypeRemoved:
 			removePartitions = append(removePartitions, iter.(*PartitionIter).getCurrent())
@@ -301,29 +319,54 @@ func (g *GlueMSClient) Merge(FromDBName, fromTable, fromBranch, toDBName, toTabl
 		}
 	})
 
-	err = g.updateTable(toDBName, table)
+	err = g.updateTable(toDB, table)
 	if err != nil {
 		return err
 	}
 	if len(addPartitions) > 0 {
-		err = g.addPartitions(toDBName, toTable, addPartitions)
+		err = g.addPartitions(toDB, toTable, addPartitions)
 		if err != nil {
 			return err
 		}
 	}
 	if len(alterPartitions) > 0 {
-		err = g.alterPartitions(toDBName, toTable, alterPartitions)
+		err = g.alterPartitions(toDB, toTable, alterPartitions)
 		if err != nil {
 			return err
 		}
 	}
 	if len(removePartitions) > 0 {
-		err = g.removePartitions(toDBName, toTable, removePartitions)
+		err = g.removePartitions(toDB, toTable, removePartitions)
 		if err != nil {
 			return err
 		}
 	}
 	return nil
+}
+
+func (g *GlueMSClient) copyOrMerge(fromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
+	table, _ := g.getTable(toDB, toTable)
+
+	if table == nil {
+		return g.copy(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
+	}
+	return g.merge(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
+}
+
+func (g *GlueMSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch string) error {
+	transformLocation := func(location string) string {
+		return metastore.TransformLocation(location, fromBranch, toBranch)
+	}
+	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, transformLocation, false)
+}
+
+func (g *GlueMSClient) CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, locationPrefix string) error {
+
+	transformLocation := func(location string) string {
+		return metastore.GetSymlinkLocation(location, locationPrefix)
+	}
+	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, transformLocation, true)
+
 }
 
 func (g *GlueMSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error) {
@@ -343,12 +386,12 @@ func (g *GlueMSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore
 	}, nil
 }
 
-func (g *GlueMSClient) getPartitionsDiff(FromDBName string, fromTable string, toDBName string, toTable string) (catalog.Differences, error) {
-	partitions, err := g.getAllPartitions(FromDBName, fromTable)
+func (g *GlueMSClient) getPartitionsDiff(FromDB string, fromTable string, toDB string, toTable string) (catalog.Differences, error) {
+	partitions, err := g.getAllPartitions(FromDB, fromTable)
 	if err != nil {
 		return nil, err
 	}
-	toPartitions, err := g.getAllPartitions(toDBName, toTable)
+	toPartitions, err := g.getAllPartitions(toDB, toTable)
 	if err != nil {
 		return nil, err
 	}
@@ -359,11 +402,11 @@ func (g *GlueMSClient) getPartitionsDiff(FromDBName string, fromTable string, to
 }
 
 func (g *GlueMSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catalog.Differences, error) {
-	tableFrom, err := g.GetTable(fromDB, fromTable)
+	tableFrom, err := g.getTable(fromDB, fromTable)
 	if err != nil {
 		return nil, err
 	}
-	tableTo, err := g.GetTable(toDB, toTable)
+	tableTo, err := g.getTable(toDB, toTable)
 	if err != nil {
 		return nil, err
 	}
@@ -373,60 +416,21 @@ func (g *GlueMSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (c
 	return metastore.GetDiff(colsIter, colsToIter), nil
 }
 
-func (g *GlueMSClient) CopyToSymlink(fromDB, fromTable, toDB, toTable, bucket string) error {
-	orig, err := g.GetTable(fromDB, fromTable)
+func (g *GlueMSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch string, partition []string) error {
+	p1, err := g.getPartition(fromDB, fromTable, partition)
 	if err != nil {
 		return err
 	}
-	orig.StorageDescriptor.SetInputFormat("org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat") // todo move to variable
-	orig.SetDatabaseName(toDB)
-	orig.SetName(toTable)
-	orig.StorageDescriptor.SerdeInfo.SetName(toTable)
-	orig.StorageDescriptor.SetLocation(metastore.GetSymlinkLocation(aws.StringValue(orig.StorageDescriptor.Location), bucket))
+	p2, _ := g.getPartition(toDB, toTable, partition)
 
-	//now partitions
-	partitions, err := g.getAllPartitions(fromDB, fromTable)
-	if err != nil {
-		return err
+	p1.SetDatabaseName(toDB)
+	p1.SetTableName(toTable)
+	p1.StorageDescriptor.SerdeInfo.SetName(toTable)
+	p1.StorageDescriptor.SetLocation(metastore.TransformLocation(aws.StringValue(p1.StorageDescriptor.Location), fromBranch, toBranch))
+	if p2 == nil {
+		err = g.addPartition(toDB, toTable, p1)
+	} else {
+		err = g.alterPartition(toDB, toTable, p1)
 	}
-	for _, partition := range partitions {
-		partition.SetDatabaseName(toDB)
-		partition.SetTableName(toTable)
-		partition.StorageDescriptor.SerdeInfo.SetName(toTable)
-		partition.StorageDescriptor.SetLocation(metastore.GetSymlinkLocation(aws.StringValue(partition.StorageDescriptor.Location), bucket))
-	}
-	err = g.addPartitions(toDB, toTable, partitions)
-	return err
-}
-
-func (g *GlueMSClient) MergeToSymlink(fromDB, fromTable, toDB, toTable, bucket string) error {
-	orig, err := g.GetTable(fromDB, fromTable)
-	if err != nil {
-		return err
-	}
-	orig.StorageDescriptor.SetInputFormat("org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat") // todo move to variable
-	orig.SetDatabaseName(toDB)
-	orig.SetName(toTable)
-	orig.StorageDescriptor.SerdeInfo.SetName(toTable)
-	orig.StorageDescriptor.SetLocation(metastore.GetSymlinkLocation(aws.StringValue(orig.StorageDescriptor.Location), bucket))
-
-	err = g.createTable(toDB, orig)
-	if err != nil {
-		return err
-	}
-	panic("implement merge symlink partitions")
-	////now partitions
-	//partitions, err := g.getAllPartitions(fromDB, fromTable)
-	//if err != nil {
-	//	return err
-	//}
-	//for _, partition := range partitions {
-	//	partition.SetDatabaseName(toDB)
-	//	partition.SetTableName(toTable)
-	//	partition.StorageDescriptor.SerdeInfo.SetName(toTable)
-	//	partition.StorageDescriptor.SetLocation(metastore.GetSymlinkLocation(aws.StringValue(partition.StorageDescriptor.Location), bucket))
-	//}
-	//
-	//err = g.addPartitions(toDB, toTable, partitions)
 	return err
 }

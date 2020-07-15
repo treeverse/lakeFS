@@ -7,15 +7,28 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 )
 
+const SymlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
+
 func TransformLocation(location, branch, branch2 string) string {
 	return strings.Replace(location, fmt.Sprintf("/%s/", branch), fmt.Sprintf("/%s/", branch2), 1)
 }
 
-func GetSymlinkLocation(location, bucket string) string {
-	res := strings.Replace(location, "s3a://", "s3://", 1)
-	res = strings.Replace(location, "s3n://", "s3://", 1)
-	metadataLocation := "lakefs"
-	res = strings.Replace(location, "s3://", fmt.Sprintf("s3://%s/%s/", bucket, metadataLocation), 1)
+func GetSymlinkLocation(location, locationPrefix string) string {
+	location = strings.TrimSuffix(location, "/")
+	locationPrefix = strings.TrimSuffix(locationPrefix, "/")
+
+	locationParts := strings.Split(location, "/")
+	prefixParts := strings.Split(locationPrefix, "/")
+
+	target := prefixParts[len(prefixParts)-1]
+	var origLocationPrefix string
+	for i := len(locationParts) - 1; i >= 0; i-- {
+		if locationParts[i] == target {
+			origLocationPrefix = strings.Join(locationParts[:i+1], "/")
+			break
+		}
+	}
+	res := strings.Replace(location, origLocationPrefix, locationPrefix, 1)
 	return res
 }
 
