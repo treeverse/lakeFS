@@ -34,15 +34,9 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 		entry := catalog.Entry{
 			Path:            row.Key,
 			PhysicalAddress: row.PhysicalAddress,
-		}
-		if row.LastModified != nil {
-			entry.CreationDate = time.Unix(0, *row.LastModified*int64(time.Millisecond))
-		}
-		if row.Size != nil {
-			entry.Size = *row.Size
-		}
-		if row.Checksum != nil {
-			entry.Checksum = *row.Checksum
+			CreationDate:    time.Unix(0, row.LastModified*int64(time.Millisecond)),
+			Size:            row.Size,
+			Checksum:        row.Checksum,
 		}
 		currentBatch = append(currentBatch, entry)
 		if len(currentBatch) >= c.batchSize {

@@ -28,24 +28,20 @@ func keys(rows []block.InventoryObject) []string {
 	return res
 }
 
-func rows(keys ...string) []block.InventoryObject {
+func rows(keys ...string) []s3.ParquetInventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]block.InventoryObject, 0, len(keys))
-	for _, key := range keys {
-		deleteMarker := false
-		latest := true
-		res = append(res, block.InventoryObject{
-			Key:            key,
-			IsDeleteMarker: &deleteMarker,
-			IsLatest:       &latest,
-		})
+	res := make([]s3.ParquetInventoryObject, len(keys))
+	latest := true
+	for i, key := range keys {
+		res[i].Key = key
+		res[i].IsLatest = &latest
 	}
 	return res
 }
 
-func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, manifestFileKey string) ([]block.InventoryObject, error) {
+func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, manifestFileKey string) ([]s3.ParquetInventoryObject, error) {
 	if inventoryBucketName != "example-bucket" {
 		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
 	}
