@@ -22,9 +22,9 @@ func GetGlueService(cfg *aws.Config) *glue.Glue {
 	return glue.New(sess)
 }
 
-func NewGlueMSClient(svc glueiface.GlueAPI, catalogID string) *GlueMSClient {
+func NewGlueMSClient(client glueiface.GlueAPI, catalogID string) *GlueMSClient {
 	return &GlueMSClient{
-		client:    svc,
+		client:    client,
 		catalogID: aws.String(catalogID),
 	}
 }

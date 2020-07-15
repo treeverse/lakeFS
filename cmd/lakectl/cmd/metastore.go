@@ -128,7 +128,7 @@ var glueCopyCmd = &cobra.Command{
 	Use:   "glue-copy",
 	Short: "copy table to new table with different locations",
 	Run: func(cmd *cobra.Command, args []string) {
-		catalog, _ := cmd.Flags().GetString("address")
+		catalog, _ := cmd.Flags().GetString("catalog-id")
 		fromDB, _ := cmd.Flags().GetString("from-schema")
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		fromBranch, _ := cmd.Flags().GetString("from-branch")
@@ -137,10 +137,8 @@ var glueCopyCmd = &cobra.Command{
 		toBranch, _ := cmd.Flags().GetString("to-branch")
 		partition, _ := cmd.Flags().GetStringArray("partition")
 
-		//copy := glueClient.GlueMSCopy{}.init (context.Background(), address, false)
-
-		svc := glue.GetGlueService(getGlueCfg())
-		msClient := glue.NewGlueMSClient(svc, catalog)
+		client := glue.GetGlueService(getGlueCfg())
+		msClient := glue.NewGlueMSClient(client, catalog)
 		var err error
 		if len(partition) > 0 {
 			err = msClient.CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, partition)
@@ -157,7 +155,7 @@ var glueDiffCmd = &cobra.Command{
 	Use:   "glue-diff",
 	Short: "show column and partition differences between two tables",
 	Run: func(cmd *cobra.Command, args []string) {
-		catalogID, _ := cmd.Flags().GetString("address")
+		catalogID, _ := cmd.Flags().GetString("catalog-id")
 		fromDB, _ := cmd.Flags().GetString("from-schema")
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		toDB, _ := cmd.Flags().GetString("to-schema")
@@ -200,7 +198,7 @@ var glueSymlinkCmd = &cobra.Command{
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")
 		path, _ := cmd.Flags().GetString("path")
-		address, _ := cmd.Flags().GetString("address")
+		address, _ := cmd.Flags().GetString("catalog-id")
 		fromDB, _ := cmd.Flags().GetString("from-schema")
 		fromTable, _ := cmd.Flags().GetString("from-table")
 		toDB, _ := cmd.Flags().GetString("to-schema")
@@ -222,7 +220,7 @@ var glueSymlinkCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(metastoreCmd)
 	metastoreCmd.AddCommand(hiveCopyCmd)
-	_ = hiveCopyCmd.Flags().String("address", "", "hive metastore address")
+	_ = hiveCopyCmd.Flags().String("address", "", "Hive metastore address")
 	_ = hiveCopyCmd.MarkFlagRequired("address")
 	_ = hiveCopyCmd.Flags().String("from-schema", "", "schema where orig table exists")
 	_ = hiveCopyCmd.MarkFlagRequired("from-schema")
@@ -240,7 +238,7 @@ func init() {
 	_ = hiveCopyCmd.Flags().StringArray("partition", nil, "partition to copy")
 
 	metastoreCmd.AddCommand(hiveDiffCmd)
-	_ = hiveDiffCmd.Flags().String("address", "", "hive metastore address")
+	_ = hiveDiffCmd.Flags().String("address", "", "Hive metastore address")
 	_ = hiveDiffCmd.MarkFlagRequired("address")
 	_ = hiveDiffCmd.Flags().String("from-schema", "", "schema where orig table exists")
 	_ = hiveDiffCmd.MarkFlagRequired("from-schema")
@@ -252,8 +250,8 @@ func init() {
 	_ = hiveDiffCmd.MarkFlagRequired("to-table")
 
 	metastoreCmd.AddCommand(glueCopyCmd)
-	_ = glueCopyCmd.Flags().String("address", "", "hive metastore address")
-	_ = glueCopyCmd.MarkFlagRequired("address")
+	_ = glueCopyCmd.Flags().String("catalog-id", "", "Glue catalog ID")
+	_ = glueCopyCmd.MarkFlagRequired("catalog-id")
 	_ = glueCopyCmd.Flags().String("from-schema", "", "schema where orig table exists")
 	_ = glueCopyCmd.MarkFlagRequired("from-schema")
 	_ = glueCopyCmd.Flags().String("from-table", "", "table where orig table exists")
@@ -270,8 +268,8 @@ func init() {
 	_ = glueCopyCmd.Flags().StringArray("partition", nil, "partition to copy")
 
 	metastoreCmd.AddCommand(glueDiffCmd)
-	_ = glueDiffCmd.Flags().String("address", "", "hive metastore address")
-	_ = glueDiffCmd.MarkFlagRequired("address")
+	_ = glueDiffCmd.Flags().String("catalog-id", "", "Glue catalog ID")
+	_ = glueDiffCmd.MarkFlagRequired("catalog-id")
 	_ = glueDiffCmd.Flags().String("from-schema", "", "schema where orig table exists")
 	_ = glueDiffCmd.MarkFlagRequired("from-schema")
 	_ = glueDiffCmd.Flags().String("from-table", "", "table where orig table exists")
@@ -282,14 +280,14 @@ func init() {
 	_ = glueDiffCmd.MarkFlagRequired("to-table")
 
 	metastoreCmd.AddCommand(glueSymlinkCmd)
-	_ = glueSymlinkCmd.Flags().String("repo", "", "hive metastore address")
+	_ = glueSymlinkCmd.Flags().String("repo", "", "lakefs repository name")
 	_ = glueSymlinkCmd.MarkFlagRequired("repo")
-	_ = glueSymlinkCmd.Flags().String("branch", "", "schema where orig table exists")
+	_ = glueSymlinkCmd.Flags().String("branch", "", "lakefs branch name")
 	_ = glueSymlinkCmd.MarkFlagRequired("branch")
 	_ = glueSymlinkCmd.Flags().String("path", "", "table where orig table exists")
 	_ = glueSymlinkCmd.MarkFlagRequired("path")
-	_ = glueSymlinkCmd.Flags().String("address", "", "hive metastore address")
-	_ = glueSymlinkCmd.MarkFlagRequired("address")
+	_ = glueSymlinkCmd.Flags().String("catalog-id", "", "Glue catalog ID")
+	_ = glueSymlinkCmd.MarkFlagRequired("catalog-id")
 	_ = glueSymlinkCmd.Flags().String("from-schema", "", "schema where orig table exists")
 	_ = glueSymlinkCmd.MarkFlagRequired("from-schema")
 	_ = glueSymlinkCmd.Flags().String("from-table", "", "table where orig table exists")
