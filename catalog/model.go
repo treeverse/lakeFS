@@ -25,18 +25,6 @@ type Entry struct {
 	Metadata        Metadata  `db:"metadata"`
 }
 
-type entryRaw struct {
-	BranchID        int       `db:"branch_id"`
-	Path            string    `db:"path"`
-	PhysicalAddress string    `db:"physical_address"`
-	CreationDate    time.Time `db:"creation_date"`
-	Size            int64     `db:"size"`
-	Checksum        string    `db:"checksum"`
-	Metadata        Metadata  `db:"metadata"`
-	MinCommit       int       `db:"min_commit"`
-	IsTombstone     bool      `db:"is_tombstone"`
-}
-
 type CommitLog struct {
 	Reference    string
 	Committer    string    `db:"committer"`
@@ -64,6 +52,11 @@ type lineageCommit struct {
 type Branch struct {
 	Repository string `db:"repository"`
 	Name       string `db:"name"`
+}
+
+type LevelEntryResult struct {
+	Path  string `db:"path"`
+	Entry *Entry
 }
 
 type MultipartUpload struct {

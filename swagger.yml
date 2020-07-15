@@ -86,7 +86,7 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3://|mem://|local://).*$'
+        pattern: '^(s3|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
@@ -286,6 +286,68 @@ definitions:
     required:
       - id
       - statement
+
+  retention_policy:
+    type: object
+    required:
+      - rules
+    properties:
+      rules:
+        type: array
+        items:
+          $ref: "#/definitions/retention_policy_rule"
+      description:
+        type: string
+
+  retention_policy_with_creation_date:
+    allOf:
+      - $ref: "#/definitions/retention_policy"
+      - type: object
+        properties:
+          creation_date:
+            type: string
+            format: date-time
+        required:
+          - creation_date
+
+  retention_policy_rule:
+    type: object
+    required:
+      - status
+      - filter
+    properties:
+      status:
+        type: string
+        enum: ["enabled", "disabled"]
+      filter:
+        type: object
+        properties:
+          prefix:
+            type: string
+      expiration:
+        type: object
+        minProperties: 1
+        properties:
+          all:
+            $ref: "#/definitions/time_period"
+          uncommitted:
+            $ref: "#/definitions/time_period"
+          noncurrent:
+            $ref: "#/definitions/time_period"
+
+  time_period:
+    type: object
+    description: |
+        a number of days, which can be broken up into a sum of weeks
+        and days
+    properties:
+      weeks:
+        type: integer
+        format: int32
+      days:
+        type: integer
+        format: int32
+    minProperties: 1
 
 paths:
 
@@ -1139,6 +1201,54 @@ paths:
           schema:
             $ref: "#/definitions/error"
 
+  /repositories/{repository}/inventory/s3/import:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+      - in: query
+        name: manifestUrl
+        required: true
+        type: string
+      - in: query
+        name: dryRun
+        type: boolean
+        default: false
+    post:
+      tags:
+        - repositories
+      operationId: importFromS3Inventory
+      summary: import metadata for an existing bucket in S3
+      responses:
+        201:
+          description: import results
+          schema:
+            type: object
+            properties:
+              is_dry_run:
+                type: boolean
+              added_or_changed:
+                type: integer
+                format: int64
+              deleted:
+                type: integer
+                format: int64
+              previous_manifest:
+                type: string
+              previous_import_date:
+                type: integer
+                format: int64
+        401:
+          $ref: "#/responses/Unauthorized"
+        404:
+          description: "repository not found"
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
   /repositories/{repository}/branches:
     parameters:
       - in: path
@@ -1363,7 +1473,6 @@ paths:
         required: true
         type: string
         description: destination branch name
-
 
     post:
       tags:
@@ -1786,6 +1895,50 @@ paths:
           description: repository or branch not found
           schema:
             $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+
+
+  /repositories/{repository}/retention:
+    parameters:
+      - in: path
+        name: repository
+        required: true
+        type: string
+    put:
+      tags:
+        - retention
+      operationId: updateRetentionPolicy
+      description: set retention policy for repository
+      parameters:
+        - in: body
+          name: policy
+          required: true
+          schema:
+            $ref: "#/definitions/retention_policy"
+      responses:
+        201:
+          description: policy attached successfully
+        401:
+          $ref: "#/responses/Unauthorized"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
+    get:
+      operationId: getRetentionPolicy
+      tags:
+        - retention
+      description: get retention policy for repository
+      responses:
+        200:
+          description: retention policy
+          schema:
+            $ref: "#/definitions/retention_policy_with_creation_date"
+        401:
+          $ref: "#/responses/Unauthorized"
         default:
           description: generic error response
           schema:

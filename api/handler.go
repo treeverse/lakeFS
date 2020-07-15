@@ -3,7 +3,6 @@
 package api
 
 import (
-	"context"
 	"fmt"
 	"net/http"
 	"net/http/pprof"
@@ -20,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
 	"gopkg.in/dgrijalva/jwt-go.v3"
@@ -35,11 +35,13 @@ var (
 	ErrAuthenticationFailed = errors.New(http.StatusUnauthorized, "error authenticating request")
 )
 
-type Server struct {
+type Handler struct {
+	meta        auth.MetadataManager
 	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
+	retention   retention.Service
 	migrator    db.Migrator
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
@@ -47,29 +49,35 @@ type Server struct {
 	logger      logging.Logger
 }
 
-func NewServer(
+func NewHandler(
 	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
+	meta auth.MetadataManager,
 	stats stats.Collector,
+	retention retention.Service,
 	migrator db.Migrator,
 	logger logging.Logger,
-) *Server {
+) http.Handler {
 	logger.Info("initialized OpenAPI server")
-	return &Server{
+	s := &Handler{
 		cataloger:   cataloger,
 		blockStore:  blockStore,
 		authService: authService,
+		meta:        meta,
 		stats:       stats,
+		retention:   retention,
 		migrator:    migrator,
 		logger:      logger,
 	}
+	s.buildAPI()
+	return s.handler
 }
 
 // JwtTokenAuth decodes, validates and authenticates a user that exists
 // in the X-JWT-Authorization header.
 // This header either exists natively, or is set using a token
-func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
+func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 	logger := logging.Default().WithField("auth", "jwt")
 	return func(tokenString string) (*models.User, error) {
 		claims := &jwt.StandardClaims{}
@@ -100,14 +108,9 @@ func (s *Server) JwtTokenAuth() func(string) (*models.User, error) {
 
 // BasicAuth returns a function that hooks into Swagger's basic Auth provider
 // it uses the Auth.Service provided to ensure credentials are valid
-func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
+func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.User, err error) {
 	logger := logging.Default().WithField("auth", "basic")
 	return func(accessKey, secretKey string) (user *models.User, err error) {
-		if noop {
-			return &models.User{
-				ID: "barak.amar",
-			}, nil
-		}
 		credentials, err := s.authService.GetCredentials(accessKey)
 		if err != nil {
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
@@ -128,7 +131,7 @@ func (s *Server) BasicAuth() func(accessKey, secretKey string) (user *models.Use
 	}
 }
 
-func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
+func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
 	// pprof
 	mux.HandleFunc("/debug/pprof/", pprof.Index)
@@ -151,13 +154,9 @@ func (s *Server) setupHandler(api http.Handler, ui http.Handler, setup http.Hand
 	s.handler = mux
 }
 
-// setupServer returns a Server that has been configured with basic authenticator and is registered
-// to all relevant API handlers
-func (s *Server) setupServer() error {
-	swaggerSpec, err := loads.Analyzed(restapi.SwaggerJSON, "")
-	if err != nil {
-		return err
-	}
+// buildAPI wires together the JWT and basic authenticator and registers all relevant API handlers
+func (s *Handler) buildAPI() {
+	swaggerSpec, _ := loads.Analyzed(restapi.SwaggerJSON, "")
 
 	api := operations.NewLakefsAPI(swaggerSpec)
 	api.Logger = func(msg string, ctx ...interface{}) {
@@ -167,7 +166,7 @@ func (s *Server) setupServer() error {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewHandler(s.cataloger, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
@@ -192,11 +191,9 @@ func (s *Server) setupServer() error {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			setupLakeFSHandler(s.authService, s.migrator, s.stats),
+			setupLakeFSHandler(s.authService, s.meta, s.migrator, s.stats),
 		),
 	)
-
-	return nil
 }
 
 func cookieToAPIHeader(next http.Handler) http.Handler {
@@ -211,39 +208,4 @@ func cookieToAPIHeader(next http.Handler) http.Handler {
 		r.Header.Set(JWTAuthorizationHeaderName, cookie.Value)
 		next.ServeHTTP(w, r)
 	})
-}
-
-// Listen starts an HTTP server at the given host and port
-func (s *Server) Listen(listenAddr string) error {
-	handler, err := s.Handler()
-	if err != nil {
-		return err
-	}
-	s.server = &http.Server{
-		Addr:    listenAddr,
-		Handler: handler,
-	}
-	logging.Default().
-		WithField("listen_address", listenAddr).
-		Info("started OpenAPI server")
-	return s.server.ListenAndServe()
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	if s == nil {
-		return nil
-	}
-	s.server.SetKeepAlivesEnabled(false)
-	return s.server.Shutdown(ctx)
-}
-
-func (s *Server) Handler() (http.Handler, error) {
-	if s.handler != nil {
-		return s.handler, nil
-	}
-	err := s.setupServer()
-	if err != nil {
-		return nil, err
-	}
-	return s.handler, nil
 }

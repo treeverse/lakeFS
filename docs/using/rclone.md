@@ -26,14 +26,14 @@ To add the remote to Rclone, choose one of the following options:
     /home/myuser/.config/rclone/rclone.conf
     ```
     
-*   If your lakeFS access key pair is already set in an AWS profile or environment variables, just run the following commmand, replacing the endpoint property with your lakeFS enpoint:
+*   If your lakeFS access key  is already set in an AWS profile or environment variables, just run the following commmand, replacing the endpoint property with your lakeFS enpoint:
 
     ```
     cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
     [lakefs]
     type = s3
     provider = AWS
-    endpoint = http://s3.local.lakefs.io:8000
+    endpoint = https://s3.lakefs.example.com
     
     EOT
     ```
@@ -48,7 +48,7 @@ To add the remote to Rclone, choose one of the following options:
     env_auth = false
     access_key_id = AKIAJF2VSETNW3RTP3ZQ
     secret_access_key = pQRw1MEPspmZeng5XEXMSvKiPxxQBdXbziXtVjq2
-    endpoint = http://s3.local.lakefs.io:8000
+    endpoint = https://s3.lakefs.example.com
     EOT
     ```
 
@@ -67,11 +67,11 @@ or to enter the lakeFS access key pair into the Rclone configuration.
 ### Syncing your data from S3 to lakeFS
 
 ``` bash
-$ rclone sync mys3remote://mybucket/path/ lakefs:my-lakefs-repo/master/path
+$ rclone sync mys3remote://mybucket/path/ lakefs:example-repo/master/path
 ```
 
 ### Syncing a local directory to lakeFS
 
 ```bash
-$ rclone sync /home/myuser/path/ lakefs:yoni-repo/master/path
+$ rclone sync /home/myuser/path/ lakefs:example-repo/master/path
 ```

@@ -14,14 +14,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/ory/dockertest/v3"
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -121,13 +119,13 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 
 	ctx := context.Background()
 	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
-	server := gateway.NewServer(authService.Region,
+	handler := gateway.NewHandler(authService.Region,
 		cataloger,
 		blockAdapter,
 		authService,
-		authService.ListenAddress, authService.BareDomain, &mockCollector{})
+		authService.BareDomain, &mockCollector{})
 
-	return server.Server.Handler, &dependencies{
+	return handler, &dependencies{
 		blocks:    blockAdapter,
 		auth:      authService,
 		cataloger: cataloger,

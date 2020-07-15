@@ -20,11 +20,11 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		return nil, err
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeNone)
+		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
 		if err != nil {
 			return nil, fmt.Errorf("left branch: %w", err)
 		}
-		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeNone)
+		rightID, err := c.getBranchIDCache(tx, repository, rightBranch)
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
@@ -63,11 +63,11 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	var maxSonMerge int64
 	sonLineage, err := getLineage(tx, sonID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("Son lineage failed: %w", err)
+		return nil, fmt.Errorf("son lineage failed: %w", err)
 	}
 	fatherLineage, err := getLineage(tx, fatherID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("Father lineage failed: %w", err)
+		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
 	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
 											From("commits").
@@ -75,7 +75,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 											PlaceholderFormat(sq.Dollar).MustSql()
 	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed getting son last commit number : %w", err)
+		return nil, fmt.Errorf("get son last commit failed: %w", err)
 	}
 
 	s, args, err := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage).
@@ -108,26 +108,26 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	// the father is lhe effective commit number of the first lineage record of the son that points to the father
 	// it is possible that the son the have already done from_father merge. so we have to take the minimal effective commit
 	effectiveCommits := struct {
-		FatherEffectiveCommit CommitID `db:"father_effective_commit"`
-		SonEffectiveCommit    CommitID `db:"son_effective_commit"`
+		FatherEffectiveCommit CommitID `db:"father_effective_commit"` // last commit father synchronized with son. If non - it is the commit where the son was branched
+		SonEffectiveCommit    CommitID `db:"son_effective_commit"`    // last commit son synchronized to father. if never - than it is 1 (everything in the son is a change)
 	}{}
 
 	effectiveCommitsQuery, args, err := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
 		From("commits").
-		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", fatherID, sonID).
+		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", sonID, fatherID).
 		OrderBy(`commit_id DESC`).
 		Limit(1).PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
 		return nil, err
 	}
-
 	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
 	if errors.Is(err, db.ErrNotFound) {
-		effectiveCommits.SonEffectiveCommit = 1
-		FatherEffectiveQuery, args := sq.Select("effective_commit").From("lineage").
-			Where("branch_id = ? AND ancestor_branch = ?", sonID, fatherID).
-			OrderBy("min_commit DESC").Limit(1).PlaceholderFormat(sq.Dollar).MustSql()
+		effectiveCommits.SonEffectiveCommit = 1 // we need all commits from the son. so any small number will do
+		query := sq.Select("commit_id as father_effective_commit").From("commits").
+			Where("branch_id = ? AND merge_source_branch = ?", sonID, fatherID).
+			OrderBy("commit_id").Limit(1)
+		FatherEffectiveQuery, args := query.PlaceholderFormat(sq.Dollar).MustSql()
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
 	}
 	if err != nil {
@@ -138,10 +138,15 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	if err != nil {
 		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
+	sonLineage, err := getLineage(tx, sonID, CommittedID)
+	if err != nil {
+		return nil, fmt.Errorf("son lineage failed: %w", err)
+	}
+	sonLineageValues := getLineageAsValues(sonLineage, sonID)
 
-	s, args, err := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
+	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues)
+
+	s, args, err := diffExpr.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}

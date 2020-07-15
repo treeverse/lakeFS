@@ -14,18 +14,19 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 	}); err != nil {
 		return err
 	}
-	res, err := c.runDBJob(dbJobFunc(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
 		return insertNewEntry(tx, branchID, &entry)
-	}))
+	}, c.txOpts(ctx)...)
+
 	if err != nil {
 		return err
 	}
 
-	// post request to dedup
+	// post request to dedup if needed
 	if dedup.ID != "" {
 		c.dedupCh <- &dedupRequest{
 			Repository:       repository,
@@ -37,4 +38,14 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 		}
 	}
 	return nil
+}
+
+func insertNewEntry(tx db.Tx, branchID int64, entry *Entry) (string, error) {
+	var ctid string
+	err := tx.Get(&ctid, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
+			ON CONFLICT (branch_id,path,min_commit)
+			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, max_commit=$7
+			RETURNING ctid`,
+		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, MaxCommitID)
+	return ctid, err
 }

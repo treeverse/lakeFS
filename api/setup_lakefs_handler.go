@@ -18,7 +18,7 @@ const SetupLakeFSRoute = "/setup_lakefs"
 //   returns 200 (ok) on creation with key/secret - content type json
 //   returns 409 (conflict) when user is found
 //   return 500 (internal error) if error during operation
-func setupLakeFSHandler(authService auth.Service, migrator db.Migrator, collector stats.Collector) http.Handler {
+func setupLakeFSHandler(authService auth.Service, meta auth.MetadataManager, migrator db.Migrator, collector stats.Collector) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
@@ -26,7 +26,7 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator, collecto
 		}
 
 		// skip migrate in case we have an active installation
-		if _, err := authService.GetAccountMetadataKey("installation_id"); err == nil {
+		if _, err := meta.InstallationID(); err == nil {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
@@ -37,13 +37,13 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator, collecto
 			return
 		}
 
-		installationID, metadata, err := auth.WriteInitialMetadata(authService)
+		metadata, err := meta.Write()
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 
-		collector.SetInstallationID(installationID)
+		collector.SetInstallationID(metadata["installation_id"])
 		collector.CollectMetadata(metadata)
 		collector.CollectEvent("global", "init")
 

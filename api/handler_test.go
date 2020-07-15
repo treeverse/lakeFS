@@ -22,6 +22,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -75,22 +76,25 @@ func (m *mockCollector) CollectEvent(_, _ string) {}
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
+
 	cataloger := catalog.NewCataloger(conn)
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")))
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
+		Enabled: false,
+	})
+	meta := auth.NewDBMetadataManager("dev", conn)
+	retention := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
-	server := api.NewServer(
+	handler := api.NewHandler(
 		cataloger,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
+		retention,
 		migrator,
 		logging.Default(),
 	)
 
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatal(err)
-	}
 	return handler, &dependencies{
 		blocks:    blockAdapter,
 		auth:      authService,

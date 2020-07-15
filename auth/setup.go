@@ -105,6 +105,32 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		},
 		{
 			CreatedAt:   ts,
+			DisplayName: "RepoManagmentFullAccess",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"retention:*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
+			},
+		},
+		{
+			CreatedAt:   ts,
+			DisplayName: "RepoManagementReadAll",
+			Statement: model.Statements{
+				{
+					Action: []string{
+						"retention:Get*",
+					},
+					Resource: permissions.All,
+					Effect:   model.StatementEffectAllow,
+				},
+			},
+		},
+		{
+			CreatedAt:   ts,
 			DisplayName: "AuthFullAccess",
 			Statement: model.Statements{
 				{
@@ -137,15 +163,15 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess"})
+	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagmentFullAccess"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials"})
+	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}
-	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials"})
+	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials", "RepoManagementReadAll"})
 	if err != nil {
 		return err
 	}

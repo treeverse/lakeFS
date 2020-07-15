@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
+	"github.com/treeverse/lakefs/api/gen/client/retention"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -80,7 +81,10 @@ type RepositoryClient interface {
 
 	DiffBranch(ctx context.Context, repository, branch string) ([]*models.Diff, error)
 
+	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
+	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
 	Symlink(ctx context.Context, repoId, ref, path string) (string, error)
+
 }
 
 type Client interface {
@@ -567,7 +571,6 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*mode
 	}
 	return diff.GetPayload().Results, nil
 }
-
 func (c *client) Symlink(ctx context.Context, repoId, branch, path string) (string, error) {
 	resp, err := c.remote.Metadata.CreateSymlink(&metadata.CreateSymlinkParams{
 		Location:   swag.String(path),
@@ -580,6 +583,26 @@ func (c *client) Symlink(ctx context.Context, repoId, branch, path string) (stri
 	}
 	return resp.GetPayload(), nil
 }
+func (c *client) GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error) {
+	policy, err := c.remote.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
+		Repository: repository,
+		Context:    ctx,
+	}, c.auth)
+	if err != nil {
+		return nil, err
+	}
+	return policy.GetPayload(), nil
+}
+
+func (c *client) UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error {
+	_, err := c.remote.Retention.UpdateRetentionPolicy(&retention.UpdateRetentionPolicyParams{
+		Repository: repository,
+		Policy:     policy,
+		Context:    ctx,
+	}, c.auth)
+	return err
+}
+
 func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.StatObject(&objects.StatObjectParams{
 		Ref:        ref,

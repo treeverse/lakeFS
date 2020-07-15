@@ -22,7 +22,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 		return nil, err
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, ref.Branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
 			return nil, err
 		}

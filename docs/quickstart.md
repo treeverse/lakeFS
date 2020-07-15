@@ -38,11 +38,8 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
    services:
      lakefs:
        image: "treeverse/lakefs:latest"
-       ports:
-         - "8000:8000"
-         - "8001:8001"
-       links:
-         - postgres
+       ports: ["8000:8000"]
+       links: ["postgres"]
        environment:
          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
          LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
@@ -62,7 +59,7 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
    $ docker-compose up
    ```
 
-1. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
+1. Open [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
 
 ### Manual Installation 
@@ -106,7 +103,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 ## Setting up a Repository
 
-1. Open [http://localhost:8001/setup](http://localhost:8001/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
+1. Open [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
    ![Setup](assets/img/setup.png)
 
@@ -124,8 +121,8 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    ![Create Repository](assets/img/repo_create.png)
 
    A [repository](index.md#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](what_is_lakefs.html#branching-model))
-   Since we're using the in-memory block adapter, the value used for `Storage Namespace` is meaningless.
-   For a real deployment that uses S3 as a block adapter, this would be a bucket name. 
+   Since we're using the `local` block adapter, the value used for `Storage Namespace` should be a static `local://`.
+   For a real deployment that uses S3 as a block adapter, this would be a bucket name with optional prefix, i.e. `s3://my-bucket/prefix`. 
    {: .note .note-info }
 
 
@@ -185,7 +182,7 @@ Here's how to get started with the CLI:
    Config file /home/janedoe/.lakectl.yaml will be used
    Access key ID: AKIAJNYOQZSWBSSXURPQ
    Secret access key: ****************************************
-   Server endpoint URL: http://localhost:8001/api/v1
+   Server endpoint URL: http://localhost:8000/api/v1
    ```
 
 1. Now that we've configured it, let's run a few sample commands:

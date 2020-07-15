@@ -14,7 +14,7 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch stri
 		return nil, err
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
