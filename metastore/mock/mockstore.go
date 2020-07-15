@@ -99,7 +99,7 @@ func (m MockStore) GetPartition(db string, table string, vals []string) (*MockOb
 func (m MockStore) GetPartitions(dbName string, tableName string) []*MockObject {
 	var res []*MockObject
 	for key, object := range m.partitionMap {
-		if strings.HasPrefix(key, getKey(dbName, tableName)) {
+		if strings.HasPrefix(key, getKey(dbName, tableName)) && object != nil {
 			res = append(res, object)
 		}
 	}
