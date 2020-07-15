@@ -68,7 +68,7 @@ func (i *Inventory) Objects(ctx context.Context, sorted bool) (objects []block.I
 			return
 		}
 		for _, row := range currentRows {
-			if !row.IsDeleteMarker && row.IsLatest {
+			if !*row.IsDeleteMarker && *row.IsLatest {
 				row.PhysicalAddress = "s3://" + row.Bucket + "/" + row.Key
 				objects = append(objects, row)
 			}

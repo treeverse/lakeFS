@@ -34,14 +34,14 @@ func CalcDiff(leftInv []block.InventoryObject, rightInv []block.InventoryObject)
 		if rightIdx < len(rightInv) {
 			rightRow = &rightInv[rightIdx]
 		}
-		if leftRow != nil && rightRow == nil || CompareKeys(leftRow, rightRow) {
+		if leftRow != nil && (rightRow == nil || CompareKeys(leftRow, rightRow)) {
 			res.Deleted = append(res.Deleted, *leftRow)
 			leftIdx++
 		} else if leftRow == nil || CompareKeys(rightRow, leftRow) {
 			res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			rightIdx++
 		} else if leftRow.Key == rightRow.Key {
-			if leftRow.Checksum != rightRow.Checksum {
+			if *leftRow.Checksum != *rightRow.Checksum {
 				res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			}
 			leftIdx++
