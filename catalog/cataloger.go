@@ -45,8 +45,10 @@ type DedupParams struct {
 type ExpireResult struct {
 	Repository   string
 	Branch       string
+	BranchId     int64 `db:"branch_id"`
 	Path         string
 	PhysicalPath string `db:"physical_address"`
+	MinCommit    int64  `db:"min_commit"`
 }
 
 type RepositoryCataloger interface {
@@ -78,7 +80,10 @@ type EntryCataloger interface {
 	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-	ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan ExpireResult) error
+	ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan *ExpireResult) error
+	// MarkExpired marks all entries identified by expire as expired.  It is a batch
+	// operation.
+	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
 }
 
 type MultipartUpdateCataloger interface {

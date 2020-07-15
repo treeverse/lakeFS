@@ -95,7 +95,7 @@ func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention
 		ruleSelectors = append(ruleSelectors, selector)
 	}
 
-	query := psql.Select("physical_address", "branches.name AS branch", "path").
+	query := psql.Select("physical_address", "branches.name AS branch", "branch_id", "path", "min_commit").
 		From("entries").
 		Where(sq.And{repositorySelector, sq.Or(ruleSelectors)})
 	query = query.Join("branches ON entries.branch_id = branches.id").
@@ -103,7 +103,9 @@ func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention
 	return query
 }
 
-func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan ExpireResult) error {
+// ScanExpired writes all objects to expire on repositoryName according to policy to channel
+// out.
+func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan *ExpireResult) error {
 	defer func() {
 		close(out)
 	}()
@@ -134,11 +136,12 @@ func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, poli
 			}
 			var res ExpireResult
 			err = rows.StructScan(&res)
+
 			if err != nil {
 				logger.WithError(err).Error("bad row (keep going)")
 			}
 			res.Repository = repositoryName
-			out <- res
+			out <- &res
 		}
 		return nil, nil
 	},
@@ -148,4 +151,56 @@ func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, poli
 		db.WithIsolationLevel(sql.LevelReadCommitted),
 	)
 	return err
+}
+
+func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
+	logger := logging.Default().WithContext(ctx).WithFields(logging.Fields{"repositoryName": repositoryName, "numRecords": len(expireResults)})
+
+	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		_, err := tx.Exec(`CREATE TEMPORARY TABLE temp_expiry (
+				path text NOT NULL, branch_id bigint NOT NULL, min_commit bigint NOT NULL)
+			ON COMMIT DROP`)
+		if err != nil {
+			return nil, fmt.Errorf("CREATE TEMPORARY TABLE: %s", err)
+		}
+
+		// TODO(ariels): Use COPY.  Hard because requires bailing out of sql(x) for the
+		//     entire transaction.
+		insert := psql.Insert("temp_expiry").Columns("path", "branch_id", "min_commit")
+		for _, expire := range expireResults {
+			insert = insert.Values(expire.Path, expire.BranchId, expire.MinCommit)
+		}
+		insertString, args, err := insert.ToSql()
+		if err != nil {
+			return nil, fmt.Errorf("generating INSERT SQL: %s", err)
+		}
+		result, err := tx.Exec(insertString, args...)
+		if err != nil {
+			return nil, fmt.Errorf("executing INSERT: %s", err)
+		}
+
+		result, err = tx.Exec(`UPDATE entries SET is_expired = true
+		    WHERE (path, branch_id, min_commit) IN (SELECT path, branch_id, min_commit FROM temp_expiry)
+		    `)
+		if err != nil {
+			return nil, fmt.Errorf("UPDATE entries to expire: %s", err)
+		}
+		count, err := result.RowsAffected()
+		if err != nil {
+			return nil, fmt.Errorf("getting number of updated rows: %s", err)
+		}
+		return int(count), nil
+	})
+	if err != nil {
+		return err
+	}
+	count, ok := result.(int)
+	if !ok {
+		return fmt.Errorf("bad result %#v from UPDATE count", result)
+	}
+	if count != len(expireResults) {
+		return fmt.Errorf("tried to expire %d entries but expired only %d entries", len(expireResults), count)
+	}
+	logger.WithField("count", count).Info("expired records")
+	return nil
 }
