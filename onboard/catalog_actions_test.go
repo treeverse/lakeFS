@@ -2,9 +2,10 @@ package onboard_test
 
 import (
 	"context"
+	"testing"
+
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/onboard"
-	"testing"
 )
 
 type mockCataloger struct {
@@ -30,7 +31,10 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 
 func TestCreateAndDeleteRows(t *testing.T) {
 	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", 5)
-	catalogActions, _ := c.(*onboard.CatalogRepoActions)
+	catalogActions, ok := c.(*onboard.CatalogRepoActions)
+	if !ok {
+		t.Fatal("NewCatalogActions return value implement doesn't match")
+	}
 	testdata := []struct {
 		AddedRows           []string
 		DeletedRows         []string
