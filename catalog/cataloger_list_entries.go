@@ -27,7 +27,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 		limit = ListEntriesMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, ref.Branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
 			return nil, err
 		}

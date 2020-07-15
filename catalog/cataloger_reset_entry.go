@@ -15,7 +15,7 @@ func (c *cataloger) ResetEntry(ctx context.Context, repository, branch string, p
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}

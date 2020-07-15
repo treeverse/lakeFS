@@ -20,11 +20,11 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		return nil, err
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeNone)
+		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
 		if err != nil {
 			return nil, fmt.Errorf("left branch: %w", err)
 		}
-		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeNone)
+		rightID, err := c.getBranchIDCache(tx, repository, rightBranch)
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}

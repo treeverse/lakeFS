@@ -15,9 +15,7 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 		return err
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := c.cache.BranchID(repository, branch, func(repository string, branch string) (int64, error) {
-			return getBranchID(tx, repository, branch, LockTypeNone)
-		})
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}

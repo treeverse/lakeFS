@@ -110,7 +110,7 @@ type dedupRequest struct {
 	DedupResultCh    chan *DedupResult
 }
 
-type CatalogerCacheConfig struct {
+type CacheConfig struct {
 	Enabled bool
 	Size    int
 	Expiry  time.Duration
@@ -124,13 +124,13 @@ type cataloger struct {
 	db          db.Database
 	dedupCh     chan *dedupRequest
 	wg          sync.WaitGroup
-	cacheConfig *CatalogerCacheConfig
+	cacheConfig *CacheConfig
 	cache       Cache
 }
 
 type CatalogerOption func(*cataloger)
 
-var defaultCatalogerCacheConfig = &CatalogerCacheConfig{
+var defaultCatalogerCacheConfig = &CacheConfig{
 	Enabled: true,
 	Size:    1024,
 	Expiry:  20 * time.Second,
@@ -143,7 +143,7 @@ func WithClock(newClock clock.Clock) CatalogerOption {
 	}
 }
 
-func WithCacheConfig(config *CatalogerCacheConfig) CatalogerOption {
+func WithCacheConfig(config *CacheConfig) CatalogerOption {
 	return func(c *cataloger) {
 		c.cacheConfig = config
 	}
@@ -225,9 +225,7 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		addresses := make([]string, len(batch))
 		for i, r := range batch {
-			repoID, err := c.cache.RepositoryID(r.Repository, func(repository string) (int, error) {
-				return getRepositoryID(tx, repository)
-			})
+			repoID, err := c.getRepositoryIDCache(tx, r.Repository)
 			if err != nil {
 				return nil, err
 			}

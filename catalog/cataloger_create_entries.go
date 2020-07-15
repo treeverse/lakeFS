@@ -25,7 +25,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 	}
 	// create entries
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}

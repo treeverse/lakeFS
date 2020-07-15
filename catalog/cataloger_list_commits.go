@@ -24,7 +24,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		limit = ListCommitsMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}

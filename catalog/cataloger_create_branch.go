@@ -20,7 +20,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepositoryID(tx, repository)
+		repoID, err := c.getRepositoryIDCache(tx, repository)
 		if err != nil {
 			return nil, err
 		}

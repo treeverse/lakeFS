@@ -28,7 +28,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	branchName := ref.Branch
 	commitID := ref.CommitID
 	markers, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branchName, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, branchName)
 		if err != nil {
 			return nil, fmt.Errorf(" get branch ID failed: %w", err)
 		}
