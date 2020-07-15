@@ -177,7 +177,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
 	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
-	api.MetadataCreateSymlinkHandler = a.MetadataCreateSymlinkHandler()
+	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
 
 }
 
@@ -879,10 +879,10 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	})
 }
 
-func (a *Handler) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
+func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
 	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *models.User) middleware.Responder {
 
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Branch),
@@ -895,7 +895,7 @@ func (a *Handler) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
 		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -905,7 +905,7 @@ func (a *Handler) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
 
 		// list entries
 		entries, _, err := cataloger.ListEntries(
-			a.Context(),
+			c.Context(),
 			params.Repository,
 			params.Branch,
 			swag.StringValue(params.Location),

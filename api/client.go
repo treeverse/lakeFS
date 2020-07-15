@@ -84,7 +84,6 @@ type RepositoryClient interface {
 	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
 	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
 	Symlink(ctx context.Context, repoId, ref, path string) (string, error)
-
 }
 
 type Client interface {
