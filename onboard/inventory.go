@@ -1,10 +1,11 @@
 package onboard
 
 import (
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 	"strconv"
 	"time"
+
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 )
 
 func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool {
@@ -41,7 +42,9 @@ func CalcDiff(leftInv []block.InventoryObject, rightInv []block.InventoryObject)
 			res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			rightIdx++
 		} else if leftRow.Key == rightRow.Key {
-			if *leftRow.Checksum != *rightRow.Checksum {
+			if (leftRow.Checksum != nil && rightRow.Checksum == nil) ||
+				(leftRow.Checksum == nil && rightRow.Checksum != nil) ||
+				(leftRow.Checksum != nil && rightRow.Checksum != nil && *leftRow.Checksum != *rightRow.Checksum) {
 				res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			}
 			leftIdx++
