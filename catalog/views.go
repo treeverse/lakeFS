@@ -6,7 +6,10 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-const DirectoryTerminationChar = string(rune(1_000_000))
+const (
+	DirectoryTerminationValue = 1_000_000
+	DirectoryTermination      = string(rune(DirectoryTerminationValue))
+)
 
 func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
@@ -200,10 +203,10 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 
 func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
 	if len(after) > 0 {
-		after += DirectoryTerminationChar
+		after += DirectoryTermination
 	}
 	prefixLen := len(prefix) + 1
-	endOfPrefixRange := prefix + DirectoryTerminationChar
+	endOfPrefixRange := prefix + DirectoryTermination
 	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
 	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
 	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")

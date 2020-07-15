@@ -61,8 +61,7 @@ func TestCataloger_CreateBranch(t *testing.T) {
 
 func TestCataloger_CreateBranch_OfBranch(t *testing.T) {
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseURI, "lakefs_catalog")
-	c := NewCataloger(cdb)
+	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repository", "branch0")
 	for i := 1; i < 3; i++ {
 		branchName := fmt.Sprintf("branch%d", i)

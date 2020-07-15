@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -15,8 +16,7 @@ import (
 
 const BlockstoreType = "transient"
 
-type Adapter struct {
-}
+type Adapter struct{}
 
 func New() *Adapter {
 	return &Adapter{}
@@ -91,4 +91,12 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	code := h.Sum(nil)
 	codeHex := hex.EncodeToString(code)
 	return &codeHex, dataSize, nil
+}
+
+func (a *Adapter) ValidateConfiguration(_ string) error {
+	return nil
+}
+
+func (a *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, errors.New("inventory feature not implemented for transient storage adapter")
 }

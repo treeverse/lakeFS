@@ -8,17 +8,16 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog"
-
-	"github.com/treeverse/lakefs/config"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -42,33 +41,39 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
-	cdb, cdbURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog)
+	conn, _ := testutil.GetDB(t, databaseUri)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
+	cataloger := catalog.NewCataloger(conn)
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
+	retention := retention.NewService(conn)
+	meta := auth.NewDBMetadataManager("dev", conn)
+	migrator := db.NewDatabaseMigrator(databaseUri)
 
-	cataloger := catalog.NewCataloger(cdb)
-
-	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaCatalog, cdbURI).
-		AddDB(config.SchemaAuth, adbURI)
-	server := api.NewServer(
+	handler := api.NewHandler(
 		cataloger,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
+		retention,
 		migrator,
+		logging.Default(),
 	)
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatalf("failed to get server handler: %s", err)
-	}
+
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
@@ -76,7 +81,7 @@ func TestLocalLoad(t *testing.T) {
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
 	}
-	credentials, err := api.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 
 	testConfig := Config{

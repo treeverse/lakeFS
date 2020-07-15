@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -237,4 +238,12 @@ func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	}
 	sort.Strings(names)
 	return names, nil
+}
+
+func (l *Adapter) ValidateConfiguration(_ string) error {
+	return nil
+}
+
+func (l *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, errors.New("inventory feature not implemented for local storage adapter")
 }

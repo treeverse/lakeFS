@@ -71,3 +71,12 @@ func TestCataloger_GetRepository(t *testing.T) {
 		})
 	}
 }
+
+func BenchmarkCataloger_GetRepository(b *testing.B) {
+	ctx := context.Background()
+	c := testCataloger(b)
+	repo := testCatalogerRepo(b, ctx, c, "repo", "master")
+	for i := 0; i < b.N; i++ {
+		_, _ = c.GetRepository(ctx, repo)
+	}
+}

@@ -5,10 +5,11 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/stats"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/permissions"
 )
 
 const SetupLakeFSRoute = "/setup_lakefs"
@@ -17,15 +18,15 @@ const SetupLakeFSRoute = "/setup_lakefs"
 //   returns 200 (ok) on creation with key/secret - content type json
 //   returns 409 (conflict) when user is found
 //   return 500 (internal error) if error during operation
-func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Handler {
+func setupLakeFSHandler(authService auth.Service, meta auth.MetadataManager, migrator db.Migrator, collector stats.Collector) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if r.Method != http.MethodPost {
 			http.Error(w, http.StatusText(http.StatusMethodNotAllowed), http.StatusMethodNotAllowed)
 			return
 		}
 
-		// skip migrate in case we have a user
-		if _, err := authService.GetFirstUser(); err == nil {
+		// skip migrate in case we have an active installation
+		if _, err := meta.InstallationID(); err == nil {
 			w.WriteHeader(http.StatusConflict)
 			return
 		}
@@ -35,6 +36,16 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
+
+		metadata, err := meta.Write()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		collector.SetInstallationID(metadata["installation_id"])
+		collector.CollectMetadata(metadata)
+		collector.CollectEvent("global", "init")
 
 		var req model.User
 		err = json.NewDecoder(r.Body).Decode(&req)
@@ -50,7 +61,7 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 			CreatedAt:   time.Now(),
 			DisplayName: req.DisplayName,
 		}
-		cred, err := SetupAdminUser(authService, user)
+		cred, err := auth.SetupAdminUser(authService, user)
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
@@ -68,175 +79,4 @@ func setupLakeFSHandler(authService auth.Service, migrator db.Migrator) http.Han
 		w.Header().Set("Content-Type", "application/json")
 		_, _ = w.Write(respJSON)
 	})
-}
-
-func createGroups(authService auth.Service, groups []*model.Group) error {
-	for _, group := range groups {
-		err := authService.CreateGroup(group)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func createPolicies(authService auth.Service, policies []*model.Policy) error {
-	for _, policy := range policies {
-		err := authService.WritePolicy(policy)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func attachPolicies(authService auth.Service, groupID string, policyIDs []string) error {
-	for _, policyID := range policyIDs {
-		err := authService.AttachPolicyToGroup(policyID, groupID)
-		if err != nil {
-			return err
-		}
-	}
-	return nil
-}
-
-func SetupBaseGroups(authService auth.Service, ts time.Time) error {
-	err := createGroups(authService, []*model.Group{
-		{CreatedAt: ts, DisplayName: "Admins"},
-		{CreatedAt: ts, DisplayName: "SuperUsers"},
-		{CreatedAt: ts, DisplayName: "Developers"},
-		{CreatedAt: ts, DisplayName: "Viewers"},
-	})
-	if err != nil {
-		return err
-	}
-
-	err = createPolicies(authService, []*model.Policy{
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSFullAccess",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSReadWriteAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						permissions.ListRepositoriesAction,
-						permissions.ReadRepositoryAction,
-						permissions.ReadCommitAction,
-						permissions.ListBranchesAction,
-						permissions.ListObjectsAction,
-						permissions.ReadObjectAction,
-						permissions.WriteObjectAction,
-						permissions.DeleteObjectAction,
-						permissions.RevertBranchAction,
-						permissions.ReadBranchAction,
-						permissions.CreateBranchAction,
-						permissions.DeleteBranchAction,
-						permissions.CreateCommitAction,
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "FSReadAll",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"fs:List*",
-						"fs:Read*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "AuthFullAccess",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						"auth:*",
-					},
-					Resource: permissions.All,
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-		{
-			CreatedAt:   ts,
-			DisplayName: "AuthManageOwnCredentials",
-			Statement: model.Statements{
-				{
-					Action: []string{
-						permissions.CreateCredentialsAction,
-						permissions.DeleteCredentialsAction,
-						permissions.ListCredentialsAction,
-						permissions.ReadCredentialsAction,
-					},
-					Resource: permissions.UserArn("${user}"),
-					Effect:   model.StatementEffectAllow,
-				},
-			},
-		},
-	})
-	if err != nil {
-		return err
-	}
-
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess"})
-	if err != nil {
-		return err
-	}
-	err = attachPolicies(authService, "SuperUsers", []string{"FSFullAccess", "AuthManageOwnCredentials"})
-	if err != nil {
-		return err
-	}
-	err = attachPolicies(authService, "Developers", []string{"FSReadWriteAll", "AuthManageOwnCredentials"})
-	if err != nil {
-		return err
-	}
-	err = attachPolicies(authService, "Viewers", []string{"FSReadAll", "AuthManageOwnCredentials"})
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func SetupAdminUser(authService auth.Service, user *model.User) (*model.Credential, error) {
-	now := time.Now()
-
-	// Setup the basic groups and policies
-	err := SetupBaseGroups(authService, now)
-	if err != nil {
-		return nil, err
-	}
-
-	// create admin user
-	err = authService.CreateUser(user)
-	if err != nil {
-		return nil, err
-	}
-	err = authService.AddUserToGroup(user.DisplayName, "Admins")
-	if err != nil {
-		return nil, err
-	}
-
-	// Generate and return a key pair
-	return authService.CreateCredentials(user.DisplayName)
 }

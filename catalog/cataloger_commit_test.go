@@ -21,7 +21,8 @@ func TestCataloger_Commit(t *testing.T) {
 	now := time.Now().Round(time.Minute)
 	fakeClock := clock.NewMock()
 	fakeClock.Set(now)
-	c := testCatalogerWithClock(t, fakeClock)
+	c := testCataloger(t, WithClock(fakeClock))
+	defer func() { _ = c.Close() }()
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 	meta := Metadata{"key1": "val1", "key2": "val2"}
 	for i := 0; i < 3; i++ {

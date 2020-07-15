@@ -98,7 +98,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 	// add commit record
 	if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-		rightID, commitID, committer, msg, c.Clock.Now(), metadata, relation, leftID, sourceCommitID); err != nil {
+		rightID, commitID, committer, msg, c.clock.Now(), metadata, relation, leftID, sourceCommitID); err != nil {
 		return 0, err
 	}
 	return commitID, nil

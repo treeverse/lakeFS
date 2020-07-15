@@ -14,14 +14,12 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/ory/dockertest/v3"
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -36,6 +34,9 @@ const (
 )
 
 func TestGatewayRecording(t *testing.T) {
+	if !*integrationTest {
+		t.Skip("Not running integration tests")
+	}
 	testData := []string{
 		"s3://lakefs-recordings/presto.zip",
 		"s3://lakefs-recordings/aws.zip",
@@ -89,7 +90,15 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(class, action string) {
+func (m *mockCollector) SetInstallationID(installationID string) {
+
+}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
+
+}
+
+func (m *mockCollector) CollectEvent(class, action string) {
 
 }
 
@@ -101,8 +110,8 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		T:          t,
 	}
 
-	cdb, _ := testutil.GetDB(t, databaseUri, "lakefs_catalog")
-	cataloger := catalog.NewCataloger(cdb)
+	conn, _ := testutil.GetDB(t, databaseUri)
+	cataloger := catalog.NewCataloger(conn)
 
 	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
 
@@ -110,13 +119,13 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 
 	ctx := context.Background()
 	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
-	server := gateway.NewServer(authService.Region,
+	handler := gateway.NewHandler(authService.Region,
 		cataloger,
 		blockAdapter,
 		authService,
-		authService.ListenAddress, authService.BareDomain, &mockCollector{})
+		authService.BareDomain, &mockCollector{})
 
-	return server.Server.Handler, &dependencies{
+	return handler, &dependencies{
 		blocks:    blockAdapter,
 		auth:      authService,
 		cataloger: cataloger,

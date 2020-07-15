@@ -1,35 +1,38 @@
 package upload
 
 import (
-	"context"
 	"encoding/hex"
 	"io"
-
-	"github.com/treeverse/lakefs/catalog"
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 )
 
-func WriteBlob(ctx context.Context, deduper catalog.Deduper, repository, bucketName string, body io.Reader, adapter block.Adapter, contentLength int64, opts block.PutOpts) (string, string, int64, error) {
+type Blob struct {
+	PhysicalAddress string
+	Checksum        string
+	DedupID         string
+	Size            int64
+}
+
+func WriteBlob(adapter block.Adapter, bucketName string, body io.Reader, contentLength int64, opts block.PutOpts) (*Blob, error) {
 	// handle the upload itself
 	hashReader := block.NewHashingReader(body, block.HashFunctionMD5, block.HashFunctionSHA256)
-	UUIDbytes := [16]byte(uuid.New())
-	objName := hex.EncodeToString(UUIDbytes[:])
-	err := adapter.Put(block.ObjectPointer{StorageNamespace: bucketName, Identifier: objName}, contentLength, hashReader, opts)
+	uid := uuid.New()
+	address := hex.EncodeToString(uid[:])
+	err := adapter.Put(block.ObjectPointer{
+		StorageNamespace: bucketName,
+		Identifier:       address,
+	}, contentLength, hashReader, opts)
 	if err != nil {
-		return "", "", -1, err
+		return nil, err
 	}
-	dedupID := hex.EncodeToString(hashReader.Sha256.Sum(nil))
 	checksum := hex.EncodeToString(hashReader.Md5.Sum(nil))
-	existingName, err := deduper.Dedup(ctx, repository, dedupID, objName)
-	if err != nil {
-		return "", "", -1, err
-	}
-	if existingName != objName {
-		// object already exists
-		_ = adapter.Remove(block.ObjectPointer{StorageNamespace: bucketName, Identifier: objName})
-		objName = existingName
-	}
-	return checksum, objName, hashReader.CopiedSize, nil
+	dedupID := hex.EncodeToString(hashReader.Sha256.Sum(nil))
+	return &Blob{
+		PhysicalAddress: address,
+		Checksum:        checksum,
+		DedupID:         dedupID,
+		Size:            hashReader.CopiedSize,
+	}, nil
 }

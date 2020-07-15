@@ -63,11 +63,11 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	var maxSonMerge int64
 	sonLineage, err := getLineage(tx, sonID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("Son lineage failed: %w", err)
+		return nil, fmt.Errorf("son lineage failed: %w", err)
 	}
 	fatherLineage, err := getLineage(tx, fatherID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("Father lineage failed: %w", err)
+		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
 	maxSonQuery, args := sq.Select("MAX(commit_id) as max_son_commit").
 		From("commits").
@@ -75,7 +75,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 		PlaceholderFormat(sq.Dollar).MustSql()
 	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
 	if err != nil {
-		return nil, fmt.Errorf("Failed getting son last commit number : %w", err)
+		return nil, fmt.Errorf("get son last commit failed: %w", err)
 	}
 	query := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage)
 	fatherSQL := sq.DebugSqlizer(query)

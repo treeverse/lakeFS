@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
@@ -72,6 +74,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	var size int64
 	o.Incr("complete_mpu")
 	uploadID := o.Request.URL.Query().Get(CompleteMultipartUploadQueryParam)
+	o.AddLogFields(logging.Fields{"upload_id": uploadID})
 	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read multipart record")
@@ -79,6 +82,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		return
 	}
 	objName := multiPart.PhysicalAddress
+	o.AddLogFields(logging.Fields{"physical_address": objName})
 	xmlMultipartComplete, err := ioutil.ReadAll(o.Request.Body)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read request body")
@@ -100,28 +104,14 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	}
 	ch := trimQuotes(*etag)
 	checksum := strings.Split(ch, "-")[0]
-	existingName, err := o.Cataloger.Dedup(o.Context(), o.Repository.Name, checksum, multiPart.PhysicalAddress)
-	if err != nil {
-		o.Log().WithError(err).Error("failed checking for duplicate content")
-		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
-		return
-	}
-
-	if existingName != objName { // object already exist
-		err := o.BlockStore.Remove(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName})
-		if err != nil {
-			o.Log().WithError(err).WithField("identifier", objName).Error("failed to remove object")
-		}
-		objName = existingName
-	}
-	err = o.finishUpload(checksum, objName, size)
+	err = o.finishUpload(o.BlockStore, o.Repository.StorageNamespace, checksum, objName, size)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	err = o.Cataloger.DeleteMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
-		o.Log().WithError(err).Warn("could not delete  multipart record")
+		o.Log().WithError(err).Warn("could not delete multipart record")
 	}
 
 	// TODO: pass scheme instead of hard-coding http instead of https

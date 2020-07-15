@@ -3,6 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -16,13 +17,13 @@ import (
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 )
 
 const (
 	gracefulShutdownTimeout = 30 * time.Second
-
-	defaultInstallationID = "anon@example.com"
 
 	serviceAPIServer = "api"
 	serviceS3Gateway = "s3gateway"
@@ -39,108 +40,102 @@ var runCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
-		services, err := cmd.Flags().GetStringArray("services")
-		if err != nil {
-			fmt.Printf("Failed to get value for 'services': %s\n", err)
-			os.Exit(1)
-		}
 
 		// validate service names and turn on the right flags
-		var runS3Gateway bool
-		var runAPIService bool
-		for _, service := range services {
-			switch service {
-			case serviceS3Gateway:
-				runS3Gateway = true
-			case serviceAPIServer:
-				runAPIService = true
-			default:
-				fmt.Printf("Unknown service: %s\n", service)
-				os.Exit(1)
-			}
-		}
-		if !runS3Gateway && !runAPIService {
-			fmt.Printf("No service to run\n")
-			os.Exit(1)
-		}
-
-		cdb := cfg.ConnectDatabase(config.DBKeyCatalog)
-		adb := cfg.ConnectDatabase(config.DBKeyAuth)
+		dbConnString := cfg.GetDatabaseURI()
+		dbPool := cfg.BuildDatabaseConnection()
 		defer func() {
-			_ = adb.Close()
-			_ = cdb.Close()
+			_ = dbPool.Close()
 		}()
-		migrator := db.NewDatabaseMigrator()
-		for name, key := range config.SchemaDBKeys {
-			migrator.AddDB(name, cfg.GetDatabaseURI(key))
-		}
+		retention := retention.NewService(dbPool)
+		migrator := db.NewDatabaseMigrator(dbConnString)
 
 		// init catalog
-		cataloger := catalog.NewCataloger(cdb)
+		cataloger := catalog.NewCataloger(dbPool)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
 
 		// init authentication
-		authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()))
+		authService := auth.NewDBAuthService(
+			dbPool,
+			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
+			cfg.GetAuthCacheConfig())
 
-		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(getInstallationID(authService))
+		meta := auth.NewDBMetadataManager(config.Version, dbPool)
+
+		installationID, err := meta.InstallationID()
+		if err != nil {
+			installationID = "" // no installation ID is available
+		}
+		stats := cfg.BuildStats(installationID)
 
 		// start API server
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
 		signal.Notify(quit, os.Interrupt)
 
-		var apiServer *api.Server
-		if runAPIService {
-			apiServer = api.NewServer(cataloger, blockStore, authService, stats, migrator)
-			go func() {
-				if err := apiServer.Listen(cfg.GetAPIListenAddress()); err != nil && err != http.ErrServerClosed {
-					fmt.Printf("API server failed to listen on %s: %v\n", cfg.GetAPIListenAddress(), err)
-					os.Exit(1)
-				}
-			}()
-		}
+		apiHandler := api.NewHandler(
+			cataloger,
+			blockStore,
+			authService,
+			meta,
+			stats,
+			retention,
+			migrator,
+			logger.WithField("service", "api_gateway"))
 
-		var gatewayServer *gateway.Server
-		if runS3Gateway {
-			// init gateway server
-			gatewayServer = gateway.NewServer(
-				cfg.GetS3GatewayRegion(),
-				cataloger,
-				blockStore,
-				authService,
-				cfg.GetS3GatewayListenAddress(),
-				cfg.GetS3GatewayDomainName(),
-				stats,
-			)
-		}
+		// init gateway server
+		s3gatewayHandler := gateway.NewHandler(
+			cfg.GetS3GatewayRegion(),
+			cataloger,
+			blockStore,
+			authService,
+			cfg.GetS3GatewayDomainName(),
+			stats)
 
+		ctx, cancelFn := context.WithCancel(context.Background())
 		go stats.Run(ctx)
-		stats.Collect("global", "run")
+		stats.CollectEvent("global", "run")
 
-		if gatewayServer != nil {
-			go func() {
-				if err := gatewayServer.Listen(); err != nil && err != http.ErrServerClosed {
-					fmt.Printf("Gateway server failed to listen on %s: %v\n", cfg.GetS3GatewayListenAddress(), err)
-					os.Exit(1)
-				}
-			}()
+		// stagger a bit and update metadata
+		go func() {
+			// avoid a thundering herd in case we have many lakeFS instances starting together
+			const maxSplay = 10 * time.Second
+			randSource := rand.New(rand.NewSource(time.Now().UnixNano()))
+			time.Sleep(time.Duration(randSource.Intn(int(maxSplay))))
+
+			metadata, err := meta.Write()
+			if err != nil {
+				logger.WithError(err).Trace("failed to collect account metadata")
+				return
+			}
+			stats.CollectMetadata(metadata)
+		}()
+
+		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
+		server := &http.Server{
+			Addr: cfg.GetListenAddress(),
+			Handler: httputil.HostMux(
+				httputil.HostHandler(apiHandler).Default(), // api as default handler
+				httputil.HostHandler(s3gatewayHandler, // s3 gateway for its bare domain and sub-domains of that
+					httputil.Exact(cfg.GetS3GatewayDomainName()),
+					httputil.SubdomainsOf(cfg.GetS3GatewayDomainName())),
+			),
 		}
-		go gracefulShutdown(quit, done, apiServer, gatewayServer)
+
+		go func() {
+			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
+				os.Exit(1)
+			}
+		}()
+
+		go gracefulShutdown(quit, done, server)
 		<-done
 		cancelFn()
 		<-stats.Done()
 	},
-}
-
-func getInstallationID(authService auth.Service) string {
-	user, err := authService.GetFirstUser()
-	if err != nil {
-		return defaultInstallationID
-	}
-	return user.DisplayName
 }
 
 func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
@@ -173,5 +168,5 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// runCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	runCmd.Flags().StringArrayP("services", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
+	runCmd.Flags().StringArrayP("service", "s", []string{serviceS3Gateway, serviceAPIServer}, "lakeFS services to run")
 }

@@ -8,7 +8,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// TODO(barak): add delimiter support - return entry and common prefix entries
+const ListEntriesMaxLimit = 10000
 
 func (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
@@ -22,6 +22,10 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 	if err != nil {
 		return nil, false, err
 	}
+
+	if limit < 0 || limit > ListEntriesMaxLimit {
+		limit = ListEntriesMaxLimit
+	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := getBranchID(tx, repository, ref.Branch, LockTypeNone)
 		if err != nil {
@@ -34,16 +38,13 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 		if err != nil {
 			return nil, err
 		}
-		q := psql.
+		sql, args, err := psql.
 			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
 			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
 			Where(sq.And{sq.Like{"path": likePath}, sq.Eq{"is_deleted": false}, sq.Gt{"path": after}}).
-			OrderBy("path")
-		if limit >= 0 {
-			q.Limit(uint64(limit) + 1)
-		}
-
-		sql, args, err := q.ToSql()
+			OrderBy("path").
+			Limit(uint64(limit) + 1).
+			ToSql()
 		if err != nil {
 			return nil, err
 		}

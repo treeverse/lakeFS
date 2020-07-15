@@ -14,19 +14,23 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
-	authentication "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
+	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
+	retentionop "github.com/treeverse/lakefs/api/gen/restapi/operations/retention"
 	"github.com/treeverse/lakefs/auth"
-	authmodel "github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/onboard"
 	"github.com/treeverse/lakefs/permissions"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/upload"
 )
@@ -36,117 +40,143 @@ const (
 	MaxResultsPerPage int64 = 1000
 )
 
-type HandlerContext struct {
+type Dependencies struct {
 	ctx          context.Context
 	Cataloger    catalog.Cataloger
 	Auth         auth.Service
 	BlockAdapter block.Adapter
 	Stats        stats.Collector
+	Retention    retention.Service
+	Dedup        *DedupHandler
+	logger       logging.Logger
 }
 
-func (c *HandlerContext) WithContext(ctx context.Context) *HandlerContext {
-	return &HandlerContext{
+func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
+	return &Dependencies{
 		ctx:          ctx,
-		Cataloger:    c.Cataloger,
-		Auth:         c.Auth, // TODO: pass context
-		BlockAdapter: c.BlockAdapter.WithContext(ctx),
-		Stats:        c.Stats,
+		Cataloger:    d.Cataloger,
+		Auth:         d.Auth,
+		BlockAdapter: d.BlockAdapter.WithContext(ctx),
+		Stats:        d.Stats,
+		Retention:    d.Retention,
+		Dedup:        d.Dedup,
+		logger:       d.logger.WithContext(ctx),
 	}
 }
 
-type Handler struct {
-	context *HandlerContext
+func (d *Dependencies) LogAction(action string) {
+	logging.FromContext(d.ctx).
+		WithField("action", action).
+		WithField("message_type", "action").
+		Debug("performing API action")
+	d.Stats.CollectEvent("api_server", action)
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector) *Handler {
-	return &Handler{
-		context: &HandlerContext{
+type Controller struct {
+	deps *Dependencies
+}
+
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, logger logging.Logger) *Controller {
+	c := &Controller{
+		deps: &Dependencies{
+			ctx:          context.Background(),
 			Cataloger:    cataloger,
 			Auth:         auth,
 			BlockAdapter: blockAdapter,
 			Stats:        stats,
+			Retention:    retention,
+			Dedup:        NewDedupHandler(blockAdapter),
+			logger:       logger,
 		},
 	}
+	c.deps.Dedup.Start()
+	return c
 }
 
-func (a *Handler) ForRequest(r *http.Request) *HandlerContext {
-	return a.context.WithContext(r.Context())
-}
-
-func (a *Handler) Context() context.Context {
-	if a.context.ctx == nil {
-		return context.Background()
+func (c *Controller) Close() error {
+	if c == nil || c.deps == nil {
+		return nil
 	}
-	return a.context.ctx
+	return c.deps.Dedup.Close()
+}
+
+func (c *Controller) Context() context.Context {
+	if c.deps.ctx != nil {
+		return c.deps.ctx
+	}
+	return context.Background()
 }
 
 // Configure attaches our API operations to a generated swagger API stub
 // Adding new handlers requires also adding them here so that the generated server will use them
-func (a *Handler) Configure(api *operations.LakefsAPI) {
+func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	// Register operations here
-	api.AuthGetCurrentUserHandler = a.GetCurrentUserHandler()
-	api.AuthListUsersHandler = a.ListUsersHandler()
-	api.AuthGetUserHandler = a.GetUserHandler()
-	api.AuthCreateUserHandler = a.CreateUserHandler()
-	api.AuthDeleteUserHandler = a.DeleteUserHandler()
-	api.AuthGetGroupHandler = a.GetGroupHandler()
-	api.AuthListGroupsHandler = a.ListGroupsHandler()
-	api.AuthCreateGroupHandler = a.CreateGroupHandler()
-	api.AuthDeleteGroupHandler = a.DeleteGroupHandler()
-	api.AuthListPoliciesHandler = a.ListPoliciesHandler()
-	api.AuthCreatePolicyHandler = a.CreatePolicyHandler()
-	api.AuthGetPolicyHandler = a.GetPolicyHandler()
-	api.AuthDeletePolicyHandler = a.DeletePolicyHandler()
-	api.AuthUpdatePolicyHandler = a.UpdatePolicyHandler()
-	api.AuthListGroupMembersHandler = a.ListGroupMembersHandler()
-	api.AuthAddGroupMembershipHandler = a.AddGroupMembershipHandler()
-	api.AuthDeleteGroupMembershipHandler = a.DeleteGroupMembershipHandler()
-	api.AuthListUserCredentialsHandler = a.ListUserCredentialsHandler()
-	api.AuthCreateCredentialsHandler = a.CreateCredentialsHandler()
-	api.AuthDeleteCredentialsHandler = a.DeleteCredentialsHandler()
-	api.AuthGetCredentialsHandler = a.GetCredentialsHandler()
-	api.AuthListUserGroupsHandler = a.ListUserGroupsHandler()
-	api.AuthListUserPoliciesHandler = a.ListUserPoliciesHandler()
-	api.AuthAttachPolicyToUserHandler = a.AttachPolicyToUserHandler()
-	api.AuthDetachPolicyFromUserHandler = a.DetachPolicyFromUserHandler()
-	api.AuthListGroupPoliciesHandler = a.ListGroupPoliciesHandler()
-	api.AuthAttachPolicyToGroupHandler = a.AttachPolicyToGroupHandler()
-	api.AuthDetachPolicyFromGroupHandler = a.DetachPolicyFromGroupHandler()
+	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
+	api.AuthListUsersHandler = c.ListUsersHandler()
+	api.AuthGetUserHandler = c.GetUserHandler()
+	api.AuthCreateUserHandler = c.CreateUserHandler()
+	api.AuthDeleteUserHandler = c.DeleteUserHandler()
+	api.AuthGetGroupHandler = c.GetGroupHandler()
+	api.AuthListGroupsHandler = c.ListGroupsHandler()
+	api.AuthCreateGroupHandler = c.CreateGroupHandler()
+	api.AuthDeleteGroupHandler = c.DeleteGroupHandler()
+	api.AuthListPoliciesHandler = c.ListPoliciesHandler()
+	api.AuthCreatePolicyHandler = c.CreatePolicyHandler()
+	api.AuthGetPolicyHandler = c.GetPolicyHandler()
+	api.AuthDeletePolicyHandler = c.DeletePolicyHandler()
+	api.AuthUpdatePolicyHandler = c.UpdatePolicyHandler()
+	api.AuthListGroupMembersHandler = c.ListGroupMembersHandler()
+	api.AuthAddGroupMembershipHandler = c.AddGroupMembershipHandler()
+	api.AuthDeleteGroupMembershipHandler = c.DeleteGroupMembershipHandler()
+	api.AuthListUserCredentialsHandler = c.ListUserCredentialsHandler()
+	api.AuthCreateCredentialsHandler = c.CreateCredentialsHandler()
+	api.AuthDeleteCredentialsHandler = c.DeleteCredentialsHandler()
+	api.AuthGetCredentialsHandler = c.GetCredentialsHandler()
+	api.AuthListUserGroupsHandler = c.ListUserGroupsHandler()
+	api.AuthListUserPoliciesHandler = c.ListUserPoliciesHandler()
+	api.AuthAttachPolicyToUserHandler = c.AttachPolicyToUserHandler()
+	api.AuthDetachPolicyFromUserHandler = c.DetachPolicyFromUserHandler()
+	api.AuthListGroupPoliciesHandler = c.ListGroupPoliciesHandler()
+	api.AuthAttachPolicyToGroupHandler = c.AttachPolicyToGroupHandler()
+	api.AuthDetachPolicyFromGroupHandler = c.DetachPolicyFromGroupHandler()
 
-	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
-	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
-	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
-	api.RepositoriesDeleteRepositoryHandler = a.DeleteRepositoryHandler()
+	api.RepositoriesListRepositoriesHandler = c.ListRepositoriesHandler()
+	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
+	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
+	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
 
-	api.BranchesListBranchesHandler = a.ListBranchesHandler()
-	api.BranchesGetBranchHandler = a.GetBranchHandler()
-	api.BranchesCreateBranchHandler = a.CreateBranchHandler()
-	api.BranchesDeleteBranchHandler = a.DeleteBranchHandler()
-	api.BranchesRevertBranchHandler = a.RevertBranchHandler()
+	api.BranchesListBranchesHandler = c.ListBranchesHandler()
+	api.BranchesGetBranchHandler = c.GetBranchHandler()
+	api.BranchesCreateBranchHandler = c.CreateBranchHandler()
+	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
+	api.BranchesRevertBranchHandler = c.RevertBranchHandler()
 
-	api.CommitsCommitHandler = a.CommitHandler()
-	api.CommitsGetCommitHandler = a.GetCommitHandler()
-	api.CommitsGetBranchCommitLogHandler = a.CommitsGetBranchCommitLogHandler()
+	api.CommitsCommitHandler = c.CommitHandler()
+	api.CommitsGetCommitHandler = c.GetCommitHandler()
+	api.CommitsGetBranchCommitLogHandler = c.CommitsGetBranchCommitLogHandler()
 
-	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
-	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
-	api.RefsMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
+	api.RefsDiffRefsHandler = c.RefsDiffRefsHandler()
+	api.BranchesDiffBranchHandler = c.BranchesDiffBranchHandler()
+	api.RefsMergeIntoBranchHandler = c.MergeMergeIntoBranchHandler()
 
-	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
-	api.ObjectsGetUnderlyingPropertiesHandler = a.ObjectsGetUnderlyingPropertiesHandler()
-	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
-	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
-	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
-	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
+	api.ObjectsStatObjectHandler = c.ObjectsStatObjectHandler()
+	api.ObjectsGetUnderlyingPropertiesHandler = c.ObjectsGetUnderlyingPropertiesHandler()
+	api.ObjectsListObjectsHandler = c.ObjectsListObjectsHandler()
+	api.ObjectsGetObjectHandler = c.ObjectsGetObjectHandler()
+	api.ObjectsUploadObjectHandler = c.ObjectsUploadObjectHandler()
+	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
+
+	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
+	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
 }
 
-func (a *Handler) incrStat(action string) {
-	a.context.Stats.Collect("api_server", action)
-}
-
-func (a *Handler) authorize(user *models.User, permissions []permissions.Permission) error {
-	return authorize(a.context.Auth, user, permissions)
+func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
+	// add user to context
+	ctx := logging.AddFields(r.Context(), logging.Fields{"user": user.ID})
+	ctx = context.WithValue(ctx, "user", user)
+	deps := c.deps.WithContext(ctx)
+	return deps, authorize(deps.Auth, user, permissions)
 }
 
 func createPaginator(nextToken string, amountResults int) *models.Pagination {
@@ -169,31 +199,31 @@ func pageAmount(i *int64) int {
 	return inti
 }
 
-func (a *Handler) GetCurrentUserHandler() authentication.GetCurrentUserHandler {
-	return authentication.GetCurrentUserHandlerFunc(func(params authentication.GetCurrentUserParams, user *models.User) middleware.Responder {
-		return authentication.NewGetCurrentUserOK().WithPayload(&authentication.GetCurrentUserOKBody{
+func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
+	return authop.GetCurrentUserHandlerFunc(func(params authop.GetCurrentUserParams, user *models.User) middleware.Responder {
+		return authop.NewGetCurrentUserOK().WithPayload(&authop.GetCurrentUserOKBody{
 			User: user,
 		})
 	})
 }
 
-func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
+func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
 	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListRepositoriesAction,
 				Resource: permissions.All,
 			},
 		})
+
 		if err != nil {
 			return repositories.NewListRepositoriesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("list_repos")
+		deps.LogAction("list_repos")
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		repos, hasMore, err := cataloger.ListRepositories(a.Context(), amount, after)
+		repos, hasMore, err := deps.Cataloger.ListRepositories(c.Context(), amount, after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error listing repositories: %s", err))
@@ -241,9 +271,9 @@ func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	return after, int(amount)
 }
 
-func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
+func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -252,9 +282,8 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("get_repo")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		deps.LogAction("get_repo")
+		repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -274,9 +303,9 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 	})
 }
 
-func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
+func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadCommitAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -285,9 +314,8 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 		if err != nil {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("get_commit")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		commit, err := cataloger.GetCommit(a.Context(), params.Repository, params.CommitID)
+		deps.LogAction("get_commit")
+		commit, err := deps.Cataloger.GetCommit(c.Context(), params.Repository, params.CommitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
@@ -305,9 +333,9 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 	})
 }
 
-func (a *Handler) CommitHandler() commits.CommitHandler {
+func (c *Controller) CommitHandler() commits.CommitHandler {
 	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -316,14 +344,14 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("create_commit")
-		userModel, err := a.context.Auth.GetUser(user.ID)
+		deps.LogAction("create_commit")
+		userModel, err := c.deps.Auth.GetUser(user.ID)
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		committer := userModel.DisplayName
 		commitMessage := swag.StringValue(params.Commit.Message)
-		commit, err := a.ForRequest(params.HTTPRequest).Cataloger.Commit(a.Context(), params.Repository,
+		commit, err := deps.Cataloger.Commit(c.Context(), params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -339,9 +367,9 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 	})
 }
 
-func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
+func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
 	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -350,12 +378,12 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 		if err != nil {
 			return commits.NewGetBranchCommitLogUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("get_branch")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("get_branch")
+		cataloger := deps.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.Repository, params.Branch, after, amount)
+		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -408,9 +436,9 @@ func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) er
 	return nil
 }
 
-func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
+func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
 	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
 				Resource: permissions.RepoArn(swag.StringValue(params.Repository.ID)),
@@ -419,15 +447,14 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 		if err != nil {
 			return repositories.NewCreateRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("create_repo")
-		ctx := a.ForRequest(params.HTTPRequest)
+		deps.LogAction("create_repo")
 
-		err = ensureStorageNamespaceRW(ctx.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
+		err = ensureStorageNamespaceRW(deps.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
 		if err != nil {
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
-		err = ctx.Cataloger.CreateRepository(a.Context(),
+		err = deps.Cataloger.CreateRepository(c.Context(),
 			swag.StringValue(params.Repository.ID),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
@@ -436,7 +463,7 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
-		repo, err := ctx.Cataloger.GetRepository(a.Context(), swag.StringValue(params.Repository.ID))
+		repo, err := deps.Cataloger.GetRepository(c.Context(), swag.StringValue(params.Repository.ID))
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
@@ -451,9 +478,9 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 	})
 }
 
-func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
+func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
 	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -462,9 +489,9 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		if err != nil {
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("delete_repo")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		err = cataloger.DeleteRepository(a.Context(), params.Repository)
+		deps.LogAction("delete_repo")
+		cataloger := deps.Cataloger
+		err = cataloger.DeleteRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -478,9 +505,9 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 	})
 }
 
-func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
+func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListBranchesAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -489,12 +516,12 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 		if err != nil {
 			return branches.NewListBranchesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("list_branches")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("list_branches")
+		cataloger := deps.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		res, hasMore, err := cataloger.ListBranches(a.Context(), params.Repository, "", amount, after)
+		res, hasMore, err := cataloger.ListBranches(c.Context(), params.Repository, "", amount, after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches: %s", err))
@@ -523,9 +550,9 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 	})
 }
 
-func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
+func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -534,9 +561,8 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 		if err != nil {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("get_branch")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		reference, err := cataloger.GetBranchReference(a.Context(), params.Repository, params.Branch)
+		deps.LogAction("get_branch")
+		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -550,11 +576,11 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 	})
 }
 
-func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
+func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
 		repository := params.Repository
 		branch := swag.StringValue(params.Branch.Name)
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateBranchAction,
 				Resource: permissions.BranchArn(repository, branch),
@@ -563,10 +589,10 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		if err != nil {
 			return branches.NewCreateBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("create_branch")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("create_branch")
+		cataloger := deps.Cataloger
 		sourceBranch := swag.StringValue(params.Branch.Source)
-		err = cataloger.CreateBranch(a.Context(), repository, branch, sourceBranch)
+		err = cataloger.CreateBranch(c.Context(), repository, branch, sourceBranch)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -575,9 +601,9 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 	})
 }
 
-func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
+func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -586,9 +612,9 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		if err != nil {
 			return branches.NewDeleteBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("delete_branch")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		err = cataloger.DeleteBranch(a.Context(), params.Repository, params.Branch)
+		deps.LogAction("delete_branch")
+		cataloger := deps.Cataloger
+		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewDeleteBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -602,9 +628,9 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	})
 }
 
-func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
+func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
 				Resource: permissions.BranchArn(params.Repository, params.DestinationRef),
@@ -613,8 +639,8 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("merge_branches")
-		userModel, err := a.context.Auth.GetUser(user.ID)
+		deps.LogAction("merge_branches")
+		userModel, err := deps.Auth.GetUser(user.ID)
 		if err != nil {
 			return refs.NewMergeIntoBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
@@ -624,7 +650,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message = params.Merge.Message
 			metadata = params.Merge.Metadata
 		}
-		res, err := a.context.Cataloger.Merge(a.Context(),
+		res, err := deps.Cataloger.Merge(c.Context(),
 			params.Repository, params.SourceRef, params.DestinationRef,
 			userModel.DisplayName,
 			message,
@@ -660,9 +686,9 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 	})
 }
 
-func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
+func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -671,9 +697,9 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		if err != nil {
 			return branches.NewDiffBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("diff_workspace")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		diff, err := cataloger.DiffUncommitted(a.Context(), params.Repository, params.Branch)
+		deps.LogAction("diff_workspace")
+		cataloger := deps.Cataloger
+		diff, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -688,9 +714,9 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	})
 }
 
-func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
+func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 	return refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -699,9 +725,9 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		if err != nil {
 			return refs.NewDiffRefsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("diff_refs")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
-		diff, err := cataloger.Diff(a.Context(), params.Repository, params.LeftRef, params.RightRef)
+		deps.LogAction("diff_refs")
+		cataloger := deps.Cataloger
+		diff, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef)
 		if err != nil {
 			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff references: %s", err))
@@ -715,9 +741,9 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 	})
 }
 
-func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
+func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -726,10 +752,10 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		if err != nil {
 			return objects.NewStatObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("stat_object")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("stat_object")
+		cataloger := deps.Cataloger
 
-		entry, err := cataloger.GetEntry(a.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -748,9 +774,9 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	})
 }
 
-func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingPropertiesHandler {
+func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingPropertiesHandler {
 	return objects.GetUnderlyingPropertiesHandlerFunc(func(params objects.GetUnderlyingPropertiesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -759,12 +785,11 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		if err != nil {
 			return objects.NewGetUnderlyingPropertiesUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("object_underlying_properties")
-		ctx := a.ForRequest(params.HTTPRequest)
-		cataloger := ctx.Cataloger
+		deps.LogAction("object_underlying_properties")
+		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -772,7 +797,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		entry, err := cataloger.GetEntry(a.Context(),
+		entry, err := cataloger.GetEntry(c.Context(),
 			params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
@@ -782,7 +807,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		}
 
 		// read object properties from underlying storage
-		properties, err := a.context.BlockAdapter.GetProperties(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
+		properties, err := c.deps.BlockAdapter.GetProperties(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
 		if err != nil {
 			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -794,9 +819,9 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 	})
 }
 
-func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
+func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -805,12 +830,11 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		if err != nil {
 			return objects.NewGetObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("get_object")
-		ctx := a.ForRequest(params.HTTPRequest)
-		cataloger := ctx.Cataloger
+		deps.LogAction("get_object")
+		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -819,7 +843,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(a.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -834,7 +858,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 
 		// build a response as a multi-reader
 		res.ContentLength = entry.Size
-		reader, err := ctx.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
+		reader, err := deps.BlockAdapter.Get(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -845,9 +869,9 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	})
 }
 
-func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
+func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -856,13 +880,13 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		if err != nil {
 			return objects.NewListObjectsUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("list_objects")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("list_objects")
+		cataloger := deps.Cataloger
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
 		res, hasMore, err := cataloger.ListEntries(
-			a.Context(),
+			c.Context(),
 			params.Repository,
 			params.Ref,
 			swag.StringValue(params.Tree),
@@ -909,9 +933,21 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	})
 }
 
-func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
+const noopUploadObject = false
+const noopCreateEntry = false
+
+func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		if noopUploadObject {
+			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+				Checksum:  "cc",
+				Mtime:     time.Now().UTC().Unix(),
+				Path:      params.Path,
+				PathType:  models.ObjectStatsPathTypeOBJECT,
+				SizeBytes: 1,
+			})
+		}
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -920,11 +956,10 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("put_object")
-		ctx := a.ForRequest(params.HTTPRequest)
-		cataloger := ctx.Cataloger
+		deps.LogAction("put_object")
+		cataloger := deps.Cataloger
 
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -939,38 +974,50 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		byteSize := file.Header.Size
 
 		// read the content
-		checksum, physicalAddress, size, err := upload.WriteBlob(a.Context(),
-			cataloger, repo.Name, repo.StorageNamespace, params.Content, ctx.BlockAdapter, byteSize, block.PutOpts{StorageClass: params.StorageClass})
+		blob, err := upload.WriteBlob(deps.BlockAdapter, repo.StorageNamespace, params.Content, byteSize, block.PutOpts{StorageClass: params.StorageClass})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
+		if noopCreateEntry {
+			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
+				Checksum:  blob.Checksum,
+				Mtime:     time.Now().UTC().Unix(),
+				Path:      params.Path,
+				PathType:  models.ObjectStatsPathTypeOBJECT,
+				SizeBytes: blob.Size,
+			})
+		}
 		// write metadata
 		writeTime := time.Now()
 		entry := catalog.Entry{
 			Path:            params.Path,
-			PhysicalAddress: physicalAddress,
+			PhysicalAddress: blob.PhysicalAddress,
 			CreationDate:    writeTime,
-			Size:            size,
-			Checksum:        checksum,
+			Size:            blob.Size,
+			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntry(a.Context(), repo.Name, params.Branch, entry)
+		err = cataloger.CreateEntryDedup(c.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
+			ID:               blob.DedupID,
+			Ch:               deps.Dedup.Channel(),
+			StorageNamespace: repo.StorageNamespace,
+		})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-			Checksum:  checksum,
+			Checksum:  blob.Checksum,
 			Mtime:     writeTime.Unix(),
 			Path:      params.Path,
 			PathType:  models.ObjectStatsPathTypeOBJECT,
-			SizeBytes: size,
+			SizeBytes: blob.Size,
 		})
 	})
 }
 
-func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
+func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -979,10 +1026,10 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		if err != nil {
 			return objects.NewDeleteObjectUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("delete_object")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("delete_object")
+		cataloger := deps.Cataloger
 
-		err = cataloger.DeleteEntry(a.Context(), params.Repository, params.Branch, params.Path)
+		err = cataloger.DeleteEntry(c.Context(), params.Repository, params.Branch, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -993,9 +1040,9 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		return objects.NewDeleteObjectNoContent()
 	})
 }
-func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
+func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RevertBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -1004,18 +1051,19 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		if err != nil {
 			return branches.NewRevertBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		a.incrStat("revert_branch")
-		cataloger := a.ForRequest(params.HTTPRequest).Cataloger
+		deps.LogAction("revert_branch")
+		cataloger := deps.Cataloger
 
+		ctx := c.Context()
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
-			err = cataloger.RollbackCommit(a.Context(), params.Repository, params.Revert.Commit)
+			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
 		case models.RevertCreationTypeTREE:
-			err = cataloger.ResetEntries(a.Context(), params.Repository, params.Branch, params.Revert.Path)
+			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeRESET:
-			err = cataloger.ResetBranch(a.Context(), params.Repository, params.Branch)
+			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)
 		case models.RevertCreationTypeOBJECT:
-			err = cataloger.ResetEntry(a.Context(), params.Repository, params.Branch, params.Revert.Path)
+			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Revert.Path)
 		default:
 			return branches.NewRevertBranchNotFound().
 				WithPayload(responseError("revert type not found"))
@@ -1031,29 +1079,30 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 	})
 }
 
-func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
-	return authentication.CreateUserHandlerFunc(func(params authentication.CreateUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
+	return authop.CreateUserHandlerFunc(func(params authop.CreateUserParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateUserAction,
 				Resource: permissions.UserArn(swag.StringValue(params.User.ID)),
 			},
 		})
 		if err != nil {
-			return authentication.NewCreateUserUnauthorized().
+			return authop.NewCreateUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		u := &authmodel.User{
+		u := &model.User{
 			CreatedAt:   time.Now(),
 			DisplayName: swag.StringValue(params.User.ID),
 		}
-		err = a.context.Auth.CreateUser(u)
+		err = deps.Auth.CreateUser(u)
+		deps.LogAction("create_user")
 		if err != nil {
-			return authentication.NewCreateUserDefault(http.StatusInternalServerError).
+			return authop.NewCreateUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewCreateUserCreated().
+		return authop.NewCreateUserCreated().
 			WithPayload(&models.User{
 				CreationDate: u.CreatedAt.Unix(),
 				ID:           u.DisplayName,
@@ -1061,25 +1110,26 @@ func (a *Handler) CreateUserHandler() authentication.CreateUserHandler {
 	})
 }
 
-func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
-	return authentication.ListUsersHandlerFunc(func(params authentication.ListUsersParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
+	return authop.ListUsersHandlerFunc(func(params authop.ListUsersParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListUsersAction,
 				Resource: permissions.All,
 			},
 		})
 		if err != nil {
-			return authentication.NewListUsersUnauthorized().
+			return authop.NewListUsersUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		users, paginator, err := a.context.Auth.ListUsers(&authmodel.PaginationParams{
+		deps.LogAction("list_users")
+		users, paginator, err := deps.Auth.ListUsers(&model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
-			return authentication.NewListUsersDefault(http.StatusInternalServerError).
+			return authop.NewListUsersDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1091,37 +1141,38 @@ func (a *Handler) ListUsersHandler() authentication.ListUsersHandler {
 			}
 		}
 
-		return authentication.NewListUsersOK().
-			WithPayload(&authentication.ListUsersOKBody{
+		return authop.NewListUsersOK().
+			WithPayload(&authop.ListUsersOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) GetUserHandler() authentication.GetUserHandler {
-	return authentication.GetUserHandlerFunc(func(params authentication.GetUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) GetUserHandler() authop.GetUserHandler {
+	return authop.GetUserHandlerFunc(func(params authop.GetUserParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewGetUserUnauthorized().
+			return authop.NewGetUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		u, err := a.context.Auth.GetUser(params.UserID)
+		deps.LogAction("get_user")
+		u, err := deps.Auth.GetUser(params.UserID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewGetUserNotFound().
+			return authop.NewGetUserNotFound().
 				WithPayload(responseError("user not found"))
 		}
 		if err != nil {
-			return authentication.NewGetUserDefault(http.StatusInternalServerError).
+			return authop.NewGetUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewGetUserOK().
+		return authop.NewGetUserOK().
 			WithPayload(&models.User{
 				CreationDate: u.CreatedAt.Unix(),
 				ID:           u.DisplayName,
@@ -1129,56 +1180,58 @@ func (a *Handler) GetUserHandler() authentication.GetUserHandler {
 	})
 }
 
-func (a *Handler) DeleteUserHandler() authentication.DeleteUserHandler {
-	return authentication.DeleteUserHandlerFunc(func(params authentication.DeleteUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
+	return authop.DeleteUserHandlerFunc(func(params authop.DeleteUserParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteUserAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDeleteUserUnauthorized().
+			return authop.NewDeleteUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.DeleteUser(params.UserID)
+		deps.LogAction("delete_user")
+		err = deps.Auth.DeleteUser(params.UserID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewDeleteUserNotFound().
+			return authop.NewDeleteUserNotFound().
 				WithPayload(responseError("user not found"))
 		}
 		if err != nil {
-			return authentication.NewDeleteUserDefault(http.StatusInternalServerError).
+			return authop.NewDeleteUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewDeleteUserNoContent()
+		return authop.NewDeleteUserNoContent()
 	})
 }
 
-func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
-	return authentication.GetGroupHandlerFunc(func(params authentication.GetGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
+	return authop.GetGroupHandlerFunc(func(params authop.GetGroupParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewGetGroupUnauthorized().
+			return authop.NewGetGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		g, err := a.context.Auth.GetGroup(params.GroupID)
+		deps.LogAction("get_group")
+		g, err := deps.Auth.GetGroup(params.GroupID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewGetGroupNotFound().
+			return authop.NewGetGroupNotFound().
 				WithPayload(responseError("group not found"))
 		}
 		if err != nil {
-			return authentication.NewGetGroupDefault(http.StatusInternalServerError).
+			return authop.NewGetGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewGetGroupOK().
+		return authop.NewGetGroupOK().
 			WithPayload(&models.Group{
 				CreationDate: g.CreatedAt.Unix(),
 				ID:           g.DisplayName,
@@ -1186,26 +1239,27 @@ func (a *Handler) GetGroupHandler() authentication.GetGroupHandler {
 	})
 }
 
-func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
-	return authentication.ListGroupsHandlerFunc(func(params authentication.ListGroupsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
+	return authop.ListGroupsHandlerFunc(func(params authop.ListGroupsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListGroupsAction,
 				Resource: permissions.All,
 			},
 		})
 		if err != nil {
-			return authentication.NewListGroupsUnauthorized().
+			return authop.NewListGroupsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		groups, paginator, err := a.context.Auth.ListGroups(&authmodel.PaginationParams{
+		deps.LogAction("list_groups")
+		groups, paginator, err := deps.Auth.ListGroups(&model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 
 		if err != nil {
-			return authentication.NewListGroupsDefault(http.StatusInternalServerError).
+			return authop.NewListGroupsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1217,38 +1271,39 @@ func (a *Handler) ListGroupsHandler() authentication.ListGroupsHandler {
 			}
 		}
 
-		return authentication.NewListGroupsOK().
-			WithPayload(&authentication.ListGroupsOKBody{
+		return authop.NewListGroupsOK().
+			WithPayload(&authop.ListGroupsOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
-	return authentication.CreateGroupHandlerFunc(func(params authentication.CreateGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
+	return authop.CreateGroupHandlerFunc(func(params authop.CreateGroupParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateGroupAction,
 				Resource: permissions.GroupArn(swag.StringValue(params.Group.ID)),
 			},
 		})
 		if err != nil {
-			return authentication.NewCreateGroupUnauthorized().
+			return authop.NewCreateGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		g := &authmodel.Group{
+		g := &model.Group{
 			CreatedAt:   time.Now(),
 			DisplayName: swag.StringValue(params.Group.ID),
 		}
 
-		err = a.context.Auth.CreateGroup(g)
+		deps.LogAction("create_group")
+		err = deps.Auth.CreateGroup(g)
 		if err != nil {
-			return authentication.NewCreateGroupDefault(http.StatusInternalServerError).
+			return authop.NewCreateGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewCreateGroupCreated().
+		return authop.NewCreateGroupCreated().
 			WithPayload(&models.Group{
 				CreationDate: g.CreatedAt.Unix(),
 				ID:           g.DisplayName,
@@ -1256,33 +1311,34 @@ func (a *Handler) CreateGroupHandler() authentication.CreateGroupHandler {
 	})
 }
 
-func (a *Handler) DeleteGroupHandler() authentication.DeleteGroupHandler {
-	return authentication.DeleteGroupHandlerFunc(func(params authentication.DeleteGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
+	return authop.DeleteGroupHandlerFunc(func(params authop.DeleteGroupParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDeleteGroupUnauthorized().
+			return authop.NewDeleteGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.DeleteGroup(params.GroupID)
+		deps.LogAction("delete_group")
+		err = deps.Auth.DeleteGroup(params.GroupID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewDeleteGroupNotFound().
+			return authop.NewDeleteGroupNotFound().
 				WithPayload(responseError("group not found"))
 		}
 		if err != nil {
-			return authentication.NewDeleteGroupDefault(http.StatusInternalServerError).
+			return authop.NewDeleteGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		return authentication.NewDeleteGroupNoContent()
+		return authop.NewDeleteGroupNoContent()
 	})
 }
 
-func serializePolicy(p *authmodel.Policy) *models.Policy {
+func serializePolicy(p *model.Policy) *models.Policy {
 	stmts := make([]*models.Statement, len(p.Statement))
 	for i, s := range p.Statement {
 		stmts[i] = &models.Statement{
@@ -1298,25 +1354,26 @@ func serializePolicy(p *authmodel.Policy) *models.Policy {
 	}
 }
 
-func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
-	return authentication.ListPoliciesHandlerFunc(func(params authentication.ListPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
+	return authop.ListPoliciesHandlerFunc(func(params authop.ListPoliciesParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListPoliciesAction,
 				Resource: permissions.All,
 			},
 		})
 		if err != nil {
-			return authentication.NewListPoliciesUnauthorized().
+			return authop.NewListPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		policies, paginator, err := a.context.Auth.ListPolicies(&authmodel.PaginationParams{
+		deps.LogAction("list_policies")
+		policies, paginator, err := deps.Auth.ListPolicies(&model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
-			return authentication.NewListPoliciesDefault(http.StatusInternalServerError).
+			return authop.NewListPoliciesDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1325,164 +1382,169 @@ func (a *Handler) ListPoliciesHandler() authentication.ListPoliciesHandler {
 			response[i] = serializePolicy(p)
 		}
 
-		return authentication.NewListPoliciesOK().
-			WithPayload(&authentication.ListPoliciesOKBody{
+		return authop.NewListPoliciesOK().
+			WithPayload(&authop.ListPoliciesOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) CreatePolicyHandler() authentication.CreatePolicyHandler {
-	return authentication.CreatePolicyHandlerFunc(func(params authentication.CreatePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) CreatePolicyHandler() authop.CreatePolicyHandler {
+	return authop.CreatePolicyHandlerFunc(func(params authop.CreatePolicyParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreatePolicyAction,
 				Resource: permissions.PolicyArn(swag.StringValue(params.Policy.ID)),
 			},
 		})
 		if err != nil {
-			return authentication.NewCreatePolicyUnauthorized().
+			return authop.NewCreatePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		stmts := make(authmodel.Statements, len(params.Policy.Statement))
+		stmts := make(model.Statements, len(params.Policy.Statement))
 		for i, apiStatement := range params.Policy.Statement {
-			stmts[i] = authmodel.Statement{
+			stmts[i] = model.Statement{
 				Effect:   swag.StringValue(apiStatement.Effect),
 				Action:   apiStatement.Action,
 				Resource: swag.StringValue(apiStatement.Resource),
 			}
 		}
 
-		p := &authmodel.Policy{
+		p := &model.Policy{
 			CreatedAt:   time.Now(),
 			DisplayName: swag.StringValue(params.Policy.ID),
 			Statement:   stmts,
 		}
 
-		err = a.context.Auth.WritePolicy(p)
+		deps.LogAction("create_policy")
+		err = deps.Auth.WritePolicy(p)
 		if err != nil {
-			return authentication.NewCreatePolicyDefault(http.StatusInternalServerError).
+			return authop.NewCreatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewCreatePolicyCreated().
+		return authop.NewCreatePolicyCreated().
 			WithPayload(serializePolicy(p))
 	})
 }
 
-func (a *Handler) GetPolicyHandler() authentication.GetPolicyHandler {
-	return authentication.GetPolicyHandlerFunc(func(params authentication.GetPolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
+	return authop.GetPolicyHandlerFunc(func(params authop.GetPolicyParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadPolicyAction,
 				Resource: permissions.PolicyArn(params.PolicyID),
 			},
 		})
 		if err != nil {
-			return authentication.NewGetPolicyUnauthorized().
+			return authop.NewGetPolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		p, err := a.context.Auth.GetPolicy(params.PolicyID)
+		deps.LogAction("get_policy")
+		p, err := deps.Auth.GetPolicy(params.PolicyID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewGetPolicyNotFound().
+			return authop.NewGetPolicyNotFound().
 				WithPayload(responseError("policy not found"))
 		}
 		if err != nil {
-			return authentication.NewGetPolicyDefault(http.StatusInternalServerError).
+			return authop.NewGetPolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewGetPolicyOK().
+		return authop.NewGetPolicyOK().
 			WithPayload(serializePolicy(p))
 	})
 }
 
-func (a *Handler) UpdatePolicyHandler() authentication.UpdatePolicyHandler {
-	return authentication.UpdatePolicyHandlerFunc(func(params authentication.UpdatePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) UpdatePolicyHandler() authop.UpdatePolicyHandler {
+	return authop.UpdatePolicyHandlerFunc(func(params authop.UpdatePolicyParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.UpdatePolicyAction,
 				Resource: permissions.PolicyArn(params.PolicyID),
 			},
 		})
 		if err != nil {
-			return authentication.NewUpdatePolicyUnauthorized().
+			return authop.NewUpdatePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		stmts := make(authmodel.Statements, len(params.Policy.Statement))
+		stmts := make(model.Statements, len(params.Policy.Statement))
 		for i, apiStatement := range params.Policy.Statement {
-			stmts[i] = authmodel.Statement{
+			stmts[i] = model.Statement{
 				Effect:   swag.StringValue(apiStatement.Effect),
 				Action:   apiStatement.Action,
 				Resource: swag.StringValue(apiStatement.Resource),
 			}
 		}
 
-		p := &authmodel.Policy{
+		p := &model.Policy{
 			CreatedAt:   time.Now(),
 			DisplayName: swag.StringValue(params.Policy.ID),
 			Statement:   stmts,
 		}
 
-		err = a.context.Auth.WritePolicy(p)
+		deps.LogAction("update_policy")
+		err = deps.Auth.WritePolicy(p)
 		if err != nil {
-			return authentication.NewUpdatePolicyDefault(http.StatusInternalServerError).
+			return authop.NewUpdatePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewUpdatePolicyOK().
+		return authop.NewUpdatePolicyOK().
 			WithPayload(serializePolicy(p))
 	})
 }
 
-func (a *Handler) DeletePolicyHandler() authentication.DeletePolicyHandler {
-	return authentication.DeletePolicyHandlerFunc(func(params authentication.DeletePolicyParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
+	return authop.DeletePolicyHandlerFunc(func(params authop.DeletePolicyParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeletePolicyAction,
 				Resource: permissions.PolicyArn(params.PolicyID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDeletePolicyUnauthorized().
+			return authop.NewDeletePolicyUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.DeletePolicy(params.PolicyID)
+		deps.LogAction("delete_policy")
+		err = deps.Auth.DeletePolicy(params.PolicyID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewDeletePolicyNotFound().
+			return authop.NewDeletePolicyNotFound().
 				WithPayload(responseError("policy not found"))
 		}
 		if err != nil {
-			return authentication.NewDeletePolicyDefault(http.StatusInternalServerError).
+			return authop.NewDeletePolicyDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		return authentication.NewDeletePolicyNoContent()
+		return authop.NewDeletePolicyNoContent()
 	})
 }
 
-func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandler {
-	return authentication.ListGroupMembersHandlerFunc(func(params authentication.ListGroupMembersParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
+	return authop.ListGroupMembersHandlerFunc(func(params authop.ListGroupMembersParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewListGroupMembersUnauthorized().
+			return authop.NewListGroupMembersUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		users, paginator, err := a.context.Auth.ListGroupUsers(params.GroupID, &authmodel.PaginationParams{
+		deps.LogAction("list_group_users")
+		users, paginator, err := deps.Auth.ListGroupUsers(params.GroupID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
-			return authentication.NewListGroupMembersDefault(http.StatusInternalServerError).
+			return authop.NewListGroupMembersDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1494,79 +1556,82 @@ func (a *Handler) ListGroupMembersHandler() authentication.ListGroupMembersHandl
 			}
 		}
 
-		return authentication.NewListGroupMembersOK().
-			WithPayload(&authentication.ListGroupMembersOKBody{
+		return authop.NewListGroupMembersOK().
+			WithPayload(&authop.ListGroupMembersOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) AddGroupMembershipHandler() authentication.AddGroupMembershipHandler {
-	return authentication.AddGroupMembershipHandlerFunc(func(params authentication.AddGroupMembershipParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) AddGroupMembershipHandler() authop.AddGroupMembershipHandler {
+	return authop.AddGroupMembershipHandlerFunc(func(params authop.AddGroupMembershipParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AddGroupMemberAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewAddGroupMembershipUnauthorized().
+			return authop.NewAddGroupMembershipUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.AddUserToGroup(params.UserID, params.GroupID)
+		deps.LogAction("add_user_to_group")
+		err = deps.Auth.AddUserToGroup(params.UserID, params.GroupID)
 		if err != nil {
-			return authentication.NewAddGroupMembershipDefault(http.StatusInternalServerError).
+			return authop.NewAddGroupMembershipDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewAddGroupMembershipCreated()
+		return authop.NewAddGroupMembershipCreated()
 	})
 }
 
-func (a *Handler) DeleteGroupMembershipHandler() authentication.DeleteGroupMembershipHandler {
-	return authentication.DeleteGroupMembershipHandlerFunc(func(params authentication.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DeleteGroupMembershipHandler() authop.DeleteGroupMembershipHandler {
+	return authop.DeleteGroupMembershipHandlerFunc(func(params authop.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RemoveGroupMemberAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDeleteGroupMembershipUnauthorized().
+			return authop.NewDeleteGroupMembershipUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.RemoveUserFromGroup(params.UserID, params.GroupID)
+		deps.LogAction("remove_user_from_group")
+		err = deps.Auth.RemoveUserFromGroup(params.UserID, params.GroupID)
 		if err != nil {
-			return authentication.NewDeleteGroupMembershipDefault(http.StatusInternalServerError).
+			return authop.NewDeleteGroupMembershipDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewDeleteGroupMembershipNoContent()
+		return authop.NewDeleteGroupMembershipNoContent()
 	})
 }
 
-func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredentialsHandler {
-	return authentication.ListUserCredentialsHandlerFunc(func(params authentication.ListUserCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHandler {
+	return authop.ListUserCredentialsHandlerFunc(func(params authop.ListUserCredentialsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewListUserCredentialsUnauthorized().
+			return authop.NewListUserCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		credentials, paginator, err := a.context.Auth.ListUserCredentials(params.UserID, &authmodel.PaginationParams{
+		deps.LogAction("list_user_credentials")
+		credentials, paginator, err := deps.Auth.ListUserCredentials(params.UserID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
-			return authentication.NewListUserCredentialsDefault(http.StatusInternalServerError).
+			return authop.NewListUserCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1578,34 +1643,35 @@ func (a *Handler) ListUserCredentialsHandler() authentication.ListUserCredential
 			}
 		}
 
-		return authentication.NewListUserCredentialsOK().
-			WithPayload(&authentication.ListUserCredentialsOKBody{
+		return authop.NewListUserCredentialsOK().
+			WithPayload(&authop.ListUserCredentialsOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHandler {
-	return authentication.CreateCredentialsHandlerFunc(func(params authentication.CreateCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler {
+	return authop.CreateCredentialsHandlerFunc(func(params authop.CreateCredentialsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewCreateCredentialsUnauthorized().
+			return authop.NewCreateCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		credentials, err := a.context.Auth.CreateCredentials(params.UserID)
+		deps.LogAction("create_credentials")
+		credentials, err := deps.Auth.CreateCredentials(params.UserID)
 		if err != nil {
-			return authentication.NewCreateCredentialsDefault(http.StatusInternalServerError).
+			return authop.NewCreateCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewCreateCredentialsCreated().
+		return authop.NewCreateCredentialsCreated().
 			WithPayload(&models.CredentialsWithSecret{
 				AccessKeyID:     credentials.AccessKeyId,
 				AccessSecretKey: credentials.AccessSecretKey,
@@ -1614,56 +1680,58 @@ func (a *Handler) CreateCredentialsHandler() authentication.CreateCredentialsHan
 	})
 }
 
-func (a *Handler) DeleteCredentialsHandler() authentication.DeleteCredentialsHandler {
-	return authentication.DeleteCredentialsHandlerFunc(func(params authentication.DeleteCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler {
+	return authop.DeleteCredentialsHandlerFunc(func(params authop.DeleteCredentialsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDeleteCredentialsUnauthorized().
+			return authop.NewDeleteCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.DeleteCredentials(params.UserID, params.AccessKeyID)
+		deps.LogAction("delete_credentials")
+		err = deps.Auth.DeleteCredentials(params.UserID, params.AccessKeyID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewDeleteCredentialsNotFound().
+			return authop.NewDeleteCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
 		}
 		if err != nil {
-			return authentication.NewDeleteCredentialsDefault(http.StatusInternalServerError).
+			return authop.NewDeleteCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewDeleteCredentialsNoContent()
+		return authop.NewDeleteCredentialsNoContent()
 	})
 }
 
-func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
-	return authentication.GetCredentialsHandlerFunc(func(params authentication.GetCredentialsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
+	return authop.GetCredentialsHandlerFunc(func(params authop.GetCredentialsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewGetCredentialsUnauthorized().
+			return authop.NewGetCredentialsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
-		credentials, err := a.context.Auth.GetCredentialsForUser(params.UserID, params.AccessKeyID)
+		deps.LogAction("get_credentials_for_user")
+		credentials, err := deps.Auth.GetCredentialsForUser(params.UserID, params.AccessKeyID)
 		if errors.Is(err, db.ErrNotFound) {
-			return authentication.NewGetCredentialsNotFound().
+			return authop.NewGetCredentialsNotFound().
 				WithPayload(responseError("credentials not found"))
 		}
 		if err != nil {
-			return authentication.NewGetCredentialsDefault(http.StatusInternalServerError).
+			return authop.NewGetCredentialsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewGetCredentialsOK().
+		return authop.NewGetCredentialsOK().
 			WithPayload(&models.Credentials{
 				AccessKeyID:  credentials.AccessKeyId,
 				CreationDate: credentials.IssuedDate.Unix(),
@@ -1671,25 +1739,26 @@ func (a *Handler) GetCredentialsHandler() authentication.GetCredentialsHandler {
 	})
 }
 
-func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
-	return authentication.ListUserGroupsHandlerFunc(func(params authentication.ListUserGroupsParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
+	return authop.ListUserGroupsHandlerFunc(func(params authop.ListUserGroupsParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewListUserGroupsUnauthorized().
+			return authop.NewListUserGroupsUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		groups, paginator, err := a.context.Auth.ListUserGroups(params.UserID, &authmodel.PaginationParams{
+		deps.LogAction("list_user_groups")
+		groups, paginator, err := deps.Auth.ListUserGroups(params.UserID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
-			return authentication.NewListUserGroupsDefault(http.StatusInternalServerError).
+			return authop.NewListUserGroupsDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1701,43 +1770,44 @@ func (a *Handler) ListUserGroupsHandler() authentication.ListUserGroupsHandler {
 			}
 		}
 
-		return authentication.NewListUserGroupsOK().
-			WithPayload(&authentication.ListUserGroupsOKBody{
+		return authop.NewListUserGroupsOK().
+			WithPayload(&authop.ListUserGroupsOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) ListUserPoliciesHandler() authentication.ListUserPoliciesHandler {
-	return authentication.ListUserPoliciesHandlerFunc(func(params authentication.ListUserPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
+	return authop.ListUserPoliciesHandlerFunc(func(params authop.ListUserPoliciesParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewListUserPoliciesUnauthorized().
+			return authop.NewListUserPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		var policies []*authmodel.Policy
-		var paginator *authmodel.Paginator
+		deps.LogAction("list_user_policies")
+		var policies []*model.Policy
+		var paginator *model.Paginator
 		if swag.BoolValue(params.Effective) {
-			policies, paginator, err = a.context.Auth.ListEffectivePolicies(params.UserID, &authmodel.PaginationParams{
+			policies, paginator, err = deps.Auth.ListEffectivePolicies(params.UserID, &model.PaginationParams{
 				After:  swag.StringValue(params.After),
 				Amount: pageAmount(params.Amount),
 			})
 		} else {
-			policies, paginator, err = a.context.Auth.ListUserPolicies(params.UserID, &authmodel.PaginationParams{
+			policies, paginator, err = deps.Auth.ListUserPolicies(params.UserID, &model.PaginationParams{
 				After:  swag.StringValue(params.After),
 				Amount: pageAmount(params.Amount),
 			})
 		}
 
 		if err != nil {
-			return authentication.NewListUserPoliciesDefault(http.StatusInternalServerError).
+			return authop.NewListUserPoliciesDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1746,79 +1816,82 @@ func (a *Handler) ListUserPoliciesHandler() authentication.ListUserPoliciesHandl
 			response[i] = serializePolicy(p)
 		}
 
-		return authentication.NewListUserPoliciesOK().
-			WithPayload(&authentication.ListUserPoliciesOKBody{
+		return authop.NewListUserPoliciesOK().
+			WithPayload(&authop.ListUserPoliciesOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) AttachPolicyToUserHandler() authentication.AttachPolicyToUserHandler {
-	return authentication.AttachPolicyToUserHandlerFunc(func(params authentication.AttachPolicyToUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandler {
+	return authop.AttachPolicyToUserHandlerFunc(func(params authop.AttachPolicyToUserParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AttachPolicyAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewAttachPolicyToUserUnauthorized().
+			return authop.NewAttachPolicyToUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.AttachPolicyToUser(params.PolicyID, params.UserID)
+		deps.LogAction("attach_policy_to_user")
+		err = deps.Auth.AttachPolicyToUser(params.PolicyID, params.UserID)
 		if err != nil {
-			return authentication.NewAttachPolicyToUserDefault(http.StatusInternalServerError).
+			return authop.NewAttachPolicyToUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewAttachPolicyToUserCreated()
+		return authop.NewAttachPolicyToUserCreated()
 	})
 }
 
-func (a *Handler) DetachPolicyFromUserHandler() authentication.DetachPolicyFromUserHandler {
-	return authentication.DetachPolicyFromUserHandlerFunc(func(params authentication.DetachPolicyFromUserParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHandler {
+	return authop.DetachPolicyFromUserHandlerFunc(func(params authop.DetachPolicyFromUserParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DetachPolicyAction,
 				Resource: permissions.UserArn(params.UserID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDetachPolicyFromUserUnauthorized().
+			return authop.NewDetachPolicyFromUserUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.DetachPolicyFromUser(params.PolicyID, params.UserID)
+		deps.LogAction("detach_policy_from_user")
+		err = deps.Auth.DetachPolicyFromUser(params.PolicyID, params.UserID)
 		if err != nil {
-			return authentication.NewDetachPolicyFromUserDefault(http.StatusInternalServerError).
+			return authop.NewDetachPolicyFromUserDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewDetachPolicyFromUserNoContent()
+		return authop.NewDetachPolicyFromUserNoContent()
 	})
 }
 
-func (a *Handler) ListGroupPoliciesHandler() authentication.ListGroupPoliciesHandler {
-	return authentication.ListGroupPoliciesHandlerFunc(func(params authentication.ListGroupPoliciesParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler {
+	return authop.ListGroupPoliciesHandlerFunc(func(params authop.ListGroupPoliciesParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewListGroupPoliciesUnauthorized().
+			return authop.NewListGroupPoliciesUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		policies, paginator, err := a.context.Auth.ListGroupPolicies(params.GroupID, &authmodel.PaginationParams{
+		deps.LogAction("list_user_policies")
+		policies, paginator, err := deps.Auth.ListGroupPolicies(params.GroupID, &model.PaginationParams{
 			After:  swag.StringValue(params.After),
 			Amount: pageAmount(params.Amount),
 		})
 		if err != nil {
-			return authentication.NewListGroupPoliciesDefault(http.StatusInternalServerError).
+			return authop.NewListGroupPoliciesDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
@@ -1827,56 +1900,167 @@ func (a *Handler) ListGroupPoliciesHandler() authentication.ListGroupPoliciesHan
 			response[i] = serializePolicy(p)
 		}
 
-		return authentication.NewListGroupPoliciesOK().
-			WithPayload(&authentication.ListGroupPoliciesOKBody{
+		return authop.NewListGroupPoliciesOK().
+			WithPayload(&authop.ListGroupPoliciesOKBody{
 				Pagination: createPaginator(paginator.NextPageToken, len(response)),
 				Results:    response,
 			})
 	})
 }
 
-func (a *Handler) AttachPolicyToGroupHandler() authentication.AttachPolicyToGroupHandler {
-	return authentication.AttachPolicyToGroupHandlerFunc(func(params authentication.AttachPolicyToGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHandler {
+	return authop.AttachPolicyToGroupHandlerFunc(func(params authop.AttachPolicyToGroupParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AttachPolicyAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewAttachPolicyToGroupUnauthorized().
+			return authop.NewAttachPolicyToGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.AttachPolicyToGroup(params.PolicyID, params.GroupID)
+		deps.LogAction("attach_policy_to_group")
+		err = deps.Auth.AttachPolicyToGroup(params.PolicyID, params.GroupID)
 		if err != nil {
-			return authentication.NewAttachPolicyToGroupDefault(http.StatusInternalServerError).
+			return authop.NewAttachPolicyToGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewAttachPolicyToGroupCreated()
+		return authop.NewAttachPolicyToGroupCreated()
 	})
 }
 
-func (a *Handler) DetachPolicyFromGroupHandler() authentication.DetachPolicyFromGroupHandler {
-	return authentication.DetachPolicyFromGroupHandlerFunc(func(params authentication.DetachPolicyFromGroupParams, user *models.User) middleware.Responder {
-		err := a.authorize(user, []permissions.Permission{
+func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroupHandler {
+	return authop.DetachPolicyFromGroupHandlerFunc(func(params authop.DetachPolicyFromGroupParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DetachPolicyAction,
 				Resource: permissions.GroupArn(params.GroupID),
 			},
 		})
 		if err != nil {
-			return authentication.NewDetachPolicyFromGroupUnauthorized().
+			return authop.NewDetachPolicyFromGroupUnauthorized().
 				WithPayload(responseErrorFrom(err))
 		}
 
-		err = a.context.Auth.DetachPolicyFromGroup(params.PolicyID, params.GroupID)
+		deps.LogAction("detach_policy_from_group")
+		err = deps.Auth.DetachPolicyFromGroup(params.PolicyID, params.GroupID)
 		if err != nil {
-			return authentication.NewDetachPolicyFromGroupDefault(http.StatusInternalServerError).
+			return authop.NewDetachPolicyFromGroupDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
 
-		return authentication.NewDetachPolicyFromGroupNoContent()
+		return authop.NewDetachPolicyFromGroupNoContent()
+	})
+}
+
+func (c *Controller) RetentionGetRetentionPolicyHandler() retentionop.GetRetentionPolicyHandler {
+	return retentionop.GetRetentionPolicyHandlerFunc(func(params retentionop.GetRetentionPolicyParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.RetentionReadPolicyAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+
+		if err != nil {
+			return retentionop.NewGetRetentionPolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		deps.LogAction("get_retention_policy")
+
+		policy, err := deps.Retention.GetPolicy(params.Repository)
+		if err != nil {
+			return retentionop.NewGetRetentionPolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return retentionop.NewGetRetentionPolicyOK().WithPayload(policy)
+	})
+}
+
+func (c *Controller) RetentionUpdateRetentionPolicyHandler() retentionop.UpdateRetentionPolicyHandler {
+	return retentionop.UpdateRetentionPolicyHandlerFunc(func(params retentionop.UpdateRetentionPolicyParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.RetentionWritePolicyAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return retentionop.NewUpdateRetentionPolicyUnauthorized().
+				WithPayload(responseErrorFrom(err))
+		}
+
+		err = deps.Retention.UpdatePolicy(params.Repository, params.Policy)
+		if err != nil {
+			return retentionop.NewUpdateRetentionPolicyDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		return retentionop.NewUpdateRetentionPolicyCreated()
+	})
+}
+
+func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3InventoryHandler {
+	return repositories.ImportFromS3InventoryHandlerFunc(func(params repositories.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+			{
+				Action:   permissions.CreateRepositoryAction,
+				Resource: permissions.RepoArn(params.Repository),
+			},
+		})
+		if err != nil {
+			return repositories.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+		deps.LogAction("import_from_s3_inventory")
+		userModel, err := c.deps.Auth.GetUser(user.ID)
+		username := "lakeFS"
+		if err == nil {
+			username = userModel.DisplayName
+		}
+		importer, err := onboard.CreateImporter(deps.Cataloger, deps.BlockAdapter, username, params.ManifestURL, params.Repository)
+		if err != nil {
+			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+				WithPayload(responseErrorFrom(err))
+		}
+		var diff *onboard.InventoryDiff
+		if *params.DryRun {
+			diff, err = importer.Import(deps.ctx, true)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+		} else {
+			repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryNotFound().
+					WithPayload(responseErrorFrom(err))
+			}
+			_, err = deps.Cataloger.GetBranchReference(deps.ctx, params.Repository, onboard.DefaultBranchName)
+			if errors.Is(err, db.ErrNotFound) {
+				err = deps.Cataloger.CreateBranch(deps.ctx, params.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
+				if err != nil {
+					return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+						WithPayload(responseErrorFrom(err))
+				}
+			} else if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+			diff, err = importer.Import(params.HTTPRequest.Context(), false)
+			if err != nil {
+				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
+					WithPayload(responseErrorFrom(err))
+			}
+		}
+		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
+			IsDryRun:           *params.DryRun,
+			PreviousImportDate: diff.PreviousImportDate.Unix(),
+			PreviousManifest:   diff.PreviousInventoryURL,
+			AddedOrChanged:     int64(len(diff.AddedOrChanged)),
+			Deleted:            int64(len(diff.Deleted)),
+		})
 	})
 }

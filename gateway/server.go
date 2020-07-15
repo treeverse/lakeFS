@@ -47,14 +47,14 @@ type Server struct {
 	bareDomain string
 }
 
-func NewServer(
+func NewHandler(
 	region string,
 	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
-	listenAddr, bareDomain string,
+	bareDomain string,
 	stats stats.Collector,
-) *Server {
+) http.Handler {
 	sc := &ServerContext{
 		ctx:         context.Background(),
 		cataloger:   cataloger,
@@ -75,38 +75,14 @@ func NewServer(
 	}
 	handler = simulator.RegisterRecorder(httputil.LoggingMiddleware(
 		"X-Amz-Request-Id", logging.Fields{"service_name": "s3_gateway"}, handler,
-	), authService, region, bareDomain, listenAddr)
+	), authService, region, bareDomain)
 
 	logging.Default().WithFields(logging.Fields{
 		"s3_bare_domain": bareDomain,
 		"s3_region":      region,
-	}).Info("initialized S3 Gateway server")
+	}).Info("initialized S3 Gateway handler")
 
-	// assemble Server
-	return &Server{
-		ctx:        sc,
-		bareDomain: bareDomain,
-		Server: &http.Server{
-			Handler: handler,
-			Addr:    listenAddr,
-		},
-	}
-}
-
-func (s *Server) Listen() error {
-	logging.Default().WithFields(logging.Fields{
-		"listen_address": s.Server.Addr,
-	}).Info("started S3 Gateway server")
-	return s.Server.ListenAndServe()
-}
-
-func (s *Server) Shutdown(ctx context.Context) error {
-	simulator.ShutdownRecorder()
-	if s == nil {
-		return nil
-	}
-	s.Server.SetKeepAlivesEnabled(false)
-	return s.Server.Shutdown(ctx)
+	return handler
 }
 
 func getApiErrOrDefault(err error, defaultApiErr gatewayerrors.APIErrorCode) gatewayerrors.APIError {
@@ -127,8 +103,15 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Cataloger:      s.cataloger,
 		BlockStore:     s.blockStore,
 		Auth:           s.authService,
-		Incr:           func(action string) { s.stats.Collect("s3_gateway", action) },
+		Incr: func(action string) {
+			logging.FromContext(request.Context()).
+				WithField("action", action).
+				WithField("message_type", "action").
+				Debug("performing S3 action")
+			s.stats.CollectEvent("s3_gateway", action)
+		},
 	}
+
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
 		sig.NewV4Authenticator(request),
@@ -177,6 +160,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		Operation: o,
 		Principal: user.DisplayName,
 	}
+
+	op.AddLogFields(logging.Fields{"user": user.DisplayName})
+
 	if perms == nil {
 		// no special permissions required, no need to authorize (used for delete-objects, where permissions are checked separately)
 		return op
@@ -212,7 +198,13 @@ func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Req
 		Cataloger:  ctx.cataloger,
 		BlockStore: ctx.blockStore,
 		Auth:       ctx.authService,
-		Incr:       func(action string) { ctx.stats.Collect("s3_gateway", action) },
+		Incr: func(action string) {
+			logging.FromContext(request.Context()).
+				WithField("action", action).
+				WithField("message_type", "action").
+				Debug("performing S3 action")
+			ctx.stats.CollectEvent("s3_gateway", action)
+		},
 	}
 }
 

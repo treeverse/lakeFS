@@ -20,8 +20,9 @@ import (
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -59,40 +60,41 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 		DisplayName: "admin",
 	}
 
-	creds, err := api.SetupAdminUser(authService, user)
+	creds, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 	return creds
 }
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(installationID string) {}
+
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
 
-	cdb, catalogURI := testutil.GetDB(t, databaseUri, config.SchemaCatalog, opts...)
-	cataloger := catalog.NewCataloger(cdb)
-
-	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth, opts...)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-
-	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaCatalog, catalogURI).
-		AddDB(config.SchemaAuth, adbURI)
-
-	server := api.NewServer(
+	cataloger := catalog.NewCataloger(conn)
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
+		Enabled: false,
+	})
+	meta := auth.NewDBMetadataManager("dev", conn)
+	retention := retention.NewService(conn)
+	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
+	handler := api.NewHandler(
 		cataloger,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
+		retention,
 		migrator,
+		logging.Default(),
 	)
 
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatal(err)
-	}
 	return handler, &dependencies{
 		blocks:    blockAdapter,
 		auth:      authService,
