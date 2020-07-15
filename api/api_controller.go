@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/treeverse/lakefs/onboard"
 	"net/http"
 	"path/filepath"
 	"time"
@@ -29,6 +28,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/onboard"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/stats"
@@ -40,7 +40,7 @@ const (
 	MaxResultsPerPage int64 = 1000
 )
 
-type HandlerDependencies struct {
+type Dependencies struct {
 	ctx          context.Context
 	Cataloger    catalog.Cataloger
 	Auth         auth.Service
@@ -51,131 +51,131 @@ type HandlerDependencies struct {
 	logger       logging.Logger
 }
 
-func (c *HandlerDependencies) WithContext(ctx context.Context) *HandlerDependencies {
-	return &HandlerDependencies{
+func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
+	return &Dependencies{
 		ctx:          ctx,
-		Cataloger:    c.Cataloger,
-		Auth:         c.Auth, // TODO: pass context
-		BlockAdapter: c.BlockAdapter.WithContext(ctx),
-		Stats:        c.Stats,
-		Retention:    c.Retention,
-		Dedup:        c.Dedup,
-		logger:       c.logger.WithContext(ctx),
+		Cataloger:    d.Cataloger,
+		Auth:         d.Auth,
+		BlockAdapter: d.BlockAdapter.WithContext(ctx),
+		Stats:        d.Stats,
+		Retention:    d.Retention,
+		Dedup:        d.Dedup,
+		logger:       d.logger.WithContext(ctx),
 	}
 }
 
-func (c *HandlerDependencies) LogAction(action string) {
-	logging.FromContext(c.ctx).
+func (d *Dependencies) LogAction(action string) {
+	logging.FromContext(d.ctx).
 		WithField("action", action).
 		WithField("message_type", "action").
 		Debug("performing API action")
-	c.Stats.CollectEvent("api_server", action)
+	d.Stats.CollectEvent("api_server", action)
 }
 
-type Handler struct {
-	deps *HandlerDependencies
+type Controller struct {
+	deps *Dependencies
 }
 
-func NewHandler(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, logger logging.Logger) *Handler {
-	h := &Handler{
-		deps: &HandlerDependencies{
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, logger logging.Logger) *Controller {
+	c := &Controller{
+		deps: &Dependencies{
+			ctx:          context.Background(),
 			Cataloger:    cataloger,
 			Auth:         auth,
 			BlockAdapter: blockAdapter,
 			Stats:        stats,
 			Retention:    retention,
 			Dedup:        NewDedupHandler(blockAdapter),
-			ctx:          context.Background(),
 			logger:       logger,
 		},
 	}
-	h.deps.Dedup.Start()
-	return h
+	c.deps.Dedup.Start()
+	return c
 }
 
-func (a *Handler) Close() error {
-	if a != nil && a.deps != nil {
-		return a.deps.Dedup.Close()
+func (c *Controller) Close() error {
+	if c == nil || c.deps == nil {
+		return nil
 	}
-	return nil
+	return c.deps.Dedup.Close()
 }
 
-func (a *Handler) Context() context.Context {
-	if a.deps.ctx == nil {
-		return context.Background()
+func (c *Controller) Context() context.Context {
+	if c.deps.ctx != nil {
+		return c.deps.ctx
 	}
-	return a.deps.ctx
+	return context.Background()
 }
 
 // Configure attaches our API operations to a generated swagger API stub
 // Adding new handlers requires also adding them here so that the generated server will use them
-func (a *Handler) Configure(api *operations.LakefsAPI) {
+func (c *Controller) Configure(api *operations.LakefsAPI) {
 
 	// Register operations here
-	api.AuthGetCurrentUserHandler = a.GetCurrentUserHandler()
-	api.AuthListUsersHandler = a.ListUsersHandler()
-	api.AuthGetUserHandler = a.GetUserHandler()
-	api.AuthCreateUserHandler = a.CreateUserHandler()
-	api.AuthDeleteUserHandler = a.DeleteUserHandler()
-	api.AuthGetGroupHandler = a.GetGroupHandler()
-	api.AuthListGroupsHandler = a.ListGroupsHandler()
-	api.AuthCreateGroupHandler = a.CreateGroupHandler()
-	api.AuthDeleteGroupHandler = a.DeleteGroupHandler()
-	api.AuthListPoliciesHandler = a.ListPoliciesHandler()
-	api.AuthCreatePolicyHandler = a.CreatePolicyHandler()
-	api.AuthGetPolicyHandler = a.GetPolicyHandler()
-	api.AuthDeletePolicyHandler = a.DeletePolicyHandler()
-	api.AuthUpdatePolicyHandler = a.UpdatePolicyHandler()
-	api.AuthListGroupMembersHandler = a.ListGroupMembersHandler()
-	api.AuthAddGroupMembershipHandler = a.AddGroupMembershipHandler()
-	api.AuthDeleteGroupMembershipHandler = a.DeleteGroupMembershipHandler()
-	api.AuthListUserCredentialsHandler = a.ListUserCredentialsHandler()
-	api.AuthCreateCredentialsHandler = a.CreateCredentialsHandler()
-	api.AuthDeleteCredentialsHandler = a.DeleteCredentialsHandler()
-	api.AuthGetCredentialsHandler = a.GetCredentialsHandler()
-	api.AuthListUserGroupsHandler = a.ListUserGroupsHandler()
-	api.AuthListUserPoliciesHandler = a.ListUserPoliciesHandler()
-	api.AuthAttachPolicyToUserHandler = a.AttachPolicyToUserHandler()
-	api.AuthDetachPolicyFromUserHandler = a.DetachPolicyFromUserHandler()
-	api.AuthListGroupPoliciesHandler = a.ListGroupPoliciesHandler()
-	api.AuthAttachPolicyToGroupHandler = a.AttachPolicyToGroupHandler()
-	api.AuthDetachPolicyFromGroupHandler = a.DetachPolicyFromGroupHandler()
+	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
+	api.AuthListUsersHandler = c.ListUsersHandler()
+	api.AuthGetUserHandler = c.GetUserHandler()
+	api.AuthCreateUserHandler = c.CreateUserHandler()
+	api.AuthDeleteUserHandler = c.DeleteUserHandler()
+	api.AuthGetGroupHandler = c.GetGroupHandler()
+	api.AuthListGroupsHandler = c.ListGroupsHandler()
+	api.AuthCreateGroupHandler = c.CreateGroupHandler()
+	api.AuthDeleteGroupHandler = c.DeleteGroupHandler()
+	api.AuthListPoliciesHandler = c.ListPoliciesHandler()
+	api.AuthCreatePolicyHandler = c.CreatePolicyHandler()
+	api.AuthGetPolicyHandler = c.GetPolicyHandler()
+	api.AuthDeletePolicyHandler = c.DeletePolicyHandler()
+	api.AuthUpdatePolicyHandler = c.UpdatePolicyHandler()
+	api.AuthListGroupMembersHandler = c.ListGroupMembersHandler()
+	api.AuthAddGroupMembershipHandler = c.AddGroupMembershipHandler()
+	api.AuthDeleteGroupMembershipHandler = c.DeleteGroupMembershipHandler()
+	api.AuthListUserCredentialsHandler = c.ListUserCredentialsHandler()
+	api.AuthCreateCredentialsHandler = c.CreateCredentialsHandler()
+	api.AuthDeleteCredentialsHandler = c.DeleteCredentialsHandler()
+	api.AuthGetCredentialsHandler = c.GetCredentialsHandler()
+	api.AuthListUserGroupsHandler = c.ListUserGroupsHandler()
+	api.AuthListUserPoliciesHandler = c.ListUserPoliciesHandler()
+	api.AuthAttachPolicyToUserHandler = c.AttachPolicyToUserHandler()
+	api.AuthDetachPolicyFromUserHandler = c.DetachPolicyFromUserHandler()
+	api.AuthListGroupPoliciesHandler = c.ListGroupPoliciesHandler()
+	api.AuthAttachPolicyToGroupHandler = c.AttachPolicyToGroupHandler()
+	api.AuthDetachPolicyFromGroupHandler = c.DetachPolicyFromGroupHandler()
 
-	api.RepositoriesListRepositoriesHandler = a.ListRepositoriesHandler()
-	api.RepositoriesGetRepositoryHandler = a.GetRepoHandler()
-	api.RepositoriesCreateRepositoryHandler = a.CreateRepositoryHandler()
-	api.RepositoriesDeleteRepositoryHandler = a.DeleteRepositoryHandler()
-	api.RepositoriesImportFromS3InventoryHandler = a.ImportFromS3InventoryHandler()
+	api.RepositoriesListRepositoriesHandler = c.ListRepositoriesHandler()
+	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
+	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
+	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
 
-	api.BranchesListBranchesHandler = a.ListBranchesHandler()
-	api.BranchesGetBranchHandler = a.GetBranchHandler()
-	api.BranchesCreateBranchHandler = a.CreateBranchHandler()
-	api.BranchesDeleteBranchHandler = a.DeleteBranchHandler()
-	api.BranchesRevertBranchHandler = a.RevertBranchHandler()
+	api.BranchesListBranchesHandler = c.ListBranchesHandler()
+	api.BranchesGetBranchHandler = c.GetBranchHandler()
+	api.BranchesCreateBranchHandler = c.CreateBranchHandler()
+	api.BranchesDeleteBranchHandler = c.DeleteBranchHandler()
+	api.BranchesRevertBranchHandler = c.RevertBranchHandler()
 
-	api.CommitsCommitHandler = a.CommitHandler()
-	api.CommitsGetCommitHandler = a.GetCommitHandler()
-	api.CommitsGetBranchCommitLogHandler = a.CommitsGetBranchCommitLogHandler()
+	api.CommitsCommitHandler = c.CommitHandler()
+	api.CommitsGetCommitHandler = c.GetCommitHandler()
+	api.CommitsGetBranchCommitLogHandler = c.CommitsGetBranchCommitLogHandler()
 
-	api.RefsDiffRefsHandler = a.RefsDiffRefsHandler()
-	api.BranchesDiffBranchHandler = a.BranchesDiffBranchHandler()
-	api.RefsMergeIntoBranchHandler = a.MergeMergeIntoBranchHandler()
+	api.RefsDiffRefsHandler = c.RefsDiffRefsHandler()
+	api.BranchesDiffBranchHandler = c.BranchesDiffBranchHandler()
+	api.RefsMergeIntoBranchHandler = c.MergeMergeIntoBranchHandler()
 
-	api.ObjectsStatObjectHandler = a.ObjectsStatObjectHandler()
-	api.ObjectsGetUnderlyingPropertiesHandler = a.ObjectsGetUnderlyingPropertiesHandler()
-	api.ObjectsListObjectsHandler = a.ObjectsListObjectsHandler()
-	api.ObjectsGetObjectHandler = a.ObjectsGetObjectHandler()
-	api.ObjectsUploadObjectHandler = a.ObjectsUploadObjectHandler()
-	api.ObjectsDeleteObjectHandler = a.ObjectsDeleteObjectHandler()
-	api.RetentionGetRetentionPolicyHandler = a.RetentionGetRetentionPolicyHandler()
-	api.RetentionUpdateRetentionPolicyHandler = a.RetentionUpdateRetentionPolicyHandler()
+	api.ObjectsStatObjectHandler = c.ObjectsStatObjectHandler()
+	api.ObjectsGetUnderlyingPropertiesHandler = c.ObjectsGetUnderlyingPropertiesHandler()
+	api.ObjectsListObjectsHandler = c.ObjectsListObjectsHandler()
+	api.ObjectsGetObjectHandler = c.ObjectsGetObjectHandler()
+	api.ObjectsUploadObjectHandler = c.ObjectsUploadObjectHandler()
+	api.ObjectsDeleteObjectHandler = c.ObjectsDeleteObjectHandler()
+
+	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
+	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
 }
 
-func (a *Handler) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*HandlerDependencies, error) {
+func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
 	// add user to context
 	ctx := logging.AddFields(r.Context(), logging.Fields{"user": user.ID})
 	ctx = context.WithValue(ctx, "user", user)
-	deps := a.deps.WithContext(ctx)
+	deps := c.deps.WithContext(ctx)
 	return deps, authorize(deps.Auth, user, permissions)
 }
 
@@ -199,7 +199,7 @@ func pageAmount(i *int64) int {
 	return inti
 }
 
-func (a *Handler) GetCurrentUserHandler() authop.GetCurrentUserHandler {
+func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
 	return authop.GetCurrentUserHandlerFunc(func(params authop.GetCurrentUserParams, user *models.User) middleware.Responder {
 		return authop.NewGetCurrentUserOK().WithPayload(&authop.GetCurrentUserOKBody{
 			User: user,
@@ -207,9 +207,9 @@ func (a *Handler) GetCurrentUserHandler() authop.GetCurrentUserHandler {
 	})
 }
 
-func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
+func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
 	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListRepositoriesAction,
 				Resource: permissions.All,
@@ -223,7 +223,7 @@ func (a *Handler) ListRepositoriesHandler() repositories.ListRepositoriesHandler
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		repos, hasMore, err := deps.Cataloger.ListRepositories(a.Context(), amount, after)
+		repos, hasMore, err := deps.Cataloger.ListRepositories(c.Context(), amount, after)
 		if err != nil {
 			return repositories.NewListRepositoriesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error listing repositories: %s", err))
@@ -271,9 +271,9 @@ func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	return after, int(amount)
 }
 
-func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
+func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -283,7 +283,7 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_repo")
-		repo, err := deps.Cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -303,9 +303,9 @@ func (a *Handler) GetRepoHandler() repositories.GetRepositoryHandler {
 	})
 }
 
-func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
+func (c *Controller) GetCommitHandler() commits.GetCommitHandler {
 	return commits.GetCommitHandlerFunc(func(params commits.GetCommitParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadCommitAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -315,7 +315,7 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 			return commits.NewGetCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_commit")
-		commit, err := deps.Cataloger.GetCommit(a.Context(), params.Repository, params.CommitID)
+		commit, err := deps.Cataloger.GetCommit(c.Context(), params.Repository, params.CommitID)
 		if errors.Is(err, db.ErrNotFound) {
 			return commits.NewGetCommitNotFound().WithPayload(responseError("commit not found"))
 		}
@@ -333,9 +333,9 @@ func (a *Handler) GetCommitHandler() commits.GetCommitHandler {
 	})
 }
 
-func (a *Handler) CommitHandler() commits.CommitHandler {
+func (c *Controller) CommitHandler() commits.CommitHandler {
 	return commits.CommitHandlerFunc(func(params commits.CommitParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -345,13 +345,13 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("create_commit")
-		userModel, err := a.deps.Auth.GetUser(user.ID)
+		userModel, err := c.deps.Auth.GetUser(user.ID)
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		committer := userModel.DisplayName
 		commitMessage := swag.StringValue(params.Commit.Message)
-		commit, err := deps.Cataloger.Commit(a.Context(), params.Repository,
+		commit, err := deps.Cataloger.Commit(c.Context(), params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
 		if err != nil {
 			return commits.NewCommitDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -367,9 +367,9 @@ func (a *Handler) CommitHandler() commits.CommitHandler {
 	})
 }
 
-func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
+func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogHandler {
 	return commits.GetBranchCommitLogHandlerFunc(func(params commits.GetBranchCommitLogParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -383,7 +383,7 @@ func (a *Handler) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitLogH
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
-		commitLog, hasMore, err := cataloger.ListCommits(a.Context(), params.Repository, params.Branch, after, amount)
+		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -436,9 +436,9 @@ func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) er
 	return nil
 }
 
-func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
+func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHandler {
 	return repositories.CreateRepositoryHandlerFunc(func(params repositories.CreateRepositoryParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
 				Resource: permissions.RepoArn(swag.StringValue(params.Repository.ID)),
@@ -454,7 +454,7 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
-		err = deps.Cataloger.CreateRepository(a.Context(),
+		err = deps.Cataloger.CreateRepository(c.Context(),
 			swag.StringValue(params.Repository.ID),
 			swag.StringValue(params.Repository.StorageNamespace),
 			params.Repository.DefaultBranch)
@@ -463,7 +463,7 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
 		}
 
-		repo, err := deps.Cataloger.GetRepository(a.Context(), swag.StringValue(params.Repository.ID))
+		repo, err := deps.Cataloger.GetRepository(c.Context(), swag.StringValue(params.Repository.ID))
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError(fmt.Sprintf("error creating repository: %s", err)))
@@ -478,9 +478,9 @@ func (a *Handler) CreateRepositoryHandler() repositories.CreateRepositoryHandler
 	})
 }
 
-func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
+func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler {
 	return repositories.DeleteRepositoryHandlerFunc(func(params repositories.DeleteRepositoryParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -491,7 +491,7 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 		}
 		deps.LogAction("delete_repo")
 		cataloger := deps.Cataloger
-		err = cataloger.DeleteRepository(a.Context(), params.Repository)
+		err = cataloger.DeleteRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewDeleteRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
@@ -505,9 +505,9 @@ func (a *Handler) DeleteRepositoryHandler() repositories.DeleteRepositoryHandler
 	})
 }
 
-func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
+func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 	return branches.ListBranchesHandlerFunc(func(params branches.ListBranchesParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListBranchesAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -521,7 +521,7 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		res, hasMore, err := cataloger.ListBranches(a.Context(), params.Repository, "", amount, after)
+		res, hasMore, err := cataloger.ListBranches(c.Context(), params.Repository, "", amount, after)
 		if err != nil {
 			return branches.NewListBranchesDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not list branches: %s", err))
@@ -550,9 +550,9 @@ func (a *Handler) ListBranchesHandler() branches.ListBranchesHandler {
 	})
 }
 
-func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
+func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 	return branches.GetBranchHandlerFunc(func(params branches.GetBranchParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -562,7 +562,7 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 			return branches.NewGetBranchUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_branch")
-		reference, err := deps.Cataloger.GetBranchReference(a.Context(), params.Repository, params.Branch)
+		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -576,11 +576,11 @@ func (a *Handler) GetBranchHandler() branches.GetBranchHandler {
 	})
 }
 
-func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
+func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 	return branches.CreateBranchHandlerFunc(func(params branches.CreateBranchParams, user *models.User) middleware.Responder {
 		repository := params.Repository
 		branch := swag.StringValue(params.Branch.Name)
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateBranchAction,
 				Resource: permissions.BranchArn(repository, branch),
@@ -592,7 +592,7 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 		deps.LogAction("create_branch")
 		cataloger := deps.Cataloger
 		sourceBranch := swag.StringValue(params.Branch.Source)
-		err = cataloger.CreateBranch(a.Context(), repository, branch, sourceBranch)
+		err = cataloger.CreateBranch(c.Context(), repository, branch, sourceBranch)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -601,9 +601,9 @@ func (a *Handler) CreateBranchHandler() branches.CreateBranchHandler {
 	})
 }
 
-func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
+func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 	return branches.DeleteBranchHandlerFunc(func(params branches.DeleteBranchParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -614,7 +614,7 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 		}
 		deps.LogAction("delete_branch")
 		cataloger := deps.Cataloger
-		err = cataloger.DeleteBranch(a.Context(), params.Repository, params.Branch)
+		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewDeleteBranchNotFound().
 				WithPayload(responseError("branch not found"))
@@ -628,9 +628,9 @@ func (a *Handler) DeleteBranchHandler() branches.DeleteBranchHandler {
 	})
 }
 
-func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
+func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 	return refs.MergeIntoBranchHandlerFunc(func(params refs.MergeIntoBranchParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCommitAction,
 				Resource: permissions.BranchArn(params.Repository, params.DestinationRef),
@@ -650,7 +650,7 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message = params.Merge.Message
 			metadata = params.Merge.Metadata
 		}
-		res, err := deps.Cataloger.Merge(a.Context(),
+		res, err := deps.Cataloger.Merge(c.Context(),
 			params.Repository, params.SourceRef, params.DestinationRef,
 			userModel.DisplayName,
 			message,
@@ -686,9 +686,9 @@ func (a *Handler) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 	})
 }
 
-func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
+func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	return branches.DiffBranchHandlerFunc(func(params branches.DiffBranchParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -699,7 +699,7 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		}
 		deps.LogAction("diff_workspace")
 		cataloger := deps.Cataloger
-		diff, err := cataloger.DiffUncommitted(a.Context(), params.Repository, params.Branch)
+		diff, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -714,9 +714,9 @@ func (a *Handler) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 	})
 }
 
-func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
+func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 	return refs.DiffRefsHandlerFunc(func(params refs.DiffRefsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -727,7 +727,7 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		}
 		deps.LogAction("diff_refs")
 		cataloger := deps.Cataloger
-		diff, err := cataloger.Diff(a.Context(), params.Repository, params.LeftRef, params.RightRef)
+		diff, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef)
 		if err != nil {
 			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff references: %s", err))
@@ -741,9 +741,9 @@ func (a *Handler) RefsDiffRefsHandler() refs.DiffRefsHandler {
 	})
 }
 
-func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
+func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	return objects.StatObjectHandlerFunc(func(params objects.StatObjectParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -755,7 +755,7 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		deps.LogAction("stat_object")
 		cataloger := deps.Cataloger
 
-		entry, err := cataloger.GetEntry(a.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -774,9 +774,9 @@ func (a *Handler) ObjectsStatObjectHandler() objects.StatObjectHandler {
 	})
 }
 
-func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingPropertiesHandler {
+func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingPropertiesHandler {
 	return objects.GetUnderlyingPropertiesHandlerFunc(func(params objects.GetUnderlyingPropertiesParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -789,7 +789,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -797,7 +797,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		entry, err := cataloger.GetEntry(a.Context(),
+		entry, err := cataloger.GetEntry(c.Context(),
 			params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
@@ -807,7 +807,7 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 		}
 
 		// read object properties from underlying storage
-		properties, err := deps.BlockAdapter.GetProperties(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
+		properties, err := c.deps.BlockAdapter.GetProperties(block.ObjectPointer{StorageNamespace: repo.StorageNamespace, Identifier: entry.PhysicalAddress})
 		if err != nil {
 			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -819,9 +819,9 @@ func (a *Handler) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyingP
 	})
 }
 
-func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
+func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	return objects.GetObjectHandlerFunc(func(params objects.GetObjectParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -834,7 +834,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		cataloger := deps.Cataloger
 
 		// read repo
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -843,7 +843,7 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(a.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -869,9 +869,9 @@ func (a *Handler) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	})
 }
 
-func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
+func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	return objects.ListObjectsHandlerFunc(func(params objects.ListObjectsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListObjectsAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -886,7 +886,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		after, amount := getPaginationParams(params.After, params.Amount)
 
 		res, hasMore, err := cataloger.ListEntries(
-			a.Context(),
+			c.Context(),
 			params.Repository,
 			params.Ref,
 			swag.StringValue(params.Tree),
@@ -936,7 +936,7 @@ func (a *Handler) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 const noopUploadObject = false
 const noopCreateEntry = false
 
-func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
+func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
 		if noopUploadObject {
 			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
@@ -947,7 +947,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 				SizeBytes: 1,
 			})
 		}
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -959,7 +959,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		deps.LogAction("put_object")
 		cataloger := deps.Cataloger
 
-		repo, err := cataloger.GetRepository(a.Context(), params.Repository)
+		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewUploadObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -997,7 +997,7 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:            blob.Size,
 			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntryDedup(a.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
+		err = cataloger.CreateEntryDedup(c.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
 			ID:               blob.DedupID,
 			Ch:               deps.Dedup.Channel(),
 			StorageNamespace: repo.StorageNamespace,
@@ -1015,9 +1015,9 @@ func (a *Handler) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	})
 }
 
-func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
+func (c *Controller) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 	return objects.DeleteObjectHandlerFunc(func(params objects.DeleteObjectParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteObjectAction,
 				Resource: permissions.ObjectArn(params.Repository, params.Path),
@@ -1029,7 +1029,7 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		deps.LogAction("delete_object")
 		cataloger := deps.Cataloger
 
-		err = cataloger.DeleteEntry(a.Context(), params.Repository, params.Branch, params.Path)
+		err = cataloger.DeleteEntry(c.Context(), params.Repository, params.Branch, params.Path)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewDeleteObjectNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -1040,9 +1040,9 @@ func (a *Handler) ObjectsDeleteObjectHandler() objects.DeleteObjectHandler {
 		return objects.NewDeleteObjectNoContent()
 	})
 }
-func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
+func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 	return branches.RevertBranchHandlerFunc(func(params branches.RevertBranchParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RevertBranchAction,
 				Resource: permissions.BranchArn(params.Repository, params.Branch),
@@ -1054,15 +1054,16 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 		deps.LogAction("revert_branch")
 		cataloger := deps.Cataloger
 
+		ctx := c.Context()
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
-			err = cataloger.RollbackCommit(a.Context(), params.Repository, params.Revert.Commit)
+			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
 		case models.RevertCreationTypeTREE:
-			err = cataloger.ResetEntries(a.Context(), params.Repository, params.Branch, params.Revert.Path)
+			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeRESET:
-			err = cataloger.ResetBranch(a.Context(), params.Repository, params.Branch)
+			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)
 		case models.RevertCreationTypeOBJECT:
-			err = cataloger.ResetEntry(a.Context(), params.Repository, params.Branch, params.Revert.Path)
+			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Revert.Path)
 		default:
 			return branches.NewRevertBranchNotFound().
 				WithPayload(responseError("revert type not found"))
@@ -1078,9 +1079,9 @@ func (a *Handler) RevertBranchHandler() branches.RevertBranchHandler {
 	})
 }
 
-func (a *Handler) CreateUserHandler() authop.CreateUserHandler {
+func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 	return authop.CreateUserHandlerFunc(func(params authop.CreateUserParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateUserAction,
 				Resource: permissions.UserArn(swag.StringValue(params.User.ID)),
@@ -1109,9 +1110,9 @@ func (a *Handler) CreateUserHandler() authop.CreateUserHandler {
 	})
 }
 
-func (a *Handler) ListUsersHandler() authop.ListUsersHandler {
+func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
 	return authop.ListUsersHandlerFunc(func(params authop.ListUsersParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListUsersAction,
 				Resource: permissions.All,
@@ -1148,9 +1149,9 @@ func (a *Handler) ListUsersHandler() authop.ListUsersHandler {
 	})
 }
 
-func (a *Handler) GetUserHandler() authop.GetUserHandler {
+func (c *Controller) GetUserHandler() authop.GetUserHandler {
 	return authop.GetUserHandlerFunc(func(params authop.GetUserParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1179,9 +1180,9 @@ func (a *Handler) GetUserHandler() authop.GetUserHandler {
 	})
 }
 
-func (a *Handler) DeleteUserHandler() authop.DeleteUserHandler {
+func (c *Controller) DeleteUserHandler() authop.DeleteUserHandler {
 	return authop.DeleteUserHandlerFunc(func(params authop.DeleteUserParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteUserAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1207,9 +1208,9 @@ func (a *Handler) DeleteUserHandler() authop.DeleteUserHandler {
 	})
 }
 
-func (a *Handler) GetGroupHandler() authop.GetGroupHandler {
+func (c *Controller) GetGroupHandler() authop.GetGroupHandler {
 	return authop.GetGroupHandlerFunc(func(params authop.GetGroupParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1238,9 +1239,9 @@ func (a *Handler) GetGroupHandler() authop.GetGroupHandler {
 	})
 }
 
-func (a *Handler) ListGroupsHandler() authop.ListGroupsHandler {
+func (c *Controller) ListGroupsHandler() authop.ListGroupsHandler {
 	return authop.ListGroupsHandlerFunc(func(params authop.ListGroupsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListGroupsAction,
 				Resource: permissions.All,
@@ -1278,9 +1279,9 @@ func (a *Handler) ListGroupsHandler() authop.ListGroupsHandler {
 	})
 }
 
-func (a *Handler) CreateGroupHandler() authop.CreateGroupHandler {
+func (c *Controller) CreateGroupHandler() authop.CreateGroupHandler {
 	return authop.CreateGroupHandlerFunc(func(params authop.CreateGroupParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateGroupAction,
 				Resource: permissions.GroupArn(swag.StringValue(params.Group.ID)),
@@ -1310,9 +1311,9 @@ func (a *Handler) CreateGroupHandler() authop.CreateGroupHandler {
 	})
 }
 
-func (a *Handler) DeleteGroupHandler() authop.DeleteGroupHandler {
+func (c *Controller) DeleteGroupHandler() authop.DeleteGroupHandler {
 	return authop.DeleteGroupHandlerFunc(func(params authop.DeleteGroupParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1353,9 +1354,9 @@ func serializePolicy(p *model.Policy) *models.Policy {
 	}
 }
 
-func (a *Handler) ListPoliciesHandler() authop.ListPoliciesHandler {
+func (c *Controller) ListPoliciesHandler() authop.ListPoliciesHandler {
 	return authop.ListPoliciesHandlerFunc(func(params authop.ListPoliciesParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListPoliciesAction,
 				Resource: permissions.All,
@@ -1389,9 +1390,9 @@ func (a *Handler) ListPoliciesHandler() authop.ListPoliciesHandler {
 	})
 }
 
-func (a *Handler) CreatePolicyHandler() authop.CreatePolicyHandler {
+func (c *Controller) CreatePolicyHandler() authop.CreatePolicyHandler {
 	return authop.CreatePolicyHandlerFunc(func(params authop.CreatePolicyParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreatePolicyAction,
 				Resource: permissions.PolicyArn(swag.StringValue(params.Policy.ID)),
@@ -1429,9 +1430,9 @@ func (a *Handler) CreatePolicyHandler() authop.CreatePolicyHandler {
 	})
 }
 
-func (a *Handler) GetPolicyHandler() authop.GetPolicyHandler {
+func (c *Controller) GetPolicyHandler() authop.GetPolicyHandler {
 	return authop.GetPolicyHandlerFunc(func(params authop.GetPolicyParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadPolicyAction,
 				Resource: permissions.PolicyArn(params.PolicyID),
@@ -1457,9 +1458,9 @@ func (a *Handler) GetPolicyHandler() authop.GetPolicyHandler {
 	})
 }
 
-func (a *Handler) UpdatePolicyHandler() authop.UpdatePolicyHandler {
+func (c *Controller) UpdatePolicyHandler() authop.UpdatePolicyHandler {
 	return authop.UpdatePolicyHandlerFunc(func(params authop.UpdatePolicyParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.UpdatePolicyAction,
 				Resource: permissions.PolicyArn(params.PolicyID),
@@ -1497,9 +1498,9 @@ func (a *Handler) UpdatePolicyHandler() authop.UpdatePolicyHandler {
 	})
 }
 
-func (a *Handler) DeletePolicyHandler() authop.DeletePolicyHandler {
+func (c *Controller) DeletePolicyHandler() authop.DeletePolicyHandler {
 	return authop.DeletePolicyHandlerFunc(func(params authop.DeletePolicyParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeletePolicyAction,
 				Resource: permissions.PolicyArn(params.PolicyID),
@@ -1524,9 +1525,9 @@ func (a *Handler) DeletePolicyHandler() authop.DeletePolicyHandler {
 	})
 }
 
-func (a *Handler) ListGroupMembersHandler() authop.ListGroupMembersHandler {
+func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 	return authop.ListGroupMembersHandlerFunc(func(params authop.ListGroupMembersParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1563,9 +1564,9 @@ func (a *Handler) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 	})
 }
 
-func (a *Handler) AddGroupMembershipHandler() authop.AddGroupMembershipHandler {
+func (c *Controller) AddGroupMembershipHandler() authop.AddGroupMembershipHandler {
 	return authop.AddGroupMembershipHandlerFunc(func(params authop.AddGroupMembershipParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AddGroupMemberAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1587,9 +1588,9 @@ func (a *Handler) AddGroupMembershipHandler() authop.AddGroupMembershipHandler {
 	})
 }
 
-func (a *Handler) DeleteGroupMembershipHandler() authop.DeleteGroupMembershipHandler {
+func (c *Controller) DeleteGroupMembershipHandler() authop.DeleteGroupMembershipHandler {
 	return authop.DeleteGroupMembershipHandlerFunc(func(params authop.DeleteGroupMembershipParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RemoveGroupMemberAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1611,9 +1612,9 @@ func (a *Handler) DeleteGroupMembershipHandler() authop.DeleteGroupMembershipHan
 	})
 }
 
-func (a *Handler) ListUserCredentialsHandler() authop.ListUserCredentialsHandler {
+func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHandler {
 	return authop.ListUserCredentialsHandlerFunc(func(params authop.ListUserCredentialsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ListCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1650,9 +1651,9 @@ func (a *Handler) ListUserCredentialsHandler() authop.ListUserCredentialsHandler
 	})
 }
 
-func (a *Handler) CreateCredentialsHandler() authop.CreateCredentialsHandler {
+func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler {
 	return authop.CreateCredentialsHandlerFunc(func(params authop.CreateCredentialsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1679,9 +1680,9 @@ func (a *Handler) CreateCredentialsHandler() authop.CreateCredentialsHandler {
 	})
 }
 
-func (a *Handler) DeleteCredentialsHandler() authop.DeleteCredentialsHandler {
+func (c *Controller) DeleteCredentialsHandler() authop.DeleteCredentialsHandler {
 	return authop.DeleteCredentialsHandlerFunc(func(params authop.DeleteCredentialsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DeleteCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1707,9 +1708,9 @@ func (a *Handler) DeleteCredentialsHandler() authop.DeleteCredentialsHandler {
 	})
 }
 
-func (a *Handler) GetCredentialsHandler() authop.GetCredentialsHandler {
+func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 	return authop.GetCredentialsHandlerFunc(func(params authop.GetCredentialsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadCredentialsAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1738,9 +1739,9 @@ func (a *Handler) GetCredentialsHandler() authop.GetCredentialsHandler {
 	})
 }
 
-func (a *Handler) ListUserGroupsHandler() authop.ListUserGroupsHandler {
+func (c *Controller) ListUserGroupsHandler() authop.ListUserGroupsHandler {
 	return authop.ListUserGroupsHandlerFunc(func(params authop.ListUserGroupsParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1777,9 +1778,9 @@ func (a *Handler) ListUserGroupsHandler() authop.ListUserGroupsHandler {
 	})
 }
 
-func (a *Handler) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
+func (c *Controller) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
 	return authop.ListUserPoliciesHandlerFunc(func(params authop.ListUserPoliciesParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadUserAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1823,9 +1824,9 @@ func (a *Handler) ListUserPoliciesHandler() authop.ListUserPoliciesHandler {
 	})
 }
 
-func (a *Handler) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandler {
+func (c *Controller) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandler {
 	return authop.AttachPolicyToUserHandlerFunc(func(params authop.AttachPolicyToUserParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AttachPolicyAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1847,9 +1848,9 @@ func (a *Handler) AttachPolicyToUserHandler() authop.AttachPolicyToUserHandler {
 	})
 }
 
-func (a *Handler) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHandler {
+func (c *Controller) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHandler {
 	return authop.DetachPolicyFromUserHandlerFunc(func(params authop.DetachPolicyFromUserParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DetachPolicyAction,
 				Resource: permissions.UserArn(params.UserID),
@@ -1871,9 +1872,9 @@ func (a *Handler) DetachPolicyFromUserHandler() authop.DetachPolicyFromUserHandl
 	})
 }
 
-func (a *Handler) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler {
+func (c *Controller) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler {
 	return authop.ListGroupPoliciesHandlerFunc(func(params authop.ListGroupPoliciesParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.ReadGroupAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1907,9 +1908,9 @@ func (a *Handler) ListGroupPoliciesHandler() authop.ListGroupPoliciesHandler {
 	})
 }
 
-func (a *Handler) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHandler {
+func (c *Controller) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHandler {
 	return authop.AttachPolicyToGroupHandlerFunc(func(params authop.AttachPolicyToGroupParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.AttachPolicyAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1931,9 +1932,9 @@ func (a *Handler) AttachPolicyToGroupHandler() authop.AttachPolicyToGroupHandler
 	})
 }
 
-func (a *Handler) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroupHandler {
+func (c *Controller) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroupHandler {
 	return authop.DetachPolicyFromGroupHandlerFunc(func(params authop.DetachPolicyFromGroupParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.DetachPolicyAction,
 				Resource: permissions.GroupArn(params.GroupID),
@@ -1955,9 +1956,9 @@ func (a *Handler) DetachPolicyFromGroupHandler() authop.DetachPolicyFromGroupHan
 	})
 }
 
-func (a *Handler) RetentionGetRetentionPolicyHandler() retentionop.GetRetentionPolicyHandler {
+func (c *Controller) RetentionGetRetentionPolicyHandler() retentionop.GetRetentionPolicyHandler {
 	return retentionop.GetRetentionPolicyHandlerFunc(func(params retentionop.GetRetentionPolicyParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RetentionReadPolicyAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -1980,9 +1981,9 @@ func (a *Handler) RetentionGetRetentionPolicyHandler() retentionop.GetRetentionP
 	})
 }
 
-func (a *Handler) RetentionUpdateRetentionPolicyHandler() retentionop.UpdateRetentionPolicyHandler {
+func (c *Controller) RetentionUpdateRetentionPolicyHandler() retentionop.UpdateRetentionPolicyHandler {
 	return retentionop.UpdateRetentionPolicyHandlerFunc(func(params retentionop.UpdateRetentionPolicyParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.RetentionWritePolicyAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -2002,9 +2003,9 @@ func (a *Handler) RetentionUpdateRetentionPolicyHandler() retentionop.UpdateRete
 	})
 }
 
-func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3InventoryHandler {
+func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3InventoryHandler {
 	return repositories.ImportFromS3InventoryHandlerFunc(func(params repositories.ImportFromS3InventoryParams, user *models.User) middleware.Responder {
-		deps, err := a.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.CreateRepositoryAction,
 				Resource: permissions.RepoArn(params.Repository),
@@ -2014,7 +2015,7 @@ func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3Invent
 			return repositories.NewImportFromS3InventoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("import_from_s3_inventory")
-		userModel, err := a.deps.Auth.GetUser(user.ID)
+		userModel, err := c.deps.Auth.GetUser(user.ID)
 		username := "lakeFS"
 		if err == nil {
 			username = userModel.DisplayName
@@ -2032,7 +2033,7 @@ func (a *Handler) ImportFromS3InventoryHandler() repositories.ImportFromS3Invent
 					WithPayload(responseErrorFrom(err))
 			}
 		} else {
-			repo, err := deps.Cataloger.GetRepository(a.Context(), params.Repository)
+			repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryNotFound().
 					WithPayload(responseErrorFrom(err))

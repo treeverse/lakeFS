@@ -56,7 +56,7 @@ func (r *recordingBodyReader) Close() error {
 
 var uniquenessCounter int32 // persistent request counter during run. used only below,
 
-func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain, listenAddr string) http.Handler {
+func RegisterRecorder(next http.Handler, authService GatewayAuthService, region, bareDomain string) http.Handler {
 	logger := logging.Default()
 	testDir, exist := os.LookupEnv("RECORD")
 	if !exist {
@@ -78,7 +78,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
 			if uniqueCount == 1 { //first activation. Now we can store the simulation configuration, since we have
 				// user details
-				createConfFile(r, authService, region, bareDomain, listenAddr, recordingDir)
+				createConfFile(r, authService, region, bareDomain, recordingDir)
 			}
 			timeStr := time.Now().Format("15-04-05")
 			nameBase := timeStr + fmt.Sprintf("-%05d", (uniqueCount%100000))
@@ -145,7 +145,7 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 	}
 }
 
-func createConfFile(r *http.Request, authService GatewayAuthService, region, bareDomain, listenAddr, recordingDir string) {
+func createConfFile(r *http.Request, authService GatewayAuthService, region, bareDomain, recordingDir string) {
 	authenticator := sig.ChainedAuthenticator(
 		sig.NewV4Authenticator(r),
 		sig.NewV2SigAuthenticator(r))
@@ -163,7 +163,6 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 			Fatal("failed getting credentials")
 	}
 	conf := &PlayBackMockConf{
-		ListenAddress:   listenAddr,
 		BareDomain:      bareDomain,
 		AccessKeyId:     accessKeyId,
 		AccessSecretKey: creds.AccessSecretKey,

@@ -3,9 +3,8 @@ package auth
 import (
 	"time"
 
-	"github.com/treeverse/lakefs/cache"
-
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/cache"
 )
 
 type CredentialSetFn func() (*model.Credential, error)

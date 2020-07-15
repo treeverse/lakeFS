@@ -38,8 +38,8 @@ var initCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 
-		installationID, metadata, err := auth.WriteInitialMetadata(config.Version, authService)
-
+		metaManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		metadata, err := metaManager.Write()
 		if err != nil {
 			fmt.Printf("failed to write initial setup metadata: %s\n", err)
 			os.Exit(1)
@@ -55,7 +55,7 @@ var initCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(installationID)
+		stats := cfg.BuildStats(metadata["installation_id"])
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")

@@ -29,7 +29,7 @@ You can use DistCP to copy between two different lakeFS repositories. Replace th
 hadoop distcp \
   -Dfs.s3a.access.key="AKIAIOSFODNN7EXAMPLE" \
   -Dfs.s3a.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
-  -Dfs.s3a.endpoint="https://example.lakefs.io" \
+  -Dfs.s3a.endpoint="https://s3.lakefs.example.com" \
   "s3a://example-repo-1/master/example-file.parquet" \
   "s3a://example-repo-2/master/example-file.parquet"
 ```
@@ -46,7 +46,7 @@ In the following examples, replace the first access key pair with your lakeFS ke
 hadoop distcp \
   -Dfs.s3a.bucket.example-repo.access.key="AKIAIOSFOLAKEEXAMPLE" \
   -Dfs.s3a.bucket.example-repo.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRLAKEEXAMPLEKEY" \
-  -Dfs.s3a.bucket.example-repo.endpoint="https://example.lakefs.io" \
+  -Dfs.s3a.bucket.example-repo.endpoint="https://s3.lakefs.example.com" \
   -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNS3EXAMPLE" \
   -Dfs.s3a.bucket.example-bucket.secret.key="aaalrXUtnFEMI/K7MDENG/bPxRfiS3EXAMPLEKEY" \
   "s3a://example-bucket/example-file.parquet" \
@@ -58,7 +58,7 @@ hadoop distcp \
 hadoop distcp \
   -Dfs.s3a.bucket.example-repo.access.key="AKIAIOSFOLAKEEXAMPLE" \
   -Dfs.s3a.bucket.example-repo.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRLAKEEXAMPLEKEY" \
-  -Dfs.s3a.bucket.example-repo.endpoint="https://example.lakefs.io" \
+  -Dfs.s3a.bucket.example-repo.endpoint="https://s3.lakefs.example.com" \
   -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNS3EXAMPLE" \
   -Dfs.s3a.bucket.example-bucket.secret.key="aaalrXUtnFEMI/K7MDENG/bPxRfiS3EXAMPLEKEY" \
   "s3a://example-repo/master/myfile" \

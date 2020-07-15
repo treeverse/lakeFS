@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -73,6 +74,13 @@ func WriteTo(tpl string, ctx interface{}, w io.Writer) {
 		},
 		"ljust": func(length int, s string) string {
 			return text.AlignLeft.Apply(s, length)
+		},
+		"json": func(v interface{}) string {
+			encoded, err := json.MarshalIndent(v, "", "  ")
+			if err != nil {
+				panic(fmt.Sprintf("failed to encode JSON: %s", err.Error()))
+			}
+			return string(encoded)
 		},
 		"paginate": func(pag *Pagination) string {
 			if pag != nil && pag.HasNext && isTerminal {

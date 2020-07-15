@@ -81,23 +81,20 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
 		Enabled: false,
 	})
+	meta := auth.NewDBMetadataManager("dev", conn)
 	retention := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
-	server := api.NewServer(
-		"dev",
+	handler := api.NewHandler(
 		cataloger,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
 		retention,
 		migrator,
 		logging.Default(),
 	)
 
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatal(err)
-	}
 	return handler, &dependencies{
 		blocks:    blockAdapter,
 		auth:      authService,

@@ -57,27 +57,23 @@ func TestLocalLoad(t *testing.T) {
 	}
 	conn, _ := testutil.GetDB(t, databaseUri)
 	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
-
 	cataloger := catalog.NewCataloger(conn)
-
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
 	retention := retention.NewService(conn)
+	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(databaseUri)
 
-	server := api.NewServer(
-		"dev",
+	handler := api.NewHandler(
 		cataloger,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
 		retention,
 		migrator,
 		logging.Default(),
 	)
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatalf("failed to get server handler: %s", err)
-	}
+
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 

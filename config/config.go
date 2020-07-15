@@ -39,11 +39,9 @@ const (
 	DefaultAuthCacheTTL     = 20 * time.Second
 	DefaultAuthCacheJitter  = 3 * time.Second
 
-	DefaultS3GatewayListenAddr = "0.0.0.0:8000"
+	DefaultListenAddr          = "0.0.0.0:8000"
 	DefaultS3GatewayDomainName = "s3.local.lakefs.io"
 	DefaultS3GatewayRegion     = "us-east-1"
-
-	DefaultAPIListenAddr = "0.0.0.0:8001"
 
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
@@ -67,6 +65,8 @@ func NewConfig() *Config {
 }
 
 func setDefaults() {
+	viper.SetDefault("listen_address", DefaultListenAddr)
+
 	viper.SetDefault("logging.format", DefaultLoggingFormat)
 	viper.SetDefault("logging.level", DefaultLoggingLevel)
 	viper.SetDefault("logging.output", DefaultLoggingOutput)
@@ -84,11 +84,8 @@ func setDefaults() {
 	viper.SetDefault("blockstore.s3.streaming_chunk_size", DefaultBlockStoreS3StreamingChunkSize)
 	viper.SetDefault("blockstore.s3.streaming_chunk_timeout", DefaultBlockStoreS3StreamingChunkTimeout)
 
-	viper.SetDefault("gateways.s3.listen_address", DefaultS3GatewayListenAddr)
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
-
-	viper.SetDefault("api.listen_address", DefaultAPIListenAddr)
 
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
@@ -196,16 +193,12 @@ func (c *Config) GetS3GatewayRegion() string {
 	return viper.GetString("gateways.s3.region")
 }
 
-func (c *Config) GetS3GatewayListenAddress() string {
-	return viper.GetString("gateways.s3.listen_address")
-}
-
 func (c *Config) GetS3GatewayDomainName() string {
 	return viper.GetString("gateways.s3.domain_name")
 }
 
-func (c *Config) GetAPIListenAddress() string {
-	return viper.GetString("api.listen_address")
+func (c *Config) GetListenAddress() string {
+	return viper.GetString("listen_address")
 }
 
 func (c *Config) GetStatsEnabled() bool {
