@@ -8,19 +8,19 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 )
 
-func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool {
-	if row1 == nil || row2 == nil {
-		return false
-	}
-	return row1.Key < row2.Key
-}
-
 type InventoryDiff struct {
 	DryRun               bool
 	AddedOrChanged       []block.InventoryObject
 	Deleted              []block.InventoryObject
 	PreviousInventoryURL string
 	PreviousImportDate   time.Time
+}
+
+func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool {
+	if row1 == nil || row2 == nil {
+		return false
+	}
+	return row1.Key < row2.Key
 }
 
 // CalcDiff returns a diff between two sorted arrays of InventoryObject
@@ -42,9 +42,7 @@ func CalcDiff(leftInv []block.InventoryObject, rightInv []block.InventoryObject)
 			res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			rightIdx++
 		} else if leftRow.Key == rightRow.Key {
-			if (leftRow.Checksum != nil && rightRow.Checksum == nil) ||
-				(leftRow.Checksum == nil && rightRow.Checksum != nil) ||
-				(leftRow.Checksum != nil && rightRow.Checksum != nil && *leftRow.Checksum != *rightRow.Checksum) {
+			if leftRow.Checksum != rightRow.Checksum {
 				res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
 			}
 			leftIdx++

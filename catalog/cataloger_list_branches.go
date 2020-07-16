@@ -41,5 +41,5 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}
 	branches := res.([]*Branch)
 	hasMore := paginateSlice(&branches, limit)
-	return branches, hasMore, err
+	return branches, hasMore, nil
 }

@@ -55,7 +55,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 		return entries, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
-		return nil, false, fmt.Errorf("list entries: %w", err)
+		return nil, false, err
 	}
 	entries := res.([]*Entry)
 	hasMore := paginateSlice(&entries, limit)
