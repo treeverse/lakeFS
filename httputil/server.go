@@ -17,13 +17,14 @@ func HostOnly(hostname string) string {
 type MatchFn func(string) bool
 
 func Exact(v string) MatchFn {
+	vHost := HostOnly(v)
 	return func(host string) bool {
-		return v == host
+		return vHost == host
 	}
 }
 
 func SubdomainsOf(v string) MatchFn {
-	subV := "." + v
+	subV := "." + HostOnly(v)
 	return func(host string) bool {
 		if !strings.HasSuffix(host, subV) || len(host) < len(subV)+1 {
 			return false
