@@ -2,7 +2,9 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strconv"
 
 	"github.com/jmoiron/sqlx"
 
@@ -67,64 +69,38 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 }
 
 func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
-	// get source commit id on destination
-	sourceCommitID, err := getNextCommitID(tx)
-	if err != nil {
-		return 0, err
-	}
-	sourceCommitID -= 1 // move next current to current source commit id
 
-	// get destination commit id on destination
-	commitID, err := getNextCommitID(tx)
+	nextCommitID, err := getNextCommitID(tx)
 	if err != nil {
 		return 0, err
 	}
 
 	// do the merge based on the relation
+	previousMaxCommitID, err := getLastCommitIDByBranchID(tx, rightID)
+	if err != nil {
+		return 0, err
+	}
 	switch relation {
 	case RelationTypeFromFather:
-		err = c.mergeFromFather(tx, commitID, leftID, rightID)
+		err = c.mergeFromFather(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
 	case RelationTypeFromSon:
-		err = c.mergeFromSon(tx, commitID, leftID, rightID)
+		err = c.mergeFromSon(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
 	case RelationTypeNotDirect:
-		err = c.mergeNonDirect(tx, commitID, leftID, rightID)
+		err = c.mergeNonDirect(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
 	default:
 		return 0, ErrUnsupportedRelation
 	}
 	if err != nil {
 		return 0, err
 	}
-
-	// add commit record
-	if _, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)`,
-		rightID, commitID, committer, msg, c.clock.Now(), metadata, relation, leftID, sourceCommitID); err != nil {
-		return 0, err
-	}
-	return commitID, nil
+	return nextCommitID, nil
 }
 
-func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID, rightID int64) error {
-	// set current lineages max commit to current one
-	/*if _, err := tx.Exec(`UPDATE lineage SET max_commit=($2 - 1) WHERE branch_id=$1 AND max_commit=$3`,
-		rightID, commitID, MaxCommitID); err != nil {
-		return err
-	}
+func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, fatherID, sonID int64, committer string, msg string, metadata Metadata) error {
 
-	// copy source lineages with an effective commit
-	_, err := tx.Exec(`INSERT INTO lineage (branch_id, precedence, ancestor_branch, effective_commit, min_commit)
-			SELECT $1, precedence + 1, ancestor_branch, effective_commit, $3
-			FROM lineage_v
-			WHERE branch_id = $2 AND active_lineage`, rightID, leftID, commitID)
-	if err != nil {
-		return err
-	}*/
-
-	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries
-	_, err := tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
-			WHERE branch_id = $1 AND max_commit = $3
-				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
-		rightID, commitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
+	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
+			WHERE branch_id = $1 AND max_commit = $3 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
+		sonID, previousMaxCommitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
@@ -134,16 +110,42 @@ func (c *cataloger) mergeFromFather(tx sqlx.Execer, commitID CommitID, leftID, r
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
-		rightID, commitID, DifferenceTypeChanged)
-	return err
+		sonID, nextCommitID, DifferenceTypeChanged)
+
+	fatherLastCommitID, err := getLastCommitIDByBranchID(tx, fatherID)
+	if err != nil {
+		return err
+	}
+
+	var fatherLastLineage, sonNewLineage string
+	err = tx.Get(&fatherLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM commits 
+												WHERE branch_id = $1 AND merge_type = 'from_father' ORDER BY branch_id,commit_id DESC`, fatherID)
+	if err != nil && !errors.As(err, &db.ErrNotFound) {
+		return err
+	}
+
+	if len(fatherLastLineage) > 0 {
+		sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10) + "," + fatherLastLineage
+	} else {
+		sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10)
+	}
+
+	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
+                     lineage_commits)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_father',$8,$9,string_to_array($10,',')::bigint[])`,
+		sonID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, fatherID, fatherLastCommitID, sonNewLineage)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int64, rightID int64) error {
-	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries
-	_, err := tx.Exec(`UPDATE entries SET max_commit = ($2 - 1)
-			WHERE branch_id = $1 AND max_commit = $3
-				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
-		rightID, commitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
+func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, sonID int64, fatherID int64, committer string, msg string, metadata Metadata) error {
+	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries in father branch
+	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
+			WHERE branch_id = $1 AND max_commit = max_commit_id()
+				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
+		fatherID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
@@ -153,19 +155,32 @@ func (c *cataloger) mergeFromSon(tx sqlx.Execer, commitID CommitID, _ int64, rig
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
-		rightID, commitID, DifferenceTypeAdded, DifferenceTypeChanged)
+		fatherID, nextCommitID, DifferenceTypeAdded, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
-	// DifferenceTypeRemoved - create tombstones if source branch is not our destination
+	// DifferenceTypeRemoved - create tombstones if father "sees" those entries from lineage branches
 	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
 				SELECT $1,path,'',0,'','{}',$2,0
 				FROM `+diffResultsTableName+`
-				WHERE diff_type=$3 AND source_branch<>$4`,
-		rightID, commitID, DifferenceTypeRemoved, rightID)
-	return err
+				WHERE diff_type=$3 AND source_branch<>$1`,
+		fatherID, nextCommitID, DifferenceTypeRemoved)
+	if err != nil {
+		return err
+	}
+	sonLastCommitID, err := getLastCommitIDByBranchID(tx, sonID)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
+		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_son',$8,$9)`,
+		fatherID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, sonID, sonLastCommitID)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
-func (c *cataloger) mergeNonDirect(tx sqlx.Execer, commitID CommitID, leftID, rightID int64) error {
+func (c *cataloger) mergeNonDirect(tx sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, metadata Metadata) error {
 	panic("not implemented - Someday is not a day of the week")
 }
