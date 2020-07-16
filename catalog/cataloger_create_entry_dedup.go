@@ -23,7 +23,7 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 		return insertEntry(tx, branchID, &entry)
 	}, c.txOpts(ctx)...)
 	if err != nil {
-		return fmt.Errorf("create entry: %w", err)
+		return err
 	}
 
 	// post request to dedup if needed

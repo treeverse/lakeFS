@@ -26,8 +26,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 			return "", err
 		}
 		if commitID == 0 {
-			// TODO(barak): recursive search for parent commit - if none, return ErrReferenceNotFound
-			return "", nil
+			return "", ErrCommitNotFound
 		}
 		return MakeReference(branch, commitID), nil
 	}, c.txOpts(ctx, db.ReadOnly())...)

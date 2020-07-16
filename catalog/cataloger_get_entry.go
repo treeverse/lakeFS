@@ -49,7 +49,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 		return &ent, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
-		return nil, fmt.Errorf("get entry: %w", err)
+		return nil, err
 	}
 	return res.(*Entry), nil
 }

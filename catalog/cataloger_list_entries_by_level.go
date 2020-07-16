@@ -53,7 +53,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		return markerList, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
-		return nil, false, fmt.Errorf("list entries by level: %w", err)
+		return nil, false, err
 	}
 	result := markers.([]LevelEntryResult)
 	moreToRead := paginateSlice(&result, limit)

@@ -71,8 +71,5 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)
-	if err != nil {
-		return fmt.Errorf("delete entry: %w", err)
-	}
-	return nil
+	return err
 }
