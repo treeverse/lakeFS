@@ -142,6 +142,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 }
 
 func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
+	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
 	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
 	sonSQL, sonArgs := sq.Select("*").FromSelect(sonLineage, "s").
 		Where("displayed_branch = ? ", sonID).MustSql()
@@ -154,11 +155,11 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		//both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
-		Column(`f.min_commit > ?  -- father created after commit
-			OR f.max_commit > ? AND f.is_deleted -- father deleted after commit
-									AS father_changed`,
-			lastSonMergeWithFather, lastSonMergeWithFather). // there was a change in the father or his ancestors after last merge of sone with father
-		// since commit is global - it is enough
+		Column(`f.min_commit > l.commit_id  -- father created after commit
+			OR f.max_commit >= l.commit_id AND f.is_deleted -- father deleted after commit
+									AS father_changed`). // father was changed if son could no "see" it
+		// this happens if min_commit is larger than the lineage commit
+		// or entry deletion max_commit is larger or eqaul than lineage commit
 		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
 		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
 							(NOT s.is_committed -- uncommitted is new
@@ -167,7 +168,8 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 						  AS DifferenceTypeConflict`, sonID, lastSonMergeWithFather, lastSonMergeWithFather).
 		FromSelect(fatherLineage, "f").
 		Where("f.displayed_branch = ?", fatherID).
-		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...)
+		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...).
+		Join(`(SELECT * FROM ` + sonLineageValues + `) l ON f.source_branch = l.branch_id`)
 
 	RemoveNonRelevantQ := sq.Select("*").
 		FromSelect(internalV, "t").

@@ -114,17 +114,18 @@ CREATE SEQUENCE commit_id_seq
     NO MAXVALUE
     CACHE 10;
 
-CREATE TABLE commits (
-    branch_id bigint NOT NULL,
-    commit_id bigint NOT NULL,
-    committer character varying,
-    message character varying,
-    creation_date timestamp with time zone DEFAULT now() NOT NULL,
-    metadata jsonb,
-    merge_source_branch bigint,
-    merge_source_commit bigint,
-    merge_type merge_type DEFAULT 'none'::merge_type,
-    lineage_commits bigint[] DEFAULT array[]::bigint[]
+CREATE TABLE commits(
+                        branch_id           bigint                                 NOT NULL,
+                        commit_id           bigint                                 NOT NULL,
+                        previous_commit_id  bigint                                 NOT NULL,
+                        committer           character varying,
+                        message             character varying,
+                        creation_date       timestamp with time zone DEFAULT now() NOT NULL,
+                        metadata            jsonb,
+                        merge_source_branch bigint,
+                        merge_source_commit bigint,
+                        merge_type          merge_type               DEFAULT 'none'::merge_type,
+                        lineage_commits     bigint[]                 DEFAULT array []::bigint[]
 );
 
 CREATE VIEW commits_v AS
