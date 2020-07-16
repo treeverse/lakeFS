@@ -11,7 +11,6 @@ import (
 )
 
 func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -49,7 +48,6 @@ func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
 }
 
 func TestCataloger_DiffUncommitted_NoChance(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
