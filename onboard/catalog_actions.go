@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"time"
 )
 
 type RepoActions interface {
@@ -34,7 +35,7 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, objects
 			Path:            row.Key,
 			PhysicalAddress: row.PhysicalAddress,
 			CreationDate:    time.Unix(0, row.LastModified*int64(time.Millisecond)),
-			Size:            *row.Size,
+			Size:            row.Size,
 			Checksum:        row.Checksum,
 		}
 		currentBatch = append(currentBatch, entry)

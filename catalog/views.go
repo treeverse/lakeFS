@@ -17,7 +17,7 @@ func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
 		"max_commit < max_commit_id() AS is_deleted",
-		"CASE  WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
+		"CASE WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
 		From("entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required

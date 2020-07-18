@@ -5,9 +5,13 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import {connect} from "react-redux";
 
 
-export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
+export const RepositoryCreateForm = connect(({ repositories }) => {
+    const {create} = repositories;
+    return {create};
+})(({ error, onSubmit, onCancel, create, sm = 6 }) => {
 
     const fieldNameOffset = 3;
 
@@ -67,8 +71,8 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
 
             <Row>
                 <Col md={{span: sm, offset: fieldNameOffset}} >
-                    <Button variant="success" type="submit" className="mr-2" disabled={!formValid}>
-                        Create Repository
+                    <Button variant="success" type="submit" className="mr-2" disabled={!formValid || create.inProgress}>
+                        { create.inProgress ? 'Creating...' : 'Create Repository' }
                     </Button>
                     <Button variant="secondary" onClick={(e) => {
                         e.preventDefault();
@@ -78,4 +82,4 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
             </Row>
         </Form>
     );
-};
+});

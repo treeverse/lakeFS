@@ -145,6 +145,7 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.RepositoriesGetRepositoryHandler = c.GetRepoHandler()
 	api.RepositoriesCreateRepositoryHandler = c.CreateRepositoryHandler()
 	api.RepositoriesDeleteRepositoryHandler = c.DeleteRepositoryHandler()
+	api.RepositoriesImportFromS3InventoryHandler = c.ImportFromS3InventoryHandler()
 
 	api.BranchesListBranchesHandler = c.ListBranchesHandler()
 	api.BranchesGetBranchHandler = c.GetBranchHandler()

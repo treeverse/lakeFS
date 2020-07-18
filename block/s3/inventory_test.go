@@ -4,15 +4,16 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	s32 "github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/block/s3"
 	"io/ioutil"
 	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+
+	s32 "github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/s3"
 )
 
 // convenience converter functions
@@ -27,22 +28,20 @@ func keys(rows []block.InventoryObject) []string {
 	return res
 }
 
-func rows(keys ...string) []block.InventoryObject {
+func rows(keys ...string) []s3.ParquetInventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]block.InventoryObject, 0, len(keys))
-	for _, key := range keys {
-		res = append(res, block.InventoryObject{
-			Key:            key,
-			IsDeleteMarker: false,
-			IsLatest:       true,
-		})
+	res := make([]s3.ParquetInventoryObject, len(keys))
+	latest := true
+	for i, key := range keys {
+		res[i].Key = key
+		res[i].IsLatest = &latest
 	}
 	return res
 }
 
-func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, manifestFileKey string) ([]block.InventoryObject, error) {
+func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, manifestFileKey string) ([]s3.ParquetInventoryObject, error) {
 	if inventoryBucketName != "example-bucket" {
 		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
 	}

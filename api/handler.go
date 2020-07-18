@@ -5,7 +5,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"net/http/pprof"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
@@ -133,15 +132,10 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 
 func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
-	// pprof
-	mux.HandleFunc("/debug/pprof/", pprof.Index)
-	mux.HandleFunc("/debug/pprof/cmdline", pprof.Cmdline)
-	mux.HandleFunc("/debug/pprof/profile", pprof.Profile)
-	mux.HandleFunc("/debug/pprof/symbol", pprof.Symbol)
-	mux.HandleFunc("/debug/pprof/trace", pprof.Trace)
-	// promethues
-	mux.Handle("/metrics", promhttp.Handler())
-
+	// health check
+	mux.Handle("/_health", httputil.ServeHealth())
+	// pprof endpoint
+	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
 	mux.Handle("/api/", api)
 	// swagger

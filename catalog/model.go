@@ -54,9 +54,9 @@ type Branch struct {
 	Name       string `db:"name"`
 }
 
-type LevelEntryResult struct {
-	Path  string `db:"path"`
-	Entry *Entry
+type LevelEntry struct {
+	CommonLevel bool
+	*Entry
 }
 
 type MultipartUpload struct {

@@ -1,18 +1,12 @@
 package onboard
 
 import (
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 	"strconv"
 	"time"
-)
 
-func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool {
-	if row1 == nil || row2 == nil {
-		return false
-	}
-	return row1.Key < row2.Key
-}
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
+)
 
 type InventoryDiff struct {
 	DryRun               bool
@@ -20,6 +14,13 @@ type InventoryDiff struct {
 	Deleted              []block.InventoryObject
 	PreviousInventoryURL string
 	PreviousImportDate   time.Time
+}
+
+func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool {
+	if row1 == nil || row2 == nil {
+		return false
+	}
+	return row1.Key < row2.Key
 }
 
 // CalcDiff returns a diff between two sorted arrays of InventoryObject
@@ -34,7 +35,7 @@ func CalcDiff(leftInv []block.InventoryObject, rightInv []block.InventoryObject)
 		if rightIdx < len(rightInv) {
 			rightRow = &rightInv[rightIdx]
 		}
-		if leftRow != nil && rightRow == nil || CompareKeys(leftRow, rightRow) {
+		if leftRow != nil && (rightRow == nil || CompareKeys(leftRow, rightRow)) {
 			res.Deleted = append(res.Deleted, *leftRow)
 			leftIdx++
 		} else if leftRow == nil || CompareKeys(rightRow, leftRow) {

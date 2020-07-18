@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -23,29 +24,29 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		// next id for branch
 		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq')`); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("next next id: %s", err)
 		}
 
 		// next id for repository
 		var repoID int64
 		if err := tx.Get(&repoID, `SELECT nextval('repositories_id_seq')`); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("next repository id: %w", err)
 		}
 		if _, err := tx.Exec(`SET CONSTRAINTS repositories_branches_id_fkey DEFERRED`); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("set constranits: %w", err)
 		}
 
 		// create repository with ref to branch
 		creationDate := c.clock.Now()
 		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
 			VALUES ($1,$2,$3,$4,$5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("insert repository: %w", err)
 		}
 
 		// create branch with ref to repository
 		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name)
 			VALUES ($1,$2,$3)`, repoID, branchID, branch); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("insert branch: %w", err)
 		}
 
 		// create initial commit
@@ -53,7 +54,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 			VALUES ($1,nextval('commit_id_seq'),$2,$3,$4,0)`,
 			branchID, CatalogerCommitter, createRepositoryCommitMessage, creationDate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("insert commit: %w", err)
 		}
 		return repoID, nil
 	}, c.txOpts(ctx)...)

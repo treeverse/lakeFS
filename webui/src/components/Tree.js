@@ -131,25 +131,59 @@ const PathLink = ({ repoId, refId, path, children, as = null }) => {
 
 const Na = () => (<span>&mdash;</span>);
 
+const EntryRowActions = ({ repo, refId, entry, onDelete }) => {
+    const [isDropdownOpen, setDropdownOpen] = useState(false);
+    return (
+        <Dropdown alignRight onToggle={setDropdownOpen}>
+        <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
+                return (
+                    <Button variant="link" onClick={e => { e.preventDefault(); onClick(e); }} ref={ref}>
+                    {children}
+                    </Button>
+                );
+            })}>
+            {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+        </Dropdown.Toggle>
+
+        <Dropdown.Menu>
+            <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+            <Dropdown.Item onClick={(e) => {
+                    e.preventDefault();
+                    if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
+                }}><TrashcanIcon/> {' '} Delete
+            </Dropdown.Item>
+        </Dropdown.Menu>
+        </Dropdown>
+    );
+};
+
 const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions }) => {
     let rowClass = 'tree-row ';
-    if (entry.diff_type === 'CHANGED') {
-        rowClass += 'diff-changed';
-    } else if (entry.diff_type === 'ADDED') {
-        rowClass += 'diff-added';
-    } else if (entry.diff_type === 'REMOVED') {
-        rowClass += 'diff-removed';
+    switch(entry.diff_type) {
+        case 'CHANGED':
+            rowClass += 'diff-changed';
+            break;
+        case 'ADDED':
+            rowClass += 'diff-added';
+            break;
+        case 'REMOVED':
+            rowClass += 'diff-removed';
+            break;
     }
 
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
 
     let button;
-    if (entry.diff_type === 'REMOVED') {
-        button = (<span>{buttonText}</span>);
-    } else if (entry.path_type === 'TREE') {
-        button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
-    } else {
-        button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
+    switch(entry.diff_type) {
+        case 'REMOVED':
+            button = (<span>{buttonText}</span>);
+            break;
+        case 'TREE':
+            button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
+            break;
+        default:
+            button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
+            break;
     }
 
     let size;
@@ -175,62 +209,39 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let diffIndicator;
-    if (entry.diff_type === 'REMOVED') {
-        diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
-                <span>
-                    <TrashcanIcon/>
-                </span>
-            </OverlayTrigger>
-        );
-    } else if (entry.diff_type === 'ADDED') {
-        diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
-                <span>
-                    <PlusIcon/>
-                </span>
-            </OverlayTrigger>
-        );
-    } else if (entry.diff_type === 'CHANGED') {
-        diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
-                <span>
-                    <PencilIcon/>
-                </span>
-            </OverlayTrigger>
-        );
+    switch(entry.diff_type) {
+        case 'REMOVED':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
+                    <span>
+                        <TrashcanIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'ADDED':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
+                    <span>
+                        <PlusIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'CHANGED':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
+                    <span>
+                        <PencilIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
     }
 
-    let ObjectDropdown;
+    let entryActions;
     if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
-        ObjectDropdown = () => {
-            const [isDropdownOpen, setDropdownOpen] = useState(false);
-            return (
-                <Dropdown alignRight onToggle={setDropdownOpen}>
-                    <Dropdown.Toggle
-                        as={React.forwardRef(({onClick, children}, ref) => {
-                            return (
-                                <Button variant="link" onClick={(e) => {
-                                    e.preventDefault();
-                                    onClick(e);
-                                }} ref={ref}>
-                                    {children}
-                                </Button>
-                            );
-                        })}>
-                        {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-                    </Dropdown.Toggle>
-
-                    <Dropdown.Menu>
-                        <PathLink path={entry.path} refId={refId} repoId={repo.id}
-                                  as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                        <Dropdown.Item onClick={(e) => {
-                            e.preventDefault();
-                            if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
-                        }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
-                    </Dropdown.Menu>
-                </Dropdown>);
-        }
+        entryActions = <EntryRowActions repo={repo} refId={refId} entry={entry} onDelete={onDelete}></EntryRowActions>;
     }
 
     return (
@@ -250,7 +261,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {modified}
             </td>
             <td className={"tree-row-actions"}>
-                <ObjectDropdown/>
+                {entryActions}
             </td>
         </tr>
         </>

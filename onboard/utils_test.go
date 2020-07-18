@@ -3,37 +3,19 @@ package onboard_test
 import (
 	"context"
 	"errors"
-	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/onboard"
 	"sort"
 	"strconv"
 	"testing"
+
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/onboard"
 )
 
 const (
 	NewInventoryURL      = "s3://example-bucket/inventory-new.json"
 	PreviousInventoryURL = "s3://example-bucket/inventory-prev.json"
 )
-
-type mockInventoryGenerator struct {
-	newInventoryURL      string
-	previousInventoryURL string
-	newInventory         []string
-	previousInventory    []string
-	sourceBucket         string
-}
-
-func (m mockInventoryGenerator) GenerateInventory(inventoryURL string) (block.Inventory, error) {
-	if inventoryURL == m.newInventoryURL {
-		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
-	}
-	if inventoryURL == m.previousInventoryURL {
-		return &mockInventory{rows: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
-	}
-	return nil, errors.New("failed to create inventory")
-}
 
 type mockInventory struct {
 	rows         []string
@@ -51,6 +33,24 @@ type mockCatalogActions struct {
 	previousCommitInventory string
 	objectActions           objectActions
 	lastCommitMetadata      catalog.Metadata
+}
+
+type mockInventoryGenerator struct {
+	newInventoryURL      string
+	previousInventoryURL string
+	newInventory         []string
+	previousInventory    []string
+	sourceBucket         string
+}
+
+func (m mockInventoryGenerator) GenerateInventory(inventoryURL string) (block.Inventory, error) {
+	if inventoryURL == m.newInventoryURL {
+		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
+	}
+	if inventoryURL == m.previousInventoryURL {
+		return &mockInventory{rows: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
+	}
+	return nil, errors.New("failed to create inventory")
 }
 
 // convenience converter functions
@@ -71,7 +71,7 @@ func rows(keys ...string) []block.InventoryObject {
 	}
 	res := make([]block.InventoryObject, 0, len(keys))
 	for _, key := range keys {
-		res = append(res, block.InventoryObject{Key: key, Size: swag.Int64(0)})
+		res = append(res, block.InventoryObject{Key: key})
 	}
 	return res
 }
