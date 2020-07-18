@@ -15,7 +15,7 @@ import (
 const (
 	CatalogerCommitter = ""
 
-	DefaultDelimiter = "/"
+	DefaultPathDelimiter = "/"
 
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 50 * time.Millisecond

@@ -5,7 +5,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -117,7 +120,8 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			wantEntries: []string{"file2", "file2/"},
 			wantMore:    false,
 			wantErr:     false,
-		}, {
+		},
+		{
 			name: "slash",
 			args: args{
 				repository: "repo1",
@@ -129,7 +133,8 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			wantEntries: []string{"/", "fileb"},
 			wantMore:    false,
 			wantErr:     false,
-		}, {
+		},
+		{
 			name: "double slash",
 			args: args{
 				repository: "repo1",
@@ -141,7 +146,8 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			wantEntries: []string{"/", "filec"},
 			wantMore:    false,
 			wantErr:     false,
-		}, {
+		},
+		{
 			name: "under file6",
 			args: args{
 				repository: "repo1",
@@ -162,22 +168,22 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				t.Fatalf(" error = %v, wantErr %v", err, tt.wantErr)
 			}
 			// test that directories have null entries, and vice versa
-			for _, res := range got {
-				resEnd := res.Path[len(res.Path)-1:]
-				if resEnd == "/" && res.Entry != nil {
-					t.Errorf("%s is a directory, pointer to entry is not nil", res.Path)
-				} else if resEnd != "/" && res.Entry == nil {
-					t.Errorf("%s is an entry,but pointer to entry is nil", res.Path)
-				}
-			}
-			// copy the Entry fields we like to compare
 			var gotNames []string
-			for _, ent := range got {
-				gotNames = append(gotNames, ent.Path)
+			for _, res := range got {
+				if strings.HasSuffix(res.Name, DefaultPathDelimiter) != res.CommonLevel {
+					t.Errorf("%s suffix doesn't match the CommonLevel = %t", res.Name, res.CommonLevel)
+				}
+				if (res.Entry == nil) != res.CommonLevel {
+					t.Errorf("CommonLevel = %t, doesn't match entry %s", res.CommonLevel, spew.Sdump(res.Entry))
+				}
+				if res.Entry != nil && !strings.HasSuffix(res.Entry.Path, res.Name) {
+					t.Errorf("Name '%s' expected to be path '%s' suffix", res.Name, res.Entry.Path)
+				}
+				gotNames = append(gotNames, res.Name)
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("ListEntriesByLevel got = %+v, want = %+v", gotNames, tt.wantEntries)
+				t.Errorf("ListEntriesByLevel got = %s, want = %s", spew.Sdump(gotNames), spew.Sdump(tt.wantEntries))
 			}
 			if gotMore != tt.wantMore {
 				t.Errorf("ListEntriesByLevel gotMore = %t, want = %t", gotMore, tt.wantMore)

@@ -41,16 +41,12 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
 		}
-		var markerList []LevelEntry
+		var markerList []string
 		err = tx.Select(&markerList, sql, args...)
 		if err != nil {
 			return nil, fmt.Errorf("select: %w", err)
 		}
-		err = loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
-		if err != nil {
-			return nil, err
-		}
-		return markerList, nil
+		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return nil, false, err
@@ -60,7 +56,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	return result, moreToRead, nil
 }
 
-func loadEntriesIntoMarkerList(markerList []LevelEntry, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) error {
+func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]LevelEntry, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int
 		startEntryRun, endEntryRun string
@@ -69,14 +65,15 @@ func loadEntriesIntoMarkerList(markerList []LevelEntry, tx db.Tx, branchID int64
 	var inRun bool
 	var previousInRun string
 	var run entryRun
-	for i := range markerList {
-		p := markerList[i].Path
+	entries := make([]LevelEntry, len(markerList))
+	for i, p := range markerList {
 		if strings.HasSuffix(p, DirectoryTermination) { // remove termination character, if present
 			p = strings.TrimSuffix(p, DirectoryTermination)
-			markerList[i].Path = p
 		}
+		entries[i].Name = p
+
 		if strings.HasSuffix(p, delimiter) { // terminating by '/'(slash) character is an indication of a directory
-			markerList[i].CommonLevel = true
+			entries[i].CommonLevel = true
 			// its absence indicates a leaf entry that has to be read from DB
 			if inRun {
 				inRun = false
@@ -101,23 +98,25 @@ func loadEntriesIntoMarkerList(markerList []LevelEntry, tx db.Tx, branchID int64
 	}
 	entriesReader := sqEntriesLineageV(branchID, commitID, lineage)
 	for _, r := range entryRuns {
-		rangeReader := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
-			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).FromSelect(entriesReader, "e")
-		sql, args, err := rangeReader.PlaceholderFormat(sq.Dollar).ToSql()
+		sql, args, err := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).
+			FromSelect(entriesReader, "e").
+			PlaceholderFormat(sq.Dollar).
+			ToSql()
 		if err != nil {
-			return fmt.Errorf("build entries sql: %w", err)
+			return nil, fmt.Errorf("build entries sql: %w", err)
 		}
-		var entriesList []Entry
+		var entriesList []*Entry
 		err = tx.Select(&entriesList, sql, args...)
 		if err != nil {
-			return fmt.Errorf("select entries: %w", err)
+			return nil, fmt.Errorf("select entries: %w", err)
 		}
 		if len(entriesList) != r.runLength {
-			return fmt.Errorf("expect to read %d entries, got %d", r.runLength, len(entriesList))
+			return nil, fmt.Errorf("expect to read %d entries, got %d", r.runLength, len(entriesList))
 		}
 		for i := 0; i < r.runLength; i++ {
-			markerList[r.startRunIndex+i].Entry = &entriesList[i]
+			entries[r.startRunIndex+i].Entry = entriesList[i]
 		}
 	}
-	return nil
+	return entries, nil
 }
