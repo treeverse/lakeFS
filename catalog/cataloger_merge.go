@@ -106,6 +106,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 	if err != nil {
 		return 0, err
 	}
+
 	switch relation {
 	case RelationTypeFromFather:
 		err = c.mergeFromFather(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
