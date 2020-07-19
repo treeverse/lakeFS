@@ -56,8 +56,7 @@ type Branch struct {
 
 type LevelEntry struct {
 	CommonLevel bool
-	Path        string
-	*Entry
+	Entry
 }
 
 type MultipartUpload struct {

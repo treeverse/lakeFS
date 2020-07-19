@@ -92,7 +92,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "file3",
 				limit:      2,
 			},
-			wantEntries: []string{"file4", "file5"},
+			wantEntries: []string{"file3/", "file4"},
 			wantMore:    true,
 			wantErr:     false,
 		}, {
@@ -130,7 +130,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      100,
 			},
-			wantEntries: []string{"/", "fileb"},
+			wantEntries: []string{"//", "/fileb"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -143,7 +143,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      100,
 			},
-			wantEntries: []string{"/", "filec"},
+			wantEntries: []string{"///", "//filec"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -156,7 +156,20 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      100,
 			},
-			wantEntries: []string{"ccc", "yyy", "zzz/"},
+			wantEntries: []string{"file6/ccc", "file6/yyy", "file6/zzz/"},
+			wantMore:    false,
+			wantErr:     false,
+		},
+		{
+			name: "under file6 after ccc",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "file6/",
+				after:      "file6/ccc",
+				limit:      100,
+			},
+			wantEntries: []string{"file6/yyy", "file6/zzz/"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -173,10 +186,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				if strings.HasSuffix(res.Path, DefaultPathDelimiter) != res.CommonLevel {
 					t.Errorf("%s suffix doesn't match the CommonLevel = %t", res.Path, res.CommonLevel)
 				}
-				if (res.Entry == nil) != res.CommonLevel {
-					t.Errorf("CommonLevel = %t, doesn't match entry %s", res.CommonLevel, spew.Sdump(res.Entry))
-				}
-				if res.Entry != nil && !strings.HasSuffix(res.Entry.Path, res.Path) {
+				if !strings.HasSuffix(res.Entry.Path, res.Path) {
 					t.Errorf("Name '%s' expected to be path '%s' suffix", res.Path, res.Entry.Path)
 				}
 				gotNames = append(gotNames, res.Path)

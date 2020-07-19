@@ -36,7 +36,9 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		prefixQuery := sqListByPrefix(prefix, after, delimiter, branchID, limit+1, commitID, lineage)
+
+		listAfter := strings.TrimPrefix(after, prefix)
+		prefixQuery := sqListByPrefix(prefix, listAfter, delimiter, branchID, limit+1, commitID, lineage)
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
@@ -69,7 +71,7 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 	for i, p := range markerList {
 		// remove termination character, if present
 		p = strings.TrimSuffix(p, DirectoryTermination)
-		entries[i].Path = p
+		entries[i].Path = prefix + p
 		if strings.HasSuffix(p, delimiter) { // terminating by '/'(slash) character is an indication of a directory
 			entries[i].CommonLevel = true
 			// its absence indicates a leaf entry that has to be read from DB
@@ -104,7 +106,7 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 		if err != nil {
 			return nil, fmt.Errorf("build entries sql: %w", err)
 		}
-		var entriesList []*Entry
+		var entriesList []Entry
 		err = tx.Select(&entriesList, sql, args...)
 		if err != nil {
 			return nil, fmt.Errorf("select entries: %w", err)

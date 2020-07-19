@@ -169,21 +169,19 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
         case 'REMOVED':
             rowClass += 'diff-removed';
             break;
+        default:
+            break;
     }
 
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
 
     let button;
-    switch(entry.diff_type) {
-        case 'REMOVED':
-            button = (<span>{buttonText}</span>);
-            break;
-        case 'TREE':
-            button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
-            break;
-        default:
-            button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
-            break;
+    if (entry.diff_type === 'REMOVED') {
+        button = (<span>{buttonText}</span>);
+    } else if (entry.path_type === 'TREE') {
+        button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
+    } else {
+        button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
 
     let size;
@@ -236,6 +234,8 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                     </span>
                 </OverlayTrigger>
             );
+            break;
+        default:
             break;
     }
 

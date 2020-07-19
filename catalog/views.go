@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"strconv"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -204,7 +205,7 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 }
 
 func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
-	if len(after) > 0 {
+	if strings.HasSuffix(after, delimiter) {
 		after += DirectoryTermination
 	}
 	prefixLen := len(prefix) + 1
