@@ -25,14 +25,14 @@ func (controller *HeadObject) RequiredPermissions(request *http.Request, repoId,
 
 func (controller *HeadObject) Handle(o *PathOperation) {
 	o.Incr("stat_object")
-	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
+	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{ReturnExpired: true})
 	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.Log().Debug("path not found")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
-	if err != nil && !errors.Is(err, catalog.ErrExpired) {
+	if err != nil {
 		o.Log().WithError(err).Error("failed querying path")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -41,7 +41,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader("ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.Size))
-	if errors.Is(err, catalog.ErrExpired) {
+	if entry.Expired {
 		o.Log().WithError(err).Info("querying expired object")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 	}

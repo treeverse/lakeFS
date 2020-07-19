@@ -399,9 +399,14 @@ func TestCataloger_MarkExpired(t *testing.T) {
 	}
 
 	for _, e := range expireResults {
-		_, err := c.GetEntry(ctx, repository, "master", e.Path)
+		_, err := c.GetEntry(ctx, repository, "master", e.Path, GetEntryParams{})
 		if err == nil || !errors.Is(err, ErrExpired) {
-			t.Fatalf("didn't get expired entry %+v: %s", e, err)
+			t.Errorf("didn't get expired entry %+v: %s", e, err)
+		}
+
+		entry, err := c.GetEntry(ctx, repository, "master", e.Path, GetEntryParams{ReturnExpired: true})
+		if err != nil || !entry.Expired {
+			t.Errorf("expected expired entry when requesting expired return for %+v, got %+v", e, entry)
 		}
 	}
 }

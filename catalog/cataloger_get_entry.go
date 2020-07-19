@@ -54,9 +54,9 @@ func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, refere
 	return res.(*Entry), nil
 }
 
-func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error) {
+func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error) {
 	entry, err := c.GetEntryMaybeExpired(ctx, repository, reference, path)
-	if entry != nil && entry.Expired {
+	if !params.ReturnExpired && entry != nil && entry.Expired {
 		return entry, ErrExpired
 	}
 	return entry, err

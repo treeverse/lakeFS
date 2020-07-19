@@ -756,12 +756,12 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		deps.LogAction("stat_object")
 		cataloger := deps.Cataloger
 
-		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
 
-		if err != nil && !errors.Is(err, catalog.ErrExpired) {
+		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
@@ -774,7 +774,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			SizeBytes: entry.Size,
 		}
 
-		if errors.Is(err, catalog.ErrExpired) {
+		if entry.Expired {
 			return objects.NewStatObjectGone().WithPayload(model)
 		}
 		return objects.NewStatObjectOK().WithPayload(model)
@@ -804,8 +804,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		entry, err := cataloger.GetEntry(c.Context(),
-			params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -850,11 +849,11 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
-		if errors.Is(err, catalog.ErrExpired) {
+		if entry.Expired {
 			return objects.NewGetObjectGone().WithPayload(responseError("resource expired"))
 		}
 		if err != nil {

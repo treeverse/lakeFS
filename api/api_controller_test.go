@@ -1057,9 +1057,9 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 
-		ent1, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp1.Payload.Path)
+		ent1, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp1.Payload.Path, catalog.GetEntryParams{})
 		testutil.MustDo(t, "get first entry", err)
-		ent2, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp2.Payload.Path)
+		ent2, err := deps.cataloger.GetEntry(ctx, "repo1", "master", resp2.Payload.Path, catalog.GetEntryParams{})
 		testutil.MustDo(t, "get second entry", err)
 		if ent1.PhysicalAddress != ent2.PhysicalAddress {
 			t.Fatalf("First entry address '%s' should match the second '%s' - check dedup",

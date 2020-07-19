@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
@@ -57,7 +58,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, p.Reference, p.Path)
+	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
 	if err != nil {
 		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))

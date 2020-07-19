@@ -45,7 +45,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
+	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
