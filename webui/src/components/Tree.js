@@ -270,7 +270,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
 
 
 const merge = (path, entriesAtPath, diffResults) => {
-    diffResults = diffResults && diffResults.payload && diffResults.payload.results : [];
+    diffResults = (diffResults && diffResults.payload) ? diffResults.payload.results : [];
     entriesAtPath = entriesAtPath || [];
 
     const entries = [...entriesAtPath];
