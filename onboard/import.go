@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"time"
 )
 
 const (
@@ -20,6 +21,19 @@ type Importer struct {
 	inventory          block.Inventory
 	InventoryDiffer    func(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *InventoryDiff
 	CatalogActions     RepoActions
+}
+
+type InventoryImportStats struct {
+	AddedOrChanged       int
+	Deleted              int
+	DryRun               bool
+	PreviousInventoryURL string
+	PreviousImportDate   time.Time
+}
+
+type ObjectImport struct {
+	obj      block.InventoryObject
+	toDelete bool
 }
 
 func CreateImporter(cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
@@ -62,14 +76,19 @@ func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog)
 	return
 }
 
-func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryDiff, error) {
-	diff, err := s.dataToImport(ctx)
+func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportStats, error) {
+	var stats InventoryImportStats
+	in, err := s.dataToImportChannel(ctx)
 	if err != nil {
 		return nil, err
 	}
-	diff.DryRun = dryRun
+	batch := make([]ObjectImport, 0, 1000)
+	for objectImport := range in {
+		batch = append(batch, objectImport)
+	}
+	stats.DryRun = dryRun
 	if dryRun {
-		return diff, nil
+		//return diff, nil
 	}
 	err = s.CatalogActions.CreateAndDeleteObjects(ctx, diff.AddedOrChanged, diff.Deleted)
 	if err != nil {
@@ -80,7 +99,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryDiff, err
 	if err != nil {
 		return nil, err
 	}
-	return diff, nil
+	return stats, nil
 }
 
 func (s *Importer) dataToImport(ctx context.Context) (diff *InventoryDiff, err error) {
@@ -105,4 +124,30 @@ func (s *Importer) dataToImport(ctx context.Context) (diff *InventoryDiff, err e
 		}
 	}
 	return
+}
+
+func (s *Importer) dataToImportChannel(ctx context.Context) (<-chan ObjectImport, error) {
+	commit, err := s.CatalogActions.GetPreviousCommit(ctx)
+	if err != nil {
+		return nil, err
+	}
+	out := make(chan ObjectImport)
+	if commit == nil {
+		// no previous commit, add whole inventory
+		in, err := s.inventory.ObjectsChannel(ctx)
+		if err != nil {
+			return nil, err
+		}
+
+		go func() {
+			for o := range in {
+				out <- ObjectImport{
+					obj: o,
+				}
+			}
+		}()
+	} else {
+		// TODO handle diff
+	}
+	return out, nil
 }

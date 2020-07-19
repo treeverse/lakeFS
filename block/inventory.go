@@ -11,6 +11,7 @@ type InventoryGenerator interface {
 // Inventory represents a snapshot of the storage space
 type Inventory interface {
 	Objects(ctx context.Context, sorted bool) ([]InventoryObject, error)
+	ObjectsChannel(ctx context.Context) (<-chan InventoryObject, error)
 	SourceName() string
 	InventoryURL() string
 }
