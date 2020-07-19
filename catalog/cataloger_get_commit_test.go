@@ -47,14 +47,28 @@ func TestCataloger_GetCommit(t *testing.T) {
 		{
 			name:      "first",
 			reference: "~KJ8Wd1Rs96Z",
-			want:      &CommitLog{Reference: "~KJ8Wd1Rs96Z", Committer: "tester0", Message: "Commit0", CreationDate: now, Metadata: Metadata{"k0": "v0"}},
-			wantErr:   false,
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96Z",
+				Committer:    "tester0",
+				Message:      "Commit0",
+				CreationDate: now,
+				Metadata:     Metadata{"k0": "v0"},
+				Parents:      []string{"~KJ8Wd1Rs96Y"},
+			},
+			wantErr: false,
 		},
 		{
 			name:      "second",
 			reference: "~KJ8Wd1Rs96a",
-			want:      &CommitLog{Reference: "~KJ8Wd1Rs96a", Committer: "tester1", Message: "Commit1", CreationDate: now, Metadata: Metadata{"k1": "v1"}},
-			wantErr:   false,
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96a",
+				Committer:    "tester1",
+				Message:      "Commit1",
+				CreationDate: now,
+				Metadata:     Metadata{"k1": "v1"},
+				Parents:      []string{"~KJ8Wd1Rs96Z"},
+			},
+			wantErr: false,
 		},
 		{
 			name:      "unknown",

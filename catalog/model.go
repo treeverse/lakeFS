@@ -36,6 +36,7 @@ type CommitLog struct {
 
 type commitLogRaw struct {
 	CommitID              CommitID  `db:"commit_id"`
+	PreviousCommitID      CommitID  `db:"previous_commit_id"`
 	Committer             string    `db:"committer"`
 	Message               string    `db:"message"`
 	CreationDate          time.Time `db:"creation_date"`

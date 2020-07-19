@@ -39,8 +39,6 @@ func TestCataloger_Commit(t *testing.T) {
 		}
 	}
 
-	const nextCommitID = 2 // first commit was used to setup the repository
-
 	type args struct {
 		repository string
 		branch     string
@@ -55,9 +53,16 @@ func TestCataloger_Commit(t *testing.T) {
 		wantErr bool
 	}{
 		{
-			name:    "simple",
-			args:    args{repository: repository, branch: "master", message: "Simple commit", committer: "tester", metadata: meta},
-			want:    &CommitLog{Reference: MakeReference("master", nextCommitID), Committer: "tester", Message: "Simple commit", CreationDate: now, Metadata: meta},
+			name: "simple",
+			args: args{repository: repository, branch: "master", message: "Simple commit", committer: "tester", metadata: meta},
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96Z",
+				Committer:    "tester",
+				Message:      "Simple commit",
+				CreationDate: now,
+				Metadata:     meta,
+				Parents:      []string{"~KJ8Wd1Rs96Y"},
+			},
 			wantErr: false,
 		},
 		{

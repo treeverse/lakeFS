@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
@@ -19,37 +20,37 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := getBranchID(tx, repository, branch, LockTypeUpdate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("get branch id: %w", err)
 		}
 
 		lastCommitID, err := getLastCommitIDByBranchID(tx, branchID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("last commit id: %w", err)
 		}
 
 		committedAffected, err := commitUpdateCommittedEntriesWithMaxCommit(tx, branchID, lastCommitID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("update commit entries: %w", err)
 		}
 
 		_, err = commitDeleteUncommittedTombstones(tx, branchID, lastCommitID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("delete uncommitted tombstones: %w", err)
 		}
 
 		affectedTombstone, err := commitTombstones(tx, branchID, lastCommitID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("commit tombstones: %w", err)
 		}
 
 		// uncommitted to committed entries
 		commitID, err := getNextCommitID(tx)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("next commit id: %w", err)
 		}
 		affectedNew, err := commitEntries(tx, branchID, commitID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("commit entries: %w", err)
 		}
 		if (affectedNew + affectedTombstone + committedAffected) == 0 {
 			return nil, ErrNothingToCommit
@@ -63,13 +64,15 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 		if err != nil {
 			return nil, err
 		}
+		reference := MakeReference(branch, commitID)
+		parentReference := MakeReference(branch, lastCommitID)
 		commitLog := &CommitLog{
 			Committer:    committer,
 			Message:      message,
 			CreationDate: creationDate,
 			Metadata:     metadata,
-			Parents:      nil,
-			Reference:    MakeReference(branch, commitID),
+			Reference:    reference,
+			Parents:      []string{parentReference},
 		}
 		return commitLog, nil
 	}, c.txOpts(ctx)...)

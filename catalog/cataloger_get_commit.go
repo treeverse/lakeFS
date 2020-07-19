@@ -24,12 +24,11 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err != nil {
 			return nil, err
 		}
-		query := `SELECT c.commit_id, c.committer, c.message, c.creation_date, c.metadata
+		query := `SELECT c.commit_id, c.previous_commit_id, c.committer, c.message, c.creation_date, c.metadata
 			FROM commits c JOIN branches b ON b.id = c.branch_id 
-			WHERE b.id = $1 AND c.commit_id = $2`
-		args := []interface{}{branchID, ref.CommitID}
+			WHERE b.id=$1 AND c.commit_id=$2`
 		var rawCommit commitLogRaw
-		if err := tx.Get(&rawCommit, query, args...); err != nil {
+		if err := tx.Get(&rawCommit, query, branchID, ref.CommitID); err != nil {
 			return nil, err
 		}
 		commit := convertRawCommit(ref.Branch, &rawCommit)
@@ -51,7 +50,12 @@ func convertRawCommit(branch string, raw *commitLogRaw) *CommitLog {
 		Metadata:     raw.Metadata,
 	}
 	if raw.MergeSourceBranchName != "" {
-		c.Parents = []string{MakeReference(raw.MergeSourceBranchName, CommitID(raw.MergeSourceCommit))}
+		reference := MakeReference(raw.MergeSourceBranchName, CommitID(raw.MergeSourceCommit))
+		c.Parents = append(c.Parents, reference)
+	}
+	if raw.PreviousCommitID > 0 {
+		reference := MakeReference(branch, raw.PreviousCommitID)
+		c.Parents = append(c.Parents, reference)
 	}
 	return c
 }
