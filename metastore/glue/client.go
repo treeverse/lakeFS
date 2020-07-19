@@ -1,6 +1,10 @@
 package glue
 
 import (
+	"fmt"
+
+	"github.com/apache/thrift/lib/go/thrift"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glue"
@@ -8,6 +12,25 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/metastore"
 )
+
+type Client struct {
+	*MSClient
+	Client    glueiface.GlueAPI
+	transport thrift.TTransport
+}
+
+func NewClient(cfg *aws.Config, catalogID string) (*Client, error) {
+	c := &Client{}
+	sess := session.Must(session.NewSession(cfg))
+	sess.ClientConfig("glue")
+	gl := glue.New(sess)
+
+	c.MSClient = &MSClient{
+		client:    gl,
+		catalogID: aws.String(catalogID),
+	}
+	return c, nil
+}
 
 type MSClient struct {
 	client    glueiface.GlueAPI
@@ -209,7 +232,7 @@ func (g *MSClient) removePartitions(dbName, tableName string, partitions []*glue
 	return nil
 }
 
-func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable string, transformLocation func(location string) string, symlink bool) error {
+func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
 	var nextToken *string
 	gotPartitions := MaxParts
 	for gotPartitions == MaxParts {
@@ -227,7 +250,7 @@ func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable strin
 
 			partition.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(partition.StorageDescriptor.Location)))
 			partition.SetTableName(toTable)
-			partition.StorageDescriptor.SerdeInfo.SetName(toTable)
+			partition.StorageDescriptor.SerdeInfo.SetName(serde)
 			partition.SetDatabaseName(toDBName)
 		}
 		_ = getPartitionsOutput.SetPartitions(partitions)
@@ -239,7 +262,7 @@ func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable strin
 	return nil
 }
 
-func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
+func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
 	t, err := g.client.GetTable(&glue.GetTableInput{
 		CatalogId:    g.catalogID,
 		DatabaseName: aws.String(fromDB),
@@ -251,7 +274,7 @@ func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable string, transformL
 	table := t.Table
 	table.SetDatabaseName(toDB)
 	table.SetName(toTable)
-	table.StorageDescriptor.SerdeInfo.SetName(toTable) //todo double check this, maybe serde should be somehting else
+	table.StorageDescriptor.SerdeInfo.SetName(serde)
 	table.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(table.StorageDescriptor.Location)))
 	if symlink {
 		table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
@@ -265,17 +288,17 @@ func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable string, transformL
 	return nil
 }
 
-func (g *MSClient) copy(fromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
+func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
 
-	err := g.copyTable(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
+	err := g.copyTable(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 	if err != nil {
 		return err
 	}
-	err = g.copyPartitions(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
+	err = g.copyPartitions(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 	return err
 }
 
-func (g *MSClient) merge(FromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
+func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
 
 	table, err := g.getTable(FromDB, fromTable)
 	if err != nil {
@@ -283,7 +306,7 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable string, transformLocat
 	}
 	table.SetDatabaseName(toDB)
 	table.SetName(toTable)
-	table.StorageDescriptor.SerdeInfo.SetName(toTable) //todo double check this, maybe serde should be somehting else
+	table.StorageDescriptor.SerdeInfo.SetName(serde)
 	table.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(table.StorageDescriptor.Location)))
 	if symlink {
 		table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
@@ -300,22 +323,26 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable string, transformLocat
 	partitionIter := NewPartitionIter(partitions)
 	toPartitionIter := NewPartitionIter(toPartitions)
 	var addPartitions, removePartitions, alterPartitions []*glue.Partition
-	metastore.Diff(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, iter metastore.ComparableIterator) {
-		partition := iter.(*PartitionIter).getCurrent()
+	metastore.DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) {
+		partition, ok := value.(*glue.Partition)
+		if !ok {
+			msg := fmt.Sprintf("unexpected value in diffIterable call. expected to get  *glue.Partition, but got: %T", value)
+			panic(msg)
+		}
 		partition.SetDatabaseName(toDB)
 		partition.SetTableName(toTable)
 		partition.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(partition.StorageDescriptor.Location)))
-		partition.StorageDescriptor.SerdeInfo.SetName(toTable)
+		partition.StorageDescriptor.SerdeInfo.SetName(serde)
 		if symlink {
 			partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
 		}
 		switch difference {
 		case catalog.DifferenceTypeRemoved:
-			removePartitions = append(removePartitions, iter.(*PartitionIter).getCurrent())
+			removePartitions = append(removePartitions, partition)
 		case catalog.DifferenceTypeAdded:
-			addPartitions = append(addPartitions, iter.(*PartitionIter).getCurrent())
+			addPartitions = append(addPartitions, partition)
 		default:
-			alterPartitions = append(alterPartitions, iter.(*PartitionIter).getCurrent())
+			alterPartitions = append(alterPartitions, partition)
 		}
 	})
 
@@ -344,20 +371,24 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable string, transformLocat
 	return nil
 }
 
-func (g *MSClient) copyOrMerge(fromDB, fromTable, toDB, toTable string, transformLocation func(location string) string, symlink bool) error {
+func (g *MSClient) copyOrMerge(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
 	table, _ := g.getTable(toDB, toTable)
 
 	if table == nil {
-		return g.copy(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
+		return g.copy(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 	}
-	return g.merge(fromDB, fromTable, toDB, toTable, transformLocation, symlink)
+	return g.merge(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 }
 
-func (g *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch string) error {
+func (g *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string, partition []string) error {
+
+	if partition != nil && len(partition) > 0 {
+		return g.CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde, partition)
+	}
 	transformLocation := func(location string) string {
 		return metastore.TransformLocation(location, fromBranch, toBranch)
 	}
-	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, transformLocation, false)
+	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, serde, false, transformLocation)
 }
 
 func (g *MSClient) CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, locationPrefix string) error {
@@ -365,7 +396,7 @@ func (g *MSClient) CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, locati
 	transformLocation := func(location string) string {
 		return metastore.GetSymlinkLocation(location, locationPrefix)
 	}
-	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, transformLocation, true)
+	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, "", true, transformLocation)
 
 }
 
@@ -398,7 +429,7 @@ func (g *MSClient) getPartitionsDiff(FromDB string, fromTable string, toDB strin
 
 	partitionIter := NewPartitionIter(partitions)
 	toPartitionIter := NewPartitionIter(toPartitions)
-	return metastore.GetDiff(partitionIter, toPartitionIter), nil
+	return metastore.Diff(partitionIter, toPartitionIter), nil
 }
 
 func (g *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catalog.Differences, error) {
@@ -413,19 +444,18 @@ func (g *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catal
 
 	colsIter := NewColumnIter(tableFrom.StorageDescriptor.Columns)
 	colsToIter := NewColumnIter(tableTo.StorageDescriptor.Columns)
-	return metastore.GetDiff(colsIter, colsToIter), nil
+	return metastore.Diff(colsIter, colsToIter), nil
 }
 
-func (g *MSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch string, partition []string) error {
+func (g *MSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string, partition []string) error {
 	p1, err := g.getPartition(fromDB, fromTable, partition)
 	if err != nil {
 		return err
 	}
 	p2, _ := g.getPartition(toDB, toTable, partition)
-
 	p1.SetDatabaseName(toDB)
 	p1.SetTableName(toTable)
-	p1.StorageDescriptor.SerdeInfo.SetName(toTable)
+	p1.StorageDescriptor.SerdeInfo.SetName(serde)
 	p1.StorageDescriptor.SetLocation(metastore.TransformLocation(aws.StringValue(p1.StorageDescriptor.Location), fromBranch, toBranch))
 	if p2 == nil {
 		err = g.addPartition(toDB, toTable, p1)

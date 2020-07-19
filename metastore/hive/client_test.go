@@ -267,7 +267,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	initialPartitions := getNPartitions(dbName, tableName, location, numOfPartitions)
 
 	hiveMockClient := NewHiveMsMock()
-	client := NewMetastoreClient(context.Background(), hiveMockClient)
+	client := NewMSClient(hiveMockClient)
 
 	err := client.client.CreateTable(client.context, initialTable)
 	if err != nil {
@@ -281,7 +281,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	toDBName := "default"
 	toBranch := "br1"
 
-	err = client.CopyOrMerge(dbName, tableName, branch, toDBName, toTableName, toBranch, "")
+	err = client.CopyOrMerge(dbName, tableName, branch, toDBName, toTableName, toBranch, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,7 +367,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	// now merge back
-	err = client.CopyOrMerge(toDBName, toTableName, toBranch, dbName, tableName, branch, "")
+	err = client.CopyOrMerge(toDBName, toTableName, toBranch, dbName, tableName, branch, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -2,6 +2,7 @@ package metastore
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 
 	"github.com/treeverse/lakefs/catalog"
@@ -37,55 +38,64 @@ type MetaDiff struct {
 	ColumnsDiff   catalog.Differences
 }
 
+type CompareResult int
+
+const (
+	ItemLess CompareResult = iota
+	ItemSameKey
+	ItemSame
+	ItemGreater
+)
+
 type ComparableIterator interface {
-	Sort()
-	HasMore() bool
-	Next()
-	GetName() string
-	GreaterEqual(b ComparableIterator) bool
-	KeyEqual(b ComparableIterator) bool
-	ValueEqual(b ComparableIterator) bool
+	sort.Interface
+	Value(i int) interface{}
+	Name(i int) string
+	CompareWith(i int, v interface{}, j int) CompareResult
 }
 
-func GetDiff(iterA, iterB ComparableIterator) catalog.Differences {
+func DiffIterable(iterA, iterB ComparableIterator, f func(difference catalog.DifferenceType, iter interface{}, name string)) {
+	sort.Sort(iterA)
+	sort.Sort(iterB)
+
+	for i, j, sizeA, sizeB := 0, 0, iterA.Len(), iterB.Len(); i < sizeA && j < sizeB; {
+		if i >= sizeA {
+			f(catalog.DifferenceTypeRemoved, iterB.Value(j), iterB.Name(j))
+			j++
+			continue
+		}
+		if j >= sizeB {
+			f(catalog.DifferenceTypeAdded, iterA.Value(i), iterA.Name(i))
+			i++
+			continue
+		}
+		switch iterA.CompareWith(i, iterB, j) {
+		case ItemSameKey:
+			f(catalog.DifferenceTypeChanged, iterA.Value(i), iterA.Name(i))
+			i++
+			j++
+
+		case ItemSame:
+			i++
+			j++
+
+		case ItemGreater:
+			f(catalog.DifferenceTypeRemoved, iterB.Value(j), iterB.Name(j))
+			j++
+		case ItemLess:
+			f(catalog.DifferenceTypeAdded, iterA.Value(i), iterA.Name(i))
+			i++
+		}
+	}
+}
+
+func Diff(iterA, iterB ComparableIterator) catalog.Differences {
 	var diff catalog.Differences
-	Diff(iterA, iterB, func(diffType catalog.DifferenceType, iter ComparableIterator) {
+	DiffIterable(iterA, iterB, func(diffType catalog.DifferenceType, _ interface{}, name string) {
 		diff = append(diff, catalog.Difference{
 			Type: diffType,
-			Path: iter.GetName(),
+			Path: name,
 		})
 	})
 	return diff
-}
-
-func Diff(iterA, iterB ComparableIterator, f func(difference catalog.DifferenceType, iter ComparableIterator)) {
-	iterA.Sort()
-	iterB.Sort()
-	for iterA.HasMore() || iterB.HasMore() {
-		if !iterA.HasMore() {
-			f(catalog.DifferenceTypeRemoved, iterB)
-			iterB.Next()
-			continue
-		}
-		if !iterB.HasMore() {
-			f(catalog.DifferenceTypeAdded, iterA)
-			iterA.Next()
-			continue
-		}
-		if iterA.GreaterEqual(iterB) {
-			if iterA.KeyEqual(iterB) {
-				if !iterA.ValueEqual(iterB) {
-					f(catalog.DifferenceTypeChanged, iterA)
-				}
-				iterA.Next()
-				iterB.Next()
-				continue
-			}
-			f(catalog.DifferenceTypeAdded, iterA)
-			iterA.Next()
-			continue
-		}
-		f(catalog.DifferenceTypeRemoved, iterB)
-		iterB.Next()
-	}
 }

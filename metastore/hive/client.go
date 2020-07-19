@@ -3,6 +3,7 @@ package hive
 import (
 	"context"
 	"crypto/tls"
+	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
 
@@ -16,7 +17,7 @@ type ThriftHiveMetastoreClient interface {
 	CreateTable(ctx context.Context, tbl *hive_metastore.Table) (err error)
 	GetTable(ctx context.Context, dbname string, tableName string) (r *hive_metastore.Table, err error)
 	AlterTable(ctx context.Context, dbname string, tableName string, newTable *hive_metastore.Table) (err error)
-	AddPartitions(ctx context.Context, new_parts []*hive_metastore.Partition) (r int32, err error)
+	AddPartitions(ctx context.Context, newParts []*hive_metastore.Partition) (r int32, err error)
 	GetPartitions(ctx context.Context, dbName string, tableName string, maxPartitions int16) (r []*hive_metastore.Partition, err error)
 	GetPartition(ctx context.Context, dbName string, tableName string, values []string) (r *hive_metastore.Partition, err error)
 	AlterPartitions(ctx context.Context, dbName string, tableName string, newPartitions []*hive_metastore.Partition) (err error)
@@ -25,59 +26,55 @@ type ThriftHiveMetastoreClient interface {
 	DropPartition(ctx context.Context, dbName string, tableName string, values []string, deleteData bool) (r bool, err error)
 }
 
-type ClientWrapper struct {
+type Client struct {
+	*MSClient
+	Client    ThriftHiveMetastoreClient
 	transport thrift.TTransport
-	addr      string
-	secure    bool
-	client    ThriftHiveMetastoreClient
 }
 
-func NewClientWrapper(addr string, secure bool) *ClientWrapper {
-	return &ClientWrapper{
-		transport: nil,
-		addr:      addr,
-		secure:    secure,
+func NewClient(addr string, secure bool) (*Client, error) {
+	c := &Client{}
+	if client, err := c.Open(addr, secure); err != nil {
+		return nil, err
+	} else {
+		c.Client = client
 	}
+	c.MSClient = NewMSClient(c.Client)
+	return c, nil
 }
 
-func (msc *ClientWrapper) Open() error {
-	transportFactory := thrift.NewTTransportFactory()
+func (c *Client) Open(addr string, secure bool) (ThriftHiveMetastoreClient, error) {
 	var err error
-	if msc.secure {
+	if secure {
 		cfg := new(tls.Config)
 		cfg.InsecureSkipVerify = true
-		msc.transport, err = thrift.NewTSSLSocket(msc.addr, cfg)
+		c.transport, err = thrift.NewTSSLSocket(addr, cfg)
 	} else {
-		msc.transport, err = thrift.NewTSocket(msc.addr)
+		c.transport, err = thrift.NewTSocket(addr)
 	}
 	if err != nil {
-		return err
+		return nil, err
 	}
-	msc.transport, err = transportFactory.GetTransport(msc.transport)
+	err = c.transport.Open()
 	if err != nil {
-		return err
-	}
-	err = msc.transport.Open()
-	if err != nil {
-		return err
+		return nil, err
 	}
 
 	protocolFactory := thrift.NewTBinaryProtocolFactoryDefault()
-	iprot := protocolFactory.GetProtocol(msc.transport)
-	oprot := protocolFactory.GetProtocol(msc.transport)
-	msc.client = hive_metastore.NewThriftHiveMetastoreClient(thrift.NewTStandardClient(iprot, oprot))
-	return nil
+	iprot := protocolFactory.GetProtocol(c.transport)
+	oprot := protocolFactory.GetProtocol(c.transport)
+	return hive_metastore.NewThriftHiveMetastoreClient(thrift.NewTStandardClient(iprot, oprot)), nil
 }
 
-func (msc *ClientWrapper) Close() error {
-	if msc.transport != nil {
-		return msc.transport.Close()
+func (c *Client) Close() error {
+	if c.transport != nil {
+		return c.transport.Close()
 	}
 	return nil
 }
 
-func (msc *ClientWrapper) GetClient() ThriftHiveMetastoreClient {
-	return msc.client
+func (c *Client) GetClient() ThriftHiveMetastoreClient {
+	return c.client
 }
 
 type MSClient struct {
@@ -85,73 +82,70 @@ type MSClient struct {
 	client  ThriftHiveMetastoreClient
 }
 
-func NewMetastoreClient(ctx context.Context, client ThriftHiveMetastoreClient) *MSClient {
+func NewMSClient(client ThriftHiveMetastoreClient) *MSClient {
 	return &MSClient{
-		context: ctx,
-		client:  client,
+		client: client,
 	}
 }
 
-func (msc *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
-	table, _ := msc.client.GetTable(msc.context, toDB, toTable)
-
+func (c *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string, partition []string) error {
+	if partition != nil && len(partition) > 0 {
+		return c.CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde, partition)
+	}
+	// todo: handle error (in case not found continue, is not found should be a function of the client that the mock will also implement)
+	table, _ := c.client.GetTable(c.context, toDB, toTable)
+	//if err != nil && !errors.Is(err, hive_metastore.NewNoSuchObjectException().) {
+	//	fmt.Printf("%T", err)
+	//	return err
+	//}
 	if table == nil {
-		return msc.Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
+		return c.Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
 	} else {
-		return msc.Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
+		return c.Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
 	}
 }
 
-func (msc *MSClient) Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
-	table, err := msc.client.GetTable(msc.context, fromDB, fromTable)
+func (c *MSClient) Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
+	table, err := c.client.GetTable(c.context, fromDB, fromTable)
 	if err != nil {
 		return err
-	}
-	if serde == "" {
-		serde = toTable
 	}
 	table.DbName = toDB
 	table.TableName = toTable
 	table.Sd.SerdeInfo.Name = serde
 	table.Sd.Location = metastore.TransformLocation(table.Sd.Location, fromBranch, toBranch)
 
-	partitions, err := msc.client.GetPartitions(msc.context, fromDB, fromTable, 2000)
+	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, 2000)
 	for _, partition := range partitions {
 		partition.Sd.Location = metastore.TransformLocation(partition.Sd.Location, fromBranch, toBranch)
 		partition.TableName = toTable
-		partition.Sd.SerdeInfo.Name = toTable
+		partition.Sd.SerdeInfo.Name = serde
 		partition.DbName = toDB
 
 	}
-	err = msc.client.CreateTable(msc.context, table)
+	err = c.client.CreateTable(c.context, table)
 	if err != nil {
 		return err
 	}
-	_, err = msc.client.AddPartitions(msc.context, partitions)
-	if err != nil {
-		return err
-	}
-	return nil
+	_, err = c.client.AddPartitions(c.context, partitions)
+	return err
 }
 
-func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
-	table, err := msc.client.GetTable(msc.context, fromDB, fromTable)
+func (c *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
+	table, err := c.client.GetTable(c.context, fromDB, fromTable)
 	if err != nil {
 		return err
 	}
 	table.DbName = toDB
 	table.TableName = toTable
-	if serde == "" {
-		serde = toTable
-	}
 	table.Sd.SerdeInfo.Name = serde
 	table.Sd.Location = metastore.TransformLocation(table.Sd.Location, fromBranch, toBranch)
 
-	partitions, err := msc.client.GetPartitions(msc.context, fromDB, fromTable, -1)
+	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
 	if err != nil {
 		return err
 	}
-	toPartitions, err := msc.client.GetPartitions(msc.context, toDB, toTable, -1)
+	toPartitions, err := c.client.GetPartitions(c.context, toDB, toTable, -1)
 	if err != nil {
 		return err
 	}
@@ -159,8 +153,13 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranc
 	partitionIter := NewPartitionIter(partitions)
 	toPartitionIter := NewPartitionIter(toPartitions)
 	var addPartitions, removePartitions, alterPartitions []*hive_metastore.Partition
-	metastore.Diff(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, iter metastore.ComparableIterator) {
-		partition := iter.(*PartitionIter).getCurrent()
+	metastore.DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) {
+		partition, ok := value.(*hive_metastore.Partition)
+		if !ok {
+			msg := fmt.Sprintf("unexpected value in diffIterable call. expected to get  *hive_metastore.Partition, but got: %T", value)
+			panic(msg)
+		}
+
 		partition.DbName = toDB
 		partition.TableName = toTable
 		partition.Sd.Location = metastore.TransformLocation(partition.Sd.Location, fromBranch, toBranch)
@@ -175,22 +174,22 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranc
 		}
 	})
 
-	err = msc.client.AlterTable(msc.context, toDB, toTable, table)
+	err = c.client.AlterTable(c.context, toDB, toTable, table)
 	if err != nil {
 		return err
 	}
 
-	_, err = msc.client.AddPartitions(msc.context, addPartitions)
+	_, err = c.client.AddPartitions(c.context, addPartitions)
 	if err != nil {
 		return err
 	}
-	err = msc.client.AlterPartitions(msc.context, toDB, toTable, alterPartitions)
+	err = c.client.AlterPartitions(c.context, toDB, toTable, alterPartitions)
 	if err != nil {
 		return err
 	}
 	//drop one by one
 	for _, partition := range removePartitions {
-		_, err = msc.client.DropPartition(msc.context, toDB, toTable, partition.Values, true)
+		_, err = c.client.DropPartition(c.context, toDB, toTable, partition.Values, true)
 		if err != nil {
 			return err
 		}
@@ -198,32 +197,31 @@ func (msc *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranc
 	return nil
 }
 
-func (msc *MSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch string, partition []string) error {
-	p1, err := msc.client.GetPartition(msc.context, fromDB, fromTable, partition)
+func (c *MSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string, partition []string) error {
+	p1, err := c.client.GetPartition(c.context, fromDB, fromTable, partition)
 	if err != nil {
 		return err
 	}
-	p2, _ := msc.client.GetPartition(msc.context, toDB, toTable, partition)
-
+	p2, _ := c.client.GetPartition(c.context, toDB, toTable, partition)
 	p1.DbName = toDB
 	p1.TableName = toTable
-	p1.Sd.SerdeInfo.Name = toTable
+	p1.Sd.SerdeInfo.Name = serde
 	p1.Sd.Location = metastore.TransformLocation(p1.Sd.Location, fromBranch, toBranch)
 	if p2 == nil {
-		_, err = msc.client.AddPartition(msc.context, p1)
+		_, err = c.client.AddPartition(c.context, p1)
 	} else {
-		err = msc.client.AlterPartition(msc.context, toDB, toTable, p1)
+		err = c.client.AlterPartition(c.context, toDB, toTable, p1)
 	}
 	return err
 }
 
-func (msc *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error) {
+func (c *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error) {
 
-	diffColumns, err := msc.getColumnDiff(fromDB, fromTable, toDB, toTable)
+	diffColumns, err := c.getColumnDiff(fromDB, fromTable, toDB, toTable)
 	if err != nil {
 		return nil, err
 	}
-	partitionDiff, err := msc.getPartitionsDiff(fromDB, fromTable, toDB, toTable)
+	partitionDiff, err := c.getPartitionsDiff(fromDB, fromTable, toDB, toTable)
 	if err != nil {
 		return nil, err
 	}
@@ -233,32 +231,32 @@ func (msc *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.M
 	}, nil
 }
 
-func (msc *MSClient) getPartitionsDiff(fromDB string, fromTable string, toDB string, toTable string) (catalog.Differences, error) {
-	partitions, err := msc.client.GetPartitions(msc.context, fromDB, fromTable, -1)
+func (c *MSClient) getPartitionsDiff(fromDB string, fromTable string, toDB string, toTable string) (catalog.Differences, error) {
+	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
 	if err != nil {
 		return nil, err
 	}
-	toPartitions, err := msc.client.GetPartitions(msc.context, toDB, toTable, -1)
+	toPartitions, err := c.client.GetPartitions(c.context, toDB, toTable, -1)
 	if err != nil {
 		return nil, err
 	}
 	partitionIter := NewPartitionIter(partitions)
 	toPartitionIter := NewPartitionIter(toPartitions)
-	return metastore.GetDiff(partitionIter, toPartitionIter), nil
+	return metastore.Diff(partitionIter, toPartitionIter), nil
 }
 
-func (msc *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catalog.Differences, error) {
+func (c *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catalog.Differences, error) {
 
-	tableFrom, err := msc.client.GetTable(msc.context, fromDB, fromTable)
+	tableFrom, err := c.client.GetTable(c.context, fromDB, fromTable)
 	if err != nil {
 		return nil, err
 	}
-	tableTo, err := msc.client.GetTable(msc.context, toDB, toTable)
+	tableTo, err := c.client.GetTable(c.context, toDB, toTable)
 	if err != nil {
 		return nil, err
 	}
 
 	colsIter := NewFSIter(tableFrom.GetSd().GetCols())
 	colsToIter := NewFSIter(tableTo.GetSd().GetCols())
-	return metastore.GetDiff(colsIter, colsToIter), nil
+	return metastore.Diff(colsIter, colsToIter), nil
 }
