@@ -152,7 +152,7 @@ func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, manifest
 		_ = pf.Close()
 	}()
 	var rawObject ParquetInventoryObject
-	pr, err := reader.NewParquetReader(pf, rawObject, 4)
+	pr, err := reader.NewParquetReader(pf, &rawObject, 4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
