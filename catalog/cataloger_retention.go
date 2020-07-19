@@ -16,7 +16,7 @@ import (
 // TODO(ariels) Move retention policy CRUD from retention service to
 // here.
 
-const entriesTable = "lakefs_catalog.entries"
+const entriesTable = "entries"
 
 // escapeSqlPattern returns pattern with any special pattern
 // characters prefixed by "\".  It assumes Postgres option
