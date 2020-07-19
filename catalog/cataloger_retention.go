@@ -2,11 +2,11 @@ package catalog
 
 import (
 	"context"
-	"database/sql"
 	"fmt"
 	"strings"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/jmoiron/sqlx"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -60,7 +60,7 @@ var (
 	byUncommitted = sq.Expr("min_commit = 0")
 )
 
-func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
+func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
 	repositorySelector := byRepository(repositoryName)
 
 	// An expression to select for each rule.  Select by ORing all these.
@@ -103,54 +103,50 @@ func (c *cataloger) buildRetentionQuery(repositoryName string, policy *retention
 	return query
 }
 
-// ScanExpired writes all objects to expire on repositoryName according to policy to channel
-// out.
-func (c *cataloger) ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan *ExpireResult) error {
-	defer func() {
-		close(out)
-	}()
+// expiryRows implements ExpiryRows.
+type expiryRows struct {
+	rows           *sqlx.Rows
+	repositoryName string
+}
+
+func (e *expiryRows) Next() bool {
+	return e.rows.Next()
+}
+
+func (e *expiryRows) Err() error {
+	return e.rows.Err()
+}
+
+func (e *expiryRows) Read() (*ExpireResult, error) {
+	var res ExpireResult
+	err := e.rows.StructScan(&res)
+	if err != nil {
+		return nil, err
+	}
+	res.Repository = e.repositoryName
+	return &res, nil
+}
+
+// QueryExpired returns ExpiryRows iterating over all objects to expire on repositoryName
+// according to policy to channel out.
+func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error) {
 	logger := logging.Default().WithContext(ctx).WithField("policy", *policy)
 
-	query := c.buildRetentionQuery(repositoryName, policy)
+	query := buildRetentionQuery(repositoryName, policy)
 	queryString, args, err := query.ToSql()
 	if err != nil {
-		logger.WithError(err).Error("building query")
-		return fmt.Errorf("building query: %s", err)
+		return nil, fmt.Errorf("building query: %w", err)
 	}
 
 	logger = logger.WithFields(logging.Fields{"query": queryString, "args": args})
 	logger.Info("retention query")
 
 	// TODO(ariels): Get lowest possible isolation level here.
-	_, err = c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		rows, err := tx.Query(queryString, args...)
-		if err != nil {
-			logger.WithError(err).Error("running query")
-			return nil, fmt.Errorf("running query: %s", err)
-		}
-		for rows.Next() {
-			err = rows.Err()
-			if err != nil {
-				logger.WithError(err).Error("scanning rows")
-				return nil, fmt.Errorf("scanning rows: %s", err)
-			}
-			var res ExpireResult
-			err = rows.StructScan(&res)
-
-			if err != nil {
-				logger.WithError(err).Error("bad row (keep going)")
-			}
-			res.Repository = repositoryName
-			out <- &res
-		}
-		return nil, nil
-	},
-		// Long-running transaction returning old objects should use a low isolation
-		// level.  Even READ UNCOMMITTED might make sense here too, but is not available
-		// in Postgres.
-		db.WithIsolationLevel(sql.LevelReadCommitted),
-	)
-	return err
+	rows, err := c.db.Queryx(queryString, args...)
+	if err != nil {
+		return nil, fmt.Errorf("running query: %w", err)
+	}
+	return &expiryRows{rows, repositoryName}, nil
 }
 
 func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {

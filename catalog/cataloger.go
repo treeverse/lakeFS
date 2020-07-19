@@ -68,6 +68,15 @@ type BranchCataloger interface {
 
 var ErrExpired = fmt.Errorf("expired from storage")
 
+// ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
+type ExpiryRows interface {
+	Next() bool
+	Err() error
+	// Read returns the current from ExpiryRows, or an error on failure.  Call it only after
+	// successfully calling Next.
+	Read() (*ExpireResult, error)
+}
+
 type EntryCataloger interface {
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
@@ -80,7 +89,7 @@ type EntryCataloger interface {
 	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-	ScanExpired(ctx context.Context, repositoryName string, policy *retention.Policy, out chan *ExpireResult) error
+	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
 	// MarkExpired marks all entries identified by expire as expired.  It is a batch
 	// operation.
 	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error

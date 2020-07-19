@@ -17,16 +17,23 @@ func makeHours(hours int) *retention.TimePeriodHours {
 }
 
 func readExpired(t *testing.T, ctx context.Context, c Cataloger, repository string, policy *retention.Policy) ([]*ExpireResult, error) {
-	ch := make(chan *ExpireResult, 10)
-	go func() {
-		err := c.ScanExpired(ctx, repository, policy, ch)
+	rows, err := c.QueryExpired(ctx, repository, policy)
+	defer func() {
+		err := rows.Close()
 		if err != nil {
-			t.Fatalf("scan for expired failed: %s", err)
+			t.Fatalf("close rows from expire result %s", err)
 		}
 	}()
+	if err != nil {
+		t.Fatalf("scan for expired failed: %s", err)
+	}
 	ret := make([]*ExpireResult, 0, 10)
-	for er := range ch {
-		ret = append(ret, er)
+	for rows.Next() {
+		e, err := rows.Read()
+		if err != nil {
+			t.Fatalf("read expired row: %s", err)
+		}
+		ret = append(ret, e)
 	}
 	return ret, nil
 }
