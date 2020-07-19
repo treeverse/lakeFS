@@ -88,7 +88,7 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		catalogCallData.addedEntries = []catalog.Entry{}
 		catalogCallData.deletedEntries = []string{}
 		catalogCallData.callLog = make(map[string]int)
-		err := catalogActions.CreateAndDeleteObjects(context.Background(), rows(test.AddedRows...), rows(test.DeletedRows...))
+		stats, err := catalogActions.CreateAndDeleteObjects(context.Background(), importsChannel(test.AddedRows, test.DeletedRows))
 		if err != nil {
 			t.Fatalf("failed to create/delete objects: %v", err)
 		}
@@ -97,6 +97,12 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		}
 		if catalogCallData.callLog["DeleteEntry"] != test.ExpectedDeleteCalls {
 			t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", test.ExpectedDeleteCalls, catalogCallData.callLog["DeleteEntry"])
+		}
+		if stats.AddedOrChanged != len(test.AddedRows) {
+			t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), stats.AddedOrChanged)
+		}
+		if stats.Deleted != len(test.DeletedRows) {
+			t.Fatalf("unexpected number of deleted entries in returned stats. expected=%d, got=%d", len(test.DeletedRows), stats.Deleted)
 		}
 		if len(catalogCallData.addedEntries) != len(test.AddedRows) {
 			t.Fatalf("unexpected number of added entries. expected=%d, got=%d", len(test.AddedRows), len(catalogCallData.addedEntries))

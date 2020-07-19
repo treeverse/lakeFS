@@ -23,41 +23,37 @@ func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool 
 	return row1.Key < row2.Key
 }
 
-// CalcDiff returns a diff between two sorted arrays of InventoryObject
-func CalcDiff(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *InventoryDiff {
-	res := InventoryDiff{}
-	var leftIdx, rightIdx int
-	for leftIdx < len(leftInv) || rightIdx < len(rightInv) {
-		var leftRow, rightRow *block.InventoryObject
-		if leftIdx < len(leftInv) {
-			leftRow = &leftInv[leftIdx]
-		}
-		if rightIdx < len(rightInv) {
-			rightRow = &rightInv[rightIdx]
-		}
-		if leftRow != nil && (rightRow == nil || CompareKeys(leftRow, rightRow)) {
-			res.Deleted = append(res.Deleted, *leftRow)
-			leftIdx++
-		} else if leftRow == nil || CompareKeys(rightRow, leftRow) {
-			res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
-			rightIdx++
-		} else if leftRow.Key == rightRow.Key {
-			if leftRow.Checksum != rightRow.Checksum {
-				res.AddedOrChanged = append(res.AddedOrChanged, *rightRow)
+func CalcDiff(leftInv <-chan *block.InventoryObject, rightInv <-chan *block.InventoryObject) <-chan *ObjectImport {
+	out := make(chan *ObjectImport)
+	go func() {
+		defer close(out)
+		leftRow := <-leftInv
+		rightRow := <-rightInv
+		for leftRow != nil || rightRow != nil {
+			if leftRow != nil && (rightRow == nil || CompareKeys(leftRow, rightRow)) {
+				out <- &ObjectImport{Obj: *leftRow, ToDelete: true}
+				leftRow = <-leftInv
+			} else if leftRow == nil || CompareKeys(rightRow, leftRow) {
+				out <- &ObjectImport{Obj: *rightRow}
+				rightRow = <-rightInv
+			} else if leftRow.Key == rightRow.Key {
+				if leftRow.Checksum != rightRow.Checksum {
+					out <- &ObjectImport{Obj: *rightRow}
+				}
+				leftRow = <-leftInv
+				rightRow = <-rightInv
 			}
-			leftIdx++
-			rightIdx++
 		}
-	}
-	return &res
+	}()
+	return out
 }
 
-func CreateCommitMetadata(inv block.Inventory, diff InventoryDiff) catalog.Metadata {
+func CreateCommitMetadata(inv block.Inventory, stats InventoryImportStats) catalog.Metadata {
 	return catalog.Metadata{
 		"inventory_url":            inv.InventoryURL(),
 		"source":                   inv.SourceName(),
-		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
-		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),
+		"added_or_changed_objects": strconv.Itoa(stats.AddedOrChanged),
+		"deleted_objects":          strconv.Itoa(stats.Deleted),
 	}
 }
 

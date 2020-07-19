@@ -100,19 +100,19 @@ func TestFetch(t *testing.T) {
 		inv, err := s3.GenerateInventory(manifestURL, &mockS3Client{
 			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 		})
-		s3Inv := inv.(*s3.Inventory)
-		s3Inv.RowReader = mockReadRows
+		//s3Inv := inv.(*s3.Inventory)
+		//s3Inv.RowReader = mockReadRows // TODO
 		if err != nil {
 			t.Fatalf("error: %v", err)
 		}
-		objects, err := inv.Objects(context.Background(), test.Sort)
+		objects, err := inv.Objects(context.Background())
 		if err != nil {
 			t.Fatalf("error: %v", err)
 		}
 		if len(objects) != len(test.ExpectedObjects) {
 			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
 		}
-		if !reflect.DeepEqual(keys(objects), test.ExpectedObjects) {
+		if !reflect.DeepEqual(objects, test.ExpectedObjects) {
 			t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, keys(objects))
 		}
 	}

@@ -3,13 +3,12 @@ package onboard_test
 import (
 	"context"
 	"errors"
-	"sort"
-	"strconv"
-	"testing"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/onboard"
+	"sort"
+	"strconv"
+	"testing"
 )
 
 const (
@@ -76,10 +75,47 @@ func rows(keys ...string) []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) CreateAndDeleteObjects(_ context.Context, objects []block.InventoryObject, objectsToDelete []block.InventoryObject) (err error) {
-	m.objectActions.Added = append(m.objectActions.Added, keys(objects)...)
-	m.objectActions.Deleted = append(m.objectActions.Deleted, keys(objectsToDelete)...)
-	return nil
+func importsChannel(keysToAdd []string, keysToDelete []string) <-chan *onboard.ObjectImport {
+	out := make(chan *onboard.ObjectImport)
+	go func() {
+		defer close(out)
+		for _, key := range keysToAdd {
+			out <- &onboard.ObjectImport{
+				Obj: block.InventoryObject{Key: key},
+			}
+		}
+		for _, key := range keysToDelete {
+			out <- &onboard.ObjectImport{
+				Obj:      block.InventoryObject{Key: key},
+				ToDelete: true,
+			}
+		}
+	}()
+	return out
+}
+func objects(keys ...string) <-chan *block.InventoryObject {
+	out := make(chan *block.InventoryObject)
+	go func() {
+		defer close(out)
+		for _, key := range keys {
+			out <- &block.InventoryObject{Key: key}
+		}
+	}()
+	return out
+}
+
+func (m *mockCatalogActions) CreateAndDeleteObjects(ctx context.Context, in <-chan *onboard.ObjectImport) (*onboard.InventoryImportStats, error) {
+	for objectImport := range in {
+		if objectImport.ToDelete {
+			m.objectActions.Deleted = append(m.objectActions.Deleted, objectImport.Obj.Key)
+		} else {
+			m.objectActions.Added = append(m.objectActions.Added, objectImport.Obj.Key)
+		}
+	}
+	return &onboard.InventoryImportStats{
+		AddedOrChanged: len(m.objectActions.Added),
+		Deleted:        len(m.objectActions.Deleted),
+	}, nil
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
@@ -94,11 +130,8 @@ func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalo
 	return nil
 }
 
-func (m *mockInventory) Objects(_ context.Context, sorted bool) ([]block.InventoryObject, error) {
-	if sorted {
-		sort.Strings(m.rows)
-	}
-	return rows(m.rows...), nil
+func (m *mockInventory) Objects(ctx context.Context) (<-chan *block.InventoryObject, error) {
+	return objects(m.rows...), nil
 }
 
 func (m *mockInventory) SourceName() string {

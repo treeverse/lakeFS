@@ -5,15 +5,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/url"
-	"sort"
-
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
+	"net/url"
 )
 
 type manifest struct {
@@ -53,77 +51,22 @@ func GenerateInventory(manifestURL string, s3 s3iface.S3API) (block.Inventory, e
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: manifest, S3: s3, RowReader: readRows, GetRowChannel: getRowChannel}, nil
+	return &Inventory{Manifest: manifest, S3: s3, GetRowChannel: getRowChannel}, nil
 }
 
 type Inventory struct {
-	RowReader     func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) ([]ParquetInventoryObject, error)
 	GetRowChannel func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (<-chan ParquetInventoryObject, error)
-
-	S3       s3iface.S3API
-	Manifest *manifest
+	S3            s3iface.S3API
+	Manifest      *manifest
 }
 
-func (i *Inventory) Objects(ctx context.Context, sorted bool) (objects []block.InventoryObject, err error) {
+func (i *Inventory) Objects(ctx context.Context) (<-chan *block.InventoryObject, error) {
 	inventoryBucketArn, err := arn.Parse(i.Manifest.InventoryBucketArn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
 	invBucket := inventoryBucketArn.Resource
-	for _, file := range i.Manifest.Files {
-		err = ctx.Err()
-		if err != nil {
-			return
-		}
-		var currentRows []ParquetInventoryObject
-		currentRows, err = i.RowReader(ctx, i.S3, invBucket, file.Key)
-		if err != nil {
-			return
-		}
-		for _, row := range currentRows {
-			isDeleteMarker := false
-			isLatest := true
-			if row.IsDeleteMarker != nil {
-				isDeleteMarker = *row.IsDeleteMarker
-			}
-			if row.IsLatest != nil {
-				isLatest = *row.IsLatest
-			}
-			if !isDeleteMarker && isLatest {
-				o := block.InventoryObject{
-					Bucket:          row.Bucket,
-					Key:             row.Key,
-					PhysicalAddress: row.GetPhysicalAddress(),
-				}
-				if row.Size != nil {
-					o.Size = *row.Size
-				}
-				if row.LastModified != nil {
-					o.LastModified = *row.LastModified
-				}
-				if row.Checksum != nil {
-					o.Checksum = *row.Checksum
-				}
-				objects = append(objects, o)
-			}
-		}
-	}
-	if sorted {
-		sort.SliceStable(objects, func(i1, i2 int) bool {
-			return objects[i1].Key < objects[i2].Key
-		})
-	}
-	return
-}
-
-func (i *Inventory) ObjectsChannel(ctx context.Context) (<-chan block.InventoryObject, error) {
-	inventoryBucketArn, err := arn.Parse(i.Manifest.InventoryBucketArn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
-	}
-	invBucket := inventoryBucketArn.Resource
-	out := make(chan block.InventoryObject)
-
+	out := make(chan *block.InventoryObject)
 	go func() {
 		defer close(out)
 		for _, file := range i.Manifest.Files {
@@ -159,7 +102,7 @@ func (i *Inventory) ObjectsChannel(ctx context.Context) (<-chan block.InventoryO
 					if row.Checksum != nil {
 						o.Checksum = *row.Checksum
 					}
-					out <- o
+					out <- &o
 				}
 			}
 		}
