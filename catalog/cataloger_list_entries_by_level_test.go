@@ -20,8 +20,8 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	// produce test data
 	testutil.MustDo(t, "create test repo",
 		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
-	suffixList := []string{"file1", "file2", "file2/xxx", "file3/", "file4", "file5", "file6/yyy", "file6/zzz/zzz", "file6/ccc", "file7", "file8", "file9", "filea",
-		"/fileb", "//filec", "///filed"}
+	suffixList := []string{"rip0", "file1", "file2", "file2/xxx", "file3/", "file4", "file5", "file6/yyy", "file6/zzz/zzz", "file6/ccc", "file7", "file8", "file9", "filea",
+		"/fileb", "//filec", "///filed", "rip"}
 	for i, suffix := range suffixList {
 		n := i + 1
 		filePath := suffix
@@ -37,11 +37,16 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				Metadata:        nil,
 			}))
 
-		if i == 2 {
+		if i == 3 {
 			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
 			testutil.MustDo(t, "commit test files", err)
 		}
 	}
+	// delete one file
+	testutil.MustDo(t, "delete rip0 file",
+		c.DeleteEntry(ctx, "repo1", "master", "rip0"))
+	testutil.MustDo(t, "delete rip file",
+		c.DeleteEntry(ctx, "repo1", "master", "rip"))
 
 	type args struct {
 		repository string
@@ -57,19 +62,19 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		wantMore    bool
 		wantErr     bool
 	}{
-		{
-			name: "all uncommitted",
-			args: args{
-				repository: "repo1",
-				reference:  "master",
-				path:       "",
-				after:      "",
-				limit:      100,
-			},
-			wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
-			wantMore:    false,
-			wantErr:     false,
-		},
+		//{
+		//	name: "all uncommitted",
+		//	args: args{
+		//		repository: "repo1",
+		//		reference:  "master",
+		//		path:       "",
+		//		after:      "",
+		//		limit:      100,
+		//	},
+		//	wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
+		//	wantMore:    false,
+		//	wantErr:     false,
+		//},
 		{
 			name: "first 2 uncommitted",
 			args: args{
@@ -117,7 +122,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "file1",
 				limit:      100,
 			},
-			wantEntries: []string{"file2", "file2/"},
+			wantEntries: []string{"file2", "file2/", "rip0"},
 			wantMore:    false,
 			wantErr:     false,
 		},
