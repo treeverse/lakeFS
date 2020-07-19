@@ -170,16 +170,16 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 			// test that directories have null entries, and vice versa
 			var gotNames []string
 			for _, res := range got {
-				if strings.HasSuffix(res.Name, DefaultPathDelimiter) != res.CommonLevel {
-					t.Errorf("%s suffix doesn't match the CommonLevel = %t", res.Name, res.CommonLevel)
+				if strings.HasSuffix(res.Path, DefaultPathDelimiter) != res.CommonLevel {
+					t.Errorf("%s suffix doesn't match the CommonLevel = %t", res.Path, res.CommonLevel)
 				}
 				if (res.Entry == nil) != res.CommonLevel {
 					t.Errorf("CommonLevel = %t, doesn't match entry %s", res.CommonLevel, spew.Sdump(res.Entry))
 				}
-				if res.Entry != nil && !strings.HasSuffix(res.Entry.Path, res.Name) {
-					t.Errorf("Name '%s' expected to be path '%s' suffix", res.Name, res.Entry.Path)
+				if res.Entry != nil && !strings.HasSuffix(res.Entry.Path, res.Path) {
+					t.Errorf("Name '%s' expected to be path '%s' suffix", res.Path, res.Entry.Path)
 				}
-				gotNames = append(gotNames, res.Name)
+				gotNames = append(gotNames, res.Path)
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {

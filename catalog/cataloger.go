@@ -17,6 +17,10 @@ const (
 
 	DefaultPathDelimiter = "/"
 
+	DefaultCatalogerCacheSize    = 1024
+	DefaultCatalogerExpirySecond = 20
+	DefaultCatalogerJitterSecond = 5
+
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 50 * time.Millisecond
 	dedupChannelSize  = 5000
@@ -134,9 +138,9 @@ type CatalogerOption func(*cataloger)
 
 var defaultCatalogerCacheConfig = &CacheConfig{
 	Enabled: true,
-	Size:    1024,
-	Expiry:  20 * time.Second,
-	Jitter:  5 * time.Second,
+	Size:    DefaultCatalogerCacheSize,
+	Expiry:  DefaultCatalogerExpirySecond * time.Second,
+	Jitter:  DefaultCatalogerJitterSecond * time.Second,
 }
 
 func WithClock(newClock clock.Clock) CatalogerOption {

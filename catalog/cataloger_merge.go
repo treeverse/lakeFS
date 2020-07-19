@@ -69,7 +69,6 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 }
 
 func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
-
 	nextCommitID, err := getNextCommitID(tx)
 	if err != nil {
 		return 0, err
@@ -97,7 +96,6 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 }
 
 func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, fatherID, sonID int64, committer string, msg string, metadata Metadata) error {
-
 	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $3 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
 		sonID, previousMaxCommitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
@@ -111,7 +109,9 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 				FROM entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
 		sonID, nextCommitID, DifferenceTypeChanged)
-
+	if err != nil {
+		return err
+	}
 	fatherLastCommitID, err := getLastCommitIDByBranchID(tx, fatherID)
 	if err != nil {
 		return err
@@ -175,10 +175,7 @@ func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID Com
 	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_son',$8,$9)`,
 		fatherID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, sonID, sonLastCommitID)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
 func (c *cataloger) mergeNonDirect(tx sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, metadata Metadata) error {

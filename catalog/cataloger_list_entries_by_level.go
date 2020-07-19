@@ -67,11 +67,9 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 	var run entryRun
 	entries := make([]LevelEntry, len(markerList))
 	for i, p := range markerList {
-		if strings.HasSuffix(p, DirectoryTermination) { // remove termination character, if present
-			p = strings.TrimSuffix(p, DirectoryTermination)
-		}
-		entries[i].Name = p
-
+		// remove termination character, if present
+		p = strings.TrimSuffix(p, DirectoryTermination)
+		entries[i].Path = p
 		if strings.HasSuffix(p, delimiter) { // terminating by '/'(slash) character is an indication of a directory
 			entries[i].CommonLevel = true
 			// its absence indicates a leaf entry that has to be read from DB

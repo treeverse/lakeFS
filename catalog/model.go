@@ -56,7 +56,7 @@ type Branch struct {
 
 type LevelEntry struct {
 	CommonLevel bool
-	Name        string
+	Path        string
 	*Entry
 }
 
