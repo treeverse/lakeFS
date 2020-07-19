@@ -39,12 +39,12 @@ type DedupParams struct {
 }
 
 type ExpireResult struct {
-	Repository   string
-	Branch       string
-	BranchId     int64 `db:"branch_id"`
-	Path         string
-	PhysicalPath string `db:"physical_address"`
-	MinCommit    int64  `db:"min_commit"`
+	Repository      string
+	Branch          string
+	BranchId        int64 `db:"branch_id"`
+	Path            string
+	PhysicalAddress string `db:"physical_address"`
+	MinCommit       int64  `db:"min_commit"`
 }
 
 type RepositoryCataloger interface {

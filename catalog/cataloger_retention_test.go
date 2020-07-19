@@ -59,7 +59,7 @@ func less(a, b *ExpireResult) bool {
 	if a.Path > b.Path {
 		return false
 	}
-	return a.PhysicalPath < b.PhysicalPath
+	return a.PhysicalAddress < b.PhysicalAddress
 }
 
 // sortResults sorts a slice of ExpireResults
@@ -166,12 +166,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 	if err != nil {
 		t.Fatalf("read all expiration records failed: %s", err)
 	}
-	resultByPhysicalPath := make(map[string]*ExpireResult, len(allResults))
+	resultByPhysicalAddress := make(map[string]*ExpireResult, len(allResults))
 	for _, result := range allResults {
-		resultByPhysicalPath[result.PhysicalPath] = result
+		resultByPhysicalAddress[result.PhysicalAddress] = result
 	}
 	translate := func(physicalPath string) *ExpireResult {
-		ret, ok := resultByPhysicalPath[physicalPath]
+		ret, ok := resultByPhysicalAddress[physicalPath]
 		if !ok {
 			t.Fatalf("no ExpireResult found for expected physical path %s", physicalPath)
 		}
