@@ -886,12 +886,14 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 
 		after, amount := getPaginationParams(params.After, params.Amount)
 
-		res, hasMore, err := cataloger.ListEntries(
+		delimiter := catalog.DefaultPathDelimiter
+		res, hasMore, err := cataloger.ListEntriesByLevel(
 			c.Context(),
 			params.Repository,
 			params.Ref,
 			swag.StringValue(params.Tree),
 			after,
+			delimiter,
 			amount)
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewListObjectsNotFound().WithPayload(responseError("could not find requested path"))
@@ -904,19 +906,25 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		objList := make([]*models.ObjectStats, len(res))
 		var lastId string
 		for i, entry := range res {
-			typ := models.ObjectStatsPathTypeOBJECT
-			mtime := entry.CreationDate.Unix()
-			if entry.CreationDate.IsZero() {
-				mtime = 0
+			if entry.CommonLevel {
+				objList[i] = &models.ObjectStats{
+					Path:     entry.Name,
+					PathType: models.ObjectStatsPathTypeTREE,
+				}
+			} else {
+				var mtime int64
+				if !entry.CreationDate.IsZero() {
+					mtime = entry.CreationDate.Unix()
+				}
+				objList[i] = &models.ObjectStats{
+					Checksum:  entry.Checksum,
+					Mtime:     mtime,
+					Path:      entry.Name,
+					PathType:  models.ObjectStatsPathTypeOBJECT,
+					SizeBytes: entry.Size,
+				}
 			}
-			objList[i] = &models.ObjectStats{
-				Checksum:  entry.Checksum,
-				Mtime:     mtime,
-				Path:      entry.Path,
-				PathType:  typ,
-				SizeBytes: entry.Size,
-			}
-			lastId = entry.Path
+			lastId = entry.Name
 		}
 		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
 			Pagination: &models.Pagination{
