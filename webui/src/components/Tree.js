@@ -270,9 +270,8 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
 
 
 const merge = (path, entriesAtPath, diffResults) => {
-    diffResults = (!!diffResults && !!diffResults.payload) ? diffResults.payload.results : [];
+    diffResults = diffResults && diffResults.payload && diffResults.payload.results : [];
     entriesAtPath = entriesAtPath || [];
-
 
     const entries = [...entriesAtPath];
     diffResults.forEach(diff => {
@@ -285,8 +284,8 @@ const merge = (path, entriesAtPath, diffResults) => {
        }
     });
 
-    return entries.map(entry => {
-        if (!!entry.diff_type) return entry;
+    const r = entries.map(entry => {
+        if (entry.diff_type) return entry;
 
         for (let i=0; i < diffResults.length; i++) {
             const diff = diffResults[i];
@@ -306,6 +305,7 @@ const merge = (path, entriesAtPath, diffResults) => {
         }
         return {...entry, diff_type: 'NONE'};
     });
+    return r;
 };
 
 const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal, setShowImportModal }) => {
@@ -330,8 +330,7 @@ const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, show
     } else if (showGetStarted) {
         body = <GetStarted repo={repo} list={list} listBranchesState={listBranchesState}
                            setShowUploadModal={setShowUploadModal} setShowImportModal={setShowImportModal}/>
-    }
-    else {
+    } else {
         const results = merge(path, list.payload.results, diffResults);
         body = (
             <Table borderless size="sm">

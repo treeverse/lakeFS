@@ -73,6 +73,9 @@ definitions:
         enum: [ADDED, REMOVED, CHANGED, CONFLICT]
       path:
         type: string
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
 
   repository_creation:
     type: object
@@ -123,6 +126,9 @@ definitions:
         enum: [ADDED, REMOVED, CHANGED, CONFLICT]
       path:
         type: string
+      path_type:
+        type: string
+        enum: [TREE, OBJECT]
 
   revert_creation:
     type: object
