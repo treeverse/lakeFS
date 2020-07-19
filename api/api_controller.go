@@ -761,7 +761,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
 
-		if err != nil && err != catalog.ErrExpired {
+		if err != nil && !errors.Is(err, catalog.ErrExpired) {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
@@ -774,7 +774,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			SizeBytes: entry.Size,
 		}
 
-		if err == catalog.ErrExpired {
+		if errors.Is(err, catalog.ErrExpired) {
 			return objects.NewStatObjectGone().WithPayload(model)
 		}
 		return objects.NewStatObjectOK().WithPayload(model)
@@ -854,7 +854,7 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
 		}
-		if err == catalog.ErrExpired {
+		if errors.Is(err, catalog.ErrExpired) {
 			return objects.NewGetObjectGone().WithPayload(responseError("resource expired"))
 		}
 		if err != nil {

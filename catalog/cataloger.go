@@ -2,7 +2,7 @@ package catalog
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"strconv"
 	"sync"
@@ -18,10 +18,6 @@ const (
 	CatalogerCommitter = ""
 
 	DefaultPathDelimiter = "/"
-
-	DefaultCatalogerCacheSize    = 1024
-	DefaultCatalogerExpirySecond = 20
-	DefaultCatalogerJitterSecond = 5
 
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 50 * time.Millisecond
@@ -66,7 +62,7 @@ type BranchCataloger interface {
 	ResetBranch(ctx context.Context, repository, branch string) error
 }
 
-var ErrExpired = fmt.Errorf("expired from storage")
+var ErrExpired = errors.New("expired from storage")
 
 // ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
 type ExpiryRows interface {
@@ -166,9 +162,9 @@ type CatalogerOption func(*cataloger)
 
 var defaultCatalogerCacheConfig = &CacheConfig{
 	Enabled: true,
-	Size:    DefaultCatalogerCacheSize,
-	Expiry:  DefaultCatalogerExpirySecond * time.Second,
-	Jitter:  DefaultCatalogerJitterSecond * time.Second,
+	Size:    1024,
+	Expiry:  20 * time.Second,
+	Jitter:  5 * time.Second,
 }
 
 func WithClock(newClock clock.Clock) CatalogerOption {

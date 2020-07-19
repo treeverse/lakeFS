@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"testing"
@@ -399,7 +400,7 @@ func TestCataloger_MarkExpired(t *testing.T) {
 
 	for _, e := range expireResults {
 		_, err := c.GetEntry(ctx, repository, "master", e.Path)
-		if err == nil || err != ErrExpired {
+		if err == nil || !errors.Is(err, ErrExpired) {
 			t.Fatalf("didn't get expired entry %+v: %s", e, err)
 		}
 	}

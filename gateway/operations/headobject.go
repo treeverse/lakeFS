@@ -32,7 +32,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
-	if err != nil && err != catalog.ErrExpired {
+	if err != nil && !errors.Is(err, catalog.ErrExpired) {
 		o.Log().WithError(err).Error("failed querying path")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -41,7 +41,7 @@ func (controller *HeadObject) Handle(o *PathOperation) {
 	o.SetHeader("Last-Modified", httputil.HeaderTimestamp(entry.CreationDate))
 	o.SetHeader("ETag", httputil.ETag(entry.Checksum))
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", entry.Size))
-	if err == catalog.ErrExpired {
+	if errors.Is(err, catalog.ErrExpired) {
 		o.Log().WithError(err).Info("querying expired object")
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 	}
