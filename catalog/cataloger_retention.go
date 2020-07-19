@@ -18,49 +18,33 @@ import (
 
 const entriesTable = "entries"
 
-// escapeSqlPattern returns pattern with any special pattern
-// characters prefixed by "\".  It assumes Postgres option
-// standard_conforming_strings is ON (the default) without checking.
-func escapeSqlPattern(pattern string) string {
-	var ret strings.Builder
-	for _, c := range pattern {
-		if c == '_' || c == '%' {
-			ret.WriteRune('\\')
-		}
-		ret.WriteRune(c)
-	}
-	return ret.String()
-}
-
 func byRepository(repository string) sq.Sqlizer {
 	return sq.Expr("repositories.name = ?", repository)
 }
 
 func byPathPrefix(pathPrefix string) sq.Sqlizer {
 	if len(pathPrefix) == 0 {
-		return sq.Expr("1=1")
+		return sq.Eq{}
 	}
 	parts := strings.SplitN(pathPrefix, "/", 2)
-	clauses := make([]sq.Sqlizer, 0, 2)
-
-	clauses = append(clauses, sq.Expr("branches.name = ?", parts[0]))
+	res := sq.Expr("branches.name = ?", parts[0])
 	if parts[1] != "" {
-		clauses = append(clauses, sq.Like{"path": escapeSqlPattern(parts[1]) + "%"})
+		res = sq.And{res, sq.Like{"path": db.Prefix(parts[1])}}
 	}
 
-	return sq.And(clauses)
+	return res
 }
 
 func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
 	return sq.Expr("NOW() - entries.creation_date > make_interval(hours => ?)", int(hours))
 }
 
-var (
-	byNoncurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
-	byUncommitted = sq.Expr("min_commit = 0")
-)
-
 func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
+	var (
+		byNoncurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
+		byUncommitted = sq.Expr("min_commit = 0")
+	)
+
 	repositorySelector := byRepository(repositoryName)
 
 	// An expression to select for each rule.  Select by ORing all these.
@@ -150,14 +134,14 @@ func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, pol
 }
 
 func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
-	logger := logging.Default().WithContext(ctx).WithFields(logging.Fields{"repositoryName": repositoryName, "numRecords": len(expireResults)})
+	logger := logging.Default().WithContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
 
 	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`CREATE TEMPORARY TABLE temp_expiry (
 				path text NOT NULL, branch_id bigint NOT NULL, min_commit bigint NOT NULL)
 			ON COMMIT DROP`)
 		if err != nil {
-			return nil, fmt.Errorf("CREATE TEMPORARY TABLE: %s", err)
+			return nil, fmt.Errorf("creating temporary expiry table: %w", err)
 		}
 
 		// TODO(ariels): Use COPY.  Hard because requires bailing out of sql(x) for the
@@ -168,18 +152,18 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 		}
 		insertString, args, err := insert.ToSql()
 		if err != nil {
-			return nil, fmt.Errorf("generating INSERT SQL: %s", err)
+			return nil, fmt.Errorf("building SQL: %w", err)
 		}
 		result, err := tx.Exec(insertString, args...)
 		if err != nil {
-			return nil, fmt.Errorf("executing INSERT: %s", err)
+			return nil, fmt.Errorf("executing: %w", err)
 		}
 
 		result, err = tx.Exec(`UPDATE entries SET is_expired = true
 		    WHERE (path, branch_id, min_commit) IN (SELECT path, branch_id, min_commit FROM temp_expiry)
 		    `)
 		if err != nil {
-			return nil, fmt.Errorf("UPDATE entries to expire: %s", err)
+			return nil, fmt.Errorf("updating entries to expire: %w", err)
 		}
 		count, err := result.RowsAffected()
 		if err != nil {
@@ -190,10 +174,7 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 	if err != nil {
 		return err
 	}
-	count, ok := result.(int)
-	if !ok {
-		return fmt.Errorf("bad result %#v from UPDATE count", result)
-	}
+	count := result.(int)
 	if count != len(expireResults) {
 		return fmt.Errorf("tried to expire %d entries but expired only %d entries", len(expireResults), count)
 	}

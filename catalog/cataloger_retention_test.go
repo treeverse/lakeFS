@@ -62,8 +62,8 @@ func less(a, b *ExpireResult) bool {
 	return a.PhysicalAddress < b.PhysicalAddress
 }
 
-// sortResults sorts a slice of ExpireResults
-func sortResults(results []*ExpireResult) {
+// sortExpireResults sorts a slice of ExpireResults
+func sortExpireResults(results []*ExpireResult) {
 	sort.Slice(results, func(i, j int) bool { return less(results[i], results[j]) })
 }
 
@@ -348,8 +348,8 @@ func TestCataloger_ScanExpired(t *testing.T) {
 				t.Fatalf("scan for expired failed: %s", err)
 			}
 
-			sortResults(tt.want)
-			sortResults(got)
+			sortExpireResults(tt.want)
+			sortExpireResults(got)
 
 			if diffs := deep.Equal(tt.want, got); diffs != nil {
 				t.Errorf("did not expire as expected, diffs %s", diffs)
