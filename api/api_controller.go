@@ -908,7 +908,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		for i, entry := range res {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
-					Path:     entry.Name,
+					Path:     entry.Path,
 					PathType: models.ObjectStatsPathTypeTREE,
 				}
 			} else {
@@ -919,12 +919,12 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 				objList[i] = &models.ObjectStats{
 					Checksum:  entry.Checksum,
 					Mtime:     mtime,
-					Path:      entry.Name,
+					Path:      entry.Path,
 					PathType:  models.ObjectStatsPathTypeOBJECT,
 					SizeBytes: entry.Size,
 				}
 			}
-			lastId = entry.Name
+			lastId = entry.Path
 		}
 		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
 			Pagination: &models.Pagination{
