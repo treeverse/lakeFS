@@ -113,6 +113,9 @@ func paginateSlice(s interface{}, limit int) bool {
 	return false
 }
 
+func GetLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, error) {
+	return getLineage(tx, branchID, commitID)
+}
 func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, error) {
 	effectiveCommit := commitID
 	if commitID <= 0 {

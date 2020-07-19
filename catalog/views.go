@@ -78,6 +78,9 @@ func sqLineageConditions(branchID int64, lineage []lineageCommit) (string, sq.Sq
 	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
 	return lineageFilter, maxCommitAlias, isDeletedAlias
 }
+func SqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+	return sqEntriesLineageV(branchID, requestedCommit, lineage)
+}
 
 func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
 	lineageFilter,
@@ -102,7 +105,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 		Where("displayed_branch = ?", fatherID).MustSql()
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
-		"f.path IS NOT NULL AS DifferenceTypeChanged",
+		"f.path IS NOT NULL AND NOT f.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted",
 		"f.path IS NOT NULL AND (f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted) AS same_object",
 		"s.entry_ctid",
@@ -141,7 +144,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
 
-func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
+func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
 	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
 	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
 	sonSQL, sonArgs := sq.Select("*").FromSelect(sonLineage, "s").
@@ -151,7 +154,7 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",
-		"s.path IS NOT NULL AS DifferenceTypeChanged",
+		"s.path IS NOT NULL AND not s.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		//both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
@@ -163,8 +166,8 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
 		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
 							(NOT s.is_committed -- uncommitted is new
-							 OR s.min_commit > ? -- created after last commit
-                           OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
+							 OR s.min_commit > ? -- created after last merge
+                           OR (s.max_commit >= ? AND s.is_deleted)) -- deleted after last merge
 						  AS DifferenceTypeConflict`, sonID, lastSonMergeWithFather, lastSonMergeWithFather).
 		FromSelect(fatherLineage, "f").
 		Where("f.displayed_branch = ?", fatherID).

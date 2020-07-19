@@ -48,7 +48,13 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, ErrConflictFound
 		}
 		if len(diffCounts) == 0 {
-			return nil, ErrNoDifferenceWasFound
+			leftCommitAdvanced, err := checkZeroDiffCommit(tx, leftID, rightID)
+			if err != nil {
+				return nil, err
+			}
+			if !leftCommitAdvanced {
+				return nil, ErrNoDifferenceWasFound
+			}
 		}
 
 		if message == "" {
@@ -62,6 +68,26 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}, c.txOpts(ctx)...)
 	return result, err
+}
+
+func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
+	/*
+		Checks if the current commit id of source branch advanced since last merge.
+		If so - a merge record must be created, even if there are no changes between branches.
+	*/
+	leftMaxCommitID, err := getLastCommitIDByBranchID(tx, leftID)
+	if err != nil {
+		return false, err
+	}
+	var mergeMaxCommitID CommitID
+	err = tx.Get(&mergeMaxCommitID, `select distinct on (branch_id) merge_source_commit from commits 
+														where 
+												branch_id = $1 and merge_source_branch = $2 order by branch_id, commit_id DESC`,
+		rightID, leftID)
+	if err != nil && !errors.As(err, &db.ErrNotFound) {
+		return false, err
+	}
+	return leftMaxCommitID > mergeMaxCommitID, nil
 }
 
 func formatMergeMessage(leftBranch string, rightBranch string) string {
@@ -123,11 +149,9 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 	if err != nil && !errors.As(err, &db.ErrNotFound) {
 		return err
 	}
-
+	sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10)
 	if len(fatherLastLineage) > 0 {
-		sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10) + "," + fatherLastLineage
-	} else {
-		sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10)
+		sonNewLineage += "," + fatherLastLineage
 	}
 
 	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
