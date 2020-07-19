@@ -101,6 +101,10 @@ func (e *expiryRows) Err() error {
 	return e.rows.Err()
 }
 
+func (e *expiryRows) Close() error {
+	return e.rows.Close()
+}
+
 func (e *expiryRows) Read() (*ExpireResult, error) {
 	var res ExpireResult
 	err := e.rows.StructScan(&res)

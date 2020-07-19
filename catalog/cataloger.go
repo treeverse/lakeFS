@@ -66,6 +66,7 @@ var ErrExpired = errors.New("expired from storage")
 
 // ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
 type ExpiryRows interface {
+	io.Closer
 	Next() bool
 	Err() error
 	// Read returns the current from ExpiryRows, or an error on failure.  Call it only after
