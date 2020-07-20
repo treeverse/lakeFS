@@ -39,6 +39,14 @@ func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
 	return sq.Expr("NOW() - entries.creation_date > make_interval(hours => ?)", int(hours))
 }
 
+type retentionQueryRecord struct {
+	PhysicalAddress string `db:"physical_address"`
+	Branch          string `db:"branch"`
+	BranchId        int64  `db:"branch_id"`
+	MinCommit       int64  `db:"min_commit"`
+	Path            string `db:"path"`
+}
+
 func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
 	var (
 		byNoncurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
@@ -106,13 +114,21 @@ func (e *expiryRows) Close() error {
 }
 
 func (e *expiryRows) Read() (*ExpireResult, error) {
-	var res ExpireResult
-	err := e.rows.StructScan(&res)
+	var record retentionQueryRecord
+	err := e.rows.StructScan(&record)
 	if err != nil {
 		return nil, err
 	}
-	res.Repository = e.repositoryName
-	return &res, nil
+	return &ExpireResult{
+		Repository:      e.repositoryName,
+		Branch:          record.Branch,
+		PhysicalAddress: record.PhysicalAddress,
+		InternalReference: (&InternalObjectRef{
+			BranchID:  record.BranchId,
+			MinCommit: record.MinCommit,
+			Path:      record.Path,
+		}).String(),
+	}, nil
 }
 
 // QueryExpired returns ExpiryRows iterating over all objects to expire on repositoryName
@@ -150,9 +166,14 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 
 		// TODO(ariels): Use COPY.  Hard because requires bailing out of sql(x) for the
 		//     entire transaction.
-		insert := psql.Insert("temp_expiry").Columns("path", "branch_id", "min_commit")
+		insert := psql.Insert("temp_expiry").Columns("branch_id", "min_commit", "path")
 		for _, expire := range expireResults {
-			insert = insert.Values(expire.Path, expire.BranchId, expire.MinCommit)
+			ref, err := ParseInternalObjectRef(expire.InternalReference)
+			if err != nil {
+				logger.WithField("record", expire).WithError(err).Error("bad reference - skip")
+				continue
+			}
+			insert = insert.Values(ref.BranchID, ref.MinCommit, ref.Path)
 		}
 		insertString, args, err := insert.ToSql()
 		if err != nil {

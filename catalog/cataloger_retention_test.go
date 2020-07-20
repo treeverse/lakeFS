@@ -53,10 +53,10 @@ func less(a, b *ExpireResult) bool {
 	if a.Branch > b.Branch {
 		return false
 	}
-	if a.Path < b.Path {
+	if a.InternalReference < b.InternalReference {
 		return true
 	}
-	if a.Path > b.Path {
+	if a.InternalReference > b.InternalReference {
 		return false
 	}
 	return a.PhysicalAddress < b.PhysicalAddress
@@ -399,12 +399,16 @@ func TestCataloger_MarkExpired(t *testing.T) {
 	}
 
 	for _, e := range expireResults {
-		_, err := c.GetEntry(ctx, repository, "master", e.Path, GetEntryParams{})
+		ref, err := ParseInternalObjectRef(e.InternalReference)
+		if err != nil {
+			t.Fatalf("couldn't parse returned internal object ref in %+v", e)
+		}
+		_, err = c.GetEntry(ctx, repository, "master", ref.Path, GetEntryParams{})
 		if err == nil || !errors.Is(err, ErrExpired) {
 			t.Errorf("didn't get expired entry %+v: %s", e, err)
 		}
 
-		entry, err := c.GetEntry(ctx, repository, "master", e.Path, GetEntryParams{ReturnExpired: true})
+		entry, err := c.GetEntry(ctx, repository, "master", ref.Path, GetEntryParams{ReturnExpired: true})
 		if err != nil || !entry.Expired {
 			t.Errorf("expected expired entry when requesting expired return for %+v, got %+v", e, entry)
 		}
