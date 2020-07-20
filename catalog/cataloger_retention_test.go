@@ -9,15 +9,14 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/retention"
 )
 
-func makeHours(hours int) *retention.TimePeriodHours {
-	ret := retention.TimePeriodHours(hours)
+func makeHours(hours int) *TimePeriodHours {
+	ret := TimePeriodHours(hours)
 	return &ret
 }
 
-func readExpired(t *testing.T, ctx context.Context, c Cataloger, repository string, policy *retention.Policy) ([]*ExpireResult, error) {
+func readExpired(t *testing.T, ctx context.Context, c Cataloger, repository string, policy *Policy) ([]*ExpireResult, error) {
 	rows, err := c.QueryExpired(ctx, repository, policy)
 	defer func() {
 		err := rows.Close()
@@ -158,9 +157,9 @@ func TestCataloger_ScanExpired(t *testing.T) {
 	// Get all expire results; we shall pick-and-choose from them for more specific tests.
 	// Hard to forge expire results because of their package-specific fields, most notably
 	// minCommit.
-	allResults, err := readExpired(t, ctx, c, repository, &retention.Policy{
-		Rules: []retention.Rule{
-			{Enabled: true, FilterPrefix: "", Expiration: retention.Expiration{All: makeHours(0)}},
+	allResults, err := readExpired(t, ctx, c, repository, &Policy{
+		Rules: []Rule{
+			{Enabled: true, FilterPrefix: "", Expiration: Expiration{All: makeHours(0)}},
 		},
 	})
 	if err != nil {
@@ -187,18 +186,18 @@ func TestCataloger_ScanExpired(t *testing.T) {
 
 	tests := []struct {
 		name    string
-		policy  *retention.Policy
+		policy  *Policy
 		want    []*ExpireResult
 		wantErr bool
 	}{
 		{
 			name: "expire nothing",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "",
-						Expiration:   retention.Expiration{All: makeHours(50)},
+						Expiration:   Expiration{All: makeHours(50)},
 					},
 				},
 			},
@@ -207,12 +206,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			// (Calls the same readExpired and doesn't test much, except that the
 			// right number of results were returned!)
 			name: "expire all",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "",
-						Expiration:   retention.Expiration{All: makeHours(0)},
+						Expiration:   Expiration{All: makeHours(0)},
 					},
 				},
 			},
@@ -227,24 +226,24 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			},
 		}, {
 			name: "expire uncommitted",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "",
-						Expiration:   retention.Expiration{Uncommitted: makeHours(0)},
+						Expiration:   Expiration{Uncommitted: makeHours(0)},
 					},
 				},
 			},
 			want: []*ExpireResult{masterUncommitted2Hours},
 		}, {
 			name: "expire all noncurrent",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "",
-						Expiration:   retention.Expiration{Noncurrent: makeHours(0)},
+						Expiration:   Expiration{Noncurrent: makeHours(0)},
 					},
 				},
 			},
@@ -254,12 +253,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			},
 		}, {
 			name: "expire old noncurrent",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "",
-						Expiration:   retention.Expiration{Noncurrent: makeHours(18)},
+						Expiration:   Expiration{Noncurrent: makeHours(18)},
 					},
 				},
 			},
@@ -268,12 +267,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			},
 		}, {
 			name: "expire uncommitted and old noncurrent",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "",
-						Expiration: retention.Expiration{
+						Expiration: Expiration{
 							Noncurrent:  makeHours(18),
 							Uncommitted: makeHours(0),
 						},
@@ -286,12 +285,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			},
 		}, {
 			name: "expire by branch",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "master/",
-						Expiration: retention.Expiration{
+						Expiration: Expiration{
 							All: makeHours(0),
 						},
 					},
@@ -305,12 +304,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			},
 		}, {
 			name: "expire noncurrent by branch",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "master/",
-						Expiration: retention.Expiration{
+						Expiration: Expiration{
 							Noncurrent: makeHours(0),
 						},
 					},
@@ -321,12 +320,12 @@ func TestCataloger_ScanExpired(t *testing.T) {
 			},
 		}, {
 			name: "expire by branch and path prefix",
-			policy: &retention.Policy{
-				Rules: []retention.Rule{
+			policy: &Policy{
+				Rules: []Rule{
 					{
 						Enabled:      true,
 						FilterPrefix: "master/0/",
-						Expiration: retention.Expiration{
+						Expiration: Expiration{
 							All: makeHours(0),
 						},
 					},
@@ -384,9 +383,9 @@ func TestCataloger_MarkExpired(t *testing.T) {
 		t.Fatalf("failed to commit: %s", err)
 	}
 
-	expireResults, err := readExpired(t, ctx, c, repository, &retention.Policy{
-		Rules: []retention.Rule{
-			{Enabled: true, FilterPrefix: "", Expiration: retention.Expiration{All: makeHours(0)}},
+	expireResults, err := readExpired(t, ctx, c, repository, &Policy{
+		Rules: []Rule{
+			{Enabled: true, FilterPrefix: "", Expiration: Expiration{All: makeHours(0)}},
 		},
 	})
 	if err != nil {

@@ -11,7 +11,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 )
 
 const (
@@ -98,7 +97,8 @@ type EntryCataloger interface {
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
+
+	QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error)
 	// MarkExpired marks all entries identified by expire as expired.  It is a batch operation.
 	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
 	DedupReportChannel() chan *DedupReport
