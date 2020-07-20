@@ -52,7 +52,7 @@ export const DataImportForm = connect(
             </div>
             <div className="d-flex align-items-center">
                 <p><CpuIcon size="48" /></p>
-                <p className="mx-2">To save time and costs, your original data will not be copied to the repository storage. Instead, metadata is created for your objects, and only future changes are saved in the repository storage.</p>
+                <p className="mx-2">To save time and costs, <b>your original data will not be copied</b> to the repository storage. Instead, metadata is created for your objects, and only future changes are saved in the repository storage.</p>
             </div>
             <div className="d-flex align-items-center">
                 <p><GitBranchIcon size="48" /></p>

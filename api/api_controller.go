@@ -2034,9 +2034,9 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		var importStats *onboard.InventoryImportStats
+		var stats *onboard.InventoryImportStats
 		if *params.DryRun {
-			importStats, err = importer.Import(deps.ctx, true)
+			stats, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2058,7 +2058,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-			importStats, err = importer.Import(params.HTTPRequest.Context(), false)
+			stats, err = importer.Import(params.HTTPRequest.Context(), false)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2066,10 +2066,10 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		}
 		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
 			IsDryRun:           *params.DryRun,
-			PreviousImportDate: importStats.PreviousImportDate.Unix(),
-			PreviousManifest:   importStats.PreviousInventoryURL,
-			AddedOrChanged:     int64(importStats.AddedOrChanged),
-			Deleted:            int64(importStats.Deleted),
+			PreviousImportDate: stats.PreviousImportDate.Unix(),
+			PreviousManifest:   stats.PreviousInventoryURL,
+			AddedOrChanged:     int64(stats.AddedOrChanged),
+			Deleted:            int64(stats.Deleted),
 		})
 	})
 }
