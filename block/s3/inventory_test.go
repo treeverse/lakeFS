@@ -3,7 +3,6 @@ package s3_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"reflect"
@@ -16,26 +15,31 @@ import (
 	"github.com/treeverse/lakefs/block/s3"
 )
 
-func rows(keys ...string) []s3.ParquetInventoryObject {
+func rows(keys ...string) []*s3.ParquetInventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]s3.ParquetInventoryObject, len(keys))
+	res := make([]*s3.ParquetInventoryObject, len(keys))
 	latest := true
 	for i, key := range keys {
-		res[i].Key = key
-		res[i].IsLatest = &latest
+		if key != "" {
+			res[i] = new(s3.ParquetInventoryObject)
+			res[i].Key = key
+			res[i].IsLatest = &latest
+		}
 	}
 	return res
 }
 
 var fileContents = map[string][]string{
-	"f1": {"f1row1", "f1row2"},
-	"f2": {"f2row1", "f2row2"},
-	"f3": {"f3row1", "f3row2"},
-	"f4": {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
-	"f5": {"a1", "a2", "a3"},
-	"f6": {"a4", "a5", "a6", "a7"},
+	"f1":        {"f1row1", "f1row2"},
+	"f2":        {"f2row1", "f2row2"},
+	"f3":        {"f3row1", "f3row2"},
+	"f4":        {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
+	"f5":        {"a1", "a2", "a3"},
+	"f6":        {"a4", "a5", "a6", "a7"},
+	"err_file1": {"a4", "", "a6", "a7"},
+	"err_file2": {""},
 }
 
 func TestFetch(t *testing.T) {
@@ -43,7 +47,7 @@ func TestFetch(t *testing.T) {
 		InventoryFiles  []string
 		ExpectedObjects []string
 		ReadBatchSize   int
-		ErrIndex        int
+		ErrExpected     bool
 	}{
 		{
 			InventoryFiles:  []string{"f1", "f2", "f3"},
@@ -85,6 +89,15 @@ func TestFetch(t *testing.T) {
 			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 			ReadBatchSize:   2,
 		},
+		{
+			InventoryFiles: []string{"f5", "err_file1"},
+			ReadBatchSize:  2,
+			ErrExpected:    true,
+		},
+		{
+			InventoryFiles: []string{"f1,", "f2", "f3", "f4", "f5", "f6", "err_file2"},
+			ErrExpected:    true,
+		},
 	}
 
 	manifestURL := "s3://example-bucket/manifest1.json"
@@ -106,6 +119,15 @@ func TestFetch(t *testing.T) {
 		for it.Next() {
 			objects = append(objects, it.Get().Key)
 		}
+		if !test.ErrExpected && it.Err() != nil {
+			t.Fatalf("got unexpected error: %v", it.Err())
+		}
+		if test.ErrExpected {
+			if it.Err() == nil {
+				t.Fatalf("expected error but didn't get one")
+			}
+			continue
+		}
 		if len(objects) != len(test.ExpectedObjects) {
 			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
 		}
@@ -116,19 +138,18 @@ func TestFetch(t *testing.T) {
 }
 
 type mockParquetReader struct {
-	rows     []s3.ParquetInventoryObject
-	nextIdx  int
-	errIndex *int
+	rows    []*s3.ParquetInventoryObject
+	nextIdx int
 }
 
 func (m *mockParquetReader) Read(dstInterface interface{}) error {
 	res := make([]s3.ParquetInventoryObject, 0, len(m.rows))
 	dst := dstInterface.(*[]s3.ParquetInventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
-		if m.errIndex != nil && i == *m.errIndex {
-			return errors.New("mock parquet reader reached error index")
+		if m.rows[i] == nil {
+			return fmt.Errorf("got empty key")
 		}
-		res = append(res, m.rows[i])
+		res = append(res, *m.rows[i])
 	}
 	m.nextIdx = m.nextIdx + len(res)
 	*dst = res
@@ -139,7 +160,7 @@ func (m *mockParquetReader) GetNumRows() int64 {
 	return int64(len(m.rows))
 }
 
-func mockParquetReaderGetter(ctx context.Context, svc s3iface.S3API, bucket string, key string) (s3.ParquetReader, error) {
+func mockParquetReaderGetter(_ context.Context, _ s3iface.S3API, bucket string, key string) (s3.ParquetReader, error) {
 	if bucket != "example-bucket" {
 		return nil, fmt.Errorf("wrong bucket name: %s", bucket)
 	}

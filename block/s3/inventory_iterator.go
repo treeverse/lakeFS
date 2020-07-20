@@ -21,6 +21,7 @@ type InventoryIterator struct {
 
 func (i *InventoryIterator) Next() bool {
 	for {
+		var errs <-chan error
 		if i.currentChannel == nil {
 			i.currentManifestFileIdx += 1
 			if i.currentManifestFileIdx >= len(i.manifest.Files) {
@@ -31,8 +32,11 @@ func (i *InventoryIterator) Next() bool {
 				i.err = err
 				return false
 			}
-			var errs <-chan error
 			i.currentChannel, errs = i.getRowChannel(pr)
+		}
+
+		parquetObj, ok := <-i.currentChannel
+		if !ok {
 			select {
 			case err, ok := <-errs:
 				if ok {
@@ -41,9 +45,6 @@ func (i *InventoryIterator) Next() bool {
 				}
 			default:
 			}
-		}
-		parquetObj, ok := <-i.currentChannel
-		if !ok {
 			i.currentChannel = nil
 			continue
 		}
@@ -81,7 +82,6 @@ func (i *InventoryIterator) getRowChannel(pr ParquetReader) (<-chan ParquetInven
 	out := make(chan ParquetInventoryObject)
 	errs := make(chan error)
 	go func() {
-		defer close(out)
 		defer close(errs)
 		batchSize := i.ReadBatchSize
 		if batchSize == 0 {
@@ -91,12 +91,15 @@ func (i *InventoryIterator) getRowChannel(pr ParquetReader) (<-chan ParquetInven
 		for i := 0; i < num; i += batchSize {
 			err := pr.Read(&rawInventoryObjects)
 			if err != nil {
+				close(out)
 				errs <- err
+				return
 			}
 			for _, o := range rawInventoryObjects {
 				out <- o
 			}
 		}
+		close(out)
 	}()
 	return out, errs
 }

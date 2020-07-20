@@ -6,7 +6,6 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/onboard"
-	"strconv"
 )
 
 const (
@@ -60,7 +59,7 @@ func rows(keys ...string) []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) CreateAndDeleteObjects(ctx context.Context, it onboard.DiffIterator, dryRun bool) (*onboard.InventoryImportStats, error) {
+func (m *mockCatalogActions) CreateAndDeleteObjects(_ context.Context, it onboard.DiffIterator, dryRun bool) (*onboard.InventoryImportStats, error) {
 	stats := onboard.InventoryImportStats{
 		AddedOrChanged: len(m.objectActions.Added),
 		Deleted:        len(m.objectActions.Deleted),
@@ -116,7 +115,7 @@ func (m *mockInventoryIterator) Get() *block.InventoryObject {
 	return &m.rows[*m.idx]
 }
 
-func (m *mockInventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {
+func (m *mockInventory) Iterator(_ context.Context) (block.InventoryIterator, error) {
 	return &mockInventoryIterator{
 		rows: rows(m.rows...),
 	}, nil
@@ -128,13 +127,4 @@ func (m *mockInventory) SourceName() string {
 
 func (m *mockInventory) InventoryURL() string {
 	return m.inventoryURL
-}
-
-func (m *mockInventory) CreateCommitMetadata(diff onboard.InventoryDiff) catalog.Metadata {
-	return catalog.Metadata{
-		"inventory_url":            m.inventoryURL,
-		"source_bucket":            m.sourceBucket,
-		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
-		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),
-	}
 }
