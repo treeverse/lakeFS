@@ -27,12 +27,12 @@ func byPathPrefix(pathPrefix string) sq.Sqlizer {
 		return sq.Eq{}
 	}
 	parts := strings.SplitN(pathPrefix, "/", 2)
-	res := sq.Expr("branches.name = ?", parts[0])
-	if parts[1] != "" {
-		res = sq.And{res, sq.Like{"path": db.Prefix(parts[1])}}
+	branchExpr := sq.Eq{"branches.name": parts[0]}
+	if len(parts) == 1 || parts[1] == "" {
+		return branchExpr
 	}
-
-	return res
+	pathPrefixExpr := sq.Like{"path": db.Prefix(parts[1])}
+	return sq.And{branchExpr, pathPrefixExpr}
 }
 
 func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
