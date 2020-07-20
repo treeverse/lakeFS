@@ -7,50 +7,52 @@ import (
 	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
 )
 
-type FSIter struct {
+type FSCollection struct {
 	fsList []*hive_metastore.FieldSchema
 }
 
-func (p *FSIter) Name(i int) string {
+func (p *FSCollection) Name(i int) string {
 	return p.fsList[i].GetName()
 }
 
-func (p *FSIter) Len() int {
+func (p *FSCollection) Len() int {
 	return len(p.fsList)
 }
 
-func (p *FSIter) Less(i, j int) bool {
+func (p *FSCollection) Less(i, j int) bool {
 	return compareFieldSchema(p.fsList[i], p.fsList[j]) == metastore.ItemLess
 }
 
-func (p *FSIter) Swap(i, j int) {
+func (p *FSCollection) Swap(i, j int) {
 	p.fsList[i], p.fsList[j] = p.fsList[j], p.fsList[i]
 }
 
-func (p *FSIter) Value(i int) interface{} {
+func (p *FSCollection) Value(i int) interface{} {
 	return p.fsList[i]
 }
 
-func (p *FSIter) CompareWith(i int, v interface{}, j int) metastore.CompareResult {
-	if partition, ok := v.(*FSIter); ok {
+func (p *FSCollection) CompareWith(i int, v interface{}, j int) metastore.CompareResult {
+	if partition, ok := v.(*FSCollection); ok {
 		return compareFieldSchema(p.fsList[i], partition.fsList[j])
 	}
-	msg := fmt.Sprintf("expected to get value of type *hive.FSIter gor: %T", v)
-	panic(msg)
+	err := fmt.Errorf("expected to get value of type *hive.FSCollection gor: %T", v)
+	panic(err)
 }
 func compareFieldSchema(fsA, fsB *hive_metastore.FieldSchema) metastore.CompareResult {
 	if fsA.GetName() < fsB.GetName() {
 		return metastore.ItemLess
-	} else if fsA.GetName() == fsB.GetName() {
-		if FieldSchemaEqual(fsA, fsB) {
-			return metastore.ItemSame
-		}
-		return metastore.ItemSameKey
 	}
-	return metastore.ItemGreater
+	if fsA.GetName() > fsB.GetName() {
+		return metastore.ItemGreater
+	}
+	if FieldSchemaEqual(fsA, fsB) {
+		return metastore.ItemSame
+	}
+	return metastore.ItemSameKey
 }
-func NewFSIter(fsList []*hive_metastore.FieldSchema) *FSIter {
-	return &FSIter{
+
+func NewFSCollection(fsList []*hive_metastore.FieldSchema) *FSCollection {
+	return &FSCollection{
 		fsList: fsList,
 	}
 }

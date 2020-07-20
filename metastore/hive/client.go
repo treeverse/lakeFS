@@ -88,24 +88,23 @@ func NewMSClient(client ThriftHiveMetastoreClient) *MSClient {
 	}
 }
 
-func (c *MSClient) CopyOrMerge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string, partition []string) error {
-	if partition != nil && len(partition) > 0 {
-		return c.CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde, partition)
+func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
+	if len(partition) > 0 {
+		return c.CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 	}
-	// todo: handle error (in case not found continue, is not found should be a function of the client that the mock will also implement)
-	table, _ := c.client.GetTable(c.context, toDB, toTable)
-	//if err != nil && !errors.Is(err, hive_metastore.NewNoSuchObjectException().) {
-	//	fmt.Printf("%T", err)
-	//	return err
-	//}
+	table, err := c.client.GetTable(c.context, toDB, toTable)
+	if err != nil {
+		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
+			return err
+		}
+	}
 	if table == nil {
-		return c.Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
-	} else {
-		return c.Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde)
+		return c.Copy(fromDB, fromTable, toDB, toTable, toBranch, serde)
 	}
+	return c.Merge(fromDB, fromTable, toDB, toTable, toBranch, serde)
 }
 
-func (c *MSClient) Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
+func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
 	table, err := c.client.GetTable(c.context, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -113,15 +112,14 @@ func (c *MSClient) Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, 
 	table.DbName = toDB
 	table.TableName = toTable
 	table.Sd.SerdeInfo.Name = serde
-	table.Sd.Location = metastore.TransformLocation(table.Sd.Location, fromBranch, toBranch)
+	table.Sd.Location = metastore.ReplaceBranchName(table.Sd.Location, toBranch)
 
 	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, 2000)
 	for _, partition := range partitions {
-		partition.Sd.Location = metastore.TransformLocation(partition.Sd.Location, fromBranch, toBranch)
+		partition.Sd.Location = metastore.ReplaceBranchName(partition.Sd.Location, toBranch)
 		partition.TableName = toTable
 		partition.Sd.SerdeInfo.Name = serde
 		partition.DbName = toDB
-
 	}
 	err = c.client.CreateTable(c.context, table)
 	if err != nil {
@@ -131,7 +129,7 @@ func (c *MSClient) Copy(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, 
 	return err
 }
 
-func (c *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string) error {
+func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde string) error {
 	table, err := c.client.GetTable(c.context, fromDB, fromTable)
 	if err != nil {
 		return err
@@ -139,8 +137,7 @@ func (c *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch,
 	table.DbName = toDB
 	table.TableName = toTable
 	table.Sd.SerdeInfo.Name = serde
-	table.Sd.Location = metastore.TransformLocation(table.Sd.Location, fromBranch, toBranch)
-
+	table.Sd.Location = metastore.ReplaceBranchName(table.Sd.Location, toBranch)
 	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
 	if err != nil {
 		return err
@@ -150,19 +147,18 @@ func (c *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch,
 		return err
 	}
 
-	partitionIter := NewPartitionIter(partitions)
-	toPartitionIter := NewPartitionIter(toPartitions)
+	partitionIter := NewPartitionCollection(partitions)
+	toPartitionIter := NewPartitionCollection(toPartitions)
 	var addPartitions, removePartitions, alterPartitions []*hive_metastore.Partition
-	metastore.DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) {
+	err = metastore.DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) error {
 		partition, ok := value.(*hive_metastore.Partition)
 		if !ok {
-			msg := fmt.Sprintf("unexpected value in diffIterable call. expected to get  *hive_metastore.Partition, but got: %T", value)
-			panic(msg)
+			return fmt.Errorf("unexpected value in diffIterable call. expected to get  *hive_metastore.Partition, but got: %T", value)
 		}
 
 		partition.DbName = toDB
 		partition.TableName = toTable
-		partition.Sd.Location = metastore.TransformLocation(partition.Sd.Location, fromBranch, toBranch)
+		partition.Sd.Location = metastore.ReplaceBranchName(partition.Sd.Location, toBranch)
 		partition.Sd.SerdeInfo.Name = toTable
 		switch difference {
 		case catalog.DifferenceTypeRemoved:
@@ -172,13 +168,16 @@ func (c *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch,
 		default:
 			alterPartitions = append(alterPartitions, partition)
 		}
+		return nil
 	})
+	if err != nil {
+		return err
+	}
 
 	err = c.client.AlterTable(c.context, toDB, toTable, table)
 	if err != nil {
 		return err
 	}
-
 	_, err = c.client.AddPartitions(c.context, addPartitions)
 	if err != nil {
 		return err
@@ -197,16 +196,21 @@ func (c *MSClient) Merge(fromDB, fromTable, fromBranch, toDB, toTable, toBranch,
 	return nil
 }
 
-func (c *MSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, toBranch, serde string, partition []string) error {
+func (c *MSClient) CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {
 	p1, err := c.client.GetPartition(c.context, fromDB, fromTable, partition)
 	if err != nil {
 		return err
 	}
-	p2, _ := c.client.GetPartition(c.context, toDB, toTable, partition)
+	p2, err := c.client.GetPartition(c.context, toDB, toTable, partition)
+	if err != nil {
+		if _, ok := err.(*hive_metastore.NoSuchObjectException); !ok {
+			return err
+		}
+	}
 	p1.DbName = toDB
 	p1.TableName = toTable
 	p1.Sd.SerdeInfo.Name = serde
-	p1.Sd.Location = metastore.TransformLocation(p1.Sd.Location, fromBranch, toBranch)
+	p1.Sd.Location = metastore.ReplaceBranchName(p1.Sd.Location, toBranch)
 	if p2 == nil {
 		_, err = c.client.AddPartition(c.context, p1)
 	} else {
@@ -216,7 +220,6 @@ func (c *MSClient) CopyPartition(fromDB, fromTable, fromBranch, toDB, toTable, t
 }
 
 func (c *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error) {
-
 	diffColumns, err := c.getColumnDiff(fromDB, fromTable, toDB, toTable)
 	if err != nil {
 		return nil, err
@@ -240,13 +243,12 @@ func (c *MSClient) getPartitionsDiff(fromDB string, fromTable string, toDB strin
 	if err != nil {
 		return nil, err
 	}
-	partitionIter := NewPartitionIter(partitions)
-	toPartitionIter := NewPartitionIter(toPartitions)
-	return metastore.Diff(partitionIter, toPartitionIter), nil
+	partitionIter := NewPartitionCollection(partitions)
+	toPartitionIter := NewPartitionCollection(toPartitions)
+	return metastore.Diff(partitionIter, toPartitionIter)
 }
 
 func (c *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catalog.Differences, error) {
-
 	tableFrom, err := c.client.GetTable(c.context, fromDB, fromTable)
 	if err != nil {
 		return nil, err
@@ -256,7 +258,7 @@ func (c *MSClient) getColumnDiff(fromDB, fromTable, toDB, toTable string) (catal
 		return nil, err
 	}
 
-	colsIter := NewFSIter(tableFrom.GetSd().GetCols())
-	colsToIter := NewFSIter(tableTo.GetSd().GetCols())
-	return metastore.Diff(colsIter, colsToIter), nil
+	colsIter := NewFSCollection(tableFrom.GetSd().GetCols())
+	colsToIter := NewFSCollection(tableTo.GetSd().GetCols())
+	return metastore.Diff(colsIter, colsToIter)
 }

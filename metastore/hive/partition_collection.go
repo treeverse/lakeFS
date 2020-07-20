@@ -8,56 +8,59 @@ import (
 	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
 )
 
-type PartitionIter struct {
+type PartitionCollection struct {
 	partitionList []*hive_metastore.Partition
 }
 
-func (p *PartitionIter) Name(i int) string {
+func (p *PartitionCollection) Name(i int) string {
 	return partitionName(p.partitionList[i])
 }
 
-func (p *PartitionIter) Value(i int) interface{} {
+func (p *PartitionCollection) Value(i int) interface{} {
 	return p.partitionList[i]
 }
 
-func (p *PartitionIter) CompareWith(i int, v interface{}, j int) metastore.CompareResult {
-	if partition, ok := v.(*PartitionIter); ok {
+func (p *PartitionCollection) CompareWith(i int, v interface{}, j int) metastore.CompareResult {
+	if partition, ok := v.(*PartitionCollection); ok {
 		return compare(p.partitionList[i], partition.partitionList[j])
 	}
-	msg := fmt.Sprintf("expected to get value of type *hive.PartitionIter gor:%T", v)
-	panic(msg)
+
+	err := fmt.Errorf("expected to get value of type *hive.PartitionCollection gor:%T", v)
+	panic(err)
 }
 
-func (p *PartitionIter) Len() int {
+func (p *PartitionCollection) Len() int {
 	return len(p.partitionList)
 }
 
 func valueEqual(a, b *hive_metastore.Partition) bool {
+	// compare only time and number of columns
 	return a.LastAccessTime == b.LastAccessTime && len(a.GetSd().GetCols()) == len(b.GetSd().GetCols())
 }
 
 func compare(partitionA, partitionB *hive_metastore.Partition) metastore.CompareResult {
 	if partitionName(partitionA) < partitionName(partitionB) {
 		return metastore.ItemLess
-	} else if partitionName(partitionA) == partitionName(partitionB) {
-		if valueEqual(partitionA, partitionB) {
-			return metastore.ItemSame
-		}
-		return metastore.ItemSameKey
 	}
-	return metastore.ItemGreater
+	if partitionName(partitionA) > partitionName(partitionB) {
+		return metastore.ItemGreater
+	}
+	if valueEqual(partitionA, partitionB) {
+		return metastore.ItemSame
+	}
+	return metastore.ItemSameKey
 }
 
-func (p *PartitionIter) Less(i, j int) bool {
+func (p *PartitionCollection) Less(i, j int) bool {
 	return compare(p.partitionList[i], p.partitionList[j]) == metastore.ItemLess
 }
 
-func (p *PartitionIter) Swap(i, j int) {
+func (p *PartitionCollection) Swap(i, j int) {
 	p.partitionList[i], p.partitionList[j] = p.partitionList[j], p.partitionList[i]
 }
 
-func NewPartitionIter(partition []*hive_metastore.Partition) *PartitionIter {
-	return &PartitionIter{
+func NewPartitionCollection(partition []*hive_metastore.Partition) *PartitionCollection {
+	return &PartitionCollection{
 		partitionList: partition,
 	}
 }

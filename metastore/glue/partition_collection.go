@@ -9,40 +9,40 @@ import (
 	"github.com/treeverse/lakefs/metastore"
 )
 
-type PartitionIter struct {
+type PartitionCollection struct {
 	partitions []*glue.Partition
 }
 
-func (p *PartitionIter) Name(i int) string {
+func (p *PartitionCollection) Name(i int) string {
 	return partitionName(p.partitions[i])
 }
 
-func (p *PartitionIter) Len() int {
+func (p *PartitionCollection) Len() int {
 	return len(p.partitions)
 }
 
-func (p *PartitionIter) Less(i, j int) bool {
+func (p *PartitionCollection) Less(i, j int) bool {
 	return comparePartitions(p.partitions[i], p.partitions[j]) == metastore.ItemLess
 }
 
-func (p *PartitionIter) Swap(i, j int) {
+func (p *PartitionCollection) Swap(i, j int) {
 	p.partitions[i], p.partitions[j] = p.partitions[j], p.partitions[i]
 }
 
-func (p *PartitionIter) Value(i int) interface{} {
+func (p *PartitionCollection) Value(i int) interface{} {
 	return p.partitions[i]
 }
 
-func (p *PartitionIter) CompareWith(i int, v interface{}, j int) metastore.CompareResult {
-	if otherIter, ok := v.(*PartitionIter); ok {
+func (p *PartitionCollection) CompareWith(i int, v interface{}, j int) metastore.CompareResult {
+	if otherIter, ok := v.(*PartitionCollection); ok {
 		return comparePartitions(p.partitions[i], otherIter.partitions[j])
 	}
-	msg := fmt.Sprintf("expected type *glue.PartitionIter, got %T.", v)
-	panic(msg)
+	err := fmt.Errorf("expected type *glue.PartitionCollection, got %T", v)
+	panic(err)
 }
 
-func NewPartitionIter(partitions []*glue.Partition) *PartitionIter {
-	return &PartitionIter{
+func NewPartitionCollection(partitions []*glue.Partition) *PartitionCollection {
+	return &PartitionCollection{
 		partitions: partitions,
 	}
 }
@@ -68,11 +68,13 @@ func comparePartitions(partitionA, partitionB *glue.Partition) metastore.Compare
 	nameA, nameB := partitionName(partitionA), partitionName(partitionB)
 	if nameA < nameB {
 		return metastore.ItemLess
-	} else if nameA == nameB {
-		if partitionValueEqual(partitionA, partitionB) {
-			return metastore.ItemSame
-		}
-		return metastore.ItemSameKey
 	}
-	return metastore.ItemGreater
+	if nameA > nameB {
+		return metastore.ItemGreater
+
+	}
+	if partitionValueEqual(partitionA, partitionB) {
+		return metastore.ItemSame
+	}
+	return metastore.ItemSameKey
 }

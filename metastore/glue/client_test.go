@@ -1,6 +1,7 @@
 package glue
 
 import (
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -14,194 +15,9 @@ import (
 	"github.com/aws/aws-sdk-go/service/glue/glueiface"
 )
 
-//func getService() *glue.Glue {
-//	cfg := &aws.Config{
-//		Region: aws.String("us-east-1"),
-//		//Logger: &config.LogrusAWSAdapter{},
-//	}
-//	cfg.Credentials = credentials.NewStaticCredentials(
-//		"[clientId]",
-//		"[secret]]",
-//		"")
-//
-//	sess := session.Must(session.NewSession(cfg))
-//	sess.ClientConfig("glue")
-//
-//	return glue.New(sess)
-//}
-//func TestGlueAddTable(t *testing.T) {
-//	dbName := "default"
-//	tableName := "lakefs-sc_by_dt"
-//	columns := []*glue.Column{
-//		{
-//			Name: aws.String("iso_code"),
-//			Type: aws.String("string"),
-//		},
-//		{
-//			Name: aws.String("location"),
-//			Type: aws.String("string"),
-//		},
-//		{
-//			Name: aws.String("total_cases"),
-//			Type: aws.String("binary"),
-//		},
-//	}
-//
-//	serde := &glue.SerDeInfo{
-//		Name:                 aws.String(tableName),
-//		Parameters:           map[string]*string{"serialization.format": aws.String("1")},
-//		SerializationLibrary: aws.String("org.apache.hadoop.hive.ql.io.parquet.serde.ParquetHiveSerDe"),
-//	}
-//	inputFormat := aws.String("parquet.hive.DeprecatedParquetInputFormat")
-//	outputFormat := aws.String("parquet.hive.DeprecatedParquetOutputFormat")
-//	location := "s3a://example-2/master/sc_by_date/"
-//	g := &GlueMSClient{
-//		client:    getService(),
-//		catalogID: aws.String("977611293394"),
-//	}
-//
-//	err := g.createTable(dbName, &glue.TableData{
-//		CreatedBy:    aws.String("lakefs-test"),
-//		DatabaseName: aws.String(dbName),
-//		Name:         aws.String(tableName),
-//		Owner:        aws.String("lakefs-test"),
-//		PartitionKeys: []*glue.Column{{
-//			Name: aws.String("dt"),
-//			Type: aws.String("string"),
-//		}},
-//		StorageDescriptor: &glue.StorageDescriptor{
-//			Columns:      columns,
-//			InputFormat:  inputFormat,
-//			Location:     aws.String(location),
-//			OutputFormat: outputFormat,
-//			SerdeInfo:    serde,
-//		},
-//		TableType: aws.String("parquet"),
-//	})
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//	var partitions []*glue.Partition
-//
-//	for i := 1; i < 31; i++ {
-//		value := fmt.Sprintf("2020-04-%02d", i)
-//		partitions = append(partitions, &glue.Partition{
-//			DatabaseName: aws.String(dbName),
-//			StorageDescriptor: &glue.StorageDescriptor{
-//				Columns:      columns,
-//				InputFormat:  inputFormat,
-//				Location:     aws.String(fmt.Sprintf("%sdate=%s", location, value)),
-//				OutputFormat: outputFormat,
-//				SerdeInfo:    serde,
-//			},
-//			TableName: nil,
-//			Values:    []*string{aws.String(value)},
-//		})
-//	}
-//	g.addPartitions(dbName, tableName, partitions)
-//	if err != nil {
-//		t.Fatal(err)
-//	}
-//}
-//func TestGlueMSClient_AddPartitions(t *testing.T) {
-//	type fields struct {
-//		Svc       glueiface.GlueAPI
-//		CatalogID *string
-//	}
-//	type args struct {
-//		dbName     string
-//		tableName  string
-//		partitions []*glue.Partition
-//	}
-//	tests := []struct {
-//		name    string
-//		fields  fields
-//		args    args
-//		wantErr bool
-//	}{
-//		{
-//			name: "add partitions",
-//			fields: fields{
-//				Svc:       getService(),
-//				CatalogID: aws.String("977611293394"),
-//			},
-//			args: args{
-//				dbName:    "default",
-//				tableName: "imdb_nice_date_2",
-//				partitions: []*glue.Partition{
-//					{
-//						//CreationTime:      nil,
-//						DatabaseName: aws.String("default"),
-//						//LastAccessTime:    nil,
-//						//LastAnalyzedTime:  nil,
-//						//Parameters:        nil,
-//						StorageDescriptor: &glue.StorageDescriptor{
-//							Location: aws.String("s3a://example/br1/collection/shows/titles_by_year/startYear=2017"),
-//							SerdeInfo: &glue.SerDeInfo{
-//								Name: aws.String("imdb_nice_date_2"),
-//							},
-//						},
-//						TableName: aws.String("imdb_nice_date_2"),
-//						Values:    []*string{aws.String("2017")},
-//					},
-//					{
-//						//CreationTime:      nil,
-//						DatabaseName: aws.String("default"),
-//						//LastAccessTime:    nil,
-//						//LastAnalyzedTime:  nil,
-//						//Parameters:        nil,
-//						StorageDescriptor: &glue.StorageDescriptor{
-//							Location: aws.String("s3a://example/br1/collection/shows/titles_by_year/startYear=2018"),
-//							SerdeInfo: &glue.SerDeInfo{
-//								Name: aws.String("imdb_nice_date_2"),
-//							},
-//						},
-//						TableName: aws.String("imdb_nice_date_2"),
-//						Values:    []*string{aws.String("2018")},
-//					},
-//				},
-//			},
-//			wantErr: false,
-//		},
-//	}
-//	for _, tt := range tests {
-//		t.Run(tt.name, func(t *testing.T) {
-//			g := &GlueMSClient{
-//				client:    tt.fields.Svc,
-//				catalogID: tt.fields.CatalogID,
-//			}
-//			if err := g.addPartitions(tt.args.dbName, tt.args.tableName, tt.args.partitions); (err != nil) != tt.wantErr {
-//				t.Errorf("addPartitions() error = %v, wantErr %v", err, tt.wantErr)
-//			}
-//		})
-//	}
-//}
-//func TestAlterPartition(t *testing.T) {
-//	g := &GlueMSClient{
-//		client:    getService(),
-//		catalogID: aws.String("977611293394"),
-//	}
-//
-//	partitions, err := g.getAllPartitions("default", "imdb_nice_date_2")
-//	if err != nil {
-//		t.Error(err)
-//	}
-//	partition := partitions[1]
-//	fmt.Printf("working on partition %s", aws.StringValue(partition.Values[0]))
-//	mp := make(map[string]*string)
-//	mp["what"] = aws.String("OK")
-//	partition.Parameters = mp
-//	np := []*glue.Partition{partition}
-//	err = g.alterPartitions("default", "imdb_nice_date_2", np)
-//	if err != nil {
-//		fmt.Printf(err.Error())
-//	}
-//	fmt.Print("done")
-//}
-
 type GlueMsMock struct {
 	glueiface.GlueAPI
-	MockStore mock.MockStore
+	MockStore mock.MetaStore
 }
 
 func NewGlueMsMock() *GlueMsMock {
@@ -210,8 +26,8 @@ func NewGlueMsMock() *GlueMsMock {
 	}
 }
 
-func tableToMock(db *string, table *glue.TableInput) *mock.MockObject {
-	return &mock.MockObject{
+func tableToMock(db *string, table *glue.TableInput) *mock.MetastoreObject {
+	return &mock.MetastoreObject{
 		DbName:      aws.StringValue(db),
 		TableName:   aws.StringValue(table.Name),
 		SdTableName: aws.StringValue(table.StorageDescriptor.SerdeInfo.Name),
@@ -220,7 +36,7 @@ func tableToMock(db *string, table *glue.TableInput) *mock.MockObject {
 	}
 }
 
-func MockToTable(mock *mock.MockObject) *glue.TableData {
+func MockToTable(mock *mock.MetastoreObject) *glue.TableData {
 	return &glue.TableData{
 		DatabaseName: aws.String(mock.DbName),
 		Name:         aws.String(mock.TableName),
@@ -232,8 +48,8 @@ func MockToTable(mock *mock.MockObject) *glue.TableData {
 	}
 }
 
-func partitionsToMock(db, table *string, partitions []*glue.PartitionInput) []*mock.MockObject {
-	var mockPartitions []*mock.MockObject
+func partitionsToMock(db, table *string, partitions []*glue.PartitionInput) []*mock.MetastoreObject {
+	var mockPartitions []*mock.MetastoreObject
 	for _, partition := range partitions {
 		mockPartitions = append(mockPartitions, partitionToMock(db, table, partition))
 	}
@@ -263,8 +79,8 @@ func mocksToColumns(columns []*mock.Column) []*glue.Column {
 	return mockColumns
 }
 
-func partitionInputToMock(db, table *string, partition *glue.PartitionInput) *mock.MockObject {
-	return &mock.MockObject{
+func partitionInputToMock(db, table *string, partition *glue.PartitionInput) *mock.MetastoreObject {
+	return &mock.MetastoreObject{
 		DbName:      aws.StringValue(db),
 		TableName:   aws.StringValue(table),
 		SdTableName: aws.StringValue(partition.StorageDescriptor.SerdeInfo.Name),
@@ -273,8 +89,8 @@ func partitionInputToMock(db, table *string, partition *glue.PartitionInput) *mo
 		Values:      aws.StringValueSlice(partition.Values),
 	}
 }
-func partitionToMock(db, table *string, partition *glue.PartitionInput) *mock.MockObject {
-	return &mock.MockObject{
+func partitionToMock(db, table *string, partition *glue.PartitionInput) *mock.MetastoreObject {
+	return &mock.MetastoreObject{
 		DbName:      aws.StringValue(db),
 		TableName:   aws.StringValue(table),
 		SdTableName: aws.StringValue(partition.StorageDescriptor.SerdeInfo.Name),
@@ -284,7 +100,7 @@ func partitionToMock(db, table *string, partition *glue.PartitionInput) *mock.Mo
 	}
 }
 
-func MockToPartition(mock *mock.MockObject) *glue.Partition {
+func MockToPartition(mock *mock.MetastoreObject) *glue.Partition {
 	return &glue.Partition{
 		DatabaseName: aws.String(mock.DbName),
 		TableName:    aws.String(mock.TableName),
@@ -297,7 +113,7 @@ func MockToPartition(mock *mock.MockObject) *glue.Partition {
 	}
 }
 
-func MockToPartitions(mockPartitions []*mock.MockObject) []*glue.Partition {
+func MockToPartitions(mockPartitions []*mock.MetastoreObject) []*glue.Partition {
 	var partitions []*glue.Partition
 	for _, partition := range mockPartitions {
 		partitions = append(partitions, MockToPartition(partition))
@@ -308,6 +124,11 @@ func MockToPartitions(mockPartitions []*mock.MockObject) []*glue.Partition {
 func (h GlueMsMock) GetPartition(partitonInput *glue.GetPartitionInput) (*glue.GetPartitionOutput, error) {
 	partition, err := h.MockStore.GetPartition(aws.StringValue(partitonInput.DatabaseName), aws.StringValue(partitonInput.TableName), aws.StringValueSlice(partitonInput.PartitionValues))
 	if err != nil {
+		if errors.Is(err, mock.ErrNotFound) {
+			err2 := &glue.EntityNotFoundException{}
+			err2.Message_ = aws.String(err.Error())
+			return nil, err2
+		}
 		return nil, err
 	}
 	return &glue.GetPartitionOutput{Partition: MockToPartition(partition)}, nil
@@ -333,6 +154,11 @@ func (h GlueMsMock) CreateTable(tbl *glue.CreateTableInput) (*glue.CreateTableOu
 func (h GlueMsMock) GetTable(input *glue.GetTableInput) (*glue.GetTableOutput, error) {
 	mockTable, err := h.MockStore.GetTable(aws.StringValue(input.DatabaseName), aws.StringValue(input.Name))
 	if err != nil {
+		if errors.Is(err, mock.ErrNotFound) {
+			err2 := &glue.EntityNotFoundException{}
+			err2.Message_ = aws.String(err.Error())
+			return nil, err2
+		}
 		return nil, err
 	}
 	return &glue.GetTableOutput{Table: MockToTable(mockTable)}, nil
@@ -457,7 +283,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	toDBName := "default"
 	toBranch := "br1"
 
-	err = client.CopyOrMerge(dbName, tableName, branch, toDBName, toTableName, toBranch, "", nil)
+	err = client.CopyOrMerge(dbName, tableName, toDBName, toTableName, toBranch, toTableName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -538,7 +364,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	// now merge back
-	err = client.CopyOrMerge(toDBName, toTableName, toBranch, dbName, tableName, branch, "", nil)
+	err = client.CopyOrMerge(toDBName, toTableName, dbName, tableName, branch, "", nil)
 	if err != nil {
 		t.Fatal(err)
 	}

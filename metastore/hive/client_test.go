@@ -2,6 +2,7 @@ package hive
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strconv"
@@ -14,7 +15,7 @@ import (
 )
 
 type HiveMsMock struct {
-	MockStore mock.MockStore
+	MockStore mock.MetaStore
 }
 
 func NewHiveMsMock() *HiveMsMock {
@@ -23,8 +24,8 @@ func NewHiveMsMock() *HiveMsMock {
 	}
 }
 
-func tableToMock(table *hive_metastore.Table) *mock.MockObject {
-	return &mock.MockObject{
+func tableToMock(table *hive_metastore.Table) *mock.MetastoreObject {
+	return &mock.MetastoreObject{
 		DbName:      table.DbName,
 		TableName:   table.TableName,
 		SdTableName: table.Sd.SerdeInfo.Name,
@@ -33,7 +34,7 @@ func tableToMock(table *hive_metastore.Table) *mock.MockObject {
 	}
 }
 
-func MockToTable(mock *mock.MockObject) *hive_metastore.Table {
+func MockToTable(mock *mock.MetastoreObject) *hive_metastore.Table {
 	return &hive_metastore.Table{
 		DbName:    mock.DbName,
 		TableName: mock.TableName,
@@ -45,8 +46,8 @@ func MockToTable(mock *mock.MockObject) *hive_metastore.Table {
 	}
 }
 
-func partitionsToMock(partitions []*hive_metastore.Partition) []*mock.MockObject {
-	var mockPartitions []*mock.MockObject
+func partitionsToMock(partitions []*hive_metastore.Partition) []*mock.MetastoreObject {
+	var mockPartitions []*mock.MetastoreObject
 	for _, partition := range partitions {
 		mockPartitions = append(mockPartitions, partitionToMock(partition))
 	}
@@ -76,8 +77,8 @@ func mocksToColumns(columns []*mock.Column) []*hive_metastore.FieldSchema {
 	return mockColumns
 }
 
-func partitionToMock(partition *hive_metastore.Partition) *mock.MockObject {
-	return &mock.MockObject{
+func partitionToMock(partition *hive_metastore.Partition) *mock.MetastoreObject {
+	return &mock.MetastoreObject{
 		DbName:      partition.DbName,
 		TableName:   partition.TableName,
 		SdTableName: partition.Sd.SerdeInfo.Name,
@@ -87,7 +88,7 @@ func partitionToMock(partition *hive_metastore.Partition) *mock.MockObject {
 	}
 }
 
-func MockToPartition(mock *mock.MockObject) *hive_metastore.Partition {
+func MockToPartition(mock *mock.MetastoreObject) *hive_metastore.Partition {
 	return &hive_metastore.Partition{
 		DbName:    mock.DbName,
 		TableName: mock.TableName,
@@ -100,7 +101,7 @@ func MockToPartition(mock *mock.MockObject) *hive_metastore.Partition {
 	}
 }
 
-func MockToPartitions(mockPartitions []*mock.MockObject) []*hive_metastore.Partition {
+func MockToPartitions(mockPartitions []*mock.MetastoreObject) []*hive_metastore.Partition {
 	var partitions []*hive_metastore.Partition
 	for _, partition := range mockPartitions {
 		partitions = append(partitions, MockToPartition(partition))
@@ -111,6 +112,11 @@ func MockToPartitions(mockPartitions []*mock.MockObject) []*hive_metastore.Parti
 func (h HiveMsMock) GetPartition(_ context.Context, dbName string, tableName string, values []string) (r *hive_metastore.Partition, err error) {
 	partition, err := h.MockStore.GetPartition(dbName, tableName, values)
 	if err != nil {
+		if errors.Is(err, mock.ErrNotFound) {
+			err2 := hive_metastore.NewNoSuchObjectException()
+			err2.Message = err.Error()
+			return nil, err2
+		}
 		return nil, err
 	}
 	return MockToPartition(partition), nil
@@ -139,6 +145,11 @@ func (h HiveMsMock) CreateTable(_ context.Context, tbl *hive_metastore.Table) (e
 func (h HiveMsMock) GetTable(_ context.Context, dbName string, tableName string) (r *hive_metastore.Table, err error) {
 	mockTable, err := h.MockStore.GetTable(dbName, tableName)
 	if err != nil {
+		if errors.Is(err, mock.ErrNotFound) {
+			err2 := hive_metastore.NewNoSuchObjectException()
+			err2.Message = err.Error()
+			return nil, err2
+		}
 		return nil, err
 	}
 	return MockToTable(mockTable), nil
@@ -281,7 +292,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	toDBName := "default"
 	toBranch := "br1"
 
-	err = client.CopyOrMerge(dbName, tableName, branch, toDBName, toTableName, toBranch, "", nil)
+	err = client.CopyOrMerge(dbName, tableName, toDBName, toTableName, toBranch, toTableName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -367,7 +378,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Fatal(err)
 	}
 	// now merge back
-	err = client.CopyOrMerge(toDBName, toTableName, toBranch, dbName, tableName, branch, "", nil)
+	err = client.CopyOrMerge(toDBName, toTableName, dbName, tableName, branch, toTableName, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

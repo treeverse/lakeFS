@@ -1885,7 +1885,7 @@ paths:
 
       responses:
         201:
-          description: loacation created
+          description: location created
           schema:
             description: "path to created location"
             type: string
