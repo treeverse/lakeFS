@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -37,8 +38,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
 
-		listAfter := strings.TrimPrefix(after, prefix)
-		prefixQuery := sqListByPrefix(prefix, listAfter, delimiter, branchID, limit+1, commitID, lineage)
+		/*prefixQuery := sqListByPrefix(prefix, listAfter, delimiter, branchID, limit+1, commitID, lineage)
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
@@ -47,7 +47,8 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		err = tx.Select(&markerList, sql, args...)
 		if err != nil {
 			return nil, fmt.Errorf("select: %w", err)
-		}
+		}*/
+		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, branchID, commitID, lineage)
 		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
@@ -56,6 +57,65 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	result := markers.([]LevelEntry)
 	moreToRead := paginateSlice(&result, limit)
 	return result, moreToRead, nil
+}
+
+func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
+	limit += 1
+	unionSQL := buildLevelQuery(lineage)
+	baseSelect := sq.Select("min(e.path) as path").
+		FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e")
+	endOfPrefixRange := prefix + DirectoryTermination
+	listAfter := prefix + strings.TrimPrefix(after, prefix)
+	var markerList []string
+	for i := 0; i < limit; i++ {
+		var nextPath string
+		next := baseSelect.Where(" e.path > ? and e.path < ? ", listAfter, endOfPrefixRange)
+		deb := sq.DebugSqlizer(next)
+		_ = deb
+		s, args, err := next.PlaceholderFormat(sq.Dollar).ToSql()
+		if err != nil {
+			return nil, err
+		}
+		err = tx.Get(&nextPath, s, args...)
+		if errors.As(err, &db.ErrNotFound) {
+			return markerList, nil
+		}
+		if err != nil {
+			return nil, err
+		}
+		nextPart := nextPath[len(prefix):]
+		pos := strings.Index(nextPart, delimiter)
+		if pos != -1 {
+			nextPath = nextPath[:len(prefix)+pos+1]
+			listAfter = nextPath + DirectoryTermination
+		} else {
+			listAfter = nextPath
+		}
+		markerList = append(markerList, nextPath)
+	}
+	return markerList, nil
+}
+
+func buildLevelQuery(lineage []lineageCommit) string {
+	var unionParts []string
+	for _, l := range lineage {
+		singleBranchQuery := fmt.Sprintf(
+			`select min(path) as path from entries  
+						where branch_id = %d  and min_commit <= %d and max_commit >= %d  
+						and path >  $1 and path < $2`, l.BranchID, l.CommitID, l.CommitID)
+		unionParts = append(unionParts, singleBranchQuery)
+	}
+	query := "select min(path) as path from (" + strings.Join(unionParts, "\n union all \n") + ") t"
+	return query
+}
+
+func sqListByPrefixSingle(prefix, endOfPrefixRange, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
+
+	selectSingle := sq.Select("e.path").
+		FromSelect(sq.Select("min(path) as path").
+			FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e").
+			Where(" e.path > ? and e.path < ? ", prefix, endOfPrefixRange), "e")
+	return selectSingle
 }
 
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]LevelEntry, error) {

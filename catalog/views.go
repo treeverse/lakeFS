@@ -196,8 +196,8 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
 		Columns("e.path", "e.branch_id AS source_branch",
-			"e.is_committed", "e.is_tombstone").
-		Column(isDeletedAlias)
+			"e.is_committed", "e.is_tombstone").Distinct().Options(" ON (e.branch_id,e.path)").
+		Column(isDeletedAlias).OrderBy("e.branch_id,e.path,e.commit_weight DESC")
 	minSelect := sq.Select(" path").
 		FromSelect(baseSelect, "e").
 		Where("not e.is_deleted")
