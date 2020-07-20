@@ -6,19 +6,20 @@ import (
 	"github.com/go-test/deep"
 
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/retention"
 )
 
 func TestParseTimePeriod(t *testing.T) {
 	cases := []struct {
 		Input  models.TimePeriod
-		Output retention.TimePeriodHours
+		Output catalog.TimePeriodHours
 		Error  bool
 	}{
 		{Input: models.TimePeriod{}, Error: true},
-		{Input: models.TimePeriod{Days: 2}, Output: retention.TimePeriodHours(2 * 24)},
-		{Input: models.TimePeriod{Weeks: 5}, Output: retention.TimePeriodHours(5 * 24 * 7)},
-		{Input: models.TimePeriod{Weeks: 1, Days: 3}, Output: retention.TimePeriodHours(10 * 24)},
+		{Input: models.TimePeriod{Days: 2}, Output: catalog.TimePeriodHours(2 * 24)},
+		{Input: models.TimePeriod{Weeks: 5}, Output: catalog.TimePeriodHours(5 * 24 * 7)},
+		{Input: models.TimePeriod{Weeks: 1, Days: 3}, Output: catalog.TimePeriodHours(10 * 24)},
 	}
 	for _, c := range cases {
 		got, err := retention.ParseTimePeriod(c.Input)
@@ -40,12 +41,12 @@ func TestParseTimePeriod(t *testing.T) {
 
 func TestUnparseTimePeriod(t *testing.T) {
 	cases := []struct {
-		Input  retention.TimePeriodHours
+		Input  catalog.TimePeriodHours
 		Output models.TimePeriod
 	}{
-		{Output: models.TimePeriod{Days: 2}, Input: retention.TimePeriodHours(2*24 - 20)},
-		{Output: models.TimePeriod{Weeks: 5}, Input: retention.TimePeriodHours(5 * 24 * 7)},
-		{Output: models.TimePeriod{Weeks: 1, Days: 3}, Input: retention.TimePeriodHours(10 * 24)},
+		{Output: models.TimePeriod{Days: 2}, Input: catalog.TimePeriodHours(2*24 - 20)},
+		{Output: models.TimePeriod{Weeks: 5}, Input: catalog.TimePeriodHours(5 * 24 * 7)},
+		{Output: models.TimePeriod{Weeks: 1, Days: 3}, Input: catalog.TimePeriodHours(10 * 24)},
 	}
 	for _, c := range cases {
 		got := retention.RenderTimePeriod(c.Input)
@@ -56,13 +57,13 @@ func TestUnparseTimePeriod(t *testing.T) {
 }
 
 func TestParseExpiration(t *testing.T) {
-	hours := func(h int) *retention.TimePeriodHours {
-		ret := retention.TimePeriodHours(h)
+	hours := func(h int) *catalog.TimePeriodHours {
+		ret := catalog.TimePeriodHours(h)
 		return &ret
 	}
 	cases := []struct {
 		Input  models.RetentionPolicyRuleExpiration
-		Output retention.Expiration
+		Output catalog.Expiration
 		Error  bool
 	}{
 		{
@@ -70,22 +71,22 @@ func TestParseExpiration(t *testing.T) {
 			Error: true,
 		}, {
 			Input:  models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
-			Output: retention.Expiration{All: hours(3 * 24)},
+			Output: catalog.Expiration{All: hours(3 * 24)},
 		}, {
 			Input:  models.RetentionPolicyRuleExpiration{Noncurrent: &models.TimePeriod{Days: 3}},
-			Output: retention.Expiration{Noncurrent: hours(3 * 24)},
+			Output: catalog.Expiration{Noncurrent: hours(3 * 24)},
 		}, {
 			Input:  models.RetentionPolicyRuleExpiration{Uncommitted: &models.TimePeriod{Days: 3}},
-			Output: retention.Expiration{Uncommitted: hours(3 * 24)},
+			Output: catalog.Expiration{Uncommitted: hours(3 * 24)},
 		}, {
 			Input:  models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
-			Output: retention.Expiration{All: hours(3 * 24)},
+			Output: catalog.Expiration{All: hours(3 * 24)},
 		}, {
 			Input: models.RetentionPolicyRuleExpiration{
 				All:         &models.TimePeriod{Days: 3},
 				Uncommitted: &models.TimePeriod{Days: 1},
 			},
-			Output: retention.Expiration{All: hours(3 * 24), Uncommitted: hours(24)},
+			Output: catalog.Expiration{All: hours(3 * 24), Uncommitted: hours(24)},
 		},
 	}
 
@@ -109,32 +110,32 @@ func TestParseExpiration(t *testing.T) {
 }
 
 func TestUnParseExpiration(t *testing.T) {
-	hours := func(h int) *retention.TimePeriodHours {
-		ret := retention.TimePeriodHours(h)
+	hours := func(h int) *catalog.TimePeriodHours {
+		ret := catalog.TimePeriodHours(h)
 		return &ret
 	}
 	cases := []struct {
 		Output models.RetentionPolicyRuleExpiration
-		Input  retention.Expiration
+		Input  catalog.Expiration
 	}{
 		{
 			Output: models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
-			Input:  retention.Expiration{All: hours(3 * 24)},
+			Input:  catalog.Expiration{All: hours(3 * 24)},
 		}, {
 			Output: models.RetentionPolicyRuleExpiration{Noncurrent: &models.TimePeriod{Days: 3}},
-			Input:  retention.Expiration{Noncurrent: hours(3 * 24)},
+			Input:  catalog.Expiration{Noncurrent: hours(3 * 24)},
 		}, {
 			Output: models.RetentionPolicyRuleExpiration{Uncommitted: &models.TimePeriod{Days: 3}},
-			Input:  retention.Expiration{Uncommitted: hours(3 * 24)},
+			Input:  catalog.Expiration{Uncommitted: hours(3 * 24)},
 		}, {
 			Output: models.RetentionPolicyRuleExpiration{All: &models.TimePeriod{Days: 3}},
-			Input:  retention.Expiration{All: hours(3 * 24)},
+			Input:  catalog.Expiration{All: hours(3 * 24)},
 		}, {
 			Output: models.RetentionPolicyRuleExpiration{
 				All:         &models.TimePeriod{Days: 3},
 				Uncommitted: &models.TimePeriod{Days: 1},
 			},
-			Input: retention.Expiration{All: hours(3 * 24), Uncommitted: hours(24)},
+			Input: catalog.Expiration{All: hours(3 * 24), Uncommitted: hours(24)},
 		},
 	}
 
@@ -202,24 +203,24 @@ func TestParsePolicy(t *testing.T) {
 func TestUnparsePolicy(t *testing.T) {
 	pathA := "/bucket/a"
 	pathB := "/bucket/b"
-	day := retention.TimePeriodHours(24)
-	ruleA := retention.Rule{
+	day := catalog.TimePeriodHours(24)
+	ruleA := catalog.Rule{
 		Enabled:      true,
 		FilterPrefix: pathA,
-		Expiration:   retention.Expiration{All: &day},
+		Expiration:   catalog.Expiration{All: &day},
 	}
-	ruleB := retention.Rule{
+	ruleB := catalog.Rule{
 		Enabled:      false,
 		FilterPrefix: pathB,
-		Expiration:   retention.Expiration{Uncommitted: &day},
+		Expiration:   catalog.Expiration{Uncommitted: &day},
 	}
 
 	cases := []struct {
-		Input        retention.Policy
+		Input        catalog.Policy
 		OutputPrefix []string // (enough to ID the rule, other parsing checked elsewhere)
 	}{
-		{Input: retention.Policy{Rules: []retention.Rule{ruleA}}, OutputPrefix: []string{pathA}},
-		{Input: retention.Policy{Rules: []retention.Rule{ruleA, ruleB}}, OutputPrefix: []string{pathA, pathB}},
+		{Input: catalog.Policy{Rules: []catalog.Rule{ruleA}}, OutputPrefix: []string{pathA}},
+		{Input: catalog.Policy{Rules: []catalog.Rule{ruleA, ruleB}}, OutputPrefix: []string{pathA, pathB}},
 	}
 	for _, c := range cases {
 		got := retention.RenderPolicy(&c.Input)
