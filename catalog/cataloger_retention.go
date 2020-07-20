@@ -2,16 +2,64 @@ package catalog
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 )
+
+// Avoid rounding by keeping whole hours (not Durations)
+type TimePeriodHours int
+
+type Expiration struct {
+	All         *TimePeriodHours `json:",omitempty"`
+	Uncommitted *TimePeriodHours `json:",omitempty"`
+	Noncurrent  *TimePeriodHours `json:",omitempty"`
+}
+
+type Rule struct {
+	Enabled      bool
+	FilterPrefix string `json:",omitempty"`
+	Expiration   Expiration
+}
+
+type Rules []Rule
+
+type Policy struct {
+	Rules       Rules
+	Description string
+}
+
+type PolicyWithCreationTime struct {
+	Policy
+	CreatedAt time.Time `db:"created_at"`
+}
+
+// RulesHolder is a dummy struct for helping pg serialization: it has
+// poor support for passing an array-valued parameter.
+type RulesHolder struct {
+	Rules Rules
+}
+
+func (a *RulesHolder) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *Rules) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, a)
+}
 
 // TODO(ariels) Move retention policy CRUD from retention service to
 // here.
@@ -35,7 +83,7 @@ func byPathPrefix(pathPrefix string) sq.Sqlizer {
 	return sq.And{branchExpr, pathPrefixExpr}
 }
 
-func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
+func byExpiration(hours TimePeriodHours) sq.Sqlizer {
 	return sq.Expr("NOW() - catalog_entries.creation_date > make_interval(hours => ?)", int(hours))
 }
 
@@ -47,7 +95,7 @@ type retentionQueryRecord struct {
 	Path            string   `db:"path"`
 }
 
-func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
+func buildRetentionQuery(repositoryName string, policy *Policy) sq.SelectBuilder {
 	var (
 		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
 		byUncommitted = sq.Expr("min_commit = 0")
@@ -133,7 +181,7 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 
 // QueryExpired returns ExpiryRows iterating over all objects to expire on repositoryName
 // according to policy to channel out.
-func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error) {
+func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error) {
 	logger := logging.Default().WithContext(ctx).WithField("policy", *policy)
 
 	query := buildRetentionQuery(repositoryName, policy)
