@@ -45,15 +45,15 @@ func setupService(t *testing.T, opts ...testutil.GetDBOption) *retention.DBReten
 func TestDBRetentionService_Config(t *testing.T) {
 	s := setupService(t)
 
-	period := retention.TimePeriodHours(48)
+	period := catalog.TimePeriodHours(48)
 
-	policy := retention.Policy{
+	policy := catalog.Policy{
 		Description: "Retention policy for testing",
-		Rules: []retention.Rule{
+		Rules: []catalog.Rule{
 			{
 				Enabled:      true,
 				FilterPrefix: "/foo/path",
-				Expiration:   retention.Expiration{All: &period},
+				Expiration:   catalog.Expiration{All: &period},
 			},
 		},
 	}

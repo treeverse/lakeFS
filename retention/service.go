@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -17,9 +18,9 @@ func NewDBRetentionService(db db.Database) *DBRetentionService {
 	return &DBRetentionService{db: db}
 }
 
-func (s *DBRetentionService) GetPolicy(repositoryName string) (*PolicyWithCreationTime, error) {
+func (s *DBRetentionService) GetPolicy(repositoryName string) (*catalog.PolicyWithCreationTime, error) {
 	o, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		var policy PolicyWithCreationTime
+		var policy catalog.PolicyWithCreationTime
 		err := tx.Get(
 			&policy,
 			`SELECT description, (value::json)->'Rules' as rules, created_at FROM catalog_repositories_config WHERE repository_id IN (SELECT repository_id FROM catalog_repositories WHERE name = $1) AND key = $2`,
@@ -31,11 +32,11 @@ func (s *DBRetentionService) GetPolicy(repositoryName string) (*PolicyWithCreati
 	if err != nil {
 		return nil, err
 	}
-	policy := o.(PolicyWithCreationTime)
+	policy := o.(catalog.PolicyWithCreationTime)
 	return &policy, nil
 }
 
-func (s *DBRetentionService) SetPolicy(repositoryName string, policy *Policy, creationDate time.Time) error {
+func (s *DBRetentionService) SetPolicy(repositoryName string, policy *catalog.Policy, creationDate time.Time) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec(
 			`INSERT INTO catalog_repositories_config
@@ -43,7 +44,7 @@ func (s *DBRetentionService) SetPolicy(repositoryName string, policy *Policy, cr
                          FROM catalog_repositories WHERE name=$1
                          ON CONFLICT (repository_id, key)
                          DO UPDATE SET (value, description, created_at) = (EXCLUDED.value, EXCLUDED.description, EXCLUDED.created_at)`,
-			repositoryName, dbConfigKey, &RulesHolder{Rules: policy.Rules}, policy.Description, creationDate,
+			repositoryName, dbConfigKey, &catalog.RulesHolder{Rules: policy.Rules}, policy.Description, creationDate,
 		)
 	})
 	return err
