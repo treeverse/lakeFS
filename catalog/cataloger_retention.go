@@ -88,7 +88,7 @@ func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.Sel
 	}
 
 	query := psql.Select("physical_address", "branches.name AS branch", "branch_id", "path", "min_commit").
-		From("entries").
+		From(entriesTable).
 		Where(sq.And{repositorySelector, sq.Or(ruleSelectors)})
 	query = query.Join("branches ON entries.branch_id = branches.id").
 		Join("repositories on branches.repository_id = repositories.id")
