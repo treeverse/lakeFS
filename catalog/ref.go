@@ -18,6 +18,9 @@ const (
 
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
+
+	InternalObjectRefSeparator = "$"
+	InternalObjectRefFormat    = "int:pbm:%s"
 )
 
 type Ref struct {
@@ -78,4 +81,43 @@ func ParseRef(ref string) (*Ref, error) {
 		Branch:   parts[0],
 		CommitID: CommitID(id),
 	}, nil
+}
+
+// InternalObjectRef provides information that uniquely identifies an object between
+// transactions.  It might be invaldiated by some database changes.
+type InternalObjectRef struct {
+	BranchID, MinCommit int64
+	Path                string
+}
+
+func (sor *InternalObjectRef) String() string {
+	internalRef := fmt.Sprintf("%x%s%x%s%s", sor.BranchID, InternalObjectRefSeparator, sor.MinCommit, InternalObjectRefSeparator, sor.Path)
+	return fmt.Sprintf(InternalObjectRefFormat, base58.Encode([]byte(internalRef)))
+}
+
+func ParseInternalObjectRef(refString string) (InternalObjectRef, error) {
+	var encodedInternalRef string
+	_, err := fmt.Sscanf(refString, InternalObjectRefFormat, &encodedInternalRef)
+	if err != nil {
+		return InternalObjectRef{}, fmt.Errorf("unpack internal object format prefix: %w", err)
+	}
+	internalRefBytes, err := base58.Decode(encodedInternalRef)
+	if err != nil {
+		return InternalObjectRef{}, fmt.Errorf("decode internal object bytes %s: %w", encodedInternalRef, err)
+	}
+	internalRef := string(internalRefBytes)
+	parts := strings.SplitN(internalRef, InternalObjectRefSeparator, 3)
+	if len(parts) < 3 {
+		return InternalObjectRef{}, fmt.Errorf("<3 parts in internal object contents %d", len(parts))
+	}
+	branchId, err := strconv.ParseInt(parts[0], 16, 64)
+	if err != nil {
+		return InternalObjectRef{}, fmt.Errorf("bad branchID part 0 in %s: %w", internalRef, err)
+	}
+	minCommit, err := strconv.ParseInt(parts[1], 16, 64)
+	if err != nil {
+		return InternalObjectRef{}, fmt.Errorf("bad minCommit part 1 in %s: %w", internalRef, err)
+	}
+	path := parts[2]
+	return InternalObjectRef{BranchID: branchId, MinCommit: minCommit, Path: path}, nil
 }

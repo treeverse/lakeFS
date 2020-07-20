@@ -15,8 +15,11 @@ import (
 
 type TxFunc func(tx Tx) (interface{}, error)
 
+type Rows = sqlx.Rows
+
 type Database interface {
 	io.Closer
+	Queryx(query string, args ...interface{}) (*Rows, error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 }
@@ -31,6 +34,10 @@ func NewSqlxDatabase(db *sqlx.DB) *SqlxDatabase {
 
 func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
+}
+
+func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
+	return d.db.Queryx(query, args...)
 }
 
 func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {

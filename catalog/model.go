@@ -23,6 +23,7 @@ type Entry struct {
 	Size            int64     `db:"size"`
 	Checksum        string    `db:"checksum"`
 	Metadata        Metadata  `db:"metadata"`
+	Expired         bool      `db:"is_expired"`
 }
 
 type CommitLog struct {

@@ -127,7 +127,7 @@ func TestCataloger_CreateEntries(t *testing.T) {
 			}
 			// check if case there was no error
 			for i, entry := range tt.args.entries {
-				ent, err := c.GetEntry(ctx, repo, tt.args.branch, entry.Path)
+				ent, err := c.GetEntry(ctx, repo, tt.args.branch, entry.Path, GetEntryParams{})
 				testutil.MustDo(t, "get entry for new created entry", err)
 				if ent.Path != entry.Path {
 					t.Errorf("Entry at pos %d: path '%s', expected '%s'", i, ent.Path, entry.Path)
