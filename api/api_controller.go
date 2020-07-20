@@ -729,6 +729,9 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		deps.LogAction("diff_refs")
 		cataloger := deps.Cataloger
 		diff, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef)
+		if errors.Is(err, catalog.ErrFeatureNotSupported) {
+			return refs.NewDiffRefsDefault(http.StatusNotImplemented).WithPayload(responseError(err.Error()))
+		}
 		if err != nil {
 			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff references: %s", err))

@@ -8,6 +8,7 @@ import (
 )
 
 var (
+	ErrFeatureNotSupported     = errors.New("feature not supported")
 	ErrOperationNotPermitted   = errors.New("operation not permitted")
 	ErrInvalidLockValue        = errors.New("invalid lock value")
 	ErrNothingToCommit         = errors.New("nothing to commit")

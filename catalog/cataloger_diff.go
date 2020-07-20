@@ -7,6 +7,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const diffResultsTableName = "diff_results"
@@ -53,7 +54,12 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 	case RelationTypeNotDirect:
 		return c.diffNonDirect(tx, leftID, rightID)
 	default:
-		return nil, nil
+		c.log.WithFields(logging.Fields{
+			"relation_type": relation,
+			"left_id":       leftID,
+			"right_id":      rightID,
+		}).Debug("Diff by relation - unsupported type")
+		return nil, ErrFeatureNotSupported
 	}
 }
 
@@ -161,6 +167,10 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	return diffReadDifferences(tx)
 }
 
-func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int64) (Differences, error) {
-	panic("not implemented - Someday is not a day of the week")
+func (c *cataloger) diffNonDirect(_ db.Tx, leftID, rightID int64) (Differences, error) {
+	c.log.WithFields(logging.Fields{
+		"left_id":  leftID,
+		"right_id": rightID,
+	}).Debug("Diff not direct - feature not supported")
+	return nil, ErrFeatureNotSupported
 }

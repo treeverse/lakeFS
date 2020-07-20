@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 )
@@ -177,6 +179,14 @@ func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID Com
 	return err
 }
 
-func (c *cataloger) mergeNonDirect(tx sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, metadata Metadata) error {
-	panic("not implemented - Someday is not a day of the week")
+func (c *cataloger) mergeNonDirect(_ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, _ Metadata) error {
+	c.log.WithFields(logging.Fields{
+		"commit_id":      previousMaxCommitID,
+		"next_commit_id": nextCommitID,
+		"left_id":        leftID,
+		"right_id":       rightID,
+		"committer":      committer,
+		"msg":            msg,
+	}).Debug("Merge non direct - feature not supported")
+	return ErrFeatureNotSupported
 }

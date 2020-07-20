@@ -36,7 +36,6 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		commit := convertRawCommit(ref.Branch, &rawCommit)
 		return commit, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
-
 	if err != nil {
 		return nil, err
 	}
@@ -51,7 +50,7 @@ func convertRawCommit(branch string, raw *commitLogRaw) *CommitLog {
 		CreationDate: raw.CreationDate,
 		Metadata:     raw.Metadata,
 	}
-	if raw.MergeSourceBranchName != "" {
+	if raw.MergeSourceBranchName != "" && raw.MergeSourceCommit > 0 {
 		reference := MakeReference(raw.MergeSourceBranchName, CommitID(raw.MergeSourceCommit))
 		c.Parents = append(c.Parents, reference)
 	}
