@@ -6,9 +6,7 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/onboard"
-	"sort"
 	"strconv"
-	"testing"
 )
 
 const (
@@ -28,7 +26,6 @@ type objectActions struct {
 }
 
 type mockCatalogActions struct {
-	onboard.RepoActions
 	previousCommitInventory string
 	objectActions           objectActions
 	lastCommitMetadata      catalog.Metadata
@@ -52,18 +49,6 @@ func (m mockInventoryGenerator) GenerateInventory(inventoryURL string) (block.In
 	return nil, errors.New("failed to create inventory")
 }
 
-// convenience converter functions
-func keys(rows []block.InventoryObject) []string {
-	if rows == nil {
-		return nil
-	}
-	res := make([]string, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, row.Key)
-	}
-	return res
-}
-
 func rows(keys ...string) []block.InventoryObject {
 	if keys == nil {
 		return nil
@@ -75,47 +60,26 @@ func rows(keys ...string) []block.InventoryObject {
 	return res
 }
 
-func importsChannel(keysToAdd []string, keysToDelete []string) <-chan *onboard.ObjectImport {
-	out := make(chan *onboard.ObjectImport)
-	go func() {
-		defer close(out)
-		for _, key := range keysToAdd {
-			out <- &onboard.ObjectImport{
-				Obj: block.InventoryObject{Key: key},
-			}
-		}
-		for _, key := range keysToDelete {
-			out <- &onboard.ObjectImport{
-				Obj:      block.InventoryObject{Key: key},
-				ToDelete: true,
-			}
-		}
-	}()
-	return out
-}
-func objects(keys ...string) <-chan *block.InventoryObject {
-	out := make(chan *block.InventoryObject)
-	go func() {
-		defer close(out)
-		for _, key := range keys {
-			out <- &block.InventoryObject{Key: key}
-		}
-	}()
-	return out
-}
-
-func (m *mockCatalogActions) CreateAndDeleteObjects(ctx context.Context, in <-chan *onboard.ObjectImport) (*onboard.InventoryImportStats, error) {
-	for objectImport := range in {
-		if objectImport.ToDelete {
-			m.objectActions.Deleted = append(m.objectActions.Deleted, objectImport.Obj.Key)
-		} else {
-			m.objectActions.Added = append(m.objectActions.Added, objectImport.Obj.Key)
-		}
-	}
-	return &onboard.InventoryImportStats{
+func (m *mockCatalogActions) CreateAndDeleteObjects(ctx context.Context, it onboard.DiffIterator, dryRun bool) (*onboard.InventoryImportStats, error) {
+	stats := onboard.InventoryImportStats{
 		AddedOrChanged: len(m.objectActions.Added),
 		Deleted:        len(m.objectActions.Deleted),
-	}, nil
+	}
+	for it.Next() {
+		diffObj := it.Get()
+		if diffObj.IsDeleted {
+			if !dryRun {
+				m.objectActions.Deleted = append(m.objectActions.Deleted, diffObj.Obj.Key)
+			}
+			stats.Deleted += 1
+		} else {
+			if !dryRun {
+				m.objectActions.Added = append(m.objectActions.Added, diffObj.Obj.Key)
+			}
+			stats.AddedOrChanged += 1
+		}
+	}
+	return &stats, nil
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
@@ -130,8 +94,32 @@ func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalo
 	return nil
 }
 
-func (m *mockInventory) Objects(ctx context.Context) (<-chan *block.InventoryObject, error) {
-	return objects(m.rows...), nil
+type mockInventoryIterator struct {
+	idx  *int
+	rows []block.InventoryObject
+}
+
+func (m *mockInventoryIterator) Next() bool {
+	if m.idx == nil {
+		m.idx = new(int)
+	} else {
+		*m.idx++
+	}
+	return *m.idx < len(m.rows)
+}
+
+func (m *mockInventoryIterator) Err() error {
+	return nil
+}
+
+func (m *mockInventoryIterator) Get() *block.InventoryObject {
+	return &m.rows[*m.idx]
+}
+
+func (m *mockInventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {
+	return &mockInventoryIterator{
+		rows: rows(m.rows...),
+	}, nil
 }
 
 func (m *mockInventory) SourceName() string {
@@ -148,40 +136,5 @@ func (m *mockInventory) CreateCommitMetadata(diff onboard.InventoryDiff) catalog
 		"source_bucket":            m.sourceBucket,
 		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
 		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),
-	}
-}
-
-func getSimpleDiffer(t *testing.T) func(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *onboard.InventoryDiff {
-	return func(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *onboard.InventoryDiff {
-		if !sort.StringsAreSorted(keys(leftInv)) || !sort.StringsAreSorted(keys(rightInv)) {
-			t.Fatalf("inventory expected to be sorted at this point")
-		}
-		// inefficient diff
-		diff := onboard.InventoryDiff{}
-		for _, o1 := range leftInv {
-			found := false
-			for _, o2 := range rightInv {
-				if o1.Key == o2.Key {
-					found = true
-					break
-				}
-			}
-			if !found {
-				diff.Deleted = append(diff.Deleted, o1)
-			}
-		}
-		for _, o2 := range rightInv {
-			found := false
-			for _, o1 := range leftInv {
-				if o1.Key == o2.Key {
-					found = true
-					break
-				}
-			}
-			if !found {
-				diff.AddedOrChanged = append(diff.AddedOrChanged, o2)
-			}
-		}
-		return &diff
 	}
 }

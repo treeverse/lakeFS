@@ -1,7 +1,7 @@
 package onboard_test
 
 import (
-	"github.com/treeverse/lakefs/block"
+	"context"
 	"github.com/treeverse/lakefs/onboard"
 	"reflect"
 	"testing"
@@ -9,66 +9,77 @@ import (
 
 func TestDiff(t *testing.T) {
 	data := []struct {
-		LeftInv             <-chan *block.InventoryObject
-		RightInv            <-chan *block.InventoryObject
+		LeftInv             []string
+		RightInv            []string
 		ExpectedDiffAdded   []string
 		ExpectedDiffDeleted []string
 	}{
 		{
-			LeftInv:             objects("a1", "a2", "a3"),
-			RightInv:            objects("a1", "a3", "b4"),
+			LeftInv:             []string{"a1", "a2", "a3"},
+			RightInv:            []string{"a1", "a3", "b4"},
 			ExpectedDiffAdded:   []string{"b4"},
 			ExpectedDiffDeleted: []string{"a2"},
 		},
 		{
-			LeftInv:             objects("a1", "a2", "a3"),
-			RightInv:            objects("a1", "a2", "a3"),
+			LeftInv:             []string{"a1", "a2", "a3"},
+			RightInv:            []string{"a1", "a2", "a3"},
 			ExpectedDiffAdded:   []string{},
 			ExpectedDiffDeleted: []string{},
 		},
 		{
-			LeftInv:             objects("a1", "a2", "a3"),
-			RightInv:            objects("b1", "b2", "b3", "b4", "b5", "b6"),
+			LeftInv:             []string{"a1", "a2", "a3"},
+			RightInv:            []string{"b1", "b2", "b3", "b4", "b5", "b6"},
 			ExpectedDiffAdded:   []string{"b1", "b2", "b3", "b4", "b5", "b6"},
 			ExpectedDiffDeleted: []string{"a1", "a2", "a3"},
 		},
 		{
-			LeftInv:             objects("a1", "a3", "a4"),
-			RightInv:            objects("a1", "a2", "a3", "a4"),
+			LeftInv:             []string{"a1", "a3", "a4"},
+			RightInv:            []string{"a1", "a2", "a3", "a4"},
 			ExpectedDiffAdded:   []string{"a2"},
 			ExpectedDiffDeleted: []string{},
 		},
 		{
-			LeftInv:             objects("a1", "a2", "a3", "a4"),
-			RightInv:            objects("a1", "a2", "a4"),
+			LeftInv:             []string{"a1", "a2", "a3", "a4"},
+			RightInv:            []string{"a1", "a2", "a4"},
 			ExpectedDiffAdded:   []string{},
 			ExpectedDiffDeleted: []string{"a3"},
 		},
 		{
-			LeftInv:             objects("a1", "a2", "a3", "a4", "a5"),
-			RightInv:            objects("b1", "b2"),
+			LeftInv:             []string{"a1", "a2", "a3", "a4", "a5"},
+			RightInv:            []string{"b1", "b2"},
 			ExpectedDiffAdded:   []string{"b1", "b2"},
 			ExpectedDiffDeleted: []string{"a1", "a2", "a3", "a4", "a5"},
 		},
 		{
-			LeftInv:             objects(),
-			RightInv:            objects("b1", "b2"),
+			LeftInv:             []string{},
+			RightInv:            []string{"b1", "b2"},
 			ExpectedDiffAdded:   []string{"b1", "b2"},
 			ExpectedDiffDeleted: []string{},
 		},
 		{
-			LeftInv:             objects("b1", "b2"),
-			RightInv:            objects(),
+			LeftInv:             []string{"b1", "b2"},
+			RightInv:            []string{},
 			ExpectedDiffAdded:   []string{},
 			ExpectedDiffDeleted: []string{"b1", "b2"},
 		},
 	}
 	for _, test := range data {
-		in := onboard.CalcDiff(test.LeftInv, test.RightInv)
+		rightInv := &mockInventory{rows: test.RightInv}
+		leftInv := &mockInventory{rows: test.LeftInv}
+		leftIt, err := leftInv.Iterator(context.Background())
+		if err != nil {
+			t.Fatalf("got error: %v", err)
+		}
+		rightIt, err := rightInv.Iterator(context.Background())
+		if err != nil {
+			t.Fatalf("got error: %v", err)
+		}
+		it := onboard.NewDiffIterator(leftIt, rightIt)
 		actualAdded := make([]string, 0, len(test.ExpectedDiffAdded))
 		actualDeleted := make([]string, 0, len(test.ExpectedDiffDeleted))
-		for o := range in {
-			if o.ToDelete {
+		for it.Next() {
+			o := it.Get()
+			if o.IsDeleted {
 				actualDeleted = append(actualDeleted, o.Obj.Key)
 			} else {
 				actualAdded = append(actualAdded, o.Obj.Key)

@@ -23,10 +23,6 @@ func TestImport(t *testing.T) {
 			ExpectedAdded: []string{"f1", "f2"},
 		},
 		{
-			NewInventory:      []string{"f1", "f2"},
-			PreviousInventory: []string{"f1", "f2"},
-		},
-		{
 			NewInventory:      []string{"f1", "f2", "f3", "f4"},
 			PreviousInventory: []string{"f1", "f2"},
 			ExpectedAdded:     []string{"f3", "f4"},
@@ -60,7 +56,6 @@ func TestImport(t *testing.T) {
 			ExpectedAdded:     []string{"a3", "a5", "a6", "a7"},
 		},
 		{
-			// do not sort when no need to delete
 			NewInventory:  []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 			ExpectedAdded: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 		},
@@ -128,7 +123,6 @@ func TestImport(t *testing.T) {
 				if len(catalogActionsMock.lastCommitMetadata) > 0 {
 					t.Fatalf("found commit metadata in dry run: %v", catalogActionsMock.lastCommitMetadata)
 				}
-
 				continue
 			}
 			if catalogActionsMock.lastCommitMetadata["inventory_url"] != newInventoryURL {

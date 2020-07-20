@@ -14,6 +14,8 @@ import (
 	"net/url"
 )
 
+const DefaultReadBatchSize = 1000
+
 type manifest struct {
 	URL                string         `json:"-"`
 	InventoryBucketArn string         `json:"destinationBucket"`
@@ -28,6 +30,11 @@ type manifestFile struct {
 	MD5checksum string `json:"MD5checksum"`
 }
 
+type ParquetReader interface {
+	Read(dstInterface interface{}) error
+	GetNumRows() int64
+}
+
 type ParquetInventoryObject struct {
 	Bucket         string  `parquet:"name=bucket, type=UTF8"`
 	Key            string  `parquet:"name=key, type=UTF8"`
@@ -37,6 +44,8 @@ type ParquetInventoryObject struct {
 	LastModified   *int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
 	Checksum       *string `parquet:"name=e_tag, type=UTF8"`
 }
+
+type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, error)
 
 func (o *ParquetInventoryObject) GetPhysicalAddress() string {
 	return "s3://" + o.Bucket + "/" + o.Key
@@ -51,63 +60,29 @@ func GenerateInventory(manifestURL string, s3 s3iface.S3API) (block.Inventory, e
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: manifest, S3: s3, GetRowChannel: getRowChannel}, nil
+	return &Inventory{Manifest: manifest, S3: s3, GetParquetReader: getParquetReader}, nil
 }
 
 type Inventory struct {
-	GetRowChannel func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (<-chan ParquetInventoryObject, error)
-	S3            s3iface.S3API
-	Manifest      *manifest
+	S3               s3iface.S3API
+	Manifest         *manifest
+	GetParquetReader parquetReaderGetter
 }
 
-func (i *Inventory) Objects(ctx context.Context) (<-chan *block.InventoryObject, error) {
+func (i *Inventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {
 	inventoryBucketArn, err := arn.Parse(i.Manifest.InventoryBucketArn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
 	invBucket := inventoryBucketArn.Resource
-	out := make(chan *block.InventoryObject)
-	go func() {
-		defer close(out)
-		for _, file := range i.Manifest.Files {
-			err = ctx.Err()
-			if err != nil {
-				// TODO handle error
-			}
-			in, err := i.GetRowChannel(ctx, i.S3, invBucket, file.Key)
-			if err != nil {
-				// TODO handle error
-			}
-			for row := range in {
-				isDeleteMarker := false
-				isLatest := true
-				if row.IsDeleteMarker != nil {
-					isDeleteMarker = *row.IsDeleteMarker
-				}
-				if row.IsLatest != nil {
-					isLatest = *row.IsLatest
-				}
-				if !isDeleteMarker && isLatest {
-					o := block.InventoryObject{
-						Bucket:          row.Bucket,
-						Key:             row.Key,
-						PhysicalAddress: row.GetPhysicalAddress(),
-					}
-					if row.Size != nil {
-						o.Size = *row.Size
-					}
-					if row.LastModified != nil {
-						o.LastModified = *row.LastModified
-					}
-					if row.Checksum != nil {
-						o.Checksum = *row.Checksum
-					}
-					out <- &o
-				}
-			}
-		}
-	}()
-	return out, nil
+	return &InventoryIterator{
+		s3:                     i.S3,
+		ctx:                    ctx,
+		manifest:               *i.Manifest,
+		inventoryBucket:        invBucket,
+		currentManifestFileIdx: -1,
+		getParquetReader:       i.GetParquetReader,
+	}, nil
 }
 
 func (i *Inventory) SourceName() string {
@@ -139,7 +114,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 	return &m, nil
 }
 
-func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) ([]ParquetInventoryObject, error) {
+func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, error) {
 	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, manifestFileKey)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
@@ -152,39 +127,5 @@ func readRows(ctx context.Context, svc s3iface.S3API, invBucket string, manifest
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
-	num := int(pr.GetNumRows())
-	rawInventoryObjects := make([]ParquetInventoryObject, num)
-	err = pr.Read(&rawInventoryObjects)
-	if err != nil {
-		return nil, err
-	}
-	return rawInventoryObjects, nil
-}
-
-func getRowChannel(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (<-chan ParquetInventoryObject, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, manifestFileKey)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
-	}
-	defer func() {
-		_ = pf.Close()
-	}()
-	var rawObject ParquetInventoryObject
-	pr, err := reader.NewParquetReader(pf, &rawObject, 4)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
-	}
-	num := int(pr.GetNumRows())
-	out := make(chan ParquetInventoryObject)
-	go func() {
-		defer close(out)
-		rawInventoryObjects := make([]ParquetInventoryObject, 1000)
-		for i := 0; i < num; i += 1000 {
-			err = pr.Read(&rawInventoryObjects)
-			for _, o := range rawInventoryObjects {
-				out <- o
-			}
-		}
-	}()
-	return out, nil
+	return pr, nil
 }
