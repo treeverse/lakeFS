@@ -37,17 +37,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-
-		/*prefixQuery := sqListByPrefix(prefix, listAfter, delimiter, branchID, limit+1, commitID, lineage)
-		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
-		if err != nil {
-			return nil, fmt.Errorf("build sql: %w", err)
-		}
-		var markerList []string
-		err = tx.Select(&markerList, sql, args...)
-		if err != nil {
-			return nil, fmt.Errorf("select: %w", err)
-		}*/
+		lineage = append(lineage, lineageCommit{BranchID: branchID, CommitID: MaxCommitID})
 		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, branchID, commitID, lineage)
 		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
@@ -60,23 +50,15 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 }
 
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
+	var err error
 	limit += 1
 	unionSQL := buildLevelQuery(lineage)
-	baseSelect := sq.Select("min(e.path) as path").
-		FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e")
 	endOfPrefixRange := prefix + DirectoryTermination
 	listAfter := prefix + strings.TrimPrefix(after, prefix)
 	var markerList []string
 	for i := 0; i < limit; i++ {
 		var nextPath string
-		next := baseSelect.Where(" e.path > ? and e.path < ? ", listAfter, endOfPrefixRange)
-		deb := sq.DebugSqlizer(next)
-		_ = deb
-		s, args, err := next.PlaceholderFormat(sq.Dollar).ToSql()
-		if err != nil {
-			return nil, err
-		}
-		err = tx.Get(&nextPath, s, args...)
+		err = tx.Get(&nextPath, unionSQL, listAfter, endOfPrefixRange)
 		if errors.As(err, &db.ErrNotFound) {
 			return markerList, nil
 		}
@@ -107,15 +89,6 @@ func buildLevelQuery(lineage []lineageCommit) string {
 	}
 	query := "select min(path) as path from (" + strings.Join(unionParts, "\n union all \n") + ") t"
 	return query
-}
-
-func sqListByPrefixSingle(prefix, endOfPrefixRange, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
-
-	selectSingle := sq.Select("e.path").
-		FromSelect(sq.Select("min(path) as path").
-			FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e").
-			Where(" e.path > ? and e.path < ? ", prefix, endOfPrefixRange), "e")
-	return selectSingle
 }
 
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]LevelEntry, error) {
