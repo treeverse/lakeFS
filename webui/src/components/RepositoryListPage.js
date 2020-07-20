@@ -107,7 +107,7 @@ export const RepositoryListPage = connect(
                                     </InputGroup.Text>
                                 </InputGroup.Prepend>
                                 <DebouncedFormControl type="text" placeholder="Find a repository..." autoFocus ref={filterField} onChange={() =>{
-                                    filterRepositories(filterField.current.value, 1000);
+                                    filterRepositories(filterField.current.value, 300);
                                 }}/>
                             </InputGroup>
                         </Col>
