@@ -7,7 +7,6 @@ import (
 	"strconv"
 
 	"github.com/jmoiron/sqlx"
-
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -25,15 +24,15 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("left branch: %w", err)
 		}
 		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeUpdate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("right branch: %w", err)
 		}
 		relation, err := getBranchesRelationType(tx, leftID, rightID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
 		differences, err := c.doDiffByRelation(tx, relation, leftID, rightID)

@@ -41,8 +41,8 @@ type commitLogRaw struct {
 	Message               string    `db:"message"`
 	CreationDate          time.Time `db:"creation_date"`
 	Metadata              Metadata  `db:"metadata"`
-	MergeSourceBranchName string    `db:"merge_source_branch"`
-	MergeSourceCommit     int       `db:"merge_source_commit"`
+	MergeSourceBranchName string    `db:"merge_source_branch_name"`
+	MergeSourceCommit     CommitID  `db:"merge_source_commit"`
 }
 
 type lineageCommit struct {
