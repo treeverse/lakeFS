@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"errors"
 	"io"
 	"strconv"
 	"sync"
@@ -10,16 +11,13 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 )
 
 const (
 	CatalogerCommitter = ""
 
 	DefaultPathDelimiter = "/"
-
-	DefaultCatalogerCacheSize    = 1024
-	DefaultCatalogerExpirySecond = 20
-	DefaultCatalogerJitterSecond = 5
 
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 50 * time.Millisecond
@@ -40,6 +38,13 @@ type DedupParams struct {
 	StorageNamespace string
 }
 
+type ExpireResult struct {
+	Repository        string
+	Branch            string
+	PhysicalAddress   string
+	InternalReference string
+}
+
 type RepositoryCataloger interface {
 	CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error
 	GetRepository(ctx context.Context, repository string) (*Repository, error)
@@ -55,8 +60,29 @@ type BranchCataloger interface {
 	ResetBranch(ctx context.Context, repository, branch string) error
 }
 
+var ErrExpired = errors.New("expired from storage")
+
+// ExpiryRows is a database iterator over ExpiryResults.  Use Next to advance from row to row.
+type ExpiryRows interface {
+	io.Closer
+	Next() bool
+	Err() error
+	// Read returns the current from ExpiryRows, or an error on failure.  Call it only after
+	// successfully calling Next.
+	Read() (*ExpireResult, error)
+}
+
+// GetEntryParams configures what entries GetEntry returns.
+type GetEntryParams struct {
+	// For entries to expired objects the Expired bit is set.  If true, GetEntry returns
+	// successfully for expired entries, otherwise it returns the entry with ErrExpired.
+	ReturnExpired bool
+}
+
 type EntryCataloger interface {
-	GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error)
+	// GetEntry returns the current entry for path in repository branch reference.  Returns
+	// the entry with ExpiredError if it has expired from underlying storage.
+	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error)
 	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
 	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedup DedupParams) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
@@ -65,6 +91,10 @@ type EntryCataloger interface {
 	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
+	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
+	// MarkExpired marks all entries identified by expire as expired.  It is a batch
+	// operation.
+	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
 }
 
 type MultipartUpdateCataloger interface {
@@ -138,9 +168,9 @@ type CatalogerOption func(*cataloger)
 
 var defaultCatalogerCacheConfig = &CacheConfig{
 	Enabled: true,
-	Size:    DefaultCatalogerCacheSize,
-	Expiry:  DefaultCatalogerExpirySecond * time.Second,
-	Jitter:  DefaultCatalogerJitterSecond * time.Second,
+	Size:    1024,
+	Expiry:  20 * time.Second,
+	Jitter:  5 * time.Second,
 }
 
 func WithClock(newClock clock.Clock) CatalogerOption {

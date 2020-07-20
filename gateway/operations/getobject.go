@@ -1,11 +1,13 @@
 package operations
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/block"
@@ -43,7 +45,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path)
+	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -54,6 +56,9 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		// TODO: create distinction between missing repo & missing key
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
+	}
+	if errors.Is(err, catalog.ErrExpired) {
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
 	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))

@@ -41,6 +41,7 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 		sql, args, err := psql.
 			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
 			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+			// Listing also shows expired objects!
 			Where(sq.And{sq.Like{"path": likePath}, sq.Eq{"is_deleted": false}, sq.Gt{"path": after}}).
 			OrderBy("path").
 			Limit(uint64(limit) + 1).

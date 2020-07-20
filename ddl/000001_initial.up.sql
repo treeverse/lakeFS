@@ -146,7 +146,9 @@ CREATE TABLE entries (
     checksum character varying(64) NOT NULL,
     metadata jsonb,
     min_commit bigint DEFAULT 0 NOT NULL,
-    max_commit bigint DEFAULT max_commit_id() NOT NULL
+    max_commit bigint DEFAULT max_commit_id() NOT NULL,
+    -- If set, entry has expired.  Requests to retrieve may return "410 Gone".
+    is_expired BOOLEAN DEFAULT false
 );
 ALTER TABLE ONLY entries ALTER COLUMN path SET STATISTICS 10000;
 

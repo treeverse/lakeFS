@@ -1679,6 +1679,10 @@ paths:
           description: path or ref not found
           schema:
             $ref: "#/definitions/error"
+        410:
+          description: object expired
+          schema:
+            $ref: "#/definitions/error"
         default:
           description: generic error response
           schema:
@@ -1779,6 +1783,10 @@ paths:
           description: path or branch not found
           schema:
             $ref: "#/definitions/error"
+        410:
+          description: object gone (but partial metadata may be available)
+          schema:
+            $ref: "#/definitions/object_stats"
         default:
           description: generic error response
           schema:
