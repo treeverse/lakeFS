@@ -140,7 +140,7 @@ CREATE VIEW commits_v AS
 CREATE TABLE entries (
     branch_id bigint NOT NULL,
     path character varying NOT NULL,
-    physical_address character varying(64),
+    physical_address character varying,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     size bigint NOT NULL,
     checksum character varying(64) NOT NULL,
@@ -183,7 +183,7 @@ CREATE TABLE multipart_uploads (
 CREATE TABLE object_dedup (
     repository_id integer NOT NULL,
     dedup_id bytea NOT NULL,
-    physical_address character varying(64) NOT NULL
+    physical_address character varying NOT NULL
 );
 
 CREATE TABLE repositories (
