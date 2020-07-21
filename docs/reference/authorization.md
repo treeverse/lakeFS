@@ -195,18 +195,33 @@ Policy:
 }
 ```
 
-##### FSDenyAdmin
+##### FSReadWriteAll
 
 Policy:
 
 ```json
 {
-  "Action": [
-    "fs:DeleteRepository",
-    "fs:CreateRepository"
-  ],
-  "Effect": "Deny",
-  "Resource": "*"
+    "statement": [
+        {
+            "action": [
+                "fs:ListRepositories",
+                "fs:ReadRepository",
+                "fs:ReadCommit",
+                "fs:ListBranches",
+                "fs:ListObjects",
+                "fs:ReadObject",
+                "fs:WriteObject",
+                "fs:DeleteObject",
+                "fs:RevertBranch",
+                "fs:ReadBranch",
+                "fs:CreateBranch",
+                "fs:DeleteBranch",
+                "fs:CreateCommit"
+            ],
+            "effect": "Allow",
+            "resource": "*"
+        }
+    ]
 }
 ```
 
@@ -254,7 +269,7 @@ Policies: `["FSFullAccess", "AuthManageOwnCredentials"]`
 
 ##### Developers
 
-Policies: `["FSFullAccess", "FSDenyAdmin", "AuthManageOwnCredentials"]`
+Policies: `["FSReadWriteAll", "AuthManageOwnCredentials"]`
  
 ##### Viewers
 
