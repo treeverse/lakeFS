@@ -6,11 +6,9 @@ import (
 	"fmt"
 	"strconv"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/jmoiron/sqlx"
-
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch string, committer string, message string, metadata Metadata) (*MergeResult, error) {
@@ -72,27 +70,26 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	return result, err
 }
 
+// checkZeroDiffCommit - Checks if the current commit id of source branch advanced since last merge.
+//		If so - a merge record must be created, even if there are no changes between branches.
 func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
-	/*
-		Checks if the current commit id of source branch advanced since last merge.
-		If so - a merge record must be created, even if there are no changes between branches.
-	*/
 	leftMaxCommitID, err := getLastCommitIDByBranchID(tx, leftID)
 	if err != nil {
-		return false, err
+		return false, fmt.Errorf("left branch id: %w", err)
 	}
 	var mergeMaxCommitID CommitID
-	err = tx.Get(&mergeMaxCommitID, `select distinct on (branch_id) merge_source_commit from commits 
-														where 
-												branch_id = $1 and merge_source_branch = $2 order by branch_id, commit_id DESC`,
+	err = tx.Get(&mergeMaxCommitID, `SELECT DISTINCT on (branch_id) merge_source_commit 
+		FROM commits
+		WHERE branch_id = $1 AND merge_source_branch = $2
+		ORDER BY branch_id, commit_id DESC`,
 		rightID, leftID)
-	if err != nil && !errors.As(err, &db.ErrNotFound) {
-		return false, err
+	if err != nil && !errors.Is(err, db.ErrNotFound) {
+		return false, fmt.Errorf("max source commit id: %w", err)
 	}
-	if errors.As(err, &db.ErrNotFound) { // can happen only in from son merge, on the first merge
-		err = tx.Get(&mergeMaxCommitID, `select min(commit_id) from commits where branch_id = $1`, leftID)
+	if errors.Is(err, db.ErrNotFound) { // can happen only in from son merge, on the first merge
+		err = tx.Get(&mergeMaxCommitID, `SELECT MIN(commit_id) FROM commits WHERE branch_id = $1`, leftID)
 		if err != nil {
-			return false, err
+			return false, fmt.Errorf("min commit from left branch: %w", err)
 		}
 	}
 	return leftMaxCommitID > mergeMaxCommitID, nil
@@ -130,7 +127,6 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 }
 
 func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, fatherID, sonID int64, committer string, msg string, metadata Metadata) error {
-
 	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $3 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
 		sonID, previousMaxCommitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
@@ -152,17 +148,16 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 		return err
 	}
 
-	var fatherLastLineage, sonNewLineage string
+	var fatherLastLineage string
 	err = tx.Get(&fatherLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM commits 
 												WHERE branch_id = $1 AND merge_type = 'from_father' ORDER BY branch_id,commit_id DESC`, fatherID)
 	if err != nil && !errors.As(err, &db.ErrNotFound) {
 		return err
 	}
 
+	sonNewLineage := strconv.FormatInt(int64(fatherLastCommitID), 10)
 	if len(fatherLastLineage) > 0 {
-		sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10) + "," + fatherLastLineage
-	} else {
-		sonNewLineage = strconv.FormatInt(int64(fatherLastCommitID), 10)
+		sonNewLineage += "," + fatherLastLineage
 	}
 
 	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,

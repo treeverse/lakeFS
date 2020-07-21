@@ -66,6 +66,17 @@ func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, re
 	}
 }
 
+func testCatalogerGetEntry(t testing.TB, ctx context.Context, c Cataloger, repository, reference, path string, expect bool) {
+	t.Helper()
+	entry, err := c.GetEntry(ctx, repository, reference, path, GetEntryParams{ReturnExpired: true})
+	if err != nil && !errors.Is(err, db.ErrNotFound) {
+		t.Fatalf("get entry from repository: %s, reference: %s, path: %s - %s", repository, path, reference, err)
+	}
+	if expect != (entry != nil) {
+		t.Fatalf("get entry from repository: %s, reference: %s, path: %s - expected %t", repository, path, reference, expect)
+	}
+}
+
 func testCreateEntryCalcChecksum(key string, seed string) string {
 	h := sha256.New()
 	h.Write([]byte(seed))
