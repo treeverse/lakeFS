@@ -7,6 +7,7 @@ import (
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const diffResultsTableName = "diff_results"
@@ -53,7 +54,12 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 	case RelationTypeNotDirect:
 		return c.diffNonDirect(tx, leftID, rightID)
 	default:
-		return nil, nil
+		c.log.WithFields(logging.Fields{
+			"relation_type": relation,
+			"left_id":       leftID,
+			"right_id":      rightID,
+		}).Debug("Diff by relation - unsupported type")
+		return nil, ErrFeatureNotSupported
 	}
 }
 
@@ -69,26 +75,27 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 	if err != nil {
 		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
-	maxSonQuery, args := sq.Select("COALESCE(MAX(commit_id),0) as max_on_commit"). //TODO:99i-0
-											From("commits").
-											Where("branch_id = ? AND merge_type = 'from_father'", sonID).
-											PlaceholderFormat(sq.Dollar).MustSql()
+	maxSonQuery, args, err := sq.Select("MAX(commit_id) as max_son_commit").
+		From("commits").
+		Where("branch_id = ? AND merge_type = 'from_father'", sonID).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("get son last commit sql: %w", err)
+	}
 	err = tx.Get(&maxSonMerge, maxSonQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("get son last commit failed: %w", err)
 	}
-
-	s, args, err := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage).
+	diffFromFatherSQL, args, err := sqDiffFromFatherV(fatherID, sonID, maxSonMerge, fatherLineage, sonLineage).
+		Prefix(`CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS ").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("diff from father sql: %w", err)
 	}
-
-	diffFromFatherSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
-
 	if _, err := tx.Exec(diffFromFatherSQL, args...); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("select diff from father: %w", err)
 	}
 	return diffReadDifferences(tx)
 }
@@ -96,7 +103,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 func diffReadDifferences(tx db.Tx) (Differences, error) {
 	var result Differences
 	if err := tx.Select(&result, "SELECT diff_type, path FROM "+diffResultsTableName); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("select diff results: %w", err)
 	}
 	return result, nil
 }
@@ -112,26 +119,29 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 		SonEffectiveCommit    CommitID `db:"son_effective_commit"`    // last commit son synchronized to father. if never - than it is 1 (everything in the son is a change)
 	}{}
 
-	effectiveCommitsQuery, args, err := sq.Select(` commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
+	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
 		From("commits").
-		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", sonID, fatherID).
+		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", fatherID, sonID).
 		OrderBy(`commit_id DESC`).
-		Limit(1).PlaceholderFormat(sq.Dollar).
+		Limit(1).
+		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("effective commits sql: %w", err)
 	}
 	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
 	if errors.Is(err, db.ErrNotFound) {
 		effectiveCommits.SonEffectiveCommit = 1 // we need all commits from the son. so any small number will do
-		query := sq.Select("commit_id as father_effective_commit").From("commits").
+		query := sq.Select("commit_id as father_effective_commit").
+			From("commits").
 			Where("branch_id = ? AND merge_source_branch = ?", sonID, fatherID).
-			OrderBy("commit_id").Limit(1)
-		FatherEffectiveQuery, args := query.PlaceholderFormat(sq.Dollar).MustSql()
-		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, FatherEffectiveQuery, args...)
+			OrderBy("commit_id").
+			Limit(1)
+		fatherEffectiveQuery, args := query.PlaceholderFormat(sq.Dollar).MustSql()
+		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, fatherEffectiveQuery, args...)
 	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("select father effective commit: %w", err)
 	}
 
 	fatherLineage, err := getLineage(tx, fatherID, UncommittedID)
@@ -142,23 +152,25 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	if err != nil {
 		return nil, fmt.Errorf("son lineage failed: %w", err)
 	}
+
 	sonLineageValues := getLineageAsValues(sonLineage, sonID)
-
-	diffExpr := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues)
-
-	s, args, err := diffExpr.PlaceholderFormat(sq.Dollar).ToSql()
+	diffFromSonSQL, args, err := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues).
+		Prefix("CREATE TEMP TABLE " + diffResultsTableName + " ON COMMIT DROP AS").
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("diff from son sql: %w", err)
 	}
-
-	diffFromSonSQL := `CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS " + s
-
 	if _, err := tx.Exec(diffFromSonSQL, args...); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("exec diff from son: %w", err)
 	}
 	return diffReadDifferences(tx)
 }
 
-func (c *cataloger) diffNonDirect(tx db.Tx, leftID, rightID int64) (Differences, error) {
-	panic("not implemented - Someday is not a day of the week")
+func (c *cataloger) diffNonDirect(_ db.Tx, leftID, rightID int64) (Differences, error) {
+	c.log.WithFields(logging.Fields{
+		"left_id":  leftID,
+		"right_id": rightID,
+	}).Debug("Diff not direct - feature not supported")
+	return nil, ErrFeatureNotSupported
 }

@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
 
 	"github.com/treeverse/lakefs/db"
@@ -41,12 +42,22 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 }
 
 func insertEntry(tx db.Tx, branchID int64, entry *Entry) (string, error) {
-	var ctid string
-	err := tx.Get(&ctid, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
+	var (
+		ctid   string
+		dbTime sql.NullTime
+	)
+	if entry.CreationDate.IsZero() {
+		dbTime.Valid = false
+	} else {
+		dbTime.Time = entry.CreationDate
+		dbTime.Valid = true
+	}
+	err := tx.Get(&ctid, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata,creation_date, is_expired)
+                        VALUES ($1,$2,$3,$4,$5,$6, COALESCE($7, NOW()), $8)
 			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, max_commit=$7
+			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=$9
 			RETURNING ctid`,
-		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, MaxCommitID)
+		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, dbTime, entry.Expired, MaxCommitID)
 	if err != nil {
 		return "", fmt.Errorf("insert entry: %w", err)
 	}

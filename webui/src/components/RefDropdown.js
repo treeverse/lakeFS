@@ -11,7 +11,7 @@ import {ChevronDownIcon, ChevronUpIcon, ChevronRightIcon, XIcon} from "@primer/o
 import * as api from "../actions/api";
 
 
-const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 1000 }) => {
+const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
 
     // used for branch pagination
     const [from, setFrom] = useState("");

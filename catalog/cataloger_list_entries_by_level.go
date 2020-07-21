@@ -11,7 +11,7 @@ import (
 
 const ListEntriesByLevelMaxLimit = 1000
 
-func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntryResult, bool, error) {
+func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
@@ -36,31 +36,29 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		prefixQuery := sqListByPrefix(prefix, after, delimiter, branchID, limit+1, commitID, lineage)
+
+		listAfter := strings.TrimPrefix(after, prefix)
+		prefixQuery := sqListByPrefix(prefix, listAfter, delimiter, branchID, limit+1, commitID, lineage)
 		sql, args, err := prefixQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
 		}
-		var markerList []LevelEntryResult
+		var markerList []string
 		err = tx.Select(&markerList, sql, args...)
 		if err != nil {
 			return nil, fmt.Errorf("select: %w", err)
 		}
-		err = loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
-		if err != nil {
-			return nil, err
-		}
-		return markerList, nil
+		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
 		return nil, false, err
 	}
-	result := markers.([]LevelEntryResult)
+	result := markers.([]LevelEntry)
 	moreToRead := paginateSlice(&result, limit)
 	return result, moreToRead, nil
 }
 
-func loadEntriesIntoMarkerList(markerList []LevelEntryResult, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) error {
+func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]LevelEntry, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int
 		startEntryRun, endEntryRun string
@@ -69,13 +67,13 @@ func loadEntriesIntoMarkerList(markerList []LevelEntryResult, tx db.Tx, branchID
 	var inRun bool
 	var previousInRun string
 	var run entryRun
-	for i := range markerList {
-		p := markerList[i].Path
-		if strings.HasSuffix(p, DirectoryTermination) { // remove termination character, if present
-			p = strings.TrimSuffix(p, DirectoryTermination)
-			markerList[i].Path = p
-		}
+	entries := make([]LevelEntry, len(markerList))
+	for i, p := range markerList {
+		// remove termination character, if present
+		p = strings.TrimSuffix(p, DirectoryTermination)
+		entries[i].Path = prefix + p
 		if strings.HasSuffix(p, delimiter) { // terminating by '/'(slash) character is an indication of a directory
+			entries[i].CommonLevel = true
 			// its absence indicates a leaf entry that has to be read from DB
 			if inRun {
 				inRun = false
@@ -100,23 +98,25 @@ func loadEntriesIntoMarkerList(markerList []LevelEntryResult, tx db.Tx, branchID
 	}
 	entriesReader := sqEntriesLineageV(branchID, commitID, lineage)
 	for _, r := range entryRuns {
-		rangeReader := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
-			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).FromSelect(entriesReader, "e")
-		sql, args, err := rangeReader.PlaceholderFormat(sq.Dollar).ToSql()
+		sql, args, err := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).
+			FromSelect(entriesReader, "e").
+			PlaceholderFormat(sq.Dollar).
+			ToSql()
 		if err != nil {
-			return fmt.Errorf("build entries sql: %w", err)
+			return nil, fmt.Errorf("build entries sql: %w", err)
 		}
 		var entriesList []Entry
 		err = tx.Select(&entriesList, sql, args...)
 		if err != nil {
-			return fmt.Errorf("select entries: %w", err)
+			return nil, fmt.Errorf("select entries: %w", err)
 		}
 		if len(entriesList) != r.runLength {
-			return fmt.Errorf("expect to read %d entries, got %d", r.runLength, len(entriesList))
+			return nil, fmt.Errorf("expect to read %d entries, got %d", r.runLength, len(entriesList))
 		}
 		for i := 0; i < r.runLength; i++ {
-			markerList[r.startRunIndex+i].Entry = &entriesList[i]
+			entries[r.startRunIndex+i].Entry = entriesList[i]
 		}
 	}
-	return nil
+	return entries, nil
 }

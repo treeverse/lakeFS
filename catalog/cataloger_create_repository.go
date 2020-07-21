@@ -50,8 +50,8 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		}
 
 		// create initial commit
-		_, err := tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date)
-			VALUES ($1,nextval('commit_id_seq'),$2,$3,$4)`,
+		_, err := tx.Exec(`INSERT INTO commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
+			VALUES ($1,nextval('commit_id_seq'),$2,$3,$4,0)`,
 			branchID, CatalogerCommitter, createRepositoryCommitMessage, creationDate)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)

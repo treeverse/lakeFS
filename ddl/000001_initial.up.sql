@@ -114,17 +114,18 @@ CREATE SEQUENCE commit_id_seq
     NO MAXVALUE
     CACHE 10;
 
-CREATE TABLE commits (
-    branch_id bigint NOT NULL,
-    commit_id bigint NOT NULL,
-    committer character varying,
-    message character varying,
-    creation_date timestamp with time zone DEFAULT now() NOT NULL,
-    metadata jsonb,
+CREATE TABLE commits(
+    branch_id           bigint                                 NOT NULL,
+    commit_id           bigint                                 NOT NULL,
+    previous_commit_id  bigint                                 NOT NULL,
+    committer           character varying,
+    message             character varying,
+    creation_date       timestamp with time zone DEFAULT now() NOT NULL,
+    metadata            jsonb,
     merge_source_branch bigint,
     merge_source_commit bigint,
-    merge_type merge_type DEFAULT 'none'::merge_type,
-    lineage_commits bigint[] DEFAULT array[]::bigint[]
+    merge_type          merge_type               DEFAULT 'none'::merge_type,
+    lineage_commits     bigint[]                 DEFAULT array []::bigint[]
 );
 
 CREATE VIEW commits_v AS
@@ -139,13 +140,15 @@ CREATE VIEW commits_v AS
 CREATE TABLE entries (
     branch_id bigint NOT NULL,
     path character varying NOT NULL,
-    physical_address character varying(64),
+    physical_address character varying,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     size bigint NOT NULL,
     checksum character varying(64) NOT NULL,
     metadata jsonb,
     min_commit bigint DEFAULT 0 NOT NULL,
-    max_commit bigint DEFAULT max_commit_id() NOT NULL
+    max_commit bigint DEFAULT max_commit_id() NOT NULL,
+    -- If set, entry has expired.  Requests to retrieve may return "410 Gone".
+    is_expired BOOLEAN DEFAULT false
 );
 ALTER TABLE ONLY entries ALTER COLUMN path SET STATISTICS 10000;
 
@@ -180,7 +183,7 @@ CREATE TABLE multipart_uploads (
 CREATE TABLE object_dedup (
     repository_id integer NOT NULL,
     dedup_id bytea NOT NULL,
-    physical_address character varying(64) NOT NULL
+    physical_address character varying NOT NULL
 );
 
 CREATE TABLE repositories (

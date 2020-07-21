@@ -12,7 +12,6 @@ import (
 )
 
 func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -45,7 +44,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	testutil.MustDo(t, "second commit to master", err)
 
 	// before the merge - make sure we see the deleted file
-	_, err = c.GetEntry(ctx, repository, "branch1:HEAD", delFilename)
+	_, err = c.GetEntry(ctx, repository, "branch1:HEAD", delFilename, GetEntryParams{})
 	if err != nil {
 		t.Fatalf("Get entry %s, expected to be found: %s", delFilename, err)
 	}
@@ -76,7 +75,6 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -117,10 +115,13 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 	// merge should identify conflicts on pending changes
 	res, err := c.Merge(ctx, repository, "master", "branch1", "tester", "", nil)
 	// expected to find 2 conflicts on the files we update/created with the same path
+
 	if !errors.Is(err, ErrConflictFound) {
 		t.Errorf("Merge err = %s, expected conflict with err = %s", err, ErrConflictFound)
 	}
-	if IsValidReference(res.Reference) {
+	if res == nil {
+		t.Errorf("Result is nil")
+	} else if IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
 	}
 	expectedDifferences := Differences{
@@ -133,7 +134,6 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -152,7 +152,6 @@ func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -219,7 +218,6 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -283,7 +281,6 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -310,7 +307,6 @@ func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -368,7 +364,6 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -468,7 +463,6 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -519,7 +513,6 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -564,7 +557,6 @@ func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
-	t.Skip("wait for catch up")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")

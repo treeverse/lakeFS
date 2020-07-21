@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string) (*Entry, error) {
+func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, reference string, path string) (*Entry, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
@@ -34,9 +34,9 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 		}
 
 		sql, args, err := psql.
-			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
-			Where(sq.And{sq.Eq{"path": path}, sq.Eq{"is_deleted": false}}).
+			Where(sq.Eq{"path": path, "is_deleted": false}).
 			ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
@@ -52,4 +52,12 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 		return nil, err
 	}
 	return res.(*Entry), nil
+}
+
+func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error) {
+	entry, err := c.GetEntryMaybeExpired(ctx, repository, reference, path)
+	if !params.ReturnExpired && entry != nil && entry.Expired {
+		return entry, ErrExpired
+	}
+	return entry, err
 }
