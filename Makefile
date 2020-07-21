@@ -79,7 +79,7 @@ gofmt:  ## gofmt code formating
 
 fmt-validator:  ## Validate go format
 	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o -name '*.go' -print)); \
+	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o \( -path ./statik \) -prune -o \( -path ./api/gen \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
 		echo checking gofmt fail... ; \
 		echo "$${res}"; \
