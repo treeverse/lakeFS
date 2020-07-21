@@ -38,7 +38,7 @@ lakeFS addresses these issues with the following capabilities:
    
    Once processing completes successfully, merging to the "main" branch is an atomic operation. If something fails mid-way, we can simply (and atomically) revert our branch to its previous committed state.
 * **Consistency** - lakeFS handles 2 levels of consistency: object-level and cross-collection:
-    * **object-level** consistency is means all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
+    * **object-level** consistency means all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
     * **cross-collection** consistency is achieved by providing [snapshot isolation](). Using branches, writers can provide consistency guarantees across different logical collections - merging to "main" is only done after several datasets have been created successfully.
 * **History** - By using a branch/commit model, we can rollback any set of changes made to the lake - atomically and safely. By keeping commit history around for a configurable amount of time - we can read from the lake at any given point in time, compare changes made - and undo them if necessary.
    
