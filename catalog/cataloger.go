@@ -22,6 +22,10 @@ const (
 	dedupBatchSize    = 10
 	dedupBatchTimeout = 50 * time.Millisecond
 	dedupChannelSize  = 5000
+
+	defaultCatalogerCacheSize   = 1024
+	defaultCatalogerCacheExpiry = 20 * time.Second
+	defaultCatalogerCacheJitter = 5 * time.Second
 )
 
 type DedupResult struct {
@@ -168,9 +172,9 @@ type CatalogerOption func(*cataloger)
 
 var defaultCatalogerCacheConfig = &CacheConfig{
 	Enabled: true,
-	Size:    1024,
-	Expiry:  20 * time.Second,
-	Jitter:  5 * time.Second,
+	Size:    defaultCatalogerCacheSize,
+	Expiry:  defaultCatalogerCacheExpiry,
+	Jitter:  defaultCatalogerCacheJitter,
 }
 
 func WithClock(newClock clock.Clock) CatalogerOption {

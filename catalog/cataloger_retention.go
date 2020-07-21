@@ -40,16 +40,16 @@ func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
 }
 
 type retentionQueryRecord struct {
-	PhysicalAddress string `db:"physical_address"`
-	Branch          string `db:"branch"`
-	BranchId        int64  `db:"branch_id"`
-	MinCommit       int64  `db:"min_commit"`
-	Path            string `db:"path"`
+	PhysicalAddress string   `db:"physical_address"`
+	Branch          string   `db:"branch"`
+	BranchID        int64    `db:"branch_id"`
+	MinCommit       CommitID `db:"min_commit"`
+	Path            string   `db:"path"`
 }
 
 func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
 	var (
-		byNoncurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
+		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
 		byUncommitted = sq.Expr("min_commit = 0")
 	)
 
@@ -70,7 +70,7 @@ func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.Sel
 			expirationExprs = append(expirationExprs,
 				sq.And{
 					byExpiration(*rule.Expiration.Noncurrent),
-					byNoncurrent,
+					byNonCurrent,
 				})
 		}
 		if rule.Expiration.Uncommitted != nil {
@@ -124,7 +124,7 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 		Branch:          record.Branch,
 		PhysicalAddress: record.PhysicalAddress,
 		InternalReference: (&InternalObjectRef{
-			BranchID:  record.BranchId,
+			BranchID:  record.BranchID,
 			MinCommit: record.MinCommit,
 			Path:      record.Path,
 		}).String(),
@@ -179,14 +179,13 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 		if err != nil {
 			return nil, fmt.Errorf("building SQL: %w", err)
 		}
-		result, err := tx.Exec(insertString, args...)
+		_, err = tx.Exec(insertString, args...)
 		if err != nil {
 			return nil, fmt.Errorf("executing: %w", err)
 		}
 
-		result, err = tx.Exec(`UPDATE entries SET is_expired = true
-		    WHERE (path, branch_id, min_commit) IN (SELECT path, branch_id, min_commit FROM temp_expiry)
-		    `)
+		result, err := tx.Exec(`UPDATE entries SET is_expired = true
+		    WHERE (path, branch_id, min_commit) IN (SELECT path, branch_id, min_commit FROM temp_expiry)`)
 		if err != nil {
 			return nil, fmt.Errorf("updating entries to expire: %w", err)
 		}

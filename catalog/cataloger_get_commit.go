@@ -51,7 +51,7 @@ func convertRawCommit(branch string, raw *commitLogRaw) *CommitLog {
 		Metadata:     raw.Metadata,
 	}
 	if raw.MergeSourceBranchName != "" && raw.MergeSourceCommit > 0 {
-		reference := MakeReference(raw.MergeSourceBranchName, CommitID(raw.MergeSourceCommit))
+		reference := MakeReference(raw.MergeSourceBranchName, raw.MergeSourceCommit)
 		c.Parents = append(c.Parents, reference)
 	}
 	if raw.PreviousCommitID > 0 {
