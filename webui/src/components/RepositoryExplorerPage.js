@@ -8,6 +8,7 @@ import {
     Link,
     generatePath,
     Redirect,
+    useHistory
 } from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
@@ -23,7 +24,7 @@ import BranchesPage from "./BranchesPage";
 import ComparePage from "./ComparePage";
 import RepoSettingsPage from "./RepoSettingsPage";
 import {importObjects, importObjectsDryRun, resetImportObjects, resetImportObjectsDryRun} from "../actions/objects";
-import {DataImportForm} from "./DataImportForm";
+import {DataImportForm, IMPORT_FROM_S3_BRANCH_NAME} from "./DataImportForm";
 import {Modal} from "react-bootstrap";
 
 
@@ -86,12 +87,21 @@ const ImportModal = connect(
     ({importObjects, importObjectsDryRun, resetImportObjects, resetImportObjectsDryRun})
 )(({importObjects, importObjectsDryRun, importState, importDryRunState, resetImportObjects, resetImportObjectsDryRun, show, setShow}) => {
     const disabled = importState.inProgress || importDryRunState.inProgress;
+    const history = useHistory();
     const { repoId } = useParams();
     const onHide = () => {
         resetImportObjects();
         resetImportObjectsDryRun();
         setShow(false);
     };
+
+    useEffect(() => {
+        if (importState.error) {
+        } else if (importState.done) {
+            history.push(`/repositories/${repoId}/tree?branch=${IMPORT_FROM_S3_BRANCH_NAME}`)
+            setShow(false);
+        }
+    }, [setShow, importState, importDryRunState, repoId, history]);
 
     const onSubmit = (manifestUrl) => {
         if (disabled) return;
