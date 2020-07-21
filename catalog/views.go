@@ -18,7 +18,7 @@ func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
 		"max_commit < max_commit_id() AS is_deleted",
-		"CASE  WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
+		"CASE WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
 		From("entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required
@@ -63,20 +63,20 @@ func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineag
 func sqLineageConditions(branchID int64, lineage []lineageCommit) (string, sq.Sqlizer, sq.Sqlizer) {
 	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
 	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
-	isDeletedExper := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
+	isDeletedExpr := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
 	lineageFilter := "(" + isDisplayedBranch + ")\n"
 	for _, lc := range lineage {
 		branchCond := "e.branch_id = " + strconv.FormatInt(lc.BranchID, 10)
 		commitStr := strconv.FormatInt(int64(lc.CommitID), 10)
 		ancestorCond := branchCond + " and e.max_commit < " + commitStr
 		maxCommitExpr = maxCommitExpr.When(ancestorCond, "e.max_commit\n")
-		isDeletedExper = isDeletedExper.When(ancestorCond, "e.is_deleted\n")
+		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
 	maxCommitExpr = maxCommitExpr.Else("max_commit_id()")
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
-	isDeletedExper = isDeletedExper.Else("false")
-	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
+	isDeletedExpr = isDeletedExpr.Else("false")
+	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
 	return lineageFilter, maxCommitAlias, isDeletedAlias
 }
 
@@ -112,7 +112,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 	).
 		//Conflict detection
 		Column(`-- father either created or deleted after last merge  - conflict
-			f.path IS NOT NULL AND ( NOT f.is_committed OR -- uncommitted entries allways new
+			f.path IS NOT NULL AND ( NOT f.is_committed OR -- uncommitted entries always new
 									(f.source_branch = ? AND  -- it is the father branch - not from lineage
 									( f.min_commit > ? OR -- created after last merge
 									 (f.max_commit >= ? AND f.is_deleted))) -- deleted after last merge
@@ -162,7 +162,7 @@ func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, f
 			OR f.max_commit >= l.commit_id AND f.is_deleted -- father deleted after commit
 									AS father_changed`). // father was changed if son could no "see" it
 		// this happens if min_commit is larger than the lineage commit
-		// or entry deletion max_commit is larger or eqaul than lineage commit
+		// or entry deletion max_commit is larger or equal than lineage commit
 		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
 		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
 							(NOT s.is_committed -- uncommitted is new
