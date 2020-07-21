@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"strconv"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 )

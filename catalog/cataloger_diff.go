@@ -66,7 +66,7 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences, error) {
 	// get the last son commit number of the last father merge
 	// if there is none - then it is  the first merge
-	var maxSonMerge int64
+	var maxSonMerge CommitID
 	sonLineage, err := getLineage(tx, sonID, UncommittedID)
 	if err != nil {
 		return nil, fmt.Errorf("son lineage failed: %w", err)

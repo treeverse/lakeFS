@@ -163,7 +163,7 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 }
 
 func getEntryTest(c Cataloger, t *testing.T, ctx context.Context, repository, reference string, path string, expect bool) {
-	entry, err := c.GetEntry(ctx, repository, reference, path)
+	entry, err := c.GetEntry(ctx, repository, reference, path, GetEntryParams{ReturnExpired: true})
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
 		t.Errorf("error in get entry %s branch %s", path, reference)
 	}

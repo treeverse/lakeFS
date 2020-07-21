@@ -89,6 +89,12 @@ func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
 	if err != nil && !errors.As(err, &db.ErrNotFound) {
 		return false, err
 	}
+	if errors.As(err, &db.ErrNotFound) { // can happen only in from son merge, on the first merge
+		err = tx.Get(&mergeMaxCommitID, `select min(commit_id) from commits where branch_id = $1`, leftID)
+		if err != nil {
+			return false, err
+		}
+	}
 	return leftMaxCommitID > mergeMaxCommitID, nil
 }
 
@@ -139,8 +145,8 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
 		sonID, nextCommitID, DifferenceTypeChanged)
 	if err != nil {
-	return err
-}
+		return err
+	}
 	fatherLastCommitID, err := getLastCommitIDByBranchID(tx, fatherID)
 	if err != nil {
 		return err
@@ -205,18 +211,6 @@ func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID Com
 		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_son',$8,$9)`,
 		fatherID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, sonID, sonLastCommitID)
 	return err
-}
-	sonLastCommitID, err := getLastCommitIDByBranchID(tx, sonID)
-	if err != nil {
-		return err
-	}
-	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_son',$8,$9)`,
-		fatherID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, sonID, sonLastCommitID)
-	if err != nil {
-		return err
-	}
-	return nil
 }
 
 func (c *cataloger) mergeNonDirect(_ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, _ Metadata) error {
