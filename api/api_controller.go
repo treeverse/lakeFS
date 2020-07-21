@@ -13,7 +13,7 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/treeverse/lakefs/block/s3"
 
-	"github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
+	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
@@ -879,8 +879,8 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 	})
 }
 
-func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandler {
-	return metadata.CreateSymlinkHandlerFunc(func(params metadata.CreateSymlinkParams, user *models.User) middleware.Responder {
+func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHandler {
+	return metadataop.CreateSymlinkHandlerFunc(func(params metadataop.CreateSymlinkParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -888,7 +888,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 			},
 		})
 		if err != nil {
-			return metadata.NewCreateSymlinkUnauthorized().WithPayload(responseErrorFrom(err))
+			return metadataop.NewCreateSymlinkUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("create_symlink")
 		cataloger := deps.Cataloger
@@ -896,10 +896,10 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 		// read repo
 		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
+			return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
-			return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 		// list entries
 		var currentPath string
@@ -916,10 +916,10 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 				after,
 				-1)
 			if errors.Is(err, db.ErrNotFound) {
-				return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
+				return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
 			}
 			if err != nil {
-				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+				return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
 					WithPayload(responseError("error while listing objects: %s", err))
 			}
 			// loop all entries enter to map[path] physicalAddress
@@ -934,7 +934,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 					//push current
 					err := writeSymlinkToS3(params, repo, path, currentAddresses, deps)
 					if err != nil {
-						return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+						return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
 							WithPayload(responseError("error while writing symlinks: %s", err))
 					}
 					currentPath = path
@@ -948,15 +948,15 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 		if len(currentAddresses) > 0 {
 			err = writeSymlinkToS3(params, repo, currentPath, currentAddresses, deps)
 			if err != nil {
-				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+				return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
 					WithPayload(responseError("error while writing symlinks: %s", err))
 			}
 		}
 		metaLocation := fmt.Sprintf("%s/%s", repo.StorageNamespace, lakeFSPrefix)
-		return metadata.NewCreateSymlinkCreated().WithPayload(metaLocation)
+		return metadataop.NewCreateSymlinkCreated().WithPayload(metaLocation)
 	})
 }
-func writeSymlinkToS3(params metadata.CreateSymlinkParams, repo *catalog.Repository, path string, addresses []string, deps *Dependencies) error {
+func writeSymlinkToS3(params metadataop.CreateSymlinkParams, repo *catalog.Repository, path string, addresses []string, deps *Dependencies) error {
 	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, params.Branch, path)
 	data := strings.Join(addresses, "\n")
 	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
