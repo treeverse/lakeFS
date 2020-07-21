@@ -206,3 +206,32 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		})
 	}
 }
+
+func TestCataloger_ListEntriesByLevel_Deleted(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "place/to/go.1", nil, "")
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "place/to/go.2", nil, "")
+	_, err := c.Commit(ctx, repo, "master", "commit two files", "tester", nil)
+
+	testutil.MustDo(t, "commit 2 files", err)
+	testutil.MustDo(t, "delete file 1",
+		c.DeleteEntry(ctx, repo, "master", "place/to/go.1"))
+	testutil.MustDo(t, "delete file 2",
+		c.DeleteEntry(ctx, repo, "master", "place/to/go.2"))
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "place/to/go.0", nil, "")
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "place/to/go.3", nil, "")
+	_, err = c.Commit(ctx, repo, "master", "commit two more files", "tester", nil)
+	testutil.MustDo(t, "commit 2 files", err)
+
+	entries, hasMore, err := c.ListEntriesByLevel(ctx, repo, "master", "place/to/", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "list entries under place/to/", err)
+	if len(entries) != 2 {
+		t.Errorf("Expected two entries, got = %s", spew.Sdump(entries))
+	}
+	if hasMore {
+		t.Errorf("ListEntriesByLevel() hasMore = %t, expected fasle", hasMore)
+	}
+}
