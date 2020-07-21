@@ -213,10 +213,12 @@ func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines in
 	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
 	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
 	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")
-	tmp := sq.Case().When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1000000) \n")).
+	tmp := sq.Case().
+		When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1000000) \n")).
 		Else(pathWithOutPrefixV)
 	getNextMarkerV := sq.ConcatExpr("\n", tmp, "\n")
-	cteStart := sq.Select("1 as num").Column(sq.Alias(getNextMarkerV, "marker")).
+	cteStart := sq.Select("1 as num").
+		Column(sq.Alias(getNextMarkerV, "marker")).
 		FromSelect(sq.Select("min(path) as path").
 			FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e").
 			Where(" e.path > ? and e.path < ? ", prefix+after, endOfPrefixRange), "e")
@@ -241,6 +243,5 @@ func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines in
 				"\n SELECT marker as path",
 				"\nFROM dir_list d",
 				"\nWHERE d.marker IS NOT NULL"))
-
 	return dirListV
 }
