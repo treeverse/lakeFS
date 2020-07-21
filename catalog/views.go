@@ -99,8 +99,9 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 
 func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit, sonLineageValues string) sq.SelectBuilder {
 	lineage := sqEntriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
-	fatherSQL, fatherArgs := sq.Select("*").FromSelect(lineage, "z").
-		Where("displayed_branch = ?", fatherID).MustSql()
+	sqFather := sq.Select("*").
+		FromSelect(lineage, "z").
+		Where("displayed_branch = ?", fatherID)
 	// Can diff with expired files, just not usefully!
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
@@ -128,7 +129,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
 		FromSelect(sqEntriesV(CommittedID).
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
-		LeftJoin("("+fatherSQL+") AS f ON f.path = s.path", fatherArgs...)
+		JoinClause(sqFather.Prefix("LEFT JOIN (").Suffix(") AS f ON f.path = s.path"))
 	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromSonInternalQ, "t").Where("NOT (same_object OR both_deleted)")
 	return sq.Select().
 		Column(sq.Alias(sq.Case().When("DifferenceTypeConflict", "3").
@@ -146,8 +147,9 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
 	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
 	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
-	sonSQL, sonArgs := sq.Select("*").FromSelect(sonLineage, "s").
-		Where("displayed_branch = ? ", sonID).MustSql()
+	sqSon := sq.Select("*").
+		FromSelect(sonLineage, "s").
+		Where("displayed_branch = ?", sonID)
 
 	fatherLineage := sqEntriesLineage(fatherID, CommittedID, fatherUncommittedLineage)
 	// Can diff with expired files, just not usefully!
@@ -171,7 +173,7 @@ func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, f
 						  AS DifferenceTypeConflict`, sonID, lastSonMergeWithFather, lastSonMergeWithFather).
 		FromSelect(fatherLineage, "f").
 		Where("f.displayed_branch = ?", fatherID).
-		LeftJoin("("+sonSQL+") AS s ON f.path = s.path", sonArgs...).
+		JoinClause(sqSon.Prefix("LEFT JOIN (").Suffix(") AS s ON f.path = s.path")).
 		Join(`(SELECT * FROM ` + sonLineageValues + `) l ON f.source_branch = l.branch_id`)
 
 	RemoveNonRelevantQ := sq.Select("*").
