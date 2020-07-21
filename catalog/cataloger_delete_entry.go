@@ -42,7 +42,8 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		sql, args, err := psql.
 			Select("is_committed").
 			FromSelect(sqEntriesLineage(branchID, UncommittedID, lineage), "entries").
-			Where(sq.And{sq.Eq{"path": path}, sq.Eq{"is_deleted": false}}).
+			// Expired objects *can* be successfully deleted!
+			Where(sq.Eq{"path": path, "is_deleted": false}).
 			ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)

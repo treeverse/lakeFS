@@ -729,6 +729,9 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		deps.LogAction("diff_refs")
 		cataloger := deps.Cataloger
 		diff, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef)
+		if errors.Is(err, catalog.ErrFeatureNotSupported) {
+			return refs.NewDiffRefsDefault(http.StatusNotImplemented).WithPayload(responseError(err.Error()))
+		}
 		if err != nil {
 			return refs.NewDiffRefsDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff references: %s", err))
@@ -756,22 +759,28 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		deps.LogAction("stat_object")
 		cataloger := deps.Cataloger
 
-		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewStatObjectNotFound().WithPayload(responseError("resource not found"))
 		}
+
 		if err != nil {
 			return objects.NewStatObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		// serialize entry
-		return objects.NewStatObjectOK().WithPayload(&models.ObjectStats{
+		model := &models.ObjectStats{
 			Checksum:  entry.Checksum,
 			Mtime:     entry.CreationDate.Unix(),
 			Path:      params.Path,
 			PathType:  models.ObjectStatsPathTypeOBJECT,
 			SizeBytes: entry.Size,
-		})
+		}
+
+		if entry.Expired {
+			return objects.NewStatObjectGone().WithPayload(model)
+		}
+		return objects.NewStatObjectOK().WithPayload(model)
 	})
 }
 
@@ -798,8 +807,7 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		entry, err := cataloger.GetEntry(c.Context(),
-			params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
@@ -844,9 +852,12 @@ func (c *Controller) ObjectsGetObjectHandler() objects.GetObjectHandler {
 		}
 
 		// read the FS entry
-		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path)
+		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{ReturnExpired: true})
 		if errors.Is(err, db.ErrNotFound) {
 			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+		}
+		if entry.Expired {
+			return objects.NewGetObjectGone().WithPayload(responseError("resource expired"))
 		}
 		if err != nil {
 			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -908,7 +919,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		for i, entry := range res {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
-					Path:     entry.Name,
+					Path:     entry.Path,
 					PathType: models.ObjectStatsPathTypeTREE,
 				}
 			} else {
@@ -919,12 +930,12 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 				objList[i] = &models.ObjectStats{
 					Checksum:  entry.Checksum,
 					Mtime:     mtime,
-					Path:      entry.Name,
+					Path:      entry.Path,
 					PathType:  models.ObjectStatsPathTypeOBJECT,
 					SizeBytes: entry.Size,
 				}
 			}
-			lastId = entry.Name
+			lastId = entry.Path
 		}
 		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
 			Pagination: &models.Pagination{

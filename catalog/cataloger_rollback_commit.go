@@ -7,10 +7,9 @@ import (
 )
 
 func (c *cataloger) RollbackCommit(ctx context.Context, repository, reference string) error {
-	c.log.WithFields(logging.Fields{
-		"ctx":        ctx,
+	c.log.WithContext(ctx).WithFields(logging.Fields{
 		"repository": repository,
 		"reference":  reference,
-	}).Debug("Implement me")
-	return nil
+	}).Debug("Rollback commit - feature not supported")
+	return ErrFeatureNotSupported
 }

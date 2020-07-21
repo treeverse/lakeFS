@@ -16,6 +16,7 @@ const (
 )
 
 type Tx interface {
+	Query(query string, args ...interface{}) (*sqlx.Rows, error)
 	Select(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (sql.Result, error)
@@ -28,6 +29,23 @@ type dbTx struct {
 
 func queryToString(q string) string {
 	return strings.Join(strings.Fields(q), " ")
+}
+
+func (d *dbTx) Query(query string, args ...interface{}) (*sqlx.Rows, error) {
+	start := time.Now()
+	rows, err := d.tx.Queryx(query, args...)
+	log := d.logger.WithFields(logging.Fields{
+		"type":  "query",
+		"args":  args,
+		"query": queryToString(query),
+		"took":  time.Since(start),
+	})
+	if err != nil {
+		log.WithError(err).Error("SQL query failed with error")
+		return nil, err
+	}
+	log.Trace("SQL query started successfully")
+	return rows, nil
 }
 
 func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error {

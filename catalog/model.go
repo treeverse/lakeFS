@@ -23,6 +23,7 @@ type Entry struct {
 	Size            int64     `db:"size"`
 	Checksum        string    `db:"checksum"`
 	Metadata        Metadata  `db:"metadata"`
+	Expired         bool      `db:"is_expired"`
 }
 
 type CommitLog struct {
@@ -36,12 +37,13 @@ type CommitLog struct {
 
 type commitLogRaw struct {
 	CommitID              CommitID  `db:"commit_id"`
+	PreviousCommitID      CommitID  `db:"previous_commit_id"`
 	Committer             string    `db:"committer"`
 	Message               string    `db:"message"`
 	CreationDate          time.Time `db:"creation_date"`
 	Metadata              Metadata  `db:"metadata"`
-	MergeSourceBranchName string    `db:"merge_source_branch"`
-	MergeSourceCommit     int       `db:"merge_source_commit"`
+	MergeSourceBranchName string    `db:"merge_source_branch_name"`
+	MergeSourceCommit     CommitID  `db:"merge_source_commit"`
 }
 
 type lineageCommit struct {
@@ -56,8 +58,7 @@ type Branch struct {
 
 type LevelEntry struct {
 	CommonLevel bool
-	Name        string
-	*Entry
+	Entry
 }
 
 type MultipartUpload struct {

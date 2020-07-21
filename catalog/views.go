@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"strconv"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -17,7 +18,7 @@ func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
 		"max_commit < max_commit_id() AS is_deleted",
-		"CASE WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
+		"CASE  WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
 		From("entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required
@@ -54,7 +55,7 @@ func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineag
 			"e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
 			"e.creation_date", "e.size", "e.checksum", "e.metadata",
-			"e.is_committed", "e.is_tombstone", "e.entry_ctid").
+			"e.is_committed", "e.is_tombstone", "e.entry_ctid", "e.is_expired").
 		Column(maxCommitAlias).Column(isDeletedAlias)
 	return baseSelect
 }
@@ -91,7 +92,7 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 		Columns("e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
 			"e.creation_date", "e.size", "e.checksum", "e.metadata",
-			"e.is_committed", "e.is_tombstone", "e.entry_ctid").
+			"e.is_committed", "e.is_tombstone", "e.entry_ctid", "e.is_expired").
 		Column(maxCommitAlias).Column(isDeletedAlias)
 	return baseSelect
 }
@@ -100,9 +101,10 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 	lineage := sqEntriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
 	fatherSQL, fatherArgs := sq.Select("*").FromSelect(lineage, "z").
 		Where("displayed_branch = ?", fatherID).MustSql()
+	// Can diff with expired files, just not usefully!
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
-		"f.path IS NOT NULL AS DifferenceTypeChanged",
+		"f.path IS NOT NULL AND NOT f.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted",
 		"f.path IS NOT NULL AND (f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted) AS same_object",
 		"s.entry_ctid",
@@ -141,17 +143,18 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
 
-func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
+func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
 	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
 	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
 	sonSQL, sonArgs := sq.Select("*").FromSelect(sonLineage, "s").
 		Where("displayed_branch = ? ", sonID).MustSql()
 
 	fatherLineage := sqEntriesLineage(fatherID, CommittedID, fatherUncommittedLineage)
+	// Can diff with expired files, just not usefully!
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",
-		"s.path IS NOT NULL AS DifferenceTypeChanged",
+		"s.path IS NOT NULL AND not s.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		//both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
@@ -163,8 +166,8 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
 		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
 							(NOT s.is_committed -- uncommitted is new
-							 OR s.min_commit > ? -- created after last commit
-                           OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
+							 OR s.min_commit > ? -- created after last merge
+                           OR (s.max_commit >= ? AND s.is_deleted)) -- deleted after last merge
 						  AS DifferenceTypeConflict`, sonID, lastSonMergeWithFather, lastSonMergeWithFather).
 		FromSelect(fatherLineage, "f").
 		Where("f.displayed_branch = ?", fatherID).
@@ -188,9 +191,7 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 }
 
 func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
-	lineageFilter,
-		_,
-		isDeletedAlias := sqLineageConditions(branchID, lineage)
+	lineageFilter, _, isDeletedAlias := sqLineageConditions(branchID, lineage)
 	baseSelect := sq.Select().
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
@@ -204,7 +205,7 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 }
 
 func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
-	if len(after) > 0 {
+	if strings.HasSuffix(after, delimiter) {
 		after += DirectoryTermination
 	}
 	prefixLen := len(prefix) + 1

@@ -49,12 +49,13 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		// create initial commit
 		creationDate := c.clock.Now()
 
-		_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date,merge_source_branch, merge_type, lineage_commits)
+		_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message,
+							creation_date,merge_source_branch, merge_type, lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('commit_id_seq'),0,$2,$3,$4,$5,'from_father',
 				(select (select max(commit_id) from commits where branch_id=$5)|| 
 					(select distinct on (branch_id) lineage_commits from commits 
 						where branch_id=$5 and merge_type='from_father' order by branch_id,commit_id desc))
-			)`,
+						,(select max(commit_id) from commits where branch_id=$5 ))`,
 			branchID, CatalogerCommitter, createBranchCommitMessage, creationDate, sourceBranchID)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)

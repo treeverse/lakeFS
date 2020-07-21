@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"strconv"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/jmoiron/sqlx"
 
 	"github.com/treeverse/lakefs/db"
@@ -25,15 +27,15 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("left branch: %w", err)
 		}
 		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeUpdate)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("right branch: %w", err)
 		}
 		relation, err := getBranchesRelationType(tx, leftID, rightID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
 		differences, err := c.doDiffByRelation(tx, relation, leftID, rightID)
@@ -48,7 +50,13 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, ErrConflictFound
 		}
 		if len(diffCounts) == 0 {
-			return nil, ErrNoDifferenceWasFound
+			leftCommitAdvanced, err := checkZeroDiffCommit(tx, leftID, rightID)
+			if err != nil {
+				return nil, err
+			}
+			if !leftCommitAdvanced {
+				return nil, ErrNoDifferenceWasFound
+			}
 		}
 
 		if message == "" {
@@ -64,12 +72,37 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	return result, err
 }
 
+func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
+	/*
+		Checks if the current commit id of source branch advanced since last merge.
+		If so - a merge record must be created, even if there are no changes between branches.
+	*/
+	leftMaxCommitID, err := getLastCommitIDByBranchID(tx, leftID)
+	if err != nil {
+		return false, err
+	}
+	var mergeMaxCommitID CommitID
+	err = tx.Get(&mergeMaxCommitID, `select distinct on (branch_id) merge_source_commit from commits 
+														where 
+												branch_id = $1 and merge_source_branch = $2 order by branch_id, commit_id DESC`,
+		rightID, leftID)
+	if err != nil && !errors.As(err, &db.ErrNotFound) {
+		return false, err
+	}
+	if errors.As(err, &db.ErrNotFound) { // can happen only in from son merge, on the first merge
+		err = tx.Get(&mergeMaxCommitID, `select min(commit_id) from commits where branch_id = $1`, leftID)
+		if err != nil {
+			return false, err
+		}
+	}
+	return leftMaxCommitID > mergeMaxCommitID, nil
+}
+
 func formatMergeMessage(leftBranch string, rightBranch string) string {
 	return fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 }
 
 func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
-
 	nextCommitID, err := getNextCommitID(tx)
 	if err != nil {
 		return 0, err
@@ -111,7 +144,9 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 				FROM entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
 		sonID, nextCommitID, DifferenceTypeChanged)
-
+	if err != nil {
+		return err
+	}
 	fatherLastCommitID, err := getLastCommitIDByBranchID(tx, fatherID)
 	if err != nil {
 		return err
@@ -175,12 +210,17 @@ func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID Com
 	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_son',$8,$9)`,
 		fatherID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, sonID, sonLastCommitID)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
 
-func (c *cataloger) mergeNonDirect(tx sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, metadata Metadata) error {
-	panic("not implemented - Someday is not a day of the week")
+func (c *cataloger) mergeNonDirect(_ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, _ Metadata) error {
+	c.log.WithFields(logging.Fields{
+		"commit_id":      previousMaxCommitID,
+		"next_commit_id": nextCommitID,
+		"left_id":        leftID,
+		"right_id":       rightID,
+		"committer":      committer,
+		"msg":            msg,
+	}).Debug("Merge non direct - feature not supported")
+	return ErrFeatureNotSupported
 }

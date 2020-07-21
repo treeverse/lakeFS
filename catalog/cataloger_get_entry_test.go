@@ -78,7 +78,7 @@ func TestCataloger_GetEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path)
+			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path, GetEntryParams{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return

@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"reflect"
+	"sort"
 	"strconv"
 	"testing"
 	"time"
@@ -47,14 +48,28 @@ func TestCataloger_GetCommit(t *testing.T) {
 		{
 			name:      "first",
 			reference: "~KJ8Wd1Rs96Z",
-			want:      &CommitLog{Reference: "~KJ8Wd1Rs96Z", Committer: "tester0", Message: "Commit0", CreationDate: now, Metadata: Metadata{"k0": "v0"}},
-			wantErr:   false,
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96Z",
+				Committer:    "tester0",
+				Message:      "Commit0",
+				CreationDate: now,
+				Metadata:     Metadata{"k0": "v0"},
+				Parents:      []string{"~KJ8Wd1Rs96Y"},
+			},
+			wantErr: false,
 		},
 		{
 			name:      "second",
 			reference: "~KJ8Wd1Rs96a",
-			want:      &CommitLog{Reference: "~KJ8Wd1Rs96a", Committer: "tester1", Message: "Commit1", CreationDate: now, Metadata: Metadata{"k1": "v1"}},
-			wantErr:   false,
+			want: &CommitLog{
+				Reference:    "~KJ8Wd1Rs96a",
+				Committer:    "tester1",
+				Message:      "Commit1",
+				CreationDate: now,
+				Metadata:     Metadata{"k1": "v1"},
+				Parents:      []string{"~KJ8Wd1Rs96Z"},
+			},
+			wantErr: false,
 		},
 		{
 			name:      "unknown",
@@ -87,4 +102,53 @@ func TestCataloger_GetCommit(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCataloger_GetMergeCommit(t *testing.T) {
+	ctx := context.Background()
+	now := time.Now().Round(time.Minute)
+	mockClock := clock.NewMock()
+	mockClock.Set(now)
+	c := testCataloger(t, WithClock(mockClock))
+	defer func() { _ = c.Close() }()
+
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	// prepare data on master
+	for i := 0; i < 3; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repo, "master", "/file"+strconv.Itoa(i), nil, "master")
+	}
+	_, err := c.Commit(ctx, repo, "master", "commit to master", "tester", nil)
+	testutil.MustDo(t, "commit to master", err)
+
+	// prepare data on b1
+	testutil.MustDo(t, "create b1 branch",
+		c.CreateBranch(ctx, repo, "b1", "master"))
+	for i := 2; i < 6; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repo, "b1", "/file"+strconv.Itoa(i), nil, "b1")
+	}
+	_, err = c.Commit(ctx, repo, "b1", "commit to branch", "tester", nil)
+	testutil.MustDo(t, "commit to b1", err)
+
+	// merge b1 to master
+	res, err := c.Merge(ctx, repo, "b1", "master", "tester", "merge b1 to master", nil)
+	testutil.MustDo(t, "merge b1 to master", err)
+
+	// test commit on master got two parents
+	commitLog, err := c.GetCommit(ctx, repo, res.Reference)
+	testutil.MustDo(t, "get commit of merge reference", err)
+
+	if len(commitLog.Parents) != 2 {
+		t.Fatalf("Expected commit log to include two parents, got %d", len(commitLog.Parents))
+	}
+	expectedReferences := []string{
+		"~3WaKeK",      // branch b1, commit 4
+		"~KJ8Wd1Rs96Z", // branch master, commit 2
+	}
+	sort.Strings(expectedReferences)
+	sort.Strings(commitLog.Parents)
+	if !reflect.DeepEqual(expectedReferences, commitLog.Parents) {
+		t.Fatalf("Merged commit log parents %s, expected %s", spew.Sdump(commitLog.Parents), spew.Sdump(expectedReferences))
+	}
+
 }

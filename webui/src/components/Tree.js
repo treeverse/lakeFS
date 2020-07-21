@@ -169,21 +169,19 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
         case 'REMOVED':
             rowClass += 'diff-removed';
             break;
+        default:
+            break;
     }
 
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
 
     let button;
-    switch(entry.diff_type) {
-        case 'REMOVED':
-            button = (<span>{buttonText}</span>);
-            break;
-        case 'TREE':
-            button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
-            break;
-        default:
-            button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
-            break;
+    if (entry.diff_type === 'REMOVED') {
+        button = (<span>{buttonText}</span>);
+    } else if (entry.path_type === 'TREE') {
+        button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
+    } else {
+        button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
 
     let size;
@@ -237,6 +235,8 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 </OverlayTrigger>
             );
             break;
+        default:
+            break;
     }
 
     let entryActions;
@@ -270,9 +270,8 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
 
 
 const merge = (path, entriesAtPath, diffResults) => {
-    diffResults = (!!diffResults && !!diffResults.payload) ? diffResults.payload.results : [];
+    diffResults = (diffResults && diffResults.payload) ? diffResults.payload.results : [];
     entriesAtPath = entriesAtPath || [];
-
 
     const entries = [...entriesAtPath];
     diffResults.forEach(diff => {
@@ -285,8 +284,8 @@ const merge = (path, entriesAtPath, diffResults) => {
        }
     });
 
-    return entries.map(entry => {
-        if (!!entry.diff_type) return entry;
+    const r = entries.map(entry => {
+        if (entry.diff_type) return entry;
 
         for (let i=0; i < diffResults.length; i++) {
             const diff = diffResults[i];
@@ -306,6 +305,7 @@ const merge = (path, entriesAtPath, diffResults) => {
         }
         return {...entry, diff_type: 'NONE'};
     });
+    return r;
 };
 
 const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal, setShowImportModal }) => {
@@ -321,7 +321,7 @@ const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, show
         refreshData();
     }, [refreshData, repo.id, refId, path]);
 
-    const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0  && listBranchesState && listBranchesState.payload && listBranchesState.payload.results.length === 1;
+    const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0 && listBranchesState && listBranchesState.payload && listBranchesState.payload.results.length === 1 && !path;
 
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
@@ -330,8 +330,7 @@ const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, show
     } else if (showGetStarted) {
         body = <GetStarted repo={repo} list={list} listBranchesState={listBranchesState}
                            setShowUploadModal={setShowUploadModal} setShowImportModal={setShowImportModal}/>
-    }
-    else {
+    } else {
         const results = merge(path, list.payload.results, diffResults);
         body = (
             <Table borderless size="sm">
