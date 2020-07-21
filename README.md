@@ -88,12 +88,12 @@ Keep up to date and get lakeFS support via:
 
 - Join our [Community Slack Channel](https://join.slack.com/t/lakefs/shared_invite/zt-fm6e2ncx-6wR3yW5jABXBuqN2NnLCDA) to get help from our team and other users.
 - Follow us on [Twitter](https://twitter.com/lake_FS).
-- [Contact us](mailto:info@treeverse.io)
+- [Contact us](mailto:hello@treeverse.io)
 
 ## More information
 
 - [lakeFS documentation](https://docs.lakefs.io/)
-- If you would like to contribute, check out our [contributing guide]().
+- If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing/).
 
 ## Licensing
 
