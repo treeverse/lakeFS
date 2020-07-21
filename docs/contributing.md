@@ -29,7 +29,7 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 
 ## Setting up an Environment
 
-*This section was tested on MacOS and Linux (Fedora 32, Ubuntu 20.04) - Your milage may vary*
+*This section was tested on macOS and Linux (Fedora 32, Ubuntu 20.04) - Your mileage may vary*
 
 1. Install the required dependencies for your OS:
     1. [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
