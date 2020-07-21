@@ -7,109 +7,81 @@ nav_order: 0
 # What is lakeFS
 {: .no_toc }
 
-**Disclaimer:** This is an early access version intended for collecting feedback and should not be used in production. API and data model are expected to change.
-{: .note .pb-3 }
+lakeFS is an open-source Data Lake platform that enables Data Engineers to build robust data architectures that are far simpler, more resilient and easier to manage.
 
-lakeFS is an open source project that empowers your object storage data lake (e.g. S3, GCS, Azure Blob) with ACID guarantees and Git-like collaboration capabilities, such as data quality assurance by data CI/CD, data reproducibility by time travel to previous lake versions, and reducing costs of mistakes by allowing instant revert. 
+lakeFS provides a set of building blocks that allows developers to build repeatable, atomic and versioned Data Lake operations - from complex ETL jobs to data science and ML.  
+
+By being API compatible with AWS S3, lakeFS works seamlessly with all modern data frameworks (Spark, Hive, AWS Athena, Presto, etc) without complex integrations.
+Data Persistence is provided by your existing S3 buckets, or other compatible object stores:
+
+![lakeFS](assets/img/wrapper.png) 
+
 {: .pb-5 }
 
-## Table of contents
-{: .no_toc .text-delta }
+## Why you need lakeFS and what it can do
 
-1. TOC
-{:toc .pb-5 }
+### Fragile Writers
 
+Writing to object stores is simple, scalable and cheap - but could also be error prone:
 
-## Why? What are Object Stores missing when used as a Data Lake?
+* Jobs (both streaming and batch) can fail, leaving partially written data
+* It's hard to signal to readers that a collection of objects is ready to be consumed. This is sometimes worked around using SUCCESS files, Metastore registration or other home-grown solutions.
+* This is especially hard for writers that mutate more than one collection - keeping several collections in-sync
+* Once data is written (or deleted), it is hard to undo - Unless we know the exact prior state, cleanly reverting a set of changes can be hard 
+* Eventual consistency may cause corruption or failure. For example, S3's list operation might not show recently written objects, leading to failing jobs
 
+lakeFS addresses these issues with the following capabilities:
 
-
-1. **Isolation:** Object stores make it easy to ingest data into the lake, making it available to others. However, by doing so, they provide no isolation guarantees: readers can access data while it's being written; bulk move/rename operations mean readers will see intermittent state.
-
+* **Atomic Operations** - lakeFS allows data producers to manipulate multiple objects as a single, atomic operation. If something fails half-way, all changes can be instantly rolled back.
    
-
-2. **Consistency:** Object Stores (S3 in particular) are eventually consistent for some operations. This requires workarounds such as EMRFS or s3Guard that help mitigate this to an extent, but don't provide the primitives to allow real, cross-collection consistency: changing many objects together as an atomic operation.
+   This is similar in concept to a Database Transactions. lakeFS does this by allowing to create "branches" (akin [Git](branching.md)'s branch/commit model). Once a branch is created, all objects manipulated within that branch are only visible inside it.
    
-
-3. **Lack of rollback/revert:** By working at the single object level, mistakes become costly. If a retention job accidentally deletes a huge number of objects, reverting such a change is very hard: common object-level versioning makes this theoretically possible, but very costly in both time and money. It makes the feedback loop much longer since there's no real way to experiment with the data without fearing data loss or breaking changes for others.
-
+   Once processing completes successfully, merging to the "main" branch is an atomic operation. If something fails mid-way, we can simply (and atomically) revert our branch to its previous committed state.
+* **Consistency** - lakeFS handles 2 levels of consistency: object-level and cross-collection:
+    * **object-level** consistency is means all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
+    * **cross-collection** consistency is achieved by providing [snapshot isolation](). Using branches, writers can provide consistency guarantees across different logical collections - merging to "main" is only done after several datasets have been created successfully.
+* **History** - By using a branch/commit model, we can rollback any set of changes made to the lake - atomically and safely. By keeping commit history around for a configurable amount of time - we can read from the lake at any given point in time, compare changes made - and undo them if necessary.
    
+   *Being able to quickly revert a change renders the cost-of-mistake much smaller, allowing for faster development and iteration.*
 
-4. **Hard to manage and control:** Teams managing large Data Lakes usually have some conventions and policies around the data they contain. For example, enforcing the use of a certain format, rules around breaking schema changes and automated tests for job output. The mutable nature of Data Lakes means you can run these tests only after the data has already been written. 
+### Fragile Readers
 
+Reading data from the lake can also lead to problems:
+
+- Data is constantly changing, sometimes during an experiment or while a long-running job is executing.
+- it's almost impossible to build reproducible, testable queries - we have no guarantee that the input data won't change.
+
+lakeFS addresses these issues with the following capabilities:
+
+* **Cross-Lake Isolation** - When creating a lakeFS branch, we are provided with a snapshot of the entire lake at a given point in time. All reads from their branch are guaranteed to always return the same results.
+   No need to create your own copy for isolation - branches guarantee immutability.
+* **Consistency** - When data is produced in isolated branches and merged atomically into "main", readers are freed from worrying about the state of their input data - if a reader sees any data at all, it's guaranteed to be complete, validated, and ready to use.
    
+   Writers may also guarantee that denormalized versions of the same data (say, partitioned by a different column) are kept consistent with each other.
+* **History** - Since previous commits are retained for a configurable duration, readers can query data from the latest commit, or from any other point in time.
 
-5. **Lack of reproducibility:** There's no way to view the data as it existed at a certain point in the past. Say I want to make a backwards-compatible change to my code: I'd like to validate this by running the new code on last week's data while making sure I'm getting last week's output. However, since last week others may have made changes to that input. If I get a different result - how can I tell if I broke something, or the data has changed?
+### Data CI/CD
 
+Data is useless, unless it's trust worthy.
+Currently, when data is written it is exposed to readers and a clear process of validation, like the one we have for code, is missing:
 
-## Concepts
+* There's no way to enforce naming conventions, schema rules, or the use of specific file formats.
+* Validating the quality of the written data is usually done too late - it has already been written and is visible to readers. 
+ 
+ lakeFS introduces the concept of **Data CI/CD** - The ability to define automated rules and tests that are required
+ to pass before committing or merging changes to data. 
+ 
+For example, data engineers can define rules such as:
 
-To solve these problems, lakeFS exposes an API that is compatible with S3 (with the data itself being stored back to S3), that introduces Git-like semantics on top: commits, branches, merges, etc. So:
+* *No breaking schema changes allowed under the following paths: \[...\]*
+* *The main branch should only contain Parquet and ORC files. CSV and TSV are not allowed.*
+* *Data validation jobs must finish successfully for this set of collections: \[...\]*
+* *The proportion of rows with a given value in a certain column is dramatically lower than usual (a possible bug in data collection)*
 
-
-1. **Isolation is achieved using branches:** I can create a branch derived from "master", run my jobs on it, experiment, and only once done, I can commit my change and atomically merge it into master. All my changes are applied as one atomic piece, meaning no-one sees any iterminnent state. You can think of it as kind of a very long-lived database transaction.
-
-   
-
-2. **reverting a change (whether it was committed or not) is also an atomic operation.** You can revert uncommitted changes but also point a branch to an older commit back in time. You can even cherry-pick changes (i.e. only revert the stuff I've done under /some/path).
-
-   
-
-3. **Control through CI:** If my changes are made in a branch, I can run automated scripts or manual reviews before merging to master. I can easily detect schema changes, bad output, wrong paths, etc., before they cause a production issue for someone else.
-
-   
-
-4. **Reproducibility:** Different users can simultaneously look at different branches and commits. If I tag a data commit with the commit hash of the job that created it, I can always go back in time and get the exact snapshot of the data that existed along with the code that created it.
-
-
-## Where does it fit in?
-
-lakeFS sits between the data itself (i.e. an S3 bucket) and the applications and users that consume the data. Think of it as S3 on top of S3:
-
-![lakeFS](assets/img/wrapper.png)
-
-   
-## Branching Model
-
-At its core, lakeFS uses a Git-like branching model. The data model contains the following types:
-
-### Repositories
-
-In lakeFS, a repository is a logical namespace used to group together objects, branches and commits. It is the equivalent of a Bucket in S3, and a repositoriy in Git.
-
-### Branches
-
-Branches are similar in concept to [Git branches](https://git-scm.com/book/en/v2/Git-Branching-Basic-Branching-and-Merging){:target="_blank"}.  
-When creating a new branch in lakeFS, we are actually creating a consistent snapshot of the entire repository, which is isolated from other branches and their changes.  
-Another way to think of branches is like a very long-lived database transaction, providing us with [Snapshot Isolation](https://en.wikipedia.org/wiki/Snapshot_isolation){: target="_blank" }.
-
-Once we've made the necessary changes to our data within our isolated branch, we can merge it back to the branch we branched from.  
-This operation is atomic in lakeFS - readers will either see all our committed changes or non at all.
-
-Isolation and Atomicity are very powerful tools: it allows us to do things that are otherwise extremely hard to get right: replace data in-place,
-add or update multiple objects and collections as a single piece, run tests and validations before exposing data to others and more.
-
-### Commits
-
-Commits are immutable "checkpoints", containing an entire snapshot of a repository at a given point in time.
-This is again very similar to commits in Git. Each commit contains metadata - who performed it, timestamp, a commit message as well as arbitrary key/value pairs we can choose to add.
-Using commits, we can view our Data Lake at a certain point in its history and we are guaranteed that the data we see is exactly is it was at the point of committing it.
-
-In lakeFS, different users can view different branches (or even commits, directly) at the same time on the same repository. there's no "checkout" process that copies data around. All live branches and commits are immediately available at all times.
-
-### Objects
-
-Objects in lakeFS are very similar to those found in S3 (or other object stores, for that matter). lakeFS is agnostic to what these objects contain: Parquet, CSV, ORC and even JPEG or other forms of unstructured data.   
-
-Unlike Git, lakeFS does not care about the contents of an object - if we try to merge two branches that both update the same file, it is up to the user to resolve this conflict.  
-This is because lakeFS doesn't assume anything about the structure of the object and so cannot try to merge both changesets into a single object (additionally, this operation makes little sense for machine generated files, and data in general).
-
-The actual data itself is not stored inside lakeFS directly, but rather stored in an underlying object store. lakeFS will manage these writes, and will store a pointer to the object in its metadata database.
-Addressing the object in the underlying object store is done using a dedupe ID - objects with the same content will receive the same ID, thus stored only once.
 
 ## Next steps
 
-Run lakeFS locally and see how it works for yourself!
+Read about lakeFS' [branching model]() or run lakeFS locally and see how it works for yourself!
 
 Check out the [Quick Start Guide](quickstart.md)
 
