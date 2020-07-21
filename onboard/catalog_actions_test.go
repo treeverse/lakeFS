@@ -30,8 +30,7 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer")
-	c.(*onboard.CatalogRepoActions).WriteBatchSize = 5
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", 5)
 	catalogActions, ok := c.(*onboard.CatalogRepoActions)
 	if !ok {
 		t.Fatal("NewCatalogActions return value implement doesn't match")
@@ -50,19 +49,19 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		},
 		{
 			AddedRows:           []string{"a1", "b2", "c3"},
-			DeletedRows:         []string{"d1", "e2"},
+			DeletedRows:         []string{"b1", "b2"},
 			ExpectedAddCalls:    1,
 			ExpectedDeleteCalls: 2,
 		},
 		{
 			AddedRows:           []string{"a1", "b2", "c3", "d4", "e5"},
-			DeletedRows:         []string{"f1", "g2"},
+			DeletedRows:         []string{"b1", "b2"},
 			ExpectedAddCalls:    1,
 			ExpectedDeleteCalls: 2,
 		},
 		{
 			AddedRows:           []string{"a1", "b2", "c3", "d4", "e5", "f6"},
-			DeletedRows:         []string{"g1", "h2"},
+			DeletedRows:         []string{"b1", "b2"},
 			ExpectedAddCalls:    2,
 			ExpectedDeleteCalls: 2,
 		},
@@ -89,9 +88,7 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		catalogCallData.addedEntries = []catalog.Entry{}
 		catalogCallData.deletedEntries = []string{}
 		catalogCallData.callLog = make(map[string]int)
-		stats, err := catalogActions.CreateAndDeleteObjects(context.Background(), *onboard.NewDiffIterator(
-			&mockInventoryIterator{rows: rows(test.DeletedRows...)},
-			&mockInventoryIterator{rows: rows(test.AddedRows...)}), false)
+		err := catalogActions.CreateAndDeleteObjects(context.Background(), rows(test.AddedRows...), rows(test.DeletedRows...))
 		if err != nil {
 			t.Fatalf("failed to create/delete objects: %v", err)
 		}
@@ -100,12 +97,6 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		}
 		if catalogCallData.callLog["DeleteEntry"] != test.ExpectedDeleteCalls {
 			t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", test.ExpectedDeleteCalls, catalogCallData.callLog["DeleteEntry"])
-		}
-		if stats.AddedOrChanged != len(test.AddedRows) {
-			t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), stats.AddedOrChanged)
-		}
-		if stats.Deleted != len(test.DeletedRows) {
-			t.Fatalf("unexpected number of deleted entries in returned stats. expected=%d, got=%d", len(test.DeletedRows), stats.Deleted)
 		}
 		if len(catalogCallData.addedEntries) != len(test.AddedRows) {
 			t.Fatalf("unexpected number of added entries. expected=%d, got=%d", len(test.AddedRows), len(catalogCallData.addedEntries))
