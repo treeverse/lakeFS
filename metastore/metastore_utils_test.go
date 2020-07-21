@@ -28,6 +28,14 @@ func TestReplaceBranchName(t *testing.T) {
 			},
 			want: "s3a://repo/br1/path/to/table/partition=value",
 		},
+		{
+			name: "error returns location input",
+			args: args{
+				location: "~s3:/s:@12/%?",
+				branch:   "br1",
+			},
+			want: "~s3:/s:@12/%?",
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -71,6 +79,14 @@ func TestGetSymlinkLocation(t *testing.T) {
 				locationPrefix: "s3://bucket/some/path/lakeFS",
 			},
 			want: "s3://bucket/some/path/lakeFS/repo/master/tableName/partition=value",
+		},
+		{
+			name: "error returns location input",
+			args: args{
+				location:       "~s3:/s:@12/%?",
+				locationPrefix: "s3://bucket/some/path/lakeFS",
+			},
+			want: "~s3:/s:@12/%?",
 		},
 	}
 	for _, tt := range tests {
