@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -62,19 +61,19 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		wantMore    bool
 		wantErr     bool
 	}{
-		//{
-		//	name: "all uncommitted",
-		//	args: args{
-		//		repository: "repo1",
-		//		reference:  "master",
-		//		path:       "",
-		//		after:      "",
-		//		limit:      100,
-		//	},
-		//	wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
-		//	wantMore:    false,
-		//	wantErr:     false,
-		//},
+		{
+			name: "all uncommitted",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "",
+				after:      "",
+				limit:      100,
+			},
+			wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
+			wantMore:    false,
+			wantErr:     false,
+		},
 		{
 			name: "first 2 uncommitted",
 			args: args{
@@ -181,9 +180,12 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			if tt.name == "all uncommitted" {
+				t.Skip("bug listing uncommitted tombstone entries")
+			}
 			got, gotMore, err := c.ListEntriesByLevel(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, "/", tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf(" error = %v, wantErr %v", err, tt.wantErr)
+				t.Fatalf("ListEntriesByLevel() err = %s, expected error %t", err, tt.wantErr)
 			}
 			// test that directories have null entries, and vice versa
 			var gotNames []string
