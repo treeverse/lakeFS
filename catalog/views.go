@@ -18,7 +18,7 @@ func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
 		"max_commit < max_commit_id() AS is_deleted",
-		"CASE WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
+		"CASE  WHEN min_commit = 0 THEN max_commit_id() ELSE min_commit END AS commit_weight").
 		From("entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required
@@ -63,20 +63,20 @@ func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineag
 func sqLineageConditions(branchID int64, lineage []lineageCommit) (string, sq.Sqlizer, sq.Sqlizer) {
 	isDisplayedBranch := "e.branch_id = " + strconv.FormatInt(branchID, 10)
 	maxCommitExpr := sq.Case().When(isDisplayedBranch, "e.max_commit\n")
-	isDeletedExpr := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
+	isDeletedExper := sq.Case().When(isDisplayedBranch, "e.is_deleted\n")
 	lineageFilter := "(" + isDisplayedBranch + ")\n"
 	for _, lc := range lineage {
 		branchCond := "e.branch_id = " + strconv.FormatInt(lc.BranchID, 10)
 		commitStr := strconv.FormatInt(int64(lc.CommitID), 10)
 		ancestorCond := branchCond + " and e.max_commit < " + commitStr
 		maxCommitExpr = maxCommitExpr.When(ancestorCond, "e.max_commit\n")
-		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
+		isDeletedExper = isDeletedExper.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
 	maxCommitExpr = maxCommitExpr.Else("max_commit_id()")
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
-	isDeletedExpr = isDeletedExpr.Else("false")
-	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
+	isDeletedExper = isDeletedExper.Else("false")
+	isDeletedAlias := sq.Alias(isDeletedExper, "is_deleted")
 	return lineageFilter, maxCommitAlias, isDeletedAlias
 }
 
@@ -104,7 +104,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 	// Can diff with expired files, just not usefully!
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
-		"f.path IS NOT NULL AS DifferenceTypeChanged",
+		"f.path IS NOT NULL AND NOT f.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted",
 		"f.path IS NOT NULL AND (f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted) AS same_object",
 		"s.entry_ctid",
@@ -143,7 +143,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
 
-func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
+func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
 	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
 	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
 	sonSQL, sonArgs := sq.Select("*").FromSelect(sonLineage, "s").
@@ -154,7 +154,7 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",
-		"s.path IS NOT NULL AS DifferenceTypeChanged",
+		"s.path IS NOT NULL AND not s.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		//both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
@@ -166,8 +166,8 @@ func sqDiffFromFatherV(fatherID, sonID, lastSonMergeWithFather int64, fatherUnco
 		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
 		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
 							(NOT s.is_committed -- uncommitted is new
-							 OR s.min_commit > ? -- created after last commit
-                           OR (s.max_commit > ? AND s.is_deleted)) -- deleted after last commit
+							 OR s.min_commit > ? -- created after last merge
+                           OR (s.max_commit >= ? AND s.is_deleted)) -- deleted after last merge
 						  AS DifferenceTypeConflict`, sonID, lastSonMergeWithFather, lastSonMergeWithFather).
 		FromSelect(fatherLineage, "f").
 		Where("f.displayed_branch = ?", fatherID).

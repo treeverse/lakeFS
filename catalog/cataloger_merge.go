@@ -9,6 +9,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 
 	"github.com/jmoiron/sqlx"
+
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -49,7 +50,13 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, ErrConflictFound
 		}
 		if len(diffCounts) == 0 {
-			return nil, ErrNoDifferenceWasFound
+			leftCommitAdvanced, err := checkZeroDiffCommit(tx, leftID, rightID)
+			if err != nil {
+				return nil, err
+			}
+			if !leftCommitAdvanced {
+				return nil, ErrNoDifferenceWasFound
+			}
 		}
 
 		if message == "" {
@@ -63,6 +70,32 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}, c.txOpts(ctx)...)
 	return result, err
+}
+
+func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
+	/*
+		Checks if the current commit id of source branch advanced since last merge.
+		If so - a merge record must be created, even if there are no changes between branches.
+	*/
+	leftMaxCommitID, err := getLastCommitIDByBranchID(tx, leftID)
+	if err != nil {
+		return false, err
+	}
+	var mergeMaxCommitID CommitID
+	err = tx.Get(&mergeMaxCommitID, `select distinct on (branch_id) merge_source_commit from commits 
+														where 
+												branch_id = $1 and merge_source_branch = $2 order by branch_id, commit_id DESC`,
+		rightID, leftID)
+	if err != nil && !errors.As(err, &db.ErrNotFound) {
+		return false, err
+	}
+	if errors.As(err, &db.ErrNotFound) { // can happen only in from son merge, on the first merge
+		err = tx.Get(&mergeMaxCommitID, `select min(commit_id) from commits where branch_id = $1`, leftID)
+		if err != nil {
+			return false, err
+		}
+	}
+	return leftMaxCommitID > mergeMaxCommitID, nil
 }
 
 func formatMergeMessage(leftBranch string, rightBranch string) string {
@@ -97,6 +130,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 }
 
 func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, fatherID, sonID int64, committer string, msg string, metadata Metadata) error {
+
 	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $3 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
 		sonID, previousMaxCommitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
