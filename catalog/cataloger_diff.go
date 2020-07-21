@@ -130,7 +130,11 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 		return nil, fmt.Errorf("effective commits sql: %w", err)
 	}
 	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
-	if errors.Is(err, db.ErrNotFound) {
+	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
+	if err != nil && !effectiveCommitsNotFound {
+		return nil, fmt.Errorf("select effective commit: %w", err)
+	}
+	if effectiveCommitsNotFound {
 		effectiveCommits.SonEffectiveCommit = 1 // we need all commits from the son. so any small number will do
 		fatherEffectiveQuery, args, err := psql.Select("commit_id as father_effective_commit").
 			From("commits").
@@ -139,14 +143,12 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 			Limit(1).
 			ToSql()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("father effective commit sql: %w", err)
 		}
 		err = tx.Get(&effectiveCommits.FatherEffectiveCommit, fatherEffectiveQuery, args...)
 		if err != nil {
 			return nil, fmt.Errorf("select father effective commit: %w", err)
 		}
-	} else if err != nil {
-		return nil, fmt.Errorf("select effective commit: %w", err)
 	}
 
 	fatherLineage, err := getLineage(tx, fatherID, UncommittedID)
