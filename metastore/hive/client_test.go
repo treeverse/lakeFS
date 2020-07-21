@@ -65,6 +65,7 @@ func columnsToMock(columns []*hive_metastore.FieldSchema) []*mock.Column {
 	}
 	return mockColumns
 }
+
 func mocksToColumns(columns []*mock.Column) []*hive_metastore.FieldSchema {
 	var mockColumns []*hive_metastore.FieldSchema
 	for _, column := range columns {
@@ -111,12 +112,10 @@ func MockToPartitions(mockPartitions []*mock.MetastoreObject) []*hive_metastore.
 
 func (h HiveMsMock) GetPartition(_ context.Context, dbName string, tableName string, values []string) (r *hive_metastore.Partition, err error) {
 	partition, err := h.MockStore.GetPartition(dbName, tableName, values)
+	if errors.Is(err, mock.ErrNotFound) {
+		return nil, &hive_metastore.NoSuchObjectException{Message: err.Error()}
+	}
 	if err != nil {
-		if errors.Is(err, mock.ErrNotFound) {
-			err2 := hive_metastore.NewNoSuchObjectException()
-			err2.Message = err.Error()
-			return nil, err2
-		}
 		return nil, err
 	}
 	return MockToPartition(partition), nil
@@ -363,12 +362,11 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 	partition19.Sd.Cols = append(partition19.Sd.Cols, addColumn)
 	// add partition
-	partitionNum := len(copiedPartitions)
-	newPartition := getPartitionN(toDBName, toTableName, expectedLocation, partitionNum)
+	partition20 := getPartitionN(toDBName, toTableName, expectedLocation, 20)
 	// add column
-	newPartition.GetSd().Cols = append(newPartition.GetSd().Cols, addColumn)
+	partition20.GetSd().Cols = append(partition20.GetSd().Cols, addColumn)
 
-	_, err = client.client.AddPartitions(client.context, []*hive_metastore.Partition{newPartition})
+	_, err = client.client.AddPartitions(client.context, []*hive_metastore.Partition{partition20})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -398,7 +396,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	// check if partition 20 was added and has three columns, 19 was updated and 17 was deleted
 	partition19 = nil
 	partition17 = nil
-	var partition20 *hive_metastore.Partition
+	partition20 = nil
 	for _, partition := range mergedPartitions {
 		if partition.GetValues()[0] == "part=20" {
 			partition20 = partition
@@ -409,6 +407,9 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		if partition.GetValues()[0] == "part=17" {
 			partition17 = partition
 		}
+	}
+	if partition19 == nil {
+		t.Fatalf("expected to have a partition with value: part=19 after merge")
 	}
 	if partition20 == nil {
 		t.Fatalf("expected to have a partition with value: part=20 after merge")
@@ -421,5 +422,4 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 			t.Fatalf("expected added column to be column_three got:%s", mergedColumns[2].Name)
 		}
 	}
-
 }

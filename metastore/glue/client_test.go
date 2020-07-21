@@ -67,6 +67,7 @@ func columnsToMock(columns []*glue.Column) []*mock.Column {
 	}
 	return mockColumns
 }
+
 func mocksToColumns(columns []*mock.Column) []*glue.Column {
 	var mockColumns []*glue.Column
 	for _, column := range columns {
@@ -89,6 +90,7 @@ func partitionInputToMock(db, table *string, partition *glue.PartitionInput) *mo
 		Values:      aws.StringValueSlice(partition.Values),
 	}
 }
+
 func partitionToMock(db, table *string, partition *glue.PartitionInput) *mock.MetastoreObject {
 	return &mock.MetastoreObject{
 		DbName:      aws.StringValue(db),
@@ -121,13 +123,11 @@ func MockToPartitions(mockPartitions []*mock.MetastoreObject) []*glue.Partition 
 	return partitions
 }
 
-func (h GlueMsMock) GetPartition(partitonInput *glue.GetPartitionInput) (*glue.GetPartitionOutput, error) {
-	partition, err := h.MockStore.GetPartition(aws.StringValue(partitonInput.DatabaseName), aws.StringValue(partitonInput.TableName), aws.StringValueSlice(partitonInput.PartitionValues))
+func (h GlueMsMock) GetPartition(partitionInput *glue.GetPartitionInput) (*glue.GetPartitionOutput, error) {
+	partition, err := h.MockStore.GetPartition(aws.StringValue(partitionInput.DatabaseName), aws.StringValue(partitionInput.TableName), aws.StringValueSlice(partitionInput.PartitionValues))
 	if err != nil {
 		if errors.Is(err, mock.ErrNotFound) {
-			err2 := &glue.EntityNotFoundException{}
-			err2.Message_ = aws.String(err.Error())
-			return nil, err2
+			return nil, &glue.EntityNotFoundException{Message_: aws.String(err.Error())}
 		}
 		return nil, err
 	}
@@ -155,9 +155,7 @@ func (h GlueMsMock) GetTable(input *glue.GetTableInput) (*glue.GetTableOutput, e
 	mockTable, err := h.MockStore.GetTable(aws.StringValue(input.DatabaseName), aws.StringValue(input.Name))
 	if err != nil {
 		if errors.Is(err, mock.ErrNotFound) {
-			err2 := &glue.EntityNotFoundException{}
-			err2.Message_ = aws.String(err.Error())
-			return nil, err2
+			return nil, &glue.EntityNotFoundException{Message_: aws.String(err.Error())}
 		}
 		return nil, err
 	}
@@ -198,7 +196,6 @@ func getCols() []*glue.Column {
 func getPartitionN(table, location string, n int) *glue.Partition {
 	partitionValue := fmt.Sprintf("part=%d", n)
 	return &glue.Partition{
-
 		Values: aws.StringSlice([]string{partitionValue}),
 		StorageDescriptor: &glue.StorageDescriptor{
 			Columns:      getCols(),
@@ -207,9 +204,7 @@ func getPartitionN(table, location string, n int) *glue.Partition {
 			OutputFormat: aws.String("parquet.hive.DeprecatedParquetOutputFormat"),
 
 			SerdeInfo: &glue.SerDeInfo{
-				Name:                 aws.String(table),
-				SerializationLibrary: nil,
-				Parameters:           nil,
+				Name: aws.String(table),
 			},
 		},
 	}
@@ -238,7 +233,6 @@ func validatePartitionLocations(partitions []*glue.Partition, location string) e
 		if gotLocation != expectedLocation {
 			return fmt.Errorf("wrong partition location, expected: %s got: %s", expectedLocation, gotLocation)
 		}
-
 	}
 	return nil
 }
@@ -265,8 +259,8 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 			Comment: nil,
 		}},
 	}
-	numOfPrtitions := 20
-	initialPartitions := getNPartitions(tableName, location, numOfPrtitions)
+	numOfPartitions := 20
+	initialPartitions := getNPartitions(tableName, location, numOfPartitions)
 
 	hiveMockClient := NewGlueMsMock()
 	client := NewGlueMSClient(hiveMockClient, "")
@@ -315,8 +309,8 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 
 	copiedPartitions, err := client.getAllPartitions(toDBName, toTableName)
 	//compare partitions
-	if len(copiedPartitions) != numOfPrtitions {
-		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPrtitions, len(copiedPartitions))
+	if len(copiedPartitions) != numOfPartitions {
+		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions, len(copiedPartitions))
 	}
 
 	err = validatePartitionLocations(copiedPartitions, expectedLocation)
@@ -341,25 +335,24 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		}
 	}
 	//add columns to existing partition
-	parition19 := copiedPartitions[19]
+	partition19 := copiedPartitions[19]
 	addColumn := &glue.Column{
 		Name:    aws.String("column_three"),
 		Type:    aws.String("string"),
 		Comment: aws.String("added column before merge"),
 	}
-	parition19.StorageDescriptor.Columns = append(parition19.StorageDescriptor.Columns, addColumn)
+	partition19.StorageDescriptor.Columns = append(partition19.StorageDescriptor.Columns, addColumn)
 	// add partition
-	partitionNum := len(copiedPartitions)
-	newPartition := getPartitionN(toTableName, expectedLocation, partitionNum)
+	partition20 := getPartitionN(toTableName, expectedLocation, 20)
 	// add column
-	newPartition.StorageDescriptor.Columns = append(newPartition.StorageDescriptor.Columns, addColumn)
+	partition20.StorageDescriptor.Columns = append(partition20.StorageDescriptor.Columns, addColumn)
 
-	err = client.addPartitions(toDBName, toTableName, []*glue.Partition{newPartition})
+	err = client.addPartitions(toDBName, toTableName, []*glue.Partition{partition20})
 	if err != nil {
 		t.Fatal(err)
 	}
 
-	err = client.alterPartitions(toDBName, toTableName, []*glue.Partition{parition19})
+	err = client.alterPartitions(toDBName, toTableName, []*glue.Partition{partition19})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -377,13 +370,13 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 
 	}
 
-	if len(mergedPartitions) != numOfPrtitions+1 {
-		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPrtitions+1, len(mergedPartitions))
+	if len(mergedPartitions) != numOfPartitions+1 {
+		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions+1, len(mergedPartitions))
 	}
 
 	// check if partition 21 was added and has three columns
-	var partition19 *glue.Partition
-	var partition20 *glue.Partition
+	partition19 = nil
+	partition20 = nil
 	for _, partition := range mergedPartitions {
 		if aws.StringValue(partition.Values[0]) == "part=20" {
 			partition20 = partition
@@ -391,6 +384,9 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		if aws.StringValue(partition.Values[0]) == "part=19" {
 			partition19 = partition
 		}
+	}
+	if partition19 == nil {
+		t.Fatalf("expected to have a partition with value: part=19 after merge")
 	}
 	if partition20 == nil {
 		t.Fatalf("expected to have a partition with value: part=20 after merge")

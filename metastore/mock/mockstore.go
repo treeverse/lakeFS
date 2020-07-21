@@ -99,10 +99,12 @@ func (m MetaStore) GetPartition(db string, table string, vals []string) (*Metast
 	}
 	return partition, nil
 }
+
 func (m MetaStore) GetPartitions(dbName string, tableName string) []*MetastoreObject {
+	k := getKey(dbName, tableName)
 	var res []*MetastoreObject
 	for key, object := range m.partitionMap {
-		if strings.HasPrefix(key, getKey(dbName, tableName)) && object != nil {
+		if object != nil && strings.HasPrefix(key, k) {
 			res = append(res, object)
 		}
 	}
@@ -132,6 +134,6 @@ func (m MetaStore) DropPartition(db string, table string, vals []string) error {
 	if m.partitionMap[key] == nil {
 		return fmt.Errorf("trying to remove missing partition with key %s", key)
 	}
-	m.partitionMap[key] = nil
+	delete(m.partitionMap, key)
 	return nil
 }
