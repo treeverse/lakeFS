@@ -63,7 +63,7 @@ func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, it Diff
 			if !dryRun {
 				err := c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, obj.Key)
 				if err != nil {
-					return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
+					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
 			}
 		}
