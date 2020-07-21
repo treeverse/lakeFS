@@ -262,8 +262,10 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	numOfPartitions := 20
 	initialPartitions := getNPartitions(tableName, location, numOfPartitions)
 
-	hiveMockClient := NewGlueMsMock()
-	client := NewGlueMSClient(hiveMockClient, "")
+	client := &MSClient{
+		client:    NewGlueMsMock(),
+		catalogID: "",
+	}
 
 	err := client.createTable(dbName, initialTable)
 	if err != nil {

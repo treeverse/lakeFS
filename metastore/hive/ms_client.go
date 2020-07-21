@@ -26,24 +26,23 @@ type ThriftHiveMetastoreClient interface {
 	DropPartition(ctx context.Context, dbName string, tableName string, values []string, deleteData bool) (r bool, err error)
 }
 
-type Client struct {
-	*MSClient
-	Client    ThriftHiveMetastoreClient
+type MSClient struct {
+	context   context.Context
+	client    ThriftHiveMetastoreClient
 	transport thrift.TTransport
 }
 
-func NewClient(addr string, secure bool) (*Client, error) {
-	c := &Client{}
-	if client, err := c.Open(addr, secure); err != nil {
+func NewMSClient(addr string, secure bool) (*MSClient, error) {
+	msClient := &MSClient{}
+	client, err := msClient.Open(addr, secure)
+	if err != nil {
 		return nil, err
-	} else {
-		c.Client = client
 	}
-	c.MSClient = NewMSClient(c.Client)
-	return c, nil
+	msClient.client = client
+	return msClient, nil
 }
 
-func (c *Client) Open(addr string, secure bool) (ThriftHiveMetastoreClient, error) {
+func (c *MSClient) Open(addr string, secure bool) (ThriftHiveMetastoreClient, error) {
 	var err error
 	if secure {
 		cfg := new(tls.Config)
@@ -66,26 +65,11 @@ func (c *Client) Open(addr string, secure bool) (ThriftHiveMetastoreClient, erro
 	return hive_metastore.NewThriftHiveMetastoreClient(thrift.NewTStandardClient(iprot, oprot)), nil
 }
 
-func (c *Client) Close() error {
+func (c *MSClient) Close() error {
 	if c.transport != nil {
 		return c.transport.Close()
 	}
 	return nil
-}
-
-func (c *Client) GetClient() ThriftHiveMetastoreClient {
-	return c.client
-}
-
-type MSClient struct {
-	context context.Context
-	client  ThriftHiveMetastoreClient
-}
-
-func NewMSClient(client ThriftHiveMetastoreClient) *MSClient {
-	return &MSClient{
-		client: client,
-	}
 }
 
 func (c *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde string, partition []string) error {

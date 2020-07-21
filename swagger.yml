@@ -1890,7 +1890,7 @@ paths:
       - in: query
         name: location
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: path to the table data
     post:
       tags:
         - metadata

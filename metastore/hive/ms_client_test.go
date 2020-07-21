@@ -276,8 +276,10 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	numOfPartitions := 20
 	initialPartitions := getNPartitions(dbName, tableName, location, numOfPartitions)
 
-	hiveMockClient := NewHiveMsMock()
-	client := NewMSClient(hiveMockClient)
+	client := &MSClient{
+		context: context.Background(),
+		client:  NewHiveMsMock(),
+	}
 
 	err := client.client.CreateTable(client.context, initialTable)
 	if err != nil {

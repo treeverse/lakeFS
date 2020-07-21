@@ -3,8 +3,6 @@ package glue
 import (
 	"fmt"
 
-	"github.com/apache/thrift/lib/go/thrift"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/glue"
@@ -13,25 +11,6 @@ import (
 	"github.com/treeverse/lakefs/metastore"
 )
 
-type Client struct {
-	*MSClient
-	Client    glueiface.GlueAPI
-	transport thrift.TTransport
-}
-
-func NewClient(cfg *aws.Config, catalogID string) (*Client, error) {
-	c := &Client{}
-	sess := session.Must(session.NewSession(cfg))
-	sess.ClientConfig("glue")
-	gl := glue.New(sess)
-
-	c.MSClient = &MSClient{
-		client:    gl,
-		catalogID: catalogID,
-	}
-	return c, nil
-}
-
 type MSClient struct {
 	client    glueiface.GlueAPI
 	catalogID string
@@ -39,11 +18,14 @@ type MSClient struct {
 
 const MaxParts = 1000 // max possible 1000
 
-func NewGlueMSClient(client glueiface.GlueAPI, catalogID string) *MSClient {
+func NewMSClient(cfg *aws.Config, catalogID string) (*MSClient, error) {
+	sess := session.Must(session.NewSession(cfg))
+	sess.ClientConfig("glue")
+	gl := glue.New(sess)
 	return &MSClient{
-		client:    client,
+		client:    gl,
 		catalogID: catalogID,
-	}
+	}, nil
 }
 
 func (g *MSClient) getTable(dbName string, tblName string) (*glue.TableData, error) {
