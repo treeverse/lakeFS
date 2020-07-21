@@ -8,9 +8,10 @@ func TestReplaceBranchName(t *testing.T) {
 		branch   string
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name    string
+		args    args
+		want    string
+		wantErr bool
 	}{
 		{
 			name: "table",
@@ -29,32 +30,54 @@ func TestReplaceBranchName(t *testing.T) {
 			want: "s3a://repo/br1/path/to/table/partition=value",
 		},
 		{
-			name: "error returns location input",
+			name: "no schema",
+			args: args{
+				location: "noschema/repo",
+				branch:   "br1",
+			},
+			wantErr: true,
+		},
+		{
+			name: "only schema",
+			args: args{
+				location: "s3://",
+				branch:   "br1",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalud url",
 			args: args{
 				location: "~s3:/s:@12/%?",
 				branch:   "br1",
 			},
-			want: "~s3:/s:@12/%?",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := ReplaceBranchName(tt.args.location, tt.args.branch); got != tt.want {
-				t.Errorf("ReplaceBranchName() = %v, want %v", got, tt.want)
+			got, err := ReplaceBranchName(tt.args.location, tt.args.branch)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("ReplaceBranchName() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("ReplaceBranchName() got = %v, want %v", got, tt.want)
 			}
 		})
 	}
 }
 
-func TestGetSymlinkLocation(t *testing.T) {
+func TestGetSymlinkLocation1(t *testing.T) {
 	type args struct {
 		location       string
 		locationPrefix string
 	}
 	tests := []struct {
-		name string
-		args args
-		want string
+		name    string
+		args    args
+		want    string
+		wantErr bool
 	}{
 		{
 			name: "table location - repo is bucket",
@@ -81,18 +104,39 @@ func TestGetSymlinkLocation(t *testing.T) {
 			want: "s3://bucket/some/path/lakeFS/repo/master/tableName/partition=value",
 		},
 		{
-			name: "error returns location input",
+			name: "no schema",
+			args: args{
+				location:       "noschema/repo",
+				locationPrefix: "s3://bucket/some/path/lakeFS",
+			},
+			wantErr: true,
+		},
+		{
+			name: "only schema",
+			args: args{
+				location:       "s3://",
+				locationPrefix: "s3://bucket/some/path/lakeFS",
+			},
+			wantErr: true,
+		},
+		{
+			name: "invalid url",
 			args: args{
 				location:       "~s3:/s:@12/%?",
 				locationPrefix: "s3://bucket/some/path/lakeFS",
 			},
-			want: "~s3:/s:@12/%?",
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := GetSymlinkLocation(tt.args.location, tt.args.locationPrefix); got != tt.want {
-				t.Errorf("GetSymlinkLocation() = %v, want %v", got, tt.want)
+			got, err := GetSymlinkLocation(tt.args.location, tt.args.locationPrefix)
+			if (err != nil) != tt.wantErr {
+				t.Errorf("GetSymlinkLocation() error = %v, wantErr %v", err, tt.wantErr)
+				return
+			}
+			if got != tt.want {
+				t.Errorf("GetSymlinkLocation() got = %v, want %v", got, tt.want)
 			}
 		})
 	}

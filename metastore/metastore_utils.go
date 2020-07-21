@@ -1,6 +1,7 @@
 package metastore
 
 import (
+	"errors"
 	"net/url"
 
 	"github.com/treeverse/lakefs/gateway/path"
@@ -8,27 +9,35 @@ import (
 
 const SymlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
 
-func ReplaceBranchName(location, branch string) string {
+var InvalidLocation = errors.New("got empty schema or host wile parsing location url, location should be schema://host/path")
+
+func ReplaceBranchName(location, branch string) (string, error) {
 	u, err := url.Parse(location)
 	if err != nil {
-		return location
+		return "", err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", InvalidLocation
 	}
 	p, err := path.ResolvePath(u.Path)
 	if err != nil {
-		return location
+		return "", err
 	}
 
-	return u.Scheme + "://" + u.Host + "/" + branch + "/" + p.Path
+	return u.Scheme + "://" + u.Host + "/" + branch + "/" + p.Path, nil
 }
 
-func GetSymlinkLocation(location, locationPrefix string) string {
+func GetSymlinkLocation(location, locationPrefix string) (string, error) {
 	u, err := url.Parse(location)
 	if err != nil {
-		return location
+		return "", err
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return "", InvalidLocation
 	}
 	p, err := path.ResolvePath(u.Path)
 	if err != nil {
-		return location
+		return "", err
 	}
-	return locationPrefix + "/" + u.Host + "/" + p.Ref + "/" + p.Path
+	return locationPrefix + "/" + u.Host + "/" + p.Ref + "/" + p.Path, nil
 }

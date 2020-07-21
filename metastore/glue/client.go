@@ -219,7 +219,7 @@ func (g *MSClient) removePartitions(dbName, tableName string, partitions []*glue
 	return err
 }
 
-func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
+func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
 	var nextToken *string
 	for {
 		getPartitionsOutput, err := g.getPartitions(fromDBName, fromTable, nextToken, MaxParts)
@@ -229,14 +229,21 @@ func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable, serd
 		nextToken = getPartitionsOutput.NextToken
 		partitions := getPartitionsOutput.Partitions
 		for _, partition := range partitions {
-			if symlink {
-				partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
-			}
-
-			partition.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(partition.StorageDescriptor.Location)))
 			partition.SetTableName(toTable)
-			partition.StorageDescriptor.SerdeInfo.SetName(serde)
 			partition.SetDatabaseName(toDBName)
+			if partition.StorageDescriptor != nil {
+				if partition.StorageDescriptor.SerdeInfo != nil {
+					partition.StorageDescriptor.SerdeInfo.SetName(serde)
+				}
+				if symlink {
+					partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+				}
+				location, err := transformLocation(aws.StringValue(partition.StorageDescriptor.Location))
+				if err != nil {
+					return err
+				}
+				partition.StorageDescriptor.SetLocation(location)
+			}
 		}
 		_ = getPartitionsOutput.SetPartitions(partitions)
 		err = g.addPartitions(toDBName, toTable, partitions)
@@ -250,24 +257,31 @@ func (g *MSClient) copyPartitions(fromDBName, fromTable, toDBName, toTable, serd
 	return nil
 }
 
-func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
+func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
 	table, err := g.getTable(fromDB, fromTable)
 	if err != nil {
 		return err
 	}
 	table.SetDatabaseName(toDB)
 	table.SetName(toTable)
-	table.StorageDescriptor.SerdeInfo.SetName(serde)
-	if symlink {
-		table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
-	} else {
-		table.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(table.StorageDescriptor.Location)))
+	if table.StorageDescriptor != nil {
+		if table.StorageDescriptor.SerdeInfo != nil {
+			table.StorageDescriptor.SerdeInfo.SetName(serde)
+		}
+		if symlink {
+			table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+		}
+		location, err := transformLocation(aws.StringValue(table.StorageDescriptor.Location))
+		if err != nil {
+			return err
+		}
+		table.StorageDescriptor.SetLocation(location)
 	}
 	err = g.createTable(toDB, table)
 	return err
 }
 
-func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
+func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
 
 	err := g.copyTable(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 	if err != nil {
@@ -277,7 +291,7 @@ func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink 
 	return err
 }
 
-func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
+func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
 
 	table, err := g.getTable(FromDB, fromTable)
 	if err != nil {
@@ -285,10 +299,20 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink
 	}
 	table.SetDatabaseName(toDB)
 	table.SetName(toTable)
-	table.StorageDescriptor.SerdeInfo.SetName(serde)
-	table.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(table.StorageDescriptor.Location)))
-	if symlink {
-		table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+	if table.StorageDescriptor != nil {
+		if table.StorageDescriptor.SerdeInfo != nil {
+			table.StorageDescriptor.SerdeInfo.SetName(serde)
+		}
+		table.StorageDescriptor.SerdeInfo.SetName(serde)
+
+		location, err := transformLocation(aws.StringValue(table.StorageDescriptor.Location))
+		if err != nil {
+			return err
+		}
+		table.StorageDescriptor.SetLocation(location)
+		if symlink {
+			table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+		}
 	}
 	partitions, err := g.getAllPartitions(FromDB, fromTable)
 	if err != nil {
@@ -309,10 +333,18 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink
 		}
 		partition.SetDatabaseName(toDB)
 		partition.SetTableName(toTable)
-		partition.StorageDescriptor.SetLocation(transformLocation(aws.StringValue(partition.StorageDescriptor.Location)))
-		partition.StorageDescriptor.SerdeInfo.SetName(serde)
-		if symlink {
-			partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+		if partition.StorageDescriptor != nil {
+			if partition.StorageDescriptor.SerdeInfo != nil {
+				partition.StorageDescriptor.SerdeInfo.SetName(serde)
+			}
+			location, err := transformLocation(aws.StringValue(partition.StorageDescriptor.Location))
+			if err != nil {
+				return err
+			}
+			partition.StorageDescriptor.SetLocation(location)
+			if symlink {
+				partition.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
+			}
 		}
 		switch difference {
 		case catalog.DifferenceTypeRemoved:
@@ -352,7 +384,7 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink
 	return nil
 }
 
-func (g *MSClient) copyOrMerge(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) string) error {
+func (g *MSClient) copyOrMerge(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
 	table, err := g.getTable(toDB, toTable)
 	if err != nil {
 		if _, ok := err.(*glue.EntityNotFoundException); !ok {
@@ -369,14 +401,14 @@ func (g *MSClient) CopyOrMerge(fromDB, fromTable, toDB, toTable, toBranch, serde
 	if len(partition) > 0 {
 		return g.CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, serde, partition)
 	}
-	transformLocation := func(location string) string {
+	transformLocation := func(location string) (string, error) {
 		return metastore.ReplaceBranchName(location, toBranch)
 	}
 	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, serde, false, transformLocation)
 }
 
 func (g *MSClient) CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, locationPrefix string) error {
-	transformLocation := func(location string) string {
+	transformLocation := func(location string) (string, error) {
 		return metastore.GetSymlinkLocation(location, locationPrefix)
 	}
 	return g.copyOrMerge(fromDB, fromTable, toDB, toTable, toTable, true, transformLocation)
@@ -442,8 +474,14 @@ func (g *MSClient) CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, ser
 	}
 	p1.SetDatabaseName(toDB)
 	p1.SetTableName(toTable)
-	p1.StorageDescriptor.SerdeInfo.SetName(serde)
-	p1.StorageDescriptor.SetLocation(metastore.ReplaceBranchName(aws.StringValue(p1.StorageDescriptor.Location), toBranch))
+	if p1.StorageDescriptor != nil {
+		p1.StorageDescriptor.SerdeInfo.SetName(serde)
+		location, err := metastore.ReplaceBranchName(aws.StringValue(p1.StorageDescriptor.Location), toBranch)
+		if err != nil {
+			return err
+		}
+		p1.StorageDescriptor.SetLocation(location)
+	}
 	if p2 == nil {
 		err = g.addPartition(toDB, toTable, p1)
 	} else {

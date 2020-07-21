@@ -111,15 +111,31 @@ func (c *MSClient) Copy(fromDB, fromTable, toDB, toTable, toBranch, serde string
 	}
 	table.DbName = toDB
 	table.TableName = toTable
-	table.Sd.SerdeInfo.Name = serde
-	table.Sd.Location = metastore.ReplaceBranchName(table.Sd.Location, toBranch)
-
-	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, 2000)
+	if table.Sd != nil {
+		if table.Sd.SerdeInfo != nil {
+			table.Sd.SerdeInfo.Name = serde
+		}
+		table.Sd.Location, err = metastore.ReplaceBranchName(table.Sd.Location, toBranch)
+		if err != nil {
+			return err
+		}
+	}
+	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
+	if err != nil {
+		return err
+	}
 	for _, partition := range partitions {
-		partition.Sd.Location = metastore.ReplaceBranchName(partition.Sd.Location, toBranch)
-		partition.TableName = toTable
-		partition.Sd.SerdeInfo.Name = serde
 		partition.DbName = toDB
+		partition.TableName = toTable
+		if partition.Sd != nil {
+			if partition.Sd.SerdeInfo != nil {
+				partition.Sd.SerdeInfo.Name = serde
+			}
+			partition.Sd.Location, err = metastore.ReplaceBranchName(partition.Sd.Location, toBranch)
+			if err != nil {
+				return err
+			}
+		}
 	}
 	err = c.client.CreateTable(c.context, table)
 	if err != nil {
@@ -136,8 +152,15 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 	}
 	table.DbName = toDB
 	table.TableName = toTable
-	table.Sd.SerdeInfo.Name = serde
-	table.Sd.Location = metastore.ReplaceBranchName(table.Sd.Location, toBranch)
+	if table.Sd != nil {
+		if table.Sd.SerdeInfo != nil {
+			table.Sd.SerdeInfo.Name = serde
+		}
+		table.Sd.Location, err = metastore.ReplaceBranchName(table.Sd.Location, toBranch)
+	}
+	if err != nil {
+		return err
+	}
 	partitions, err := c.client.GetPartitions(c.context, fromDB, fromTable, -1)
 	if err != nil {
 		return err
@@ -158,8 +181,15 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 
 		partition.DbName = toDB
 		partition.TableName = toTable
-		partition.Sd.Location = metastore.ReplaceBranchName(partition.Sd.Location, toBranch)
-		partition.Sd.SerdeInfo.Name = toTable
+		if partition.Sd != nil {
+			if partition.Sd.SerdeInfo != nil {
+				partition.Sd.SerdeInfo.Name = toTable
+			}
+			partition.Sd.Location, err = metastore.ReplaceBranchName(partition.Sd.Location, toBranch)
+			if err != nil {
+				return err
+			}
+		}
 		switch difference {
 		case catalog.DifferenceTypeRemoved:
 			removePartitions = append(removePartitions, partition)
@@ -207,10 +237,17 @@ func (c *MSClient) CopyPartition(fromDB, fromTable, toDB, toTable, toBranch, ser
 			return err
 		}
 	}
-	p1.DbName = toDB
-	p1.TableName = toTable
-	p1.Sd.SerdeInfo.Name = serde
-	p1.Sd.Location = metastore.ReplaceBranchName(p1.Sd.Location, toBranch)
+	if p1.Sd != nil {
+		if p1.Sd.SerdeInfo != nil {
+			p1.Sd.SerdeInfo.Name = serde
+		}
+		p1.DbName = toDB
+		p1.TableName = toTable
+		p1.Sd.Location, err = metastore.ReplaceBranchName(p1.Sd.Location, toBranch)
+	}
+	if err != nil {
+		return err
+	}
 	if p2 == nil {
 		_, err = c.client.AddPartition(c.context, p1)
 	} else {
