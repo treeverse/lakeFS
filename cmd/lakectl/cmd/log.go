@@ -11,8 +11,8 @@ import (
 
 const commitsTemplate = `
 {{ range $val := .Commits }}
-ID: {{ $val.ID|yellow }}
-Author: {{ $val.Committer }}
+ID: {{ $val.ID|yellow }}{{if $val.Committer }}
+Author: {{ $val.Committer }}{{end}}
 Date: {{ $val.CreationDate|date }}
 	{{ if gt ($val.Parents|len) 1 -}}
 Merge: {{ $val.Parents|join ", "|bold }}
