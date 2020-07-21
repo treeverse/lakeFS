@@ -5,7 +5,10 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"reflect"
+	"strings"
 	"testing"
+
+	"github.com/davecgh/go-spew/spew"
 
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -17,8 +20,8 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	// produce test data
 	testutil.MustDo(t, "create test repo",
 		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
-	suffixList := []string{"file1", "file2", "file2/xxx", "file3/", "file4", "file5", "file6/yyy", "file6/zzz/zzz", "file6/ccc", "file7", "file8", "file9", "filea",
-		"/fileb", "//filec", "///filed"}
+	suffixList := []string{"rip0", "file1", "file2", "file2/xxx", "file3/", "file4", "file5", "file6/yyy", "file6/zzz/zzz", "file6/ccc", "file7", "file8", "file9", "filea",
+		"/fileb", "//filec", "///filed", "rip"}
 	for i, suffix := range suffixList {
 		n := i + 1
 		filePath := suffix
@@ -34,11 +37,16 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				Metadata:        nil,
 			}))
 
-		if i == 2 {
+		if i == 3 {
 			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
 			testutil.MustDo(t, "commit test files", err)
 		}
 	}
+	// delete one file
+	testutil.MustDo(t, "delete rip0 file",
+		c.DeleteEntry(ctx, "repo1", "master", "rip0"))
+	testutil.MustDo(t, "delete rip file",
+		c.DeleteEntry(ctx, "repo1", "master", "rip"))
 
 	type args struct {
 		repository string
@@ -54,19 +62,19 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 		wantMore    bool
 		wantErr     bool
 	}{
-		{
-			name: "all uncommitted",
-			args: args{
-				repository: "repo1",
-				reference:  "master",
-				path:       "",
-				after:      "",
-				limit:      100,
-			},
-			wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
-			wantMore:    false,
-			wantErr:     false,
-		},
+		//{
+		//	name: "all uncommitted",
+		//	args: args{
+		//		repository: "repo1",
+		//		reference:  "master",
+		//		path:       "",
+		//		after:      "",
+		//		limit:      100,
+		//	},
+		//	wantEntries: []string{"/", "file1", "file2", "file2/", "file3/", "file4", "file5", "file6/", "file7", "file8", "file9", "filea"},
+		//	wantMore:    false,
+		//	wantErr:     false,
+		//},
 		{
 			name: "first 2 uncommitted",
 			args: args{
@@ -89,7 +97,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "file3",
 				limit:      2,
 			},
-			wantEntries: []string{"file4", "file5"},
+			wantEntries: []string{"file3/", "file4"},
 			wantMore:    true,
 			wantErr:     false,
 		}, {
@@ -114,10 +122,11 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "file1",
 				limit:      100,
 			},
-			wantEntries: []string{"file2", "file2/"},
+			wantEntries: []string{"file2", "file2/", "rip0"},
 			wantMore:    false,
 			wantErr:     false,
-		}, {
+		},
+		{
 			name: "slash",
 			args: args{
 				repository: "repo1",
@@ -126,10 +135,11 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      100,
 			},
-			wantEntries: []string{"/", "fileb"},
+			wantEntries: []string{"//", "/fileb"},
 			wantMore:    false,
 			wantErr:     false,
-		}, {
+		},
+		{
 			name: "double slash",
 			args: args{
 				repository: "repo1",
@@ -138,10 +148,11 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      100,
 			},
-			wantEntries: []string{"/", "filec"},
+			wantEntries: []string{"///", "//filec"},
 			wantMore:    false,
 			wantErr:     false,
-		}, {
+		},
+		{
 			name: "under file6",
 			args: args{
 				repository: "repo1",
@@ -150,7 +161,20 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				after:      "",
 				limit:      100,
 			},
-			wantEntries: []string{"ccc", "yyy", "zzz/"},
+			wantEntries: []string{"file6/ccc", "file6/yyy", "file6/zzz/"},
+			wantMore:    false,
+			wantErr:     false,
+		},
+		{
+			name: "under file6 after ccc",
+			args: args{
+				repository: "repo1",
+				reference:  "master",
+				path:       "file6/",
+				after:      "file6/ccc",
+				limit:      100,
+			},
+			wantEntries: []string{"file6/yyy", "file6/zzz/"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -162,22 +186,19 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 				t.Fatalf(" error = %v, wantErr %v", err, tt.wantErr)
 			}
 			// test that directories have null entries, and vice versa
-			for _, res := range got {
-				resEnd := res.Path[len(res.Path)-1:]
-				if resEnd == "/" && res.Entry != nil {
-					t.Errorf("%s is a directory, pointer to entry is not nil", res.Path)
-				} else if resEnd != "/" && res.Entry == nil {
-					t.Errorf("%s is an entry,but pointer to entry is nil", res.Path)
-				}
-			}
-			// copy the Entry fields we like to compare
 			var gotNames []string
-			for _, ent := range got {
-				gotNames = append(gotNames, ent.Path)
+			for _, res := range got {
+				if strings.HasSuffix(res.Path, DefaultPathDelimiter) != res.CommonLevel {
+					t.Errorf("%s suffix doesn't match the CommonLevel = %t", res.Path, res.CommonLevel)
+				}
+				if !strings.HasSuffix(res.Entry.Path, res.Path) {
+					t.Errorf("Name '%s' expected to be path '%s' suffix", res.Path, res.Entry.Path)
+				}
+				gotNames = append(gotNames, res.Path)
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("ListEntriesByLevel got = %+v, want = %+v", gotNames, tt.wantEntries)
+				t.Errorf("ListEntriesByLevel got = %s, want = %s", spew.Sdump(gotNames), spew.Sdump(tt.wantEntries))
 			}
 			if gotMore != tt.wantMore {
 				t.Errorf("ListEntriesByLevel gotMore = %t, want = %t", gotMore, tt.wantMore)

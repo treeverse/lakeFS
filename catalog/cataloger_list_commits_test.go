@@ -47,10 +47,10 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -64,22 +64,22 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         2,
 			},
 			want: []*CommitLog{
-				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
 			},
 			wantMore: true,
 			wantErr:  false,
 		},
 		{
-			name: "last 1",
+			name: "get last commit",
 			args: args{
 				repository:    repository,
 				branch:        "master",
-				fromReference: MakeReference("master", 3),
+				fromReference: commits[0].Reference,
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
+				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
 			wantErr:  false,
@@ -89,7 +89,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 			args: args{
 				repository:    repository,
 				branch:        "master",
-				fromReference: MakeReference("master", 2),
+				fromReference: commits[2].Reference,
 				limit:         1,
 			},
 			want: []*CommitLog{

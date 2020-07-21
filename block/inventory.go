@@ -16,13 +16,10 @@ type Inventory interface {
 }
 
 type InventoryObject struct {
-	Bucket         string `parquet:"name=bucket, type=INTERVAL"`
-	Key            string `parquet:"name=key, type=INTERVAL"`
-	Size           *int64 `parquet:"name=size, type=INT_64"`
-	Checksum       string `parquet:"name=e_tag, type=INTERVAL"`
-	LastModified   int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
-	IsLatest       bool   `parquet:"name=is_latest, type=BOOLEAN"`
-	IsDeleteMarker bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
-
+	Bucket          string
+	Key             string
+	Size            int64
+	LastModified    int64
+	Checksum        string
 	PhysicalAddress string
 }

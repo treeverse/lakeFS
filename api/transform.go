@@ -1,6 +1,8 @@
 package api
 
 import (
+	"strings"
+
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -19,6 +21,12 @@ func transformDifferenceToMergeResult(difference catalog.Difference) *models.Mer
 	case catalog.DifferenceTypeConflict:
 		mr.Type = models.MergeResultTypeCONFLICT
 	}
+
+	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
+		mr.PathType = models.MergeResultPathTypeTREE
+	} else {
+		mr.PathType = models.MergeResultPathTypeOBJECT
+	}
 	return mr
 }
 
@@ -35,6 +43,12 @@ func transformDifferenceToDiff(difference catalog.Difference) *models.Diff {
 		d.Type = models.DiffTypeCHANGED
 	case catalog.DifferenceTypeConflict:
 		d.Type = models.DiffTypeCONFLICT
+	}
+
+	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
+		d.PathType = models.DiffPathTypeTREE
+	} else {
+		d.PathType = models.DiffPathTypeOBJECT
 	}
 	return d
 }

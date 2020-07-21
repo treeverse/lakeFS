@@ -66,6 +66,18 @@ func getNextCommitID(tx db.Tx) (CommitID, error) {
 	return commitID, err
 }
 
+func getRepository(tx db.Tx, repository string) (*Repository, error) {
+	var r Repository
+	err := tx.Get(&r, `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
+			FROM repositories r, branches b
+			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name = $1`,
+		repository)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
 func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64) (RelationType, error) {
 	var youngerBranch, olderBranch int64
 	var possibleRelation RelationType

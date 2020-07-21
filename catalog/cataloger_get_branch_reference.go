@@ -15,7 +15,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return "", err
 		}
@@ -26,8 +26,7 @@ func (c *cataloger) GetBranchReference(ctx context.Context, repository, branch s
 			return "", err
 		}
 		if commitID == 0 {
-			// TODO(barak): recursive search for parent commit - if none, return ErrReferenceNotFound
-			return "", nil
+			return "", ErrCommitNotFound
 		}
 		return MakeReference(branch, commitID), nil
 	}, c.txOpts(ctx, db.ReadOnly())...)

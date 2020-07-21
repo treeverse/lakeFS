@@ -19,7 +19,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}
 	prefixCond := db.Prefix(prefix)
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		repoID, err := getRepositoryID(tx, repository)
+		repoID, err := c.getRepositoryIDCache(tx, repository)
 		if err != nil {
 			return nil, err
 		}
@@ -41,5 +41,5 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 	}
 	branches := res.([]*Branch)
 	hasMore := paginateSlice(&branches, limit)
-	return branches, hasMore, err
+	return branches, hasMore, nil
 }

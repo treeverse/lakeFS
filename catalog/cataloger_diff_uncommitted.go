@@ -2,6 +2,9 @@ package catalog
 
 import (
 	"context"
+	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -14,29 +17,29 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch stri
 		return nil, err
 	}
 	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
-		const diffSQL = `
-SELECT CASE
-           WHEN DifferenceTypeRemoved THEN 1
-           WHEN DifferenceTypeChanged THEN 2
-           ELSE 0
-           END AS diff_type,
-       path
-FROM (
-         SELECT u.path,
-                u.max_commit = 0   AS DifferenceTypeRemoved,
-                c.path IS NOT NULL AS DifferenceTypeChanged
-         FROM entries u
-                  LEFT JOIN entries_lineage_committed_v c
-                            ON c.path = u.path AND c.displayed_branch = u.branch_id
-         WHERE u.branch_id = $1
-           AND u.min_commit = 0
-     ) as t;`
+
+		lineage, err := getLineage(tx, branchID, CommittedID)
+		if err != nil {
+			return nil, fmt.Errorf("get lineage: %w", err)
+		}
+
+		q := psql.Select("CASE WHEN e.max_commit=0 THEN 1 WHEN v.path IS NOT NULL THEN 2 ELSE 0 END AS diff_type", "e.path").
+			FromSelect(sqEntriesV(UncommittedID), "e").
+			JoinClause(
+				sqEntriesLineageV(branchID, CommittedID, lineage).
+					Prefix("LEFT JOIN (").Suffix(") AS v ON v.path=e.path")).
+			Where(sq.Eq{"e.branch_id": branchID, "e.is_committed": false})
+		sql, args, err := q.ToSql()
+		if err != nil {
+			return nil, fmt.Errorf("build sql: %w", err)
+		}
+
 		var result Differences
-		if err := tx.Select(&result, diffSQL, branchID); err != nil {
+		if err := tx.Select(&result, sql, args...); err != nil {
 			return nil, err
 		}
 		return result, nil

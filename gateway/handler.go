@@ -2,18 +2,12 @@ package gateway
 
 import (
 	"net/http"
-	"net/http/pprof"
 	"strings"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/httputil"
-)
-
-const (
-	HealthEndpoint   = "/_health"
-	DebugPprofPrefix = "/debug/pprof/"
 )
 
 type Handler struct {
@@ -26,55 +20,14 @@ type Handler struct {
 
 func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// pprof endpoints
-	handler := h.serveHealthCheck(r)
-
-	if handler == nil {
-		handler = h.servePprof(r)
-	}
-	if handler == nil {
-		handler = h.servePathBased(r)
-	}
+	handler := h.servePathBased(r)
 	if handler == nil {
 		handler = h.serveVirtualHost(r)
 	}
 	if handler == nil {
 		handler = h.NotFoundHandler
 	}
-
 	handler.ServeHTTP(w, r)
-}
-
-func (h *Handler) serveHealthCheck(r *http.Request) http.Handler {
-	if !strings.EqualFold(r.URL.Path, HealthEndpoint) {
-		return nil
-	}
-	// return a 200 OK
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-}
-
-func (h *Handler) servePprof(r *http.Request) http.Handler {
-	if !strings.HasPrefix(r.URL.Path, DebugPprofPrefix) {
-		return nil
-	}
-	endpoint := strings.TrimPrefix(r.URL.Path, DebugPprofPrefix)
-	switch endpoint {
-	case "":
-		return http.HandlerFunc(pprof.Index)
-	case "cmdline":
-		return http.HandlerFunc(pprof.Cmdline)
-	case "profile":
-		return http.HandlerFunc(pprof.Profile)
-	case "symbol":
-		return http.HandlerFunc(pprof.Symbol)
-	case "trace":
-		return http.HandlerFunc(pprof.Trace)
-	case "block", "goroutine", "heap", "threadcreate":
-		return pprof.Handler(endpoint)
-	}
-
-	return nil
 }
 
 func (h *Handler) servePathBased(r *http.Request) http.Handler {

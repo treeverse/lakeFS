@@ -7,6 +7,8 @@ import (
 	"reflect"
 	"testing"
 
+	"github.com/davecgh/go-spew/spew"
+
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -36,6 +38,8 @@ func TestCataloger_ListEntries(t *testing.T) {
 			testutil.MustDo(t, "commit test files", err)
 		}
 	}
+	testutil.MustDo(t, "delete the first committed file",
+		c.DeleteEntry(ctx, "repo1", "master", "/file1"))
 
 	type args struct {
 		repository string
@@ -61,7 +65,6 @@ func TestCataloger_ListEntries(t *testing.T) {
 				limit:      -1,
 			},
 			wantEntries: []Entry{
-				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
 				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
 				{Path: "/file4", PhysicalAddress: "/addr4", Size: 40, Checksum: "49f014abae232570cc48072bac6b70531bba7e883ea04b448c6cbeed1446e6ff"},
@@ -80,8 +83,8 @@ func TestCataloger_ListEntries(t *testing.T) {
 				limit:      2,
 			},
 			wantEntries: []Entry{
-				{Path: "/file1", PhysicalAddress: "/addr1", Size: 10, Checksum: "7c9d66ac57c9fa91bb375256fe1541e33f9548904c3f41fcd1e1208f2f3559f1"},
 				{Path: "/file2", PhysicalAddress: "/addr2", Size: 20, Checksum: "a23eaeb64fff1004b1ef460294035633055bb49bc7b99bedc1493aab73d03f63"},
+				{Path: "/file3", PhysicalAddress: "/addr3", Size: 30, Checksum: "fdfe3b8d45740319c989f33eaea4e3acbd3d7e01e0484d8e888d95bcc83d43f3"},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -137,7 +140,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotEntries, tt.wantEntries) {
-				t.Errorf("ListEntries() got = %+v, want = %+v", gotEntries, tt.wantEntries)
+				t.Errorf("ListEntries() got = %s, want = %s", spew.Sdump(gotEntries), spew.Sdump(tt.wantEntries))
 			}
 			if gotMore != tt.wantMore {
 				t.Errorf("ListEntries() gotMore = %v, want = %v", gotMore, tt.wantMore)
