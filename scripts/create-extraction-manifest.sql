@@ -5,8 +5,11 @@
 -- -- -- -- -- -- -- -- --
 -- Set these variables by running "psql --var VARIABLE=VALUE", e.g.:
 --
---     "psql -var branch_name=master".
+--     "psql -var repository_name=foo -var branch_name=master --var dst_bucket_name=foo-extract".
 
+-- Variable repository_name: repository to be extracted.  Must be
+-- specified.
+--
 -- Variable branch_name: branch to be extracted.  Must be specified
 -- (otherwise object paths can identify more than a single object).
 --
@@ -26,7 +29,7 @@ RETURNS text
 LANGUAGE sql IMMUTABLE STRICT
 AS $$
    SELECT string_agg(
-      CASE WHEN bytes > 1 OR c !~ '[0-9a-zA-Z_.!~*''()-]+' THEN 
+      CASE WHEN bytes > 1 OR c !~ '[0-9a-zA-Z_.!~*''()-]+' THEN
 	    regexp_replace(encode(convert_to(c, 'utf-8')::bytea, 'hex'), '(..)', E'%\\1', 'g')
       ELSE
             c
@@ -50,10 +53,15 @@ SELECT regexp_replace(repository.storage_namespace, '^s3://', 'arn:aws:s3:::') s
      pg_temp.encode_uri_component(json_build_object(
 	 'dstBucket', :'dst_bucket_name',
 	 'dstPath', pg_temp.join_paths(repository.name, entry.path),
+	 -- BUG(ariels): add namespace (also for src_bucket_arn...)
 	 'srcPath', entry.physical_address) #>> '{}')
-FROM (lakefs_catalog.entries_lineage_full_v entry
-      JOIN lakefs_catalog.branches branch
-      	   ON entry.displayed_branch = branch.id
-      JOIN lakefs_catalog.repositories repository
-      	   ON branch.repository_id = repository.id)
-WHERE entry.rank=1 AND branch.name = :'branch_name';
+FROM (entries entry
+      JOIN branches branch ON entry.branch_id = branch.id
+      JOIN repositories repository ON branch.repository_id = repository.id)
+WHERE repository.name = :'repository_name' AND
+      branch.name = :'branch_name' AND
+      -- uncommitted        OR                          current
+      (entry.min_commit = 0 OR entry.min_commit > 0 AND entry.max_commit = max_commit_id()) AND
+      -- Skip explicit physical addresses: imported from elsewhere
+      -- with meaningful name so do not export
+      regexp_match(entry.physical_address, '^[a-zA-Z0-9]+://') IS NULL;
