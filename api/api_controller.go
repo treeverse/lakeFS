@@ -10,9 +10,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/block/s3"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/treeverse/lakefs/block/s3"
 
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 
@@ -902,22 +901,20 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 		if err != nil {
 			return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-
 		// list entries
-		var lastPathInserted string
-		var lastAddressesInserted []string
+		var currentPath string
+		var currentAddresses []string
 		var after string
 		var entries []*catalog.Entry
 		hasMore := true
 		for hasMore {
-
 			entries, hasMore, err = cataloger.ListEntries(
 				c.Context(),
 				params.Repository,
 				params.Branch,
 				swag.StringValue(params.Location),
 				after,
-				2)
+				-1)
 			if errors.Is(err, db.ErrNotFound) {
 				return metadata.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
 			}
@@ -926,43 +923,50 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadata.CreateSymlinkHandle
 					WithPayload(responseError("error while listing objects: %s", err))
 			}
 			// loop all entries enter to map[path] physicalAddress
-			var symlinkMap map[string][]string
-			symlinkMap = make(map[string][]string, 0)
 			for _, entry := range entries {
 				address := fmt.Sprintf("%s/%s", repo.StorageNamespace, entry.PhysicalAddress)
-				path := filepath.Dir(entry.Path)
-				if symlinkMap[path] == nil {
-					symlinkMap[path] = []string{address}
+				var path string
+				idx := strings.LastIndex(entry.Path, "/")
+				if idx != -1 {
+					path = entry.Path[0:idx]
+				}
+				if path != currentPath {
+					//push current
+					err := writeSymlinkToS3(params, repo, path, currentAddresses, deps)
+					if err != nil {
+						return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+							WithPayload(responseError("error while writing symlinks: %s", err))
+					}
+					currentPath = path
+					currentAddresses = []string{address}
 				} else {
-					symlinkMap[path] = append(symlinkMap[path], address)
+					currentAddresses = append(currentAddresses, address)
 				}
-			}
-			if val, ok := symlinkMap[lastPathInserted]; ok {
-				symlinkMap[lastPathInserted] = append(val, lastAddressesInserted...)
-			}
-			// go through map create symlinks
-			for path, addresses := range symlinkMap {
-				address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, params.Branch, path)
-				data := strings.Join(addresses, "\n")
-				symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
-				s3Adapter := deps.BlockAdapter
-				err := s3Adapter.(*s3.Adapter).PutWithoutStream(block.ObjectPointer{ //TODO: change to .Put without casting once bug is fixed
-					StorageNamespace: repo.StorageNamespace,
-					Identifier:       address,
-				}, int64(len(data)), symlinkReader, block.PutOpts{})
-				if err != nil {
-					return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
-						WithPayload(responseError("error while writing symlinks: %s", err))
-				}
-				lastPathInserted = path
-				lastAddressesInserted = addresses
 			}
 			after = entries[len(entries)-1].Path
 		}
-
+		if len(currentAddresses) > 0 {
+			err = writeSymlinkToS3(params, repo, currentPath, currentAddresses, deps)
+			if err != nil {
+				return metadata.NewCreateSymlinkDefault(http.StatusInternalServerError).
+					WithPayload(responseError("error while writing symlinks: %s", err))
+			}
+		}
 		metaLocation := fmt.Sprintf("%s/%s", repo.StorageNamespace, lakeFSPrefix)
 		return metadata.NewCreateSymlinkCreated().WithPayload(metaLocation)
 	})
+}
+func writeSymlinkToS3(params metadata.CreateSymlinkParams, repo *catalog.Repository, path string, addresses []string, deps *Dependencies) error {
+	address := fmt.Sprintf("%s/%s/%s/%s/symlink.txt", lakeFSPrefix, repo.Name, params.Branch, path)
+	data := strings.Join(addresses, "\n")
+	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
+	s3Adapter := deps.BlockAdapter
+	err := s3Adapter.(*s3.Adapter).PutWithoutStream(block.ObjectPointer{ //TODO: change to .Put without casting once bug is fixed
+		StorageNamespace: repo.StorageNamespace,
+		Identifier:       address,
+	}, int64(len(data)), symlinkReader, block.PutOpts{})
+
+	return err
 }
 
 func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
