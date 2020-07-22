@@ -324,8 +324,8 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 	}
 
 	// call callbacks for each entry we updated
-	addresses := res.([]string)
 	if c.dedupReportEnabled {
+		addresses := res.([]string)
 		for i, r := range batch {
 			if addresses[i] == "" {
 				continue

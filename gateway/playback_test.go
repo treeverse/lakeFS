@@ -118,7 +118,6 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	blockAdapter := testutil.NewBlockAdapterByEnv(IdTranslator)
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
-	dedupCleaner.Start()
 	t.Cleanup(func() {
 		// order is important - close cataloger channel before dedup
 		_ = cataloger.Close()

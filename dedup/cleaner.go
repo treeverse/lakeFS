@@ -28,21 +28,19 @@ type Cleaner struct {
 
 // NewCleaner handles the delete of objects from block after dedup identified and updated by the cataloger
 func NewCleaner(adapter block.Adapter, ch chan *catalog.DedupReport) *Cleaner {
-	return &Cleaner{
+	c := &Cleaner{
 		block:    adapter,
 		ch:       ch,
 		removeCh: make(chan dedupRemoveRequest, dedupRemoveChannelSize),
 	}
+	c.startDedupRemove()
+	return c
 }
 
 func (d *Cleaner) Close() error {
 	close(d.removeCh)
 	d.wg.Wait()
 	return nil
-}
-
-func (d *Cleaner) Start() {
-	d.startDedupRemove()
 }
 
 func (d *Cleaner) startDedupRemove() {
