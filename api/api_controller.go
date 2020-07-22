@@ -10,13 +10,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/dedup"
-
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/treeverse/lakefs/block/s3"
-
-	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
-
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/go-openapi/swag"
@@ -25,6 +19,7 @@ import (
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
@@ -32,8 +27,10 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
@@ -772,7 +769,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		}
 
 		// serialize entry
-		model := &models.ObjectStats{
+		obj := &models.ObjectStats{
 			Checksum:  entry.Checksum,
 			Mtime:     entry.CreationDate.Unix(),
 			Path:      params.Path,
@@ -781,9 +778,9 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 		}
 
 		if entry.Expired {
-			return objects.NewStatObjectGone().WithPayload(model)
+			return objects.NewStatObjectGone().WithPayload(obj)
 		}
-		return objects.NewStatObjectOK().WithPayload(model)
+		return objects.NewStatObjectOK().WithPayload(obj)
 	})
 }
 
@@ -1046,20 +1043,8 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 	})
 }
 
-const noopUploadObject = false
-const noopCreateEntry = false
-
 func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 	return objects.UploadObjectHandlerFunc(func(params objects.UploadObjectParams, user *models.User) middleware.Responder {
-		if noopUploadObject {
-			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-				Checksum:  "cc",
-				Mtime:     time.Now().UTC().Unix(),
-				Path:      params.Path,
-				PathType:  models.ObjectStatsPathTypeOBJECT,
-				SizeBytes: 1,
-			})
-		}
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				Action:   permissions.WriteObjectAction,
@@ -1092,15 +1077,6 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
-		if noopCreateEntry {
-			return objects.NewUploadObjectCreated().WithPayload(&models.ObjectStats{
-				Checksum:  blob.Checksum,
-				Mtime:     time.Now().UTC().Unix(),
-				Path:      params.Path,
-				PathType:  models.ObjectStatsPathTypeOBJECT,
-				SizeBytes: blob.Size,
-			})
-		}
 		// write metadata
 		writeTime := time.Now()
 		entry := catalog.Entry{
@@ -1112,7 +1088,6 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		}
 		err = cataloger.CreateEntryDedup(c.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
 			ID:               blob.DedupID,
-			Ch:               deps.Dedup.Channel(),
 			StorageNamespace: repo.StorageNamespace,
 		})
 		if err != nil {

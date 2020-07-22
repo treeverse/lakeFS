@@ -35,7 +35,6 @@ func (c *cataloger) CreateEntryDedup(ctx context.Context, repository, branch str
 			DedupID:          dedup.ID,
 			Entry:            &entry,
 			EntryCTID:        res.(string),
-			DedupResultCh:    dedup.Ch,
 		}
 	}
 	return nil

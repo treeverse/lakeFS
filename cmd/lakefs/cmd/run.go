@@ -73,9 +73,11 @@ var runCmd = &cobra.Command{
 		}
 		stats := cfg.BuildStats(installationID)
 
-		dedupCleaner := dedup.NewDedupCleaner(blockStore)
+		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 		dedupCleaner.Start()
 		defer func() {
+			// order is important - close cataloger channel before dedup
+			_ = cataloger.Close()
 			_ = dedupCleaner.Close()
 		}()
 

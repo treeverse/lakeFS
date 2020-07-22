@@ -19,26 +19,27 @@ const (
 
 	DefaultPathDelimiter = "/"
 
-	dedupBatchSize    = 10
-	dedupBatchTimeout = 50 * time.Millisecond
-	dedupChannelSize  = 5000
+	dedupBatchSize         = 10
+	dedupBatchTimeout      = 50 * time.Millisecond
+	dedupChannelSize       = 5000
+	dedupReportChannelSize = 5000
 
 	defaultCatalogerCacheSize   = 1024
 	defaultCatalogerCacheExpiry = 20 * time.Second
 	defaultCatalogerCacheJitter = 5 * time.Second
 )
 
-type DedupResult struct {
+type DedupReport struct {
 	Repository         string
 	StorageNamespace   string
 	DedupID            string
 	Entry              *Entry
 	NewPhysicalAddress string
+	Timestamp          time.Time
 }
 
 type DedupParams struct {
 	ID               string
-	Ch               chan *DedupResult
 	StorageNamespace string
 }
 
@@ -99,6 +100,7 @@ type EntryCataloger interface {
 	// MarkExpired marks all entries identified by expire as expired.  It is a batch
 	// operation.
 	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
+	DedupReportChannel() chan *DedupReport
 }
 
 type MultipartUpdateCataloger interface {
@@ -147,7 +149,6 @@ type dedupRequest struct {
 	DedupID          string
 	Entry            *Entry
 	EntryCTID        string
-	DedupResultCh    chan *DedupResult
 }
 
 type CacheConfig struct {
@@ -159,13 +160,15 @@ type CacheConfig struct {
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	clock       clock.Clock
-	log         logging.Logger
-	db          db.Database
-	dedupCh     chan *dedupRequest
-	wg          sync.WaitGroup
-	cacheConfig *CacheConfig
-	cache       Cache
+	clock              clock.Clock
+	log                logging.Logger
+	db                 db.Database
+	wg                 sync.WaitGroup
+	cacheConfig        *CacheConfig
+	cache              Cache
+	dedupCh            chan *dedupRequest
+	dedupReportEnabled bool
+	dedupReportCh      chan *DedupReport
 }
 
 type CatalogerOption func(*cataloger)
@@ -189,13 +192,20 @@ func WithCacheConfig(config *CacheConfig) CatalogerOption {
 	}
 }
 
+func WithDedupReportChannel(b bool) CatalogerOption {
+	return func(c *cataloger) {
+		c.dedupReportEnabled = b
+	}
+}
+
 func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
-		clock:       clock.New(),
-		log:         logging.Default().WithField("service_name", "cataloger"),
-		db:          db,
-		dedupCh:     make(chan *dedupRequest, dedupChannelSize),
-		cacheConfig: defaultCatalogerCacheConfig,
+		clock:              clock.New(),
+		log:                logging.Default().WithField("service_name", "cataloger"),
+		db:                 db,
+		cacheConfig:        defaultCatalogerCacheConfig,
+		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
+		dedupReportEnabled: true,
 	}
 	for _, opt := range options {
 		opt(c)
@@ -204,6 +214,9 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		c.cache = NewLRUCache(c.cacheConfig.Size, c.cacheConfig.Expiry, c.cacheConfig.Jitter)
 	} else {
 		c.cache = &DummyCache{}
+	}
+	if c.dedupReportEnabled {
+		c.dedupReportCh = make(chan *DedupReport, dedupReportChannelSize)
 	}
 	c.processDedupBatches()
 	return c
@@ -220,9 +233,14 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 func (c *cataloger) Close() error {
 	if c != nil {
 		close(c.dedupCh)
+		close(c.dedupReportCh)
 		c.wg.Wait()
 	}
 	return nil
+}
+
+func (c *cataloger) DedupReportChannel() chan *DedupReport {
+	return c.dedupReportCh
 }
 
 func (c *cataloger) processDedupBatches() {
@@ -307,14 +325,23 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 
 	// call callbacks for each entry we updated
 	addresses := res.([]string)
-	for i, r := range batch {
-		if r.DedupResultCh != nil {
-			r.DedupResultCh <- &DedupResult{
+	if c.dedupReportEnabled {
+		for i, r := range batch {
+			if addresses[i] == "" {
+				continue
+			}
+			report := &DedupReport{
+				Timestamp:          time.Now(),
 				Repository:         r.Repository,
 				StorageNamespace:   r.StorageNamespace,
 				Entry:              r.Entry,
 				DedupID:            r.DedupID,
 				NewPhysicalAddress: addresses[i],
+			}
+			select {
+			case c.dedupReportCh <- report:
+			default:
+				dedupRemoveObjectDroppedCounter.Inc()
 			}
 		}
 	}

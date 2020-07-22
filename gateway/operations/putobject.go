@@ -154,7 +154,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// write metadata
-	err = o.finishUpload(o.BlockStore, o.Repository.StorageNamespace, blob.Checksum, blob.PhysicalAddress, blob.Size)
+	err = o.finishUpload(o.Repository.StorageNamespace, blob.Checksum, blob.PhysicalAddress, blob.Size)
 	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return

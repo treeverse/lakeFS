@@ -3,12 +3,11 @@ package operations
 import (
 	"time"
 
-	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (o *PathOperation) finishUpload(blockAdapter block.Adapter, storageNamespace, checksum, physicalAddress string, size int64) error {
+func (o *PathOperation) finishUpload(storageNamespace, checksum, physicalAddress string, size int64) error {
 	// write metadata
 	writeTime := time.Now()
 	entry := catalog.Entry{
@@ -22,7 +21,6 @@ func (o *PathOperation) finishUpload(blockAdapter block.Adapter, storageNamespac
 
 	err := o.Cataloger.CreateEntryDedup(o.Context(), o.Repository.Name, o.Reference, entry, catalog.DedupParams{
 		ID:               checksum,
-		Ch:               o.DedupCleaner.Channel(),
 		StorageNamespace: storageNamespace,
 	})
 	if err != nil {

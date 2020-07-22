@@ -87,9 +87,11 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	retentionService := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 
-	dedupCleaner := dedup.NewDedupCleaner(blockAdapter)
+	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	dedupCleaner.Start()
 	t.Cleanup(func() {
+		// order is important - close cataloger channel before dedup
+		_ = cataloger.Close()
 		_ = dedupCleaner.Close()
 	})
 

@@ -12,3 +12,10 @@ var dedupBatchSizeCounter = promauto.NewCounterVec(
 	},
 	[]string{"size"},
 )
+
+var dedupRemoveObjectDroppedCounter = promauto.NewCounter(
+	prometheus.CounterOpts{
+		Name: "dedup_remove_object_dropped",
+		Help: "A counter for dedup remove object that we dropped.",
+	},
+)
