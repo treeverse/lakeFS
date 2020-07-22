@@ -5,6 +5,8 @@ import (
 	"errors"
 	"net/http"
 
+	dedup2 "github.com/treeverse/lakefs/dedup"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -27,7 +29,7 @@ type ServerContext struct {
 	blockStore  block.Adapter
 	authService simulator.GatewayAuthService
 	stats       stats.Collector
-	dedup       *block.DedupCleaner
+	dedup       *dedup2.Cleaner
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
@@ -56,7 +58,7 @@ func NewHandler(
 	authService simulator.GatewayAuthService,
 	bareDomain string,
 	stats stats.Collector,
-	dedup *block.DedupCleaner,
+	dedup *dedup2.Cleaner,
 ) http.Handler {
 	sc := &ServerContext{
 		ctx:         context.Background(),
@@ -114,6 +116,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 				Debug("performing S3 action")
 			s.stats.CollectEvent("s3_gateway", action)
 		},
+		DedupCleaner: s.dedup,
 	}
 
 	// authenticate

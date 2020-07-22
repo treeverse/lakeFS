@@ -1,8 +1,10 @@
-package block
+package dedup
 
 import (
 	"sync"
 	"time"
+
+	"github.com/treeverse/lakefs/block"
 
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -16,42 +18,42 @@ const (
 
 type dedupRemoveRequest struct {
 	Timestamp time.Time
-	Object    ObjectPointer
+	Object    block.ObjectPointer
 }
 
-type DedupCleaner struct {
-	block    Adapter
+type Cleaner struct {
+	block    block.Adapter
 	checkCh  chan *catalog.DedupResult
 	removeCh chan dedupRemoveRequest
 	wg       sync.WaitGroup
 }
 
 // NewDedupCleaner handles the delete of objects from block after dedup identified and updated by the cataloger
-func NewDedupCleaner(adapter Adapter) *DedupCleaner {
-	return &DedupCleaner{
+func NewDedupCleaner(adapter block.Adapter) *Cleaner {
+	return &Cleaner{
 		block:    adapter,
 		checkCh:  make(chan *catalog.DedupResult, dedupCheckChannelSize),
 		removeCh: make(chan dedupRemoveRequest, dedupRemoveChannelSize),
 	}
 }
 
-func (d *DedupCleaner) Close() error {
+func (d *Cleaner) Close() error {
 	close(d.checkCh)
 	close(d.removeCh)
 	d.wg.Wait()
 	return nil
 }
 
-func (d *DedupCleaner) Channel() chan *catalog.DedupResult {
+func (d *Cleaner) Channel() chan *catalog.DedupResult {
 	return d.checkCh
 }
 
-func (d *DedupCleaner) Start() {
+func (d *Cleaner) Start() {
 	d.startDedupCheck()
 	d.startDedupRemove()
 }
 
-func (d *DedupCleaner) startDedupRemove() {
+func (d *Cleaner) startDedupRemove() {
 	d.wg.Add(dedupRemoveWorkers)
 	for i := 0; i < dedupRemoveWorkers; i++ {
 		go func() {
@@ -70,7 +72,7 @@ func (d *DedupCleaner) startDedupRemove() {
 	}
 }
 
-func (d *DedupCleaner) startDedupCheck() {
+func (d *Cleaner) startDedupCheck() {
 	d.wg.Add(1)
 	go func() {
 		defer d.wg.Done()
@@ -83,7 +85,7 @@ func (d *DedupCleaner) startDedupCheck() {
 			select {
 			case d.removeCh <- dedupRemoveRequest{
 				Timestamp: time.Now(),
-				Object: ObjectPointer{
+				Object: block.ObjectPointer{
 					StorageNamespace: dd.StorageNamespace,
 					Identifier:       dd.Entry.PhysicalAddress,
 				},

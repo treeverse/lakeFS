@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"net/http"
 
+	dedup2 "github.com/treeverse/lakefs/dedup"
+
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -45,7 +47,7 @@ type Handler struct {
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
 	server      *http.Server
-	dedup       *block.DedupCleaner
+	dedup       *dedup2.Cleaner
 	logger      logging.Logger
 }
 
@@ -57,7 +59,7 @@ func NewHandler(
 	stats stats.Collector,
 	retention retention.Service,
 	migrator db.Migrator,
-	dedup *block.DedupCleaner,
+	dedup *dedup2.Cleaner,
 	logger logging.Logger,
 ) http.Handler {
 	logger.Info("initialized OpenAPI server")

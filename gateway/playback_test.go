@@ -14,6 +14,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -113,17 +115,27 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	conn, _ := testutil.GetDB(t, databaseUri)
 	cataloger := catalog.NewCataloger(conn)
 
-	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
+	blockAdapter := testutil.NewBlockAdapterByEnv(IdTranslator)
+
+	dedupCleaner := dedup.NewDedupCleaner(blockAdapter)
+	dedupCleaner.Start()
+	t.Cleanup(func() {
+		_ = dedupCleaner.Close()
+	})
 
 	authService := newGatewayAuth(t, simulator.PlaybackParams.RecordingDir)
 
 	ctx := context.Background()
 	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
-	handler := gateway.NewHandler(authService.Region,
+	handler := gateway.NewHandler(
+		authService.Region,
 		cataloger,
 		blockAdapter,
 		authService,
-		authService.BareDomain, &mockCollector{})
+		authService.BareDomain,
+		&mockCollector{},
+		dedupCleaner,
+	)
 
 	return handler, &dependencies{
 		blocks:    blockAdapter,

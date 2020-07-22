@@ -9,6 +9,8 @@ import (
 	"io/ioutil"
 	"net/http"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -32,7 +34,7 @@ type Operation struct {
 	BlockStore     block.Adapter
 	Auth           simulator.GatewayAuthService
 	Incr           ActionIncr
-	DedupCleaner   *block.DedupCleaner
+	DedupCleaner   *dedup.Cleaner
 }
 
 func (o *Operation) RequestId() string {

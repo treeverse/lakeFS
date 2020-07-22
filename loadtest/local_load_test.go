@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -56,12 +58,17 @@ func TestLocalLoad(t *testing.T) {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
 	conn, _ := testutil.GetDB(t, databaseUri)
-	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
+	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
-	retention := retention.NewService(conn)
+	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(databaseUri)
+	dedupCleaner := dedup.NewDedupCleaner(blockAdapter)
+	dedupCleaner.Start()
+	t.Cleanup(func() {
+		_ = dedupCleaner.Close()
+	})
 
 	handler := api.NewHandler(
 		cataloger,
@@ -69,8 +76,9 @@ func TestLocalLoad(t *testing.T) {
 		authService,
 		meta,
 		&mockCollector{},
-		retention,
+		retentionService,
 		migrator,
+		dedupCleaner,
 		logging.Default(),
 	)
 

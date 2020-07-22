@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -75,7 +77,7 @@ func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
-	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
+	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 
 	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
@@ -85,7 +87,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	retentionService := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
 
-	dedupCleaner := block.NewDedupCleaner(blockAdapter)
+	dedupCleaner := dedup.NewDedupCleaner(blockAdapter)
 	dedupCleaner.Start()
 	t.Cleanup(func() {
 		_ = dedupCleaner.Close()

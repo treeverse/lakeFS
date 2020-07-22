@@ -10,11 +10,12 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
-	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -72,7 +73,7 @@ var runCmd = &cobra.Command{
 		}
 		stats := cfg.BuildStats(installationID)
 
-		dedupCleaner := block.NewDedupCleaner(blockStore)
+		dedupCleaner := dedup.NewDedupCleaner(blockStore)
 		dedupCleaner.Start()
 		defer func() {
 			_ = dedupCleaner.Close()

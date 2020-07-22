@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/treeverse/lakefs/block/s3"
 
@@ -54,7 +56,7 @@ type Dependencies struct {
 	BlockAdapter block.Adapter
 	Stats        stats.Collector
 	Retention    retention.Service
-	Dedup        *block.DedupCleaner
+	Dedup        *dedup.Cleaner
 	logger       logging.Logger
 }
 
@@ -83,7 +85,7 @@ type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, dedupCleaner *block.DedupCleaner, logger logging.Logger) *Controller {
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, dedupCleaner *dedup.Cleaner, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
 			ctx:          context.Background(),
