@@ -43,6 +43,9 @@ docs: docs/assets/js/swagger.yml
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
 
+gen-metastore: ## Run Metastore Code generation
+	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
+
 gen-api: docs ## Run the go-swagger code generator (Docker required)
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)

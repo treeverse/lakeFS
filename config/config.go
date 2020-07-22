@@ -224,3 +224,22 @@ func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
 		stats.WithSender(sender),
 		stats.WithFlushInterval(c.GetStatsFlushInterval()))
 }
+
+func GetMetastoreAwsConfig() *aws.Config {
+	cfg := &aws.Config{
+		Region: aws.String(viper.GetString("metastore.s3.region")),
+		Logger: &LogrusAWSAdapter{},
+	}
+	if viper.IsSet("metastore.s3.profile") || viper.IsSet("metastore.s3.credentials_file") {
+		cfg.Credentials = credentials.NewSharedCredentials(
+			viper.GetString("metastore.s3.credentials_file"),
+			viper.GetString("metastore.s3.profile"))
+	}
+	if viper.IsSet("metastore.s3.credentials") {
+		cfg.Credentials = credentials.NewStaticCredentials(
+			viper.GetString("metastore.s3.credentials.access_key_id"),
+			viper.GetString("metastore.s3.credentials.access_secret_key"),
+			viper.GetString("metastore.s3.credentials.session_token"))
+	}
+	return cfg
+}
