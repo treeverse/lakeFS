@@ -7,7 +7,10 @@ import (
 	"github.com/treeverse/lakefs/block"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
+	"github.com/xitongsys/parquet-go/source"
 )
+
+const DefaultReadBatchSize = 100000
 
 type ParquetInventoryObject struct {
 	Bucket         string  `parquet:"name=bucket, type=UTF8"`
@@ -36,15 +39,31 @@ type InventoryIterator struct {
 }
 
 type iteratorState struct {
-	value                  block.InventoryObject
 	err                    error
 	currentManifestFileIdx int
-	currentChannel         <-chan ParquetInventoryObject
+	rowsPerFile            []int
+	nextRowIdx             int
+	buffer                 []ParquetInventoryObject
+	valueIdx               int
+	val                    block.InventoryObject
+	rowsRead               int
 }
 
 type ParquetReader interface {
 	Read(dstInterface interface{}) error
 	GetNumRows() int64
+	SkipRows(int64) error
+	Close()
+}
+
+type ParquetReaderBundle struct {
+	reader.ParquetReader
+	file source.ParquetFile
+}
+
+func (p *ParquetReaderBundle) Close() {
+	p.ReadStop()
+	_ = p.file.Close()
 }
 
 func NewInventoryIterator(s3 s3iface.S3API, ctx context.Context, manifest manifest, inventoryBucket string) *InventoryIterator {
@@ -58,54 +77,94 @@ func NewInventoryIterator(s3 s3iface.S3API, ctx context.Context, manifest manife
 		iteratorState:    iteratorState{currentManifestFileIdx: -1},
 	}
 }
-
-func (i *InventoryIterator) Next() bool {
-	for {
-		var errs <-chan error
-		if i.currentChannel == nil {
-			i.currentManifestFileIdx += 1
-			if i.currentManifestFileIdx >= len(i.manifest.Files) {
-				return false
-			}
-			pr, err := i.GetParquetReader(i.ctx, i.s3, i.inventoryBucket, i.manifest.Files[i.currentManifestFileIdx].Key)
+func (i *InventoryIterator) loadRowNums() bool {
+	if i.rowsPerFile == nil {
+		i.rowsPerFile = make([]int, len(i.manifest.Files))
+		for j := range i.manifest.Files {
+			pr, err := i.GetParquetReader(i.ctx, i.s3, i.inventoryBucket, i.manifest.Files[j].Key)
 			if err != nil {
 				i.err = err
 				return false
 			}
-			i.currentChannel, errs = i.getRowChannel(pr)
+			i.rowsPerFile[j] = int(pr.GetNumRows())
+			pr.Close()
 		}
-		parquetObj, ok := <-i.currentChannel
-		if !ok {
-			select {
-			case err, ok := <-errs:
-				if ok {
-					i.err = err
-					return false
-				}
-			default:
-			}
-			i.currentChannel = nil
-			continue
+	}
+	return true
+}
+
+func (i *InventoryIterator) Next() bool {
+	if !i.loadRowNums() {
+		return false
+	}
+	for {
+		if i.nextFromBuffer() {
+			return true
 		}
+		if !i.tryLoadBuffer() {
+			return false
+		}
+	}
+}
+
+func (i *InventoryIterator) tryLoadBuffer() bool {
+	if i.currentManifestFileIdx < 0 || i.nextRowIdx >= i.rowsPerFile[i.currentManifestFileIdx] {
+		i.currentManifestFileIdx += 1
+		i.nextRowIdx = 0
+		i.buffer = nil
+	}
+	if i.buffer == nil || i.valueIdx+1 >= len(i.buffer) {
+		i.buffer = make([]ParquetInventoryObject, i.ReadBatchSize)
+		i.valueIdx = -1
+	}
+	if i.currentManifestFileIdx >= len(i.manifest.Files) {
+		return false
+	}
+	pr, err := i.GetParquetReader(i.ctx, i.s3, i.inventoryBucket, i.manifest.Files[i.currentManifestFileIdx].Key)
+	if err != nil {
+		i.err = err
+		return false
+	}
+	defer pr.Close()
+	err = pr.SkipRows(int64(i.nextRowIdx))
+	if err != nil {
+		i.err = err
+		return false
+	}
+	err = pr.Read(&i.buffer)
+	if err != nil {
+		i.err = err
+		return false
+	}
+	i.nextRowIdx += len(i.buffer)
+	return true
+}
+
+func (i *InventoryIterator) nextFromBuffer() bool {
+	var res block.InventoryObject
+	for i.valueIdx = i.valueIdx + 1; i.valueIdx < len(i.buffer); i.valueIdx++ {
+		parquetObj := i.buffer[i.valueIdx]
 		if (parquetObj.IsLatest == nil || *parquetObj.IsLatest) &&
 			(parquetObj.IsDeleteMarker == nil || !*parquetObj.IsDeleteMarker) {
-			i.value = block.InventoryObject{
+			res = block.InventoryObject{
 				Bucket:          parquetObj.Bucket,
 				Key:             parquetObj.Key,
 				PhysicalAddress: parquetObj.GetPhysicalAddress(),
 			}
 			if parquetObj.Size != nil {
-				i.value.Size = *parquetObj.Size
+				res.Size = *parquetObj.Size
 			}
 			if parquetObj.LastModified != nil {
-				i.value.LastModified = *parquetObj.LastModified
+				res.LastModified = *parquetObj.LastModified
 			}
 			if parquetObj.Checksum != nil {
-				i.value.Checksum = *parquetObj.Checksum
+				res.Checksum = *parquetObj.Checksum
 			}
+			i.val = res
 			return true
 		}
 	}
+	return false
 }
 
 func (i *InventoryIterator) Err() error {
@@ -113,34 +172,7 @@ func (i *InventoryIterator) Err() error {
 }
 
 func (i *InventoryIterator) Get() *block.InventoryObject {
-	return &i.value
-}
-
-func (i *InventoryIterator) getRowChannel(pr ParquetReader) (<-chan ParquetInventoryObject, <-chan error) {
-	num := int(pr.GetNumRows())
-	out := make(chan ParquetInventoryObject)
-	errs := make(chan error)
-	go func() {
-		defer close(errs)
-		batchSize := i.ReadBatchSize
-		if batchSize == 0 {
-			batchSize = DefaultReadBatchSize
-		}
-		rawInventoryObjects := make([]ParquetInventoryObject, batchSize)
-		for i := 0; i < num; i += batchSize {
-			err := pr.Read(&rawInventoryObjects)
-			if err != nil {
-				close(out)
-				errs <- err
-				return
-			}
-			for _, o := range rawInventoryObjects {
-				out <- o
-			}
-		}
-		close(out)
-	}()
-	return out, errs
+	return &i.val
 }
 
 func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, error) {
@@ -148,13 +180,10 @@ func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, 
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
-	defer func() {
-		_ = pf.Close()
-	}()
 	var rawObject ParquetInventoryObject
 	pr, err := reader.NewParquetReader(pf, &rawObject, 4)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
-	return pr, nil
+	return &ParquetReaderBundle{*pr, pf}, nil
 }

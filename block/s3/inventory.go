@@ -12,8 +12,6 @@ import (
 	"net/url"
 )
 
-const DefaultReadBatchSize = 100000
-
 type manifest struct {
 	URL                string         `json:"-"`
 	InventoryBucketArn string         `json:"destinationBucket"`
