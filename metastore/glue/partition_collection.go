@@ -71,7 +71,6 @@ func comparePartitions(partitionA, partitionB *glue.Partition) metastore.Compare
 	}
 	if nameA > nameB {
 		return metastore.ItemGreater
-
 	}
 	if partitionValueEqual(partitionA, partitionB) {
 		return metastore.ItemSame

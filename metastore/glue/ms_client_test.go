@@ -28,7 +28,7 @@ func NewGlueMsMock() *GlueMsMock {
 
 func tableToMock(db *string, table *glue.TableInput) *mock.MetastoreObject {
 	return &mock.MetastoreObject{
-		DbName:      aws.StringValue(db),
+		DBName:      aws.StringValue(db),
 		TableName:   aws.StringValue(table.Name),
 		SdTableName: aws.StringValue(table.StorageDescriptor.SerdeInfo.Name),
 		Location:    aws.StringValue(table.StorageDescriptor.Location),
@@ -38,7 +38,7 @@ func tableToMock(db *string, table *glue.TableInput) *mock.MetastoreObject {
 
 func MockToTable(mock *mock.MetastoreObject) *glue.TableData {
 	return &glue.TableData{
-		DatabaseName: aws.String(mock.DbName),
+		DatabaseName: aws.String(mock.DBName),
 		Name:         aws.String(mock.TableName),
 		StorageDescriptor: &glue.StorageDescriptor{
 			Columns:   mocksToColumns(mock.Columns),
@@ -82,7 +82,7 @@ func mocksToColumns(columns []*mock.Column) []*glue.Column {
 
 func partitionInputToMock(db, table *string, partition *glue.PartitionInput) *mock.MetastoreObject {
 	return &mock.MetastoreObject{
-		DbName:      aws.StringValue(db),
+		DBName:      aws.StringValue(db),
 		TableName:   aws.StringValue(table),
 		SdTableName: aws.StringValue(partition.StorageDescriptor.SerdeInfo.Name),
 		Location:    aws.StringValue(partition.StorageDescriptor.Location),
@@ -93,7 +93,7 @@ func partitionInputToMock(db, table *string, partition *glue.PartitionInput) *mo
 
 func partitionToMock(db, table *string, partition *glue.PartitionInput) *mock.MetastoreObject {
 	return &mock.MetastoreObject{
-		DbName:      aws.StringValue(db),
+		DBName:      aws.StringValue(db),
 		TableName:   aws.StringValue(table),
 		SdTableName: aws.StringValue(partition.StorageDescriptor.SerdeInfo.Name),
 		Location:    aws.StringValue(partition.StorageDescriptor.Location),
@@ -104,7 +104,7 @@ func partitionToMock(db, table *string, partition *glue.PartitionInput) *mock.Me
 
 func MockToPartition(mock *mock.MetastoreObject) *glue.Partition {
 	return &glue.Partition{
-		DatabaseName: aws.String(mock.DbName),
+		DatabaseName: aws.String(mock.DBName),
 		TableName:    aws.String(mock.TableName),
 		Values:       aws.StringSlice(mock.Values),
 		StorageDescriptor: &glue.StorageDescriptor{

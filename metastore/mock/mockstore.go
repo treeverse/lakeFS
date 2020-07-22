@@ -16,7 +16,7 @@ type Column struct {
 
 // table and partition
 type MetastoreObject struct {
-	DbName      string
+	DBName      string
 	TableName   string
 	SdTableName string
 	Location    string
@@ -73,7 +73,7 @@ func (m MetaStore) AlterTable(db, tableName string, table *MetastoreObject) erro
 }
 
 func (m MetaStore) AddPartition(newPartition *MetastoreObject) error {
-	key := getPartitionKey(newPartition.DbName, newPartition.TableName, newPartition.Values)
+	key := getPartitionKey(newPartition.DBName, newPartition.TableName, newPartition.Values)
 	if m.partitionMap[key] != nil {
 		return fmt.Errorf("partition for key %s already exists", key)
 	}

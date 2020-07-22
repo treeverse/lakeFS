@@ -264,7 +264,6 @@ func (g *MSClient) copyTable(fromDB, fromTable, toDB, toTable, serde string, sym
 }
 
 func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
-
 	err := g.copyTable(fromDB, fromTable, toDB, toTable, serde, symlink, transformLocation)
 	if err != nil {
 		return err
@@ -274,7 +273,6 @@ func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink 
 }
 
 func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
-
 	table, err := g.getTable(FromDB, fromTable)
 	if err != nil {
 		return err

@@ -26,7 +26,7 @@ func NewHiveMsMock() *HiveMsMock {
 
 func tableToMock(table *hive_metastore.Table) *mock.MetastoreObject {
 	return &mock.MetastoreObject{
-		DbName:      table.DbName,
+		DBName:      table.DbName,
 		TableName:   table.TableName,
 		SdTableName: table.Sd.SerdeInfo.Name,
 		Location:    table.Sd.Location,
@@ -36,7 +36,7 @@ func tableToMock(table *hive_metastore.Table) *mock.MetastoreObject {
 
 func MockToTable(mock *mock.MetastoreObject) *hive_metastore.Table {
 	return &hive_metastore.Table{
-		DbName:    mock.DbName,
+		DbName:    mock.DBName,
 		TableName: mock.TableName,
 		Sd: &hive_metastore.StorageDescriptor{
 			Cols:      mocksToColumns(mock.Columns),
@@ -80,7 +80,7 @@ func mocksToColumns(columns []*mock.Column) []*hive_metastore.FieldSchema {
 
 func partitionToMock(partition *hive_metastore.Partition) *mock.MetastoreObject {
 	return &mock.MetastoreObject{
-		DbName:      partition.DbName,
+		DBName:      partition.DbName,
 		TableName:   partition.TableName,
 		SdTableName: partition.Sd.SerdeInfo.Name,
 		Location:    partition.Sd.Location,
@@ -91,7 +91,7 @@ func partitionToMock(partition *hive_metastore.Partition) *mock.MetastoreObject 
 
 func MockToPartition(mock *mock.MetastoreObject) *hive_metastore.Partition {
 	return &hive_metastore.Partition{
-		DbName:    mock.DbName,
+		DbName:    mock.DBName,
 		TableName: mock.TableName,
 		Values:    mock.Values,
 		Sd: &hive_metastore.StorageDescriptor{

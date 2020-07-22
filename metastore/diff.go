@@ -69,7 +69,6 @@ func DiffIterable(iterA, iterB Collection, callbackFn DiffCallbackFn) error {
 			return err
 		}
 		j++
-
 	}
 	for i < sizeA {
 		err := callbackFn(catalog.DifferenceTypeAdded, iterA.Value(i), iterA.Name(i))

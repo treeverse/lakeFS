@@ -9,7 +9,7 @@ import (
 
 const SymlinkInputFormat = "org.apache.hadoop.hive.ql.io.SymlinkTextInputFormat"
 
-var InvalidLocation = errors.New("got empty schema or host wile parsing location url, location should be schema://host/path")
+var ErrInvalidLocation = errors.New("got empty schema or host wile parsing location url, location should be schema://host/path")
 
 func ReplaceBranchName(location, branch string) (string, error) {
 	u, err := url.Parse(location)
@@ -17,7 +17,7 @@ func ReplaceBranchName(location, branch string) (string, error) {
 		return "", err
 	}
 	if u.Scheme == "" || u.Host == "" {
-		return "", InvalidLocation
+		return "", ErrInvalidLocation
 	}
 	p, err := path.ResolvePath(u.Path)
 	if err != nil {
@@ -33,7 +33,7 @@ func GetSymlinkLocation(location, locationPrefix string) (string, error) {
 		return "", err
 	}
 	if u.Scheme == "" || u.Host == "" {
-		return "", InvalidLocation
+		return "", ErrInvalidLocation
 	}
 	p, err := path.ResolvePath(u.Path)
 	if err != nil {

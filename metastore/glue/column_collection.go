@@ -36,7 +36,7 @@ func (c *ColumnCollection) CompareWith(i int, v interface{}, j int) metastore.Co
 	if otherIter, ok := v.(*ColumnCollection); ok {
 		return compareColumns(c.columns[i], otherIter.columns[j])
 	}
-	err := fmt.Errorf("expected type *glue.ColumnCollection, got %T.", v)
+	err := fmt.Errorf("expected type *glue.ColumnCollection, got %T", v)
 	panic(err)
 }
 
@@ -52,7 +52,6 @@ func compareColumns(columnA, columnB *glue.Column) metastore.CompareResult {
 		return metastore.ItemSame
 	}
 	return metastore.ItemSameKey
-
 }
 
 func ColumnEqual(column, otherColumn *glue.Column) bool {
