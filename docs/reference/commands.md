@@ -773,6 +773,75 @@ Global Flags:
 
 ```
 
+#### `lakectl metastore copy`
+````text
+copy or merge table. the destination table will point to the selected branch
+
+Usage:
+  lakectl metastore copy [flags]
+
+Flags:
+      --address string          Hive metastore address/ glue catalog ID
+      --from-schema string      source schema name
+      --from-table string       source table name
+  -h, --help                    help for copy
+      --partition stringArray   partition to copy
+      --serde string            serde to set copy to  [default is - to-table]
+      --to-branch string        lakeFS branch name
+      --to-schema string        destination schema name
+      --to-table string         destination table name
+      --type string             metastore type [hive, glue]
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+````
+
+#### `lakectl metastore diff`
+````text
+show column and partition differences between two tables
+
+Usage:
+  lakectl metastore diff [flags]
+
+Flags:
+      --address string       Hive metastore address/ Glue catalog ID
+      --from-schema string   source schema name
+      --from-table string    source table name
+  -h, --help                 help for diff
+      --to-schema string     destination schema name
+      --to-table string      destination table name
+      --type string          metastore type [hive, Glue]
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+````
+#### `lakectl metastore create-symlink`
+````text
+create table with symlinks, and create the symlinks in s3 in order to access from external devices that could only access s3 directly (e.g athena)
+
+Usage:
+  lakectl metastore create-symlink [flags]
+
+Flags:
+      --address string       Glue catalog ID
+      --branch string        lakeFS branch name
+      --from-schema string   source schema name
+      --from-table string    source table name
+  -h, --help                 help for create-symlink
+      --path string          path to table on lakeFS
+      --repo string          lakeFS repository name
+      --to-schema string     destination schema name
+      --to-table string      destination table name
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+````
 
 ### lakeFS URI pattern
 
