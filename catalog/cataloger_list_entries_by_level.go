@@ -37,7 +37,6 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		lineage = append(lineage, lineageCommit{BranchID: branchID, CommitID: MaxCommitID})
 		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, branchID, commitID, lineage)
 		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
@@ -52,12 +51,13 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
 	var err error
 	limit += 1
-	unionSQL := buildLevelQuery(lineage)
+	unionSQL := buildLevelQuery(branchID, lineage, 4)
 	endOfPrefixRange := prefix + DirectoryTermination
+	nextPath := make([]string, len(lineage)+1)
 	listAfter := prefix + strings.TrimPrefix(after, prefix)
 	var markerList []string
 	for i := 0; i < limit; i++ {
-		var nextPath string
+
 		err = tx.Get(&nextPath, unionSQL, listAfter, endOfPrefixRange)
 		if errors.As(err, &db.ErrNotFound) {
 			return markerList, nil
@@ -78,16 +78,55 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit int, branchID 
 	return markerList, nil
 }
 
-func buildLevelQuery(lineage []lineageCommit) string {
-	var unionParts []string
+type responseRow struct {
+	branchID  int64
+	path      string
+	minCommit CommitID
+	maxCommit CommitID
+}
+type responseRows []responseRow
+
+func doOneStrech(tx db.Tx, prefix string, delimiter string, branchID int64, limit int, numOfBranches int) (string, error) {
+	var resultBuf []responseRow
+	var nextPath string
+	pathCandidates := make([]string, numOfBranches)
+	readPrefixes := make([]string, numOfBranches)
+	for i := 0; i < numOfBranches; i++ {
+		readPrefixes[i] = prefix
+	}
+
+	foundPath := false
+	for !foundPath {
+
+	}
+
+}
+func buildLevelQuery(baseBranchID int64, lineage []lineageCommit, limit int, requestedCommit CommitID) []sq.SelectBuilder {
+	rowSelect := sq.Select("branch_id as branchID", "path", "min_commit as minCommit", "max_commit as maxCommit").
+		From("entries").
+		OrderBy("branch_id", "path", "min_commit desc").
+		Limit(uint64(limit))
+	unionParts := make([]sq.SelectBuilder, len(lineage)+1)
+	unionParts[0] = rowSelect.Where("branch_id = ?", baseBranchID).
+		Where("min_commit <=  ? and (max_commit > ? or max_commit = 0", requestedCommit, requestedCommit)
+
+	unionParts[0] = fmt.Sprintf(
+		`select * from (select branch_id as branchID,path,min_commit as minCommit ,max_commit as maxCommit from entries 
+						where branch_id = %d 
+						and path >  $1 and path < $2 and (max_commit = max_commit_id() or max_commit = 0)
+						order by branch_id,path,min_commit desc
+						limit %d) t`, baseBranchID, limit)
+
 	for _, l := range lineage {
 		singleBranchQuery := fmt.Sprintf(
-			`select min(path) as path from entries  
-						where branch_id = %d  and min_commit <= %d and max_commit >= %d  
-						and path >  $1 and path < $2`, l.BranchID, l.CommitID, l.CommitID)
+			`select * from (select branch_id,path,min_commit,max_commit from entries  
+						where branch_id = %d  and min_commit between 1 and  %d and (max_commit >= %d  or max_commit = 0)
+						and path >  $1 and path < $2
+						order by branch_id,path,min_commit desc
+						limit %d) t`, l.BranchID, l.CommitID, l.CommitID, limit)
 		unionParts = append(unionParts, singleBranchQuery)
 	}
-	query := "select min(path) as path from (" + strings.Join(unionParts, "\n union all \n") + ") t"
+	query := strings.Join(unionParts, "\n union all\n")
 	return query
 }
 
