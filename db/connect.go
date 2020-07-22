@@ -14,7 +14,6 @@ func ConnectDB(driver string, uri string) (Database, error) {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
 
-	// TODO(barak): viper configuration with defaults
 	conn.SetMaxOpenConns(25)
 	conn.SetMaxIdleConns(25)
 	conn.SetConnMaxLifetime(5 * time.Minute)

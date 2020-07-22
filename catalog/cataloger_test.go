@@ -41,7 +41,7 @@ func testCatalogerRepo(t testing.TB, ctx context.Context, c Cataloger, prefix st
 
 func testCatalogerBranch(t testing.TB, ctx context.Context, c Cataloger, repository, name, source string) {
 	t.Helper()
-	err := c.CreateBranch(ctx, repository, name, source)
+	_, err := c.CreateBranch(ctx, repository, name, source)
 	if err != nil {
 		t.Fatalf("failed to create branch %s (%s) on %s: %s", name, source, repository, err)
 	}

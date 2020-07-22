@@ -14,10 +14,10 @@ func TestCataloger_GetBranch(t *testing.T) {
 
 	// setup test data
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
-	testutil.MustDo(t, "create branch1",
-		c.CreateBranch(ctx, repo, "branch1", "master"))
+	_, err := c.CreateBranch(ctx, repo, "branch1", "master")
+	testutil.MustDo(t, "create branch1", err)
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "a/file", nil, "")
-	_, err := c.Commit(ctx, repo, "master", "commit a file", "tester", nil)
+	_, err = c.Commit(ctx, repo, "master", "commit a file", "tester", nil)
 	testutil.MustDo(t, "commit a file", err)
 
 	type args struct {

@@ -481,8 +481,8 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo2", "s3://foo2", "master"))
 		for i := 0; i < 7; i++ {
 			branchName := "master" + strconv.Itoa(i+1)
-			testutil.MustDo(t, "create branch "+branchName,
-				deps.cataloger.CreateBranch(ctx, "repo2", branchName, "master"))
+			_, err := deps.cataloger.CreateBranch(ctx, "repo2", branchName, "master")
+			testutil.MustDo(t, "create branch "+branchName, err)
 		}
 		resp, err := clt.Branches.ListBranches(&branches.ListBranchesParams{
 			Amount:     swag.Int64(2),
@@ -589,9 +589,10 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 	t.Run("create branch success", func(t *testing.T) {
 		ctx := context.Background()
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "repo1", "s3://foo1", "master"))
+		const newBranchName = "master2"
 		resp, err := clt.Branches.CreateBranch(&branches.CreateBranchParams{
 			Branch: &models.BranchCreation{
-				Name:   swag.String("master2"),
+				Name:   swag.String(newBranchName),
 				Source: swag.String("master"),
 			},
 			Repository: "repo1",
@@ -599,9 +600,9 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error creating branch: %s", err)
 		}
-		branch := resp.GetPayload()
-		if branch != "master2" {
-			t.Fatalf("got unexpected branch %s", branch)
+		reference := resp.GetPayload()
+		if len(reference) == 0 {
+			t.Fatalf("branch %s creation got no reference", newBranchName)
 		}
 	})
 
@@ -646,7 +647,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 	t.Run("delete branch success", func(t *testing.T) {
 		ctx := context.Background()
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "my-new-repo", "s3://foo1", "master"))
-		err := deps.cataloger.CreateBranch(ctx, "my-new-repo", "master2", "master")
+		_, err := deps.cataloger.CreateBranch(ctx, "my-new-repo", "master2", "master")
 		if err != nil {
 			t.Fatal(err)
 		}

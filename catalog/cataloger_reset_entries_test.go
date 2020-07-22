@@ -124,8 +124,8 @@ func TestCataloger_ResetEntries(t *testing.T) {
 	}
 
 	// create b1 branch with 3 entries committed
-	testutil.MustDo(t, "Create branch b1 for ResetEntries",
-		c.CreateBranch(ctx, repository, "b1", "master"))
+	_, err := c.CreateBranch(ctx, repository, "b1", "master")
+	testutil.MustDo(t, "Create branch b1 for ResetEntries", err)
 	for i := 3; i < 6; i++ {
 		testutil.Must(t, c.CreateEntry(ctx, repository, "b1", Entry{
 			Path:            "/file" + strconv.Itoa(i),
@@ -189,7 +189,7 @@ func TestCataloger_ResetEntries(t *testing.T) {
 		entries, _, err := c.ListEntries(ctx, repository, MakeReference("master", UncommittedID), "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 3 {
-			t.Fatal("List entries of reseted master branch should return 3 items, got", len(entries))
+			t.Fatal("List entries of master branch after reset should return 3 items, got", len(entries))
 		}
 		for i := 0; i < 3; i++ {
 			if entries[i].Size != int64(i+1) {

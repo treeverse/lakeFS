@@ -593,12 +593,11 @@ func (c *Controller) CreateBranchHandler() branches.CreateBranchHandler {
 		deps.LogAction("create_branch")
 		cataloger := deps.Cataloger
 		sourceBranch := swag.StringValue(params.Branch.Source)
-		err = cataloger.CreateBranch(c.Context(), repository, branch, sourceBranch)
+		commitLog, err := cataloger.CreateBranch(c.Context(), repository, branch, sourceBranch)
 		if err != nil {
 			return branches.NewCreateBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
-		// TODO(barak): create branch should return the reference of the new branch's commit
-		return branches.NewCreateBranchCreated().WithPayload(branch)
+		return branches.NewCreateBranchCreated().WithPayload(commitLog.Reference)
 	})
 }
 
@@ -2128,7 +2127,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			}
 			_, err = deps.Cataloger.GetBranchReference(deps.ctx, params.Repository, onboard.DefaultBranchName)
 			if errors.Is(err, db.ErrNotFound) {
-				err = deps.Cataloger.CreateBranch(deps.ctx, params.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
+				_, err = deps.Cataloger.CreateBranch(deps.ctx, params.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
 				if err != nil {
 					return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 						WithPayload(responseErrorFrom(err))

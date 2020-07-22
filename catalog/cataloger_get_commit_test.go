@@ -122,8 +122,8 @@ func TestCataloger_GetMergeCommit(t *testing.T) {
 	testutil.MustDo(t, "commit to master", err)
 
 	// prepare data on b1
-	testutil.MustDo(t, "create b1 branch",
-		c.CreateBranch(ctx, repo, "b1", "master"))
+	_, err = c.CreateBranch(ctx, repo, "b1", "master")
+	testutil.MustDo(t, "create b1 branch", err)
 	for i := 2; i < 6; i++ {
 		testCatalogerCreateEntry(t, ctx, c, repo, "b1", "/file"+strconv.Itoa(i), nil, "b1")
 	}

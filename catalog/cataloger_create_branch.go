@@ -11,16 +11,16 @@ const (
 	createBranchCommitMessage = "Branch created"
 )
 
-func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) error {
+func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
 		{Name: "sourceBranch", IsValid: ValidateBranchName(sourceBranch)},
 	}); err != nil {
-		return err
+		return nil, err
 	}
 
-	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		repoID, err := c.getRepositoryIDCache(tx, repository)
 		if err != nil {
 			return nil, err
@@ -49,18 +49,35 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		// create initial commit
 		creationDate := c.clock.Now()
 
-		_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message,
-							creation_date,merge_source_branch, merge_type, lineage_commits,merge_source_commit)
+		insertReturns := struct {
+			CommitID          CommitID `db:"commit_id"`
+			MergeSourceCommit CommitID `db:"merge_source_commit"`
+		}{}
+		err = tx.Get(&insertReturns, `INSERT INTO commits (branch_id,commit_id,previous_commit_id,committer,message,
+			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('commit_id_seq'),0,$2,$3,$4,$5,'from_father',
 				(select (select max(commit_id) from commits where branch_id=$5)|| 
 					(select distinct on (branch_id) lineage_commits from commits 
 						where branch_id=$5 and merge_type='from_father' order by branch_id,commit_id desc))
-						,(select max(commit_id) from commits where branch_id=$5 ))`,
+						,(select max(commit_id) from commits where branch_id=$5 ))
+			RETURNING commit_id,merge_source_commit`,
 			branchID, CatalogerCommitter, createBranchCommitMessage, creationDate, sourceBranchID)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}
-		return branchID, nil
+		reference := MakeReference(branch, insertReturns.CommitID)
+		parentReference := MakeReference(sourceBranch, insertReturns.MergeSourceCommit)
+		commitLog := &CommitLog{
+			Committer:    CatalogerCommitter,
+			Message:      createBranchCommitMessage,
+			CreationDate: creationDate,
+			Reference:    reference,
+			Parents:      []string{parentReference},
+		}
+		return commitLog, nil
 	}, c.txOpts(ctx)...)
-	return err
+	if err != nil {
+		return nil, err
+	}
+	return res.(*CommitLog), nil
 }

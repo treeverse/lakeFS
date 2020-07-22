@@ -58,7 +58,7 @@ type RepositoryCataloger interface {
 }
 
 type BranchCataloger interface {
-	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) error
+	CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error)
 	DeleteBranch(ctx context.Context, repository, branch string) error
 	ListBranches(ctx context.Context, repository string, prefix string, limit int, after string) ([]*Branch, bool, error)
 	GetBranchReference(ctx context.Context, repository, branch string) (string, error)

@@ -51,9 +51,15 @@ func TestCataloger_CreateBranch(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := c.CreateBranch(ctx, tt.args.repository, tt.args.branch, tt.args.sourceBranch)
+			commitLog, err := c.CreateBranch(ctx, tt.args.repository, tt.args.branch, tt.args.sourceBranch)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("CreateBranch() error = %s, wantErr %t", err, tt.wantErr)
+			}
+			if err != nil {
+				return
+			}
+			if commitLog == nil {
+				t.Fatal("CreateBranch() no error, missing commit log")
 			}
 		})
 	}
@@ -66,7 +72,7 @@ func TestCataloger_CreateBranch_OfBranch(t *testing.T) {
 	for i := 1; i < 3; i++ {
 		branchName := fmt.Sprintf("branch%d", i)
 		sourceBranchName := fmt.Sprintf("branch%d", i-1)
-		err := c.CreateBranch(ctx, repository, branchName, sourceBranchName)
+		commitLog, err := c.CreateBranch(ctx, repository, branchName, sourceBranchName)
 		if err != nil {
 			t.Fatalf("failed to create branch '%s' based on '%s': %s", branchName, sourceBranchName, err)
 		}
@@ -77,6 +83,9 @@ func TestCataloger_CreateBranch_OfBranch(t *testing.T) {
 		if reference == "" {
 			t.Errorf("Created branch '%s' should have valid reference to initial commit", branchName)
 		}
+		if reference != commitLog.Reference {
+			t.Errorf("CreateBranch commit reference doesn't match to last branch reference")
+		}
 	}
 }
 
@@ -85,10 +94,10 @@ func TestCataloger_CreateBranch_Existing(t *testing.T) {
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	const branchName = "master2"
-	testutil.MustDo(t, "create test branch",
-		c.CreateBranch(ctx, repo, branchName, "master"))
+	_, err := c.CreateBranch(ctx, repo, branchName, "master")
+	testutil.MustDo(t, "create test branch", err)
 
-	err := c.CreateBranch(ctx, repo, branchName, "master")
+	_, err = c.CreateBranch(ctx, repo, branchName, "master")
 	if err == nil {
 		t.Fatalf("CreateBranch expected to fail on create branch '%s' already exists", branchName)
 	}
