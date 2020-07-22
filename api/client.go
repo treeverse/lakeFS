@@ -6,6 +6,8 @@ import (
 	"net/url"
 	"path"
 
+	"github.com/treeverse/lakefs/api/gen/client/metadata"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -81,6 +83,7 @@ type RepositoryClient interface {
 
 	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
 	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
+	Symlink(ctx context.Context, repoId, ref, path string) (string, error)
 }
 
 type Client interface {
@@ -567,7 +570,18 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*mode
 	}
 	return diff.GetPayload().Results, nil
 }
-
+func (c *client) Symlink(ctx context.Context, repoId, branch, path string) (string, error) {
+	resp, err := c.remote.Metadata.CreateSymlink(&metadata.CreateSymlinkParams{
+		Location:   swag.String(path),
+		Branch:     branch,
+		Repository: repoId,
+		Context:    ctx,
+	}, c.auth)
+	if err != nil {
+		return "", err
+	}
+	return resp.GetPayload(), nil
+}
 func (c *client) GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error) {
 	policy, err := c.remote.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
 		Repository: repository,
