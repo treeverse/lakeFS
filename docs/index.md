@@ -5,44 +5,49 @@ nav_order: 0
 ---
 
 # What is lakeFS
-{: .no_toc }
+{: .no_toc }  
 
-lakeFS is an open-source Data Lake platform that enables Data Engineers to build robust data architectures that are far simpler, more resilient and easier to manage.
+lakeFS is an open source wraps your existing object-storage based Data Lake that adds a layer of resilience and manageability.
 
-lakeFS provides a set of building blocks that allows developers to build repeatable, atomic and versioned Data Lake operations - from complex ETL jobs to data science and ML.  
+Use lakeFS to build repeatable, atomic and versioned Data Lake operations - from complex ETL jobs to data science and analytics.
 
-By being API compatible with AWS S3, lakeFS works seamlessly with all modern data frameworks (Spark, Hive, AWS Athena, Presto, etc) without complex integrations.
-Data Persistence is provided by your existing S3 buckets, or other compatible object stores:
+lakeFS is API compatible with AWS S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
 ![lakeFS](assets/img/wrapper.png) 
+
 
 {: .pb-5 }
 
 ## Why you need lakeFS and what it can do
 
+lakeFS provides a Git-like branching and committing model that scales to Petabytes of data by utilizing S3 for storage.
+
+This branching model makes your Data Lake [ACID compliant]() by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
+
+Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by adding the branch name to the object path, so:
+
+![lakeFS s3 addressing](assets/img/s3_branch.png)
+
+Here's why you need it:
+
 ### Fragile Writers
 
-Writing to object stores is simple, scalable and cheap - but could also be error prone:
+Writing to object stores is simple, scalable and cheap but could also be error prone, for example:
 
 * Jobs (both streaming and batch) can fail, leaving partially written data
 * It's hard to signal to readers that a collection of objects is ready to be consumed. This is sometimes worked around using SUCCESS files, Metastore registration or other home-grown solutions.
-* This is especially hard for writers that mutate more than one collection - keeping several collections in-sync
-* Once data is written (or deleted), it is hard to undo - Unless we know the exact prior state, cleanly reverting a set of changes can be hard 
+   It's even harder to keep multiple such collections in sync.
+* Unless we know the exact prior state, cleanly undoing operations is hard
 * Eventual consistency may cause corruption or failure. For example, S3's list operation might not show recently written objects, leading to failing jobs
 
-lakeFS addresses these issues with the following capabilities:
+lakeFS provides:
 
-* **Atomic Operations** - lakeFS allows data producers to manipulate multiple objects as a single, atomic operation. If something fails half-way, all changes can be instantly rolled back.
-   
-   This is similar in concept to a Database Transactions. lakeFS does this by allowing to create "branches" (akin [Git](branching.md)'s branch/commit model). Once a branch is created, all objects manipulated within that branch are only visible inside it.
-   
-   Once processing completes successfully, merging to the "main" branch is an atomic operation. If something fails mid-way, we can simply (and atomically) revert our branch to its previous committed state.
+* **Atomic Operations** - lakeFS allows data producers to manipulate multiple objects as a single, atomic operation. If something fails half-way, all changes can be instantly rolled back. lakeFS does this by allowing to create branches. Once a branch is created, all objects manipulated within that branch are only visible inside it. Once processing completes successfully, merging to the "main" branch is an atomic operation. If something fails mid-way, we can simply (and atomically) revert our branch to its previous committed state.
 * **Consistency** - lakeFS handles 2 levels of consistency: object-level and cross-collection:
     * **object-level** consistency means all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
     * **cross-collection** consistency is achieved by providing [snapshot isolation](). Using branches, writers can provide consistency guarantees across different logical collections - merging to "main" is only done after several datasets have been created successfully.
 * **History** - By using a branch/commit model, we can rollback any set of changes made to the lake - atomically and safely. By keeping commit history around for a configurable amount of time - we can read from the lake at any given point in time, compare changes made - and undo them if necessary.
-   
-   *Being able to quickly revert a change renders the cost-of-mistake much smaller, allowing for faster development and iteration.*
+
 
 ### Fragile Readers
 
@@ -51,13 +56,10 @@ Reading data from the lake can also lead to problems:
 - Data is constantly changing, sometimes during an experiment or while a long-running job is executing.
 - it's almost impossible to build reproducible, testable queries - we have no guarantee that the input data won't change.
 
-lakeFS addresses these issues with the following capabilities:
+lakeFS provides:
 
-* **Cross-Lake Isolation** - When creating a lakeFS branch, we are provided with a snapshot of the entire lake at a given point in time. All reads from their branch are guaranteed to always return the same results.
-   No need to create your own copy for isolation - branches guarantee immutability.
-* **Consistency** - When data is produced in isolated branches and merged atomically into "main", readers are freed from worrying about the state of their input data - if a reader sees any data at all, it's guaranteed to be complete, validated, and ready to use.
-   
-   Writers may also guarantee that denormalized versions of the same data (say, partitioned by a different column) are kept consistent with each other.
+* **Cross-Lake Isolation** - When creating a lakeFS branch, we are provided with a snapshot of the entire lake at a given point in time. All reads from that branch are guaranteed to always return the same results.
+* **Consistency** - When data is produced in isolated branches and merged atomically into "main", writers can provide data that readers can trust as complete and validated.
 * **History** - Since previous commits are retained for a configurable duration, readers can query data from the latest commit, or from any other point in time.
 
 ### Data CI/CD
