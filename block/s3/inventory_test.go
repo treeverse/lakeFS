@@ -105,12 +105,13 @@ func TestFetch(t *testing.T) {
 		inv, err := s3.GenerateInventory(manifestURL, &mockS3Client{
 			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 		})
-		s3Inv := inv.(*s3.Inventory)
-		s3Inv.GetParquetReader = mockParquetReaderGetter
 		if err != nil {
 			t.Fatalf("error: %v", err)
 		}
 		it, err := inv.Iterator(context.Background())
+		s3It := it.(*s3.InventoryIterator)
+		s3It.GetParquetReader = mockParquetReaderGetter
+
 		it.(*s3.InventoryIterator).ReadBatchSize = test.ReadBatchSize
 		if err != nil {
 			t.Fatalf("error: %v", err)

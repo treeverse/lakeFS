@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-const DefaultWriteBatchSize = 1000
+const DefaultWriteBatchSize = 100000
 
 type RepoActions interface {
 	CreateAndDeleteObjects(ctx context.Context, it DiffIterator, dryRun bool) (*InventoryImportStats, error)
