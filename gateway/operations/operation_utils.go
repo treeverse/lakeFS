@@ -20,25 +20,15 @@ func (o *PathOperation) finishUpload(blockAdapter block.Adapter, storageNamespac
 		CreationDate:    writeTime,
 	}
 
-	dedupCh := make(chan *catalog.DedupResult)
 	err := o.Cataloger.CreateEntryDedup(o.Context(), o.Repository.Name, o.Reference, entry, catalog.DedupParams{
 		ID:               checksum,
-		Ch:               dedupCh,
+		Ch:               o.DedupCleaner.Channel(),
 		StorageNamespace: storageNamespace,
 	})
 	if err != nil {
 		o.Log().WithError(err).Error("could not update metadata")
 		return err
 	}
-	go func() {
-		dedupResult := <-dedupCh
-		if dedupResult.NewPhysicalAddress != "" {
-			_ = blockAdapter.Remove(block.ObjectPointer{
-				StorageNamespace: dedupResult.StorageNamespace,
-				Identifier:       dedupResult.Entry.PhysicalAddress,
-			})
-		}
-	}()
 	tookMeta := time.Since(writeTime)
 	o.Log().WithFields(logging.Fields{
 		"took": tookMeta,

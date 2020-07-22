@@ -54,7 +54,7 @@ type Dependencies struct {
 	BlockAdapter block.Adapter
 	Stats        stats.Collector
 	Retention    retention.Service
-	Dedup        *DedupHandler
+	Dedup        *block.DedupCleaner
 	logger       logging.Logger
 }
 
@@ -83,7 +83,7 @@ type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, logger logging.Logger) *Controller {
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, dedupCleaner *block.DedupCleaner, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
 			ctx:          context.Background(),
@@ -92,19 +92,11 @@ func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter 
 			BlockAdapter: blockAdapter,
 			Stats:        stats,
 			Retention:    retention,
-			Dedup:        NewDedupHandler(blockAdapter),
+			Dedup:        dedupCleaner,
 			logger:       logger,
 		},
 	}
-	c.deps.Dedup.Start()
 	return c
-}
-
-func (c *Controller) Close() error {
-	if c == nil || c.deps == nil {
-		return nil
-	}
-	return c.deps.Dedup.Close()
 }
 
 func (c *Controller) Context() context.Context {

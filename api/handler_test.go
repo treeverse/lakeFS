@@ -67,9 +67,9 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) SetInstallationID(installationID string) {}
+func (m *mockCollector) SetInstallationID(_ string) {}
 
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
+func (m *mockCollector) CollectMetadata(_ map[string]string) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
@@ -82,16 +82,24 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 		Enabled: false,
 	})
 	meta := auth.NewDBMetadataManager("dev", conn)
-	retention := retention.NewService(conn)
+	retentionService := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
+
+	dedupCleaner := block.NewDedupCleaner(blockAdapter)
+	dedupCleaner.Start()
+	t.Cleanup(func() {
+		_ = dedupCleaner.Close()
+	})
+
 	handler := api.NewHandler(
 		cataloger,
 		blockAdapter,
 		authService,
 		meta,
 		&mockCollector{},
-		retention,
+		retentionService,
 		migrator,
+		dedupCleaner,
 		logging.Default(),
 	)
 

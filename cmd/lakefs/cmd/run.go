@@ -7,12 +7,14 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -70,10 +72,16 @@ var runCmd = &cobra.Command{
 		}
 		stats := cfg.BuildStats(installationID)
 
+		dedupCleaner := block.NewDedupCleaner(blockStore)
+		dedupCleaner.Start()
+		defer func() {
+			_ = dedupCleaner.Close()
+		}()
+
 		// start API server
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, os.Interrupt)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.NewHandler(
 			cataloger,
@@ -83,7 +91,9 @@ var runCmd = &cobra.Command{
 			stats,
 			retention,
 			migrator,
-			logger.WithField("service", "api_gateway"))
+			dedupCleaner,
+			logger.WithField("service", "api_gateway"),
+		)
 
 		// init gateway server
 		s3gatewayHandler := gateway.NewHandler(
@@ -92,7 +102,9 @@ var runCmd = &cobra.Command{
 			blockStore,
 			authService,
 			cfg.GetS3GatewayDomainName(),
-			stats)
+			stats,
+			dedupCleaner,
+		)
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go stats.Run(ctx)

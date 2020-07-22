@@ -27,6 +27,7 @@ type ServerContext struct {
 	blockStore  block.Adapter
 	authService simulator.GatewayAuthService
 	stats       stats.Collector
+	dedup       *block.DedupCleaner
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
@@ -38,6 +39,7 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 		blockStore:  c.blockStore.WithContext(ctx),
 		authService: c.authService,
 		stats:       c.stats,
+		dedup:       c.dedup,
 	}
 }
 
@@ -54,6 +56,7 @@ func NewHandler(
 	authService simulator.GatewayAuthService,
 	bareDomain string,
 	stats stats.Collector,
+	dedup *block.DedupCleaner,
 ) http.Handler {
 	sc := &ServerContext{
 		ctx:         context.Background(),
@@ -63,6 +66,7 @@ func NewHandler(
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
+		dedup:       dedup,
 	}
 
 	// setup routes
@@ -188,23 +192,23 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	return op
 }
 
-func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
+func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
 	return &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
-		Region:         ctx.region,
-		FQDN:           ctx.bareDomain,
-
-		Cataloger:  ctx.cataloger,
-		BlockStore: ctx.blockStore,
-		Auth:       ctx.authService,
+		Region:         sc.region,
+		FQDN:           sc.bareDomain,
+		Cataloger:      sc.cataloger,
+		BlockStore:     sc.blockStore,
+		Auth:           sc.authService,
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
 				WithField("message_type", "action").
 				Debug("performing S3 action")
-			ctx.stats.CollectEvent("s3_gateway", action)
+			sc.stats.CollectEvent("s3_gateway", action)
 		},
+		DedupCleaner: sc.dedup,
 	}
 }
 

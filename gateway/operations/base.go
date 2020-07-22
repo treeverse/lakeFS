@@ -32,6 +32,7 @@ type Operation struct {
 	BlockStore     block.Adapter
 	Auth           simulator.GatewayAuthService
 	Incr           ActionIncr
+	DedupCleaner   *block.DedupCleaner
 }
 
 func (o *Operation) RequestId() string {

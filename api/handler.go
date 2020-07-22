@@ -45,6 +45,7 @@ type Handler struct {
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
 	server      *http.Server
+	dedup       *block.DedupCleaner
 	logger      logging.Logger
 }
 
@@ -56,6 +57,7 @@ func NewHandler(
 	stats stats.Collector,
 	retention retention.Service,
 	migrator db.Migrator,
+	dedup *block.DedupCleaner,
 	logger logging.Logger,
 ) http.Handler {
 	logger.Info("initialized OpenAPI server")
@@ -67,6 +69,7 @@ func NewHandler(
 		stats:       stats,
 		retention:   retention,
 		migrator:    migrator,
+		dedup:       dedup,
 		logger:      logger,
 	}
 	s.buildAPI()
@@ -134,6 +137,8 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	mux := http.NewServeMux()
 	// health check
 	mux.Handle("/_health", httputil.ServeHealth())
+	// metrics
+	mux.Handle("/_metrics", promhttp.Handler())
 	// pprof endpoint
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
@@ -160,7 +165,7 @@ func (s *Handler) buildAPI() {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedup, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
