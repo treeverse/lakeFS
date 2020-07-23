@@ -1,7 +1,9 @@
 ---
 layout: default
-title: Branching Model
-nav_order: 3
+title: Introduction
+parent: Branching Model
+has_children: false
+nav_order: 1
 ---
 
 # Branching Model
