@@ -17,6 +17,7 @@ type Repository struct {
 }
 
 type Entry struct {
+	CommonLevel     bool
 	Path            string    `db:"path"`
 	PhysicalAddress string    `db:"physical_address"`
 	CreationDate    time.Time `db:"creation_date"`
@@ -56,11 +57,6 @@ type Branch struct {
 	Name       string `db:"name"`
 }
 
-type LevelEntry struct {
-	CommonLevel bool
-	Entry
-}
-
 type MultipartUpload struct {
 	Repository      string    `db:"repository"`
 	UploadID        string    `db:"upload_id"`
@@ -85,15 +81,4 @@ func (j *Metadata) Scan(src interface{}) error {
 		return errors.New("invalid metadata src format")
 	}
 	return json.Unmarshal(data, j)
-}
-
-func EntriesToLevelEntries(entries []*Entry) []*LevelEntry {
-	l := make([]*LevelEntry, len(entries))
-	for i := range entries {
-		l[i] = &LevelEntry{
-			CommonLevel: false,
-			Entry:       *entries[i],
-		}
-	}
-	return l
 }

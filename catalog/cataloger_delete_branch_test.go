@@ -34,7 +34,7 @@ func TestCataloger_DeleteBranch(t *testing.T) {
 		PhysicalAddress: "/file1abc",
 		Size:            42,
 		Metadata:        nil,
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("create entry for testing", err)
 	}
 

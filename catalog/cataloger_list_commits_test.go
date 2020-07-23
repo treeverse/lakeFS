@@ -167,7 +167,7 @@ func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger
 			Checksum:        strings.Repeat("ff", i),
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("Write entry for list repository commits failed", err)
 		}
 		message := "commit" + strconv.Itoa(i+1)

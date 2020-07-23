@@ -207,7 +207,9 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 			n := strconv.Itoa(i + 1)
 			p := "foo/bar" + n
 			testutil.MustDo(t, "create entry bar"+n, deps.cataloger.CreateEntry(ctx, "repo2", "master",
-				catalog.Entry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n}))
+				catalog.Entry{Path: p, PhysicalAddress: "bar" + n + "addr", CreationDate: time.Now(), Size: int64(i) + 1, Checksum: "cksum" + n},
+				catalog.CreateEntryParams{},
+			))
 			if _, err := deps.cataloger.Commit(ctx, "repo2", "master", "commit"+n, "some_user", nil); err != nil {
 				t.Fatalf("failed to commit '%s': %s", p, err)
 			}
@@ -257,7 +259,9 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 		err := deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master")
 		testutil.Must(t, err)
 		testutil.MustDo(t, "create entry bar1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
-			catalog.Entry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"}))
+			catalog.Entry{Path: "foo/bar1", PhysicalAddress: "bar1addr", CreationDate: time.Now(), Size: 1, Checksum: "cksum1"},
+			catalog.CreateEntryParams{},
+		))
 		commit1, err := deps.cataloger.Commit(ctx, "foo1", "master", "some message", DefaultUserID, nil)
 		testutil.Must(t, err)
 		reference1, err := deps.cataloger.GetBranchReference(ctx, "foo1", "master")
@@ -317,7 +321,9 @@ func TestHandler_CommitHandler(t *testing.T) {
 		testutil.MustDo(t, "create repo foo1",
 			deps.cataloger.CreateRepository(ctx, "foo1", "s3://foo1", "master"))
 		testutil.MustDo(t, "commit bar on foo1", deps.cataloger.CreateEntry(ctx, "foo1", "master",
-			catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil}))
+			catalog.Entry{Path: "foo/bar", PhysicalAddress: "pa", CreationDate: time.Now(), Size: 666, Checksum: "cs", Metadata: nil},
+			catalog.CreateEntryParams{},
+		))
 		_, err := clt.Commits.Commit(&commits.CommitParams{
 			Branch: "master",
 			Commit: &models.CommitCreation{
@@ -704,7 +710,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			Size:            666,
 			Checksum:        "this_is_a_checksum",
 			Metadata:        nil,
-		})
+		}, catalog.CreateEntryParams{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -744,7 +750,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 			Checksum:        "eeee",
 			Metadata:        nil,
 			Expired:         true,
-		})
+		}, catalog.CreateEntryParams{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -788,7 +794,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		CreationDate:    time.Now(),
 		Size:            666,
 		Checksum:        "this_is_a_checksum",
-	})
+	}, catalog.CreateEntryParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -799,7 +805,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		Size:            9999999,
 		Checksum:        "quux_checksum",
 		Expired:         true,
-	})
+	}, catalog.CreateEntryParams{})
 
 	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
 		Path:            "foo/baz",
@@ -807,7 +813,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		CreationDate:    time.Now(),
 		Size:            666,
 		Checksum:        "baz_checksum",
-	})
+	}, catalog.CreateEntryParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -818,7 +824,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		CreationDate:    time.Now(),
 		Size:            666,
 		Checksum:        "baz_checksum",
-	})
+	}, catalog.CreateEntryParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -905,7 +911,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
 	}
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry)
+	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -918,7 +924,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Checksum:        "b10b",
 		Expired:         true,
 	}
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", expired)
+	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", expired, catalog.CreateEntryParams{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -977,7 +983,9 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 			Path:       "foo/expired",
 			Repository: "repo1",
 		}, bauth, buf)
-		if !strings.Contains(err.Error(), "resource expired") {
+		if err == nil {
+			t.Errorf("expected an error, got none\n\t%s", buf.String())
+		} else if !strings.Contains(err.Error(), "resource expired") {
 			t.Errorf("expected \"resource expired\" error, got %s\n\t%s", err, buf.String())
 		}
 	})

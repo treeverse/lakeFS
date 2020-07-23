@@ -13,7 +13,9 @@ func TestCataloger_CreateEntries(t *testing.T) {
 	// test data
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testutil.MustDo(t, "create entry on master for testing",
-		c.CreateEntry(ctx, repo, "master", Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1}))
+		c.CreateEntry(ctx, repo, "master",
+			Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1},
+			CreateEntryParams{}))
 	_, err := c.CreateBranch(ctx, repo, "b1", "master")
 	testutil.MustDo(t, "create branch b1 based on master", err)
 
