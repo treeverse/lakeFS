@@ -233,8 +233,8 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 func (c *cataloger) Close() error {
 	if c != nil {
 		close(c.dedupCh)
-		close(c.dedupReportCh)
 		c.wg.Wait()
+		close(c.dedupReportCh)
 	}
 	return nil
 }
