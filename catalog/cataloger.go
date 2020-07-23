@@ -93,7 +93,7 @@ type EntryCataloger interface {
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
-	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error)
+	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]*LevelEntry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
