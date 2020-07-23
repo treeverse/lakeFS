@@ -3,12 +3,11 @@ package db
 import (
 	"context"
 	"database/sql"
-	"regexp"
+	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/jmoiron/sqlx"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -17,6 +16,7 @@ const (
 )
 
 type Tx interface {
+	Query(query string, args ...interface{}) (*sqlx.Rows, error)
 	Select(dest interface{}, query string, args ...interface{}) error
 	Get(dest interface{}, query string, args ...interface{}) error
 	Exec(query string, args ...interface{}) (sql.Result, error)
@@ -28,8 +28,24 @@ type dbTx struct {
 }
 
 func queryToString(q string) string {
-	r := regexp.MustCompile(`[\t\s\n]+`)
-	return r.ReplaceAllString(q, " ")
+	return strings.Join(strings.Fields(q), " ")
+}
+
+func (d *dbTx) Query(query string, args ...interface{}) (*sqlx.Rows, error) {
+	start := time.Now()
+	rows, err := d.tx.Queryx(query, args...)
+	log := d.logger.WithFields(logging.Fields{
+		"type":  "query",
+		"args":  args,
+		"query": queryToString(query),
+		"took":  time.Since(start),
+	})
+	if err != nil {
+		log.WithError(err).Error("SQL query failed with error")
+		return nil, err
+	}
+	log.Trace("SQL query started successfully")
+	return rows, nil
 }
 
 func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error {
@@ -42,6 +58,7 @@ func (d *dbTx) Select(dest interface{}, query string, args ...interface{}) error
 		"took":  time.Since(start),
 	})
 	if err != nil {
+		dbErrorsCounter.WithLabelValues("select").Inc()
 		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
@@ -63,6 +80,7 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		return ErrNotFound
 	}
 	if err != nil {
+		dbErrorsCounter.WithLabelValues("get").Inc()
 		log.WithError(err).Error("SQL query failed with error")
 		return err
 	}
@@ -80,6 +98,7 @@ func (d *dbTx) Exec(query string, args ...interface{}) (sql.Result, error) {
 		"took":  time.Since(start),
 	})
 	if err != nil {
+		dbErrorsCounter.WithLabelValues("exec").Inc()
 		log.WithError(err).Error("SQL query failed with error")
 		return res, err
 	}

@@ -2,7 +2,7 @@ package sig
 
 import (
 	"crypto/hmac"
-	"crypto/sha1"
+	"crypto/sha1" //nolint:gosec
 	"encoding/base64"
 	"fmt"
 	"net/http"

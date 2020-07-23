@@ -6,53 +6,31 @@ import (
 	"os"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/treeverse/lakefs/block/mem"
-
-	"github.com/jmoiron/sqlx"
-
-	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/ory/dockertest/v3"
-
-	"github.com/google/uuid"
-	"github.com/treeverse/lakefs/db"
-
-	"github.com/treeverse/lakefs/block"
-	lakefsS3 "github.com/treeverse/lakefs/block/s3"
-
 	"github.com/aws/aws-sdk-go/service/s3"
-	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/model"
+	"github.com/google/uuid"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/jmoiron/sqlx"
+	"github.com/ory/dockertest/v3"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/mem"
+	lakefsS3 "github.com/treeverse/lakefs/block/s3"
+	"github.com/treeverse/lakefs/db"
 )
 
 const (
-	TimeFormat                = "Jan 2 15:04:05 2006 -0700"
-	FixtureRoot               = "lakeFsFixtures"
-	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
-	S3BlockAdapterEnvVar      = "USE_S3_BLOCK_ADAPTER"
-	AWS_KEY                   = "AWS_ACCESS_KEY_ID"
-	AWS_SECRET                = "AWS_SECRET_ACCESS_KEY"
-	AWS_REGION                = "AWS_DEFAULT_REGION"
-)
+	TimeFormat = "Jan 2 15:04:05 2006 -0700"
 
-func GetIndexWithRepo(t *testing.T, conn db.Database) (index.Index, *model.Repo) {
-	repoCreateDate, _ := time.Parse(TimeFormat, "Apr 7 15:13:13 2005 -0700")
-	createIndex := index.NewDBIndex(conn, index.WithTimeGenerator(func() time.Time {
-		return repoCreateDate
-	}))
-	Must(t, createIndex.CreateRepo("example", "s3://example-tzahi", "master"))
-	return index.NewDBIndex(conn), &model.Repo{
-		Id:               "example",
-		StorageNamespace: " example-tzahi",
-		CreationDate:     repoCreateDate,
-		DefaultBranch:    "master",
-	}
-}
+	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
+
+	envKeyUseS3BlockAdapter = "USE_S3_BLOCK_ADAPTER"
+	envKeyAws               = "AWS_ACCESS_KEY_ID"
+	envKeyAwsSecret         = "AWS_SECRET_ACCESS_KEY"
+	envKeyAwsRegion         = "AWS_DEFAULT_REGION"
+)
 
 func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 	resource, err := pool.Run("postgres", "11", []string{
@@ -111,7 +89,7 @@ func WithGetDBApplyDDL(apply bool) GetDBOption {
 	}
 }
 
-func GetDB(t *testing.T, uri string, opts ...GetDBOption) (db.Database, string) {
+func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) {
 	options := &GetDBOptions{
 		ApplyDDL: true,
 	}
@@ -154,42 +132,44 @@ func GetDB(t *testing.T, uri string, opts ...GetDBOption) (db.Database, string) 
 	return database, connURI
 }
 
-func GetBlockAdapter(t *testing.T, translator block.UploadIdTranslator) block.Adapter {
-	_, useS3 := os.LookupEnv(S3BlockAdapterEnvVar)
-	isLocal := !useS3
-	if isLocal {
-		return mem.New(mem.WithTranslator(translator))
-	} else {
-		aws_region, region_ok := os.LookupEnv(AWS_REGION)
-		if !region_ok {
-			aws_region = "us-east-1"
-		}
-		cfg := &aws.Config{
-			Region: aws.String(aws_region),
-		}
-		aws_secret, secret_ok := os.LookupEnv(AWS_SECRET)
-		aws_key, key_ok := os.LookupEnv(AWS_KEY)
-		if key_ok && secret_ok {
-			cfg.Credentials = credentials.NewStaticCredentials(aws_key, aws_secret, "")
-		} else {
-			cfg.Credentials = credentials.NewSharedCredentials("", "default")
-		}
-
-		sess := session.Must(session.NewSession(cfg))
-		svc := s3.New(sess)
-		adapter := lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
-		return adapter
-	}
-}
-
-func Must(t *testing.T, err error) {
+func Must(t testing.TB, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("error returned for operation: %v", err)
 	}
 }
 
-func MustDo(t *testing.T, what string, err error) {
+func MustDo(t testing.TB, what string, err error) {
+	t.Helper()
 	if err != nil {
 		t.Fatalf("%s, expected no error, got err=%s", what, err)
 	}
+}
+
+func NewBlockAdapterByEnv(translator block.UploadIdTranslator) block.Adapter {
+	_, useS3 := os.LookupEnv(envKeyUseS3BlockAdapter)
+	isLocal := !useS3
+	if isLocal {
+		return mem.New(mem.WithTranslator(translator))
+	}
+
+	awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
+	if !regionOk {
+		awsRegion = "us-east-1"
+	}
+	cfg := &aws.Config{
+		Region: aws.String(awsRegion),
+	}
+	awsSecret, secretOk := os.LookupEnv(envKeyAwsSecret)
+	awsKey, keyOk := os.LookupEnv(envKeyAws)
+	if keyOk && secretOk {
+		cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
+	} else {
+		cfg.Credentials = credentials.NewSharedCredentials("", "default")
+	}
+
+	sess := session.Must(session.NewSession(cfg))
+	svc := s3.New(sess)
+	adapter := lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
+	return adapter
 }
