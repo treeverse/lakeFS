@@ -15,8 +15,11 @@ import (
 
 type TxFunc func(tx Tx) (interface{}, error)
 
+type Rows = sqlx.Rows
+
 type Database interface {
 	io.Closer
+	Queryx(query string, args ...interface{}) (*Rows, error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 }
@@ -33,6 +36,10 @@ func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
+func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
+	return d.db.Queryx(query, args...)
+}
+
 func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	options := DefaultTxOptions()
 	for _, opt := range opts {
@@ -43,6 +50,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	for attempt < SerializationRetryMaxAttempts {
 		if attempt > 0 {
 			duration := time.Duration(int(SerializationRetryStartInterval) * attempt)
+			dbRetriesCount.Inc()
 			options.logger.
 				WithField("attempt", attempt).
 				WithField("sleep_interval", duration).

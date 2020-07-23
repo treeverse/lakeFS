@@ -34,7 +34,7 @@ export const extractError = async (response) => {
 
 const apiRequest = async (uri, requestData = {}, additionalHeaders = {}, defaultHeaders ={"Accept": "application/json",
     "Content-Type": "application/json",}) => {
-    return await fetch(`${API_ENDPOINT}${uri}`, {
+    return fetch(`${API_ENDPOINT}${uri}`, {
         headers: new Headers({
             ...defaultHeaders,
             ...additionalHeaders,
@@ -88,7 +88,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list users: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async createUser(userId) {
@@ -96,7 +96,7 @@ class Auth {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async listGroups(after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -105,7 +105,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list groups: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async listGroupMembers(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -114,7 +114,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list group members: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async addUserToGroup(userId, groupId) {
@@ -171,7 +171,7 @@ class Auth {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async listPolicies(after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -180,7 +180,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async createPolicy(policyId, policyDocument) {
@@ -192,7 +192,7 @@ class Auth {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async editPolicy(policyId, policyDocument) {
@@ -204,7 +204,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async listCredentials(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -213,7 +213,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list credentials: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async createCredentials(userId) {
@@ -223,7 +223,7 @@ class Auth {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async listUserGroups(userId, after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -232,7 +232,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list user groups: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async listUserPolicies(userId, after, amount = DEFAULT_LISTING_AMOUNT, effective = false) {
@@ -244,7 +244,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async getPolicy(policyId) {
@@ -252,7 +252,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not get policy: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async listGroupPolicies(groupId, after, amount = DEFAULT_LISTING_AMOUNT) {
@@ -261,7 +261,7 @@ class Auth {
         if (response.status !== 200) {
             throw new Error(`could not list policies: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async deleteUser(userId) {
@@ -325,7 +325,7 @@ class Repositories {
         } else if (response.status !== 200) {
             throw new Error(`could not get repository: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async list(after, amount) {
@@ -334,14 +334,14 @@ class Repositories {
         if (response.status !== 200) {
             throw new Error(`could not list repositories: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
     async filter(from, amount) {
         if (!from) {
-            return await this.list(from, amount);
+            return this.list(from, amount);
         }
-        const response = await this.list(from, 1000);
+        const response = await this.list(from, amount);
         let self;
         try {
             self = await this.get(from);
@@ -350,19 +350,18 @@ class Repositories {
                 throw error;
             }
         }
-        let results = response.results.filter(repo => repo.id.indexOf(from) === 0);
-        let hasMore = (results.length === 1000 && response.pagination.has_more);
-        if (!!self) results = [self, ...results];
+        const results = response.results.filter(repo => repo.id.indexOf(from) === 0);
+        if (self) results.unshift(from);
+        const hasMore = response.pagination.has_more;
 
-        let returnVal = {
+        return {
             results,
             pagination: {
                 has_more: hasMore,
-                max_per_page: 1000,
-                results: results.length + 1,
+                max_per_page: amount,
+                results: results.length,
             },
         };
-        return returnVal;
     }
 
     async create(repo) {
@@ -373,7 +372,7 @@ class Repositories {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async delete(repoId) {
@@ -393,22 +392,22 @@ class Branches {
         } else if (response.status !== 200) {
             throw new Error(`could not get branch: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
-    async create(repoId, id, sourceRefId) {
+    async create(repoId, name, source) {
         const response = await apiRequest(`/repositories/${repoId}/branches`, {
             method: 'POST',
-            body: json({id, sourceRefId}),
+            body: json({name, source}),
         });
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
-    async revert(repoId, branchId, options) {
-        const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}`, {
+    async revert(repoId, branch, options) {
+        const response = await apiRequest(`/repositories/${repoId}/branches/${branch}`, {
             method: 'PUT',
             body: json(options),
         });
@@ -423,13 +422,13 @@ class Branches {
         if (response.status !== 200) {
             throw new Error(`could not list branches: ${await extractError(response)}`)
         }
-        return await response.json();
+        return response.json();
     }
 
 
     async filter(repoId, from, amount) {
         if (!from) {
-            return await this.list(repoId, from, amount);
+            return this.list(repoId, from, amount);
         }
         const response = await this.list(repoId, from, amount);
         let self;
@@ -442,31 +441,30 @@ class Branches {
                 }
             }
         }
-        let results = response.results.filter(branch => branch.id.indexOf(from) === 0);
-        let hasMore = (results.length === amount && response.pagination.has_more);
-        if (!!self) results = [self, ...results];
+        const results = response.results.filter(branch => branch.indexOf(from) === 0);
+        if (self) results.unshift(from);
+        const hasMore = response.pagination.has_more;
 
-        let returnVal = {
+        return {
             results,
             pagination: {
                 has_more: hasMore,
-                max_per_page: 1000,
-                results: results.length + (!!self) ? 1 : 0,
+                max_per_page: amount,
+                results: results.length,
             },
         };
-        return returnVal;
     }
 }
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = 1000, readUncommitted = true) {
+    async list(repoId, ref, tree, after = "", amount = 300, readUncommitted = true) {
         const query = qs({tree, amount, after, readUncommitted});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async upload(repoId, branchId, path, fileObject) {
@@ -480,7 +478,7 @@ class Objects {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async delete(repoId, branchId, path) {
@@ -492,6 +490,17 @@ class Objects {
             throw new Error(await extractError(response));
         }
     }
+
+    async import(repoId, manifestUrl, dryRun) {
+        const query = qs({manifestUrl, dryRun});
+        const response = await apiRequest(`/repositories/${repoId}/inventory/s3/import?${query}`, {
+            method: 'POST',
+        });
+        if (response.status !== 201) {
+            throw new Error(await extractError(response));
+        }
+        return response.json()
+    }
 }
 
 class Commits {
@@ -501,7 +510,7 @@ class Commits {
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async commit(repoId, branchId, message, metadata ={}) {
@@ -512,7 +521,7 @@ class Commits {
         if (response.status !== 201) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 }
 
@@ -527,7 +536,7 @@ class Refs {
         if (response.status !== 200) {
             throw new Error(await extractError(response));
         }
-        return await response.json();
+        return response.json();
     }
 
     async merge(repoId, sourceBranch, destinationBranch) {

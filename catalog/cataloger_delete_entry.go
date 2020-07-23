@@ -2,7 +2,10 @@ package catalog
 
 import (
 	"context"
+	"errors"
+	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -15,45 +18,59 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
 
-		// getting two entries on this path so we can check uncommitted and committed changes
-		var entries []*entryRaw
-		err = tx.Select(&entries, `SELECT physical_address,checksum,size,metadata,min_commit,is_tombstone
-			FROM entries_lineage_full_v
-			WHERE displayed_branch = $1 AND path = $2 ORDER BY rank LIMIT 2
-		`, branchID, path)
+		// delete uncommitted entry, if found first
+		res, err := tx.Exec("DELETE FROM entries WHERE branch_id=$1 AND path=$2 AND min_commit=0 AND max_commit=max_commit_id()",
+			branchID, path)
 		if err != nil {
+			return nil, fmt.Errorf("uncommitted: %w", err)
+		}
+		deletedUncommittedCount, err := res.RowsAffected()
+		if err != nil {
+			return nil, fmt.Errorf("rows affected: %w", err)
+		}
+
+		// get uncommitted entry based on path
+		lineage, err := getLineage(tx, branchID, UncommittedID)
+		if err != nil {
+			return nil, fmt.Errorf("get lineage: %w", err)
+		}
+		sql, args, err := psql.
+			Select("is_committed").
+			FromSelect(sqEntriesLineage(branchID, UncommittedID, lineage), "entries").
+			// Expired objects *can* be successfully deleted!
+			Where(sq.Eq{"path": path, "is_deleted": false}).
+			ToSql()
+		if err != nil {
+			return nil, fmt.Errorf("build sql: %w", err)
+		}
+		var isCommitted bool
+		err = tx.Get(&isCommitted, sql, args...)
+		committedNotFound := errors.Is(err, db.ErrNotFound)
+		if err != nil && !committedNotFound {
 			return nil, err
 		}
-		// handle the case where there is no entry to delete
-		if len(entries) == 0 || entries[0].IsTombstone {
+		// 1. found committed record - add tombstone and return success
+		// 2. not found committed record:
+		//    - if we deleted uncommitted - return success
+		//    - if we didn't delete uncommitted - return not found
+		if isCommitted {
+			_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit)
+					VALUES ($1,$2,'','',0,'{}',0,0)`,
+				branchID, path)
+			if err != nil {
+				return nil, fmt.Errorf("tombstone: %w", err)
+			}
+			return nil, nil
+		}
+		if deletedUncommittedCount == 0 {
 			return nil, ErrEntryNotFound
 		}
-
-		switch {
-		case entries[0].MinCommit == 0 && len(entries) == 2:
-			// uncommitted change with previous committed entry - update to tombstone
-			_, err = tx.Exec(`UPDATE entries SET physical_address=$3, checksum=$4, size=$5, metadata=$6, max_commit=$7
-				WHERE displayed_branch = $1 AND path = $2 AND min_commit = 0`,
-				branchID, path, "", "", 0, nil, 0)
-		case entries[0].MinCommit == 0 && len(entries) == 1:
-			// uncommitted change without previous committed entry - delete uncommitted
-			_, err = tx.Exec(`DELETE FROM entries_v WHERE branch_id = $1 AND path = $2 AND NOT is_committed`,
-				branchID, path)
-		case entries[0].MinCommit != 0:
-			// committed change - add tombstone
-			ent := entries[0]
-			_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit) 
-				VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-				branchID, path, ent.PhysicalAddress, ent.Checksum, ent.Size, ent.Metadata, 0, 0)
-		default:
-			return nil, ErrInvalidState
-		}
-		return nil, err
+		return nil, nil
 	}, c.txOpts(ctx)...)
 	return err
 }

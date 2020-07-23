@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -15,46 +16,43 @@ func (c *cataloger) DeleteBranch(ctx context.Context, repository, branch string)
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// get repository id and default branch name
-		var r struct {
-			ID            string `db:"id"`
-			DefaultBranch string `db:"default_branch"`
-		}
-		err := tx.Get(&r, `SELECT r.id, b.name as default_branch
-			FROM repositories r
-			JOIN branches b ON r.default_branch = b.id 
-			WHERE r.name = $1`, repository)
+		branchID, err := getBranchID(tx, repository, branch, LockTypeUpdate)
 		if err != nil {
 			return nil, err
 		}
 
-		// fail in case we try to delete default branch
-		if r.DefaultBranch == branch {
-			return nil, ErrOperationNotPermitted
+		// default branch doesn't have parents
+		var legacyCount int
+		err = tx.Get(&legacyCount, `SELECT array_length(lineage,1) FROM branches WHERE id=$1`, branchID)
+		if err != nil {
+			return nil, err
+		}
+		if legacyCount == 0 {
+			return nil, fmt.Errorf("delete default branch: %w", ErrOperationNotPermitted)
 		}
 
 		// check we don't have branch depends on us by count lineage records we are part of
-		var ancestorCount int
-		err = tx.Get(&ancestorCount, `SELECT count(branch_id) FROM lineage 
-			WHERE ancestor_branch = (SELECT id FROM branches WHERE repository_id = $1 AND name = $2)`, r.ID, branch)
+		var childBranches int
+		err = tx.Get(&childBranches, `SELECT count(*) FROM branches b 
+			JOIN branches b2 ON b.repository_id = b2.repository_id AND b2.id=$1
+			WHERE $1=ANY(b.lineage)`, branchID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("dependent check: %w", err)
 		}
-		if ancestorCount > 0 {
-			return nil, ErrBranchHasDependentBranches
+		if childBranches > 0 {
+			return nil, fmt.Errorf("branch has dependent branch: %w", ErrOperationNotPermitted)
 		}
 
 		// delete branch entries
-		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id = (SELECT id FROM branches WHERE repository_id = $1 AND name = $2)`,
-			r.ID, branch)
+		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id=$1`, branchID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("delete entries: %w", err)
 		}
 
 		// delete branch
-		res, err := tx.Exec(`DELETE FROM branches WHERE repository_id = $1 AND name = $2`, r.ID, branch)
+		res, err := tx.Exec(`DELETE FROM branches WHERE id=$1`, branchID)
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("delete branch: %w", err)
 		}
 		if affected, err := res.RowsAffected(); err != nil {
 			return nil, err

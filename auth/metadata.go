@@ -83,7 +83,7 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 			// we don't have an installation ID - let's write one.
 			installationID = uuid.Must(uuid.NewUUID()).String()
 			metadata["installation_id"] = installationID
-			metadata["setup_time"] = time.Now().Format(time.RFC3339)
+			metadata["setup_time"] = time.Now().UTC().Format(time.RFC3339)
 		}
 
 		err = writeMetadata(tx, metadata)

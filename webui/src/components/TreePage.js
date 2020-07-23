@@ -1,14 +1,14 @@
-import React, {useEffect, useState, useCallback, useRef} from "react";
+import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
-import {Tooltip, OverlayTrigger, ButtonToolbar, Button, Form, Row, Col, Modal} from "react-bootstrap";
-import {SyncIcon, GitCommitIcon, PlusIcon, XIcon} from "@primer/octicons-react";
+import {Button, ButtonToolbar, Col, Form, Modal, OverlayTrigger, Row, Tooltip} from "react-bootstrap";
+import {GitCommitIcon, PlusIcon, SyncIcon, XIcon} from "@primer/octicons-react";
 import {deleteObject, listTree, listTreePaginate, upload, uploadDone} from "../actions/objects";
 import {diff, resetDiff} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
 import Tree from "./Tree";
 import {doCommit, resetCommit} from "../actions/commits";
-import {revertBranch, resetRevertBranch} from "../actions/branches";
+import {listBranches, resetRevertBranch, revertBranch} from "../actions/branches";
 import Alert from "react-bootstrap/Alert";
 import ConfirmationModal from "./ConfirmationModal";
 
@@ -56,8 +56,7 @@ const RevertButton = connect(
 const UploadButton = connect(
     ({ objects }) => ({ uploadState: objects.upload }),
     ({ upload, uploadDone })
-)(({ repo, refId, path, uploadState, upload, uploadDone }) => {
-    const [show, setShow] = useState(false);
+)(({ repo, refId, path, uploadState, upload, uploadDone, show, setShow }) => {
     const textRef = useRef(null);
     const fileRef = useRef(null);
 
@@ -66,7 +65,7 @@ const UploadButton = connect(
             setShow(false);
             uploadDone()
         }
-    }, [uploadDone, uploadState.done]);
+    }, [setShow, uploadDone, uploadState.done]);
 
     if (!refId || refId.type !== 'branch') {
         return <span/>;
@@ -123,6 +122,7 @@ const UploadButton = connect(
         </>
     );
 });
+
 
 const CommitButton = connect(
     ({ commits }) => ({ commitState: commits.commit }),
@@ -242,11 +242,10 @@ const CommitButton = connect(
     );
 });
 
-
-const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState}) => {
+const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, uploadState, deleteObject, deleteState, commitState, revertState, importState, setShowImportModal}) => {
     const history = useHistory();
     const location = useLocation();
-
+    const[showUploadModal, setShowUploadModal] = useState(false)
     const refreshData = useCallback(() => {
         listTree(repo.id, refId.id, path);
         if (refId.type === 'branch') {
@@ -258,10 +257,11 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
 
     useEffect(() => {
         refreshData();
-    }, [refreshData, repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done, revertState.done]);
+    }, [refreshData, repo.id, refId, path, listTree, diff, resetDiff, uploadState.done, commitState.done, deleteState.done, revertState.done, importState.done]);
 
     const paginator = (!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const changes = diffResults.payload ? diffResults.payload.results.length : 0;
+
     return (
         <div className="mt-3">
             <div className="action-bar">
@@ -291,7 +291,7 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                     </OverlayTrigger>
 
                     <RevertButton refId={refId} repo={repo} changes={changes}/>
-                    <UploadButton refId={refId} repo={repo} path={path}/>
+                    <UploadButton show={showUploadModal} setShow={setShowUploadModal} refId={refId} repo={repo} path={path}/>
                     <CommitButton refId={refId} repo={repo} changes={changes}/>
                 </ButtonToolbar>
             </div>
@@ -310,8 +310,9 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
                 }}
                 diffResults={diffResults}
                 list={list}
-                path={path}/>
-
+                path={path}
+                setShowUploadModal={setShowUploadModal}
+                setShowImportModal={setShowImportModal}/>
             {paginator &&
             <p className="tree-paginator">
                 <Button variant="outline-primary" onClick={() => {
@@ -326,13 +327,15 @@ const TreePage = ({repo, refId, path, list, listTree, listTreePaginate, diff, re
 };
 
 export default connect(
-    ({ objects, refs, commits, branches }) => ({
+    ({objects, refs, commits, branches}) => ({
         list: objects.list,
         diffResults: refs.diff,
         uploadState: objects.upload,
         deleteState: objects.delete,
         commitState: commits.commit,
         revertState: branches.revert,
+        importState: objects.import,
+        importDryRunState: objects.importDryRun,
     }),
-    ({ listTree, listTreePaginate, diff, resetDiff, deleteObject })
+    ({listTree, listTreePaginate, diff, resetDiff, deleteObject, listBranches})
 )(TreePage);

@@ -4,61 +4,55 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 
-	pth "github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 )
 
 const (
 	Separator = "/"
 
-	CreateRepoMatch = "{repo:[^\\/]+}"
-
-	RepoMatch   = "{repo:[a-zA-Z0-9\\-]+}"
-	RepoReMatch = "(?P<repo>[a-zA-Z0-9\\-]+)"
-
-	PathMatch   = "{path:.*}"
-	PathReMatch = "(?P<path>.*)"
-
-	RefMatch   = "{ref:[a-z0-9\\-]+}"
-	RefReMatch = "(?P<ref>[a-z0-9\\-]+)"
+	rePath      = "(?P<path>.*)"
+	reReference = "(?P<ref>[a-z0-9\\-]+)"
 )
 
 var (
-	EncodedPathRe    = regexp.MustCompile(fmt.Sprintf("/?%s/%s", RefReMatch, PathReMatch))
-	EncodedPathRefRe = regexp.MustCompile(fmt.Sprintf("/?%s", RefReMatch))
-	EncodedAbsPathRe = regexp.MustCompile(fmt.Sprintf("/?%s/%s/%s", RepoReMatch, RefReMatch, PathReMatch))
+	EncodedPathRe          = regexp.MustCompile(fmt.Sprintf("/?%s/%s", reReference, rePath))
+	EncodedPathReferenceRe = regexp.MustCompile(fmt.Sprintf("/?%s", reReference))
 
 	ErrPathMalformed = errors.New("encoded path is malformed")
 )
 
+type Ref struct {
+	Branch   string
+	CommitID catalog.CommitID
+}
+
 type ResolvedPath struct {
-	Path     string
 	Ref      string
+	Path     string
 	WithPath bool
 }
 
 type ResolvedAbsolutePath struct {
-	Repo string
-	Path string
-	Ref  string
+	Repo      string
+	Reference string
+	Path      string
 }
 
 func ResolveAbsolutePath(encodedPath string) (ResolvedAbsolutePath, error) {
-	r := ResolvedAbsolutePath{}
-	match := EncodedAbsPathRe.FindStringSubmatch(encodedPath)
-	if len(match) == 0 {
-		return r, ErrPathMalformed
+	const encodedPartsCount = 3
+	encodedPath = strings.TrimLeft(encodedPath, "/")
+	parts := strings.SplitN(encodedPath, "/", encodedPartsCount)
+	if len(parts) != encodedPartsCount {
+		return ResolvedAbsolutePath{}, ErrPathMalformed
 	}
-	result := make(map[string]string)
-	for i, name := range EncodedAbsPathRe.SubexpNames() {
-		if i != 0 && name != "" {
-			result[name] = match[i]
-		}
-	}
-	r.Repo = result["repo"]
-	r.Path = result["path"]
-	r.Ref = result["ref"]
-	return r, nil
+	return ResolvedAbsolutePath{
+		Repo:      parts[0],
+		Reference: parts[1],
+		Path:      parts[2],
+	}, nil
 }
 
 func ResolvePath(encodedPath string) (ResolvedPath, error) {
@@ -70,9 +64,9 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 	match := EncodedPathRe.FindStringSubmatch(encodedPath)
 	if len(match) == 0 {
 		// attempt to see if this is a ref only
-		match = EncodedPathRefRe.FindStringSubmatch(encodedPath)
+		match = EncodedPathReferenceRe.FindStringSubmatch(encodedPath)
 		if len(match) > 0 {
-			for i, name := range EncodedPathRefRe.SubexpNames() {
+			for i, name := range EncodedPathReferenceRe.SubexpNames() {
 				if i != 0 && name != "" {
 					result[name] = match[i]
 				}
@@ -95,5 +89,5 @@ func ResolvePath(encodedPath string) (ResolvedPath, error) {
 }
 
 func WithRef(path, ref string) string {
-	return pth.Join([]string{ref, path})
+	return block.JoinPathParts([]string{ref, path})
 }

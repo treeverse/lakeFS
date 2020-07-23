@@ -2,15 +2,19 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) CreateRepository(ctx context.Context, repository string, bucket string, branch string) error {
+const (
+	createRepositoryCommitMessage = "Repository created"
+)
+
+func (c *cataloger) CreateRepository(ctx context.Context, repository string, storageNamespace string, branch string) error {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "bucket", IsValid: ValidateBucketName(bucket)},
+		{Name: "storageNamespace", IsValid: ValidateStorageNamespace(storageNamespace)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
 		return err
@@ -18,34 +22,40 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, buc
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// next id for branch
-		var branchID int
+		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq')`); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("next next id: %s", err)
 		}
 
 		// next id for repository
-		var repoID int
+		var repoID int64
 		if err := tx.Get(&repoID, `SELECT nextval('repositories_id_seq')`); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("next repository id: %w", err)
 		}
 		if _, err := tx.Exec(`SET CONSTRAINTS repositories_branches_id_fkey DEFERRED`); err != nil {
-			return nil, err
-		}
-		// create repository with ref to branch
-		creationDate := c.Clock.Now()
-		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
-			VALUES ($1, $2, $3, $4, $5)`, repoID, repository, bucket, creationDate, branchID); err != nil {
-			return nil, err
-		}
-		// create branch with ref to repository
-		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name)
-			VALUES ($1, $2, $3)`, repoID, branchID, branch); err != nil {
-			return nil, err
+			return nil, fmt.Errorf("set constranits: %w", err)
 		}
 
-		c.log.WithContext(ctx).
-			WithFields(logging.Fields{"branch_id": branchID, "branch": branch, "repo_id": repoID, "repository": repository}).
-			Debug("Repository created")
+		// create repository with ref to branch
+		creationDate := c.clock.Now()
+		if _, err := tx.Exec(`INSERT INTO repositories (id, name, storage_namespace, creation_date, default_branch)
+			VALUES ($1,$2,$3,$4,$5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
+			return nil, fmt.Errorf("insert repository: %w", err)
+		}
+
+		// create branch with ref to repository
+		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name)
+			VALUES ($1,$2,$3)`, repoID, branchID, branch); err != nil {
+			return nil, fmt.Errorf("insert branch: %w", err)
+		}
+
+		// create initial commit
+		_, err := tx.Exec(`INSERT INTO commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
+			VALUES ($1,nextval('commit_id_seq'),$2,$3,$4,0)`,
+			branchID, CatalogerCommitter, createRepositoryCommitMessage, creationDate)
+		if err != nil {
+			return nil, fmt.Errorf("insert commit: %w", err)
+		}
 		return repoID, nil
 	}, c.txOpts(ctx)...)
 	return err

@@ -8,31 +8,30 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
-	ipath "github.com/treeverse/lakefs/index/path"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/upload"
 )
 
 const (
 	CopySourceHeader     = "x-amz-copy-source"
-	QueryParamUploadId   = "uploadId"
+	QueryParamUploadID   = "uploadId"
 	QueryParamPartNumber = "partNumber"
 )
 
 type PutObject struct{}
 
-func (controller *PutObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+func (controller *PutObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }
@@ -52,14 +51,14 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	// validate src and dst are in the same repository
-	if !strings.EqualFold(o.Repo.Id, p.Repo) {
+	if !strings.EqualFold(o.Repository.Name, p.Repo) {
 		o.Log().WithError(err).Error("cannot copy objects across repos")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
 		return
 	}
 
 	// update metadata to refer to the source hash in the destination workspace
-	src, err := o.Index.ReadEntryObject(o.Repo.Id, p.Ref, p.Path, true)
+	ent, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, p.Reference, p.Path, catalog.GetEntryParams{})
 	if err != nil {
 		o.Log().WithError(err).Error("could not read copy source")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopySource))
@@ -67,9 +66,9 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 	// write this object to workspace
 	// TODO: move this logic into the Index impl.
-	src.CreationDate = time.Now()
-	src.Name = ipath.New(o.Path, src.EntryType).BaseName()
-	err = o.Index.WriteEntry(o.Repo.Id, o.Ref, o.Path, src)
+	ent.CreationDate = time.Now()
+	ent.Path = o.Path
+	err = o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Reference, *ent)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))
@@ -77,15 +76,15 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	}
 
 	o.EncodeResponse(&serde.CopyObjectResult{
-		LastModified: serde.Timestamp(src.CreationDate),
-		ETag:         fmt.Sprintf("\"%s\"", src.Checksum),
+		LastModified: serde.Timestamp(ent.CreationDate),
+		ETag:         fmt.Sprintf("\"%s\"", ent.Checksum),
 	}, http.StatusOK)
 }
 
 func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 	o.Incr("put_mpu_part")
 	query := o.Request.URL.Query()
-	uploadId := query.Get(QueryParamUploadId)
+	uploadID := query.Get(QueryParamUploadID)
 	partNumberStr := query.Get(QueryParamPartNumber)
 
 	partNumber, err := strconv.ParseInt(partNumberStr, 10, 64)
@@ -97,18 +96,19 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 
 	o.AddLogFields(logging.Fields{
 		"part_number": partNumber,
-		"upload_id":   uploadId,
+		"upload_id":   uploadID,
 	})
 
 	// handle the upload itself
-	multiPart, err := o.Index.ReadMultiPartUpload(o.Repo.Id, uploadId)
+	multiPart, err := o.Cataloger.GetMultipartUpload(o.Context(), o.Repository.Name, uploadID)
 	if err != nil {
 		o.Log().WithError(err).Error("could not read  multipart record")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
 	byteSize := o.Request.ContentLength
-	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: multiPart.PhysicalAddress}, byteSize, o.Request.Body, uploadId, partNumber)
+	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
+		byteSize, o.Request.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log().WithError(err).Error("part " + partNumberStr + " upload failed")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -121,15 +121,6 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 func (controller *PutObject) Handle(o *PathOperation) {
 	// check if this is a copy operation (i.e. https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
-
-	// validate branch
-	_, err := o.Index.GetBranch(o.Repo.Id, o.Ref)
-	if err != nil {
-		o.Log().WithError(err).Debug("trying to write to invalid branch")
-		o.ResponseWriter.WriteHeader(http.StatusNotFound)
-		return
-	}
-
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.PutOpts{StorageClass: storageClass}
 
@@ -139,8 +130,7 @@ func (controller *PutObject) Handle(o *PathOperation) {
 		// storage class, subsequent PUT operations of the
 		// same file continue to use that storage class.
 
-		// TODO(ariels): Add a counter for how often a copy
-		//     has different options.
+		// TODO(ariels): Add a counter for how often a copy has different options
 		controller.HandleCopy(o, copySource)
 		return
 	}
@@ -148,15 +138,15 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	query := o.Request.URL.Query()
 
 	// check if this is a multipart upload creation call
-	_, hasUploadId := query[QueryParamUploadId]
-	if hasUploadId {
+	_, hasUploadID := query[QueryParamUploadID]
+	if hasUploadID {
 		controller.HandleUploadPart(o)
 		return
 	}
 
 	o.Incr("put_object")
 	// handle the upload itself
-	checksum, physicalAddress, size, err := upload.WriteBlob(o.Index, o.Repo.Id, o.Repo.StorageNamespace, o.Request.Body, o.BlockStore, o.Request.ContentLength, opts)
+	blob, err := upload.WriteBlob(o.BlockStore, o.Repository.StorageNamespace, o.Request.Body, o.Request.ContentLength, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not write request body to block adapter")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -164,11 +154,11 @@ func (controller *PutObject) Handle(o *PathOperation) {
 	}
 
 	// write metadata
-	err = o.finishUpload(checksum, physicalAddress, size)
-	if err == nil {
-		o.SetHeader("ETag", httputil.ETag(checksum))
-		o.ResponseWriter.WriteHeader(http.StatusOK)
-	} else {
+	err = o.finishUpload(o.Repository.StorageNamespace, blob.Checksum, blob.PhysicalAddress, blob.Size)
+	if err != nil {
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
 	}
+	o.SetHeader("ETag", httputil.ETag(blob.Checksum))
+	o.ResponseWriter.WriteHeader(http.StatusOK)
 }

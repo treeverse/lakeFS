@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"os"
-	"strings"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
@@ -12,7 +11,7 @@ import (
 )
 
 var diffCmd = &cobra.Command{
-	Use:   "diff [ref uri] <other ref uri>",
+	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
 	Args: ValidationChain(
@@ -66,32 +65,24 @@ func FmtDiff(diff *models.Diff, withDirection bool) {
 	case models.DiffTypeREMOVED:
 		color = text.FgRed
 		action = "- removed"
-	default:
+	case models.DiffTypeCHANGED:
 		color = text.FgYellow
 		action = "~ modified"
-	}
-
-	var direction string
-	switch diff.Direction {
-	case models.DiffDirectionLEFT:
-		direction = "<"
-	case models.DiffDirectionRIGHT:
-		direction = ">"
+	case models.DiffTypeCONFLICT:
+		color = text.FgHiYellow
+		action = "* conflict"
 	default:
-		direction = "*"
 	}
 
 	if !withDirection {
 		_, _ = os.Stdout.WriteString(
-			color.Sprintf("%s %s %s\n",
-				action, strings.ToLower(diff.PathType), diff.Path),
+			color.Sprintf("%s %s\n", action, diff.Path),
 		)
 		return
 	}
 
 	_, _ = os.Stdout.WriteString(
-		color.Sprintf("%s %s %s %s\n",
-			direction, action, strings.ToLower(diff.PathType), diff.Path),
+		color.Sprintf("%s %s\n", action, diff.Path),
 	)
 }
 
