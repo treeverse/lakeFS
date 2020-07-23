@@ -96,7 +96,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	if attempt == SerializationRetryMaxAttempts {
 		options.logger.
 			WithField("attempt", attempt).
-			Error("transaction failed after max attempts due to serialization error")
+			Warn("transaction failed after max attempts due to serialization error")
 	}
 	return nil, ErrSerialization
 }
@@ -167,7 +167,6 @@ func (d *SqlxDatabase) getVersion() (string, error) {
 		return "", err
 	}
 	return v.(string), err
-
 }
 
 func (d *SqlxDatabase) getAuroraVersion() (string, error) {
@@ -183,5 +182,4 @@ func (d *SqlxDatabase) getAuroraVersion() (string, error) {
 		return "", err
 	}
 	return v.(string), err
-
 }
