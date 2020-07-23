@@ -2,12 +2,15 @@ package config
 
 import (
 	"fmt"
+	"net/url"
+	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
@@ -108,7 +111,32 @@ func (c *Config) BuildDatabaseConnection() db.Database {
 	return database
 }
 
-func (c *Config) buildS3Adapter() (block.Adapter, error) {
+type AwsS3RetentionConfig struct {
+	RoleArn         string
+	ManifestBaseUrl *url.URL
+}
+
+func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
+	errors := []string{}
+	roleArn := viper.GetString("blockstore.s3.retention.role_arn")
+	if roleArn == "" {
+		errors = append(errors, "blockstore.s3.retention.role_arn")
+	}
+
+	manifestBaseUrl, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
+	if err != nil {
+		errors = append(errors, fmt.Sprintf("blockstore.s3.retention.manifest_base_url: %s", err))
+	}
+	if len(errors) > 0 {
+		panic(fmt.Sprintf("need %s to handle retention on S3", strings.Join(errors, ", ")))
+	}
+	return AwsS3RetentionConfig{
+		RoleArn:         roleArn,
+		ManifestBaseUrl: manifestBaseUrl,
+	}
+}
+
+func (c *Config) GetAwsConfig() *aws.Config {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
@@ -124,6 +152,28 @@ func (c *Config) buildS3Adapter() (block.Adapter, error) {
 			viper.GetString("blockstore.s3.credentials.access_secret_key"),
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
+	return cfg
+}
+
+func GetAccount(awsConfig *aws.Config) (*string, error) {
+	sess, err := session.NewSession(awsConfig)
+	if err != nil {
+		return nil, fmt.Errorf("get AWS session: %w", err)
+	}
+	sess.ClientConfig(sts.ServiceName)
+	svc := sts.New(sess)
+	accessKeyId := viper.GetString("blockstore.s3.credentials.access_key_id")
+	account, err := svc.GetAccessKeyInfo(&sts.GetAccessKeyInfoInput{
+		AccessKeyId: aws.String(accessKeyId),
+	})
+	if err != nil {
+		return nil, fmt.Errorf("get access key info for %s: %w", accessKeyId, err)
+	}
+	return account.Account, nil
+}
+
+func (c *Config) buildS3Adapter() (block.Adapter, error) {
+	cfg := c.GetAwsConfig()
 
 	sess, err := session.NewSession(cfg)
 	if err != nil {
