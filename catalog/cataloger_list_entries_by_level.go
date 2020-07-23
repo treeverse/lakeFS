@@ -11,7 +11,7 @@ import (
 
 const ListEntriesByLevelMaxLimit = 1000
 
-func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]LevelEntry, bool, error) {
+func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]*LevelEntry, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
@@ -53,12 +53,12 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 	if err != nil {
 		return nil, false, err
 	}
-	result := markers.([]LevelEntry)
+	result := markers.([]*LevelEntry)
 	moreToRead := paginateSlice(&result, limit)
 	return result, moreToRead, nil
 }
 
-func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]LevelEntry, error) {
+func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*LevelEntry, error) {
 	type entryRun struct {
 		startRunIndex, runLength   int
 		startEntryRun, endEntryRun string
@@ -67,11 +67,14 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 	var inRun bool
 	var previousInRun string
 	var run entryRun
-	entries := make([]LevelEntry, len(markerList))
+	entries := make([]*LevelEntry, len(markerList))
 	for i, p := range markerList {
 		// remove termination character, if present
 		p = strings.TrimSuffix(p, DirectoryTermination)
-		entries[i].Path = prefix + p
+		entries[i] = &LevelEntry{
+			CommonLevel: false,
+			Entry:       Entry{Path: prefix + p},
+		}
 		if strings.HasSuffix(p, delimiter) { // terminating by '/'(slash) character is an indication of a directory
 			entries[i].CommonLevel = true
 			// its absence indicates a leaf entry that has to be read from DB
