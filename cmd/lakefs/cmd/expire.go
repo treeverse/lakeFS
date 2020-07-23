@@ -22,7 +22,7 @@ var expireCmd = &cobra.Command{
 	Short: "Apply configured retention policies to expire objects",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
-		logger := logging.Default().WithContext(ctx)
+		logger := logging.FromContext(ctx)
 		adapter, err := cfg.BuildBlockAdapter()
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
@@ -76,15 +76,6 @@ var expireCmd = &cobra.Command{
 				"repository": repo.Name,
 				"storage":    repo.StorageNamespace,
 			})
-			parsedRepo, err := url.ParseRequestURI(repo.StorageNamespace)
-			if err != nil {
-				logger.WithFields(logging.Fields{
-					"error": err,
-					"repo":  repo,
-				}).Error("Failed to parse repo to get bucket")
-				numFailures += 1
-				continue
-			}
 			policy, err := retentionService.GetPolicy(repo.Name)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to get retention policy (skip repo)")
@@ -102,22 +93,6 @@ var expireCmd = &cobra.Command{
 			}
 
 			retention.ExpireOnS3(ctx, s3ControlClient, s3Client, cataloger, expiryReader, &expiryParams)
-
-			if err != nil {
-				// Cannot advance last so fail everything
-				logger.WithField("error", err).Fatal("Failed to list repositories")
-			}
-
-			bucket := parsedRepo.Host
-			err = adapter.ValidateConfiguration(bucket)
-			if err != nil {
-				logger.WithFields(logging.Fields{
-					"error":      err,
-					"repository": repo,
-				}).Error("Configuration error found in repository")
-				numFailures += 1
-				continue
-			}
 		}
 		if numFailures > 0 {
 			logger.Fatalf("Configuration issues found in %d repositories", numFailures)
