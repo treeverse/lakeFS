@@ -93,7 +93,11 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			return ret, nil
 		}
 	}
-
+	if attempt == SerializationRetryMaxAttempts {
+		options.logger.
+			WithField("attempt", attempt).
+			Error("transaction failed after max attempts due to serialization error")
+	}
 	return nil, ErrSerialization
 }
 
