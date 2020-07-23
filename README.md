@@ -1,5 +1,3 @@
-# lakeFS
-
 
 <p align="center">
   <img src="logo_large.png"/>
