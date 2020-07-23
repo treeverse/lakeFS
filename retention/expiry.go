@@ -77,19 +77,19 @@ func (bw *BucketEncoders) GetEncoder(bucketName string) (*json.Encoder, error) {
 
 // WriteExpiryManifestFromSeekableReader reads from r ExpiryResults and returns Readers to CSV
 // files suitable for passing to AWS S3 batch tagging.
-func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r io.Reader) (map[string]io.Reader, error) {
+func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r io.Reader) (map[string]fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
 	decoder := json.NewDecoder(r)
 	bucketEncoders := BucketEncoders{}
-	count := 0
+
 	var err error
-	for ; ; count++ {
+	for recordNumber := 0; ; recordNumber++ {
+		recordLogger := logger.WithField("record_number", recordNumber)
 		record := catalog.ExpireResult{}
 		err = decoder.Decode(&record)
 		if errors.Is(err, io.EOF) {
 			break
 		}
-		recordLogger := logger.WithField("record_number", count)
 		if err != nil {
 			recordLogger.WithError(err).Warning("failed to read record; keep going, lose this expiry")
 			continue
@@ -132,7 +132,7 @@ func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r 
 	if !errors.Is(err, io.EOF) {
 		return nil, err
 	}
-	ret := map[string]io.Reader{}
+	ret := map[string]fileutil.RewindableReader{}
 	for bucket, encodingData := range bucketEncoders {
 		resetableReader, count, err := encodingData.Writer.StartReading()
 		bucketLogger := logger.WithField("bucket", bucket)
@@ -164,7 +164,7 @@ type BatchTagOnS3BucketParams struct {
 
 // BatchTagOnS3Bucket uses client (which should be on the right region) to start an AWS S3 batch
 // tagging operation in bucket according to the CSV contents of reader.
-func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, reader io.ReadSeeker, params BatchTagOnS3BucketParams) error {
+func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, reader io.ReadSeeker, params *BatchTagOnS3BucketParams) error {
 	manifestUrl, err := url.Parse(params.ManifestUrl)
 	if err != nil {
 		return fmt.Errorf("parse manifest URL %s: %w", params.ManifestUrl, err)
@@ -224,4 +224,105 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 		"job_id":   *result.JobId,
 	}).Info("started S3 batch tagging job")
 	return nil
+}
+
+// ExpireOnS3Params holds configuration for ExpireOnS3.
+type ExpireOnS3Params struct {
+	AccountId            string
+	RoleArn              string
+	ManifestUrlForBucket func(string) string
+}
+
+func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, c catalog.Cataloger, expiryResultsReader fileutil.RewindableReader, params *ExpireOnS3Params) {
+	logger := logging.FromContext(ctx)
+	manifests, err := WriteExpiryManifestsFromReader(ctx, c, expiryResultsReader)
+	if err != nil {
+		logger.WithError(err).Error("write per-bucket manifests for expiry: %s (no expiry performed)", err)
+		return
+	}
+	type doneRec struct {
+		bucketName string
+		ok         bool
+	}
+	tagCh := make(chan doneRec)
+	for bucketName, manifestReader := range manifests {
+		bucketLogger := logger.WithField("bucket", bucketName)
+		bucketLogger.Info("start expiry on S3")
+		go func(bucketName string, manifestReader io.ReadSeeker) {
+
+			params := BatchTagOnS3BucketParams{
+				AccountId:   params.AccountId,
+				RoleArn:     params.RoleArn,
+				BucketName:  bucketName,
+				ManifestUrl: params.ManifestUrlForBucket(bucketName),
+			}
+			err := BatchTagOnS3Bucket(ctx, s3ControlClient, s3Client, manifestReader, &params)
+			if err != nil {
+				bucketLogger.WithError(err).Error("tag for expiry on S3")
+				return
+			}
+			tagCh <- doneRec{bucketName: bucketName, ok: true}
+		}(bucketName, manifestReader)
+	}
+
+	taggedBuckets := make(map[string]struct{})
+	for i := 0; i < len(manifests); i++ {
+		done := <-tagCh
+		if done.ok {
+			taggedBuckets[done.bucketName] = struct{}{}
+		}
+	}
+
+	// Filter entries from successful buckets
+	err = expiryResultsReader.Rewind()
+	if err != nil {
+		logger.WithError(err).Error("[SEVERE] rewind expiry entries to expire on DB: entries may be lost")
+		// TODO(ariels): attempt to cancel jobs?  (Tricky because those jobs are
+		// unlikely already to be available -- meanwhile failing to rewind a file is
+		// pretty much impossible.
+		return
+	}
+	decoder := json.NewDecoder(expiryResultsReader)
+
+	taggedRecordsByRepo := make(map[string] /*repositoryName*/ []*catalog.ExpireResult, 10000)
+	for recordNumber := 0; ; recordNumber++ {
+		recordLogger := logger.WithField("record_number", recordNumber)
+		record := catalog.ExpireResult{}
+		err = decoder.Decode(&record)
+		if errors.Is(err, io.EOF) {
+			break
+		}
+		if err != nil {
+			recordLogger.WithError(err).Warning("failed to read record; keep going, already lost this expiry")
+			continue
+		}
+		recordLogger = recordLogger.WithField("record", record)
+		repository, err := c.GetRepository(ctx, record.Repository)
+		if err != nil {
+			recordLogger.WithError(err).Warning("failed to get repository URI; keep going, already lost this expiry")
+			continue
+		}
+		qualifiedKey, err := block.ResolveNamespace(repository.StorageNamespace, record.PhysicalAddress)
+		if err != nil {
+			recordLogger.WithError(err).
+				Warning("could not resolve namespace; keep going, already lost this expiry")
+		}
+		recordLogger = recordLogger.WithField("qualified_key", qualifiedKey)
+		bucketName := qualifiedKey.StorageNamespace
+		if _, ok := taggedBuckets[bucketName]; !ok {
+			continue
+		}
+		taggedRecordsByRepo[record.Repository] = append(taggedRecordsByRepo[record.Repository], &record)
+	}
+	for repositoryName, records := range taggedRecordsByRepo {
+		repositoryLogger := logger.WithFields(logging.Fields{"repository": repositoryName, "num_records": len(records)})
+		err := c.MarkExpired(ctx, repositoryName, records)
+		if err != nil {
+			// TODO(ariels): attempt to cancel jobs?  (Tricky because those jobs are
+			// unlikely already to be available.)
+			repositoryLogger.WithError(err).Error("[SEVERE] failed to mark objects expired in catalog; S3 WILL expire them soon")
+		} else {
+			repositoryLogger.Info("marked objects expired in catalog")
+		}
+	}
 }
