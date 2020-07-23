@@ -360,17 +360,14 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 
 	// handle GET /?versioning
-	keys := o.Request.URL.Query()
-	for k := range keys {
-		if strings.EqualFold(k, "versioning") {
-			// this is a versioning request
-			o.EncodeXMLBytes([]byte(serde.VersioningResponse), http.StatusOK)
-			return
-		}
+	query := o.Request.URL.Query()
+	if _, found := query["versioning"]; found {
+		o.EncodeXMLBytes([]byte(serde.VersioningResponse), http.StatusOK)
+		return
 	}
 
 	// handle ListObjects versions
-	listType := o.Request.URL.Query().Get("list-type")
+	listType := query.Get("list-type")
 	switch listType {
 	case "", "1":
 		controller.ListV1(o)
