@@ -14,19 +14,16 @@ func (c *cataloger) ResetBranch(ctx context.Context, repository, branch string) 
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
-		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND min_commit = 0`, branchID)
+		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id=$1 AND min_commit=0`, branchID)
 		if err != nil {
 			return nil, err
 		}
-		affected, err := res.RowsAffected()
-		if err != nil {
-			return nil, err
-		}
-		return affected, nil
+		_, err = res.RowsAffected()
+		return nil, err
 	}, c.txOpts(ctx)...)
 	return err
 }

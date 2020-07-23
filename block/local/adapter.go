@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/md5"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -18,6 +19,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 )
+
+const BlockstoreType = "local"
 
 type Adapter struct {
 	path               string
@@ -83,7 +86,7 @@ func (l *Adapter) Remove(obj block.ObjectPointer) error {
 	return err
 }
 
-func (l *Adapter) Get(obj block.ObjectPointer) (reader io.ReadCloser, err error) {
+func (l *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (reader io.ReadCloser, err error) {
 	path := l.getPath(obj.Identifier)
 	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
 	if err != nil {
@@ -142,8 +145,7 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 		fullDir := path.Dir(fullPath)
 		err := os.MkdirAll(fullDir, 0755)
 		if err != nil {
-			fmt.Errorf("failed to create directory: " + fullDir)
-			return "", nil
+			return "", err
 		}
 
 	}
@@ -160,6 +162,7 @@ func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return ETag, err
 }
+
 func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	files, err := l.getPartFiles(uploadId)
 	if err != nil {
@@ -168,17 +171,16 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	l.removePartFiles(files)
 	return nil
 }
+
 func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	ETag := computeETag(MultipartList.Part) + "-" + strconv.Itoa(len(MultipartList.Part))
 	partFiles, err := l.getPartFiles(uploadId)
 	if err != nil {
-		fmt.Errorf("did not find part files for: " + uploadId)
-		return nil, -1, err
+		return nil, -1, fmt.Errorf("part files not found for %s: %w", uploadId, err)
 	}
 	size, err := l.unitePartFiles(obj.Identifier, partFiles)
 	if err != nil {
-		fmt.Errorf("faile multipart upload file unification: " + uploadId)
-		return nil, -1, err
+		return nil, -1, fmt.Errorf("multipart upload unite for %s: %w", uploadId, err)
 	}
 	l.removePartFiles(partFiles)
 	return &ETag, size, nil
@@ -204,17 +206,15 @@ func computeETag(Parts []*s3.CompletedPart) string {
 func (l *Adapter) unitePartFiles(identifier string, files []string) (int64, error) {
 	path := l.getPath(identifier)
 	unitedFile, err := os.Create(path)
-	defer unitedFile.Close()
 	if err != nil {
-		fmt.Errorf("failed creating united multipart file : " + path)
-		return 0, err
+		return 0, fmt.Errorf("create path %s: %w", path, err)
 	}
+	defer unitedFile.Close()
 	var readers = []io.Reader{}
 	for _, name := range files {
 		f, err := os.Open(name)
 		if err != nil {
-			fmt.Errorf("failed opening file : " + name)
-			return 0, err
+			return 0, fmt.Errorf("open file %s: %w", name, err)
 		}
 		readers = append(readers, f)
 		defer f.Close()
@@ -223,12 +223,10 @@ func (l *Adapter) unitePartFiles(identifier string, files []string) (int64, erro
 	size, err := io.Copy(unitedFile, unitedReader)
 	return size, err
 }
+
 func (l *Adapter) removePartFiles(files []string) {
 	for _, name := range files {
-		err := os.Remove(name)
-		if err != nil {
-			fmt.Errorf("failed removing file : " + name)
-		}
+		_ = os.Remove(name)
 	}
 }
 
@@ -236,9 +234,16 @@ func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
 	globPathPattern := l.getPath(uploadId) + "-*"
 	names, err := filepath.Glob(globPathPattern)
 	if err != nil {
-		fmt.Errorf("failed Globe on: " + globPathPattern)
 		return nil, err
 	}
 	sort.Strings(names)
-	return names, err
+	return names, nil
+}
+
+func (l *Adapter) ValidateConfiguration(_ string) error {
+	return nil
+}
+
+func (l *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, errors.New("inventory feature not implemented for local storage adapter")
 }

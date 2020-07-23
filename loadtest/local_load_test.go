@@ -8,7 +8,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/dedup"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
@@ -16,8 +16,10 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -41,13 +43,9 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) SetInstallationID(installationID string) {
+func (m *mockCollector) SetInstallationID(_ string) {}
 
-}
-
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
-
-}
+func (m *mockCollector) CollectMetadata(_ map[string]string) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
@@ -56,20 +54,28 @@ func TestLocalLoad(t *testing.T) {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
 	conn, _ := testutil.GetDB(t, databaseUri)
-	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
-
-	index := index.NewDBIndex(conn)
-
+	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
+	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
+	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
 	migrator := db.NewDatabaseMigrator(databaseUri)
+	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
+	t.Cleanup(func() {
+		// order is important - close cataloger channel before dedup
+		_ = cataloger.Close()
+		_ = dedupCleaner.Close()
+	})
+
 	handler := api.NewHandler(
-		index,
+		cataloger,
 		blockAdapter,
 		authService,
 		meta,
 		&mockCollector{},
+		retentionService,
 		migrator,
+		dedupCleaner,
 		logging.Default(),
 	)
 

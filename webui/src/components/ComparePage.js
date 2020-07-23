@@ -32,7 +32,7 @@ const MergeButton = connect(
         mergeText = 'Please select a different branch to compare with';
     } else if (diffItems.length === 0) {
         mergeText = `No changes found between '${sourceBranchId}' and '${destinationBranchId}'`;
-    } else if (diffItems.some(x => x.direction === 'CONFLICT')) {
+    } else if (diffItems.some(x => x.type === 'CONFLICT')) {
         mergeText = `Conflict found between '${sourceBranchId}' and '${destinationBranchId}'`;
     } else {
         mergeText = `Merge '${sourceBranchId}' into '${destinationBranchId}'`;

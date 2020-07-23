@@ -5,37 +5,43 @@ import (
 	"errors"
 	"net/http"
 
+	dedup2 "github.com/treeverse/lakefs/dedup"
+
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/operations"
 	"github.com/treeverse/lakefs/gateway/sig"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/stats"
 )
 
 type ServerContext struct {
+	ctx         context.Context
 	region      string
 	bareDomain  string
-	meta        index.Index
+	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService simulator.GatewayAuthService
 	stats       stats.Collector
+	dedup       *dedup2.Cleaner
 }
 
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
+		ctx:         ctx,
 		region:      c.region,
 		bareDomain:  c.bareDomain,
-		meta:        c.meta.WithContext(ctx),
+		cataloger:   c.cataloger,
 		blockStore:  c.blockStore.WithContext(ctx),
 		authService: c.authService,
 		stats:       c.stats,
+		dedup:       c.dedup,
 	}
 }
 
@@ -47,26 +53,29 @@ type Server struct {
 
 func NewHandler(
 	region string,
-	meta index.Index,
+	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService simulator.GatewayAuthService,
 	bareDomain string,
 	stats stats.Collector,
+	dedup *dedup2.Cleaner,
 ) http.Handler {
-	ctx := &ServerContext{
-		meta:        meta,
+	sc := &ServerContext{
+		ctx:         context.Background(),
+		cataloger:   cataloger,
 		region:      region,
 		bareDomain:  bareDomain,
 		blockStore:  blockStore,
 		authService: authService,
 		stats:       stats,
+		dedup:       dedup,
 	}
 
 	// setup routes
 	var handler http.Handler
 	handler = &Handler{
 		BareDomain:         bareDomain,
-		ctx:                ctx,
+		sc:                 sc,
 		NotFoundHandler:    http.HandlerFunc(notFound),
 		ServerErrorHandler: nil,
 	}
@@ -97,10 +106,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 		ResponseWriter: writer,
 		Region:         s.region,
 		FQDN:           s.bareDomain,
-
-		Index:      s.meta,
-		BlockStore: s.blockStore,
-		Auth:       s.authService,
+		Cataloger:      s.cataloger,
+		BlockStore:     s.blockStore,
+		Auth:           s.authService,
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
@@ -108,7 +116,9 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 				Debug("performing S3 action")
 			s.stats.CollectEvent("s3_gateway", action)
 		},
+		DedupCleaner: s.dedup,
 	}
+
 	// authenticate
 	authenticator := sig.ChainedAuthenticator(
 		sig.NewV4Authenticator(request),
@@ -185,36 +195,36 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	return op
 }
 
-func operation(ctx *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
+func operation(sc *ServerContext, writer http.ResponseWriter, request *http.Request) *operations.Operation {
 	return &operations.Operation{
 		Request:        request,
 		ResponseWriter: writer,
-		Region:         ctx.region,
-		FQDN:           ctx.bareDomain,
-
-		Index:      ctx.meta,
-		BlockStore: ctx.blockStore,
-		Auth:       ctx.authService,
+		Region:         sc.region,
+		FQDN:           sc.bareDomain,
+		Cataloger:      sc.cataloger,
+		BlockStore:     sc.blockStore,
+		Auth:           sc.authService,
 		Incr: func(action string) {
 			logging.FromContext(request.Context()).
 				WithField("action", action).
 				WithField("message_type", "action").
 				Debug("performing S3 action")
-			ctx.stats.CollectEvent("s3_gateway", action)
+			sc.stats.CollectEvent("s3_gateway", action)
 		},
+		DedupCleaner: sc.dedup,
 	}
 }
 
-func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
+func OperationHandler(sc *ServerContext, handler operations.AuthenticatedOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
 		perms, err := handler.RequiredPermissions(request)
 		if err != nil {
-			o := operation(ctx, writer, request)
+			o := operation(sc, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
+		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
@@ -223,24 +233,24 @@ func OperationHandler(ctx *ServerContext, handler operations.AuthenticatedOperat
 	})
 }
 
-func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.RepoOperationHandler) http.Handler {
+func RepoOperationHandler(sc *ServerContext, repoID string, handler operations.RepoOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repoId)
+		perms, err := handler.RequiredPermissions(request, repoID)
 		if err != nil {
-			o := operation(ctx, writer, request)
+			o := operation(sc, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
+		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(repoId)
+		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
-			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
+			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.ErrNoSuchBucket.ToAPIErr())
 			return
 		}
@@ -251,33 +261,33 @@ func RepoOperationHandler(ctx *ServerContext, repoId string, handler operations.
 		// run callback
 		repoOperation := &operations.RepoOperation{
 			AuthenticatedOperation: authOp,
-			Repo:                   repo,
+			Repository:             repo,
 		}
 		repoOperation.AddLogFields(logging.Fields{
-			"repository": repo.Id,
+			"repository": repo.Name,
 		})
 		handler.Handle(repoOperation)
 	})
 }
 
-func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handler operations.PathOperationHandler) http.Handler {
+func PathOperationHandler(sc *ServerContext, repoID, refID, path string, handler operations.PathOperationHandler) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// structure operation
-		perms, err := handler.RequiredPermissions(request, repoId, refId, path)
+		perms, err := handler.RequiredPermissions(request, repoID, refID, path)
 		if err != nil {
-			o := operation(ctx, writer, request)
+			o := operation(sc, writer, request)
 			o.EncodeError(gatewayerrors.ErrAccessDenied.ToAPIErr())
 			return
 		}
-		authOp := authenticateOperation(ctx.WithContext(request.Context()), writer, request, perms)
+		authOp := authenticateOperation(sc.WithContext(request.Context()), writer, request, perms)
 		if authOp == nil {
 			return
 		}
 
 		// validate repo exists
-		repo, err := authOp.Index.GetRepo(repoId)
+		repo, err := authOp.Cataloger.GetRepository(sc.ctx, repoID)
 		if errors.Is(err, db.ErrNotFound) {
-			authOp.Log().WithField("repository", repoId).Warn("the specified repo does not exist")
+			authOp.Log().WithField("repository", repoID).Warn("the specified repo does not exist")
 			authOp.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchBucket))
 			return
 		}
@@ -291,15 +301,15 @@ func PathOperationHandler(ctx *ServerContext, repoId, refId, path string, handle
 			RefOperation: &operations.RefOperation{
 				RepoOperation: &operations.RepoOperation{
 					AuthenticatedOperation: authOp,
-					Repo:                   repo,
+					Repository:             repo,
 				},
-				Ref: refId,
+				Reference: refID,
 			},
 			Path: path,
 		}
 		operation.AddLogFields(logging.Fields{
-			"repository": repo.Id,
-			"ref":        refId,
+			"repository": repo.Name,
+			"ref":        refID,
 			"path":       path,
 		})
 		handler.Handle(operation)

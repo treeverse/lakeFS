@@ -9,28 +9,26 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
-var commitsTemplate = `{{ range $val := .Commits }}
-{{ if gt  ($val.Parents|len) 0 -}}
-commit {{ $val.ID|yellow }}
-Author: {{ $val.Committer }}
+const commitsTemplate = `
+{{ range $val := .Commits }}
+ID: {{ $val.ID|yellow }}{{if $val.Committer }}
+Author: {{ $val.Committer }}{{end}}
 Date: {{ $val.CreationDate|date }}
-{{ if gt ($val.Parents|len) 1 -}}
+	{{ if gt ($val.Parents|len) 1 -}}
 Merge: {{ $val.Parents|join ", "|bold }}
-{{ end }}
-
-    {{ $val.Message }}
-
-    {{ range $key, $value := $val.Metadata }}
-    {{ $key }} = {{ $value }}
+	{{ end }}
+	{{ $val.Message }}
+	
+	{{ range $key, $value := $val.Metadata }}
+		{{ $key }} = {{ $value }}
 	{{ end -}}
-{{ end -}}
 {{ end }}
 {{.Pagination | paginate }}
 `
 
 // logCmd represents the log command
 var logCmd = &cobra.Command{
-	Use:   "log [branch uri]",
+	Use:   "log <branch uri>",
 	Short: "show log of commits for the given branch",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -52,8 +50,7 @@ var logCmd = &cobra.Command{
 			Commits    []*models.Commit
 			Pagination *Pagination
 		}{
-			commits,
-			nil,
+			Commits: commits,
 		}
 		if pagination != nil && swag.BoolValue(pagination.HasMore) {
 			ctx.Pagination = &Pagination{

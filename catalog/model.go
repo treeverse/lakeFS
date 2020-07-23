@@ -23,18 +23,7 @@ type Entry struct {
 	Size            int64     `db:"size"`
 	Checksum        string    `db:"checksum"`
 	Metadata        Metadata  `db:"metadata"`
-}
-
-type entryRaw struct {
-	BranchID        int       `db:"branch_id"`
-	Path            string    `db:"path"`
-	PhysicalAddress string    `db:"physical_address"`
-	CreationDate    time.Time `db:"creation_date"`
-	Size            int64     `db:"size"`
-	Checksum        string    `db:"checksum"`
-	Metadata        Metadata  `db:"metadata"`
-	MinCommit       int       `db:"min_commit"`
-	IsTombstone     bool      `db:"is_tombstone"`
+	Expired         bool      `db:"is_expired"`
 }
 
 type CommitLog struct {
@@ -43,19 +32,33 @@ type CommitLog struct {
 	Message      string    `db:"message"`
 	CreationDate time.Time `db:"creation_date"`
 	Metadata     Metadata  `db:"metadata"`
+	Parents      []string
 }
 
 type commitLogRaw struct {
-	CommitID     CommitID  `db:"commit_id"`
-	Committer    string    `db:"committer"`
-	Message      string    `db:"message"`
-	CreationDate time.Time `db:"creation_date"`
-	Metadata     Metadata  `db:"metadata"`
+	CommitID              CommitID  `db:"commit_id"`
+	PreviousCommitID      CommitID  `db:"previous_commit_id"`
+	Committer             string    `db:"committer"`
+	Message               string    `db:"message"`
+	CreationDate          time.Time `db:"creation_date"`
+	Metadata              Metadata  `db:"metadata"`
+	MergeSourceBranchName string    `db:"merge_source_branch_name"`
+	MergeSourceCommit     CommitID  `db:"merge_source_commit"`
+}
+
+type lineageCommit struct {
+	BranchID int64    `db:"branch_id"`
+	CommitID CommitID `db:"commit_id"`
 }
 
 type Branch struct {
 	Repository string `db:"repository"`
 	Name       string `db:"name"`
+}
+
+type LevelEntry struct {
+	CommonLevel bool
+	Entry
 }
 
 type MultipartUpload struct {

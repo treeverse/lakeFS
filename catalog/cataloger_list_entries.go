@@ -2,12 +2,14 @@ package catalog
 
 import (
 	"context"
-	"errors"
+	"fmt"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/db"
 )
 
-// TODO(barak): add delimiter support - return entry and common prefix entries
+const ListEntriesMaxLimit = 10000
 
 func (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
@@ -21,44 +23,42 @@ func (c *cataloger) ListEntries(ctx context.Context, repository, reference strin
 	if err != nil {
 		return nil, false, err
 	}
+
+	if limit < 0 || limit > ListEntriesMaxLimit {
+		limit = ListEntriesMaxLimit
+	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, ref.Branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
 			return nil, err
 		}
 
-		var q string
-		switch ref.CommitID {
-		case UncommittedID:
-			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
-					FROM entries_lineage_v
-					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
-					ORDER BY path`
-		case CommittedID:
-			q = `SELECT path, physical_address, creation_date, size, checksum, metadata
-					FROM entries_lineage_committed_v
-					WHERE displayed_branch = $1 AND path like $2 AND path > $3 AND NOT is_deleted
-					ORDER BY path`
-		default:
-			return nil, errors.New("TBD")
+		likePath := db.Prefix(prefix)
+		lineage, err := getLineage(tx, branchID, ref.CommitID)
+		if err != nil {
+			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		args := []interface{}{branchID, db.Prefix(prefix), after}
-		if limit >= 0 {
-			q += " LIMIT $4"
-			args = append(args, limit+1)
+		sql, args, err := psql.
+			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+			// Listing also shows expired objects!
+			Where(sq.And{sq.Like{"path": likePath}, sq.Eq{"is_deleted": false}, sq.Gt{"path": after}}).
+			OrderBy("path").
+			Limit(uint64(limit) + 1).
+			ToSql()
+		if err != nil {
+			return nil, fmt.Errorf("build sql: %w", err)
 		}
-
 		var entries []*Entry
-		if err := tx.Select(&entries, q, args...); err != nil {
+		if err := tx.Select(&entries, sql, args...); err != nil {
 			return nil, err
 		}
 		return entries, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
-
 	if err != nil {
 		return nil, false, err
 	}
 	entries := res.([]*Entry)
 	hasMore := paginateSlice(&entries, limit)
-	return entries, hasMore, err
+	return entries, hasMore, nil
 }

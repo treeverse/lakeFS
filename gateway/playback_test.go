@@ -2,6 +2,7 @@ package gateway_test
 
 import (
 	"archive/zip"
+	"context"
 	"encoding/json"
 	"io"
 	"io/ioutil"
@@ -10,22 +11,24 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
-	"github.com/ory/dockertest/v3"
-	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/dedup"
 
+	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
-	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 type dependencies struct {
-	blocks block.Adapter
-	auth   simulator.GatewayAuthService
-	meta   index.Index
+	blocks    block.Adapter
+	auth      simulator.GatewayAuthService
+	cataloger catalog.Cataloger
 }
 
 const (
@@ -51,7 +54,8 @@ func TestGatewayRecording(t *testing.T) {
 		}
 		basename := filepath.Base(s3Url.Path)
 		filename := filepath.Join(RecordingsDir, basename)
-		t.Run(basename, func(t *testing.T) {
+		testName := strings.TrimSuffix(basename, filepath.Ext(basename))
+		t.Run(testName, func(t *testing.T) {
 			// download record
 			err := downloader.DownloadRecording(s3Url.Host, basename, filename)
 			if err != nil {
@@ -64,7 +68,6 @@ func TestGatewayRecording(t *testing.T) {
 			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
 			handler, _ := getBasicHandler(t, basename)
 			DoTestRun(handler, false, 1.0, t)
-
 		})
 	}
 }
@@ -109,24 +112,36 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		T:          t,
 	}
 
-	mdb, _ := testutil.GetDB(t, databaseUri)
-	meta := index.NewDBIndex(mdb)
+	conn, _ := testutil.GetDB(t, databaseUri)
+	cataloger := catalog.NewCataloger(conn)
 
-	blockAdapter := testutil.GetBlockAdapter(t, IdTranslator)
+	blockAdapter := testutil.NewBlockAdapterByEnv(IdTranslator)
+
+	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
+	t.Cleanup(func() {
+		// order is important - close cataloger channel before dedup
+		_ = cataloger.Close()
+		_ = dedupCleaner.Close()
+	})
 
 	authService := newGatewayAuth(t, simulator.PlaybackParams.RecordingDir)
 
-	testutil.Must(t, meta.CreateRepo("example", "example-tzahi", "master"))
-	handler := gateway.NewHandler(authService.Region,
-		meta,
+	ctx := context.Background()
+	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
+	handler := gateway.NewHandler(
+		authService.Region,
+		cataloger,
 		blockAdapter,
 		authService,
-		authService.BareDomain, &mockCollector{})
+		authService.BareDomain,
+		&mockCollector{},
+		dedupCleaner,
+	)
 
 	return handler, &dependencies{
-		blocks: blockAdapter,
-		auth:   authService,
-		meta:   meta,
+		blocks:    blockAdapter,
+		auth:      authService,
+		cataloger: cataloger,
 	}
 }
 

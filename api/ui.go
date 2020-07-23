@@ -21,7 +21,7 @@ const (
 )
 
 type loginData struct {
-	AccessKeyId     string `json:"access_key_id"`
+	AccessKeyID     string `json:"access_key_id"`
 	AccessSecretKey string `json:"secret_access_key"`
 }
 
@@ -42,7 +42,7 @@ func UIHandler(authService auth.Service) http.Handler {
 		}
 
 		// check login
-		credentials, err := authService.GetCredentials(login.AccessKeyId)
+		credentials, err := authService.GetCredentials(login.AccessKeyID)
 		if err != nil || credentials.AccessSecretKey != login.AccessSecretKey {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -63,7 +63,7 @@ func UIHandler(authService auth.Service) http.Handler {
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-		tokenString, err := token.SignedString([]byte(authService.SecretStore().SharedSecret()))
+		tokenString, err := token.SignedString(authService.SecretStore().SharedSecret())
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
@@ -96,12 +96,12 @@ func UIHandler(authService auth.Service) http.Handler {
 
 func HandlerWithDefault(root http.FileSystem, handler http.Handler, defaultPath string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		upath := r.URL.Path
-		if !strings.HasPrefix(upath, "/") {
-			upath = "/" + upath
-			r.URL.Path = upath
+		urlPath := r.URL.Path
+		if !strings.HasPrefix(urlPath, "/") {
+			urlPath = "/" + urlPath
+			r.URL.Path = urlPath
 		}
-		_, err := root.Open(path.Clean(upath))
+		_, err := root.Open(path.Clean(urlPath))
 		if err != nil && os.IsNotExist(err) {
 			r.URL.Path = defaultPath
 		}

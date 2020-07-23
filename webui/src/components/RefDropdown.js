@@ -11,7 +11,7 @@ import {ChevronDownIcon, ChevronUpIcon, ChevronRightIcon, XIcon} from "@primer/o
 import * as api from "../actions/api";
 
 
-const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 1000 }) => {
+const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches, selectRef, withCommits, withWorkspace, amount = 300 }) => {
 
     // used for branch pagination
     const [from, setFrom] = useState("");
@@ -23,7 +23,6 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
     useEffect(()=> {
         listBranches(repo.id, from, amount);
     }, [listBranches, repo.id, amount, from]);
-
     const form = (
         <div className="ref-filter-form">
             <Form onSubmit={e => { e.preventDefault(); }}>
@@ -74,8 +73,8 @@ const BranchSelector = ({ repo, selected, branches, filterBranches, listBranches
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
                     {results.map(branch => (
-                        <BranchEntry key={branch.id} repo={repo} branch={branch} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
-                            const data = await api.commits.log(repo.id, branch.id, '', 0);
+                        <BranchEntry key={branch} repo={repo} branch={branch} selectRef={selectRef} selected={selected} withCommits={withCommits} logCommits={async () => {
+                            const data = await api.commits.log(repo.id, branch, '', 0);
                             setCommitList({...commitList, branch: branch, commits: data.results});
                         }}/>
                     ))}
@@ -101,14 +100,14 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 
     return (
         <div className="ref-selector">
-            <h5>{branch.id}</h5>
+            <h5>{branch}</h5>
             <div className="ref-scroller">
                 <ul className="list-group ref-list">
                     {(withWorkspace) ? (
-                        <li className="list-group-item" key={branch.id}>
+                        <li className="list-group-item" key={branch}>
                             <Button variant="link" onClick={() => {
-                                selectRef({id: branch.id, type: 'branch'});
-                            }}><em>{branch.id}'s Workspace (uncommitted changes)</em></Button>
+                                selectRef({id: branch, type: 'branch'});
+                            }}><em>{branch}'s Workspace (uncommitted changes)</em></Button>
                         </li>
                     ) : (<span/>)}
                     {commits.map(commit => (
@@ -117,7 +116,7 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
                                     selectRef({id: commit.id, type: 'commit'});
                                 }}>{getMessage(commit)} </Button>
                             <div className="actions">
-                                <Badge variant="light">{commit.id.substr(0, 16)}</Badge>
+                                <Badge variant="light">{commit.id}</Badge>
                             </div>
                         </li>
                     ))}
@@ -132,15 +131,15 @@ const CommitList = ({ commits, selectRef, reset, branch, withWorkspace }) => {
 
 const BranchEntry = ({repo, branch, selectRef, selected, logCommits, withCommits}) => {
     return (
-        <li className="list-group-item" key={branch.id}>
-            {(!!selected && selected.type === 'branch' && branch.id === selected.id) ?
-                <strong>{branch.id}</strong> :
+        <li className="list-group-item" key={branch}>
+            {(!!selected && branch === selected) ?
+                <strong>{branch}</strong> :
                 <Button variant="link" onClick={() => {
-                    selectRef({id: branch.id, type: 'branch'});
-                }}>{branch.id}</Button>
+                    selectRef({id: branch, type: 'branch'});
+                }}>{branch}</Button>
             }
             <div className="actions">
-                {(branch.id === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
+                {(branch === repo.default_branch) ? (<Badge variant="info">Default</Badge>) : <span/>}
                 {(withCommits) ? (
                     <Button onClick={logCommits} size="sm" variant="link">
                         <ChevronRightIcon/>
@@ -228,7 +227,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
         return (
             <>
                 <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                    {emptyText} {show ? ChevronUpIcon : ChevronDownIcon}
+                    {emptyText} {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
                 </Button>
                 {cancelButton}
                 {popover}
@@ -237,12 +236,10 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     }
 
     const title = prefix + ((selected.type === 'branch') ? 'Branch: ' : 'Commit: ');
-    const selectedIdDisplay = (selected.type === 'branch') ? selected.id : selected.id.slice(0, 16);
-
     return (
         <>
             <Button ref={target} variant="light" onClick={()=> { setShow(!show) }}>
-                {title} <strong>{selectedIdDisplay}</strong> {show ? ChevronUpIcon : ChevronDownIcon}
+                {title} <strong>{selected.id}</strong> {show ? <ChevronUpIcon/> : <ChevronDownIcon/>}
             </Button>
             {cancelButton}
             {popover}
