@@ -2,9 +2,12 @@ package catalog
 
 import (
 	"context"
+	"math"
 
 	"github.com/treeverse/lakefs/db"
 )
+
+const ListCommitsMaxLimit = 10000
 
 func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, fromReference string, limit int) ([]*CommitLog, bool, error) {
 	if err := Validate(ValidateFields{
@@ -18,23 +21,26 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 	if err != nil {
 		return nil, false, err
 	}
+	if limit < 0 || limit > ListCommitsMaxLimit {
+		limit = ListCommitsMaxLimit
+	}
+	// we start from the newest to the oldest
+	fromCommitID := CommitID(math.MaxInt64)
+	if ref.CommitID > 0 {
+		fromCommitID = ref.CommitID
+	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
 		query := `SELECT c.commit_id, c.committer, c.message, c.creation_date, c.metadata
 			FROM commits c JOIN branches b ON b.id = c.branch_id 
-			WHERE b.id = $1 AND c.commit_id > $2
-			ORDER BY c.commit_id`
-		args := []interface{}{branchID, ref.CommitID}
-		if limit >= 0 {
-			query += ` LIMIT $3`
-			args = append(args, limit+1)
-		}
-
+			WHERE b.id = $1 AND c.commit_id < $2
+			ORDER BY c.commit_id DESC
+			LIMIT $3`
 		var rawCommits []*commitLogRaw
-		if err := tx.Select(&rawCommits, query, args...); err != nil {
+		if err := tx.Select(&rawCommits, query, branchID, fromCommitID, limit+1); err != nil {
 			return nil, err
 		}
 		commits := convertRawCommits(branch, rawCommits)
@@ -52,13 +58,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 func convertRawCommits(branch string, rawCommits []*commitLogRaw) []*CommitLog {
 	commits := make([]*CommitLog, len(rawCommits))
 	for i, commit := range rawCommits {
-		commits[i] = &CommitLog{
-			Reference:    MakeReference(branch, commit.CommitID),
-			Committer:    commit.Committer,
-			Message:      commit.Message,
-			CreationDate: commit.CreationDate,
-			Metadata:     commit.Metadata,
-		}
+		commits[i] = convertRawCommit(branch, commit)
 	}
 	return commits
 }

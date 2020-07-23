@@ -10,16 +10,17 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
-var commitCreateTemplate = `Commit for branch "{{.Branch.Ref}}" done.
+var commitCreateTemplate = `Commit for branch "{{.Branch.Ref}}" completed.
 
 ID: {{.Commit.ID|yellow}}
+Message: {{.Commit.Message}}
 Timestamp: {{.Commit.CreationDate|date}}
 Parents: {{.Commit.Parents|join ", "}}
 
 `
 
 var commitCmd = &cobra.Command{
-	Use:   "commit [branch uri]",
+	Use:   "commit <branch uri>",
 	Short: "commit changes on a given branch",
 	Args: ValidationChain(
 		HasNArgs(1),

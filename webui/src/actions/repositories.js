@@ -2,7 +2,7 @@ import * as api from './api';
 import {AsyncActionType} from "./request";
 
 export const
-    PAGINATION_AMOUNT = 1000,
+    PAGINATION_AMOUNT = 300,
     REPOSITORY_LIST = new AsyncActionType('REPOSITORY_LIST'),
     REPOSITORY_LIST_PAGINATE = new AsyncActionType('REPOSITORY_LIST_PAGINATE'),
     REPOSITORY_GET = new AsyncActionType('REPOSITORY_GET'),
@@ -36,7 +36,7 @@ export const listRepositoriesPaginate = (after = "", amount = PAGINATION_AMOUNT)
     });
 };
 
-export const filterRepositories = (from = "", amount = 1000) => {
+export const filterRepositories = (from = "", amount = 300) => {
     return REPOSITORY_LIST.execute(async () => {
         return await api.repositories.filter(from, amount);
     });

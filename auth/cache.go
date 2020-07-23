@@ -1,12 +1,10 @@
 package auth
 
 import (
-	"math/rand"
 	"time"
 
-	"github.com/treeverse/lakefs/cache"
-
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/cache"
 )
 
 type CredentialSetFn func() (*model.Credential, error)
@@ -27,14 +25,12 @@ type LRUCache struct {
 }
 
 func NewLRUCache(size int, expiry, jitter time.Duration) *LRUCache {
-	jitterFn := func() time.Duration {
-		return time.Duration(rand.Intn(int(jitter)))
+	jitterFn := cache.NewJitterFn(jitter)
+	return &LRUCache{
+		credentialsCache: cache.NewCache(size, expiry, jitterFn),
+		userCache:        cache.NewCache(size, expiry, jitterFn),
+		policyCache:      cache.NewCache(size, expiry, jitterFn),
 	}
-	credentialsCache := cache.NewCache(size, expiry, jitterFn)
-	userCache := cache.NewCache(size, expiry, jitterFn)
-	policyCache := cache.NewCache(size, expiry, jitterFn)
-
-	return &LRUCache{credentialsCache: credentialsCache, userCache: userCache, policyCache: policyCache}
 }
 
 func (c *LRUCache) GetCredential(accessKeyID string, setFn CredentialSetFn) (*model.Credential, error) {

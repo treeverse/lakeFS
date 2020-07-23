@@ -7,12 +7,13 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-var (
-	formatterInitOnce sync.Once
-)
-
 const (
 	LogFieldsContextKey = "log_fields"
+)
+
+var (
+	formatterInitOnce sync.Once
+	defaultLogger     *logrus.Logger = logrus.StandardLogger()
 )
 
 func Level() string {
@@ -140,10 +141,11 @@ func (lf logrusCallerFormatter) Format(e *logrus.Entry) ([]byte, error) {
 func Default() Logger {
 	// wrap formatter with our own formatter that overrides caller
 	formatterInitOnce.Do(func() {
-		logrus.StandardLogger().Formatter = logrusCallerFormatter{logrus.StandardLogger().Formatter}
+		defaultLogger.SetNoLock()
+		defaultLogger.Formatter = logrusCallerFormatter{defaultLogger.Formatter}
 	})
 	return &logrusEntryWrapper{
-		e: logrus.NewEntry(logrus.StandardLogger()),
+		e: logrus.NewEntry(defaultLogger),
 	}
 }
 

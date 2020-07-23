@@ -8,6 +8,7 @@ import (
 	"net/url"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 
 	"github.com/treeverse/lakefs/block"
@@ -25,9 +26,24 @@ import (
 )
 
 const (
+	BlockstoreType = "s3"
+
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
+
+	StreamingDefaultChunkSize = 2 << 19 // 1MiB by default per chunk
+	ExpireObjectS3Tag         = "lakefs_expire_object"
 )
+
+func getMapKeys(m map[string]interface{}) []string {
+	ret := make([]string, len(m))
+	i := 0
+	for k := range m {
+		ret[i] = k
+		i += 1
+	}
+	return ret
+}
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
@@ -117,6 +133,22 @@ func GetScheme(key string) string {
 	return parsed.Scheme
 }
 
+// work around, because put failed with trying to create symlinks
+func (s *Adapter) PutWithoutStream(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return err
+	}
+	putObject := s3.PutObjectInput{
+		Body:         aws.ReadSeekCloser(reader),
+		Bucket:       aws.String(qualifiedKey.StorageNamespace),
+		Key:          aws.String(qualifiedKey.Key),
+		StorageClass: opts.StorageClass,
+	}
+	_, err = s.s3.PutObject(&putObject)
+	return err
+}
+
 func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
@@ -198,7 +230,6 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 		ChunkSize:    s.streamingChunkSize,
 		ChunkTimeout: s.streamingChunkTimeout,
 	})
-
 	resp, err := s.httpClient.Do(req)
 	if err != nil {
 		log.WithError(err).
@@ -225,7 +256,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	return resp, nil
 }
 
-func (s *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
+func (s *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
@@ -386,4 +417,62 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	} else {
 		return resp.ETag, *headResp.ContentLength, err
 	}
+}
+
+func contains(tags []*s3.Tag, pred func(string, string) bool) bool {
+	for _, tag := range tags {
+		if pred(*tag.Key, *tag.Value) {
+			return true
+		}
+	}
+	return false
+}
+
+func isExpirationRule(rule s3.LifecycleRule) bool {
+	return rule.Expiration != nil && // Check for *any* expiration -- not its details.
+		rule.Status != nil && *rule.Status == "Enabled" &&
+		rule.Filter != nil &&
+		rule.Filter.Tag != nil &&
+		*rule.Filter.Tag.Key == ExpireObjectS3Tag &&
+		*rule.Filter.Tag.Value == "1" ||
+		rule.Filter.And != nil &&
+			contains(rule.Filter.And.Tags,
+				func(key string, value string) bool {
+					return key == ExpireObjectS3Tag && value == "1"
+				},
+			)
+}
+
+// ValidateConfiguration on an S3 adapter checks for a usable bucket
+// lifecycle policy: the storageNamespace bucket should expire objects
+// marked with ExpireObjectS3Tag (with _some_ duration, even if
+// nonzero).
+func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
+	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
+	config, err := s.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
+	if err != nil {
+		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
+			return fmt.Errorf("Bucket %s has no lifecycle configuration", storageNamespace)
+		}
+		return err
+	}
+	// TODO(oz): Is this too chatty for a command?
+	s.log().WithFields(logging.Fields{
+		"Bucket":          storageNamespace,
+		"LifecyclePolicy": config.GoString(),
+	}).Info("S3 bucket lifecycle policy")
+
+	hasMatchingRule := false
+	for _, a := range config.Rules {
+		if isExpirationRule(*a) {
+			hasMatchingRule = true
+			break
+		}
+	}
+
+	if !hasMatchingRule {
+		// TODO(oz): Add a "to fix, ..." message?
+		return fmt.Errorf("Bucket %s lifecycle rules not configured to expire objects tagged \"%s\"", storageNamespace, ExpireObjectS3Tag)
+	}
+	return nil
 }

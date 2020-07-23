@@ -1,11 +1,13 @@
 package operations
 
 import (
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
 	"time"
 
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/httputil"
 
 	"github.com/treeverse/lakefs/block"
@@ -20,11 +22,11 @@ import (
 
 type GetObject struct{}
 
-func (controller *GetObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+func (controller *GetObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }
@@ -43,7 +45,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}
 
 	beforeMeta := time.Now()
-	entry, err := o.Index.ReadEntryObject(o.Repo.Id, o.Ref, o.Path, true)
+	entry, err := o.Cataloger.GetEntry(o.Context(), o.Repository.Name, o.Reference, o.Path, catalog.GetEntryParams{})
 	metaTook := time.Since(beforeMeta)
 	o.Log().
 		WithField("took", metaTook).
@@ -55,6 +57,9 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
 	}
+	if errors.Is(err, catalog.ErrExpired) {
+		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchVersion))
+	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
 		return
@@ -65,13 +70,6 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	o.SetHeader("Accept-Ranges", "bytes")
 	// TODO: the rest of https://docs.aws.amazon.com/en_pv/AmazonS3/latest/API/API_GetObject.html
 
-	// now we might need the object itself
-	obj, err := o.Index.ReadObject(o.Repo.Id, o.Ref, o.Path, true)
-	if err != nil {
-		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
-		return
-	}
-
 	// range query
 	var expected int64
 	var data io.ReadCloser
@@ -80,18 +78,18 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		rng, err = ghttp.ParseHTTPRange(rangeSpec, obj.Size)
+		rng, err = ghttp.ParseHTTPRange(rangeSpec, entry.Size)
 		if err != nil {
 			o.Log().WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}
 	}
 	if rangeSpec == "" || err != nil {
 		// assemble a response body (range-less query)
-		expected = obj.Size
-		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: obj.PhysicalAddress})
+		expected = entry.Size
+		data, err = o.BlockStore.Get(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, entry.Size)
 	} else {
 		expected = rng.EndOffset - rng.StartOffset + 1 // both range ends are inclusive
-		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repo.StorageNamespace, Identifier: obj.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
+		data, err = o.BlockStore.GetRange(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: entry.PhysicalAddress}, rng.StartOffset, rng.EndOffset)
 	}
 	if err != nil {
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrInternalError))
@@ -102,7 +100,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	}()
 	o.SetHeader("Content-Length", fmt.Sprintf("%d", expected))
 	if rng.StartOffset != -1 {
-		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, obj.Size))
+		o.SetHeader("Content-Range", fmt.Sprintf("bytes %d-%d/%d", rng.StartOffset, rng.EndOffset, entry.Size))
 	}
 	_, err = io.Copy(o.ResponseWriter, data)
 	if err != nil {

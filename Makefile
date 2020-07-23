@@ -16,7 +16,7 @@ GOFMT=$(GOCMD)fmt
 
 GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
 
-SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) treeverse/go-swagger:v0.23.0
+SWAGGER=${DOCKER} run --rm -i --user $(shell id -u):$(shell id -g) -v ${HOME}:${HOME} -w $(CURDIR) quay.io/goswagger/swagger:v0.24.0
 
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
@@ -42,6 +42,9 @@ docs: docs/assets/js/swagger.yml
 
 docs-serve: ### Serve local docs
 	cd docs; bundle exec jekyll serve
+
+gen-metastore: ## Run Metastore Code generation
+	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 
 gen-api: docs ## Run the go-swagger code generator (Docker required)
 	@rm -rf $(API_BUILD_DIR)
@@ -79,7 +82,7 @@ gofmt:  ## gofmt code formating
 
 fmt-validator:  ## Validate go format
 	@echo checking gofmt...
-	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o -name '*.go' -print)); \
+	@res=$$($(GOFMT) -d -e -s $$(find . -type d \( -path ./ddl \) -prune -o \( -path ./statik \) -prune -o \( -path ./api/gen \) -prune -o -name '*.go' -print)); \
 	if [ -n "$${res}" ]; then \
 		echo checking gofmt fail... ; \
 		echo "$${res}"; \

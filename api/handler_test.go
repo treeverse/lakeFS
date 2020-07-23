@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/ory/dockertest/v3"
@@ -19,14 +21,15 @@ import (
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 const (
-	DefaultUserId = "example_user"
+	DefaultUserID = "example_user"
 )
 
 var (
@@ -48,9 +51,9 @@ func TestMain(m *testing.M) {
 }
 
 type dependencies struct {
-	blocks block.Adapter
-	auth   auth.Service
-	meta   index.Index
+	blocks    block.Adapter
+	auth      auth.Service
+	cataloger catalog.Cataloger
 }
 
 func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.Credential {
@@ -66,38 +69,47 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) SetInstallationID(installationID string) {}
+func (m *mockCollector) SetInstallationID(_ string) {}
 
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
+func (m *mockCollector) CollectMetadata(_ map[string]string) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
-	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
+	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 
-	index := index.NewDBIndex(conn)
-
+	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
 		Enabled: false,
 	})
 	meta := auth.NewDBMetadataManager("dev", conn)
-
+	retentionService := retention.NewService(conn)
 	migrator := db.NewDatabaseMigrator(handlerDatabaseURI)
+
+	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
+	t.Cleanup(func() {
+		// order is important - close cataloger channel before dedup
+		_ = cataloger.Close()
+		_ = dedupCleaner.Close()
+	})
+
 	handler := api.NewHandler(
-		index,
+		cataloger,
 		blockAdapter,
 		authService,
 		meta,
 		&mockCollector{},
+		retentionService,
 		migrator,
+		dedupCleaner,
 		logging.Default(),
 	)
 
 	return handler, &dependencies{
-		blocks: blockAdapter,
-		auth:   authService,
-		meta:   index,
+		blocks:    blockAdapter,
+		auth:      authService,
+		cataloger: cataloger,
 	}
 }
 

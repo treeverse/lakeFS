@@ -4,7 +4,7 @@ import * as api from './api';
 import {AsyncActionType} from "./request";
 
 export const
-    PAGINATION_AMOUNT = 1000,
+    PAGINATION_AMOUNT = 300,
     COMMITS_LIST = new AsyncActionType('COMMITS_LIST'),
     COMMITS_LIST_PAGINATE = new AsyncActionType('COMMITS_LIST_PAGINATE'),
     COMMITS_COMMIT = new AsyncActionType('COMMITS_COMMIT');
