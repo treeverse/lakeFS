@@ -42,6 +42,10 @@
     color: #FFFFFF;
 }
 
+.nav-tabs .nav-link.active {
+    font-weight: bold;
+}
+
 .commit-list .list-group-item:nth-of-type(even) {
     background-color: #FBFBFB;
 }
@@ -199,14 +203,13 @@
 }
 
 .table .tree-row .tree-row-actions .btn {
-    display: none;
-    padding: 0;
-    margin: 0;
+    visibility: hidden;
     font-size: 0.7rem;
 }
 
 .table .tree-row:hover .tree-row-actions .btn,
 .table .tree-row:focus .tree-row-actions .btn {
+    visibility: visible;
     display: inline-block;
 }
 
@@ -279,4 +282,16 @@ textarea.form-control.policy-document:focus {
 
 td .form-group {
     margin-bottom: 0;
+}
+
+.section-title {
+    padding-bottom: 5px;
+    padding-top: 10px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid rgba(0,0,0,.125);
+    overflow: hidden;
+}
+
+.btn {
+    text-transform: none;
 }

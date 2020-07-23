@@ -11,6 +11,7 @@
     "base-64": "^0.1.0",
     "bootstrap": "^4.4.1",
     "bootswatch": "^4.5.0",
+    "http-proxy-middleware": "^1.0.5",
     "moment": "^2.25.3",
     "react": "^16.13.1",
     "react-bootstrap": "^1.0.1",
@@ -31,7 +32,6 @@
   "eslintConfig": {
     "extends": "react-app"
   },
-  "proxy": "http://localhost:8000",
   "browserslist": {
     "production": [
       ">0.2%",

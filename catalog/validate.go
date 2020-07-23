@@ -4,17 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"strings"
 )
 
 var (
 	ErrInvalidValue = errors.New("invalid value")
 
-	validBranchNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
-	validRepoIDRegexp     = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
-	validBucketNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9.-]+[a-z0-9]$`)
-	validIPv4Regexp       = regexp.MustCompile(`/[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+/`)
-	validHexRegexp        = regexp.MustCompile(`^[a-fA-F0-9]+$`)
+	validBranchNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
+	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
 type ValidateFunc func() bool
@@ -56,7 +52,7 @@ func ValidateRepositoryName(repository string) ValidateFunc {
 }
 
 func IsValidRepositoryName(repository string) bool {
-	return validRepoIDRegexp.MatchString(repository)
+	return validRepositoryNameRegexp.MatchString(repository)
 }
 
 func ValidateReference(reference string) ValidateFunc {
@@ -85,16 +81,6 @@ func ValidateUploadID(uploadID string) ValidateFunc {
 	}
 }
 
-func ValidateDedupID(id string) ValidateFunc {
-	return func() bool {
-		return IsValidDedupID(id)
-	}
-}
-
-func IsValidDedupID(id string) bool {
-	return validHexRegexp.MatchString(id)
-}
-
 func ValidatePath(name string) ValidateFunc {
 	return func() bool {
 		return IsNonEmptyString(name)
@@ -119,29 +105,9 @@ func ValidateCommitter(name string) ValidateFunc {
 	}
 }
 
-func IsValidBucketName(bucket string) bool {
-	if len(bucket) < 3 || len(bucket) > 63 {
-		return false
-	}
-	// bucket with successive periods is invalid.
-	if strings.Contains(bucket, "..") {
-		return false
-	}
-	// bucket cannot have ip address style.
-	if validIPv4Regexp.MatchString(bucket) {
-		return false
-	}
-	// bucket should begin with alphabet/number and end with alphabet/number,
-	// with alphabet/number/.- in the middle.
-	if !validBucketNameRegexp.MatchString(bucket) {
-		return false
-	}
-	return true
-}
-
-func ValidateBucketName(bucket string) ValidateFunc {
+func ValidateStorageNamespace(storageNamespace string) ValidateFunc {
 	return func() bool {
-		return IsValidBucketName(bucket)
+		return IsNonEmptyString(storageNamespace)
 	}
 }
 

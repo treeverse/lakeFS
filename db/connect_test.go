@@ -16,11 +16,9 @@ func TestConnectDB(t *testing.T) {
 		args    args
 		wantErr bool
 	}{
-		{name: "no schema", args: args{"pgx", databaseURI}, wantErr: true},
-		{name: "known schema", args: args{"pgx", databaseURI + "&search_path=lakefs_index"}, wantErr: false},
-		{name: "unknown driver", args: args{"bad", databaseURI + "&search_path=lakefs_index"}, wantErr: true},
-		{name: "unknown schema", args: args{"pgx", databaseURI + "&search_path=lakefs_stam"}, wantErr: true},
-		{name: "invalid address with known schema", args: args{"file", "bad://place/db&search_path=lakefs_stam"}, wantErr: true},
+		{name: "basic", args: args{"pgx", databaseURI}, wantErr: false},
+		{name: "unknown driver", args: args{"bad", databaseURI}, wantErr: true},
+		{name: "invalid address", args: args{"file", "bad://place/db&search_path=lakefs_stam"}, wantErr: true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

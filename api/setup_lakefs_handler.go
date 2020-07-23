@@ -52,7 +52,6 @@ func setupLakeFSHandler(authService auth.Service, meta auth.MetadataManager, mig
 		if err != nil {
 			http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
 			return
-
 		}
 		if len(req.DisplayName) == 0 {
 			http.Error(w, http.StatusText(http.StatusBadRequest), http.StatusBadRequest)

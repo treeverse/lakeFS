@@ -15,12 +15,12 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository, branch string,
 		return err
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		branchID, err := getBranchID(tx, repository, branch, LockTypeShare)
+		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
 		prefixCond := db.Prefix(prefix)
-		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id = $1 AND path LIKE $2 AND min_commit = 0`, branchID, prefixCond)
+		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id=$1 AND path LIKE $2 AND min_commit=0`, branchID, prefixCond)
 		return nil, err
 	}, c.txOpts(ctx)...)
 	return err
