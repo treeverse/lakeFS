@@ -167,12 +167,13 @@ func TestCataloger_ScanExpired(t *testing.T) {
 	}
 	resultByPhysicalAddress := make(map[string]*ExpireResult, len(allResults))
 	for _, result := range allResults {
+		t.Logf("Result: %+v", result)
 		resultByPhysicalAddress[result.PhysicalAddress] = result
 	}
-	translate := func(physicalPath string) *ExpireResult {
-		ret, ok := resultByPhysicalAddress[physicalPath]
+	translate := func(physicalAddress string) *ExpireResult {
+		ret, ok := resultByPhysicalAddress[physicalAddress]
 		if !ok {
-			t.Fatalf("no ExpireResult found for expected physical path %s", physicalPath)
+			t.Fatalf("no ExpireResult found for expected physical path %s", physicalAddress)
 		}
 		return ret
 	}

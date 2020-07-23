@@ -2,13 +2,13 @@ package retention
 
 import (
 	"context"
+	"encoding/csv"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"net/url"
 	"strings"
-	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -51,28 +51,28 @@ func WriteExpiryResultsToSeekableReader(ctx context.Context, expiryRows catalog.
 	return reader, nil
 }
 
-type EncoderData struct {
-	Writer  fileutil.WriterThenReader
-	Encoder *json.Encoder
+type CsvWriterData struct {
+	Writer    fileutil.WriterThenReader
+	CsvWriter *csv.Writer
 }
 
 // BucketWriters maps buckets to WriterThenReaders handling them.
-type BucketEncoders map[string]EncoderData
+type BucketWriters map[string]CsvWriterData
 
-func (bw *BucketEncoders) GetEncoder(bucketName string) (*json.Encoder, error) {
+func (bw *BucketWriters) GetWriter(bucketName string) (*csv.Writer, error) {
 	if quickRet, ok := (*bw)[bucketName]; ok {
-		return quickRet.Encoder, nil
+		return quickRet.CsvWriter, nil
 	}
 	ret, err := fileutil.NewFileWriterThenReader(fmt.Sprintf("expiry-for-%s.csv", strings.ReplaceAll(bucketName, "/", "_")))
 	if err != nil {
 		return nil, err
 	}
-	record := EncoderData{
-		Writer:  ret,
-		Encoder: json.NewEncoder(ret),
+	record := CsvWriterData{
+		Writer:    ret,
+		CsvWriter: csv.NewWriter(ret),
 	}
 	(*bw)[bucketName] = record
-	return record.Encoder, nil
+	return record.CsvWriter, nil
 }
 
 // WriteExpiryManifestFromSeekableReader reads from r ExpiryResults and returns Readers to CSV
@@ -80,7 +80,7 @@ func (bw *BucketEncoders) GetEncoder(bucketName string) (*json.Encoder, error) {
 func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r io.Reader) (map[string]fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
 	decoder := json.NewDecoder(r)
-	bucketEncoders := BucketEncoders{}
+	bucketWriters := BucketWriters{}
 
 	var err error
 	for recordNumber := 0; ; recordNumber++ {
@@ -117,12 +117,12 @@ func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r 
 			continue
 		}
 		bucketName := qualifiedKey.StorageNamespace
-		encoder, err := bucketEncoders.GetEncoder(bucketName)
+		csvWriter, err := bucketWriters.GetWriter(bucketName)
 		if err != nil {
 			recordLogger.WithError(err).
-				Warning("failed to prepare encoder; keep going, lose this expiry")
+				Warning("failed to prepare CSV encoder; keep going, lose this expiry")
 		}
-		err = encoder.Encode([]string{bucketName, qualifiedKey.Key})
+		err = csvWriter.Write([]string{bucketName, qualifiedKey.Key})
 		if err != nil {
 			recordLogger.WithError(err).
 				Warningf("failed to encode CSV row for %s,%s: %s; keep going, lose this expiry", bucketName, qualifiedKey.Key, err)
@@ -133,15 +133,22 @@ func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r 
 		return nil, err
 	}
 	ret := map[string]fileutil.RewindableReader{}
-	for bucket, encodingData := range bucketEncoders {
+	for bucket, encodingData := range bucketWriters {
+		filename := encodingData.Writer.Name()
+		bucketLogger := logger.WithFields(logging.Fields{"filename": filename, "bucket": bucket})
+		encodingData.CsvWriter.Flush()
+		err := encodingData.CsvWriter.Error()
+		if err != nil {
+			bucketLogger.WithError(err).Error("failed to flush encoded CSV; lose all bucket expiries")
+			continue
+		}
 		resetableReader, count, err := encodingData.Writer.StartReading()
-		bucketLogger := logger.WithField("bucket", bucket)
 		if err != nil {
 			bucketLogger.WithError(err).Error("failed to start reading encoded CSVs; lose all bucket expiries")
 			continue
 		}
 		bucketLogger.WithField("bytes", count).Info("wrote encoded CSV for bucket expiry")
-		if count > 0 {
+		if count >= 0 {
 			ret[bucket] = resetableReader
 		}
 	}
@@ -169,32 +176,38 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 	if err != nil {
 		return fmt.Errorf("parse manifest URL %s: %w", params.ManifestUrl, err)
 	}
+	logger := logging.FromContext(ctx).WithFields(logging.Fields{
+		"manifest": params.ManifestUrl,
+		"bucket":   params.BucketName,
+	})
 	if manifestUrl.Scheme != "s3" {
 		return fmt.Errorf("manifest URL %s not on S3", params.ManifestUrl)
 	}
+	trimmedPath := strings.TrimPrefix(manifestUrl.Path, "/")
 	// Upload to S3 and get ETag.
 	manifestParams := s3.PutObjectInput{
 		Body:    reader,
 		Bucket:  &manifestUrl.Host,
-		Key:     &manifestUrl.Path,
+		Key:     &trimmedPath,
 		Tagging: aws.String("service=lakeFS&type=retention-manifest"),
 	}
 	upload, err := s3Client.PutObject(&manifestParams)
 	if err != nil {
 		return fmt.Errorf("putObject %+v: %w", manifestParams, err)
 	}
-	etag := upload.ETag
-	manifestArn := fmt.Sprintf("arn:aws:s3:::%s/%s", manifestUrl.Host, manifestUrl.Path)
+	// PutObject includes _quotes_ around the etag.  Strip it.
+	etag := strings.TrimSuffix(strings.TrimPrefix(*upload.ETag, "\""), "\"")
+	logger.WithField("etag", etag).Info("Manifest uploaded")
+	manifestArn := fmt.Sprintf("arn:aws:s3:::%s/%s", manifestUrl.Host, trimmedPath)
 
 	input := s3control.CreateJobInput{
-		AccountId: &params.AccountId,
-		// Use client request tokens to prevent expiring too often.  This is only an
-		// emergency brake.
-		ClientRequestToken: aws.String(fmt.Sprintf("expire-%s-at-%s", manifestUrl.Host, time.Now().Round(5*time.Minute))),
-		Description:        aws.String("automated tag to expire objects"),
+		AccountId:            &params.AccountId,
+		ConfirmationRequired: aws.Bool(false),
+		// TODO(ariels): use ClientRequestToken to help avoid flooding?
+		Description: aws.String("automated tag to expire objects"),
 		Manifest: &s3control.JobManifest{
 			Location: &s3control.JobManifestLocation{
-				ETag:      etag,
+				ETag:      aws.String(etag),
 				ObjectArn: aws.String(manifestArn),
 			},
 			Spec: &s3control.JobManifestSpec{
@@ -210,19 +223,20 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 		// TODO(ariels): allow configuration
 		Priority: aws.Int64(10),
 		// TODO(ariels): allow configuration of Report field
-
+		Report: &s3control.JobReport{
+			Enabled: aws.Bool(false),
+		},
 		RoleArn: &params.RoleArn,
-		Tags:    []*s3control.S3Tag{{Key: aws.String("service"), Value: aws.String("lakeFS")}},
+		Tags: []*s3control.S3Tag{
+			{Key: aws.String("service"), Value: aws.String("lakeFS")},
+			{Key: aws.String("job"), Value: aws.String("tag-expiry")},
+		},
 	}
 	result, err := s3ControlClient.CreateJob(&input)
 	if err != nil {
 		return fmt.Errorf("create tagging job %+v: %w", input, err)
 	}
-	logging.FromContext(ctx).WithFields(logging.Fields{
-		"manifest": params.ManifestUrl,
-		"bucket":   params.BucketName,
-		"job_id":   *result.JobId,
-	}).Info("started S3 batch tagging job")
+	logger.WithField("job_id", *result.JobId).Info("started S3 batch tagging job")
 	return nil
 }
 
@@ -246,20 +260,20 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 	}
 	tagCh := make(chan doneRec)
 	for bucketName, manifestReader := range manifests {
-		bucketLogger := logger.WithField("bucket", bucketName)
+		manifestUrl := params.ManifestUrlForBucket(bucketName)
+		bucketLogger := logger.WithFields(logging.Fields{"bucket": bucketName, "manifest_url": manifestUrl})
 		bucketLogger.Info("start expiry on S3")
 		go func(bucketName string, manifestReader io.ReadSeeker) {
-
 			params := BatchTagOnS3BucketParams{
 				AccountId:   params.AccountId,
 				RoleArn:     params.RoleArn,
 				BucketName:  bucketName,
-				ManifestUrl: params.ManifestUrlForBucket(bucketName),
+				ManifestUrl: manifestUrl,
 			}
 			err := BatchTagOnS3Bucket(ctx, s3ControlClient, s3Client, manifestReader, &params)
 			if err != nil {
 				bucketLogger.WithError(err).Error("tag for expiry on S3")
-				return
+				tagCh <- doneRec{bucketName: bucketName, ok: false}
 			}
 			tagCh <- doneRec{bucketName: bucketName, ok: true}
 		}(bucketName, manifestReader)
