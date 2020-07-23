@@ -38,7 +38,7 @@ var metastoreCopyCmd = &cobra.Command{
 		toTable, _ := cmd.Flags().GetString("to-table")
 		toBranch, _ := cmd.Flags().GetString("to-branch")
 		serde, _ := cmd.Flags().GetString("serde")
-		partition, _ := cmd.Flags().GetStringArray("partition")
+		partition, _ := cmd.Flags().GetStringSlice("partition")
 
 		if serde == "" {
 			serde = toTable
@@ -183,7 +183,7 @@ func init() {
 	_ = metastoreCopyCmd.Flags().String("to-branch", "", "lakeFS branch name")
 	_ = metastoreCopyCmd.MarkFlagRequired("to-branch")
 	_ = metastoreCopyCmd.Flags().String("serde", "", "serde to set copy to  [default is - to-table]")
-	_ = metastoreCopyCmd.Flags().StringArray("partition", nil, "partition to copy")
+	_ = metastoreCopyCmd.Flags().StringSliceP("partition", "p", nil, "partition to copy")
 
 	metastoreCmd.AddCommand(metastoreDiffCmd)
 	_ = metastoreDiffCmd.Flags().String("type", "", "metastore type [hive, Glue]")

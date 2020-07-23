@@ -227,19 +227,19 @@ func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
 
 func GetMetastoreAwsConfig() *aws.Config {
 	cfg := &aws.Config{
-		Region: aws.String(viper.GetString("metastore.s3.region")),
+		Region: aws.String(viper.GetString("metastore.glue.region")),
 		Logger: &LogrusAWSAdapter{},
 	}
-	if viper.IsSet("metastore.s3.profile") || viper.IsSet("metastore.s3.credentials_file") {
+	if viper.IsSet("metastore.glue.profile") || viper.IsSet("metastore.glue.credentials_file") {
 		cfg.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("metastore.s3.credentials_file"),
-			viper.GetString("metastore.s3.profile"))
+			viper.GetString("metastore.glue.credentials_file"),
+			viper.GetString("metastore.glue.profile"))
 	}
-	if viper.IsSet("metastore.s3.credentials") {
+	if viper.IsSet("metastore.glue.credentials") {
 		cfg.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("metastore.s3.credentials.access_key_id"),
-			viper.GetString("metastore.s3.credentials.access_secret_key"),
-			viper.GetString("metastore.s3.credentials.session_token"))
+			viper.GetString("metastore.glue.credentials.access_key_id"),
+			viper.GetString("metastore.glue.credentials.access_secret_key"),
+			viper.GetString("metastore.glue.credentials.session_token"))
 	}
 	return cfg
 }

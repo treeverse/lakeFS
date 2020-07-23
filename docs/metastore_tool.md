@@ -1,0 +1,163 @@
+---
+layout: default
+title: Metastore tools
+nav_order: 13
+---
+
+# Metastore Tools
+{: .no_toc }
+In order to support Glue and Hive metastore, lakeFS comes with cli commands which enable copying metadata between branches.
+
+
+## Table of contents
+{: .no_toc .text-delta }
+
+1. TOC
+{:toc}
+
+
+
+# Access to metastores
+The commands could run on Glue and Hive metastore, each of them have different parameters and different configurations.
+## Hive
+To run a command on Hive metastore we will need to:
+
+Specify that the type is Hive ``` --type hive```
+
+Insert the Hive metastore url in the address flag ``` --address thrift://hive-metastore:9083```
+
+## Glue
+To run a command on Glue metastore we will need to:
+
+Specify that the type is Glue ``` --type glue```
+
+Insert the catalog ID (aws numerical account-id) in the address flag ``` --address 123456789012```
+
+Configure aws credentials for accessing Glue catalog:
+In the lakectl configuration file add the credentials:
+
+```
+metastore:
+  glue:
+    region: us-east-1
+    profile: default # optional, implies using a credentials file
+    credentials:
+      access_key_id: AKIAIOSFODNN7EXAMPLE
+      access_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+```
+
+
+# Commands:
+Metastore tools supports three commands: ```copy```, ```diff``` and ```create-symlink```.
+copy and diff could work both on Glue and on Hive.
+
+
+ 
+
+## Copy
+The Copy command creates a copy of a table pointing to the defined branch.
+In case the destination table already exists, the command will only merge the changes.
+
+Example:
+
+suppose we have the table `example_by_dt` on branch `master` on schema `default`.
+We create a new branch `exmpale_branch` .
+we would like to create a copy of the table `branch_example_by_dt` pointing to the new branch.   
+
+Glue:
+```
+lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table exmpale_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example_branch 
+```
+
+Hive:
+```
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch exmample-branch
+```
+
+### Copy partition
+Copy supports copying only a single partition.
+we could specify the partition using the partition flag.
+
+Example:
+
+Let's assume we created the table from the copy example.
+
+So no we have the copied table `branch_example_by_dt` and we've added a new partition `2020-08-01`.
+
+Suppose we merged back the data to master, and we want the data to be available on our original table on master `example_by_dt`.
+
+We would like to merge back the partition:  
+hive:
+```
+lakectl metastore copy --type hive --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020-08-01
+```
+Glue:
+```
+lakectl metastore copy --type glue --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020-08-01
+```
+
+In case our table is partitioned by more than one value, from example partitioned by year/month/day for year ```2020``` month ```08``` day ```01``` 
+
+Hive:
+```
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020 -p 08 -p 01
+```
+
+Glue:
+```
+lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020 -p 08 -p 01
+```
+
+
+## Diff
+Provides a 2-way diff between two tables.
+Shows added`+` , removed`-` and changed`~` partitions and columns.
+
+
+Example:
+
+Suppose that we made some changes on the copied table `branch_exmample_dt` and we want to see the changes before merging back to `example_by_dt` 
+Glue:
+```
+lakectl metastore diff --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
+```
+
+Hive:
+```
+lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
+```
+
+The answer will be something like ״
+```
+Columns are identical
+Partitions
+- 2020-07-04
++ 2020-07-05
++ 2020-07-06
+~ 2020-07-08
+```
+
+## Create Symlink  
+Some tools (such as Athena) don't support configuring the endpoint-uri.
+meaning we can't use them above lakeFS, and can only use them above S3.
+ 
+In order to enable accessing partitioned data we could use create-symlink.
+
+create-symlink receives a source table, destination table and the location of the table and does two actions:
+1. Creates partitioned directories with symlink files in the underlying s3 bucket.
+2. Creates a table in glue catalog with symlink format type and location pointing to the created symlinks.
+
+
+Example:
+
+Let's assume we have the table `example_by_dt` in glue.
+The table is pointing to repo `example-repo` branch `master` and the data is located at `path/to/table/in/lakeFS`
+
+We want to query the table using Amazon Athena.
+
+To do this, we run the command:
+```
+ metastore create-symlink --address 123456789012 --branch master --from-schema default --from-table branch_example_by_dt --to-schema default --to-table sym_example_by_dt --repo example-repository --path path/to/table/in/lakeFS
+```
+
+Now we can use  Amazon Athena and query the created table `sym_example_by_dt`
