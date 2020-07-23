@@ -2,24 +2,23 @@ package operations
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"io"
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/permissions"
-
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/dedup"
 
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/simulator"
-	"github.com/treeverse/lakefs/index"
-	"github.com/treeverse/lakefs/index/model"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 const StorageClassHeader = "x-amz-storage-class"
@@ -31,15 +30,15 @@ type Operation struct {
 	ResponseWriter http.ResponseWriter
 	Region         string
 	FQDN           string
-
-	Index      index.Index
-	BlockStore block.Adapter
-	Auth       simulator.GatewayAuthService
-	Incr       ActionIncr
+	Cataloger      catalog.Cataloger
+	BlockStore     block.Adapter
+	Auth           simulator.GatewayAuthService
+	Incr           ActionIncr
+	DedupCleaner   *dedup.Cleaner
 }
 
 func (o *Operation) RequestId() string {
-	req, rid := httputil.RequestId(o.Request)
+	req, rid := httputil.RequestID(o.Request)
 	o.Request = req
 	return rid
 }
@@ -53,12 +52,16 @@ func StorageClassFromHeader(header http.Header) *string {
 }
 
 func (o *Operation) AddLogFields(fields logging.Fields) {
-	ctx := logging.AddFields(o.Request.Context(), fields)
+	ctx := logging.AddFields(o.Context(), fields)
 	o.Request = o.Request.WithContext(ctx)
 }
 
+func (o *Operation) Context() context.Context {
+	return o.Request.Context()
+}
+
 func (o *Operation) Log() logging.Logger {
-	return logging.FromContext(o.Request.Context())
+	return logging.FromContext(o.Context())
 }
 
 func EncodeXMLBytes(w http.ResponseWriter, t []byte, statusCode int) error {
@@ -120,19 +123,19 @@ func (o *Operation) SetHeaders(headers map[string]string) {
 	}
 }
 
-func (o *Operation) EncodeError(err errors.APIError) {
-	werr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
-		Code:       err.Code,
-		Message:    err.Description,
+func (o *Operation) EncodeError(e errors.APIError) {
+	err := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
+		Code:       e.Code,
+		Message:    e.Description,
 		BucketName: "",
 		Key:        "",
 		Resource:   "",
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8), // just for compatibility, meaningless in our case
-	}, err.HTTPStatusCode)
-	if werr != nil {
-		o.Log().WithError(werr).Error("encoding response failed")
+	}, e.HTTPStatusCode)
+	if err != nil {
+		o.Log().WithError(err).Error("encoding response failed")
 	}
 }
 
@@ -143,16 +146,16 @@ type AuthenticatedOperation struct {
 
 type RepoOperation struct {
 	*AuthenticatedOperation
-	Repo *model.Repo
+	Repository *catalog.Repository
 }
 
 func (o *RepoOperation) EncodeError(err errors.APIError) {
 	writeErr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
-		BucketName: o.Repo.Id,
+		BucketName: o.Repository.Name,
 		Key:        "",
-		Resource:   o.Repo.Id,
+		Resource:   o.Repository.Name,
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
@@ -164,7 +167,7 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 
 type RefOperation struct {
 	*RepoOperation
-	Ref string
+	Reference string
 }
 
 type PathOperation struct {
@@ -176,9 +179,9 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 	writeErr := EncodeResponse(o.ResponseWriter, errors.APIErrorResponse{
 		Code:       err.Code,
 		Message:    err.Description,
-		BucketName: o.Repo.Id,
+		BucketName: o.Repository.Name,
 		Key:        o.Path,
-		Resource:   fmt.Sprintf("%s@%s", o.Ref, o.Repo.Id),
+		Resource:   fmt.Sprintf("%s@%s", o.Reference, o.Repository.Name),
 		Region:     o.Region,
 		RequestID:  o.RequestId(),
 		HostID:     auth.HexStringGenerator(8),
@@ -199,15 +202,15 @@ type AuthenticatedOperationHandler interface {
 }
 
 type RepoOperationHandler interface {
-	RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error)
+	RequiredPermissions(request *http.Request, repository string) ([]permissions.Permission, error)
 	Handle(op *RepoOperation)
 }
 
 type BranchOperationHandler interface {
-	RequiredPermissions(request *http.Request, repoId, branchId string) ([]permissions.Permission, error)
+	RequiredPermissions(request *http.Request, repository, branch string) ([]permissions.Permission, error)
 	Handle(op *RefOperation)
 }
 type PathOperationHandler interface {
-	RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error)
+	RequiredPermissions(request *http.Request, repository, branch, path string) ([]permissions.Permission, error)
 	Handle(op *PathOperation)
 }

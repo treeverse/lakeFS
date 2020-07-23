@@ -7,18 +7,22 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
+
+	"github.com/treeverse/lakefs/dedup"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 )
 
 const (
@@ -46,10 +50,11 @@ var runCmd = &cobra.Command{
 		defer func() {
 			_ = dbPool.Close()
 		}()
+		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbConnString)
 
-		// init index
-		index := index.NewDBIndex(dbPool)
+		// init catalog
+		cataloger := catalog.NewCataloger(dbPool)
 
 		// init block store
 		blockStore := cfg.BuildBlockAdapter()
@@ -68,23 +73,40 @@ var runCmd = &cobra.Command{
 		}
 		stats := cfg.BuildStats(installationID)
 
+		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
+		defer func() {
+			// order is important - close cataloger channel before dedup
+			_ = cataloger.Close()
+			_ = dedupCleaner.Close()
+		}()
+
 		// start API server
 		done := make(chan bool, 1)
 		quit := make(chan os.Signal, 1)
-		signal.Notify(quit, os.Interrupt)
+		signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 		apiHandler := api.NewHandler(
-			index, blockStore, authService, meta, stats, migrator,
-			logger.WithField("service", "api_gateway"))
+			cataloger,
+			blockStore,
+			authService,
+			meta,
+			stats,
+			retention,
+			migrator,
+			dedupCleaner,
+			logger.WithField("service", "api_gateway"),
+		)
 
 		// init gateway server
 		s3gatewayHandler := gateway.NewHandler(
 			cfg.GetS3GatewayRegion(),
-			index,
+			cataloger,
 			blockStore,
 			authService,
 			cfg.GetS3GatewayDomainName(),
-			stats)
+			stats,
+			dedupCleaner,
+		)
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go stats.Run(ctx)

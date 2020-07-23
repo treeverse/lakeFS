@@ -6,13 +6,12 @@ import (
 	"os"
 	"time"
 
-	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 )
 
 // initCmd represents the init command
@@ -40,9 +39,7 @@ var initCmd = &cobra.Command{
 			cfg.GetAuthCacheConfig())
 
 		metaManager := auth.NewDBMetadataManager(config.Version, dbPool)
-
 		metadata, err := metaManager.Write()
-
 		if err != nil {
 			fmt.Printf("failed to write initial setup metadata: %s\n", err)
 			os.Exit(1)
@@ -63,7 +60,8 @@ var initCmd = &cobra.Command{
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")
 
-		fmt.Printf("credentials:\naccess key id: %s\naccess secret key: %s\n", credentials.AccessKeyId, credentials.AccessSecretKey)
+		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
+			credentials.AccessKeyId, credentials.AccessSecretKey)
 
 		cancelFn()
 		<-stats.Done()

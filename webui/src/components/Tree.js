@@ -1,16 +1,17 @@
-import React, {useState} from "react";
+import React, {useCallback, useEffect, useState} from "react";
 import {linkToPath} from "../actions/api";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
 import {
-    FileIcon,
-    FileDirectoryIcon,
-    PlusIcon,
-    TrashcanIcon,
-    PencilIcon,
     ChevronDownIcon,
     ChevronUpIcon,
-    DownloadIcon
+    DotIcon,
+    DownloadIcon,
+    FileDirectoryIcon,
+    FileIcon,
+    PencilIcon,
+    PlusIcon,
+    TrashcanIcon
 } from "@primer/octicons-react";
 import Button from "react-bootstrap/Button";
 import * as moment from "moment";
@@ -19,6 +20,10 @@ import {Link} from "react-router-dom";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
 import Dropdown from "react-bootstrap/Dropdown";
+import Container from "react-bootstrap/Container";
+import Row from "react-bootstrap/Row";
+import {connect} from "react-redux";
+import {listBranches} from "../actions/branches";
 
 
 const humanSize = (bytes) => {
@@ -91,8 +96,6 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
 
     const baseUrl = `/repositories/${repo.id}/tree`;
 
-    const refIdDisplay = (refId.type === 'commit') ? refId.id.substr(0, 16) : refId.id;
-
     const refWithPath = (path, name) => {
         const refQuery = (refId.type === 'commit') ? qs({path, commit: refId.id}) : qs({path, branch: refId.id});
         const refUrl = `${baseUrl}${refQuery}`;
@@ -104,7 +107,7 @@ const URINavigator = ({ repo, refId, path, onNavigate }) => {
             <strong>{'lakefs://'}</strong>
             <Link to={baseUrl}>{repo.id}</Link>
             <strong>{'@'}</strong>
-            {refWithPath("", refIdDisplay)}
+            {refWithPath("", refId.id)}
             <strong>{'/'}</strong>
             {parts.map((part, i) => (
                 <span key={i}>
@@ -128,17 +131,46 @@ const PathLink = ({ repoId, refId, path, children, as = null }) => {
 
 const Na = () => (<span>&mdash;</span>);
 
-const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions }) => {
-
+const EntryRowActions = ({ repo, refId, entry, onDelete }) => {
     const [isDropdownOpen, setDropdownOpen] = useState(false);
+    return (
+        <Dropdown alignRight onToggle={setDropdownOpen}>
+        <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
+                return (
+                    <Button variant="link" onClick={e => { e.preventDefault(); onClick(e); }} ref={ref}>
+                    {children}
+                    </Button>
+                );
+            })}>
+            {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
+        </Dropdown.Toggle>
 
+        <Dropdown.Menu>
+            <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
+            <Dropdown.Item onClick={(e) => {
+                    e.preventDefault();
+                    if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
+                }}><TrashcanIcon/> {' '} Delete
+            </Dropdown.Item>
+        </Dropdown.Menu>
+        </Dropdown>
+    );
+};
+
+const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions }) => {
     let rowClass = 'tree-row ';
-    if (entry.diff_type === 'CHANGED') {
-        rowClass += 'diff-changed';
-    } else if (entry.diff_type === 'ADDED') {
-        rowClass += 'diff-added';
-    } else if (entry.diff_type === 'REMOVED') {
-        rowClass += 'diff-removed';
+    switch(entry.diff_type) {
+        case 'CHANGED':
+            rowClass += 'diff-changed';
+            break;
+        case 'ADDED':
+            rowClass += 'diff-added';
+            break;
+        case 'REMOVED':
+            rowClass += 'diff-removed';
+            break;
+        default:
+            break;
     }
 
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
@@ -175,58 +207,45 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let diffIndicator;
-    if (entry.diff_type === 'REMOVED') {
-        diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
-                <span>
-                    <TrashcanIcon/>
-                </span>
-            </OverlayTrigger>
-        );
-    } else if (entry.diff_type === 'ADDED') {
-        diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
-                <span>
-                    <PlusIcon/>
-                </span>
-            </OverlayTrigger>
-        );
-    } else if (entry.diff_type === 'CHANGED') {
-        diffIndicator = (
-            <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
-                <span>
-                    <PencilIcon/>
-                </span>
-            </OverlayTrigger>
-        );
-    } else {
-        diffIndicator = (<span/>);
+    switch(entry.diff_type) {
+        case 'REMOVED':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
+                    <span>
+                        <TrashcanIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'ADDED':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
+                    <span>
+                        <PlusIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        case 'CHANGED':
+            diffIndicator = (
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
+                    <span>
+                        <PencilIcon/>
+                    </span>
+                </OverlayTrigger>
+            );
+            break;
+        default:
+            break;
     }
 
-    let objectDropdown = (<span/>);
+    let entryActions;
     if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
-        objectDropdown = (
-            <Dropdown alignRight onToggle={setDropdownOpen}>
-                <Dropdown.Toggle
-                    as={React.forwardRef(({onClick, children}, ref) => {
-                        return (
-                            <Button variant="link" onClick={(e) => { e.preventDefault(); onClick(e); }} ref={ref}>
-                                {children}
-                            </Button>
-                            );
-                    })}>
-                    {(isDropdownOpen) ?  ChevronUpIcon : ChevronDownIcon}
-                </Dropdown.Toggle>
-
-                <Dropdown.Menu>
-                    <PathLink path={entry.path} refId={refId} repoId={repo.id} as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                    <Dropdown.Item onClick={(e) => { e.preventDefault(); if (window.confirm(`are  you sure you wish to delete object "${entry.path}"?`)) onDelete(entry); }}><TrashcanIcon/> {' '} Delete</Dropdown.Item>
-                </Dropdown.Menu>
-            </Dropdown>
-        );
+        entryActions = <EntryRowActions repo={repo} refId={refId} entry={entry} onDelete={onDelete}></EntryRowActions>;
     }
 
     return (
+        <>
         <tr className={rowClass}>
             <td className="diff-indicator">
                 {diffIndicator}
@@ -242,17 +261,17 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {modified}
             </td>
             <td className={"tree-row-actions"}>
-                {objectDropdown}
+                {entryActions}
             </td>
         </tr>
+        </>
     );
 };
 
 
 const merge = (path, entriesAtPath, diffResults) => {
-    diffResults = (!!diffResults && !!diffResults.payload) ? diffResults.payload.results : [];
+    diffResults = (diffResults && diffResults.payload) ? diffResults.payload.results : [];
     entriesAtPath = entriesAtPath || [];
-
 
     const entries = [...entriesAtPath];
     diffResults.forEach(diff => {
@@ -265,15 +284,14 @@ const merge = (path, entriesAtPath, diffResults) => {
        }
     });
 
-    return entries.map(entry => {
-        if (!!entry.diff_type) return entry;
+    const r = entries.map(entry => {
+        if (entry.diff_type) return entry;
 
         for (let i=0; i < diffResults.length; i++) {
             const diff = diffResults[i];
             if (entry.path === diff.path) {
                 // if there's an exact 'CHANGE' or 'ADD' diff for it, color it that way.
                 return {...entry,  diff_type: diff.type};
-
             }
             if (diff.path_type === 'TREE' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
                 // for any entry descendant from a TREE event that was ADD, color it as ADD
@@ -287,14 +305,31 @@ const merge = (path, entriesAtPath, diffResults) => {
         }
         return {...entry, diff_type: 'NONE'};
     });
+    return r;
 };
 
-export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions }) => {
+const Tree = ({ path, list, repo, refId, diffResults, onNavigate, onDelete, showActions, listBranches, listBranchesState, setShowUploadModal, setShowImportModal }) => {
     let body;
+    const refreshData = useCallback(() => {
+        if (refId.type === 'branch') {
+            if (refId.id === repo.default_branch) {
+                listBranches(repo.id, "", 2) // trigger list branches to
+            }
+        }
+    }, [repo.id, listBranches, refId, repo.default_branch]);
+    useEffect(() => {
+        refreshData();
+    }, [refreshData, repo.id, refId, path]);
+
+    const showGetStarted = !list.loading && list.payload && list.payload.results.length === 0 && listBranchesState && listBranchesState.payload && listBranchesState.payload.results.length === 1 && !path;
+
     if (list.loading) {
         body = (<Alert variant="info">Loading...</Alert>);
     } else if (list.error) {
         body = <Alert variant="danger" className="tree-error">{list.error}</Alert>
+    } else if (showGetStarted) {
+        body = <GetStarted repo={repo} list={list} listBranchesState={listBranchesState}
+                           setShowUploadModal={setShowUploadModal} setShowImportModal={setShowImportModal}/>
     } else {
         const results = merge(path, list.payload.results, diffResults);
         body = (
@@ -307,7 +342,6 @@ export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, sh
             </Table>
         );
     }
-
     return (
         <div className="tree-container">
             <Card>
@@ -321,3 +355,22 @@ export default ({ path, list, repo, refId, diffResults, onNavigate, onDelete, sh
         </div>
     );
 };
+
+
+const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowImportModal}) => {
+    useEffect(() =>{
+    }, [repo, list, listBranchesState])
+    return <>{ (
+                <Container className="m-3"><h3>To get started with this repository, you can:</h3>
+                <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowImportModal(true)}}>Import</a>&nbsp;data from S3</Row>
+                <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowUploadModal(true)}}>Upload</a>&nbsp;an object</Row>
+                <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/>See the&nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.</Row>
+</Container>    )}</>
+}
+
+export default connect(
+    ({branches}) => ({
+        listBranchesState: branches.list,
+    }),
+    ({listBranches})
+)(Tree);

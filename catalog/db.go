@@ -1,7 +1,11 @@
 package catalog
 
 import (
+	"fmt"
 	"reflect"
+	"strings"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -14,27 +18,34 @@ const (
 	LockTypeUpdate
 )
 
-const MaxCommitID = 0x7FFFFFFF
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-func getBranchID(tx db.Tx, repository, branch string, branchLockType LockType) (int, error) {
+func getBranchID(tx db.Tx, repository, branch string, lockType LockType) (int64, error) {
 	const b = `SELECT b.id FROM branches b join repositories r 
 					ON r.id = b.repository_id
 					WHERE r.name = $1 AND b.name = $2`
-	var q string
-	switch branchLockType {
-	case LockTypeNone:
-		q = b
-	case LockTypeShare:
-		q = b + " FOR SHARE"
-	case LockTypeUpdate:
-		q = b + " FOR UPDATE"
-	default:
-		return 0, ErrInvalidLockValue
+	q, err := formatSQLWithLockType(b, lockType)
+	if err != nil {
+		return 0, err
 	}
-	// will block merges, commits and diffs on this branch
-	var branchID int
-	err := tx.Get(&branchID, q, repository, branch)
+	var branchID int64
+	err = tx.Get(&branchID, q, repository, branch)
 	return branchID, err
+}
+
+func formatSQLWithLockType(sql string, lockType LockType) (string, error) {
+	var q string
+	switch lockType {
+	case LockTypeNone:
+		q = sql
+	case LockTypeShare:
+		q = sql + " FOR SHARE"
+	case LockTypeUpdate:
+		q = sql + " FOR UPDATE"
+	default:
+		return "", ErrInvalidLockValue
+	}
+	return q, nil
 }
 
 func getRepositoryID(tx db.Tx, repository string) (int, error) {
@@ -43,29 +54,53 @@ func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	return repoID, err
 }
 
-func getNextCommitID(tx db.Tx, branchID int) (CommitID, error) {
+func getLastCommitIDByBranchID(tx db.Tx, branchID int64) (CommitID, error) {
 	var commitID CommitID
-	err := tx.Get(&commitID, `SELECT next_commit FROM branches WHERE id = $1`, branchID)
+	err := tx.Get(&commitID, `SELECT max(commit_id) FROM commits where branch_id=$1`, branchID)
 	return commitID, err
 }
 
-func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int) (RelationType, error) {
+func getNextCommitID(tx db.Tx) (CommitID, error) {
+	var commitID CommitID
+	err := tx.Get(&commitID, `SELECT nextval('commit_id_seq');`)
+	return commitID, err
+}
+
+func getRepository(tx db.Tx, repository string) (*Repository, error) {
+	var r Repository
+	err := tx.Get(&r, `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
+			FROM repositories r, branches b
+			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name = $1`,
+		repository)
+	if err != nil {
+		return nil, err
+	}
+	return &r, nil
+}
+
+func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64) (RelationType, error) {
+	var youngerBranch, olderBranch int64
+	var possibleRelation RelationType
 	if sourceBranchID == destinationBranchID {
 		return RelationTypeNone, nil
 	}
-	const directLinkQuery = `SELECT COUNT(*) FROM lineage WHERE branch_id=$2 AND ancestor_branch=$1 AND precedence=1`
-	var directLink int
-	if err := tx.Get(&directLink, directLinkQuery, sourceBranchID, destinationBranchID); err != nil {
+	if sourceBranchID > destinationBranchID {
+		possibleRelation = RelationTypeFromSon
+		youngerBranch = sourceBranchID
+		olderBranch = destinationBranchID
+	} else {
+		possibleRelation = RelationTypeFromFather
+		youngerBranch = destinationBranchID
+		olderBranch = sourceBranchID
+	}
+	var isDirectRelation bool
+	err := tx.Get(&isDirectRelation,
+		`select lineage[1]=$1 from branches where id=$2`, olderBranch, youngerBranch)
+	if err != nil {
 		return RelationTypeNone, err
 	}
-	if directLink > 0 {
-		return RelationTypeFromFather, nil
-	}
-	if err := tx.Get(&directLink, directLinkQuery, destinationBranchID, sourceBranchID); err != nil {
-		return RelationTypeNone, err
-	}
-	if directLink > 0 {
-		return RelationTypeFromSon, nil
+	if isDirectRelation {
+		return possibleRelation, nil
 	}
 	return RelationTypeNotDirect, nil
 }
@@ -88,4 +123,31 @@ func paginateSlice(s interface{}, limit int) bool {
 		return true
 	}
 	return false
+}
+
+func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, error) {
+	effectiveCommit := commitID
+	if commitID <= 0 {
+		effectiveCommit = MaxCommitID
+	}
+	sql := `SELECT * FROM UNNEST(
+				(SELECT lineage from branches WHERE id=$1),
+				(SELECT lineage_commits FROM commits WHERE branch_id=$1 AND merge_type='from_father' AND commit_id <= $2 ORDER BY commit_id DESC LIMIT 1)
+			) as t(branch_id, commit_id)`
+	var requestedLineage []lineageCommit
+	err := tx.Select(&requestedLineage, sql, branchID, effectiveCommit)
+	if err != nil {
+		return nil, err
+	}
+	return requestedLineage, nil
+}
+
+func getLineageAsValues(lineage []lineageCommit, branchID int64) string {
+	valArray := make([]string, 1, len(lineage)+1)
+	valArray[0] = fmt.Sprintf("(0,%d,%d)", branchID, MaxCommitID)
+	for precedence, lineageBranch := range lineage {
+		valArray = append(valArray, fmt.Sprintf("(%d,%d,%d)", precedence+1, lineageBranch.BranchID, lineageBranch.CommitID))
+	}
+	valTable := "(VALUES " + strings.Join(valArray, " ,\n ") + ") as l(precedence,branch_id,commit_id) "
+	return valTable
 }

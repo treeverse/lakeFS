@@ -33,9 +33,9 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		duration, _ := cmd.Flags().GetDuration(DurationFlag)
+		maxWorkers, _ := cmd.Flags().GetUint64(MaxWorkersFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
-		maxWorkers, _ := cmd.Flags().GetUint64(MaxWorkersFlag)
 		testConfig := loadtest.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      duration,

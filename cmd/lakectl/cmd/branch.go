@@ -3,7 +3,6 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"strings"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -23,7 +22,7 @@ var branchListTemplate = `{{.BranchTable | table -}}
 `
 
 var branchListCmd = &cobra.Command{
-	Use:     "list [repository uri]",
+	Use:     "list <repository uri>",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://myrepo",
 	Args: ValidationChain(
@@ -43,7 +42,7 @@ var branchListCmd = &cobra.Command{
 
 		rows := make([][]interface{}, len(response))
 		for i, row := range response {
-			rows[i] = []interface{}{*row.ID, *row.CommitID}
+			rows[i] = []interface{}{row}
 		}
 
 		ctx := struct {
@@ -51,7 +50,7 @@ var branchListCmd = &cobra.Command{
 			Pagination  *Pagination
 		}{
 			BranchTable: &Table{
-				Headers: []interface{}{"Ref Name", "Commit ID"},
+				Headers: []interface{}{"Branch"},
 				Rows:    rows,
 			},
 		}
@@ -68,7 +67,7 @@ var branchListCmd = &cobra.Command{
 }
 
 var branchCreateCmd = &cobra.Command{
-	Use:   "create [ref uri]",
+	Use:   "create <ref uri>",
 	Short: "create a new branch in a repository",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -82,24 +81,24 @@ var branchCreateCmd = &cobra.Command{
 		if err != nil {
 			DieFmt("failed to parse source URI: %s", err)
 		}
-		if !strings.EqualFold(sourceURI.Repository, u.Repository) {
+		if sourceURI.Repository != u.Repository {
 			Die("source branch must be in the same repository", 1)
 		}
 
 		ref, err := client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
-			ID:          swag.String(u.Ref),
-			SourceRefID: swag.String(sourceURI.Ref),
+			Name:   swag.String(u.Ref),
+			Source: swag.String(sourceURI.Ref),
 		})
 		if err != nil {
 			DieErr(err)
 		}
 
-		Fmt("created branch '%s', pointing to commit ID: '%s'\n", *ref.ID, *ref.CommitID)
+		Fmt("created branch '%s'\n", ref)
 	},
 }
 
 var branchDeleteCmd = &cobra.Command{
-	Use:   "delete [branch uri]",
+	Use:   "delete <branch uri>",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -122,19 +121,9 @@ var branchDeleteCmd = &cobra.Command{
 	},
 }
 
-func moreThanOne(args ...bool) bool {
-	count := 0
-	for _, args := range args {
-		if args {
-			count++
-		}
-	}
-	return count > 1
-}
-
 // lakectl branch revert lakefs://myrepo@master --commit commitId --tree path --object path
 var branchRevertCmd = &cobra.Command{
-	Use:   "revert [branch uri] [flags]",
+	Use:   "revert <branch uri> [flags]",
 	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path ",
 	Long: `revert changes: there are four different ways to revert changes:
 				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
@@ -165,7 +154,7 @@ var branchRevertCmd = &cobra.Command{
 		isTree := len(tree) > 0
 		isObject := len(object) > 0
 
-		if moreThanOne(isCommit, isTree, isObject) {
+		if isCommit || isTree || isObject {
 			Die("can't revert by multiple commands, please choose only one [commit, tree, object]!", 1)
 		}
 
@@ -209,8 +198,8 @@ var branchRevertCmd = &cobra.Command{
 }
 
 var branchShowCmd = &cobra.Command{
-	Use:   "show [branch uri]",
-	Short: "show branch metadata",
+	Use:   "show <branch uri>",
+	Short: "show branch latest commit reference",
 	Args: ValidationChain(
 		HasNArgs(1),
 		IsRefURI(0),
@@ -218,11 +207,11 @@ var branchShowCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		resp, err := client.GetBranch(context.Background(), u.Repository, u.Ref)
+		ref, err := client.GetBranch(context.Background(), u.Repository, u.Ref)
 		if err != nil {
 			DieErr(err)
 		}
-		Fmt("%s\t%s\n", *resp.ID, *resp.CommitID)
+		Fmt("%s\n", ref)
 	},
 }
 

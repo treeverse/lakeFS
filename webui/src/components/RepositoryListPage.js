@@ -3,7 +3,7 @@ import {RepositoryCreateForm} from "./RepositoryCreateForm";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import Card from "react-bootstrap/Card";
-import {Link} from "react-router-dom";
+import {useHistory, Link} from "react-router-dom";
 import * as moment from "moment";
 import {connect} from "react-redux";
 import {createRepository, createRepositoryDone, filterRepositories, listRepositories, listRepositoriesPaginate} from "../actions/repositories";
@@ -75,24 +75,24 @@ const RepositoryList = ({ list, paginate }) => {
 
 export const RepositoryListPage = connect(
     ({ repositories }) => {
-        const {list, create, createIndex} = repositories;
-        return {list, create, createIndex};
+        const {list, create} = repositories;
+        return {list, create};
     },
     ({ listRepositories, listRepositoriesPaginate,  filterRepositories, createRepository, createRepositoryDone })
-)(({listRepositories, listRepositoriesPaginate, filterRepositories, createRepository, createRepositoryDone, list, create, createIndex }) => {
+)(({listRepositories, listRepositoriesPaginate, filterRepositories, createRepository, createRepositoryDone, list, create }) => {
 
     const [showingCreateModal, setShowCreateModal] = useState(false);
     const closeCreateModal = () => setShowCreateModal(false);
     const showCreateModal = () => setShowCreateModal(true);
-
+    const history = useHistory();
     const filterField = useRef(null);
 
     useEffect(()=> {
-        listRepositories();
         if (create.done) {
-            setShowCreateModal(false);
+            history.push(`/repositories/${create.payload.id}/tree`)
         }
-    }, [listRepositories, create.done]);
+        listRepositories();
+    }, [listRepositories, create, history]);
 
     return (
         <div className="mt-3">
@@ -107,7 +107,7 @@ export const RepositoryListPage = connect(
                                     </InputGroup.Text>
                                 </InputGroup.Prepend>
                                 <DebouncedFormControl type="text" placeholder="Find a repository..." autoFocus ref={filterField} onChange={() =>{
-                                    filterRepositories(filterField.current.value, 1000);
+                                    filterRepositories(filterField.current.value, 300);
                                 }}/>
                             </InputGroup>
                         </Col>

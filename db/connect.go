@@ -2,31 +2,21 @@ package db
 
 import (
 	"fmt"
-	"net/url"
-
-	"github.com/treeverse/lakefs/logging"
+	"time"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/treeverse/lakefs/logging"
 )
-
-func extractSchemaFromURI(uri string) (string, error) {
-	var schema string
-	parsed, err := url.Parse(uri)
-	if err != nil {
-		return schema, err
-	}
-	schema = parsed.Query().Get("search_path")
-	if schema == "" {
-		return "", fmt.Errorf("search_path not present in database connection string")
-	}
-	return schema, nil
-}
 
 func ConnectDB(driver string, uri string) (Database, error) {
 	conn, err := sqlx.Connect(driver, uri)
 	if err != nil {
 		return nil, fmt.Errorf("could not open database: %w", err)
 	}
+
+	conn.SetMaxOpenConns(25)
+	conn.SetMaxIdleConns(25)
+	conn.SetConnMaxLifetime(5 * time.Minute)
 
 	logging.Default().WithFields(logging.Fields{
 		"driver": driver,

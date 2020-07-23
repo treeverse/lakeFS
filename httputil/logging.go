@@ -5,14 +5,12 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/logging"
-
-	"github.com/treeverse/lakefs/auth"
 )
 
 const (
 	RequestIdContextKey = "request_id"
-	RequestIdByteLength = 8
 )
 
 type ResponseRecordingWriter struct {
@@ -27,9 +25,7 @@ func (w *ResponseRecordingWriter) Header() http.Header {
 
 func (w *ResponseRecordingWriter) Write(data []byte) (int, error) {
 	written, err := w.Writer.Write(data)
-	if err == nil {
-		w.ResponseSize += int64(written)
-	}
+	w.ResponseSize += int64(written)
 	return written, err
 }
 
@@ -38,25 +34,25 @@ func (w *ResponseRecordingWriter) WriteHeader(statusCode int) {
 	w.Writer.WriteHeader(statusCode)
 }
 
-func RequestId(r *http.Request) (*http.Request, string) {
-	var reqId string
+func RequestID(r *http.Request) (*http.Request, string) {
 	ctx := r.Context()
 	resp := ctx.Value(RequestIdContextKey)
+	var reqID string
 	if resp == nil {
 		// assign a request ID for this request
-		reqId = auth.HexStringGenerator(RequestIdByteLength)
-		r = r.WithContext(context.WithValue(ctx, RequestIdContextKey, reqId))
+		reqID = uuid.New().String()
+		r = r.WithContext(context.WithValue(ctx, RequestIdContextKey, reqID))
 	} else {
-		reqId = resp.(string)
+		reqID = resp.(string)
 	}
-	return r, reqId
+	return r, reqID
 }
 
 func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
-		r, reqID := RequestId(r)
+		r, reqID := RequestID(r)
 
 		// add default fields to context
 		requestFields := logging.Fields{

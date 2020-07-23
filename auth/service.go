@@ -5,15 +5,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/auth/wildcard"
-
-	"github.com/treeverse/lakefs/permissions"
-
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/auth/wildcard"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/permissions"
 )
 
 type AuthorizationRequest struct {

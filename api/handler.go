@@ -1,24 +1,29 @@
+//go:generate swagger generate client -q -A lakefs -f ../swagger.yml -P models.User -t gen
+//go:generate swagger generate server -q -A lakefs -f ../swagger.yml -P models.User -t gen --exclude-main
 package api
 
 import (
 	"fmt"
 	"net/http"
 
-	"gopkg.in/dgrijalva/jwt-go.v3"
+	dedup2 "github.com/treeverse/lakefs/dedup"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/httputil"
-	"github.com/treeverse/lakefs/index"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	_ "github.com/treeverse/lakefs/statik"
 	"github.com/treeverse/lakefs/stats"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 const (
@@ -33,34 +38,40 @@ var (
 
 type Handler struct {
 	meta        auth.MetadataManager
-	index       index.Index
+	cataloger   catalog.Cataloger
 	blockStore  block.Adapter
 	authService auth.Service
 	stats       stats.Collector
+	retention   retention.Service
 	migrator    db.Migrator
 	apiServer   *restapi.Server
 	handler     *http.ServeMux
 	server      *http.Server
+	dedup       *dedup2.Cleaner
 	logger      logging.Logger
 }
 
 func NewHandler(
-	index index.Index,
+	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
 	meta auth.MetadataManager,
 	stats stats.Collector,
+	retention retention.Service,
 	migrator db.Migrator,
+	dedup *dedup2.Cleaner,
 	logger logging.Logger,
 ) http.Handler {
-	logger.Info("initialized OpenAPI handler")
+	logger.Info("initialized OpenAPI server")
 	s := &Handler{
-		index:       index,
+		cataloger:   cataloger,
 		blockStore:  blockStore,
 		authService: authService,
 		meta:        meta,
 		stats:       stats,
+		retention:   retention,
 		migrator:    migrator,
+		dedup:       dedup,
 		logger:      logger,
 	}
 	s.buildAPI()
@@ -128,6 +139,8 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	mux := http.NewServeMux()
 	// health check
 	mux.Handle("/_health", httputil.ServeHealth())
+	// metrics
+	mux.Handle("/_metrics", promhttp.Handler())
 	// pprof endpoint
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
@@ -154,7 +167,7 @@ func (s *Handler) buildAPI() {
 	api.JwtTokenAuth = s.JwtTokenAuth()
 
 	// bind our handlers to the server
-	NewController(s.index, s.authService, s.blockStore, s.stats, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedup, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
@@ -165,7 +178,11 @@ func (s *Handler) buildAPI() {
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
-			cookieToAPIHeader(s.apiServer.GetHandler()),
+			promhttp.InstrumentHandlerCounter(requestCounter,
+				cookieToAPIHeader(
+					s.apiServer.GetHandler(),
+				),
+			),
 		),
 
 		// ui handler

@@ -4,29 +4,24 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/auth"
-
-	"github.com/google/uuid"
-
-	"github.com/treeverse/lakefs/db"
-
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/treeverse/lakefs/block/local"
-	"github.com/treeverse/lakefs/block/mem"
-
-	"github.com/treeverse/lakefs/stats"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/local"
+	"github.com/treeverse/lakefs/block/mem"
 	s3a "github.com/treeverse/lakefs/block/s3"
+	"github.com/treeverse/lakefs/block/transient"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/stats"
 )
 
 const (
@@ -142,7 +137,7 @@ func (c *Config) buildLocalAdapter() block.Adapter {
 	location := viper.GetString("blockstore.local.path")
 	location, err := homedir.Expand(location)
 	if err != nil {
-		panic(fmt.Errorf("could not parse metadata location URI: %s\n", err))
+		panic(fmt.Errorf("could not parse blockstore location URI: %w", err))
 	}
 
 	adapter, err := local.NewAdapter(location)
@@ -157,19 +152,23 @@ func (c *Config) buildLocalAdapter() block.Adapter {
 }
 
 func (c *Config) BuildBlockAdapter() block.Adapter {
-	switch viper.GetString("blockstore.type") {
-	case "local":
+	blockstore := viper.GetString("blockstore.type")
+	logging.Default().
+		WithField("type", blockstore).
+		Info("initialize blockstore adapter")
+	switch blockstore {
+	case local.BlockstoreType:
 		return c.buildLocalAdapter()
-	case "s3":
+	case s3a.BlockstoreType:
 		return c.buildS3Adapter()
-	case "mem", "memory":
-		logging.Default().
-			WithField("type", "mem").
-			Info("initialized blockstore adapter")
+	case mem.BlockstoreType, "memory":
 		return mem.New()
+	case transient.BlockstoreType:
+		return transient.New()
 	default:
-		panic(fmt.Errorf("%s is not a valid blockstore type, please choose one of \"s3\", \"local\" or \"mem\"",
-			viper.GetString("blockstore.type")))
+		err := fmt.Errorf("BLockstore '%s' is not a valid type, please choose one of %s",
+			blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
+		panic(err)
 	}
 }
 
@@ -224,4 +223,23 @@ func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
 		uuid.Must(uuid.NewUUID()).String(),
 		stats.WithSender(sender),
 		stats.WithFlushInterval(c.GetStatsFlushInterval()))
+}
+
+func GetMetastoreAwsConfig() *aws.Config {
+	cfg := &aws.Config{
+		Region: aws.String(viper.GetString("metastore.s3.region")),
+		Logger: &LogrusAWSAdapter{},
+	}
+	if viper.IsSet("metastore.s3.profile") || viper.IsSet("metastore.s3.credentials_file") {
+		cfg.Credentials = credentials.NewSharedCredentials(
+			viper.GetString("metastore.s3.credentials_file"),
+			viper.GetString("metastore.s3.profile"))
+	}
+	if viper.IsSet("metastore.s3.credentials") {
+		cfg.Credentials = credentials.NewStaticCredentials(
+			viper.GetString("metastore.s3.credentials.access_key_id"),
+			viper.GetString("metastore.s3.credentials.access_secret_key"),
+			viper.GetString("metastore.s3.credentials.session_token"))
+	}
+	return cfg
 }
