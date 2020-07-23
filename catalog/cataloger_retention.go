@@ -146,7 +146,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy) sq.SelectBuilder
 // expiryRows implements ExpiryRows.
 type expiryRows struct {
 	rows           *sqlx.Rows
-	repositoryName string
+	RepositoryName string
 }
 
 func (e *expiryRows) Next() bool {
@@ -168,7 +168,7 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 		return nil, err
 	}
 	return &ExpireResult{
-		Repository:      e.repositoryName,
+		Repository:      e.RepositoryName,
 		Branch:          record.Branch,
 		PhysicalAddress: record.PhysicalAddress,
 		InternalReference: (&InternalObjectRef{
@@ -179,26 +179,47 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 	}, nil
 }
 
-// QueryExpired returns ExpiryRows iterating over all objects to expire on repositoryName
-// according to policy to channel out.
 func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error) {
 	logger := logging.Default().WithContext(ctx).WithField("policy", *policy)
 
-	query := buildRetentionQuery(repositoryName, policy)
-	queryString, args, err := query.ToSql()
+	// TODO(ariels): Get lowest possible isolation level here.
+	expiryByEntriesQuery := buildRetentionQuery(repositoryName, policy)
+	expiryByEntriesQueryString, args, err := expiryByEntriesQuery.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("building query: %w", err)
 	}
 
-	logger = logger.WithFields(logging.Fields{"query": queryString, "args": args})
-	logger.Info("retention query")
+	// Hold retention query results as a CTE in a WITH prefix.  Everything must live in a
+	// single SQL statement because multiple statements would occur on separate connections,
+	// and using a transaction would close the returned rows iterator on exit... preventing
+	// the caller from reading the returned rows.
 
-	// TODO(ariels): Get lowest possible isolation level here.
-	rows, err := c.db.Queryx(queryString, args...)
+	dedupedQuery := fmt.Sprintf(`
+                    WITH to_expire AS (%s) SELECT * FROM to_expire
+                    WHERE physical_address IN (
+                        SELECT a.physical_address FROM
+                            ((SELECT physical_address, COUNT(*) c FROM to_expire GROUP BY physical_address) AS a JOIN
+                             (SELECT physical_address, COUNT(*) c FROM entries GROUP BY physical_address) AS b
+                             ON a.physical_address = b.physical_address)
+                            WHERE a.c = b.c)
+                    `,
+		expiryByEntriesQueryString,
+	)
+
+	logger.WithFields(logging.Fields{
+		"dedupe_query": dedupedQuery,
+		"args":         args,
+	}).Info("retention dedupe")
+	// Return only those entries to expire for which *all* entry references are due:
+	// An object may have been deduped onto several branches with different names
+	// and will have multiple entries; it can only be remove once it expires from
+	// all of those.
+	rows, err := c.db.Queryx(dedupedQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("running query: %w", err)
 	}
-	return &expiryRows{rows, repositoryName}, nil
+	var ret ExpiryRows = &expiryRows{rows: rows, RepositoryName: repositoryName}
+	return ret, nil
 }
 
 func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
