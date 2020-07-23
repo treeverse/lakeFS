@@ -139,6 +139,19 @@ func TestCataloger_CreateEntry(t *testing.T) {
 			},
 			wantErr: true,
 		},
+		{
+			name: "special file",
+			args: args{
+				repository:      repo,
+				branch:          "master",
+				path:            "_temp/0/",
+				checksum:        "0000",
+				physicalAddress: "0000",
+				size:            1,
+				metadata:        Metadata{},
+			},
+			wantErr: false,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
