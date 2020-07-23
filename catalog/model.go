@@ -86,3 +86,14 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	return json.Unmarshal(data, j)
 }
+
+func EntriesToLevelEntries(entries []*Entry) []*LevelEntry {
+	l := make([]*LevelEntry, len(entries))
+	for i := range entries {
+		l[i] = &LevelEntry{
+			CommonLevel: false,
+			Entry:       *entries[i],
+		}
+	}
+	return l
+}
