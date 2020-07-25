@@ -1,7 +1,6 @@
 package catalog
 
 import (
-	"container/heap"
 	"context"
 	"errors"
 	"fmt"
@@ -38,7 +37,7 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, 8, branchID, commitID, lineage)
+		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, 32, branchID, commitID, lineage)
 		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
@@ -50,10 +49,10 @@ func (c *cataloger) ListEntriesByLevel(ctx context.Context, repository, referenc
 }
 
 type resultRow struct {
-	BranchID  int64
-	Path      string
-	MinCommit CommitID
-	MaxCommit CommitID
+	BranchID   int64    `db:"branch_id"`
+	PathSuffix string   `db:"path_postfix"`
+	MinCommit  CommitID `db:"min_commit"`
+	MaxCommit  CommitID `db:"max_commit"`
 }
 
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
@@ -67,10 +66,10 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		topCommitID = MaxCommitID
 	}
 	// list of branches ordered form son to ancestors
-	sortedBranches := make([]int64, len(lineage)+1)
-	sortedBranches[0] = branchID
+	branchPriorityMap := make(map[int64]int, len(lineage)+1)
+	branchPriorityMap[branchID] = 0
 	for i, l := range lineage {
-		sortedBranches[i+1] = l.BranchID
+		branchPriorityMap[l.BranchID] = i + 1
 	}
 	limit += 1 // increase limit to get indication of more rows to come
 	unionQueryParts := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
@@ -78,8 +77,8 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	listAfter := prefix + strings.TrimPrefix(after, prefix)
 	var markerList []string
 	pathCond := "path > ? and path < '" + endOfPrefixRange + "'"
-	var responseRows []resultRow
-	for i := 0; i < limit; i++ {
+	var resultRows []resultRow
+	for true { // exit by return
 		unionSelect := unionQueryParts[0].Where(pathCond, listAfter).Prefix("(").Suffix(")")
 		for j := 1; j < len(lineage)+1; j++ {
 			// add the path condition to each union part
@@ -93,30 +92,35 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		if err != nil {
 			return nil, err
 		}
-		responseRows = responseRows[:0]
-		err = tx.Select(&responseRows, unionSQL, args...)
+		resultRows = resultRows[:0]
+		err = tx.Select(&resultRows, unionSQL, args...)
 		if errors.As(err, &db.ErrNotFound) {
 			return markerList, nil
 		}
 		if err != nil {
 			return nil, err
 		}
-		pathSuffix := findCommonPrefix(responseRows, lineage, delimiter, sortedBranches)
-		if pathSuffix == nil {
+		if len(resultRows) == 0 {
+			fmt.Print("FINISHED")
 			return markerList, nil
 		}
-		markerList = append(markerList, *pathSuffix)
-		if strings.HasSuffix(*pathSuffix, delimiter) {
-			*pathSuffix += DirectoryTermination
+		pathSuffixs := findCommonPrefix(resultRows, lineage, delimiter, branchPriorityMap, limit-i)
+		markerList = append(markerList, pathSuffixs...)
+		if len(pathSuffixs) == 0 || len(markerList) >= limit {
+			return markerList, nil
 		}
-		listAfter = prefix + *pathSuffix
+		nextJump := pathSuffixs[len(pathSuffixs)-1]
+		if strings.HasSuffix(nextJump, delimiter) {
+			nextJump += DirectoryTermination
+		}
+		listAfter = prefix + nextJump
 	}
 	return markerList, nil
 }
 
-func findCommonPrefix(response []resultRow, lineage []lineageCommit, delimiter string, branches []int64) *string {
+func findCommonPrefix(response []resultRow, lineage []lineageCommit, delimiter string, branchPriorityMap map[int64]int, limit int) []string {
 	// split results by branch
-	branchRanges := make(map[int64][]resultRow, len(branches))
+	branchRanges := make(map[int64][]resultRow, len(branchPriorityMap))
 	for len(response) > 0 {
 		b := response[0].BranchID
 		i := 1
@@ -126,47 +130,71 @@ func findCommonPrefix(response []resultRow, lineage []lineageCommit, delimiter s
 		branchRanges[b] = response[:i]
 		response = response[i:]
 	}
-	// init heap
-	rh := new(responseRowHeapType)
-	heap.Init(rh)
-	for _, b := range branches {
-		heap.Push(rh, branchRanges[b][0]) // bug - not
-	}
-	lowestResult := heap.Pop(rh).(resultRow)
-	for true { // exit loop by break
-		p := lowestResult.Path
-		b := lowestResult.BranchID
-		var i int
-		numOfRes := len(branchRanges[b])
-		// find range of rows with this name - only cases it is not one are uncommitted or tombstone
-		for i = 0; (i < numOfRes) && (branchRanges[b][i].Path) == p; i++ {
-		}
-		if i == numOfRes {
-			panic("got to end of list - will be implemented later")
-		}
-		pathResults := branchRanges[b][:i] // take all results with this path
-		if checkPath(pathResults) {        // minimal path was found
+	var resultPathes []string
+	for true { // exit loop by return
+		//find lowest result
+		b := findLowestResultInBranches(branchRanges, branchPriorityMap)
+		t := branchRanges[b]
+		p := branchRanges[b][0].PathSuffix
+		pathResults := getPathResultRows(p, &t)
+		if checkPathNotDeleted(pathResults) { // minimal path was found
 			pos := strings.Index(p, delimiter)
 			if pos > -1 {
 				p = p[:pos+1]
 			}
-			return &p
+			resultPathes = append(resultPathes, p)
+			if pos > -1 || len(resultPathes) >= limit {
+				return resultPathes
+			}
 		}
-		branchRanges[b] = branchRanges[b][i:] // remove  rows of this path
-		heap.Push(rh, branchRanges[b][0])
-		rejectedResult := lowestResult
-		lowestResult = heap.Pop(rh).(resultRow)        // todo : deleted should not be filtered ???
-		for lowestResult.Path == rejectedResult.Path { // clear results with the same path as the one that was rejected
-			b = lowestResult.BranchID
-			branchRanges[b] = branchRanges[b][1:] // to do - handle empty result
-			heap.Push(rh, branchRanges[b][0])
-			lowestResult = heap.Pop(rh).(resultRow)
+		// if path was rejected in a branch, it can not be viewed from branches "deeper" in the lineage chain.
+		// the path is removed from the beginning of all results.
+		// if the path is not at the start of any other result = nothing happens
+		for _, results := range branchRanges {
+			getPathResultRows(p, &results)
 		}
 	}
-	return nil
+	return nil // will never be executed
 }
 
-func checkPath(pathResults []resultRow) bool {
+func getPathResultRows(path string, branchResults *[]resultRow) []resultRow {
+	i := 0
+	resultLen := len(*branchResults)
+	for (*branchResults)[i].PathSuffix == path {
+		i++
+		if i == resultLen {
+			panic("need more rows ")
+		}
+	}
+	returnSlice := (*branchResults)[:i]
+	*branchResults = (*branchResults)[i:]
+	return returnSlice
+}
+
+func findLowestResultInBranches(branchRanges map[int64][]resultRow, branchPriorityMap map[int64]int) int64 {
+	firstTime := true
+	var chosenBranch int64
+	var chosenResults []resultRow
+	for b, r := range branchRanges {
+		if firstTime {
+			chosenBranch = b
+			chosenResults = r
+			continue
+		}
+		if r[0].PathSuffix == chosenResults[0].PathSuffix {
+			if branchPriorityMap[chosenBranch] > branchPriorityMap[b] {
+				chosenBranch = b
+				chosenResults = r
+			}
+		} else if r[0].PathSuffix < chosenResults[0].PathSuffix {
+			chosenBranch = b
+			chosenResults = r
+		}
+	}
+	return chosenBranch
+}
+
+func checkPathNotDeleted(pathResults []resultRow) bool {
 	if pathResults[0].MaxCommit != MaxCommitID { // top is deleted
 		return false
 	} // top path not deleted, but may have uncommitted tombstone
@@ -179,21 +207,21 @@ func checkPath(pathResults []resultRow) bool {
 }
 
 func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, brancEntryLimit int, lowestCommitId, topCommitID CommitID, prefixLen int) []sq.SelectBuilder {
-	rowSelect := sq.Select("branch_id as BranchID", "min_commit as minCommit").
-		Column("substr(path,?) as path", prefixLen+1).
+	rawSelect := sq.Select("branch_id", "min_commit").
+		Column("substr(path,?) as path_postfix", prefixLen+1).
 		From("entries").
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(brancEntryLimit))
 	unionParts := make([]sq.SelectBuilder, len(lineage)+1)
-	unionParts[0] = rowSelect.Where("branch_id = ?", baseBranchID).
-		Column("max_commit as maxCommit").
-		Where("min_commit between ? and ?  and (max_commit >= ? or max_commit = 0)", lowestCommitId, topCommitID, topCommitID)
+	unionParts[0] = rawSelect.Where("branch_id = ?", baseBranchID).
+		Column("max_commit").
+		Where("min_commit between ? and ? ", lowestCommitId, topCommitID)
 
 	for i, l := range lineage {
-		unionParts[i+1] = rowSelect.
-			Column("CASE WHEN max_commit >= ? THEN max_commit_id() ELSE max_commit END AS maxCommit", l.CommitID).
+		unionParts[i+1] = rawSelect.
+			Column("CASE WHEN max_commit >= ? THEN max_commit_id() ELSE max_commit END AS max_commit", l.CommitID).
 			Where("branch_id = ?", l.BranchID).
-			Where("min_commit between 1 and  ? and (max_commit > ? or max_commit = 0)", l.CommitID, l.CommitID)
+			Where("min_commit between 1 and  ? ", l.CommitID)
 
 	}
 	return unionParts
