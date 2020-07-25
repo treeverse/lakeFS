@@ -2,9 +2,14 @@ package cmd
 
 import (
 	"github.com/manifoldco/promptui"
+	"github.com/spf13/pflag"
 )
 
-func confirm(question string) (bool, error) {
+func confirm(flags *pflag.FlagSet, question string) (bool, error) {
+	sure, _ := flags.GetBool("sure")
+	if sure {
+		return true, nil
+	}
 	prm := promptui.Prompt{
 		Label:     question,
 		IsConfirm: true,
