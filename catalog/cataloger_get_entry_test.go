@@ -115,7 +115,7 @@ func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
 		PhysicalAddress: "/addr1",
 		Size:            42,
 		Metadata:        nil,
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", Entry{
@@ -124,7 +124,7 @@ func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
 		PhysicalAddress: "/addr2",
 		Size:            24,
 		Metadata:        nil,
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1 and 2", "tester", nil); err != nil {
@@ -136,7 +136,7 @@ func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
 		PhysicalAddress: "/addr3",
 		Size:            42,
 		Metadata:        nil,
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", Entry{
@@ -145,7 +145,7 @@ func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
 		PhysicalAddress: "/addr4",
 		Size:            24,
 		Metadata:        nil,
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	return repository
