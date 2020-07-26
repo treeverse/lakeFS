@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -129,10 +128,14 @@ func TestCataloger_ListEntries(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			// copy the Entry fields we like to compare
+			// copy the Entry's fields we like to compare
 			var gotEntries []Entry
-			for _, ent := range got {
+			for i, ent := range got {
+				if ent == nil {
+					t.Fatalf("Expected entry at index %d, found nil", i)
+				}
 				gotEntries = append(gotEntries, Entry{
+					CommonLevel:     ent.CommonLevel,
 					Path:            ent.Path,
 					PhysicalAddress: ent.PhysicalAddress,
 					Size:            ent.Size,
@@ -317,13 +320,14 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "all uncommitted" {
-				t.Skip("bug listing uncommitted tombstone entries")
-			}
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, DefaultPathDelimiter, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntriesByLevel() err = %s, expected error %t", err, tt.wantErr)
+			}
+			if err != nil {
+				return
 			}
 			// test that directories have null entries, and vice versa
 			var gotNames []string
