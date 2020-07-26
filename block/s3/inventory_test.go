@@ -167,14 +167,15 @@ func (m *mockParquetReader) SkipRows(skip int64) error {
 	return nil
 }
 
-func mockParquetReaderGetter(_ context.Context, _ s3iface.S3API, bucket string, key string) (s3.ParquetReader, func(), error) {
+func mockParquetReaderGetter(_ context.Context, _ s3iface.S3API, bucket string, key string) (s3.ParquetReader, s3.CloseFunc, error) {
 	if bucket != "example-bucket" {
 		return nil, nil, fmt.Errorf("wrong bucket name: %s", bucket)
 	}
 	pr := &mockParquetReader{rows: rows(fileContents[key]...)}
-	return pr, func() {
+	return pr, func() error {
 		pr.nextIdx = -1
 		pr.rows = nil
+		return nil
 	}, nil
 }
 

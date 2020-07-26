@@ -32,9 +32,9 @@ type ParquetReader interface {
 	SkipRows(int64) error
 }
 
-type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, closeFunc, error)
+type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, CloseFunc, error)
 
-type closeFunc func() error
+type CloseFunc func() error
 
 func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error) {
 	return GenerateInventory(manifestURL, s.s3, getParquetReader)
@@ -92,7 +92,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 	return &m, nil
 }
 
-func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, closeFunc, error) {
+func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, CloseFunc, error) {
 	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, manifestFileKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create parquet file reader: %w", err)
