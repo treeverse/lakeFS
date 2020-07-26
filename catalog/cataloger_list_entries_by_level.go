@@ -175,7 +175,7 @@ func findCommonPrefix(response []resultRow, lineage []lineageCommit, delimiter s
 		// after path is processed, it can not be viewed from branches "deeper" in the lineage chain.
 		// the path is removed from the beginning of all results.
 		// if the path is not at the start of a result array - nothing happens
-		for branch, _ := range branchRanges {
+		for branch := range branchRanges {
 			if branch != b {
 				getBrancResultRowsForPath(p, branch, &branchRanges, readParams)
 			}
