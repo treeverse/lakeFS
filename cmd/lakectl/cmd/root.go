@@ -104,7 +104,7 @@ func init() {
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
 	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "use fancy output colors (ignored when not attached to an interactive terminal)")
-	rootCmd.PersistentFlags().BoolP("sure", "y", false, "do not ask for confirmation")
+	rootCmd.PersistentFlags().BoolP("force", "f", false, "without prompting for confirmation")
 }
 
 // initConfig reads in config file and ENV variables if set.
