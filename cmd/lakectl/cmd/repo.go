@@ -115,7 +115,7 @@ var repoDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
 		u := uri.Must(uri.Parse(args[0]))
-		confirmation, err := confirm(fmt.Sprintf("Are you sure you want to delete repository: %s", u.Repository))
+		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete repository: "+u.Repository)
 		if err != nil || !confirmation {
 			DieFmt("Delete Repository '%s' aborted\n", u.Repository)
 		}
