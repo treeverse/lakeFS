@@ -32,7 +32,9 @@ type ParquetReader interface {
 	SkipRows(int64) error
 }
 
-type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, func(), error)
+type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, closeFunc, error)
+
+type closeFunc func() error
 
 func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error) {
 	return GenerateInventory(manifestURL, s.s3, getParquetReader)
@@ -52,21 +54,21 @@ type Inventory struct {
 	getParquetReader parquetReaderGetter
 }
 
-func (i *Inventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {
-	inventoryBucketArn, err := arn.Parse(i.Manifest.InventoryBucketArn)
+func (inv *Inventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {
+	inventoryBucketArn, err := arn.Parse(inv.Manifest.InventoryBucketArn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
 	invBucket := inventoryBucketArn.Resource
-	return NewInventoryIterator(ctx, i, invBucket)
+	return NewInventoryIterator(ctx, inv, invBucket)
 }
 
-func (i *Inventory) SourceName() string {
-	return i.Manifest.SourceBucket
+func (inv *Inventory) SourceName() string {
+	return inv.Manifest.SourceBucket
 }
 
-func (i *Inventory) InventoryURL() string {
-	return i.Manifest.URL
+func (inv *Inventory) InventoryURL() string {
+	return inv.Manifest.URL
 }
 
 func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
@@ -90,7 +92,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 	return &m, nil
 }
 
-func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, func(), error) {
+func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, closeFunc, error) {
 	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, manifestFileKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create parquet file reader: %w", err)
@@ -100,9 +102,9 @@ func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, 
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
-	closer := func() {
+	closer := func() error {
 		pr.ReadStop()
-		_ = pf.Close()
+		return pf.Close()
 	}
 	return pr, closer, nil
 }

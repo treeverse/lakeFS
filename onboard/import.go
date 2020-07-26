@@ -81,7 +81,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportSta
 			return nil, err
 		}
 	}
-	stats, err := s.CatalogActions.CreateAndDeleteObjects(ctx, dataToImport, dryRun)
+	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
 		return nil, err
 	}

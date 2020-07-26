@@ -59,7 +59,7 @@ func rows(keys ...string) []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) CreateAndDeleteObjects(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.InventoryImportStats, error) {
+func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.InventoryImportStats, error) {
 	stats := onboard.InventoryImportStats{
 		AddedOrChanged: len(m.objectActions.Added),
 		Deleted:        len(m.objectActions.Deleted),

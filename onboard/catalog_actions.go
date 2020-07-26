@@ -13,7 +13,7 @@ import (
 const DefaultWriteBatchSize = 100000
 
 type RepoActions interface {
-	CreateAndDeleteObjects(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error)
+	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
 }
@@ -29,7 +29,7 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer
 	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer}
 }
 
-func (c *CatalogRepoActions) CreateAndDeleteObjects(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error) {
+func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error) {
 	var stats InventoryImportStats
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {

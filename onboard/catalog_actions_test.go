@@ -90,7 +90,7 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			catalogCallData.addedEntries = []catalog.Entry{}
 			catalogCallData.deletedEntries = []string{}
 			catalogCallData.callLog = make(map[string]int)
-			stats, err := catalogActions.CreateAndDeleteObjects(context.Background(), onboard.NewDiffIterator(
+			stats, err := catalogActions.ApplyImport(context.Background(), onboard.NewDiffIterator(
 				&mockInventoryIterator{rows: rows(test.DeletedRows...)},
 				&mockInventoryIterator{rows: rows(test.AddedRows...)}), dryRun)
 			if err != nil {
