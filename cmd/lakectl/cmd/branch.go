@@ -85,7 +85,7 @@ var branchCreateCmd = &cobra.Command{
 			Die("source branch must be in the same repository", 1)
 		}
 
-		ref, err := client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
+		_, err = client.CreateBranch(context.Background(), u.Repository, &models.BranchCreation{
 			Name:   swag.String(u.Ref),
 			Source: swag.String(sourceURI.Ref),
 		})
@@ -93,7 +93,7 @@ var branchCreateCmd = &cobra.Command{
 			DieErr(err)
 		}
 
-		Fmt("created branch '%s'\n", ref)
+		Fmt("created branch '%s'\n", u.Ref)
 	},
 }
 
