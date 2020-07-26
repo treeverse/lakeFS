@@ -6,8 +6,8 @@ import (
 )
 
 func confirm(flags *pflag.FlagSet, question string) (bool, error) {
-	sure, _ := flags.GetBool("sure")
-	if sure {
+	force, _ := flags.GetBool("force")
+	if force {
 		return true, nil
 	}
 	prm := promptui.Prompt{
