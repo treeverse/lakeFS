@@ -4,9 +4,11 @@ package api
 
 import (
 	"fmt"
-	"net/http"
-
+	"github.com/go-openapi/runtime/middleware"
 	dedup2 "github.com/treeverse/lakefs/dedup"
+	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
@@ -135,6 +137,20 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 	}
 }
 
+type metricResponseWriter struct {
+	http.ResponseWriter
+	statusCode int
+}
+
+func newMetricResponseWriter(w http.ResponseWriter) *metricResponseWriter {
+	return &metricResponseWriter{w, http.StatusOK}
+}
+
+func (lrw *metricResponseWriter) WriteHeader(code int) {
+	lrw.statusCode = code
+	lrw.ResponseWriter.WriteHeader(code)
+}
+
 func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
 	// health check
@@ -144,8 +160,13 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	// pprof endpoint
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
-	mux.Handle("/api/", api)
-	// swagger
+	mux.HandleFunc("/api/", func(writer http.ResponseWriter, request *http.Request) {
+		start := time.Now()
+		mrw := newMetricResponseWriter(writer)
+		api.ServeHTTP(mrw, request)
+
+		requestSummaries.WithLabelValues(request.URL.String(), request.Method, strconv.Itoa(mrw.statusCode)).Observe(time.Since(start).Seconds())
+	}) // swagger
 	mux.Handle("/swagger.json", api)
 	// setup system
 	mux.Handle(SetupLakeFSRoute, setup)
@@ -165,23 +186,22 @@ func (s *Handler) buildAPI() {
 	}
 	api.BasicAuthAuth = s.BasicAuth()
 	api.JwtTokenAuth = s.JwtTokenAuth()
-
 	// bind our handlers to the server
 	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedup, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
 	s.apiServer.ConfigureAPI()
-
 	s.setupHandler(
 		// api handler
 		httputil.LoggingMiddleware(
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			promhttp.InstrumentHandlerCounter(requestCounter,
-				cookieToAPIHeader(
-					s.apiServer.GetHandler(),
-				),
+				bla(api.Context(),
+					cookieToAPIHeader(
+						s.apiServer.GetHandler(),
+					)),
 			),
 		),
 
@@ -207,6 +227,15 @@ func cookieToAPIHeader(next http.Handler) http.Handler {
 		}
 		// header found
 		r.Header.Set(JWTAuthorizationHeaderName, cookie.Value)
+		next.ServeHTTP(w, r)
+	})
+}
+
+func bla(ctx *middleware.Context, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		route, _, ok := ctx.RouteInfo(r)
+		if ok {
+		}
 		next.ServeHTTP(w, r)
 	})
 }

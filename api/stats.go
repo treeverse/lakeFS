@@ -12,3 +12,5 @@ var requestCounter = promauto.NewCounterVec(
 	},
 	[]string{"code", "method"},
 )
+
+var requestSummaries = promauto.NewSummaryVec(prometheus.SummaryOpts{Name: "api_requests_duration"}, []string{"code", "method"})
