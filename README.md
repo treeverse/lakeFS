@@ -1,6 +1,3 @@
-# lakeFS
-
-
 <p align="center">
   <img src="logo_large.png"/>
 </p>
@@ -10,28 +7,33 @@
 
 ## What is lakeFS
 
-An open source platform that empowers your object storage data lake with ACID guarantees and Git-like capabilities.
+lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
 
+With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
+
+lakeFS is API compatible with AWS S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
+
+
+<p align="center">
+  <img src="docs/assets/img/wrapper.png"/>
+</p>
 
 For more information see the [Official Documentation](https://docs.lakefs.io/).
 
 ## Capabilities
 
-#### ACID Guarantees
+**Atomic Operations** - lakeFS allows data producers to manipulate multiple objects as a single, atomic operation. If something fails half-way, all changes can be instantly rolled back.
 
-Simplifying the workflow between data producers and consumers, providing strong isolation and enabling data consistency, integrity and availability
+**Consistency** - lakeFS enables object-level and cross-collection consistency:
+  - object-level consistency ensures all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
+  - cross-collection consistency is achieved by providing snapshot isolation. Using branches, writers can provide consistency guarantees across different logical   collections - merging to “main” is only done after several datasets have been created successfully.
 
-#### Data Versioning
+**History** - Commits are retained for a configurable duration, so readers can query data from the latest commit, or from any other point in time. Writers can atomically and safely rollback changes to previous versions.
 
-Applying the power of branching, merging and reverting to your data lake.
+**Cross-Lake Isolation** - Creating a lakeFS branch provides you with a snapshot of the entire lake at a given point in time.
+All reads from that branch are    guaranteed to always return the same results.
 
-#### Instant Revert
-
-Revert back if something goes wrong with your data. Increasing developer velocity while ensuring production safety and stability.
-
-#### Data Deduplication
-
-Reduce the impact of redundant data on your storage manageability and governance.
+**Data CI/CD** - The ability to define automated rules and tests that are required to pass before committing or merging changes to data.
 
 
 ## Getting Started
