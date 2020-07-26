@@ -107,7 +107,7 @@ var branchDeleteCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete branch")
 		if err != nil || !confirmation {
-			Die("please confirm by passing the --sure | -y flag", 1)
+			Die("Delete branch aborted", 1)
 		}
 		client := getClient()
 		u := uri.Must(uri.Parse(args[0]))
@@ -184,7 +184,7 @@ var branchRevertCmd = &cobra.Command{
 
 		confirmation, err := confirm(cmd.Flags(), confirmationMsg)
 		if err != nil || !confirmation {
-			fmt.Println("Revert Aborted")
+			Die("Revert aborted", 1)
 			return
 		}
 		err = clt.RevertBranch(context.Background(), u.Repository, u.Ref, &revert)
