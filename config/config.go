@@ -46,6 +46,10 @@ const (
 	DefaultStatsEnabled       = true
 	DefaultStatsAddr          = "https://stats.treeverse.io"
 	DefaultStatsFlushInterval = time.Second * 30
+
+	MetaStoreType          = "metastore.type"
+	MetaStoreHiveURI       = "metastore.hive.uri"
+	MetastoreGlueCatalogID = "metastore.glue.catalog-id"
 )
 
 type LogrusAWSAdapter struct {
@@ -242,4 +246,15 @@ func GetMetastoreAwsConfig() *aws.Config {
 			viper.GetString("metastore.glue.credentials.session_token"))
 	}
 	return cfg
+}
+
+func GetMetastoreHiveURI() string {
+	return viper.GetString(MetaStoreHiveURI)
+}
+
+func GetMetastoreGlueCatalogID() string {
+	return viper.GetString(MetastoreGlueCatalogID)
+}
+func GetMetastoreType() string {
+	return viper.GetString(MetaStoreType)
 }
