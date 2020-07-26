@@ -150,7 +150,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListEntriesByLevel(t *testing.T) {
+func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -347,7 +347,7 @@ func TestCataloger_ListEntriesByLevel(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListEntriesByLevel_Deleted(t *testing.T) {
+func TestCataloger_ListEntries_ByLevelDeleted(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
