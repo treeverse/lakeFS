@@ -46,9 +46,7 @@ func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 }
 
 type Server struct {
-	ctx        *ServerContext
-	Server     *http.Server
-	bareDomain string
+	Server *http.Server
 }
 
 func NewHandler(

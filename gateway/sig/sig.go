@@ -51,24 +51,24 @@ func EncodePath(pathName string) string {
 	var encodedPathname string
 	for _, s := range pathName {
 		if 'A' <= s && s <= 'Z' || 'a' <= s && s <= 'z' || '0' <= s && s <= '9' { // §2.3 Unreserved characters (mark)
-			encodedPathname = encodedPathname + string(s)
+			encodedPathname += string(s)
 			continue
 		}
 		switch s {
 		case '-', '_', '.', '~', '/': // §2.3 Unreserved characters (mark)
-			encodedPathname = encodedPathname + string(s)
+			encodedPathname += string(s)
 			continue
 		default:
-			len := utf8.RuneLen(s)
-			if len < 0 {
+			runeLen := utf8.RuneLen(s)
+			if runeLen < 0 {
 				// if utf8 cannot convert return the same string as is
 				return pathName
 			}
-			u := make([]byte, len)
+			u := make([]byte, runeLen)
 			utf8.EncodeRune(u, s)
 			for _, r := range u {
-				hex := hex.EncodeToString([]byte{r})
-				encodedPathname = encodedPathname + "%" + strings.ToUpper(hex)
+				h := hex.EncodeToString([]byte{r})
+				encodedPathname += "%" + strings.ToUpper(h)
 			}
 		}
 	}
