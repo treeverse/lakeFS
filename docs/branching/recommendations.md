@@ -113,9 +113,9 @@ A common use case for this are "materialized views" - i.e. the same data but par
 
 For this use case let's look at streaming systems, or real time ingest pipelines that use the data lake as a Sink.
 
-A common scenario would be data arriving to a message broker such as [Kafka]() or [AWS Kinesis](), with a consumer that reads small batches from the stream and writes Parquet files to S3.
+A common scenario would be data arriving to a message broker such as [Apache Kafka](https://kafka.apache.org/){: target="_blank" } or [AWS Kinesis](https://aws.amazon.com/kinesis/){: target="_blank" }, with a consumer that reads small batches from the stream and writes Parquet files to S3.
 
-These messaging systems generally have an [offset mechanism]() that allows a consumer to "rewind" and re-read messages
+These messaging systems generally have an [offset mechanism](https://kafka.apache.org/documentation/#intro_topics){: target="_blank" } that allows a consumer to "rewind" and re-read messages
 This is a great for production safety - but re-reading will also mean duplication of data in our data lake unless:
 
 1. When rewinding an offset we also know exactly which objects to delete from previous runs
@@ -214,7 +214,7 @@ This is a great for production safety - but re-reading will also mean duplicatio
 
 Data science requires experimentation - We want to adjust an algorithm or test different parameters and see how they influence results.
 
-If the input data changes between different runs, it's impossible to determine if our results changed because we changed the code or because the input chaged.
+If the input data changes between different runs, it's impossible to determine if our results changed because we changed the code or because the input changed.
 
 Additionally, we want some form of quality assurance - being able to run the algorithm as it existed at a given point in time, with the same exact input data that existed when it initially ran.
 
@@ -231,7 +231,7 @@ Additionally, we want some form of quality assurance - being able to run the alg
         --source lakefs://example-repo@main
    created branch 'exp-cnn-tests', pointing to commit ID: '~43aP3nUrR17LcX'
    ```
-1. Run the desired algoritm, committing the results along with the parameters used:
+1. Run the desired algorithm, committing the results along with the parameters used:
 
    ```shell
    $ lakectl commit lakefs://example-repo@exp-cnn-tests \
@@ -256,7 +256,7 @@ Additionally, we want some form of quality assurance - being able to run the alg
 ### Keeping experiment branches up to date
 {: .no_toc }
 
-While snapshot isolation is a desired attribute, and ensures data doesn't change under our feet, we sometime want to explictily ask to see more up to date data in our branch.
+While snapshot isolation is a desired attribute, and ensures data doesn't change under our feet, we sometime want to explicitly ask to see more up to date data in our branch.
 
 In lakeFS this is done by merging in the opposite direction - from the main branch into our experiment branch:
 
@@ -269,7 +269,7 @@ new: 2592 modified: 12 removed: 1439
 
 Sometimes we don't have a structured experiment or workflow, we simply want to play with the data - test out completely new algorithms, introduce new technologies or simply try out something we're not sure of its results.
 
-**Recommended model:** Branch(es) per user, keeps up-to-date from main branch, never merged back
+**Recommended model:** Branch(es) per user, keeps up-to-date from a main branch, never merged back
 {: .note .note-info }
 
 ![user branching model](../assets/img/user_branching_model.png)
