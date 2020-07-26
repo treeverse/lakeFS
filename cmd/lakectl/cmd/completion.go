@@ -8,19 +8,19 @@ import (
 
 // completionCmd represents the completion command
 var completionCmd = &cobra.Command{
-	Use:   "completion [bash|zsh|fish|powershell]",
+	Use:   "completion <bash|zsh|fish>",
 	Short: "Generate completion script",
 	Long: `To load completions:
 
 Bash:
 
-$ source <(yourprogram completion bash)
+$ source <(lakectl completion bash)
 
 # To load completions for each session, execute once:
 Linux:
-  $ yourprogram completion bash > /etc/bash_completion.d/yourprogram
+  $ lakectl completion bash > /etc/bash_completion.d/lakectl
 MacOS:
-  $ yourprogram completion bash > /usr/local/etc/bash_completion.d/yourprogram
+  $ lakectl completion bash > /usr/local/etc/bash_completion.d/lakectl
 
 Zsh:
 
@@ -30,19 +30,19 @@ Zsh:
 $ echo "autoload -U compinit; compinit" >> ~/.zshrc
 
 # To load completions for each session, execute once:
-$ yourprogram completion zsh > "${fpath[1]}/_yourprogram"
+$ lakectl completion zsh > "${fpath[1]}/_lakectl"
 
 # You will need to start a new shell for this setup to take effect.
 
 Fish:
 
-$ yourprogram completion fish | source
+$ lakectl completion fish | source
 
 # To load completions for each session, execute once:
-$ yourprogram completion fish > ~/.config/fish/completions/yourprogram.fish
+$ lakectl completion fish > ~/.config/fish/completions/lakectl.fish
 `,
 	DisableFlagsInUseLine: true,
-	ValidArgs:             []string{"bash", "zsh", "fish", "powershell"},
+	ValidArgs:             []string{"bash", "zsh", "fish"},
 	Args:                  cobra.ExactValidArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 		switch args[0] {
@@ -52,8 +52,6 @@ $ yourprogram completion fish > ~/.config/fish/completions/yourprogram.fish
 			cmd.Root().GenZshCompletion(os.Stdout)
 		case "fish":
 			cmd.Root().GenFishCompletion(os.Stdout, true)
-		case "powershell":
-			cmd.Root().GenPowerShellCompletion(os.Stdout)
 		}
 	},
 }
