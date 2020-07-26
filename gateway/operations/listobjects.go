@@ -57,7 +57,7 @@ func (controller *ListObjects) getMaxKeys(o *RepoOperation) int {
 	return maxKeys
 }
 
-func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.LevelEntry) ([]serde.CommonPrefixes, []serde.Contents, string) {
+func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.Entry) ([]serde.CommonPrefixes, []serde.Contents, string) {
 	dirs := make([]serde.CommonPrefixes, 0)
 	files := make([]serde.Contents, 0)
 	var lastKey string
@@ -107,24 +107,19 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		fromStr = continuationToken
 	}
 
-	var from path.ResolvedPath
-
 	maxKeys := controller.getMaxKeys(o)
 
 	// see if this is a recursive call`
-	descend := true
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
 			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
 			return
 		}
-		descend = false
 	}
 
-	var results []*catalog.LevelEntry
-	hasMore := false
-
+	var results []*catalog.Entry
+	var hasMore bool
 	var ref string
 	// should we list branches?
 	prefix, err := path.ResolvePath(params.Get("prefix"))
@@ -137,6 +132,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		return
 	}
 
+	var from path.ResolvedPath
 	if !prefix.WithPath {
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
@@ -186,7 +182,15 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			}
 		}
 
-		results, hasMore, err = listEntriesDescend(o, descend, prefix, from.Path, maxKeys)
+		results, hasMore, err = o.Cataloger.ListEntries(
+			o.Context(),
+			o.Repository.Name,
+			prefix.Ref,
+			prefix.Path,
+			from.Path,
+			delimiter,
+			maxKeys,
+		)
 		if errors.Is(err, catalog.ErrBranchNotFound) {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"ref":  prefix.Ref,
@@ -225,30 +229,6 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	o.EncodeResponse(resp, http.StatusOK)
 }
 
-func listEntriesDescend(o *RepoOperation, descend bool, prefix path.ResolvedPath, after string, maxKeys int) ([]*catalog.LevelEntry, bool, error) {
-	if descend {
-		entries, hasMore, err := o.Cataloger.ListEntries(
-			o.Context(),
-			o.Repository.Name,
-			prefix.Ref,
-			prefix.Path,
-			after,
-			maxKeys)
-		results := catalog.EntriesToLevelEntries(entries)
-		return results, hasMore, err
-	}
-
-	results, hasMore, err := o.Cataloger.ListEntriesByLevel(
-		o.Context(),
-		o.Repository.Name,
-		prefix.Ref,
-		prefix.Path,
-		after,
-		catalog.DefaultPathDelimiter,
-		maxKeys)
-	return results, hasMore, err
-}
-
 func (controller *ListObjects) ListV1(o *RepoOperation) {
 	o.AddLogFields(logging.Fields{
 		"list_type": "v1",
@@ -269,7 +249,7 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 
 	maxKeys := controller.getMaxKeys(o)
 
-	var results []*catalog.LevelEntry
+	var results []*catalog.Entry
 	hasMore := false
 
 	var ref string
@@ -339,31 +319,17 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 				return
 			}
 		}
-		if descend {
-			var entries []*catalog.Entry
-			entries, hasMore, err = o.Cataloger.ListEntries(
-				o.Context(),
-				o.Repository.Name,
-				prefix.Ref,
-				prefix.Path,
-				marker.Path,
-				maxKeys,
-			)
-			results = catalog.EntriesToLevelEntries(entries)
-		} else {
-			results, hasMore, err = o.Cataloger.ListEntriesByLevel(
-				o.Context(),
-				o.Repository.Name,
-				prefix.Ref,
-				prefix.Path,
-				marker.Path,
-				catalog.DefaultPathDelimiter,
-				maxKeys,
-			)
-		}
-		results, hasMore, err = listEntriesDescend(o, descend, prefix, marker.Path, maxKeys)
+		results, hasMore, err = o.Cataloger.ListEntries(
+			o.Context(),
+			o.Repository.Name,
+			prefix.Ref,
+			prefix.Path,
+			marker.Path,
+			delimiter,
+			maxKeys,
+		)
 		if errors.Is(err, db.ErrNotFound) {
-			results = make([]*catalog.LevelEntry, 0) // no results found
+			results = make([]*catalog.Entry, 0) // no results found
 		} else if err != nil {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"branch": prefix.Ref,

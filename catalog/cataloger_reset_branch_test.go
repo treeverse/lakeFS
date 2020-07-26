@@ -29,7 +29,7 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -48,7 +48,7 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -56,7 +56,8 @@ func TestCataloger_ResetBranch_ChangesOnBranch(t *testing.T) {
 	if err := c.ResetBranch(ctx, repository, "master"); err != nil {
 		t.Fatal("Reset branch should work on empty branch")
 	}
-	entries, _, err := c.ListEntries(ctx, repository, MakeReference("master", UncommittedID), "", "", -1)
+	reference := MakeReference("master", UncommittedID)
+	entries, _, err := c.ListEntries(ctx, repository, reference, "", "", "", -1)
 	if err != nil {
 		t.Fatal("ListEntries for ResetBranch test:", err)
 	}
@@ -78,7 +79,7 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 			Checksum:        strings.Repeat("01", i+1),
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -103,7 +104,7 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 			PhysicalAddress: "/addr" + strconv.Itoa(i),
 			Size:            int64(i) + 1,
 			Metadata:        nil,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for ResetBranch:", err)
 		}
 	}
@@ -111,7 +112,7 @@ func TestCataloger_ResetBranch_ChangesOnParent(t *testing.T) {
 	if err := c.ResetBranch(ctx, repository, "b1"); err != nil {
 		t.Fatal("Reset branch should work on empty branch")
 	}
-	entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", -1)
+	entries, _, err := c.ListEntries(ctx, repository, MakeReference("b1", UncommittedID), "", "", "", -1)
 	if err != nil {
 		t.Fatal("ListEntries for ResetBranch test:", err)
 	}

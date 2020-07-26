@@ -15,6 +15,7 @@ var (
 	ErrNoDifferenceWasFound    = errors.New("no difference was found")
 	ErrConflictFound           = errors.New("conflict found")
 	ErrUnsupportedRelation     = errors.New("unsupported relation")
+	ErrUnsupportedDelimiter    = errors.New("unsupported delimiter")
 	ErrInvalidReference        = errors.New("invalid reference")
 	ErrBranchNotFound          = fmt.Errorf("branch %w", db.ErrNotFound)
 	ErrCommitNotFound          = fmt.Errorf("commit %w", db.ErrNotFound)
