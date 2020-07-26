@@ -60,7 +60,7 @@ func testCatalogerCreateEntry(t testing.TB, ctx context.Context, c Cataloger, re
 		PhysicalAddress: checksum,
 		Size:            size,
 		Metadata:        metadata,
-	})
+	}, CreateEntryParams{})
 	if err != nil {
 		t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repository, err)
 	}

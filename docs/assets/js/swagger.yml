@@ -1305,7 +1305,7 @@ paths:
             $ref: "#/definitions/branch_creation"
       responses:
         201:
-          description: branch
+          description: reference
           schema:
             type: string
         400:
@@ -1876,6 +1876,7 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
   /repositories/{repository}/refs/{branch}/symlink:
     parameters:
       - in: path
@@ -1889,7 +1890,7 @@ paths:
       - in: query
         name: location
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: path to the table data
     post:
       tags:
         - metadata
@@ -1898,7 +1899,7 @@ paths:
 
       responses:
         201:
-          description: loacation created
+          description: location created
           schema:
             description: "path to created location"
             type: string
@@ -1912,6 +1913,7 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
 
   /repositories/{repository}/retention:
     parameters:
