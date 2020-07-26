@@ -161,8 +161,15 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
 
     const paginator =(!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
-
     const compareWithSelf = (compareRef && refId.type === compareRef.type && refId.id === compareRef.id);
+
+    let alertText;
+    if (list.error) {
+        alertText = list.error;
+    } else if (diffResults.error) {
+        alertText = diffResults.error;
+    }
+
     return (
         <div className="mt-3">
             <div className="action-bar">
@@ -178,7 +185,11 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
                 Merge completed
             </Alert>
 
-            {!compareWithSelf &&
+            <Alert variant="danger" show={!!alertText}>
+                <Alert.Heading>{alertText}</Alert.Heading>
+            </Alert>
+
+            {!(compareWithSelf || alertText) &&
                 <>
                 <Tree
                     repo={repo}
