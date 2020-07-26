@@ -166,7 +166,7 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 	case transient.BlockstoreType:
 		return transient.New()
 	default:
-		err := fmt.Errorf("BLockstore '%s' is not a valid type, please choose one of %s",
+		err := fmt.Errorf("blockstore '%s' is not a valid type, please choose one of %s",
 			blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
 		panic(err)
 	}
