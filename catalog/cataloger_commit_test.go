@@ -34,7 +34,7 @@ func TestCataloger_Commit(t *testing.T) {
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
 			Metadata:        meta,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for testing", fileName, err)
 		}
 	}
@@ -125,7 +125,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				Checksum:        strings.Repeat("ff", i),
 				PhysicalAddress: "/addr" + strconv.Itoa(i+1),
 				Size:            int64(i) + 1,
-			}); err != nil {
+			}, CreateEntryParams{}); err != nil {
 				t.Error("create entry for commit twice", err)
 				return
 			}
@@ -163,7 +163,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				Checksum:        "ff",
 				PhysicalAddress: addrName,
 				Size:            42,
-			}); err != nil {
+			}, CreateEntryParams{}); err != nil {
 				t.Error("create entry for file per commit", err)
 				return
 			}
@@ -180,7 +180,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				t.Fatalf("Commit new commit ID %d, should go up - previous %d", ref.CommitID, previousCommitID)
 			}
 
-			ent, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)
+			ent, _, err := c.ListEntries(ctx, repository, "master", "", "", "", -1)
 			if err != nil {
 				t.Errorf("List committed data failed on iterations %d: %s", i+1, err)
 				return
@@ -198,7 +198,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			Checksum:        "ffff",
 			PhysicalAddress: "/addr5",
 			Size:            55,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for file per commit", err)
 			return
 		}
@@ -207,7 +207,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Fatal("Commit expected to succeed error:", err)
 		}
 		// make sure we see one file
-		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", -1)
+		entries, _, err := c.ListEntries(ctx, repository, "master", "", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 1 {
 			t.Fatalf("List should find 1 file, got %d", len(entries))
@@ -218,13 +218,13 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Fatal("Delete expected to succeed, got err", err)
 		}
 		// make sure we see no file uncommitted
-		entries, _, err = c.ListEntries(ctx, repository, "master", "", "", -1)
+		entries, _, err = c.ListEntries(ctx, repository, "master", "", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 0 {
 			t.Fatalf("List should find no files, got %d", len(entries))
 		}
 		// make sure we see one file committed
-		entries, _, err = c.ListEntries(ctx, repository, "master:HEAD", "", "", -1)
+		entries, _, err = c.ListEntries(ctx, repository, "master:HEAD", "", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 1 {
 			t.Fatalf("List should find 1 file, got %d", len(entries))
@@ -234,7 +234,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Fatal("Commit expected to succeed error:", err)
 		}
 		// make sure we don't see the file after we commit the change
-		entries, _, err = c.ListEntries(ctx, repository, "master:HEAD", "", "", -1)
+		entries, _, err = c.ListEntries(ctx, repository, "master:HEAD", "", "", "", -1)
 		testutil.Must(t, err)
 		if len(entries) != 0 {
 			t.Errorf("Delete should left no entries, got %d", len(entries))

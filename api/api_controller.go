@@ -915,6 +915,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 				params.Branch,
 				swag.StringValue(params.Location),
 				after,
+				"",
 				-1)
 			if errors.Is(err, db.ErrNotFound) {
 				return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
@@ -987,7 +988,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		after, amount := getPaginationParams(params.After, params.Amount)
 
 		delimiter := catalog.DefaultPathDelimiter
-		res, hasMore, err := cataloger.ListEntriesByLevel(
+		res, hasMore, err := cataloger.ListEntries(
 			c.Context(),
 			params.Repository,
 			params.Ref,
@@ -1085,10 +1086,13 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:            blob.Size,
 			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntryDedup(c.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
-			ID:               blob.DedupID,
-			StorageNamespace: repo.StorageNamespace,
-		})
+		err = cataloger.CreateEntry(c.Context(), repo.Name, params.Branch, entry,
+			catalog.CreateEntryParams{
+				Dedup: catalog.DedupParams{
+					ID:               blob.DedupID,
+					StorageNamespace: repo.StorageNamespace,
+				},
+			})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}

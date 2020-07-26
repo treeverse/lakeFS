@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -17,7 +18,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 	// test data
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	testutil.MustDo(t, "create entry on master for testing",
-		c.CreateEntry(ctx, repo, "master", Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1}))
+		c.CreateEntry(ctx, repo, "master", Entry{Path: "/aaa/bbb/ddd", Checksum: "cc", PhysicalAddress: "xx", Size: 1}, CreateEntryParams{}))
 	_, err := c.CreateBranch(ctx, repo, "b1", "master")
 	testutil.MustDo(t, "create branch b1 based on master", err)
 
@@ -161,7 +162,7 @@ func TestCataloger_CreateEntry(t *testing.T) {
 				PhysicalAddress: tt.args.physicalAddress,
 				Size:            tt.args.size,
 				Metadata:        tt.args.metadata,
-			})
+			}, CreateEntryParams{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("CreateEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -189,6 +190,55 @@ func TestCataloger_CreateEntry(t *testing.T) {
 	}
 }
 
+func TestCataloger_CreateEntry_Dedup(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	defer func() { _ = c.Close() }()
+
+	const testBranch = "master"
+	repo := testCatalogerRepo(t, ctx, c, "repo", testBranch)
+
+	const firstAddr = "1"
+	const secondAddr = "2"
+	// add first entry
+	ent1 := Entry{
+		Path:            "file1",
+		PhysicalAddress: firstAddr,
+		CreationDate:    time.Now(),
+		Size:            0,
+		Checksum:        "aa",
+	}
+	dedup1 := DedupParams{
+		ID:               "aa",
+		StorageNamespace: "s1",
+	}
+	testutil.MustDo(t, "create first entry",
+		c.CreateEntry(ctx, repo, testBranch, ent1, CreateEntryParams{Dedup: dedup1}))
+
+	// add second entry with the same dedup id
+	dedup2 := DedupParams{
+		ID:               "aa",
+		StorageNamespace: "s2",
+	}
+	ent2 := Entry{
+		Path:            "file2",
+		PhysicalAddress: secondAddr,
+		CreationDate:    time.Now(),
+		Size:            0,
+		Checksum:        "aa",
+	}
+	testutil.MustDo(t, "create second entry, same content",
+		c.CreateEntry(ctx, repo, testBranch, ent2, CreateEntryParams{Dedup: dedup2}))
+	select {
+	case report := <-c.DedupReportChannel():
+		if report.Entry.Path != "file2" && report.NewPhysicalAddress == "" {
+			t.Fatal("second entry should have new physical address after dedup")
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("timeout waiting for dedup report")
+	}
+}
+
 func randomFilepath(basename string) string {
 	var sb strings.Builder
 	depth := rand.Intn(10)
@@ -204,6 +254,7 @@ func BenchmarkCataloger_CreateEntry(b *testing.B) {
 	ctx := context.Background()
 	c := testCataloger(b)
 	repo := testCatalogerRepo(b, ctx, c, "repo", "master")
+	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		entPath := randomFilepath("test_entry")
 		testCatalogerCreateEntry(b, ctx, c, repo, "master", entPath, nil, "")

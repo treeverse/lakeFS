@@ -84,16 +84,18 @@ type GetEntryParams struct {
 	ReturnExpired bool
 }
 
+type CreateEntryParams struct {
+	Dedup DedupParams
+}
+
 type EntryCataloger interface {
 	// GetEntry returns the current entry for path in repository branch reference.  Returns
 	// the entry with ExpiredError if it has expired from underlying storage.
 	GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error)
-	CreateEntry(ctx context.Context, repository, branch string, entry Entry) error
-	CreateEntryDedup(ctx context.Context, repository, branch string, entry Entry, dedup DedupParams) error
+	CreateEntry(ctx context.Context, repository, branch string, entry Entry, params CreateEntryParams) error
 	CreateEntries(ctx context.Context, repository, branch string, entries []Entry) error
 	DeleteEntry(ctx context.Context, repository, branch string, path string) error
-	ListEntries(ctx context.Context, repository, reference string, prefix, after string, limit int) ([]*Entry, bool, error)
-	ListEntriesByLevel(ctx context.Context, repository, reference, prefix, after, delimiter string, limit int) ([]*LevelEntry, bool, error)
+	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
