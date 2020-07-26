@@ -1305,7 +1305,7 @@ paths:
             $ref: "#/definitions/branch_creation"
       responses:
         201:
-          description: branch
+          description: reference
           schema:
             type: string
         400:
