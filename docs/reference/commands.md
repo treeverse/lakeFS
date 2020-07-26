@@ -31,7 +31,7 @@ $ lakectl config
 Config file /home/janedoe/.lakectl.yaml will be used
 Access key ID: AKIAJNYOQZSWBSSXURPQ
 Secret access key: ****************************************
-Server endpoint URL: http://localhost:8001/api/v1
+Server endpoint URL: http://localhost:8000/api/v1
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
@@ -711,11 +711,9 @@ Usage:
   lakectl auth policies create [flags]
 
 Flags:
-      --action strings    actions to attach to the policy
-      --effect string     policy effect (Allow/Deny) (default "Allow")
-  -h, --help              help for create
-      --id string         policy identifier
-      --resource string   resource ARN
+  -h, --help                        help for create
+      --id string                   policy identifier
+      --statement-document string   JSON statement document path (or "-" for stdin)
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
@@ -758,7 +756,22 @@ Global Flags:
 
 ```
 
+##### `lakectl auth policies show`
+```text
+show a policy
 
+Usage:
+  lakectl auth policies show [flags]
+
+Flags:
+  -h, --help        help for show
+      --id string   policy identifier
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+```
 
 
 ### lakeFS URI pattern

@@ -7,15 +7,15 @@ import (
 	"testing"
 )
 
-func TestCataloger_ListRepos(t *testing.T) {
+func TestCataloger_ListRepositories(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
 	// create test data
 	for i := 3; i > 0; i-- {
 		repoName := fmt.Sprintf("repo%d", i)
-		bucketName := fmt.Sprintf("bucket%d", i)
-		err := c.CreateRepository(ctx, repoName, bucketName, "master")
+		storage := fmt.Sprintf("s3://bucket%d", i)
+		err := c.CreateRepository(ctx, repoName, storage, "master")
 		if err != nil {
 			t.Fatal("create repository for testing failed", err)
 		}

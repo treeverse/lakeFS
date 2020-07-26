@@ -4,7 +4,7 @@ on:
     types: [published]
 jobs:
   deploy:
-    name: Build and push to ECR
+    name: Build and push Docker image
     runs-on: ubuntu-latest
     steps:
 
@@ -37,19 +37,42 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
 
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::$(echo ${GITHUB_REF##*/} | sed s/^v//g)"
+        id: version
+
       - name: Login to Amazon ECR
         id: login-ecr
         uses: aws-actions/amazon-ecr-login@v1
 
-      - name: Build, tag and push image to Amazon ECR
+      - name: Build and push to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           ECR_REPOSITORY_LAKEFS: lakefs
           ECR_REPOSITORY_LAKECTL: lakectl
         run: |
-          VERSION=$(echo ${GITHUB_REF##*/} | sed  s/^v//g)
-          docker build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${VERSION} --build-arg VERSION=${VERSION} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${VERSION}
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${VERSION} --build-arg VERSION=${VERSION} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${VERSION}
+          docker build --target lakectl -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }}
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
 
+      - name: Build and push lakectl to Docker hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          build_args: VERSION=${{ steps.version.outputs.tag }}
+          target: lakectl
+          repository: treeverse/lakectl
+          tags: ${{ steps.version.outputs.tag }},latest
+
+      - name: Build and push lakefs to Docker hub
+        uses: docker/build-push-action@v1
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+          build_args: VERSION=${{ steps.version.outputs.tag }}
+          target: lakefs
+          repository: treeverse/lakefs
+          tags: ${{ steps.version.outputs.tag }},latest

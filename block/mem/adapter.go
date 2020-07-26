@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -15,6 +16,8 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 )
+
+const BlockstoreType = "mem"
 
 type mpu struct {
 	id    string
@@ -73,7 +76,7 @@ func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
 }
 
 func getKey(obj block.ObjectPointer) string {
-	return fmt.Sprintf("%s:%s", obj.Repo, obj.Identifier)
+	return fmt.Sprintf("%s:%s", obj.StorageNamespace, obj.Identifier)
 }
 
 func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
@@ -100,7 +103,7 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	return nil
 }
 
-func (a *Adapter) Get(obj block.ObjectPointer) (io.ReadCloser, error) {
+func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
@@ -194,4 +197,12 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	a.uploadIdTranslator.RemoveUploadId(uploadId)
 	a.data[getKey(obj)] = data
 	return &hex, int64(len(data)), nil
+}
+
+func (a *Adapter) ValidateConfiguration(_ string) error {
+	return nil
+}
+
+func (a *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+	return nil, errors.New("inventory feature not implemented for memory storage adapter")
 }

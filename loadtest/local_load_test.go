@@ -1,21 +1,26 @@
 package loadtest
 
 import (
+	"log"
+	"math"
+	"net/http/httptest"
+	"os"
+	"testing"
+	"time"
+
+	"github.com/treeverse/lakefs/dedup"
+
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/index"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/retention"
 	"github.com/treeverse/lakefs/testutil"
-	"log"
-	"net/http/httptest"
-	"os"
-	"testing"
-	"time"
 )
 
 var (
@@ -38,33 +43,42 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) Collect(_, _ string) {}
+func (m *mockCollector) SetInstallationID(_ string) {}
+
+func (m *mockCollector) CollectMetadata(_ map[string]string) {}
+
+func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
-	mdb, mdbURI := testutil.GetDB(t, databaseUri, config.SchemaMetadata)
-	blockAdapter := testutil.GetBlockAdapter(t, &block.NoOpTranslator{})
+	conn, _ := testutil.GetDB(t, databaseUri)
+	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
+	cataloger := catalog.NewCataloger(conn)
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
+	retentionService := retention.NewService(conn)
+	meta := auth.NewDBMetadataManager("dev", conn)
+	migrator := db.NewDatabaseMigrator(databaseUri)
+	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
+	t.Cleanup(func() {
+		// order is important - close cataloger channel before dedup
+		_ = cataloger.Close()
+		_ = dedupCleaner.Close()
+	})
 
-	meta := index.NewDBIndex(mdb)
-
-	adb, adbURI := testutil.GetDB(t, databaseUri, config.SchemaAuth)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")))
-	migrator := db.NewDatabaseMigrator().
-		AddDB(config.SchemaMetadata, mdbURI).
-		AddDB(config.SchemaAuth, adbURI)
-	server := api.NewServer(
-		meta,
+	handler := api.NewHandler(
+		cataloger,
 		blockAdapter,
 		authService,
+		meta,
 		&mockCollector{},
+		retentionService,
 		migrator,
+		dedupCleaner,
+		logging.Default(),
 	)
-	handler, err := server.Handler()
-	if err != nil {
-		t.Fatalf("failed to get server handler: %s", err)
-	}
+
 	ts := httptest.NewServer(handler)
 	defer ts.Close()
 
@@ -72,12 +86,13 @@ func TestLocalLoad(t *testing.T) {
 		CreatedAt:   time.Now(),
 		DisplayName: "admin",
 	}
-	credentials, err := api.SetupAdminUser(authService, user)
+	credentials, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
 
 	testConfig := Config{
 		FreqPerSecond: 6,
 		Duration:      10 * time.Second,
+		MaxWorkers:    math.MaxInt64,
 		KeepRepo:      false,
 		Credentials:   *credentials,
 		ServerAddress: ts.URL,

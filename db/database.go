@@ -2,17 +2,26 @@ package db
 
 import (
 	"database/sql"
+	"fmt"
 	"io"
+	"strconv"
+	"strings"
 	"time"
+
+	"github.com/treeverse/lakefs/logging"
 
 	"github.com/jmoiron/sqlx"
 )
 
 type TxFunc func(tx Tx) (interface{}, error)
 
+type Rows = sqlx.Rows
+
 type Database interface {
 	io.Closer
+	Queryx(query string, args ...interface{}) (*Rows, error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
+	Metadata() (map[string]string, error)
 }
 
 type SqlxDatabase struct {
@@ -27,6 +36,10 @@ func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
+func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
+	return d.db.Queryx(query, args...)
+}
+
 func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	options := DefaultTxOptions()
 	for _, opt := range opts {
@@ -37,6 +50,7 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 	for attempt < SerializationRetryMaxAttempts {
 		if attempt > 0 {
 			duration := time.Duration(int(SerializationRetryStartInterval) * attempt)
+			dbRetriesCount.Inc()
 			options.logger.
 				WithField("attempt", attempt).
 				WithField("sleep_interval", duration).
@@ -79,6 +93,93 @@ func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
 			return ret, nil
 		}
 	}
-
+	if attempt == SerializationRetryMaxAttempts {
+		options.logger.
+			WithField("attempt", attempt).
+			Warn("transaction failed after max attempts due to serialization error")
+	}
 	return nil, ErrSerialization
+}
+
+func (d *SqlxDatabase) Metadata() (map[string]string, error) {
+	metadata := make(map[string]string)
+	version, err := d.getVersion()
+	if err == nil {
+		metadata["postgresql_version"] = version
+	}
+	auroraVersion, err := d.getAuroraVersion()
+	if err == nil {
+		metadata["postgresql_aurora_version"] = auroraVersion
+	}
+
+	m, err := d.Transact(func(tx Tx) (interface{}, error) {
+		metadata := make(map[string]string)
+
+		// select name,setting from pg_settings
+		// where name in ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')
+		type pgSettings struct {
+			Name    string `db:"name"`
+			Setting string `db:"setting"`
+		}
+		pgs := make([]pgSettings, 0)
+		err = tx.Select(&pgs,
+			`SELECT name, setting FROM pg_settings
+					WHERE name IN ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')`)
+		if err != nil {
+			return nil, err
+		}
+		for _, setting := range pgs {
+			if setting.Name == "data_directory" {
+				isRDS := strings.HasPrefix(setting.Setting, "/rdsdata")
+				metadata["postgresql_setting_is_rds"] = strconv.FormatBool(isRDS)
+				continue
+			}
+			metadata[fmt.Sprintf("postgresql_setting_%s", setting.Name)] = setting.Setting
+		}
+
+		return metadata, nil
+
+	}, ReadOnly())
+	if err != nil {
+		return metadata, nil
+	}
+
+	settings := m.(map[string]string)
+	for k, v := range settings {
+		metadata[k] = v
+	}
+	return metadata, nil
+}
+
+func (d *SqlxDatabase) getVersion() (string, error) {
+	v, err := d.Transact(func(tx Tx) (interface{}, error) {
+		type ver struct {
+			Version string `db:"version"`
+		}
+		var v ver
+		err := tx.Get(&v, "SELECT version()")
+		if err != nil {
+			return "", err
+		}
+		return v.Version, nil
+	}, ReadOnly(), WithLogger(logging.Dummy()))
+	if err != nil {
+		return "", err
+	}
+	return v.(string), err
+}
+
+func (d *SqlxDatabase) getAuroraVersion() (string, error) {
+	v, err := d.Transact(func(tx Tx) (interface{}, error) {
+		var v string
+		err := tx.Get(&v, "SELECT aurora_version()")
+		if err != nil {
+			return "", err
+		}
+		return v, nil
+	}, ReadOnly(), WithLogger(logging.Dummy()))
+	if err != nil {
+		return "", err
+	}
+	return v.(string), err
 }

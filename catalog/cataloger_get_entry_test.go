@@ -78,7 +78,7 @@ func TestCataloger_GetEntry(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path)
+			got, err := c.GetEntry(ctx, tt.args.repository, tt.args.reference, tt.args.path, GetEntryParams{})
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetEntry() error = %v, wantErr %v", err, tt.wantErr)
 				return
@@ -109,19 +109,43 @@ func TestCataloger_GetEntry(t *testing.T) {
 
 func setupReadEntryData(t *testing.T, ctx context.Context, c Cataloger) string {
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
-	if err := c.CreateEntry(ctx, repository, "master", "/file1", "ff", "/addr1", 42, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file1",
+		Checksum:        "ff",
+		PhysicalAddress: "/addr1",
+		Size:            42,
+		Metadata:        nil,
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", "/file2", "ee", "/addr2", 24, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file2",
+		Checksum:        "ee",
+		PhysicalAddress: "/addr2",
+		Size:            24,
+		Metadata:        nil,
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "commit file1 and 2", "tester", nil); err != nil {
 		t.Fatal("failed to commit for get entry:", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", "/file3", "ffff", "/addr3", 42, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file3",
+		Checksum:        "ffff",
+		PhysicalAddress: "/addr3",
+		Size:            42,
+		Metadata:        nil,
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
-	if err := c.CreateEntry(ctx, repository, "master", "/file4", "eeee", "/addr4", 24, nil); err != nil {
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "/file4",
+		Checksum:        "eeee",
+		PhysicalAddress: "/addr4",
+		Size:            24,
+		Metadata:        nil,
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("failed to create entry", err)
 	}
 	return repository

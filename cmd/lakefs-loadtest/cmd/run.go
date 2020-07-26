@@ -2,20 +2,23 @@ package cmd
 
 import (
 	"fmt"
+	"math"
+	"os"
+	"time"
+
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/loadtest"
-	"os"
-	"time"
 
 	"github.com/spf13/cobra"
 )
 
 const (
-	DurationFlag  = "duration"
-	FrequencyFlag = "freq"
-	RepoNameFlag  = "repo"
-	KeepFlag      = "keep"
+	DurationFlag   = "duration"
+	FrequencyFlag  = "freq"
+	RepoNameFlag   = "repo"
+	KeepFlag       = "keep"
+	MaxWorkersFlag = "max-workers"
 )
 
 // runCmd represents the run command
@@ -30,11 +33,13 @@ var runCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		duration, _ := cmd.Flags().GetDuration(DurationFlag)
+		maxWorkers, _ := cmd.Flags().GetUint64(MaxWorkersFlag)
 		requestsPerSeq, _ := cmd.Flags().GetInt(FrequencyFlag)
 		isKeep, _ := cmd.Flags().GetBool(KeepFlag)
 		testConfig := loadtest.Config{
 			FreqPerSecond: requestsPerSeq,
 			Duration:      duration,
+			MaxWorkers:    maxWorkers,
 			RepoName:      repoName,
 			KeepRepo:      isKeep,
 			Credentials: model.Credential{
@@ -58,4 +63,5 @@ func init() {
 	runCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
 	runCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
 	runCmd.Flags().DurationP(DurationFlag, "d", 30*time.Second, "Duration of test")
+	runCmd.Flags().Uint64(MaxWorkersFlag, math.MaxInt64, "Max workers used in the test")
 }

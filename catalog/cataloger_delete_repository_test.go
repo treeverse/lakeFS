@@ -9,16 +9,16 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func TestCataloger_DeleteRepo(t *testing.T) {
+func TestCataloger_DeleteRepository(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
 	// create test data
 	for i := 1; i < 3; i++ {
 		repoName := fmt.Sprintf("repo%d", i)
-		bucketName := fmt.Sprintf("bucket%d", i)
+		storage := fmt.Sprintf("s3://bucket%d", i)
 		branchName := fmt.Sprintf("branch%d", i)
-		if err := c.CreateRepository(ctx, repoName, bucketName, branchName); err != nil {
+		if err := c.CreateRepository(ctx, repoName, storage, branchName); err != nil {
 			t.Fatal("create repository for testing failed", err)
 		}
 	}

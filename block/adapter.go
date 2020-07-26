@@ -13,8 +13,8 @@ type MultipartUploadCompletion struct{ Part []*s3.CompletedPart }
 // ObjectPointer is a unique identifier of an object in the object
 // store: the store is a 1:1 mapping between pointers and objects.
 type ObjectPointer struct {
-	Repo       string
-	Identifier string
+	StorageNamespace string
+	Identifier       string
 }
 
 // PutOpts contains optional arguments for Put.  These should be
@@ -49,9 +49,10 @@ type Properties struct {
 }
 
 type Adapter interface {
+	InventoryGenerator
 	WithContext(ctx context.Context) Adapter
 	Put(obj ObjectPointer, sizeBytes int64, reader io.Reader, opts PutOpts) error
-	Get(obj ObjectPointer) (io.ReadCloser, error)
+	Get(obj ObjectPointer, expectedSize int64) (io.ReadCloser, error)
 	GetRange(obj ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error)
 	GetProperties(obj ObjectPointer) (Properties, error)
 	Remove(obj ObjectPointer) error
@@ -59,6 +60,9 @@ type Adapter interface {
 	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
 	AbortMultiPartUpload(obj ObjectPointer, uploadId string) error
 	CompleteMultiPartUpload(obj ObjectPointer, uploadId string, MultipartList *MultipartUploadCompletion) (*string, int64, error)
+	// ValidateConfiguration validates an appropriate bucket
+	// configuration and returns a validation error or nil.
+	ValidateConfiguration(storageNamespace string) error
 }
 
 type UploadIdTranslator interface {

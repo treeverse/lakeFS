@@ -77,7 +77,9 @@ const TopBar = ({ user }) => {
 
     return (!!user) ? (
         <Navbar variant="dark" bg="dark" expand="md">
-            <Navbar.Brand href="/">lakeFS</Navbar.Brand>
+            <Navbar.Brand href="/">
+                <img src="/logo.png" alt="lakeFS" className="logo"/>
+            </Navbar.Brand>
 
             <Nav className="mr-auto">
                 <Nav.Link href="/repositories" onSelect={onNavigate} active={isActive("/repositories")}>Repositories</Nav.Link>

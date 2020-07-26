@@ -5,20 +5,24 @@ import Alert from "react-bootstrap/Alert";
 import Button from "react-bootstrap/Button";
 import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
+import {connect} from "react-redux";
 
 
-export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
+export const RepositoryCreateForm = connect(({ repositories }) => {
+    const {create} = repositories;
+    return {create};
+})(({ error, onSubmit, onCancel, create, sm = 6 }) => {
 
     const fieldNameOffset = 3;
 
     const [formValid, setFormValid] = useState(false);
-    const bucketNameField = useRef(null);
+    const storageNamespaceField = useRef(null);
     const defaultBranchField = useRef(null);
     const repoIdField = useRef(null);
 
     const checkValidity = () => {
         if (repoIdField.current.value.length === 0 ||
-            bucketNameField.current.value.length === 0 ||
+            storageNamespaceField.current.value.length === 0 ||
             defaultBranchField.current.value.length === 0) {
             setFormValid(false);
             return;
@@ -34,7 +38,7 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
             }
             onSubmit({
                 id: repoIdField.current.value,
-                bucket_name: bucketNameField.current.value,
+                storage_namespace: storageNamespaceField.current.value,
                 default_branch: defaultBranchField.current.value
             });
         }}>
@@ -45,10 +49,10 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
                 </Col>
             </Form.Group>
 
-            <Form.Group as={Row} controlId="bucketName">
+            <Form.Group as={Row}>
                 <Form.Label column sm={fieldNameOffset}>Storage Namespace</Form.Label>
                     <Col sm={sm}>
-                        <Form.Control type="text" ref={bucketNameField} placeholder="i.e. S3 Bucket name" onChange={checkValidity}/>
+                        <Form.Control type="text" ref={storageNamespaceField} placeholder="i.e. s3://example-bucket/" onChange={checkValidity}/>
                     </Col>
             </Form.Group>
             <Form.Group as={Row} controlId="defaultBranch">
@@ -67,8 +71,8 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
 
             <Row>
                 <Col md={{span: sm, offset: fieldNameOffset}} >
-                    <Button variant="success" type="submit" className="mr-2" disabled={!formValid}>
-                        Create Repository
+                    <Button variant="success" type="submit" className="mr-2" disabled={!formValid || create.inProgress}>
+                        { create.inProgress ? 'Creating...' : 'Create Repository' }
                     </Button>
                     <Button variant="secondary" onClick={(e) => {
                         e.preventDefault();
@@ -78,4 +82,4 @@ export const RepositoryCreateForm = ({ error, onSubmit, onCancel, sm = 6 }) => {
             </Row>
         </Form>
     );
-};
+});

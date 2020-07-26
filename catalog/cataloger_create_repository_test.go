@@ -13,9 +13,9 @@ func TestCataloger_CreateRepo(t *testing.T) {
 	c := testCataloger(t)
 
 	type args struct {
-		name   string
-		bucket string
-		branch string
+		name    string
+		storage string
+		branch  string
 	}
 	tests := []struct {
 		name    string
@@ -25,31 +25,25 @@ func TestCataloger_CreateRepo(t *testing.T) {
 	}{
 		{
 			name:    "basic",
-			args:    args{name: "repo1", bucket: "bucket1", branch: "master"},
+			args:    args{name: "repo1", storage: "s3://bucket1", branch: "master"},
 			wantErr: false,
 			asErr:   nil,
 		},
 		{
-			name:    "invalid bucket",
-			args:    args{name: "repo2", bucket: "b", branch: "master"},
-			wantErr: true,
-			asErr:   ErrInvalidValue,
-		},
-		{
 			name:    "unknown branch",
-			args:    args{name: "repo3", bucket: "bucket3", branch: ""},
+			args:    args{name: "repo3", storage: "s3://bucket3", branch: ""},
 			wantErr: true,
 			asErr:   ErrInvalidValue,
 		},
 		{
 			name:    "missing repo",
-			args:    args{name: "", bucket: "bucket1", branch: "master"},
+			args:    args{name: "", storage: "s3://bucket1", branch: "master"},
 			wantErr: true,
 			asErr:   ErrInvalidValue,
 		},
 		{
-			name:    "missing bucket",
-			args:    args{name: "repo1", bucket: "", branch: "master"},
+			name:    "missing storage",
+			args:    args{name: "repo1", storage: "", branch: "master"},
 			wantErr: true,
 			asErr:   ErrInvalidValue,
 		},
@@ -57,7 +51,7 @@ func TestCataloger_CreateRepo(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := c.CreateRepository(ctx, tt.args.name, tt.args.bucket, tt.args.branch)
+			err := c.CreateRepository(ctx, tt.args.name, tt.args.storage, tt.args.branch)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("CreateRepository() error = %v, wantErr %v", err, tt.wantErr)
 			}
@@ -76,8 +70,14 @@ func TestCataloger_CreateRepo(t *testing.T) {
 			if rep.DefaultBranch != tt.args.branch {
 				t.Errorf("Create repository got branch = %s, expected = %s", rep.DefaultBranch, tt.args.branch)
 			}
-			if rep.StorageNamespace != tt.args.bucket {
-				t.Errorf("Create repository got branch = %s, expected = %s", rep.StorageNamespace, tt.args.bucket)
+			if rep.StorageNamespace != tt.args.storage {
+				t.Errorf("Create repository got branch = %s, expected = %s", rep.StorageNamespace, tt.args.storage)
+			}
+			// get initial commit record
+			ref, err := c.GetBranchReference(ctx, tt.args.name, tt.args.branch)
+			testutil.MustDo(t, "Get branch reference for new repository", err)
+			if ref == "" {
+				t.Fatal("Create repository should create commit with valid reference")
 			}
 		})
 	}

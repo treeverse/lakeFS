@@ -18,7 +18,7 @@ Checksum: {{.Checksum}}
 `
 
 var fsStatCmd = &cobra.Command{
-	Use:   "stat [path uri]",
+	Use:   "stat <path uri>",
 	Short: "view object metadata",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -26,9 +26,8 @@ var fsStatCmd = &cobra.Command{
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
-		readUncommitted, _ := cmd.Flags().GetBool("read-uncommitted")
 		client := getClient()
-		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, readUncommitted)
+		stat, err := client.StatObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path)
 		if err != nil {
 			DieErr(err)
 		}
@@ -43,7 +42,7 @@ const fsLsTemplate = `{{ range $val := . -}}
 `
 
 var fsListCmd = &cobra.Command{
-	Use:   "ls [path uri]",
+	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -55,8 +54,7 @@ var fsListCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		readUncommitted, _ := cmd.Flags().GetBool("read-uncommitted")
-		results, _, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, "", -1, readUncommitted)
+		results, _, err := client.ListObjects(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, "", -1)
 		if err != nil {
 			DieErr(err)
 		}
@@ -65,7 +63,7 @@ var fsListCmd = &cobra.Command{
 }
 
 var fsCatCmd = &cobra.Command{
-	Use:   "cat [path uri]",
+	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -74,8 +72,7 @@ var fsCatCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 		pathURI := uri.Must(uri.Parse(args[0]))
-		readUncommitted, _ := cmd.Flags().GetBool("read-uncommitted")
-		_, err := client.GetObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, readUncommitted, os.Stdout)
+		_, err := client.GetObject(context.Background(), pathURI.Repository, pathURI.Ref, pathURI.Path, os.Stdout)
 		if err != nil {
 			DieErr(err)
 		}
@@ -83,7 +80,7 @@ var fsCatCmd = &cobra.Command{
 }
 
 var fsUploadCmd = &cobra.Command{
-	Use:   "upload [path uri]",
+	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -118,7 +115,7 @@ var fsUploadCmd = &cobra.Command{
 }
 
 var fsRmCmd = &cobra.Command{
-	Use:   "rm [path uri]",
+	Use:   "rm <path uri>",
 	Short: "delete object",
 	Args: ValidationChain(
 		HasNArgs(1),
@@ -147,10 +144,6 @@ func init() {
 	fsCmd.AddCommand(fsCatCmd)
 	fsCmd.AddCommand(fsUploadCmd)
 	fsCmd.AddCommand(fsRmCmd)
-
-	fsStatCmd.Flags().Bool("read-uncommitted", true, "read uncommitted data")
-	fsListCmd.Flags().Bool("read-uncommitted", true, "read uncommitted data")
-	fsCatCmd.Flags().Bool("read-uncommitted", true, "read uncommitted data")
 
 	fsUploadCmd.Flags().StringP("source", "s", "", "local file to upload, or \"-\" for stdin")
 	_ = fsUploadCmd.MarkFlagRequired("source")
