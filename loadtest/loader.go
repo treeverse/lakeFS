@@ -5,14 +5,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
+	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
-	"github.com/go-openapi/swag"
-
-	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"
@@ -32,13 +30,14 @@ type Loader struct {
 }
 
 type Config struct {
-	FreqPerSecond int
-	Duration      time.Duration
-	MaxWorkers    uint64
-	RepoName      string
-	KeepRepo      bool
-	Credentials   model.Credential
-	ServerAddress string
+	FreqPerSecond    int
+	Duration         time.Duration
+	MaxWorkers       uint64
+	RepoName         string
+	StorageNamespace string
+	KeepRepo         bool
+	Credentials      model.Credential
+	ServerAddress    string
 }
 
 func NewLoader(config Config) *Loader {
@@ -47,9 +46,6 @@ func NewLoader(config Config) *Loader {
 		Config: config,
 		Reader: reader,
 		Writer: writer,
-	}
-	if config.RepoName == "" {
-		res.NewRepoName = uuid.New().String()
 	}
 	return res
 }
@@ -99,10 +95,11 @@ func (t *Loader) createRepo(apiClient api.Client) (string, error) {
 		// using an existing repo, no need to create one
 		return t.Config.RepoName, nil
 	}
+	t.NewRepoName = uuid.New().String()
 	err := apiClient.CreateRepository(context.Background(), &models.RepositoryCreation{
 		DefaultBranch:    "master",
 		ID:               &t.NewRepoName,
-		StorageNamespace: swag.String("s3://" + t.NewRepoName),
+		StorageNamespace: &t.Config.StorageNamespace,
 	})
 	if err != nil {
 		return "", fmt.Errorf("failed to create lakeFS repository: %w", err)
