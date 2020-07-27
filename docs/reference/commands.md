@@ -781,16 +781,17 @@ Usage:
   lakectl metastore copy [flags]
 
 Flags:
-      --address string          Hive metastore address/ glue catalog ID
-      --from-schema string      source schema name
-      --from-table string       source table name
-  -h, --help                    help for copy
-      --partition stringArray   partition to copy
-      --serde string            serde to set copy to  [default is - to-table]
-      --to-branch string        lakeFS branch name
-      --to-schema string        destination schema name
-      --to-table string         destination table name
-      --type string             metastore type [hive, glue]
+      --catalog-id string      Glue catalog ID
+      --from-schema string     source schema name
+      --from-table string      source table name
+  -h, --help                   help for copy
+      --metastore-uri string   Hive metastore URI
+  -p, --partition strings      partition to copy
+      --serde string           serde to set copy to  [default is  to-table]
+      --to-branch string       lakeFS branch name
+      --to-schema string       destination schema name [default is from-branch]
+      --to-table string        destination table name [default is  from-table] 
+      --type string            metastore type [hive, glue]
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
@@ -806,13 +807,14 @@ Usage:
   lakectl metastore diff [flags]
 
 Flags:
-      --address string       Hive metastore address/ Glue catalog ID
-      --from-schema string   source schema name
-      --from-table string    source table name
-  -h, --help                 help for diff
-      --to-schema string     destination schema name
-      --to-table string      destination table name
-      --type string          metastore type [hive, Glue]
+      --catalog-id string      Glue catalog ID
+      --from-schema string     source schema name
+      --from-table string      source table name
+  -h, --help                   help for diff
+      --metastore-uri string   Hive metastore URI
+      --to-schema string       destination schema name 
+      --to-table string        destination table name [default is from-table]
+      --type string            metastore type [hive, glue]
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
@@ -827,8 +829,8 @@ Usage:
   lakectl metastore create-symlink [flags]
 
 Flags:
-      --address string       Glue catalog ID
       --branch string        lakeFS branch name
+      --catalog-id string    Glue catalog ID
       --from-schema string   source schema name
       --from-table string    source table name
   -h, --help                 help for create-symlink

@@ -153,7 +153,7 @@ var metastoreDiffCmd = &cobra.Command{
 var glueSymlinkCmd = &cobra.Command{
 	Use:   "create-symlink",
 	Short: "create symlink table and data",
-	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external devices that could only access s3 directly (e.g athena)",
+	Long:  "create table with symlinks, and create the symlinks in s3 in order to access from external services that could only access s3 directly (e.g athena)",
 	Run: func(cmd *cobra.Command, args []string) {
 		repo, _ := cmd.Flags().GetString("repo")
 		branch, _ := cmd.Flags().GetString("branch")

@@ -6,7 +6,9 @@ nav_order: 13
 
 # Metastore Tools
 {: .no_toc }
-In order to support Glue and Hive metastore, lakeFS comes with cli commands which enable copying metadata between branches.
+When working with Glue or Hive metastore, each table can point only to one lakeFS branch.
+When creating a new branch, you may want to have a similar table pointing to the new branch.  
+To support this, lakeFS comes with cli commands which enable copying metadata between branches.
 
 
 ## Table of contents
@@ -73,16 +75,26 @@ metastore:
       access_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
-
+# Suggested model:
+For simplicity, we recommend creating a schema for each branch, this way you can use the same table name across different schemas.
+For Example:
+after creating branch `example_branch` also create a schema named `example_branch`.
+for a table named `example_table` under the schema `master` we would like to create a new table called `example_table` under the schema `example_branch`  
+ 
 
 # Commands:
 Metastore tools supports three commands: ```copy```, ```diff``` and ```create-symlink```.
 copy and diff could work both on Glue and on Hive.
 create-symlink works only on Glue.
 
+**Notice:** It's recommended to set type and catalog-id/metastore-uri in the lakectl configuration file.
+{: .note .pb-3 }
+**Notice:** If `to-schema` or `to-table` are not specified, the destination branch and source table names will be used as per the [suggested model](#suggested-model).
+{: .note .pb-3 }
+
 
 ## Copy
-The Copy command creates a copy of a table pointing to the defined branch.
+The `copy` command creates a copy of a table pointing to the defined branch.
 In case the destination table already exists, the command will only merge the changes.
 
 Example:
@@ -90,11 +102,6 @@ Example:
 suppose we have the table `example_by_dt` on branch `master` on schema `default`.
 We create a new branch `exmpale_branch` .
 we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
-
-**Notice:** It's recommended to configure type and catalog-id/metastore-uri .
-{: .note .pb-3 }
-**Notice:** It's recommended to name the schema with the branch name. therefore, the default schema will be the branch name, and the default destination table will be the source table.
-{: .note .pb-3 }
 
 Recommended:
 ```
@@ -112,7 +119,7 @@ lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from
 ```
 
 ### Copy partition
-Copy supports copying only a single partition.
+Copying a single partition is also supported.
 we could specify the partition using the partition flag.
 
 Example:
@@ -169,7 +176,7 @@ Hive:
 lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
-The answer will be something like ״
+The output will be something like ״
 ```
 Columns are identical
 Partitions
