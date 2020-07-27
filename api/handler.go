@@ -137,20 +137,6 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 	}
 }
 
-type metricResponseWriter struct {
-	http.ResponseWriter
-	statusCode int
-}
-
-func newMetricResponseWriter(w http.ResponseWriter) *metricResponseWriter {
-	return &metricResponseWriter{w, http.StatusOK}
-}
-
-func (lrw *metricResponseWriter) WriteHeader(code int) {
-	lrw.statusCode = code
-	lrw.ResponseWriter.WriteHeader(code)
-}
-
 func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
 	mux := http.NewServeMux()
 	// health check
@@ -160,13 +146,8 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	// pprof endpoint
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
-	mux.HandleFunc("/api/", func(writer http.ResponseWriter, request *http.Request) {
-		start := time.Now()
-		mrw := newMetricResponseWriter(writer)
-		api.ServeHTTP(mrw, request)
-
-		requestSummaries.WithLabelValues(request.URL.String(), request.Method, strconv.Itoa(mrw.statusCode)).Observe(time.Since(start).Seconds())
-	}) // swagger
+	mux.Handle("/api/", api)
+	// swagger
 	mux.Handle("/swagger.json", api)
 	// setup system
 	mux.Handle(SetupLakeFSRoute, setup)
@@ -198,7 +179,7 @@ func (s *Handler) buildAPI() {
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			promhttp.InstrumentHandlerCounter(requestCounter,
-				bla(api.Context(),
+				prometheusMiddleware(api.Context(),
 					cookieToAPIHeader(
 						s.apiServer.GetHandler(),
 					)),
@@ -231,11 +212,14 @@ func cookieToAPIHeader(next http.Handler) http.Handler {
 	})
 }
 
-func bla(ctx *middleware.Context, next http.Handler) http.Handler {
+func prometheusMiddleware(ctx *middleware.Context, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		route, _, ok := ctx.RouteInfo(r)
+		start := time.Now()
+		mrw := httputil.NewMetricResponseWriter(w)
+		next.ServeHTTP(mrw, r)
 		if ok {
+			requestSummaries.WithLabelValues(route.Operation.ID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 		}
-		next.ServeHTTP(w, r)
 	})
 }
