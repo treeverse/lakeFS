@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"time"
 )
 
 const (
 	DefaultBranchName = "import-from-inventory"
 	CommitMsgTemplate = "Import from %s"
-	DefaultBatchSize  = 500
 )
 
 type Importer struct {
@@ -18,91 +18,84 @@ type Importer struct {
 	batchSize          int
 	inventoryGenerator block.InventoryGenerator
 	inventory          block.Inventory
-	InventoryDiffer    func(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *InventoryDiff
 	CatalogActions     RepoActions
+}
+
+type InventoryImportStats struct {
+	AddedOrChanged       int
+	Deleted              int
+	DryRun               bool
+	PreviousInventoryURL string
+	PreviousImportDate   time.Time
 }
 
 func CreateImporter(cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
 	res := &Importer{
 		repository:         repository,
-		batchSize:          DefaultBatchSize,
 		inventoryGenerator: inventoryGenerator,
-		InventoryDiffer:    CalcDiff,
 	}
 	res.inventory, err = inventoryGenerator.GenerateInventory(inventoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
-	res.CatalogActions = NewCatalogActions(cataloger, repository, username, DefaultBatchSize)
+	res.CatalogActions = NewCatalogActions(cataloger, repository, username)
 	return res, nil
 }
 
-func (s *Importer) diffFromCommit(ctx context.Context, commit catalog.CommitLog) (diff *InventoryDiff, err error) {
+func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (Iterator, error) {
 	previousInventoryURL := ExtractInventoryURL(commit.Metadata)
 	if previousInventoryURL == "" {
-		err = fmt.Errorf("no inventory_url in commit Metadata. commit_ref=%s", commit.Reference)
-		return
+		return nil, fmt.Errorf("no inventory_url in commit Metadata. commit_ref=%s", commit.Reference)
 	}
 	previousInv, err := s.inventoryGenerator.GenerateInventory(previousInventoryURL)
 	if err != nil {
-		err = fmt.Errorf("failed to create inventory for previous state: %w", err)
-		return
+		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
 	}
-	previousObjs, err := previousInv.Objects(ctx, true)
+	previousObjs, err := previousInv.Iterator(ctx)
 	if err != nil {
-		return
+		return nil, err
 	}
-	currentObjs, err := s.inventory.Objects(ctx, true)
+	currentObjs, err := s.inventory.Iterator(ctx)
 	if err != nil {
-		return
+		return nil, err
 	}
-	diff = s.InventoryDiffer(previousObjs, currentObjs)
-	diff.PreviousInventoryURL = previousInventoryURL
-	diff.PreviousImportDate = commit.CreationDate
-	return
+	return NewDiffIterator(previousObjs, currentObjs), nil
 }
 
-func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryDiff, error) {
-	diff, err := s.dataToImport(ctx)
+func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportStats, error) {
+	previousCommit, err := s.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to get previous commit: %w", err)
 	}
-	diff.DryRun = dryRun
-	if dryRun {
-		return diff, nil
-	}
-	err = s.CatalogActions.CreateAndDeleteObjects(ctx, diff.AddedOrChanged, diff.Deleted)
-	if err != nil {
-		return nil, err
-	}
-	commitMetadata := CreateCommitMetadata(s.inventory, *diff)
-	err = s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
-	if err != nil {
-		return nil, err
-	}
-	return diff, nil
-}
-
-func (s *Importer) dataToImport(ctx context.Context) (diff *InventoryDiff, err error) {
-	var commit *catalog.CommitLog
-	commit, err = s.CatalogActions.GetPreviousCommit(ctx)
-	if err != nil {
-		return
-	}
-	if commit == nil {
+	var dataToImport Iterator
+	if previousCommit == nil {
 		// no previous commit, add whole inventory
-		var objects []block.InventoryObject
-		objects, err = s.inventory.Objects(ctx, false)
+		it, err := s.inventory.Iterator(ctx)
 		if err != nil {
-			return
+			return nil, err
 		}
-		diff = &InventoryDiff{AddedOrChanged: objects}
+		dataToImport = NewInventoryIterator(it)
 	} else {
-		// has previous commit, add/delete according to diff
-		diff, err = s.diffFromCommit(ctx, *commit)
+		dataToImport, err = s.diffIterator(ctx, *previousCommit)
 		if err != nil {
 			return nil, err
 		}
 	}
-	return
+	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
+	if err != nil {
+		return nil, err
+	}
+	stats.DryRun = dryRun
+	if previousCommit != nil {
+		stats.PreviousImportDate = previousCommit.CreationDate
+		stats.PreviousInventoryURL = previousCommit.Metadata["inventory_url"]
+	}
+	if !dryRun {
+		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
+		err = s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return stats, nil
 }
