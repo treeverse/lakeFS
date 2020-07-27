@@ -60,7 +60,7 @@ In file ``` hdfs-site.xml``` add to the configuration:
 Here are some examples based on examples from the [Presto Hive connector documentation](https://prestodb.io/docs/current/connector/hive.html#examples)
 
 ### Example with schema
-Create a new schema named ```master``` that will store tables in an lakeFS Repository named ```example``` branch: ```master```:
+Create a new schema named ```master``` that will store tables in a lakeFS repository named ```example``` branch: ```master```:
 ```sql
 CREATE SCHEMA master
 WITH (location = 's3a://example/master')
@@ -99,7 +99,7 @@ WITH (
 )
 ```
 
-### Example of copy table with [metastore tools](../metastore_tool.md):
+### Example of copying a table with [metastore tools](../metastore_tool.md):
 Copy the created table `page_views` on schema `master` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
 ```
 lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
