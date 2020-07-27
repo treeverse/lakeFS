@@ -11,7 +11,7 @@ has_children: false
 {:.pb-5 }
 
 
-Amazon Athena works directly above S3 and con't access lakeFS.
+Amazon Athena works directly above S3 and can't access lakeFS.
 
 In order to support querying data from lakeFS with Amazon Athena, we will use [create-symlink](../metastore_tool.md#create-symlink), one of the [metastore commands](../metastore_tool.md) in [lakectl](../reference/commands.md).
 
