@@ -46,7 +46,7 @@ docs-serve: ### Serve local docs
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 
-gen-api: docs ## Run the go-swagger code generator (Docker required)
+gen-api: ## Run the go-swagger code generator (Docker required)
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
 	$(SWAGGER) generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)
@@ -55,7 +55,7 @@ gen-api: docs ## Run the go-swagger code generator (Docker required)
 validate-swagger:  ## Validate swagger.yaml
 	$(SWAGGER) validate swagger.yml
 
-build: gen  ## Download dependecies and Build the default binary
+build: gen docs ## Download dependecies and Build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKECTL_BINARY_NAME)
 
