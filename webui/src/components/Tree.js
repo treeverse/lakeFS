@@ -362,8 +362,8 @@ const GetStarted = ({repo, list, listBranchesState, setShowUploadModal, setShowI
     }, [repo, list, listBranchesState])
     return <>{ (
                 <Container className="m-3"><h3>To get started with this repository, you can:</h3>
-                <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowImportModal(true)}}>Import</a>&nbsp;data from S3</Row>
-                <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowUploadModal(true)}}>Upload</a>&nbsp;an object</Row>
+                <Row className="pt-2 ml-2" xs="0"><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowImportModal(true)}}>Import</a>&nbsp;data from S3 without copying it.</Row>
+                <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/><a href="/#" onClick={(e) => {e.preventDefault(); setShowUploadModal(true)}}>Upload</a>&nbsp;an object.</Row>
                 <Row className="pt-2 ml-2" ><DotIcon className="mr-1 mt-1"/>See the&nbsp;<a href="https://docs.lakefs.io/using/" target="_blank" rel="noopener noreferrer">docs</a>&nbsp;for other ways to import data to your repository.</Row>
 </Container>    )}</>
 }

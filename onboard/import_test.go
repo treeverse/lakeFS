@@ -23,11 +23,7 @@ func TestImport(t *testing.T) {
 			ExpectedAdded: []string{"f1", "f2"},
 		},
 		{
-			NewInventory:      []string{"f1", "f2"},
-			PreviousInventory: []string{"f1", "f2"},
-		},
-		{
-			NewInventory:      []string{"f1", "f2", "f4", "f3"},
+			NewInventory:      []string{"f1", "f2", "f3", "f4"},
 			PreviousInventory: []string{"f1", "f2"},
 			ExpectedAdded:     []string{"f3", "f4"},
 			ExpectedDeleted:   nil,
@@ -40,13 +36,13 @@ func TestImport(t *testing.T) {
 		},
 		{
 			NewInventory:      []string{"f1", "f2", "s1"},
-			PreviousInventory: []string{"f4", "f3", "f2", "f1"},
+			PreviousInventory: []string{"f1", "f2", "f3", "f4"},
 			ExpectedAdded:     []string{"s1"},
 			ExpectedDeleted:   []string{"f3", "f4"},
 		},
 		{
 			NewInventory:      []string{},
-			PreviousInventory: []string{"f4", "f3", "f2", "f1"},
+			PreviousInventory: []string{"f1", "f2", "f3", "f4"},
 			ExpectedAdded:     nil,
 			ExpectedDeleted:   []string{"f1", "f2", "f3", "f4"},
 		},
@@ -54,15 +50,14 @@ func TestImport(t *testing.T) {
 			// do nothing, expect no errors
 		},
 		{
-			NewInventory:      []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
-			PreviousInventory: []string{"a9", "a10", "a2", "a4", "a1", "a8"},
-			ExpectedDeleted:   []string{"a10", "a8", "a9"},
+			NewInventory:      []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			PreviousInventory: []string{"a1", "a2", "a4", "a8", "a9", "a10"},
+			ExpectedDeleted:   []string{"a8", "a9", "a10"},
 			ExpectedAdded:     []string{"a3", "a5", "a6", "a7"},
 		},
 		{
-			// do not sort when no need to delete
-			NewInventory:  []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
-			ExpectedAdded: []string{"a1", "a2", "a3", "a4", "a7", "a6", "a5"},
+			NewInventory:  []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			ExpectedAdded: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 		},
 	}
 	for _, dryRun := range []bool{true, false} {
@@ -92,8 +87,7 @@ func TestImport(t *testing.T) {
 				t.Fatalf("failed to create importer: %v", err)
 			}
 			importer.CatalogActions = &catalogActionsMock
-			importer.InventoryDiffer = getSimpleDiffer(t)
-			diff, err := importer.Import(context.Background(), dryRun)
+			stats, err := importer.Import(context.Background(), dryRun)
 			if err != nil {
 				if !test.ExpectedErr {
 					t.Fatalf("unexpected error: %v", err)
@@ -105,11 +99,11 @@ func TestImport(t *testing.T) {
 				t.Fatalf("error was expected but none was returned")
 			}
 
-			if !reflect.DeepEqual(keys(diff.AddedOrChanged), test.ExpectedAdded) {
-				t.Fatalf("added objects in return value different than expected. expected=%v, got=%v", test.ExpectedAdded, keys(diff.AddedOrChanged))
+			if !reflect.DeepEqual(stats.AddedOrChanged, len(test.ExpectedAdded)) {
+				t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), stats.AddedOrChanged)
 			}
-			if !reflect.DeepEqual(keys(diff.Deleted), test.ExpectedDeleted) {
-				t.Fatalf("deleted objects in return value different than expected. expected=%v, got=%v", test.ExpectedDeleted, keys(diff.Deleted))
+			if !reflect.DeepEqual(stats.Deleted, len(test.ExpectedDeleted)) {
+				t.Fatalf("number of deleted objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedDeleted), stats.Deleted)
 			}
 			var expectedAddedToCatalog, expectedDeletedFromCatalog []string
 			if !dryRun {
@@ -122,14 +116,13 @@ func TestImport(t *testing.T) {
 			if !reflect.DeepEqual(catalogActionsMock.objectActions.Deleted, expectedDeletedFromCatalog) {
 				t.Fatalf("objects deleted from catalog different than expected. expected=%v, got=%v.", expectedDeletedFromCatalog, catalogActionsMock.objectActions.Deleted)
 			}
-			if diff.DryRun != dryRun {
-				t.Fatalf("dryRun boolean on return value different than expected, expected=%t, got=%t", dryRun, diff.DryRun)
+			if stats.DryRun != dryRun {
+				t.Fatalf("dryRun boolean on return value different than expected, expected=%t, got=%t", dryRun, stats.DryRun)
 			}
 			if dryRun {
 				if len(catalogActionsMock.lastCommitMetadata) > 0 {
 					t.Fatalf("found commit metadata in dry run: %v", catalogActionsMock.lastCommitMetadata)
 				}
-
 				continue
 			}
 			if catalogActionsMock.lastCommitMetadata["inventory_url"] != newInventoryURL {

@@ -3,10 +3,6 @@ package onboard_test
 import (
 	"context"
 	"errors"
-	"sort"
-	"strconv"
-	"testing"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/onboard"
@@ -29,7 +25,6 @@ type objectActions struct {
 }
 
 type mockCatalogActions struct {
-	onboard.RepoActions
 	previousCommitInventory string
 	objectActions           objectActions
 	lastCommitMetadata      catalog.Metadata
@@ -53,18 +48,6 @@ func (m mockInventoryGenerator) GenerateInventory(inventoryURL string) (block.In
 	return nil, errors.New("failed to create inventory")
 }
 
-// convenience converter functions
-func keys(rows []block.InventoryObject) []string {
-	if rows == nil {
-		return nil
-	}
-	res := make([]string, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, row.Key)
-	}
-	return res
-}
-
 func rows(keys ...string) []block.InventoryObject {
 	if keys == nil {
 		return nil
@@ -76,10 +59,26 @@ func rows(keys ...string) []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) CreateAndDeleteObjects(_ context.Context, objects []block.InventoryObject, objectsToDelete []block.InventoryObject) (err error) {
-	m.objectActions.Added = append(m.objectActions.Added, keys(objects)...)
-	m.objectActions.Deleted = append(m.objectActions.Deleted, keys(objectsToDelete)...)
-	return nil
+func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.InventoryImportStats, error) {
+	stats := onboard.InventoryImportStats{
+		AddedOrChanged: len(m.objectActions.Added),
+		Deleted:        len(m.objectActions.Deleted),
+	}
+	for it.Next() {
+		diffObj := it.Get()
+		if diffObj.IsDeleted {
+			if !dryRun {
+				m.objectActions.Deleted = append(m.objectActions.Deleted, diffObj.Obj.Key)
+			}
+			stats.Deleted += 1
+		} else {
+			if !dryRun {
+				m.objectActions.Added = append(m.objectActions.Added, diffObj.Obj.Key)
+			}
+			stats.AddedOrChanged += 1
+		}
+	}
+	return &stats, nil
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
@@ -94,11 +93,32 @@ func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalo
 	return nil
 }
 
-func (m *mockInventory) Objects(_ context.Context, sorted bool) ([]block.InventoryObject, error) {
-	if sorted {
-		sort.Strings(m.rows)
+type mockInventoryIterator struct {
+	idx  *int
+	rows []block.InventoryObject
+}
+
+func (m *mockInventoryIterator) Next() bool {
+	if m.idx == nil {
+		m.idx = new(int)
+	} else {
+		*m.idx++
 	}
-	return rows(m.rows...), nil
+	return *m.idx < len(m.rows)
+}
+
+func (m *mockInventoryIterator) Err() error {
+	return nil
+}
+
+func (m *mockInventoryIterator) Get() *block.InventoryObject {
+	return &m.rows[*m.idx]
+}
+
+func (m *mockInventory) Iterator(_ context.Context) (block.InventoryIterator, error) {
+	return &mockInventoryIterator{
+		rows: rows(m.rows...),
+	}, nil
 }
 
 func (m *mockInventory) SourceName() string {
@@ -107,48 +127,4 @@ func (m *mockInventory) SourceName() string {
 
 func (m *mockInventory) InventoryURL() string {
 	return m.inventoryURL
-}
-
-func (m *mockInventory) CreateCommitMetadata(diff onboard.InventoryDiff) catalog.Metadata {
-	return catalog.Metadata{
-		"inventory_url":            m.inventoryURL,
-		"source_bucket":            m.sourceBucket,
-		"added_or_changed_objects": strconv.Itoa(len(diff.AddedOrChanged)),
-		"deleted_objects":          strconv.Itoa(len(diff.Deleted)),
-	}
-}
-
-func getSimpleDiffer(t *testing.T) func(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *onboard.InventoryDiff {
-	return func(leftInv []block.InventoryObject, rightInv []block.InventoryObject) *onboard.InventoryDiff {
-		if !sort.StringsAreSorted(keys(leftInv)) || !sort.StringsAreSorted(keys(rightInv)) {
-			t.Fatalf("inventory expected to be sorted at this point")
-		}
-		// inefficient diff
-		diff := onboard.InventoryDiff{}
-		for _, o1 := range leftInv {
-			found := false
-			for _, o2 := range rightInv {
-				if o1.Key == o2.Key {
-					found = true
-					break
-				}
-			}
-			if !found {
-				diff.Deleted = append(diff.Deleted, o1)
-			}
-		}
-		for _, o2 := range rightInv {
-			found := false
-			for _, o1 := range leftInv {
-				if o1.Key == o2.Key {
-					found = true
-					break
-				}
-			}
-			if !found {
-				diff.AddedOrChanged = append(diff.AddedOrChanged, o2)
-			}
-		}
-		return &diff
-	}
 }
