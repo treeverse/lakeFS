@@ -232,6 +232,11 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 			{Key: aws.String("job"), Value: aws.String("tag-expiry")},
 		},
 	}
+	err = input.Validate()
+	if err != nil {
+		logger.WithField("input", input).WithError(err).Error("validate CreateJob input")
+		return fmt.Errorf("validate CreateJobInput: %w", err)
+	}
 	result, err := s3ControlClient.CreateJob(&input)
 	if err != nil {
 		return fmt.Errorf("create tagging job %+v: %w", input, err)
