@@ -90,12 +90,13 @@ func TestLocalLoad(t *testing.T) {
 	testutil.Must(t, err)
 
 	testConfig := Config{
-		FreqPerSecond: 6,
-		Duration:      10 * time.Second,
-		MaxWorkers:    math.MaxInt64,
-		KeepRepo:      false,
-		Credentials:   *credentials,
-		ServerAddress: ts.URL,
+		FreqPerSecond:    6,
+		Duration:         10 * time.Second,
+		MaxWorkers:       math.MaxInt64,
+		KeepRepo:         false,
+		Credentials:      *credentials,
+		ServerAddress:    ts.URL,
+		StorageNamespace: "s3://local/test/",
 	}
 	loader := NewLoader(testConfig)
 	err = loader.Run()
