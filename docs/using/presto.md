@@ -60,16 +60,16 @@ In file ``` hdfs-site.xml``` add to the configuration:
 Here are some examples based on examples from the [Presto Hive connector documentation](https://prestodb.io/docs/current/connector/hive.html#examples)
 
 ### Example with schema
-Create a new Hive schema named ```web``` that will store tables in an lakeFS Repository named ```example``` branch: ```master```:
+Create a new schema named ```master``` that will store tables in a lakeFS repository named ```example``` branch: ```master```:
 ```sql
-CREATE SCHEMA hive.web
+CREATE SCHEMA master
 WITH (location = 's3a://example/master')
 ```
 
 Create a new Hive table named ```page_views``` in the ```web``` schema that is stored using the ORC file format,
  partitioned by date and country, and bucketed by user into ```50``` buckets (note that Hive requires the partition columns to be the last columns in the table):
 ```postgresql
-CREATE TABLE hive.web.page_views (
+CREATE TABLE master.page_views (
   view_time timestamp,
   user_id bigint,
   page_url varchar,
@@ -87,7 +87,7 @@ WITH (
 Create an external Hive table named ```request_logs``` that points at existing data in lakeFS:
 
 ```postgresql
-CREATE TABLE hive.web.request_logs (
+CREATE TABLE master.request_logs (
   request_time timestamp,
   url varchar,
   ip varchar,
@@ -98,5 +98,12 @@ WITH (
   external_location = 's3a://example/master/data/logs/'
 )
 ```
+
+### Example of copying a table with [metastore tools](../metastore_tool.md):
+Copy the created table `page_views` on schema `master` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
+```
+lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
+```
+
 
 
