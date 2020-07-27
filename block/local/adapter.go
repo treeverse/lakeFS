@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"net/http"
 	"os"
 	"path"
@@ -69,26 +70,27 @@ func (l *Adapter) getPath(identifier string) string {
 	return path.Join(l.path, identifier)
 }
 
-func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, opts block.PutOpts) error {
-	path := l.getPath(obj.Identifier)
-	f, err := os.Create(path)
-	defer f.Close()
-	_, err = io.Copy(f, reader)
+func (l *Adapter) Put(obj block.ObjectPointer, _ int64, reader io.Reader, _ block.PutOpts) error {
+	p := l.getPath(obj.Identifier)
+	f, err := os.Create(p)
 	if err != nil {
 		return err
 	}
-	return nil
-}
-
-func (l *Adapter) Remove(obj block.ObjectPointer) error {
-	path := l.getPath(obj.Identifier)
-	err := os.Remove(path)
+	defer func() {
+		_ = f.Close()
+	}()
+	_, err = io.Copy(f, reader)
 	return err
 }
 
-func (l *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (reader io.ReadCloser, err error) {
-	path := l.getPath(obj.Identifier)
-	f, err := os.OpenFile(path, os.O_RDONLY, 0755)
+func (l *Adapter) Remove(obj block.ObjectPointer) error {
+	p := l.getPath(obj.Identifier)
+	return os.Remove(p)
+}
+
+func (l *Adapter) Get(obj block.ObjectPointer, _ int64) (reader io.ReadCloser, err error) {
+	p := l.getPath(obj.Identifier)
+	f, err := os.OpenFile(p, os.O_RDONLY, 0755)
 	if err != nil {
 		return nil, err
 	}
@@ -96,8 +98,8 @@ func (l *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (reader io.Re
 }
 
 func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.ReadCloser, error) {
-	path := l.getPath(obj.Identifier)
-	f, err := os.Open(path)
+	p := l.getPath(obj.Identifier)
+	f, err := os.Open(p)
 	if err != nil {
 		return nil, err
 	}
@@ -111,8 +113,8 @@ func (l *Adapter) GetRange(obj block.ObjectPointer, start int64, end int64) (io.
 }
 
 func (l *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
-	path := l.getPath(obj.Identifier)
-	_, err := os.Stat(path)
+	p := l.getPath(obj.Identifier)
+	_, err := os.Stat(p)
 	if err != nil {
 		return block.Properties{}, err
 	}
@@ -125,18 +127,13 @@ func isDirectoryWritable(pth string) bool {
 	// as there is no simple way to test this in windows, I prefer the "brute force" method
 	// of creating s dummy file. will work in any OS.
 	// speed is not an issue, as this will be activated very few times during startup
-
-	fileName := path.Join(pth, "dummy.tmp")
-	os.Remove(fileName)
-	file, err := os.Create(fileName)
-	if err == nil {
-		file.Close()
-		os.Remove(fileName)
-
-		return true
-	} else {
+	f, err := ioutil.TempFile(pth, "dummy")
+	if err != nil {
 		return false
 	}
+	_ = f.Close()
+	_ = os.Remove(f.Name())
+	return true
 }
 
 func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {

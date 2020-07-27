@@ -11,6 +11,7 @@ import (
 	"github.com/treeverse/lakefs/block/local"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func newConfigFromFile(fn string) *config.Config {
@@ -77,7 +78,8 @@ func TestNewFromFile(t *testing.T) {
 func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c := newConfigFromFile("testdata/valid_config.yaml")
-		adapter := c.BuildBlockAdapter()
+		adapter, err := c.BuildBlockAdapter()
+		testutil.Must(t, err)
 		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
 		}
@@ -86,7 +88,8 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("s3 block adapter", func(t *testing.T) {
 		newConfigFromFile("testdata/valid_s3adapter_config.yaml")
 		c := config.NewConfig()
-		adapter := c.BuildBlockAdapter()
+		adapter, err := c.BuildBlockAdapter()
+		testutil.Must(t, err)
 		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
 		}
