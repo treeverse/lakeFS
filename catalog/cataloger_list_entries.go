@@ -145,6 +145,9 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		listAfter = prefix
 	} else {
 		listAfter = after
+		if strings.HasSuffix(listAfter, delimiter) {
+			listAfter += DirectoryTermination
+		}
 	}
 	var markerList []string
 	readParams := readPramsType{
