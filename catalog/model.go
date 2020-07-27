@@ -17,6 +17,7 @@ type Repository struct {
 }
 
 type Entry struct {
+	CommonLevel     bool
 	Path            string    `db:"path"`
 	PhysicalAddress string    `db:"physical_address"`
 	CreationDate    time.Time `db:"creation_date"`
@@ -54,11 +55,6 @@ type lineageCommit struct {
 type Branch struct {
 	Repository string `db:"repository"`
 	Name       string `db:"name"`
-}
-
-type LevelEntry struct {
-	CommonLevel bool
-	Entry
 }
 
 type MultipartUpload struct {

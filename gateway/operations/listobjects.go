@@ -7,7 +7,6 @@ import (
 	"strings"
 
 	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/path"
@@ -26,9 +25,9 @@ type ListObjects struct{}
 func (controller *ListObjects) RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error) {
 	// check if we're listing files in a branch, or listing branches
 	params := request.URL.Query()
-	delim := params.Get("delimiter")
+	delimiter := params.Get("delimiter")
 	prefix := params.Get("prefix")
-	if delim == "/" && !strings.Contains(prefix, "/") {
+	if delimiter == "/" && !strings.Contains(prefix, "/") {
 		return []permissions.Permission{
 			{
 				Action:   permissions.ListBranchesAction,
@@ -64,13 +63,17 @@ func (controller *ListObjects) serializeEntries(ref string, entries []*catalog.E
 	var lastKey string
 	for _, entry := range entries {
 		lastKey = entry.Path
-		files = append(files, serde.Contents{
-			Key:          path.WithRef(entry.Path, ref),
-			LastModified: serde.Timestamp(entry.CreationDate),
-			ETag:         httputil.ETag(entry.Checksum),
-			Size:         entry.Size,
-			StorageClass: "STANDARD",
-		})
+		if entry.CommonLevel {
+			dirs = append(dirs, serde.CommonPrefixes{Prefix: path.WithRef(entry.Path, ref)})
+		} else {
+			files = append(files, serde.Contents{
+				Key:          path.WithRef(entry.Path, ref),
+				LastModified: serde.Timestamp(entry.CreationDate),
+				ETag:         httputil.ETag(entry.Checksum),
+				Size:         entry.Size,
+				StorageClass: "STANDARD",
+			})
+		}
 	}
 	return dirs, files, lastKey
 }
@@ -104,13 +107,19 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		fromStr = continuationToken
 	}
 
-	var from path.ResolvedPath
-
 	maxKeys := controller.getMaxKeys(o)
 
-	var results []*catalog.Entry
-	hasMore := false
+	// see if this is a recursive call`
+	if len(delimiter) >= 1 {
+		if delimiter != path.Separator {
+			// we only support "/" as a delimiter
+			o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrBadRequest))
+			return
+		}
+	}
 
+	var results []*catalog.Entry
+	var hasMore bool
 	var ref string
 	// should we list branches?
 	prefix, err := path.ResolvePath(params.Get("prefix"))
@@ -123,6 +132,7 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 		return
 	}
 
+	var from path.ResolvedPath
 	if !prefix.WithPath {
 		// list branches then.
 		branchPrefix := prefix.Ref // TODO: same prefix logic also in V1!!!!!
@@ -156,8 +166,8 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 
 		o.EncodeResponse(resp, http.StatusOK)
 		return
-
 	} else {
+		// list branches then.
 		ref = prefix.Ref
 		if len(fromStr) > 0 {
 			from, err = path.ResolvePath(fromStr)
@@ -178,7 +188,9 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 			prefix.Ref,
 			prefix.Path,
 			from.Path,
-			maxKeys)
+			delimiter,
+			maxKeys,
+		)
 		if errors.Is(err, catalog.ErrBranchNotFound) {
 			o.Log().WithError(err).WithFields(logging.Fields{
 				"ref":  prefix.Ref,
@@ -195,7 +207,6 @@ func (controller *ListObjects) ListV2(o *RepoOperation) {
 	}
 
 	dirs, files, lastKey := controller.serializeEntries(ref, results)
-
 	resp := serde.ListObjectsV2Output{
 		Name:           o.Repository.Name,
 		Prefix:         params.Get("prefix"),
@@ -227,7 +238,6 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 	params := o.Request.URL.Query()
 	delimiter := params.Get("delimiter")
 	descend := true
-
 	if len(delimiter) >= 1 {
 		if delimiter != path.Separator {
 			// we only support "/" as a delimiter
@@ -309,13 +319,13 @@ func (controller *ListObjects) ListV1(o *RepoOperation) {
 				return
 			}
 		}
-
 		results, hasMore, err = o.Cataloger.ListEntries(
 			o.Context(),
 			o.Repository.Name,
 			prefix.Ref,
 			prefix.Path,
 			marker.Path,
+			delimiter,
 			maxKeys,
 		)
 		if errors.Is(err, db.ErrNotFound) {
@@ -360,17 +370,14 @@ func (controller *ListObjects) Handle(o *RepoOperation) {
 	// GET /example?list-type=2&prefix=master%2F&delimiter=%2F&encoding-type=url HTTP/1.1
 
 	// handle GET /?versioning
-	keys := o.Request.URL.Query()
-	for k := range keys {
-		if strings.EqualFold(k, "versioning") {
-			// this is a versioning request
-			o.EncodeXMLBytes([]byte(serde.VersioningResponse), http.StatusOK)
-			return
-		}
+	query := o.Request.URL.Query()
+	if _, found := query["versioning"]; found {
+		o.EncodeXMLBytes([]byte(serde.VersioningResponse), http.StatusOK)
+		return
 	}
 
 	// handle ListObjects versions
-	listType := o.Request.URL.Query().Get("list-type")
+	listType := query.Get("list-type")
 	switch listType {
 	case "", "1":
 		controller.ListV1(o)

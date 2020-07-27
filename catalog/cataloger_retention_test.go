@@ -80,7 +80,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/master/history/1",
 		CreationDate:    time.Now().Add(-20 * time.Hour),
 		Checksum:        "1",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to create 0/historical on master", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", Entry{
@@ -88,7 +88,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/committed/1",
 		CreationDate:    time.Now().Add(-19 * time.Hour),
 		Checksum:        "2",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to create 0/committed on master", err)
 	}
 
@@ -101,7 +101,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/master/history/2",
 		CreationDate:    time.Now().Add(-19 * time.Hour),
 		Checksum:        "2",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to update 0/historical on master", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "second commit", "tester", Metadata{}); err != nil {
@@ -113,7 +113,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/committed/2",
 		CreationDate:    time.Now().Add(-15 * time.Hour),
 		Checksum:        "3",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to create 0/committed on slow", err)
 	}
 
@@ -126,7 +126,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/history/2",
 		CreationDate:    time.Now().Add(-15 * time.Hour),
 		Checksum:        "3",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to update 0/historical on fast", err)
 	}
 
@@ -138,7 +138,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/history/3",
 		CreationDate:    time.Now().Add(-5 * time.Hour),
 		Checksum:        "4",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to update 0/historical again on fast", err)
 	}
 
@@ -151,7 +151,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 		PhysicalAddress: "/history/4",
 		CreationDate:    time.Now().Add(-2 * time.Hour),
 		Checksum:        "5",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to update 0/historical on master", err)
 	}
 
@@ -375,7 +375,7 @@ func TestCataloger_MarkExpired(t *testing.T) {
 				Path:            fmt.Sprintf("/path/%08d/%08d", i, batch),
 				PhysicalAddress: fmt.Sprintf("/phys/%09d", batch*batchSize+i),
 				Checksum:        fmt.Sprintf("%08x", i),
-			}); err != nil {
+			}, CreateEntryParams{}); err != nil {
 				t.Fatalf("failed to create entry batch %d #%d: %s", batch, i, err)
 			}
 		}

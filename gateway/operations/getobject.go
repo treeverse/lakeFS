@@ -7,17 +7,14 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/httputil"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	gatewayerrors "github.com/treeverse/lakefs/gateway/errors"
 	ghttp "github.com/treeverse/lakefs/gateway/http"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/permissions"
-
-	"golang.org/x/xerrors"
 )
 
 type GetObject struct{}
@@ -52,7 +49,7 @@ func (controller *GetObject) Handle(o *PathOperation) {
 		WithError(err).
 		Debug("metadata operation to retrieve object done")
 
-	if xerrors.Is(err, db.ErrNotFound) {
+	if errors.Is(err, db.ErrNotFound) {
 		// TODO: create distinction between missing repo & missing key
 		o.EncodeError(gatewayerrors.Codes.ToAPIErr(gatewayerrors.ErrNoSuchKey))
 		return
