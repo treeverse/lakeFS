@@ -99,8 +99,7 @@ type EntryCataloger interface {
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
 	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
-	// MarkExpired marks all entries identified by expire as expired.  It is a batch
-	// operation.
+	// MarkExpired marks all entries identified by expire as expired.  It is a batch operation.
 	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
 	DedupReportChannel() chan *DedupReport
 }

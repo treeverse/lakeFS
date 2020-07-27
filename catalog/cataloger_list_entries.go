@@ -11,7 +11,10 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-const ListEntriesMaxLimit = 10000
+const (
+	ListEntriesMaxLimit        = 10000
+	ListEntriesBranchBatchSize = 32
+)
 
 func (c *cataloger) ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*Entry, bool, error) {
 	if err := Validate(ValidateFields{
@@ -90,7 +93,10 @@ func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, r
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, 32, branchID, commitID, lineage)
+		markerList, err := loopByLevel(tx, prefix, after, delimiter, limit, ListEntriesBranchBatchSize, branchID, commitID, lineage)
+		if err != nil {
+			return nil, err
+		}
 		return loadEntriesIntoMarkerList(markerList, tx, branchID, commitID, lineage, delimiter, prefix)
 	}, c.txOpts(ctx, db.ReadOnly())...)
 }
@@ -116,11 +122,11 @@ type readPramsType struct {
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
 	// translate logical (uncommitted and committed) commit id to actual minCommit,maxCommit numbers in Rows
 	lowestCommitID := CommitID(1)
-	topCommitID := requestedCommit
-	if requestedCommit == 0 {
-		lowestCommitID = 0
+	if requestedCommit == UncommittedID {
+		lowestCommitID = UncommittedID
 	}
-	if requestedCommit <= 0 {
+	topCommitID := requestedCommit
+	if requestedCommit <= UncommittedID {
 		topCommitID = MaxCommitID
 	}
 
@@ -149,8 +155,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		topCommitID:     topCommitID,
 		branchID:        branchID,
 	}
-	var resultRows []resultRow
-	for true { // exit by return
+	for {
 		unionSelect := unionQueryParts[0].Where(pathCond, listAfter).Prefix("(").Suffix(")")
 		for j := 1; j < len(lineage)+1; j++ {
 			// add the path condition to each union part
@@ -164,16 +169,15 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		if err != nil {
 			return nil, err
 		}
-		resultRows = make([]resultRow, 0, branchBatchSize*len(lineage)+1)
+		resultRows := make([]resultRow, 0, branchBatchSize*len(lineage)+1)
 		err = tx.Select(&resultRows, unionSQL, args...)
-		if errors.As(err, &db.ErrNotFound) {
+		if errors.Is(err, db.ErrNotFound) {
 			return markerList, nil
 		}
 		if err != nil {
 			return nil, err
 		}
 		if len(resultRows) == 0 {
-			fmt.Print("FINISHED")
 			return markerList, nil
 		}
 		pathSuffixes := findCommonPrefix(resultRows, delimiter, branchPriorityMap, limit-len(markerList), readParams)
@@ -187,7 +191,6 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		}
 		listAfter = prefix + nextJump
 	}
-	return markerList, nil // will never be reached. required by compiler
 }
 
 func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
@@ -203,7 +206,7 @@ func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap 
 		response = response[1:]
 	}
 	var resultPaths []string
-	for true { // exit loop by return
+	for { // exit loop by return
 		//find lowest result
 		b := findLowestResultInBranches(branchRanges, branchPriorityMap)
 		p := branchRanges[b][0].PathSuffix
@@ -346,14 +349,15 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 		Where("min_commit between ? and  ? ", lowestCommitId, topCommitID).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(branchBatchSize))
+	var query sq.SelectBuilder
 	if isBaseBranch {
-		query := rawSelect.Column("max_commit")
-		return query
+		query = rawSelect.Column("max_commit")
 	} else {
-		query := rawSelect.
+		query = rawSelect.
 			Column("CASE WHEN max_commit >= ? THEN max_commit_id() ELSE max_commit END AS max_commit", topCommitID)
-		return query
 	}
+	return query
+
 }
 
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*Entry, error) {
@@ -394,7 +398,8 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 	entries := make([]*Entry, len(markerList))
 	entriesReader := sqEntriesLineageV(branchID, commitID, lineage)
 	for _, r := range entryRuns {
-		entriesSql, args, err := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
+		entriesSql, args, err := sq.
+			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
 			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).
 			FromSelect(entriesReader, "e").
 			PlaceholderFormat(sq.Dollar).
