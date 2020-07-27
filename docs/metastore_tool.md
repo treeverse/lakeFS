@@ -24,16 +24,29 @@ To run a command on Hive metastore we will need to:
 
 Specify that the type is Hive ``` --type hive```
 
-Insert the Hive metastore url in the address flag ``` --address thrift://hive-metastore:9083```
+Insert the Hive metastore uri in the metastore-uri flag ``` --metastore-uri thrift://hive-metastore:9083```
+
+It's recommended to configure these fields in the lakectl configuration file:
+
+in lakectl.yaml add:
+```
+metastore:
+  type: hive
+  hive:
+    uri: thrift://hive-metastore:9083
+```
+
+
 
 ## Glue
 To run a command on Glue metastore we will need to:
 
 Specify that the type is Glue ``` --type glue```
 
-Insert the catalog ID (aws numerical account-id) in the address flag ``` --address 123456789012```
+Insert the catalog ID (aws numerical account-id) in the catalog-id flag ``` --catalog-id 123456789012```
 
 Configure aws credentials for accessing Glue catalog:
+
 In the lakectl configuration file add the credentials:
 
 ```
@@ -46,13 +59,27 @@ metastore:
       access_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 ```
 
+It is recommended to set the type and catalog-id in the configuration file:
+
+```
+metastore:
+  type: glue
+  glue:
+    catalog-id: 123456789012
+    region: us-east-1
+    profile: default # optional, implies using a credentials file
+    credentials:
+      access_key_id: AKIAIOSFODNN7EXAMPLE
+      access_secret_key: wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
+```
+
+
 
 # Commands:
 Metastore tools supports three commands: ```copy```, ```diff``` and ```create-symlink```.
 copy and diff could work both on Glue and on Hive.
+create-symlink works only on Glue.
 
-
- 
 
 ## Copy
 The Copy command creates a copy of a table pointing to the defined branch.
@@ -62,7 +89,17 @@ Example:
 
 suppose we have the table `example_by_dt` on branch `master` on schema `default`.
 We create a new branch `exmpale_branch` .
-we would like to create a copy of the table `branch_example_by_dt` pointing to the new branch.   
+we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
+
+**Notice:** It's recommended to configure type and catalog-id/metastore-uri .
+{: .note .pb-3 }
+**Notice:** It's recommended to name the schema with the branch name. therefore, the default schema will be the branch name, and the default destination table will be the source table.
+{: .note .pb-3 }
+
+Recommended:
+```
+lakectl metastore copy  --from-schema default --from-table exmpale_by_dt --to-branch example_branch 
+```
 
 Glue:
 ```
@@ -80,32 +117,31 @@ we could specify the partition using the partition flag.
 
 Example:
 
-Let's assume we created the table from the copy example.
+So no we have the copied table `example_by_dt` on schema `example_branch` and we've added a new partition `2020-08-01`.
 
-So no we have the copied table `branch_example_by_dt` and we've added a new partition `2020-08-01`.
-
-Suppose we merged back the data to master, and we want the data to be available on our original table on master `example_by_dt`.
+Suppose we merged back the data to master, and we want the data to be available on our original table on master `example_by_dt` on schema `default`.
 
 We would like to merge back the partition:  
-hive:
+
+recommended:
 ```
-lakectl metastore copy --type hive --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020-08-01
-```
-Glue:
-```
-lakectl metastore copy --type glue --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020-08-01
+lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
 ```
 
-In case our table is partitioned by more than one value, from example partitioned by year/month/day for year ```2020``` month ```08``` day ```01``` 
+Glue:
+```
+lakectl metastore copy --type glue --address 123456789012 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
+```
 
 Hive:
 ```
-lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020 -p 08 -p 01
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
 ```
 
-Glue:
+In case our table is partitioned by more than one value, for example partitioned by year/month/day for year ```2020``` month ```08``` day ```01``` 
+
 ```
-lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt --to-branch example_branch -p 2020 -p 08 -p 01
+lakectl metastore copy --from-schema example_branch --from-table branch_example_by_dt --to-schema default --to-branch master -p 2020 -p 08 -p 01
 ```
 
 
@@ -116,7 +152,13 @@ Shows added`+` , removed`-` and changed`~` partitions and columns.
 
 Example:
 
-Suppose that we made some changes on the copied table `branch_exmample_dt` and we want to see the changes before merging back to `example_by_dt` 
+Suppose that we made some changes on the copied table `exmample_by_dt` on schema `example_branch` and we want to see the changes before merging back to `example_by_dt` on schema `default`. 
+
+Recommended:
+```
+lakectl metastore diff --from-schema default --from-table branch_example_by_dt --to-schema example_branch 
+```
+
 Glue:
 ```
 lakectl metastore diff --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
