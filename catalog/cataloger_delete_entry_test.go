@@ -28,7 +28,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			PhysicalAddress: "/addr2",
 			Size:            2,
 			Metadata:        nil,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		err := c.DeleteEntry(ctx, repository, "master", "/file2")
@@ -53,7 +53,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			PhysicalAddress: "/addr3",
 			Size:            2,
 			Metadata:        nil,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file3", "tester", nil); err != nil {
@@ -75,7 +75,7 @@ func TestCataloger_DeleteEntry(t *testing.T) {
 			PhysicalAddress: "/addr4",
 			Size:            4,
 			Metadata:        nil,
-		}); err != nil {
+		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for delete entry test:", err)
 		}
 		if _, err := c.Commit(ctx, repository, "master", "commit file4", "tester", nil); err != nil {

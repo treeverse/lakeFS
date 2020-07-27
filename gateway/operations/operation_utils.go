@@ -19,10 +19,13 @@ func (o *PathOperation) finishUpload(storageNamespace, checksum, physicalAddress
 		CreationDate:    writeTime,
 	}
 
-	err := o.Cataloger.CreateEntryDedup(o.Context(), o.Repository.Name, o.Reference, entry, catalog.DedupParams{
-		ID:               checksum,
-		StorageNamespace: storageNamespace,
-	})
+	err := o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Reference, entry,
+		catalog.CreateEntryParams{
+			Dedup: catalog.DedupParams{
+				ID:               checksum,
+				StorageNamespace: storageNamespace,
+			},
+		})
 	if err != nil {
 		o.Log().WithError(err).Error("could not update metadata")
 		return err

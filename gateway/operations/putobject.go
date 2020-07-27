@@ -68,7 +68,7 @@ func (controller *PutObject) HandleCopy(o *PathOperation, copySource string) {
 	// TODO: move this logic into the Index impl.
 	ent.CreationDate = time.Now()
 	ent.Path = o.Path
-	err = o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Reference, *ent)
+	err = o.Cataloger.CreateEntry(o.Context(), o.Repository.Name, o.Reference, *ent, catalog.CreateEntryParams{})
 	if err != nil {
 		o.Log().WithError(err).Error("could not write copy destination")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInvalidCopyDest))

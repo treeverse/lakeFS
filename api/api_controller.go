@@ -915,6 +915,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 				params.Branch,
 				swag.StringValue(params.Location),
 				after,
+				"",
 				-1)
 			if errors.Is(err, db.ErrNotFound) {
 				return metadataop.NewCreateSymlinkNotFound().WithPayload(responseError("could not find requested path"))
@@ -987,7 +988,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		after, amount := getPaginationParams(params.After, params.Amount)
 
 		delimiter := catalog.DefaultPathDelimiter
-		res, hasMore, err := cataloger.ListEntriesByLevel(
+		res, hasMore, err := cataloger.ListEntries(
 			c.Context(),
 			params.Repository,
 			params.Ref,
@@ -1085,10 +1086,13 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Size:            blob.Size,
 			Checksum:        blob.Checksum,
 		}
-		err = cataloger.CreateEntryDedup(c.Context(), repo.Name, params.Branch, entry, catalog.DedupParams{
-			ID:               blob.DedupID,
-			StorageNamespace: repo.StorageNamespace,
-		})
+		err = cataloger.CreateEntry(c.Context(), repo.Name, params.Branch, entry,
+			catalog.CreateEntryParams{
+				Dedup: catalog.DedupParams{
+					ID:               blob.DedupID,
+					StorageNamespace: repo.StorageNamespace,
+				},
+			})
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -2113,9 +2117,9 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		var diff *onboard.InventoryDiff
+		var stats *onboard.InventoryImportStats
 		if *params.DryRun {
-			diff, err = importer.Import(deps.ctx, true)
+			stats, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2137,7 +2141,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-			diff, err = importer.Import(params.HTTPRequest.Context(), false)
+			stats, err = importer.Import(params.HTTPRequest.Context(), false)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2145,10 +2149,10 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		}
 		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
 			IsDryRun:           *params.DryRun,
-			PreviousImportDate: diff.PreviousImportDate.Unix(),
-			PreviousManifest:   diff.PreviousInventoryURL,
-			AddedOrChanged:     int64(len(diff.AddedOrChanged)),
-			Deleted:            int64(len(diff.Deleted)),
+			PreviousImportDate: stats.PreviousImportDate.Unix(),
+			PreviousManifest:   stats.PreviousInventoryURL,
+			AddedOrChanged:     int64(stats.AddedOrChanged),
+			Deleted:            int64(stats.Deleted),
 		})
 	})
 }
