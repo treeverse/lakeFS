@@ -30,7 +30,6 @@ Insert the Hive metastore uri in the metastore-uri flag ``` --metastore-uri thri
 
 It's recommended to configure these fields in the lakectl configuration file:
 
-in lakectl.yaml add:
 ```
 metastore:
   type: hive
@@ -77,7 +76,8 @@ metastore:
 
 # Suggested model:
 For simplicity, we recommend creating a schema for each branch, this way you can use the same table name across different schemas.
-For Example:
+
+For example:
 after creating branch `example_branch` also create a schema named `example_branch`.
 for a table named `example_table` under the schema `master` we would like to create a new table called `example_table` under the schema `example_branch`  
  
@@ -130,7 +130,7 @@ Suppose we merged back the data to master, and we want the data to be available 
 
 We would like to merge back the partition:  
 
-recommended:
+Recommended:
 ```
 lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
 ```
