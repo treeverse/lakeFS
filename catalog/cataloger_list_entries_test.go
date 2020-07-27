@@ -9,7 +9,6 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -129,10 +128,14 @@ func TestCataloger_ListEntries(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntries() error = %v, wantErr %v", err, tt.wantErr)
 			}
-			// copy the Entry fields we like to compare
+			// copy the Entry's fields we like to compare
 			var gotEntries []Entry
-			for _, ent := range got {
+			for i, ent := range got {
+				if ent == nil {
+					t.Fatalf("Expected entry at index %d, found nil", i)
+				}
 				gotEntries = append(gotEntries, Entry{
+					CommonLevel:     ent.CommonLevel,
 					Path:            ent.Path,
 					PhysicalAddress: ent.PhysicalAddress,
 					Size:            ent.Size,
@@ -155,8 +158,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 	c := testCataloger(t)
 
 	// produce test data
-	testutil.MustDo(t, "create test repo",
-		c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"))
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
 	suffixList := []string{"rip0", "file1", "file2", "file2/xxx", "file3/", "file4", "file5", "file6/yyy", "file6/zzz/zzz", "file6/ccc", "file7", "file8", "file9", "filea",
 		"/fileb", "//filec", "///filed", "rip"}
 	for i, suffix := range suffixList {
@@ -166,7 +168,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		fileAddress := fmt.Sprintf("/addr%d", n)
 		fileSize := int64(n) * 10
 		testutil.MustDo(t, "create test entry",
-			c.CreateEntry(ctx, "repo1", "master", Entry{
+			c.CreateEntry(ctx, repo, "master", Entry{
 				Path:            filePath,
 				Checksum:        fileChecksum,
 				PhysicalAddress: fileAddress,
@@ -175,15 +177,15 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 			}, CreateEntryParams{}))
 
 		if i == 3 {
-			_, err := c.Commit(ctx, "repo1", "master", "commit test files", "tester", nil)
+			_, err := c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
 			testutil.MustDo(t, "commit test files", err)
 		}
 	}
 	// delete one file
 	testutil.MustDo(t, "delete rip0 file",
-		c.DeleteEntry(ctx, "repo1", "master", "rip0"))
+		c.DeleteEntry(ctx, repo, "master", "rip0"))
 	testutil.MustDo(t, "delete rip file",
-		c.DeleteEntry(ctx, "repo1", "master", "rip"))
+		c.DeleteEntry(ctx, repo, "master", "rip"))
 
 	type args struct {
 		repository string
@@ -202,7 +204,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "all uncommitted",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "",
 				after:      "",
@@ -215,7 +217,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "first 2 uncommitted",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "",
 				after:      "",
@@ -228,7 +230,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "2 after file3",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "",
 				after:      "file3",
@@ -240,7 +242,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		}, {
 			name: "2 after file2/",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "",
 				after:      "file2/",
@@ -253,7 +255,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "committed",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master:HEAD",
 				path:       "",
 				after:      "file1",
@@ -266,7 +268,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "slash",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "/",
 				after:      "",
@@ -279,7 +281,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "double slash",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "//",
 				after:      "",
@@ -292,7 +294,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "under file6",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "file6/",
 				after:      "",
@@ -305,7 +307,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		{
 			name: "under file6 after ccc",
 			args: args{
-				repository: "repo1",
+				repository: repo,
 				reference:  "master",
 				path:       "file6/",
 				after:      "file6/ccc",
@@ -318,9 +320,6 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if tt.name == "all uncommitted" {
-				t.Skip("bug listing uncommitted tombstone entries")
-			}
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, DefaultPathDelimiter, tt.args.limit)
 			if (err != nil) != tt.wantErr {
 				t.Fatalf("ListEntriesByLevel() err = %s, expected error %t", err, tt.wantErr)
