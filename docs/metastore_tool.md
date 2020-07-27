@@ -20,7 +20,7 @@ To support this, lakeFS comes with cli commands which enable copying metadata be
 
 
 # Access to metastores
-The commands could run on Glue and Hive metastore, each of them have different parameters and different configurations.
+The commands could run on Glue or Hive metastore, each of them have different parameters and different configurations.
 ## Hive
 To run a command on Hive metastore we will need to:
 
@@ -99,7 +99,7 @@ In case the destination table already exists, the command will only merge the ch
 
 Example:
 
-suppose we have the table `example_by_dt` on branch `master` on schema `default`.
+Suppose we have the table `example_by_dt` on branch `master` on schema `default`.
 We create a new branch `exmpale_branch` .
 we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
 
@@ -176,7 +176,7 @@ Hive:
 lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
-The output will be something like ״
+The output will be something like:
 ```
 Columns are identical
 Partitions
