@@ -68,9 +68,13 @@ func TestIsValidBranchName(t *testing.T) {
 	}{
 		{name: "simple", input: "branch", want: true},
 		{name: "empty", input: "", want: false},
-		{name: "short", input: "a", want: false},
+		{name: "short", input: "a", want: true},
 		{name: "space", input: "got space", want: false},
 		{name: "special", input: "/branch", want: false},
+		{name: "dash", input: "a-branch", want: true},
+		{name: "leading-dash", input: "-branch", want: false},
+		{name: "underscores", input: "__", want: true},
+		{name: "backslash", input: "a\\branch", want: false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
