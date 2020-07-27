@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/go-openapi/swag"
 	"io/ioutil"
 	"reflect"
 	"regexp"
@@ -12,56 +13,44 @@ import (
 
 	s32 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/s3"
 )
 
-// convenience converter functions
-func keys(rows []block.InventoryObject) []string {
-	if rows == nil {
-		return nil
-	}
-	res := make([]string, 0, len(rows))
-	for _, row := range rows {
-		res = append(res, row.Key)
-	}
-	return res
-}
-
-func rows(keys ...string) []s3.ParquetInventoryObject {
+func rows(keys ...string) []*s3.ParquetInventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]s3.ParquetInventoryObject, len(keys))
-	latest := true
+	res := make([]*s3.ParquetInventoryObject, len(keys))
 	for i, key := range keys {
-		res[i].Key = key
-		res[i].IsLatest = &latest
+		if key != "" {
+			res[i] = new(s3.ParquetInventoryObject)
+			res[i].Key = key
+			res[i].IsLatest = swag.Bool(!strings.HasPrefix(key, "expired_"))
+			res[i].IsDeleteMarker = swag.Bool(strings.HasPrefix(key, "del_"))
+		}
 	}
 	return res
 }
 
-func mockReadRows(_ context.Context, _ s3iface.S3API, inventoryBucketName string, manifestFileKey string) ([]s3.ParquetInventoryObject, error) {
-	if inventoryBucketName != "example-bucket" {
-		return nil, fmt.Errorf("wrong bucket name: %s", inventoryBucketName)
-	}
-	return rows(fileContents[manifestFileKey]...), nil
-}
-
 var fileContents = map[string][]string{
-	"f1": {"f1row1", "f1row2"},
-	"f2": {"f2row1", "f2row2"},
-	"f3": {"f3row1", "f3row2"},
-	"f4": {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
-	"f5": {"a1", "a3", "a5"},
-	"f6": {"a2", "a4", "a6", "a7"},
+	"f1":          {"del_1", "f1row1", "f1row2", "del_2"},
+	"f2":          {"f2row1", "f2row2"},
+	"f3":          {"f3row1", "f3row2"},
+	"f4":          {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
+	"f5":          {"a1", "a2", "a3"},
+	"f6":          {"a4", "a5", "a6", "a7"},
+	"f7":          {"f7row1", "del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "expired_1", "expired_2", "expired_3", "f7row2"},
+	"err_file1":   {"a4", "", "a6", "a7"},
+	"err_file2":   {""},
+	"all_deleted": {"del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "del_7", "del_8"},
+	"empty_file":  {},
 }
 
-func TestFetch(t *testing.T) {
+func TestIterator(t *testing.T) {
 	testdata := []struct {
 		InventoryFiles  []string
-		Sort            bool
 		ExpectedObjects []string
+		ErrExpected     bool
 	}{
 		{
 			InventoryFiles:  []string{"f1", "f2", "f3"},
@@ -69,11 +58,7 @@ func TestFetch(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{},
-			ExpectedObjects: nil,
-		},
-		{
-			InventoryFiles:  []string{"f3", "f2", "f1"},
-			ExpectedObjects: []string{"f3row1", "f3row2", "f2row1", "f2row2", "f1row1", "f1row2"},
+			ExpectedObjects: []string{},
 		},
 		{
 			InventoryFiles:  []string{"f4"},
@@ -84,38 +69,114 @@ func TestFetch(t *testing.T) {
 			ExpectedObjects: []string{"f1row1", "f1row2", "f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
 		},
 		{
-			InventoryFiles:  []string{"f3", "f2", "f1"},
-			Sort:            true,
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+			InventoryFiles:  []string{"f5", "f6"},
+			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 		},
 		{
-			InventoryFiles:  []string{"f5", "f6"},
-			Sort:            true,
-			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			InventoryFiles: []string{"f5", "err_file1"},
+			ErrExpected:    true,
+		},
+		{
+			InventoryFiles: []string{"f1,", "f2", "f3", "f4", "f5", "f6", "err_file2"},
+			ErrExpected:    true,
+		},
+		{
+			InventoryFiles:  []string{"f7"},
+			ExpectedObjects: []string{"f7row1", "f7row2"},
+		},
+		{
+			InventoryFiles:  []string{"all_deleted", "all_deleted", "all_deleted"},
+			ExpectedObjects: []string{},
+		},
+		{
+			InventoryFiles:  []string{"all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted"},
+			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+		},
+		{
+			InventoryFiles:  []string{"empty_file"},
+			ExpectedObjects: []string{},
 		},
 	}
 
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
-		inv, err := s3.GenerateInventory(manifestURL, &mockS3Client{
-			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-		})
-		s3Inv := inv.(*s3.Inventory)
-		s3Inv.RowReader = mockReadRows
-		if err != nil {
-			t.Fatalf("error: %v", err)
-		}
-		objects, err := inv.Objects(context.Background(), test.Sort)
-		if err != nil {
-			t.Fatalf("error: %v", err)
-		}
-		if len(objects) != len(test.ExpectedObjects) {
-			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
-		}
-		if !reflect.DeepEqual(keys(objects), test.ExpectedObjects) {
-			t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, keys(objects))
+		for _, batchSize := range []int{1, 2, 3, 4, 5, 7, 9, 11, 15, 100, 1000, 10000} {
+			inv, err := s3.GenerateInventory(manifestURL, &mockS3Client{
+				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
+			}, mockParquetReaderGetter)
+			if err != nil {
+				t.Fatalf("error: %v", err)
+			}
+			it, err := inv.Iterator(context.Background())
+			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
+
+			if err != nil {
+				t.Fatalf("error: %v", err)
+			}
+			objects := make([]string, 0, len(test.ExpectedObjects))
+			for it.Next() {
+				objects = append(objects, it.Get().Key)
+			}
+			if !test.ErrExpected && it.Err() != nil {
+				t.Fatalf("got unexpected error: %v", it.Err())
+			}
+			if test.ErrExpected {
+				if it.Err() == nil {
+					print(len(test.ExpectedObjects))
+					t.Fatalf("expected error but didn't get one")
+				}
+				continue
+			}
+			if len(objects) != len(test.ExpectedObjects) {
+				t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
+			}
+			if !reflect.DeepEqual(objects, test.ExpectedObjects) {
+				t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, objects)
+			}
 		}
 	}
+}
+
+type mockParquetReader struct {
+	rows    []*s3.ParquetInventoryObject
+	nextIdx int
+}
+
+func (m *mockParquetReader) Read(dstInterface interface{}) error {
+	res := make([]s3.ParquetInventoryObject, 0, len(m.rows))
+	dst := dstInterface.(*[]s3.ParquetInventoryObject)
+	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
+		if m.rows[i] == nil {
+			return fmt.Errorf("got empty key")
+		}
+		res = append(res, *m.rows[i])
+	}
+	m.nextIdx = m.nextIdx + len(res)
+	*dst = res
+	return nil
+}
+
+func (m *mockParquetReader) GetNumRows() int64 {
+	return int64(len(m.rows))
+}
+func (m *mockParquetReader) SkipRows(skip int64) error {
+	m.nextIdx += int(skip)
+	if m.nextIdx > len(m.rows) {
+		return fmt.Errorf("index out of bounds after skip. got index=%d, length=%d", m.nextIdx, len(m.rows))
+	}
+	return nil
+}
+
+func mockParquetReaderGetter(_ context.Context, _ s3iface.S3API, bucket string, key string) (s3.ParquetReader, s3.CloseFunc, error) {
+	if bucket != "example-bucket" {
+		return nil, nil, fmt.Errorf("wrong bucket name: %s", bucket)
+	}
+	pr := &mockParquetReader{rows: rows(fileContents[key]...)}
+	return pr, func() error {
+		pr.nextIdx = -1
+		pr.rows = nil
+		return nil
+	}, nil
 }
 
 func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {
@@ -128,7 +189,7 @@ func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutpu
 	if manifestFileNames == nil {
 		manifestFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
 	}
-	manifestFiles := make([]interface{}, len(manifestFileNames))
+	manifestFiles := make([]interface{}, 0, len(manifestFileNames))
 	for _, filename := range manifestFileNames {
 		manifestFiles = append(manifestFiles, struct {
 			Key string `json:"key"`
