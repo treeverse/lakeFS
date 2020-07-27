@@ -13,4 +13,9 @@ var requestCounter = promauto.NewCounterVec(
 	[]string{"code", "method"},
 )
 
-var requestSummaries = promauto.NewSummaryVec(prometheus.SummaryOpts{Name: "api_requests_duration"}, []string{"operation_id", "code"})
+var requestSummaries = promauto.NewSummaryVec(
+	prometheus.SummaryOpts{
+		Name: "api_requests_duration",
+		Help: "A summary for request durations to the wrapped handler.",
+	},
+	[]string{"operation_id", "code"})

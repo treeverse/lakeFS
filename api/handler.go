@@ -179,7 +179,7 @@ func (s *Handler) buildAPI() {
 			RequestIdHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			promhttp.InstrumentHandlerCounter(requestCounter,
-				prometheusMiddleware(api.Context(),
+				metricsMiddleware(api.Context(),
 					cookieToAPIHeader(
 						s.apiServer.GetHandler(),
 					)),
@@ -212,14 +212,16 @@ func cookieToAPIHeader(next http.Handler) http.Handler {
 	})
 }
 
-func prometheusMiddleware(ctx *middleware.Context, next http.Handler) http.Handler {
+func metricsMiddleware(ctx *middleware.Context, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		route, _, ok := ctx.RouteInfo(r)
 		start := time.Now()
 		mrw := httputil.NewMetricResponseWriter(w)
 		next.ServeHTTP(mrw, r)
 		if ok {
-			requestSummaries.WithLabelValues(route.Operation.ID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
+			requestSummaries.
+				WithLabelValues(route.Operation.ID, strconv.Itoa(mrw.StatusCode)).
+				Observe(time.Since(start).Seconds())
 		}
 	})
 }
