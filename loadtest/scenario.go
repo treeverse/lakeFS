@@ -2,6 +2,7 @@ package loadtest
 
 import (
 	"fmt"
+
 	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
@@ -24,13 +25,16 @@ func (s *SimpleScenario) Play(serverAddress string, repoName string, stopCh chan
 			for _, tgt := range targetGenerator.GenerateCreateFileTargets(repoName, "master", FileCountInCommit) {
 				out <- tgt
 			}
-			out <- targetGenerator.GenerateCommitTarget(repoName, fmt.Sprintf("commit%d", i))
-			out <- targetGenerator.GenerateBranchTarget(repoName, fmt.Sprintf("branch%d", i))
+			commitMsg := fmt.Sprintf("commit%d", i)
+			out <- targetGenerator.GenerateCommitTarget(repoName, "master", commitMsg)
+			branchName := fmt.Sprintf("branch%d", i)
+			out <- targetGenerator.GenerateBranchTarget(repoName, branchName)
 
-			for _, tgt := range targetGenerator.GenerateCreateFileTargets(repoName, fmt.Sprintf("branch%d", i), FileCountInCommit) {
+			for _, tgt := range targetGenerator.GenerateCreateFileTargets(repoName, branchName, FileCountInCommit) {
 				out <- tgt
 			}
-			out <- targetGenerator.GenerateMergeToMasterTarget(repoName, fmt.Sprintf("branch%d", i))
+			out <- targetGenerator.GenerateCommitTarget(repoName, branchName, commitMsg)
+			out <- targetGenerator.GenerateMergeToMasterTarget(repoName, branchName)
 			out <- targetGenerator.GenerateListTarget(repoName, "master", 100)
 			out <- targetGenerator.GenerateListTarget(repoName, "master", 1000)
 			out <- targetGenerator.GenerateDiffTarget(repoName, "master")
