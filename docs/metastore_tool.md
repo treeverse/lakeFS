@@ -20,7 +20,7 @@ To support this, lakeFS comes with cli commands which enable copying metadata be
 
 
 # Access to metastores
-The commands could run on Glue and Hive metastore, each of them have different parameters and different configurations.
+The commands could run on Glue or Hive metastore, each of them have different parameters and different configurations.
 ## Hive
 To run a command on Hive metastore we will need to:
 
@@ -30,7 +30,6 @@ Insert the Hive metastore uri in the metastore-uri flag ``` --metastore-uri thri
 
 It's recommended to configure these fields in the lakectl configuration file:
 
-in lakectl.yaml add:
 ```
 metastore:
   type: hive
@@ -77,7 +76,8 @@ metastore:
 
 # Suggested model:
 For simplicity, we recommend creating a schema for each branch, this way you can use the same table name across different schemas.
-For Example:
+
+For example:
 after creating branch `example_branch` also create a schema named `example_branch`.
 for a table named `example_table` under the schema `master` we would like to create a new table called `example_table` under the schema `example_branch`  
  
@@ -99,7 +99,7 @@ In case the destination table already exists, the command will only merge the ch
 
 Example:
 
-suppose we have the table `example_by_dt` on branch `master` on schema `default`.
+Suppose we have the table `example_by_dt` on branch `master` on schema `default`.
 We create a new branch `exmpale_branch` .
 we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
 
@@ -130,7 +130,7 @@ Suppose we merged back the data to master, and we want the data to be available 
 
 We would like to merge back the partition:  
 
-recommended:
+Recommended:
 ```
 lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
 ```
@@ -176,7 +176,7 @@ Hive:
 lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
-The output will be something like ״
+The output will be something like:
 ```
 Columns are identical
 Partitions
