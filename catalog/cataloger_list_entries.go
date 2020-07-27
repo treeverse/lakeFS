@@ -146,12 +146,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	} else {
 		listAfter = after
 	}
-	if strings.HasSuffix(listAfter, delimiter) {
-		listAfter += DirectoryTermination
-	}
-
 	var markerList []string
-	pathCond := "path > ? and path < '" + endOfPrefixRange + "'"
 	readParams := readPramsType{
 		tx:              tx,
 		prefix:          prefix,
@@ -162,11 +157,11 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		branchID:        branchID,
 	}
 	for {
-		unionSelect := unionQueryParts[0].Where(pathCond, listAfter).Prefix("(").Suffix(")")
+		unionSelect := unionQueryParts[0].Where("path > ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
 		for j := 1; j < len(lineage)+1; j++ {
 			// add the path condition to each union part
 			unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
-				unionQueryParts[j].Where(pathCond, listAfter), ")"))
+				unionQueryParts[j].Where("path > ? and path < ?", listAfter, endOfPrefixRange), ")"))
 		}
 		fullQuery := sq.Select("*").FromSelect(unionSelect, "u")
 		deb := sq.DebugSqlizer(fullQuery)
@@ -202,18 +197,16 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
 	// split results by branch
 	branchRanges := make(map[int64][]resultRow, len(branchPriorityMap))
-	for len(response) > 0 {
-		b := response[0].BranchID
+	for _, result := range response {
+		b := result.BranchID
 		_, exists := branchRanges[b]
 		if !exists {
 			branchRanges[b] = make([]resultRow, 0, readParams.branchBatchSize)
 		}
-		branchRanges[b] = append(branchRanges[b], response[0])
-		response = response[1:]
+		branchRanges[b] = append(branchRanges[b], result)
 	}
 	var resultPaths []string
 	for { // exit loop by return
-		//find lowest result
 		b := findLowestResultInBranches(branchRanges, branchPriorityMap)
 		p := branchRanges[b][0].PathSuffix
 		pathResults := getBranchResultRowsForPath(p, b, &branchRanges, readParams)
@@ -276,23 +269,23 @@ func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges *ma
 			}
 		}
 	}
-	singleSelect := selectSingleBranch(branch, branch == readParams.branchID, readParams.branchBatchSize, readParams.lowestCommitID, topCommitID, len(readParams.prefix))
-	pathCond := `((path = ? AND min_commit < ?) OR path > ?) and path < '` + readParams.prefix + DirectoryTermination + "'"
+	// have to re-read the last entry, because otherwise the expression becomes complex and the optimizer gets NUTS
+	//so read size must be the batch size + whhatever results were left from the last entry
+	// If readBuf is not extended - there will be an endless loop if number of results is bigger than batch size.
+	requiredBufferSize := readParams.branchBatchSize + len((*branchRanges)[branch])
+	readBuf := make([]resultRow, 0, requiredBufferSize)
+	singleSelect := selectSingleBranch(branch, branch == readParams.branchID, requiredBufferSize, readParams.lowestCommitID, topCommitID, len(readParams.prefix))
 	requestedPath := readParams.prefix + path
-	singleSelect = singleSelect.Where(pathCond, requestedPath, minCommit, requestedPath)
+	singleSelect = singleSelect.Where("path >= ? and path < ?", requestedPath, readParams.prefix+DirectoryTermination)
 	deb := sq.DebugSqlizer(singleSelect)
 	_ = deb
 	s, args, err := singleSelect.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return err
 	}
-	additionalReadSpace := len((*branchRanges)[branch])
 
-	readBuf := make([]resultRow, additionalReadSpace, readParams.branchBatchSize+additionalReadSpace)
-	copy(readBuf, (*branchRanges)[branch])
 	err = readParams.tx.Select(&readBuf, s, args...)
-	if additionalReadSpace == len(readBuf) && err == nil {
-		// surprisingly, when "Select" read no results, but the buffer contains something - id does not return error for no rows
+	if len((*branchRanges)[branch]) == len(readBuf) {
 		err = sql.ErrNoRows
 	}
 	if err != nil {
