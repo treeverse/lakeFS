@@ -2,13 +2,14 @@ package loadtest
 
 import (
 	"fmt"
-	vegeta "github.com/tsenart/vegeta/v12/lib"
 	"math/rand"
 	"net/http"
 	"net/url"
 	"strconv"
 	"strings"
 	"time"
+
+	vegeta "github.com/tsenart/vegeta/v12/lib"
 )
 
 const boundary = "---------------------abcdefg123456789"
@@ -61,9 +62,9 @@ func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int
 	return result
 }
 
-func (t *TargetGenerator) GenerateCommitTarget(repo, msg string) vegeta.Target {
+func (t *TargetGenerator) GenerateCommitTarget(repo, branch, msg string) vegeta.Target {
 	return defaultTarget("POST",
-		fmt.Sprintf("%s/repositories/%s/branches/master/commits", t.ServerAddress, repo),
+		fmt.Sprintf("%s/repositories/%s/branches/%s/commits", t.ServerAddress, repo, branch),
 		fmt.Sprintf(`{"message":"%s","metadata":{}}`, msg),
 		"commit")
 }
@@ -71,7 +72,7 @@ func (t *TargetGenerator) GenerateCommitTarget(repo, msg string) vegeta.Target {
 func (t *TargetGenerator) GenerateBranchTarget(repo, name string) vegeta.Target {
 	return defaultTarget("POST",
 		fmt.Sprintf("%s/repositories/%s/branches", t.ServerAddress, repo),
-		fmt.Sprintf(`{"id":"%s","sourceRefId":"master"}`, name),
+		fmt.Sprintf(`{"name":"%s","source":"master"}`, name),
 		"createBranch")
 }
 
