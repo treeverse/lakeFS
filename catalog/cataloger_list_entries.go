@@ -139,16 +139,10 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	limit += 1 // increase limit to get indication of more rows to come
 	unionQueryParts := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
 	endOfPrefixRange := prefix + DirectoryTermination
-
-	var listAfter string
-	if len(after) == 0 {
-		listAfter = prefix
-	} else {
-		listAfter = after
+	if strings.HasSuffix(after, delimiter) {
+		after += DirectoryTermination
 	}
-	if strings.HasSuffix(listAfter, delimiter) {
-		listAfter += DirectoryTermination
-	}
+	listAfter := prefix + strings.TrimPrefix(after, prefix)
 
 	var markerList []string
 	pathCond := "path > ? and path < '" + endOfPrefixRange + "'"
