@@ -9,7 +9,7 @@ import (
 var (
 	ErrInvalidValue = errors.New("invalid value")
 
-	validBranchNameRegexp     = regexp.MustCompile(`^[a-zA-Z0-9\\-]{2,}$`)
+	validBranchNameRegexp     = regexp.MustCompile(`^\w[-\w]*$`)
 	validRepositoryNameRegexp = regexp.MustCompile(`^[a-z0-9][a-z0-9-]{2,62}$`)
 )
 
