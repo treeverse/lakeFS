@@ -105,7 +105,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 	// Can diff with expired files, just not usefully!
 	fromSonInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
-		"f.path IS NOT NULL AS DifferenceTypeChanged",
+		"f.path IS NOT NULL AND NOT f.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted",
 		"f.path IS NOT NULL AND (f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted) AS same_object",
 		"s.entry_ctid",
@@ -156,7 +156,7 @@ func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, f
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",
-		"s.path IS NOT NULL AS DifferenceTypeChanged",
+		"s.path IS NOT NULL AND NOT s.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		//both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
@@ -197,9 +197,10 @@ func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageComm
 	baseSelect := sq.Select().
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
-		Columns("e.path", "e.branch_id AS source_branch",
-			"e.is_committed", "e.is_tombstone").Distinct().Options(" ON (e.branch_id,e.path)").
-		Column(isDeletedAlias).OrderBy("e.branch_id,e.path,e.commit_weight DESC")
+		Columns("e.path", "e.branch_id AS source_branch", "e.is_committed", "e.is_tombstone").
+		Distinct().Options(" ON (e.branch_id,e.path)").
+		Column(isDeletedAlias).
+		OrderBy("e.branch_id,e.path,e.commit_weight DESC")
 	minSelect := sq.Select(" path").
 		FromSelect(baseSelect, "e").
 		Where("not e.is_deleted")
