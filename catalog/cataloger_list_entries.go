@@ -400,7 +400,7 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 	for _, r := range entryRuns {
 		entriesSql, args, err := sq.
 			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
-			Where("path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).
+			Where("NOT is_deleted AND path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).
 			FromSelect(entriesReader, "e").
 			PlaceholderFormat(sq.Dollar).
 			ToSql()
