@@ -378,7 +378,7 @@ func TestCataloger_ScanExpiredWithDupes(t *testing.T) {
 		PhysicalAddress: "/master/one/file",
 		CreationDate:    time.Now().Add(-20 * time.Hour),
 		Checksum:        "1",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to create 0/historical on master", err)
 	}
 	if err := c.CreateEntry(ctx, repository, "master", Entry{
@@ -386,7 +386,7 @@ func TestCataloger_ScanExpiredWithDupes(t *testing.T) {
 		PhysicalAddress: "/master/all/different",
 		CreationDate:    time.Now().Add(-19 * time.Hour),
 		Checksum:        "2",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to create 0/committed on master", err)
 	}
 	if _, err := c.Commit(ctx, repository, "master", "first commit", "tester", Metadata{}); err != nil {
@@ -398,7 +398,7 @@ func TestCataloger_ScanExpiredWithDupes(t *testing.T) {
 		PhysicalAddress: "/master/one/file",
 		CreationDate:    time.Now().Add(-5 * time.Hour),
 		Checksum:        "1",
-	}); err != nil {
+	}, CreateEntryParams{}); err != nil {
 		t.Fatal("Failed to create 0/different on branch", err)
 	}
 
