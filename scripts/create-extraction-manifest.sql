@@ -45,6 +45,37 @@ AS $$
    ) q;
 $$;
 
+-- Return the first part of path.
+CREATE FUNCTION pg_temp.get_head(path text)
+RETURNS text
+LANGUAGE sql IMMUTABLE STRICT
+AS $$
+   SELECT regexp_replace($1, '^s3://([^/]*)/.*$', '\1')
+$$;
+
+-- Return the bucket name of path: its head if it has slashes, or all
+-- of it if it does not.
+CREATE FUNCTION pg_temp.get_bucket(path text)
+RETURNS text
+LANGUAGE sql IMMUTABLE STRICT
+AS $$
+   SELECT CASE WHEN head = '' THEN $1 ELSE head END FROM (
+      SELECT pg_temp.get_head(path) head
+   ) i;
+$$;
+
+-- If path is an S3 path with a key after the bucket, return the rest
+-- ("path") of path (everything after the first slash) and a trailing
+-- slash.  Otherwise return ''.
+CREATE FUNCTION pg_temp.get_rest(path text)
+RETURNS text
+LANGUAGE sql IMMUTABLE STRICT
+AS $$
+   SELECT CASE WHEN tail = '' THEN '' ELSE concat(tail, '/') END FROM (
+      SELECT substr($1, length(pg_temp.get_head($1)) + 7) tail
+   ) i;
+$$;
+
 -- Format output appropriately
 \pset format csv
 \pset tuples_only on
@@ -52,12 +83,11 @@ $$;
 -- TODO(ariels): Works just for S3-based namespaces.  Current
 -- alternatives (mem, local) do not require support, future may be
 -- different.
-SELECT regexp_replace(repository.storage_namespace, '^s3://', 'arn:aws:s3:::') src_bucket_arn,
+SELECT regexp_replace(pg_temp.get_bucket(repository.storage_namespace), '^s3://', 'arn:aws:s3:::') src_bucket_arn,
      pg_temp.encode_uri_component(json_build_object(
 	 'dstBucket', :'dst_bucket_name',
-	 'dstPath', pg_temp.join_paths(repository.name, entry.path),
-	 -- BUG(ariels): add namespace (also for src_bucket_arn...)
-	 'srcPath', entry.physical_address) #>> '{}')
+	 'dstKey', pg_temp.join_paths(repository.name, entry.path),
+	 'srcKey', concat(pg_temp.get_rest(repository.storage_namespace), entry.physical_address)) #>> '{}')
 FROM (entries entry
       JOIN branches branch ON entry.branch_id = branch.id
       JOIN repositories repository ON branch.repository_id = repository.id)
