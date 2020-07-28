@@ -3,6 +3,8 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"github.com/dlmiddlecote/sqlstats"
+	"github.com/prometheus/client_golang/prometheus"
 	"math/rand"
 	"net/http"
 	"os"
@@ -46,7 +48,10 @@ var runCmd = &cobra.Command{
 
 		// validate service names and turn on the right flags
 		dbConnString := cfg.GetDatabaseURI()
+
 		dbPool := cfg.BuildDatabaseConnection()
+		collector := sqlstats.NewStatsCollector("lakefs", dbPool)
+		prometheus.MustRegister(collector)
 		defer func() {
 			_ = dbPool.Close()
 		}()
