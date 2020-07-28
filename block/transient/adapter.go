@@ -3,7 +3,7 @@ package transient
 import (
 	"context"
 	"crypto/rand"
-	"crypto/sha256" //nolint:gosec
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"io"
@@ -69,7 +69,7 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	if err != nil {
 		return "", err
 	}
-	h := sha256.New() //nolint:gosec
+	h := sha256.New()
 	_, err = h.Write(data)
 	if err != nil {
 		return "", err

@@ -43,7 +43,7 @@ func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string)
 		ReadBatchSize:   DefaultReadBatchSize,
 		inventoryBucket: invBucket,
 	}
-	res.rowsPerFile = make([]int, len(res.Inventory.Manifest.Files))
+	res.rowsPerFile = make([]int, len(res.Manifest.Files))
 	for i := range res.Manifest.Files {
 		pr, closeReader, err := res.getParquetReader(res.ctx, res.S3, res.inventoryBucket, res.Manifest.Files[i].Key)
 		if err != nil {
