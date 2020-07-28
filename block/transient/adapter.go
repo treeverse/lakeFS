@@ -22,7 +22,7 @@ func New() *Adapter {
 	return &Adapter{}
 }
 
-func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
+func (a *Adapter) WithContext(context.Context) block.Adapter {
 	return &Adapter{}
 }
 
@@ -70,16 +70,19 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 		return "", err
 	}
 	h := sha256.New()
-	h.Write(data)
+	_, err = h.Write(data)
+	if err != nil {
+		return "", err
+	}
 	code := h.Sum(nil)
 	return hex.EncodeToString(code), nil
 }
 
-func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
+func (a *Adapter) AbortMultiPartUpload(block.ObjectPointer, string) error {
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(block.ObjectPointer, string, *block.MultipartUploadCompletion) (*string, int64, error) {
 	const dataSize = 1024
 	data := make([]byte, dataSize)
 	if _, err := rand.Read(data); err != nil {
@@ -87,7 +90,10 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	}
 
 	h := sha256.New()
-	h.Write(data)
+	_, err := h.Write(data)
+	if err != nil {
+		return nil, 0, err
+	}
 	code := h.Sum(nil)
 	codeHex := hex.EncodeToString(code)
 	return &codeHex, dataSize, nil

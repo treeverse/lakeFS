@@ -5,12 +5,12 @@ import (
 	"encoding/base64"
 	"errors"
 	"fmt"
-	"github.com/google/uuid"
 	"io"
 	"net/http"
 	"os"
 	"time"
 
+	"github.com/google/uuid"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/schollz/progressbar/v3"
 	log "github.com/sirupsen/logrus"

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -34,7 +35,7 @@ func getInstallationID(tx db.Tx) (string, error) {
 	return installationID, err
 }
 
-func writeMetadata(tx db.Tx, items map[string]string) error {
+func writeMetadata(tx sqlx.Execer, items map[string]string) error {
 	for key, value := range items {
 		_, err := tx.Exec(`
 			INSERT INTO auth_installation_metadata (key_name, key_value)
@@ -74,14 +75,14 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 	// see if we have existing metadata or we need to generate one
 	_, err = d.db.Transact(func(tx db.Tx) (interface{}, error) {
 		// get installation ID - if we don't have one we'll generate one
-		installationID, err := getInstallationID(tx)
+		_, err := getInstallationID(tx)
 		if err != nil && !errors.Is(err, db.ErrNotFound) {
 			return nil, err
 		}
 
 		if err != nil { // i.e. err is db.ErrNotFound
 			// we don't have an installation ID - let's write one.
-			installationID = uuid.Must(uuid.NewUUID()).String()
+			installationID := uuid.Must(uuid.NewUUID()).String()
 			metadata["installation_id"] = installationID
 			metadata["setup_time"] = time.Now().UTC().Format(time.RFC3339)
 		}
