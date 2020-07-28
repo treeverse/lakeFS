@@ -23,10 +23,6 @@ var expireCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		logger := logging.FromContext(ctx)
-		adapter, err := cfg.BuildBlockAdapter()
-		if err != nil {
-			logger.WithError(err).Fatal("Failed to create block adapter")
-		}
 		dbPool := cfg.BuildDatabaseConnection()
 		cataloger := catalog.NewCataloger(dbPool)
 
@@ -46,7 +42,7 @@ var expireCmd = &cobra.Command{
 		}
 
 		expiryParams := retention.ExpireOnS3Params{
-			AccountId: *accountId,
+			AccountId: accountId,
 			RoleArn:   awsRetentionConfig.RoleArn,
 			ManifestUrlForBucket: func(x string) string {
 				u, err := url.Parse(x)
@@ -81,6 +77,9 @@ var expireCmd = &cobra.Command{
 				repoLogger.WithError(err).Error("failed to get retention policy (skip repo)")
 				continue
 			}
+			if policy == nil {
+				repoLogger.Info("no retention policy for this repository - skip")
+			}
 			expiryRows, err := cataloger.QueryExpired(ctx, repo.Name, &policy.Policy)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to query for expired (skip repo)")
@@ -88,7 +87,7 @@ var expireCmd = &cobra.Command{
 			}
 			expiryReader, err := retention.WriteExpiryResultsToSeekableReader(ctx, expiryRows)
 			if err != nil {
-				repoLogger.WithError(err).Error("failed to get retention policy (skip repo)")
+				repoLogger.WithError(err).Error("failed to write expiry results (skip repo)")
 				continue
 			}
 

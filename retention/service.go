@@ -23,7 +23,7 @@ func (s *DBRetentionService) GetPolicy(repositoryName string) (*catalog.PolicyWi
 		var policy catalog.PolicyWithCreationTime
 		err := tx.Get(
 			&policy,
-			`SELECT description, (value::json)->'Rules' as rules, created_at FROM catalog_repositories_config WHERE repository_id IN (SELECT repository_id FROM catalog_repositories WHERE name = $1) AND key = $2`,
+			`SELECT description, (value::json)->'Rules' as rules, created_at FROM catalog_repositories_config WHERE repository_id IN (SELECT id FROM catalog_repositories WHERE name = $1) AND key = $2`,
 			repositoryName,
 			dbConfigKey,
 		)

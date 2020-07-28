@@ -40,7 +40,6 @@ require (
 	github.com/lib/pq v1.7.0 // indirect
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/manifoldco/promptui v0.7.0
-	github.com/matoous/go-nanoid v1.4.1
 	github.com/mattn/go-colorable v0.1.7 // indirect
 	github.com/mattn/go-sqlite3 v1.14.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0

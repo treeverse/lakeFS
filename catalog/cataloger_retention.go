@@ -180,7 +180,7 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 }
 
 func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error) {
-	logger := logging.Default().WithContext(ctx).WithField("policy", *policy)
+	logger := logging.FromContext(ctx).WithField("policy", *policy)
 
 	// TODO(ariels): Get lowest possible isolation level here.
 	expiryByEntriesQuery := buildRetentionQuery(repositoryName, policy)
@@ -199,7 +199,7 @@ func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, pol
                     WHERE physical_address IN (
                         SELECT a.physical_address FROM
                             ((SELECT physical_address, COUNT(*) c FROM to_expire GROUP BY physical_address) AS a JOIN
-                             (SELECT physical_address, COUNT(*) c FROM entries GROUP BY physical_address) AS b
+                             (SELECT physical_address, COUNT(*) c FROM catalog_entries GROUP BY physical_address) AS b
                              ON a.physical_address = b.physical_address)
                             WHERE a.c = b.c)
                     `,
@@ -223,7 +223,7 @@ func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, pol
 }
 
 func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
-	logger := logging.Default().WithContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
+	logger := logging.FromContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
 
 	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`CREATE TEMPORARY TABLE temp_expiry (
