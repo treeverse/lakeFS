@@ -16,6 +16,9 @@
 -- Variable dst_bucket_name: name of bucket to place files.  Must be
 -- specified.
 
+-- Avoid superfluous output (such as "CREATE FUNCTION)
+\set QUIET 1
+
 CREATE FUNCTION pg_temp.join_paths(p text, q text)
 RETURNS text
 LANGUAGE sql IMMUTABLE STRICT
