@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	homedir "github.com/mitchellh/go-homedir"
+	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/api"
@@ -39,14 +39,12 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 		if cmd == configCmd {
 			return
 		}
-		if cfgFileErr != nil {
-			if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
-				// specific message in case the file doesn't not found
-				DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
-			} else {
-				// other errors while reading the config file
-				DieFmt("error reading configuration file: %v", cfgFileErr)
-			}
+		if _, ok := cfgFileErr.(viper.ConfigFileNotFoundError); ok {
+			// specific message in case the file doesn't not found
+			DieFmt("config file not found, please run \"lakectl config\" to create one\n%s\n", cfgFileErr)
+		} else if cfgFileErr != nil {
+			// other errors while reading the config file
+			DieFmt("error reading configuration file: %v", cfgFileErr)
 		}
 	},
 	Version: config.Version,
@@ -91,6 +89,9 @@ func ParseDocument(dest interface{}, filename string, fileTitle string) {
 		if fp, err = os.Open(filename); err != nil {
 			DieFmt("open %s %s for read: %v", fileTitle, filename, err)
 		}
+		defer func() {
+			_ = fp.Close()
+		}()
 	}
 	if err := json.NewDecoder(fp).Decode(dest); err != nil {
 		DieFmt("could not parse %s document: %v", fileTitle, err)

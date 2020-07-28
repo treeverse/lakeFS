@@ -3,9 +3,10 @@ package onboard
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"time"
 )
 
 const (

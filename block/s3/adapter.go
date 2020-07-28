@@ -5,22 +5,17 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"net/url"
 	"time"
 
+	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
-
-	"github.com/treeverse/lakefs/block"
-
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
-
-	"github.com/treeverse/lakefs/logging"
-
-	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	_ "github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/logging"
 
 	"io"
 )
@@ -31,19 +26,8 @@ const (
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 
-	StreamingDefaultChunkSize = 2 << 19 // 1MiB by default per chunk
-	ExpireObjectS3Tag         = "lakefs_expire_object"
+	ExpireObjectS3Tag = "lakefs_expire_object"
 )
-
-func getMapKeys(m map[string]interface{}) []string {
-	ret := make([]string, len(m))
-	i := 0
-	for k := range m {
-		ret[i] = k
-		i += 1
-	}
-	return ret
-}
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
@@ -125,14 +109,6 @@ func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
-func GetScheme(key string) string {
-	parsed, err := url.Parse(key)
-	if err != nil {
-		return ""
-	}
-	return parsed.Scheme
-}
-
 // work around, because put failed with trying to create symlinks
 func (s *Adapter) PutWithoutStream(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	qualifiedKey, err := resolveNamespace(obj)
@@ -194,9 +170,14 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	sigTime := time.Now()
 	log := s.log().WithField("operation", "PutObject")
 
-	_ = sdkRequest.Build()
+	if err := sdkRequest.Build(); err != nil {
+		return nil, err
+	}
 
-	req, _ := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
+	req, err := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
+	if err != nil {
+		return nil, err
+	}
 	req.Header.Set("Content-Encoding", StreamingContentEncoding)
 	req.Header.Set("Transfer-Encoding", "chunked")
 	req.Header.Set("x-amz-content-sha256", StreamingSha256)
@@ -205,7 +186,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
 
-	_, err := baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
+	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
 		return nil, err
@@ -244,9 +225,10 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			body = []byte(fmt.Sprintf("s3 error: %d %s (unknown)", resp.StatusCode, resp.Status))
+			err = fmt.Errorf("s3 error: %d %s (unknown)", resp.StatusCode, resp.Status)
+		} else {
+			err = fmt.Errorf("s3 error: %s", body)
 		}
-		err = fmt.Errorf("s3 error: %s", body)
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			WithField("status_code", resp.StatusCode).
@@ -256,7 +238,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	return resp, nil
 }
 
-func (s *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
+func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
@@ -347,7 +329,6 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	resp, err := s.s3.CreateMultipartUpload(input)
 	if err != nil {
 		return "", err
-
 	}
 	uploadId := *resp.UploadId
 	uploadId = s.uploadIdTranslator.SetUploadId(uploadId)
@@ -360,6 +341,7 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	}).Debug("created multipart upload")
 	return uploadId, err
 }
+
 func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
@@ -382,12 +364,12 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	return err
 }
 
-func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, 0, err
 	}
-	cmpu := &s3.CompletedMultipartUpload{Parts: MultipartList.Part}
+	cmpu := &s3.CompletedMultipartUpload{Parts: multipartList.Part}
 	translatedUploadId := s.uploadIdTranslator.TranslateUploadId(uploadId)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),

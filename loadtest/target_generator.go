@@ -40,10 +40,11 @@ func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int
 	now := time.Now().UnixNano()
 	result := make([]vegeta.Target, num)
 	for i := 0; i < num; i++ {
+		randomContent := rand.Int()
 		fileContent := "--" + boundary + "\n" +
 			"Content-Disposition: form-data; name=\"content\"; filename=\"file\"\n" +
 			"Content-Type: text/plain\n\n" +
-			strconv.Itoa(rand.Int()) + "\n" + "--" + boundary + "--\n"
+			strconv.Itoa(randomContent) + "\n" + "--" + boundary + "--\n"
 		filename := randomFilepath(fmt.Sprintf("file_%d_%d", now, i))
 		tgt := vegeta.Target{
 			Method: "POST",

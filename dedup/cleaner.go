@@ -50,7 +50,7 @@ func (d *Cleaner) startDedupRemove() {
 			defer d.wg.Done()
 			for req := range d.ch {
 				// wait before before we delete the object
-				timeDiff := req.Timestamp.Add(dedupRemoveWait).Sub(time.Now())
+				timeDiff := time.Until(req.Timestamp.Add(dedupRemoveWait))
 				time.Sleep(timeDiff)
 
 				// delete the object

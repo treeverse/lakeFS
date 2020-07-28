@@ -67,11 +67,9 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 	}
 
 	// no repository given
-	switch r.Method {
-	case http.MethodGet:
+	if r.Method == http.MethodGet {
 		return OperationHandler(h.sc, &operations.ListBuckets{})
 	}
-
 	return h.NotFoundHandler
 }
 

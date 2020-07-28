@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+
 	"github.com/treeverse/lakefs/block"
 )
 
@@ -23,17 +24,12 @@ func (o *ParquetInventoryObject) GetPhysicalAddress() string {
 
 type InventoryIterator struct {
 	*Inventory
-	iteratorState
-	ctx             context.Context
-	ReadBatchSize   int
-	inventoryBucket string
-}
-
-type iteratorState struct {
-	err    error
-	val    block.InventoryObject
-	buffer []ParquetInventoryObject
-
+	ReadBatchSize          int
+	ctx                    context.Context
+	inventoryBucket        string
+	err                    error
+	val                    block.InventoryObject
+	buffer                 []ParquetInventoryObject
 	currentManifestFileIdx int
 	nextRowInParquet       int
 	rowsPerFile            []int
@@ -47,7 +43,7 @@ func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string)
 		ReadBatchSize:   DefaultReadBatchSize,
 		inventoryBucket: invBucket,
 	}
-	res.rowsPerFile = make([]int, len(res.Manifest.Files))
+	res.rowsPerFile = make([]int, len(res.Inventory.Manifest.Files))
 	for i := range res.Manifest.Files {
 		pr, closeReader, err := res.getParquetReader(res.ctx, res.S3, res.inventoryBucket, res.Manifest.Files[i].Key)
 		if err != nil {

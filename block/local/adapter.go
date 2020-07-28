@@ -2,7 +2,7 @@ package local
 
 import (
 	"context"
-	"crypto/md5"
+	"crypto/md5" //nolint:gosec
 	"encoding/hex"
 	"errors"
 	"fmt"
@@ -144,10 +144,9 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 		if err != nil {
 			return "", err
 		}
-
 	}
-	UUIDbytes := ([16]byte(uuid.New()))
-	uploadId := hex.EncodeToString(UUIDbytes[:])
+	uidBytes := uuid.New()
+	uploadId := hex.EncodeToString(uidBytes[:])
 	uploadId = l.uploadIdTranslator.SetUploadId(uploadId)
 	return uploadId, nil
 }
@@ -156,8 +155,8 @@ func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
 	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
 	err := l.Put(block.ObjectPointer{StorageNamespace: "", Identifier: fName}, -1, md5Read, nilPutOpts)
-	ETag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
-	return ETag, err
+	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
+	return etag, err
 }
 
 func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
@@ -169,8 +168,8 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	return nil
 }
 
-func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
-	ETag := computeETag(MultipartList.Part) + "-" + strconv.Itoa(len(MultipartList.Part))
+func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	ETag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
 	partFiles, err := l.getPartFiles(uploadId)
 	if err != nil {
 		return nil, -1, fmt.Errorf("part files not found for %s: %w", uploadId, err)
@@ -181,32 +180,33 @@ func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	}
 	l.removePartFiles(partFiles)
 	return &ETag, size, nil
-
 }
 
-func computeETag(Parts []*s3.CompletedPart) string {
-	var ETagHex []string
-	for _, p := range Parts {
+func computeETag(parts []*s3.CompletedPart) string {
+	var etagHex []string
+	for _, p := range parts {
 		e := *p.ETag
 		if strings.HasPrefix(e, "\"") && strings.HasSuffix(e, "\"") {
 			e = e[1 : len(e)-1]
 		}
-		ETagHex = append(ETagHex, e)
+		etagHex = append(etagHex, e)
 	}
-	s := strings.Join(ETagHex, "")
+	s := strings.Join(etagHex, "")
 	b, _ := hex.DecodeString(s)
-	md5res := md5.Sum(b)
+	md5res := md5.Sum(b) //nolint:gosec
 	csm := hex.EncodeToString(md5res[:])
 	return csm
 }
 
 func (l *Adapter) unitePartFiles(identifier string, files []string) (int64, error) {
-	path := l.getPath(identifier)
-	unitedFile, err := os.Create(path)
+	p := l.getPath(identifier)
+	unitedFile, err := os.Create(p)
 	if err != nil {
-		return 0, fmt.Errorf("create path %s: %w", path, err)
+		return 0, fmt.Errorf("create path %s: %w", p, err)
 	}
-	defer unitedFile.Close()
+	defer func() {
+		_ = unitedFile.Close()
+	}()
 	var readers = []io.Reader{}
 	for _, name := range files {
 		f, err := os.Open(name)
@@ -214,7 +214,9 @@ func (l *Adapter) unitePartFiles(identifier string, files []string) (int64, erro
 			return 0, fmt.Errorf("open file %s: %w", name, err)
 		}
 		readers = append(readers, f)
-		defer f.Close()
+		defer func() {
+			_ = f.Close()
+		}()
 	}
 	unitedReader := io.MultiReader(readers...)
 	size, err := io.Copy(unitedFile, unitedReader)

@@ -7,10 +7,10 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
-type logContextKey string
+type contextKey string
 
 const (
-	LogFieldsContextKey = logContextKey("log_fields")
+	LogFieldsContextKey = contextKey("log_fields")
 )
 
 var (
