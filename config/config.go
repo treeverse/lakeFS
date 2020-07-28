@@ -155,10 +155,10 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	return cfg
 }
 
-func GetAccount(awsConfig *aws.Config) (*string, error) {
+func GetAccount(awsConfig *aws.Config) (string, error) {
 	sess, err := session.NewSession(awsConfig)
 	if err != nil {
-		return nil, fmt.Errorf("get AWS session: %w", err)
+		return "", fmt.Errorf("get AWS session: %w", err)
 	}
 	sess.ClientConfig(sts.ServiceName)
 	svc := sts.New(sess)
@@ -167,9 +167,9 @@ func GetAccount(awsConfig *aws.Config) (*string, error) {
 		AccessKeyId: aws.String(accessKeyId),
 	})
 	if err != nil {
-		return nil, fmt.Errorf("get access key info for %s: %w", accessKeyId, err)
+		return "", fmt.Errorf("get access key info for %s: %w", accessKeyId, err)
 	}
-	return account.Account, nil
+	return *account.Account, nil
 }
 
 func (c *Config) buildS3Adapter() (block.Adapter, error) {
