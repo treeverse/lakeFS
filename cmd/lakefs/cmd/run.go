@@ -51,7 +51,10 @@ var runCmd = &cobra.Command{
 
 		dbPool := cfg.BuildDatabaseConnection()
 		collector := sqlstats.NewStatsCollector("lakefs", dbPool)
-		prometheus.MustRegister(collector)
+		err := prometheus.Register(collector)
+		if err != nil {
+			logger.WithError(err).Error("failed to register db stats collector")
+		}
 		defer func() {
 			_ = dbPool.Close()
 		}()
