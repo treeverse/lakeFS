@@ -57,7 +57,7 @@ type Adapter interface {
 	GetProperties(obj ObjectPointer) (Properties, error)
 	Remove(obj ObjectPointer) error
 	CreateMultiPartUpload(obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
-	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error)
+	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
 	AbortMultiPartUpload(obj ObjectPointer, uploadId string) error
 	CompleteMultiPartUpload(obj ObjectPointer, uploadId string, MultipartList *MultipartUploadCompletion) (*string, int64, error)
 	// ValidateConfiguration validates an appropriate bucket
@@ -81,6 +81,4 @@ func (d *NoOpTranslator) SetUploadId(uploadId string) string {
 func (d *NoOpTranslator) TranslateUploadId(uploadId string) string {
 	return uploadId
 }
-func (d *NoOpTranslator) RemoveUploadId(_ string) {
-	return
-}
+func (d *NoOpTranslator) RemoveUploadId(_ string) {}

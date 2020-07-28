@@ -10,12 +10,12 @@ import (
 // has been adjusted to skip our wrapper
 
 var (
-
 	// qualified package name, cached at first use
 	loggingPackage string
 
 	// Positions in the call stack when tracing to report the calling method
-	minimumCallerDepth int
+	// start at the bottom of the stack before the package-name cache is primed
+	minimumCallerDepth int = 1
 
 	// Used for caller information initialisation
 	callerInitOnce sync.Once
@@ -25,11 +25,6 @@ const (
 	maximumCallerDepth int = 25
 	knownLoggerFrames  int = 8
 )
-
-func init() {
-	// start at the bottom of the stack before the package-name cache is primed
-	minimumCallerDepth = 1
-}
 
 // getPackageName reduces a fully qualified function name to the package name
 // There really ought to be to be a better way...
@@ -48,7 +43,6 @@ func getPackageName(f string) string {
 }
 
 func getCaller() *runtime.Frame {
-
 	// cache this package's fully-qualified name
 	callerInitOnce.Do(func() {
 		pcs := make([]uintptr, 2)
