@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"strconv"
-	"strings"
 
 	sq "github.com/Masterminds/squirrel"
 )
@@ -190,61 +189,4 @@ func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, f
 			When("DifferenceTypeChanged AND entry_in_son", "entry_ctid").
 			Else("NULL"), "entry_ctid")).
 		FromSelect(RemoveNonRelevantQ, "t1")
-}
-
-func sqTopEntryV(branchID int64, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
-	lineageFilter, _, isDeletedAlias := sqLineageConditions(branchID, lineage)
-	baseSelect := sq.Select().
-		FromSelect(sqEntriesV(requestedCommit), "e\n").
-		Where(lineageFilter).
-		Columns("e.path", "e.branch_id AS source_branch", "e.is_committed", "e.is_tombstone").
-		Distinct().Options(" ON (e.branch_id,e.path)").
-		Column(isDeletedAlias).
-		OrderBy("e.branch_id,e.path,e.commit_weight DESC")
-	minSelect := sq.Select(" path").
-		FromSelect(baseSelect, "e").
-		Where("not e.is_deleted")
-	return minSelect
-}
-
-func sqListByPrefix(prefix, after, delimiter string, branchID int64, maxLines int, requestedCommit CommitID, lineage []lineageCommit) sq.SelectBuilder {
-	if strings.HasSuffix(after, delimiter) {
-		after += DirectoryTermination
-	}
-	prefixLen := len(prefix) + 1
-	endOfPrefixRange := prefix + DirectoryTermination
-	strPosV := sq.Expr("strPos(substr(e.path,?),?)", prefixLen, delimiter)
-	pathWithOutPrefixV := sq.Expr("substr(e.path,?)", prefixLen)
-	directoryPartV := sq.ConcatExpr("left(", pathWithOutPrefixV, ",", strPosV, ")")
-	tmp := sq.Case().
-		When(sq.ConcatExpr(strPosV, " > 0\n"), sq.ConcatExpr(directoryPartV, " || chr(1000000) \n")).
-		Else(pathWithOutPrefixV)
-	getNextMarkerV := sq.ConcatExpr("\n", tmp, "\n")
-	cteStart := sq.Select("1 as num").
-		Column(sq.Alias(getNextMarkerV, "marker")).
-		FromSelect(sq.Select("min(path) as path").
-			FromSelect(sqTopEntryV(branchID, requestedCommit, lineage), "e").
-			Where(" e.path > ? and e.path < ? ", prefix+after, endOfPrefixRange), "e")
-	nextMarkerSelect := sq.Select().FromSelect(
-		sq.Select("min(path) as path").FromSelect(
-			sq.Select("path").FromSelect(
-				sqTopEntryV(branchID, requestedCommit, lineage), "e").
-				Where(" e.path > ?  || d.marker and e.path < ? ", prefix, endOfPrefixRange), "e"), "e").
-		Column(getNextMarkerV)
-
-	dirListV := sq.Select("1 as num", "marker").
-		Prefix(`WITH RECURSIVE dir_list AS (`).
-		FromSelect(cteStart, "t").
-		SuffixExpr(
-			sq.ConcatExpr("\nUNION ALL\n",
-				sq.Select("d.num + 1 as num").
-					Column( // calculate the next entry
-						sq.ConcatExpr("(", nextMarkerSelect, ")")).
-					From("dir_list as d").
-					Where("num <= ? and  d.marker is not null and length(d.marker) > 0", maxLines),
-				")",
-				"\n SELECT marker as path",
-				"\nFROM dir_list d",
-				"\nWHERE d.marker IS NOT NULL"))
-	return dirListV
 }
