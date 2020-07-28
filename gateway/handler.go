@@ -16,7 +16,7 @@ import (
 type Handler struct {
 	BareDomain         string
 	sc                 *ServerContext
-	operationId        string
+	operationID        string
 	NotFoundHandler    http.Handler
 	ServerErrorHandler http.Handler
 }
@@ -32,9 +32,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
-
-	requestSummaries.WithLabelValues(h.operationId, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
-
+	requestSummaries.WithLabelValues(h.operationID, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 }
 
 func (h *Handler) servePathBased(r *http.Request) http.Handler {
@@ -79,10 +77,10 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 	case http.MethodGet:
 		handler = &operations.ListBuckets{}
 	default:
-		h.operationId = "not_found_operation"
+		h.operationID = "not_found_operation"
 		return h.NotFoundHandler
 	}
-	h.operationId = reflect.TypeOf(handler).Elem().Name()
+	h.operationID = reflect.TypeOf(handler).Elem().Name()
 	return OperationHandler(h.sc, handler)
 
 }
@@ -137,10 +135,10 @@ func (h *Handler) pathBasedHandler(method, repository, ref, path string) http.Ha
 	case http.MethodPut:
 		handler = &operations.PutObject{}
 	default:
-		h.operationId = "not_found_operation"
+		h.operationID = "not_found_operation"
 		return h.NotFoundHandler
 	}
-	h.operationId = reflect.TypeOf(handler).Elem().Name()
+	h.operationID = reflect.TypeOf(handler).Elem().Name()
 	return PathOperationHandler(h.sc, repository, ref, path, handler)
 }
 
@@ -148,7 +146,7 @@ func (h *Handler) repositoryBasedHandler(method, repository string) http.Handler
 	var handler operations.RepoOperationHandler
 	switch method {
 	case http.MethodDelete, http.MethodPut:
-		h.operationId = "unsupported_operation"
+		h.operationID = "unsupported_operation"
 		return unsupportedOperationHandler()
 	case http.MethodHead:
 		handler = &operations.HeadBucket{}
@@ -157,10 +155,10 @@ func (h *Handler) repositoryBasedHandler(method, repository string) http.Handler
 	case http.MethodGet:
 		handler = &operations.ListObjects{}
 	default:
-		h.operationId = "not_found_operation"
+		h.operationID = "not_found_operation"
 		return h.NotFoundHandler
 	}
-	h.operationId = reflect.TypeOf(handler).Elem().Name()
+	h.operationID = reflect.TypeOf(handler).Elem().Name()
 
 	return RepoOperationHandler(h.sc, repository, handler)
 }

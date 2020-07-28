@@ -8,6 +8,6 @@ import (
 var requestSummaries = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
 		Name: "gateway_requests_duration",
-		Help: "request durations for lakeFS gateway",
+		Help: "request durations in seconds for lakeFS gateway",
 	},
-	[]string{"operation_id", "code"})
+	[]string{"operation", "code"})
