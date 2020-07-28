@@ -30,6 +30,13 @@ DOCKER_TAG=dev
 VERSION=dev
 export VERSION
 
+# This cannot detect whether untracked files have yet to be added.
+# That is sort-of a git feature, but can be a limitation here.
+DIRTY=$(shell git diff-index --quiet HEAD -- || echo '.with.local.changes')
+GIT_REF=$(shell git rev-parse --short HEAD --)
+REVISION=$(GIT_REF)$(DIRTY)
+export REVISION
+
 all: build
 
 clean:
@@ -55,7 +62,8 @@ gen-api: ## Run the go-swagger code generator (Docker required)
 validate-swagger:  ## Validate swagger.yaml
 	$(SWAGGER) validate swagger.yml
 
-build: gen docs ## Download dependecies and Build the default binary
+DEFINE_LD_VARS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
+build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKECTL_BINARY_NAME)
 
