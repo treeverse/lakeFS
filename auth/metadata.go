@@ -8,6 +8,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type MetadataManager interface {
@@ -89,7 +90,7 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 
 		err = writeMetadata(tx, metadata)
 		return nil, err
-	})
+	}, db.WithLogger(logging.Dummy()))
 
 	return metadata, err
 }
