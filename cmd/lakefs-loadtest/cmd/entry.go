@@ -139,7 +139,6 @@ var entryCmd = &cobra.Command{
 					if usePgx {
 						err = insertEntryPgx(ctx, pool, branchID, &ent)
 					} else {
-						//err := c.CreateEntry(ctx, repository, "master", ent)
 						err = insertEntry(ctx, database, branchID, &ent)
 					}
 					if err != nil {
@@ -166,32 +165,6 @@ var entryCmd = &cobra.Command{
 			fmt.Printf("%d requests failed!\n", errCount)
 		}
 	},
-}
-
-func insertEntryPgxTx(ctx context.Context, pool *pgxpool.Pool, branchID int64, entry *catalog.Entry) error {
-	conn, err := pool.Acquire(ctx)
-	if err != nil {
-		return err
-	}
-	defer conn.Release()
-
-	var ctid string
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return err
-	}
-	defer tx.Rollback(ctx)
-	err = tx.QueryRow(ctx, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
-			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=max_commit_id()
-			RETURNING ctid`,
-		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata).
-		Scan(&ctid)
-	if err != nil {
-		return err
-	}
-	tx.Commit(ctx)
-	return nil
 }
 
 func insertEntryPgx(ctx context.Context, pool *pgxpool.Pool, branchID int64, entry *catalog.Entry) error {

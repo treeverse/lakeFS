@@ -60,7 +60,6 @@ func ReadAllWithTimeout(r io.Reader, buf []byte, timeout time.Duration) (n int, 
 	start := time.Now()
 	timedOut := false
 	for n < desired && err == nil {
-
 		var nn int
 		nn, err = r.Read(buf[n:])
 		n += nn

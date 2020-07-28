@@ -917,7 +917,7 @@ func (s *DBAuthService) Authorize(req *AuthorizationRequest) (*AuthorizationResp
 					continue
 				}
 				for _, action := range stmt.Action {
-					if !wildcard.Match(action, string(perm.Action)) {
+					if !wildcard.Match(action, perm.Action) {
 						continue // not a matching action
 					}
 
