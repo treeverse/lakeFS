@@ -272,8 +272,8 @@ func (g *MSClient) copy(fromDB, fromTable, toDB, toTable, serde string, symlink 
 	return err
 }
 
-func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
-	table, err := g.getTable(FromDB, fromTable)
+func (g *MSClient) merge(fromDB, fromTable, toDB, toTable, serde string, symlink bool, transformLocation func(location string) (string, error)) error {
+	table, err := g.getTable(fromDB, fromTable)
 	if err != nil {
 		return err
 	}
@@ -294,7 +294,7 @@ func (g *MSClient) merge(FromDB, fromTable, toDB, toTable, serde string, symlink
 			table.StorageDescriptor.SetInputFormat(metastore.SymlinkInputFormat)
 		}
 	}
-	partitions, err := g.getAllPartitions(FromDB, fromTable)
+	partitions, err := g.getAllPartitions(fromDB, fromTable)
 	if err != nil {
 		return err
 	}

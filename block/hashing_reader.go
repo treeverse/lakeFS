@@ -45,11 +45,11 @@ func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
 	for hashType := range hashTypes {
 		switch hashType {
 		case HashFunctionMD5:
-			if s.Md5 != nil {
+			if s.Md5 == nil {
 				s.Md5 = md5.New() //nolint:gosec
 			}
 		case HashFunctionSHA256:
-			if s.Sha256 != nil {
+			if s.Sha256 == nil {
 				s.Sha256 = sha256.New()
 			}
 		default:
