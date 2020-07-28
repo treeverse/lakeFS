@@ -219,7 +219,7 @@ func metricsMiddleware(ctx *middleware.Context, next http.Handler) http.Handler 
 		mrw := httputil.NewMetricResponseWriter(w)
 		next.ServeHTTP(mrw, r)
 		if ok {
-			requestSummaries.
+			requestHistograms.
 				WithLabelValues(route.Operation.ID, strconv.Itoa(mrw.StatusCode)).
 				Observe(time.Since(start).Seconds())
 		}
