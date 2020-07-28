@@ -3,9 +3,10 @@ package onboard
 import (
 	"context"
 	"fmt"
+	"time"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"time"
 )
 
 const (
@@ -15,7 +16,6 @@ const (
 
 type Importer struct {
 	repository         string
-	batchSize          int
 	inventoryGenerator block.InventoryGenerator
 	inventory          block.Inventory
 	CatalogActions     RepoActions

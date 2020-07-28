@@ -73,16 +73,12 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 	var handler operations.AuthenticatedOperationHandler
 
 	// no repository given
-	switch r.Method {
-	case http.MethodGet:
-		handler = &operations.ListBuckets{}
-	default:
-		h.operationID = "not_found_operation"
-		return h.NotFoundHandler
+	if r.Method == http.MethodGet {
+		h.operationID = "list_buckets"
+		return OperationHandler(h.sc, &operations.ListBuckets{})
 	}
-	h.operationID = reflect.TypeOf(handler).Elem().Name()
-	return OperationHandler(h.sc, handler)
-
+	h.operationID = "not_found_operation"
+	return h.NotFoundHandler
 }
 
 func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {

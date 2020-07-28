@@ -108,7 +108,7 @@ func (c *Config) BuildDatabaseConnection() db.Database {
 	return database
 }
 
-func (c *Config) buildS3Adapter() block.Adapter {
+func (c *Config) buildS3Adapter() (block.Adapter, error) {
 	cfg := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.s3.region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
@@ -125,7 +125,10 @@ func (c *Config) buildS3Adapter() block.Adapter {
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
 
-	sess := session.Must(session.NewSession(cfg))
+	sess, err := session.NewSession(cfg)
+	if err != nil {
+		return nil, err
+	}
 	sess.ClientConfig(s3.ServiceName)
 	svc := s3.New(sess)
 	adapter := s3a.NewAdapter(svc,
@@ -134,28 +137,28 @@ func (c *Config) buildS3Adapter() block.Adapter {
 	log.WithFields(log.Fields{
 		"type": "s3",
 	}).Info("initialized blockstore adapter")
-	return adapter
+	return adapter, nil
 }
 
-func (c *Config) buildLocalAdapter() block.Adapter {
+func (c *Config) buildLocalAdapter() (block.Adapter, error) {
 	location := viper.GetString("blockstore.local.path")
 	location, err := homedir.Expand(location)
 	if err != nil {
-		panic(fmt.Errorf("could not parse blockstore location URI: %w", err))
+		return nil, fmt.Errorf("could not parse blockstore location URI: %w", err)
 	}
 
 	adapter, err := local.NewAdapter(location)
 	if err != nil {
-		panic(fmt.Errorf("got error opening a local block adapter with path %s: %s", location, err))
+		return nil, fmt.Errorf("got error opening a local block adapter with path %s: %w", location, err)
 	}
 	log.WithFields(log.Fields{
 		"type": "local",
 		"path": location,
 	}).Info("initialized blockstore adapter")
-	return adapter
+	return adapter, nil
 }
 
-func (c *Config) BuildBlockAdapter() block.Adapter {
+func (c *Config) BuildBlockAdapter() (block.Adapter, error) {
 	blockstore := viper.GetString("blockstore.type")
 	logging.Default().
 		WithField("type", blockstore).
@@ -166,13 +169,12 @@ func (c *Config) BuildBlockAdapter() block.Adapter {
 	case s3a.BlockstoreType:
 		return c.buildS3Adapter()
 	case mem.BlockstoreType, "memory":
-		return mem.New()
+		return mem.New(), nil
 	case transient.BlockstoreType:
-		return transient.New()
+		return transient.New(), nil
 	default:
-		err := fmt.Errorf("blockstore '%s' is not a valid type, please choose one of %s",
+		return nil, fmt.Errorf("blockstore '%s' is not a valid type, please choose one of %s",
 			blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
-		panic(err)
 	}
 }
 

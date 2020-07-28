@@ -162,7 +162,10 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 		return "", err
 	}
 	h := sha256.New()
-	h.Write(data)
+	_, err = h.Write(data)
+	if err != nil {
+		return "", err
+	}
 	code := h.Sum(nil)
 	mpu.parts[partNumber] = data
 	return fmt.Sprintf("%x", code), nil
@@ -181,7 +184,7 @@ func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, _ *block.MultipartUploadCompletion) (*string, int64, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
 	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
@@ -191,12 +194,15 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	}
 	data := mpu.get()
 	h := sha256.New()
-	h.Write(data)
+	_, err := h.Write(data)
+	if err != nil {
+		return nil, 0, err
+	}
 	code := h.Sum(nil)
-	hex := fmt.Sprintf("%x", code)
+	hexCode := fmt.Sprintf("%x", code)
 	a.uploadIdTranslator.RemoveUploadId(uploadId)
 	a.data[getKey(obj)] = data
-	return &hex, int64(len(data)), nil
+	return &hexCode, int64(len(data)), nil
 }
 
 func (a *Adapter) ValidateConfiguration(_ string) error {
