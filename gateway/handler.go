@@ -2,6 +2,7 @@ package gateway
 
 import (
 	"net/http"
+	"reflect"
 	"strconv"
 	"strings"
 	"time"
@@ -32,7 +33,6 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	start := time.Now()
 	mrw := httputil.NewMetricResponseWriter(w)
 
-	handler.ServeHTTP(mrw, r)
 	requestSummaries.WithLabelValues(h.operationId, strconv.Itoa(mrw.StatusCode)).Observe(time.Since(start).Seconds())
 
 }
@@ -72,15 +72,19 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 
 		return h.repositoryBasedHandler(r.Method, repository)
 	}
+	var handler operations.AuthenticatedOperationHandler
 
 	// no repository given
 	switch r.Method {
 	case http.MethodGet:
-		h.operationId = "list_buckets"
-		return OperationHandler(h.sc, &operations.ListBuckets{})
+		handler = &operations.ListBuckets{}
+	default:
+		h.operationId = "not_found_operation"
+		return h.NotFoundHandler
 	}
+	h.operationId = reflect.TypeOf(handler).Elem().Name()
+	return OperationHandler(h.sc, handler)
 
-	return h.NotFoundHandler
 }
 
 func (h *Handler) serveVirtualHost(r *http.Request) http.Handler {
@@ -123,25 +127,20 @@ func (h *Handler) pathBasedHandler(method, repository, ref, path string) http.Ha
 	var handler operations.PathOperationHandler
 	switch method {
 	case http.MethodDelete:
-		h.operationId = "delete_object"
 		handler = &operations.DeleteObject{}
 	case http.MethodPost:
-		h.operationId = "post_object"
 		handler = &operations.PostObject{}
 	case http.MethodGet:
-		h.operationId = "get_object"
 		handler = &operations.GetObject{}
 	case http.MethodHead:
-		h.operationId = "head_object"
 		handler = &operations.HeadObject{}
 	case http.MethodPut:
-		h.operationId = "put_object"
 		handler = &operations.PutObject{}
 	default:
 		h.operationId = "not_found_operation"
 		return h.NotFoundHandler
 	}
-
+	h.operationId = reflect.TypeOf(handler).Elem().Name()
 	return PathOperationHandler(h.sc, repository, ref, path, handler)
 }
 
@@ -149,21 +148,19 @@ func (h *Handler) repositoryBasedHandler(method, repository string) http.Handler
 	var handler operations.RepoOperationHandler
 	switch method {
 	case http.MethodDelete, http.MethodPut:
-		h.operationId = "unsupported_opeartion"
+		h.operationId = "unsupported_operation"
 		return unsupportedOperationHandler()
 	case http.MethodHead:
-		h.operationId = "head_bucket"
 		handler = &operations.HeadBucket{}
 	case http.MethodPost:
-		h.operationId = "delete_objects"
 		handler = &operations.DeleteObjects{}
 	case http.MethodGet:
-		h.operationId = "list_objects"
 		handler = &operations.ListObjects{}
 	default:
 		h.operationId = "not_found_operation"
 		return h.NotFoundHandler
 	}
+	h.operationId = reflect.TypeOf(handler).Elem().Name()
 
 	return RepoOperationHandler(h.sc, repository, handler)
 }
