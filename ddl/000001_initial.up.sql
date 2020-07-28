@@ -68,9 +68,6 @@ CREATE TABLE IF NOT EXISTS auth_installation_metadata (
 );
 
 -- catalog schema, containing information about lakeFS metadata
-
-CREATE EXTENSION IF NOT EXISTS pg_trgm WITH SCHEMA public;
-
 CREATE FUNCTION max_commit_id() RETURNS bigint
     LANGUAGE sql IMMUTABLE COST 1
 AS $$ select 1000000000000000000::bigint $$;
