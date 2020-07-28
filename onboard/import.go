@@ -16,7 +16,6 @@ const (
 
 type Importer struct {
 	repository         string
-	batchSize          int
 	inventoryGenerator block.InventoryGenerator
 	inventory          block.Inventory
 	CatalogActions     RepoActions

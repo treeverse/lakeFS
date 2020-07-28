@@ -395,7 +395,6 @@ func (g *MSClient) CopyOrMergeToSymlink(fromDB, fromTable, toDB, toTable, locati
 }
 
 func (g *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.MetaDiff, error) {
-
 	diffColumns, err := g.getColumnDiff(fromDB, fromTable, toDB, toTable)
 	if err != nil {
 		return nil, err
@@ -411,8 +410,8 @@ func (g *MSClient) Diff(fromDB, fromTable, toDB, toTable string) (*metastore.Met
 	}, nil
 }
 
-func (g *MSClient) getPartitionsDiff(FromDB string, fromTable string, toDB string, toTable string) (catalog.Differences, error) {
-	partitions, err := g.getAllPartitions(FromDB, fromTable)
+func (g *MSClient) getPartitionsDiff(fromDB string, fromTable string, toDB string, toTable string) (catalog.Differences, error) {
+	partitions, err := g.getAllPartitions(fromDB, fromTable)
 	if err != nil {
 		return nil, err
 	}

@@ -111,7 +111,6 @@ func (c *Controller) Context() context.Context {
 // Configure attaches our API operations to a generated swagger API stub
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (c *Controller) Configure(api *operations.LakefsAPI) {
-
 	// Register operations here
 	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
 	api.AuthListUsersHandler = c.ListUsersHandler()
@@ -172,7 +171,6 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
 	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
-
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {

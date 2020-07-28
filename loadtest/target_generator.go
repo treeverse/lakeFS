@@ -20,7 +20,7 @@ type TargetGenerator struct {
 
 func randomFilepath(basename string) string {
 	var sb strings.Builder
-	depth := rand.Intn(10)
+	depth := rand.Intn(10) //nolint:gosec
 	for i := 0; i < depth; i++ {
 		dirSuffix := rand.Intn(3)
 		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))

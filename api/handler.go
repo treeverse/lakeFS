@@ -45,7 +45,6 @@ type Handler struct {
 	migrator     db.Migrator
 	apiServer    *restapi.Server
 	handler      *http.ServeMux
-	server       *http.Server
 	dedupCleaner *dedup.Cleaner
 	logger       logging.Logger
 }
