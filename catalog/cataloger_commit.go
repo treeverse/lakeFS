@@ -58,7 +58,7 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 
 		// insert commit record
 		creationDate := c.clock.Now()
-		_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, committer, message, creation_date, metadata, merge_type,previous_commit_id)
+		_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,metadata,merge_type,previous_commit_id)
 			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
 			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone, lastCommitID)
 		if err != nil {
@@ -83,10 +83,10 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 }
 
 func commitUpdateCommittedEntriesWithMaxCommit(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`UPDATE entries_v SET max_commit = $2
+	res, err := tx.Exec(`UPDATE catalog_entries_v SET max_commit = $2
 			WHERE branch_id = $1 AND is_committed
 				AND max_commit = $3
-				AND path in (SELECT path FROM entries_v WHERE branch_id = $1 AND NOT is_committed)`,
+				AND path in (SELECT path FROM catalog_entries_v WHERE branch_id = $1 AND NOT is_committed)`,
 		branchID, commitID, MaxCommitID)
 	if err != nil {
 		return 0, err
@@ -95,8 +95,8 @@ func commitUpdateCommittedEntriesWithMaxCommit(tx sqlx.Execer, branchID int64, c
 }
 
 func commitDeleteUncommittedTombstones(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`DELETE FROM entries_v WHERE branch_id = $1 AND NOT is_committed AND is_tombstone AND path IN (
-		SELECT path FROM entries_v WHERE branch_id = $1 AND is_committed AND max_commit = $2)`,
+	res, err := tx.Exec(`DELETE FROM catalog_entries_v WHERE branch_id = $1 AND NOT is_committed AND is_tombstone AND path IN (
+		SELECT path FROM catalog_entries_v WHERE branch_id = $1 AND is_committed AND max_commit = $2)`,
 		branchID, commitID)
 	if err != nil {
 		return 0, err
@@ -105,7 +105,7 @@ func commitDeleteUncommittedTombstones(tx sqlx.Execer, branchID int64, commitID 
 }
 
 func commitTombstones(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`UPDATE entries_v SET min_commit = $2, max_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND is_deleted`,
+	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2, max_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND is_deleted`,
 		branchID, commitID)
 	if err != nil {
 		return 0, err
@@ -114,7 +114,7 @@ func commitTombstones(tx sqlx.Execer, branchID int64, commitID CommitID) (int64,
 }
 
 func commitEntries(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`UPDATE entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND NOT is_deleted`,
+	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND NOT is_deleted`,
 		branchID, commitID)
 	if err != nil {
 		return 0, err
