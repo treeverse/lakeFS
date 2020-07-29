@@ -1,6 +1,7 @@
 package retention
 
 import (
+	"errors"
 	"time"
 
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -27,9 +28,12 @@ func (s *DBRetentionService) GetPolicy(repositoryName string) (*catalog.PolicyWi
 			repositoryName,
 			dbConfigKey,
 		)
+		if errors.Is(err, db.ErrNotFound) {
+			return nil, nil
+		}
 		return policy, err
 	})
-	if err != nil {
+	if err != nil || o == nil {
 		return nil, err
 	}
 	policy := o.(catalog.PolicyWithCreationTime)
