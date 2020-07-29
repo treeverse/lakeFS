@@ -27,8 +27,8 @@ type mpu struct {
 }
 
 func newMPU() *mpu {
-	UUIDBytes := [16]byte(uuid.New())
-	uploadID := hex.EncodeToString(UUIDBytes[:])
+	uid := uuid.New()
+	uploadID := hex.EncodeToString(uid[:])
 	return &mpu{
 		id:    uploadID,
 		parts: make(map[int64][]byte),
