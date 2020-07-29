@@ -67,6 +67,7 @@ var expireCmd = &cobra.Command{
 		// it is easier to understand separated logs, and safer to expire one repository
 		// at a time.
 		numFailures := 0
+		ok := true
 		for _, repo := range repos {
 			repoLogger := logger.WithFields(logging.Fields{
 				"repository": repo.Name,
@@ -75,26 +76,42 @@ var expireCmd = &cobra.Command{
 			policy, err := retentionService.GetPolicy(repo.Name)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to get retention policy (skip repo)")
+				numFailures++
 				continue
 			}
 			if policy == nil {
 				repoLogger.Info("no retention policy for this repository - skip")
+				// (not a failure)
+				continue
 			}
 			expiryRows, err := cataloger.QueryExpired(ctx, repo.Name, &policy.Policy)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to query for expired (skip repo)")
+				numFailures++
 				continue
 			}
 			expiryReader, err := retention.WriteExpiryResultsToSeekableReader(ctx, expiryRows)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to write expiry results (skip repo)")
+				numFailures++
 				continue
 			}
 
-			retention.ExpireOnS3(ctx, s3ControlClient, s3Client, cataloger, expiryReader, &expiryParams)
+			errCh := retention.ExpireOnS3(ctx, s3ControlClient, s3Client, cataloger, expiryReader, &expiryParams)
+
+			repoOk := true
+			for err := range errCh {
+				repoOk = false
+				repoLogger.Error(err)
+			}
+			if !repoOk {
+				numFailures++
+				ok = false
+				continue
+			}
 		}
-		if numFailures > 0 {
-			logger.Fatalf("Configuration issues found in %d repositories", numFailures)
+		if numFailures > 0 || !ok {
+			logger.Fatalf("Failed to expire on %d repositories; errors emitted above", numFailures)
 		}
 	},
 	Hidden: true,
