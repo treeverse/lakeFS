@@ -27,9 +27,9 @@ func createPolicies(authService Service, policies []*model.Policy) error {
 	return nil
 }
 
-func attachPolicies(authService Service, groupId string, policyIds []string) error {
-	for _, policyId := range policyIds {
-		err := authService.AttachPolicyToGroup(policyId, groupId)
+func attachPolicies(authService Service, groupID string, policyIDs []string) error {
+	for _, policyID := range policyIDs {
+		err := authService.AttachPolicyToGroup(policyID, groupID)
 		if err != nil {
 			return err
 		}
@@ -105,7 +105,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		},
 		{
 			CreatedAt:   ts,
-			DisplayName: "RepoManagmentFullAccess",
+			DisplayName: "RepoManagementFullAccess",
 			Statement: model.Statements{
 				{
 					Action: []string{
@@ -163,7 +163,7 @@ func SetupBaseGroups(authService Service, ts time.Time) error {
 		return err
 	}
 
-	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagmentFullAccess"})
+	err = attachPolicies(authService, "Admins", []string{"FSFullAccess", "AuthFullAccess", "RepoManagementFullAccess"})
 	if err != nil {
 		return err
 	}

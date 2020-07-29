@@ -20,9 +20,11 @@ type TargetGenerator struct {
 
 func randomFilepath(basename string) string {
 	var sb strings.Builder
-	depth := rand.Intn(10) //nolint:gosec
+	const maxDepthLevel = 10
+	const maxDirSuffixes = 3
+	depth := rand.Intn(maxDepthLevel) //nolint:gosec
 	for i := 0; i < depth; i++ {
-		dirSuffix := rand.Intn(3)
+		dirSuffix := rand.Intn(maxDirSuffixes)
 		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))
 	}
 	return sb.String() + basename
@@ -40,7 +42,7 @@ func (t *TargetGenerator) GenerateCreateFileTargets(repo, branch string, num int
 	now := time.Now().UnixNano()
 	result := make([]vegeta.Target, num)
 	for i := 0; i < num; i++ {
-		randomContent := rand.Int()
+		randomContent := rand.Int() //nolint:gosec
 		fileContent := "--" + boundary + "\n" +
 			"Content-Disposition: form-data; name=\"content\"; filename=\"file\"\n" +
 			"Content-Type: text/plain\n\n" +
@@ -82,7 +84,6 @@ func (t *TargetGenerator) GenerateMergeToMasterTarget(repo, branch string) veget
 		fmt.Sprintf("%s/repositories/%s/refs/%s/merge/master", t.ServerAddress, repo, branch),
 		"{}",
 		"merge")
-
 }
 
 func (t *TargetGenerator) GenerateListTarget(repo, branch string, amount int) vegeta.Target {
@@ -115,25 +116,25 @@ func GetRequestType(res vegeta.Result) string {
 }
 
 func addTypeToURL(u, typ string) string {
-	parsedUrl, err := url.Parse(u)
+	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return u
 	}
-	parsedQuery, err := url.ParseQuery(parsedUrl.RawQuery)
+	parsedQuery, err := url.ParseQuery(parsedURL.RawQuery)
 	if err != nil {
 		return u
 	}
 	parsedQuery.Add("loader-request-type", typ)
-	parsedUrl.RawQuery = parsedQuery.Encode()
-	return parsedUrl.String()
+	parsedURL.RawQuery = parsedQuery.Encode()
+	return parsedURL.String()
 }
 
 func getTypeFromURL(u string) string {
-	parsedUrl, err := url.Parse(u)
+	parsedURL, err := url.Parse(u)
 	if err != nil {
 		return ""
 	}
-	parsedQuery, err := url.ParseQuery(parsedUrl.RawQuery)
+	parsedQuery, err := url.ParseQuery(parsedURL.RawQuery)
 	if err != nil {
 		return ""
 	}

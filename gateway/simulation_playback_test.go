@@ -30,7 +30,7 @@ const (
 type simulationEvent struct {
 	eventTime    time.Time
 	request      []byte
-	uploadId     []byte
+	uploadID     []byte
 	statusCode   int
 	baseName     string
 	bodyReader   *os.File
@@ -59,8 +59,8 @@ func DoTestRun(handler http.Handler, timed bool, speed float64, t *testing.T) {
 	}
 	_, toKeep := os.LookupEnv("KEEP_RESULTS")
 	if !toKeep {
-		os.RemoveAll(simulator.PlaybackParams.PlaybackDir)
-		os.RemoveAll(simulator.PlaybackParams.RecordingDir)
+		_ = os.RemoveAll(simulator.PlaybackParams.PlaybackDir)
+		_ = os.RemoveAll(simulator.PlaybackParams.RecordingDir)
 	}
 }
 
@@ -100,10 +100,9 @@ func buildEventList(t *testing.T) []simulationEvent {
 			logging.Default().WithError(err).Fatal("Failed to unmarshal event " + file + "\n")
 		}
 		evt.statusCode = se.Status
-		evt.uploadId = []byte(se.UploadID)
+		evt.uploadID = []byte(se.UploadID)
 		evt.request = []byte(se.Request)
 		simulationEvents = append(simulationEvents, *evt)
-
 	}
 	return simulationEvents
 }
@@ -122,8 +121,8 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 		if err != nil {
 			logging.Default().WithError(err).Fatal("could not create Request from URL")
 		}
-		if len(event.uploadId) > 0 {
-			IdTranslator.ExpectedId = string(event.uploadId)
+		if len(event.uploadID) > 0 {
+			IdTranslator.ExpectedID = string(event.uploadID)
 		}
 
 		secondDiff := time.Duration(float64(event.eventTime.Add(durationToAdd).Sub(time.Now())) / playbackSpeed)
@@ -131,13 +130,13 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 			t.Log("\nwait: ", secondDiff, "\n")
 			time.Sleep(secondDiff)
 		}
-		currentResult := ServeRecordedHTTP(request, handler, &event, simulationMisses, t)
+		currentResult := ServeRecordedHTTP(request, handler, &event, simulationMisses)
 		allStatusEqual = currentResult && allStatusEqual
 	}
 	return allStatusEqual
 }
 
-func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *simulator.LazyOutput, t *testing.T) bool {
+func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationEvent, simulationMisses *simulator.LazyOutput) bool {
 	statusEqual := true
 	event.originalBody = r.Body
 	r.Body = event
@@ -161,7 +160,7 @@ func ServeRecordedHTTP(r *http.Request, handler http.Handler, event *simulationE
 	if respWrite.StatusCode != event.statusCode {
 		eventNumber := event.baseName[len(event.baseName)-5:]
 		logging.Default().Warnf("Unexpected status %d, expected %d on event number %s - %s %s", respWrite.StatusCode, event.statusCode, eventNumber, r.Method, r.RequestURI)
-		fmt.Fprintf(simulationMisses, "different status event %s recorded\t%d current\t%d\n",
+		_, _ = fmt.Fprintf(simulationMisses, "different status event %s recorded\t%d current\t%d\n",
 			event.baseName, event.statusCode, respWrite.StatusCode)
 		statusEqual = false
 	}

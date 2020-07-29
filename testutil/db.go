@@ -27,8 +27,8 @@ const (
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
 	envKeyUseS3BlockAdapter = "USE_S3_BLOCK_ADAPTER"
-	envKeyAws               = "AWS_ACCESS_KEY_ID"
-	envKeyAwsSecret         = "AWS_SECRET_ACCESS_KEY"
+	envKeyAwsKeyID          = "AWS_ACCESS_KEY_ID"
+	envKeyAwsSecretKey      = "AWS_SECRET_ACCESS_KEY"
 	envKeyAwsRegion         = "AWS_DEFAULT_REGION"
 )
 
@@ -146,7 +146,7 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByEnv(translator block.UploadIdTranslator) block.Adapter {
+func NewBlockAdapterByEnv(translator block.UploadIDTranslator) block.Adapter {
 	_, useS3 := os.LookupEnv(envKeyUseS3BlockAdapter)
 	isLocal := !useS3
 	if isLocal {
@@ -160,8 +160,8 @@ func NewBlockAdapterByEnv(translator block.UploadIdTranslator) block.Adapter {
 	cfg := &aws.Config{
 		Region: aws.String(awsRegion),
 	}
-	awsSecret, secretOk := os.LookupEnv(envKeyAwsSecret)
-	awsKey, keyOk := os.LookupEnv(envKeyAws)
+	awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
+	awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
 	if keyOk && secretOk {
 		cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
 	} else {

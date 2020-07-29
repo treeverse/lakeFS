@@ -25,7 +25,7 @@ import (
 
 var (
 	pool        *dockertest.Pool
-	databaseUri string
+	databaseURI string
 )
 
 func TestMain(m *testing.M) {
@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-	databaseUri, closer = testutil.GetDBInstance(pool)
+	databaseURI, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
 	closer() // cleanup
 	os.Exit(code)
@@ -53,13 +53,13 @@ func TestLocalLoad(t *testing.T) {
 	if testing.Short() {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
-	conn, _ := testutil.GetDB(t, databaseUri)
+	conn, _ := testutil.GetDB(t, databaseURI)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
-	migrator := db.NewDatabaseMigrator(databaseUri)
+	migrator := db.NewDatabaseMigrator(databaseURI)
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
 		// order is important - close cataloger channel before dedup

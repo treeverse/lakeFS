@@ -63,8 +63,8 @@ func TestGatewayRecording(t *testing.T) {
 			}
 
 			setGlobalPlaybackParams(basename)
-			os.RemoveAll(simulator.PlaybackParams.RecordingDir)
-			os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
+			_ = os.RemoveAll(simulator.PlaybackParams.RecordingDir)
+			_ = os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
 			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
 			handler, _ := getBasicHandler(t, basename)
 			DoTestRun(handler, false, 1.0, t)
@@ -74,7 +74,7 @@ func TestGatewayRecording(t *testing.T) {
 
 var (
 	pool        *dockertest.Pool
-	databaseUri string
+	databaseURI string
 )
 
 func TestMain(m *testing.M) {
@@ -84,7 +84,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-	databaseUri, closer = testutil.GetDBInstance(pool)
+	databaseURI, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
 	closer() // cleanup
 	os.Exit(code)
@@ -104,15 +104,15 @@ func (m *mockCollector) CollectEvent(class, action string) {
 
 }
 
-var IdTranslator *testutil.UploadIdTranslator
+var IdTranslator *testutil.UploadIDTranslator
 
 func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
-	IdTranslator = &testutil.UploadIdTranslator{TransMap: make(map[string]string),
-		ExpectedId: "",
+	IdTranslator = &testutil.UploadIDTranslator{TransMap: make(map[string]string),
+		ExpectedID: "",
 		T:          t,
 	}
 
-	conn, _ := testutil.GetDB(t, databaseUri)
+	conn, _ := testutil.GetDB(t, databaseURI)
 	cataloger := catalog.NewCataloger(conn)
 
 	blockAdapter := testutil.NewBlockAdapterByEnv(IdTranslator)
