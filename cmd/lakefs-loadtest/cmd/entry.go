@@ -181,7 +181,7 @@ func insertEntryPgx(ctx context.Context, pool *pgxpool.Pool, branchID int64, ent
 	var ctid string
 	err = conn.QueryRow(ctx, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
 			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=max_commit_id()
+			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=catalog_max_commit_id()
 			RETURNING ctid`,
 		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata).
 		Scan(&ctid)
@@ -193,7 +193,7 @@ func insertEntry(ctx context.Context, database db.Database, branchID int64, entr
 		var ctid string
 		err := tx.Get(&ctid, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
 			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=max_commit_id()
+			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=catalog_max_commit_id()
 			RETURNING ctid`,
 			branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata)
 		return ctid, err

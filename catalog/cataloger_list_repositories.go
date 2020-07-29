@@ -14,7 +14,7 @@ func (c *cataloger) ListRepositories(ctx context.Context, limit int, after strin
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		query := `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
-			FROM repositories r JOIN branches b ON r.default_branch = b.id 
+			FROM catalog_repositories r JOIN catalog_branches b ON r.default_branch = b.id 
 			WHERE r.name > $1
 			ORDER BY r.name
 			LIMIT $2`

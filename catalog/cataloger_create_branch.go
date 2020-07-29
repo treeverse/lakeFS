@@ -28,20 +28,20 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 
 		// get source branch id and
 		var sourceBranchID int
-		if err := tx.Get(&sourceBranchID, `SELECT id FROM branches WHERE repository_id=$1 AND name=$2`,
+		if err := tx.Get(&sourceBranchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
 			repoID, sourceBranch); err != nil {
 			return nil, fmt.Errorf("source branch id: %w", err)
 		}
 
 		// next id for branch
 		var branchID int64
-		if err := tx.Get(&branchID, `SELECT nextval('branches_id_seq')`); err != nil {
+		if err := tx.Get(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
 			return nil, fmt.Errorf("next branch id: %w", err)
 		}
 
 		// insert new branch
-		if _, err := tx.Exec(`INSERT INTO branches (repository_id, id, name, lineage)
-			VALUES($1,$2,$3,(SELECT $4::bigint||lineage FROM branches WHERE id=$4))`,
+		if _, err := tx.Exec(`INSERT INTO catalog_branches (repository_id, id, name, lineage)
+			VALUES($1,$2,$3,(SELECT $4::bigint||lineage FROM catalog_branches WHERE id=$4))`,
 			repoID, branchID, branch, sourceBranchID); err != nil {
 			return nil, fmt.Errorf("insert branch: %w", err)
 		}
@@ -53,13 +53,13 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 			CommitID          CommitID `db:"commit_id"`
 			MergeSourceCommit CommitID `db:"merge_source_commit"`
 		}{}
-		err = tx.Get(&insertReturns, `INSERT INTO commits (branch_id,commit_id,previous_commit_id,committer,message,
+		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
-			VALUES ($1,nextval('commit_id_seq'),0,$2,$3,$4,$5,'from_father',
-				(select (select max(commit_id) from commits where branch_id=$5)|| 
-					(select distinct on (branch_id) lineage_commits from commits 
+			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,$4,$5,'from_father',
+				(select (select max(commit_id) from catalog_commits where branch_id=$5)|| 
+					(select distinct on (branch_id) lineage_commits from catalog_commits 
 						where branch_id=$5 and merge_type='from_father' order by branch_id,commit_id desc))
-						,(select max(commit_id) from commits where branch_id=$5 ))
+						,(select max(commit_id) from catalog_commits where branch_id=$5 ))
 			RETURNING commit_id,merge_source_commit`,
 			branchID, CatalogerCommitter, createBranchCommitMessage, creationDate, sourceBranchID)
 		if err != nil {

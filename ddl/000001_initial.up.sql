@@ -67,51 +67,47 @@ CREATE TABLE IF NOT EXISTS auth_installation_metadata (
     key_value text NOT NULL
 );
 
--- catalog schema, containing information about lakeFS metadata
-CREATE FUNCTION max_commit_id() RETURNS bigint
+-- catalog: containing information about lakeFS metadata
+
+CREATE FUNCTION catalog_max_commit_id() RETURNS bigint
     LANGUAGE sql IMMUTABLE COST 1
 AS $$ select 1000000000000000000::bigint $$;
 
-CREATE TYPE commit_status AS ENUM (
+CREATE TYPE catalog_commit_status AS ENUM (
     'not_committed',
     'committed',
     'deleted'
 );
 
-CREATE TYPE lineage_rec AS (
-	branch_id bigint,
-	commit_id bigint
-);
-
-CREATE TYPE merge_type AS ENUM (
+CREATE TYPE catalog_merge_type AS ENUM (
     'none',
     'from_father',
     'from_son',
     'non_direct'
 );
 
-CREATE SEQUENCE branches_id_seq
+CREATE SEQUENCE catalog_branches_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
 
-CREATE TABLE branches (
+CREATE TABLE catalog_branches (
     repository_id integer NOT NULL,
-    id integer DEFAULT nextval('branches_id_seq'::regclass) NOT NULL,
+    id integer DEFAULT nextval('catalog_branches_id_seq'::regclass) NOT NULL,
     name character varying(64) NOT NULL,
     lineage bigint[] DEFAULT array[]::bigint[]
 );
 
-CREATE SEQUENCE commit_id_seq
+CREATE SEQUENCE catalog_commit_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 10;
 
-CREATE TABLE commits(
+CREATE TABLE catalog_commits (
     branch_id           bigint                                 NOT NULL,
     commit_id           bigint                                 NOT NULL,
     previous_commit_id  bigint                                 NOT NULL,
@@ -121,20 +117,11 @@ CREATE TABLE commits(
     metadata            jsonb,
     merge_source_branch bigint,
     merge_source_commit bigint,
-    merge_type          merge_type               DEFAULT 'none'::merge_type,
+    merge_type          catalog_merge_type               DEFAULT 'none'::catalog_merge_type,
     lineage_commits     bigint[]                 DEFAULT array []::bigint[]
 );
 
-CREATE VIEW commits_v AS
- SELECT commits.branch_id,
-    commits.commit_id,
-    commits.merge_source_branch,
-    commits.merge_source_commit,
-    commits.merge_type,
-    commits.lineage_commits
-   FROM commits;
-
-CREATE TABLE entries (
+CREATE TABLE catalog_entries (
     branch_id bigint NOT NULL,
     path character varying NOT NULL,
     physical_address character varying,
@@ -143,13 +130,13 @@ CREATE TABLE entries (
     checksum character varying(64) NOT NULL,
     metadata jsonb,
     min_commit bigint DEFAULT 0 NOT NULL,
-    max_commit bigint DEFAULT max_commit_id() NOT NULL,
+    max_commit bigint DEFAULT catalog_max_commit_id() NOT NULL,
     -- If set, entry has expired.  Requests to retrieve may return "410 Gone".
     is_expired BOOLEAN DEFAULT false NOT NULL
 );
-ALTER TABLE ONLY entries ALTER COLUMN path SET STATISTICS 10000;
+ALTER TABLE ONLY catalog_entries ALTER COLUMN path SET STATISTICS 10000;
 
-CREATE VIEW entries_v AS
+CREATE VIEW catalog_entries_v AS
  SELECT e.branch_id,
     e.path,
     e.physical_address,
@@ -160,16 +147,16 @@ CREATE VIEW entries_v AS
     e.min_commit,
     e.max_commit,
     (e.min_commit <> 0) AS is_committed,
-    (e.max_commit < max_commit_id()) AS is_deleted,
+    (e.max_commit < catalog_max_commit_id()) AS is_deleted,
     ((e.max_commit < e.min_commit) OR (e.max_commit = 0)) AS is_tombstone,
     e.ctid AS entry_ctid,
         CASE e.min_commit
-            WHEN 0 THEN max_commit_id()
+            WHEN 0 THEN catalog_max_commit_id()
             ELSE e.min_commit
         END AS commit_weight
-   FROM entries e;
+   FROM catalog_entries e;
 
-CREATE TABLE multipart_uploads (
+CREATE TABLE catalog_multipart_uploads (
     repository_id integer NOT NULL,
     upload_id character varying NOT NULL,
     path character varying NOT NULL,
@@ -177,13 +164,13 @@ CREATE TABLE multipart_uploads (
     physical_address character varying
 );
 
-CREATE TABLE object_dedup (
+CREATE TABLE catalog_object_dedup (
     repository_id integer NOT NULL,
     dedup_id bytea NOT NULL,
     physical_address character varying NOT NULL
 );
 
-CREATE TABLE repositories (
+CREATE TABLE catalog_repositories (
     id integer NOT NULL,
     name character varying(64) NOT NULL,
     storage_namespace character varying NOT NULL,
@@ -191,15 +178,14 @@ CREATE TABLE repositories (
     default_branch integer NOT NULL
 );
 
-CREATE SEQUENCE repositories_id_seq
+CREATE SEQUENCE catalog_repositories_id_seq
     START WITH 1
     INCREMENT BY 1
     NO MINVALUE
     NO MAXVALUE
     CACHE 1;
 
-CREATE TABLE IF NOT EXISTS repositories_config
-(
+CREATE TABLE IF NOT EXISTS catalog_repositories_config (
     repository_id integer     NOT NULL,
     key           varchar     NOT NULL,
     value         jsonb       NOT NULL,
@@ -209,52 +195,52 @@ CREATE TABLE IF NOT EXISTS repositories_config
     PRIMARY KEY (repository_id, key)
 );
 
-ALTER TABLE ONLY branches
-    ADD CONSTRAINT branches_pk PRIMARY KEY (id);
+ALTER TABLE ONLY catalog_branches
+    ADD CONSTRAINT catalog_branches_pk PRIMARY KEY (id);
 
-ALTER TABLE ONLY commits
-    ADD CONSTRAINT commits_pkey PRIMARY KEY (branch_id, commit_id);
+ALTER TABLE ONLY catalog_commits
+    ADD CONSTRAINT catalog_commits_pk PRIMARY KEY (branch_id, commit_id);
 
-ALTER TABLE ONLY entries
-    ADD CONSTRAINT entries_pk PRIMARY KEY (path, branch_id, min_commit) INCLUDE (max_commit);
+ALTER TABLE ONLY catalog_entries
+    ADD CONSTRAINT catalog_entries_pk PRIMARY KEY (path, branch_id, min_commit) INCLUDE (max_commit);
 
-ALTER TABLE ONLY multipart_uploads
-    ADD CONSTRAINT multipart_uploads_pkey PRIMARY KEY (upload_id);
+ALTER TABLE ONLY catalog_multipart_uploads
+    ADD CONSTRAINT catalog_multipart_uploads_pk PRIMARY KEY (upload_id);
 
-ALTER TABLE ONLY object_dedup
-    ADD CONSTRAINT object_dedup_pkey PRIMARY KEY (repository_id, dedup_id);
+ALTER TABLE ONLY catalog_object_dedup
+    ADD CONSTRAINT catalog_object_dedup_pk PRIMARY KEY (repository_id, dedup_id);
 
-ALTER TABLE ONLY repositories
-    ADD CONSTRAINT repositories_pk PRIMARY KEY (id);
+ALTER TABLE ONLY catalog_repositories
+    ADD CONSTRAINT catalog_repositories_pk PRIMARY KEY (id);
 
-ALTER TABLE ONLY repositories_config
-    ADD CONSTRAINT repositories_config_fk FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE;
+ALTER TABLE ONLY catalog_repositories_config
+    ADD CONSTRAINT catalog_repositories_config_fk FOREIGN KEY (repository_id) REFERENCES catalog_repositories(id) ON DELETE CASCADE;
 
-CREATE UNIQUE INDEX branches_repository_name_uindex ON branches USING btree (name, repository_id);
+CREATE UNIQUE INDEX catalog_branches_repository_name_uindex ON catalog_branches USING btree (name, repository_id);
 
-CREATE INDEX fki_branch_repository_fk ON branches USING btree (repository_id);
+CREATE INDEX catalog_fki_branch_repository_fk ON catalog_branches USING btree (repository_id);
 
-CREATE INDEX fki_entries_branches_fk ON entries USING btree (branch_id);
+CREATE INDEX catalog_fki_entries_branches_fk ON catalog_entries USING btree (branch_id);
 
-CREATE INDEX fki_repositories_branches_id_fkey ON repositories USING btree (default_branch);
+CREATE INDEX catalog_fki_repositories_branches_id_fk ON catalog_repositories USING btree (default_branch);
 
-CREATE UNIQUE INDEX repositories_name_uindex ON repositories USING btree (name);
+CREATE UNIQUE INDEX catalog_repositories_name_uindex ON catalog_repositories USING btree (name);
 
-ALTER TABLE ONLY branches
-    ADD CONSTRAINT branch_repository_fk FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE ONLY catalog_branches
+    ADD CONSTRAINT branch_repository_fk FOREIGN KEY (repository_id) REFERENCES catalog_repositories(id) ON DELETE CASCADE NOT VALID;
 
-ALTER TABLE ONLY commits
-    ADD CONSTRAINT commits_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE;
+ALTER TABLE ONLY catalog_commits
+    ADD CONSTRAINT catalog_commits_branches_repository_id_fk FOREIGN KEY (branch_id) REFERENCES catalog_branches(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY entries
-    ADD CONSTRAINT entries_branches_fk FOREIGN KEY (branch_id) REFERENCES branches(id) ON DELETE CASCADE NOT VALID;
+ALTER TABLE ONLY catalog_entries
+    ADD CONSTRAINT catalog_entries_branches_fk FOREIGN KEY (branch_id) REFERENCES catalog_branches(id) ON DELETE CASCADE NOT VALID;
 
-ALTER TABLE ONLY multipart_uploads
-    ADD CONSTRAINT multipart_uploads_repository_id_fkey FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE;
+ALTER TABLE ONLY catalog_multipart_uploads
+    ADD CONSTRAINT catalog_multipart_uploads_repository_id_fk FOREIGN KEY (repository_id) REFERENCES catalog_repositories(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY object_dedup
-    ADD CONSTRAINT object_dedup_repository_id_fkey FOREIGN KEY (repository_id) REFERENCES repositories(id) ON DELETE CASCADE;
+ALTER TABLE ONLY catalog_object_dedup
+    ADD CONSTRAINT catalog_object_dedup_repository_id_fk FOREIGN KEY (repository_id) REFERENCES catalog_repositories(id) ON DELETE CASCADE;
 
-ALTER TABLE ONLY repositories
-    ADD CONSTRAINT repositories_branches_id_fkey FOREIGN KEY (default_branch) REFERENCES branches(id) DEFERRABLE INITIALLY DEFERRED NOT VALID;
+ALTER TABLE ONLY catalog_repositories
+    ADD CONSTRAINT catalog_repositories_branches_id_fk FOREIGN KEY (default_branch) REFERENCES catalog_branches(id) DEFERRABLE INITIALLY DEFERRED NOT VALID;
 
