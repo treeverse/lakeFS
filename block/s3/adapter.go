@@ -126,6 +126,9 @@ func (s *Adapter) PutWithoutStream(obj block.ObjectPointer, sizeBytes int64, rea
 }
 
 func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+	var err error
+	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
+
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
@@ -141,6 +144,8 @@ func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 }
 
 func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+	var err error
+	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
@@ -239,6 +244,9 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 }
 
 func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+	var err error
+	var sizeBytes int64
+	defer reportMetrics("Get", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
@@ -253,10 +261,14 @@ func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 		log.WithError(err).Error("failed to get S3 object")
 		return nil, err
 	}
+	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
 }
 
 func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+	var err error
+	var sizeBytes int64
+	defer reportMetrics("GetRange", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, err
@@ -275,10 +287,13 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 		}).Error("failed to get S3 object range")
 		return nil, err
 	}
+	sizeBytes = *objectOutput.ContentLength
 	return objectOutput.Body, nil
 }
 
 func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+	var err error
+	defer reportMetrics("GetProperties", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return block.Properties{}, err
@@ -295,6 +310,8 @@ func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 }
 
 func (s *Adapter) Remove(obj block.ObjectPointer) error {
+	var err error
+	defer reportMetrics("Remove", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
@@ -316,6 +333,8 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 }
 
 func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+	var err error
+	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
@@ -343,6 +362,8 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 }
 
 func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
+	var err error
+	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
@@ -365,6 +386,8 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 }
 
 func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	var err error
+	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return nil, 0, err
