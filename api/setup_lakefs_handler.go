@@ -68,7 +68,7 @@ func setupLakeFSHandler(authService auth.Service, meta auth.MetadataManager, mig
 		}
 
 		resp := model.CredentialKeys{
-			AccessKeyId:     cred.AccessKeyId,
+			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
 		}
 		respJSON, err := json.Marshal(resp)

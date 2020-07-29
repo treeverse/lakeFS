@@ -50,28 +50,28 @@ func (s *DBRetentionService) SetPolicy(repositoryName string, policy *Policy, cr
 }
 
 type Service interface {
-	GetPolicy(repositoryId string) (*models.RetentionPolicyWithCreationDate, error)
-	UpdatePolicy(repositoryId string, modelPolicy *models.RetentionPolicy) error
+	GetPolicy(repositoryID string) (*models.RetentionPolicyWithCreationDate, error)
+	UpdatePolicy(repositoryID string, modelPolicy *models.RetentionPolicy) error
 }
 
 type ModelService struct {
 	dbService *DBRetentionService
 }
 
-func (ts *ModelService) GetPolicy(repositoryId string) (*models.RetentionPolicyWithCreationDate, error) {
-	dbPolicy, err := ts.dbService.GetPolicy(repositoryId)
+func (ts *ModelService) GetPolicy(repositoryID string) (*models.RetentionPolicyWithCreationDate, error) {
+	dbPolicy, err := ts.dbService.GetPolicy(repositoryID)
 	if err != nil {
 		return nil, err
 	}
 	return RenderPolicyWithCreationDate(dbPolicy), nil
 }
 
-func (ts *ModelService) UpdatePolicy(repositoryId string, modelPolicy *models.RetentionPolicy) error {
+func (ts *ModelService) UpdatePolicy(repositoryID string, modelPolicy *models.RetentionPolicy) error {
 	policy, err := ParsePolicy(*modelPolicy)
 	if err != nil {
 		return err
 	}
-	return ts.dbService.SetPolicy(repositoryId, policy, time.Now())
+	return ts.dbService.SetPolicy(repositoryID, policy, time.Now())
 }
 
 func NewService(db db.Database) *ModelService {

@@ -19,7 +19,7 @@ import (
 
 var (
 	pool        *dockertest.Pool
-	databaseUri string
+	databaseURI string
 )
 
 func TestMain(m *testing.M) {
@@ -29,14 +29,14 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logging.Default().Fatalf("Could not connect to Docker: %s", err)
 	}
-	databaseUri, closer = testutil.GetDBInstance(pool)
+	databaseURI, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
 	closer() // cleanup
 	os.Exit(code)
 }
 
 func setupService(t *testing.T, opts ...testutil.GetDBOption) auth.Service {
-	adb, _ := testutil.GetDB(t, databaseUri, opts...)
+	adb, _ := testutil.GetDB(t, databaseURI, opts...)
 	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{
 		Enabled: false,
 	})

@@ -61,7 +61,7 @@ var initCmd = &cobra.Command{
 		stats.CollectEvent("global", "init")
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
-			credentials.AccessKeyId, credentials.AccessSecretKey)
+			credentials.AccessKeyID, credentials.AccessSecretKey)
 
 		cancelFn()
 		<-stats.Done()

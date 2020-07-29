@@ -76,7 +76,7 @@ func EncodePath(pathName string) string {
 }
 
 type SigContext interface {
-	GetAccessKeyId() string
+	GetAccessKeyID() string
 }
 
 type SigAuthenticator interface {

@@ -44,9 +44,10 @@ type contextKey string
 
 const (
 	// Maximum amount of results returned for paginated queries to the API
-	MaxResultsPerPage            = 1000
-	lakeFSPrefix                 = "symlinks"
-	UserContextKey    contextKey = "user"
+	MaxResultsPerPage                = 1000
+	DefaultResultsPerPage            = 100
+	lakeFSPrefix                     = "symlinks"
+	UserContextKey        contextKey = "user"
 )
 
 type Dependencies struct {
@@ -196,7 +197,7 @@ func pageAmount(i *int64) int {
 		return MaxResultsPerPage
 	}
 	if inti <= 0 {
-		return 100
+		return DefaultResultsPerPage
 	}
 	return inti
 }
@@ -391,7 +392,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		}
 
 		serializedCommits := make([]*models.Commit, len(commitLog))
-		lastId := ""
+		lastID := ""
 		for i, commit := range commitLog {
 			serializedCommits[i] = &models.Commit{
 				Committer:    commit.Committer,
@@ -401,7 +402,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 				Metadata:     commit.Metadata,
 				Parents:      commit.Parents,
 			}
-			lastId = commit.Reference
+			lastID = commit.Reference
 		}
 
 		returnValue := commits.NewGetBranchCommitLogOK().WithPayload(&commits.GetBranchCommitLogOKBody{
@@ -413,7 +414,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 			Results: serializedCommits,
 		})
 		if hasMore {
-			returnValue.Payload.Pagination.NextOffset = lastId
+			returnValue.Payload.Pagination.NextOffset = lastID
 		}
 		return returnValue
 	})
@@ -530,10 +531,10 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 		}
 
 		branchList := make([]string, len(res))
-		var lastId string
+		var lastID string
 		for i, branch := range res {
 			branchList[i] = branch.Name
-			lastId = branch.Name
+			lastID = branch.Name
 		}
 		returnValue := branches.NewListBranchesOK().WithPayload(&branches.ListBranchesOKBody{
 			Pagination: &models.Pagination{
@@ -545,7 +546,7 @@ func (c *Controller) ListBranchesHandler() branches.ListBranchesHandler {
 		})
 
 		if hasMore {
-			returnValue.Payload.Pagination.NextOffset = lastId
+			returnValue.Payload.Pagination.NextOffset = lastID
 		}
 
 		return returnValue
@@ -1006,7 +1007,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		}
 
 		objList := make([]*models.ObjectStats, len(res))
-		var lastId string
+		var lastID string
 		for i, entry := range res {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
@@ -1026,7 +1027,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					SizeBytes: entry.Size,
 				}
 			}
-			lastId = entry.Path
+			lastID = entry.Path
 		}
 		returnValue := objects.NewListObjectsOK().WithPayload(&objects.ListObjectsOKBody{
 			Pagination: &models.Pagination{
@@ -1038,7 +1039,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 		})
 
 		if hasMore {
-			returnValue.Payload.Pagination.NextOffset = lastId
+			returnValue.Payload.Pagination.NextOffset = lastID
 		}
 		return returnValue
 	})
@@ -1731,7 +1732,7 @@ func (c *Controller) ListUserCredentialsHandler() authop.ListUserCredentialsHand
 		response := make([]*models.Credentials, len(credentials))
 		for i, c := range credentials {
 			response[i] = &models.Credentials{
-				AccessKeyID:  c.AccessKeyId,
+				AccessKeyID:  c.AccessKeyID,
 				CreationDate: c.IssuedDate.Unix(),
 			}
 		}
@@ -1766,7 +1767,7 @@ func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler 
 
 		return authop.NewCreateCredentialsCreated().
 			WithPayload(&models.CredentialsWithSecret{
-				AccessKeyID:     credentials.AccessKeyId,
+				AccessKeyID:     credentials.AccessKeyID,
 				AccessSecretKey: credentials.AccessSecretKey,
 				CreationDate:    credentials.IssuedDate.Unix(),
 			})
@@ -1826,7 +1827,7 @@ func (c *Controller) GetCredentialsHandler() authop.GetCredentialsHandler {
 
 		return authop.NewGetCredentialsOK().
 			WithPayload(&models.Credentials{
-				AccessKeyID:  credentials.AccessKeyId,
+				AccessKeyID:  credentials.AccessKeyID,
 				CreationDate: credentials.IssuedDate.Unix(),
 			})
 	})

@@ -67,7 +67,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 	if err != nil {
 		logger.WithError(err).Fatal("FAILED create directory for recordings")
 	}
-	uploadIdRegexp := regexp.MustCompile(`<UploadId>([^\\b<]+)</UploadId>`)
+	uploadIDRegexp := regexp.MustCompile(`<UploadId>([^\\b<]+)</UploadId>`)
 
 	return http.HandlerFunc(
 		func(w http.ResponseWriter, r *http.Request) {
@@ -88,7 +88,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			respWriter.Headers = make(http.Header)
 			rawQuery := r.URL.RawQuery
 			if (rawQuery == "uploads=") || (rawQuery == "uploads") { // initial post for s3 multipart upload
-				respWriter.UploadIdRegexp = uploadIdRegexp
+				respWriter.UploadIDRegexp = uploadIDRegexp
 			}
 			newBody := &recordingBodyReader{recorder: NewLazyOutput(filepath.Join(recordingDir, nameBase+RequestBodyExtension)),
 				originalBody: r.Body}
@@ -99,7 +99,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 				_ = newBody.recorder.Close()
 			}()
 			next.ServeHTTP(respWriter, r)
-			logRequest(r, respWriter.uploadId, nameBase, respWriter.StatusCode, recordingDir)
+			logRequest(r, respWriter.uploadID, nameBase, respWriter.StatusCode, recordingDir)
 		})
 }
 
@@ -113,7 +113,7 @@ func ShutdownRecorder() {
 	compressRecordings(testDir, recordingDir)
 }
 
-func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode int, recordingDir string) {
+func logRequest(r *http.Request, uploadID []byte, nameBase string, statusCode int, recordingDir string) {
 	request, err := httputil.DumpRequest(r, false)
 	if err != nil || len(request) == 0 {
 		logging.Default().
@@ -123,7 +123,7 @@ func logRequest(r *http.Request, uploadId []byte, nameBase string, statusCode in
 	}
 	event := StoredEvent{
 		Request:  string(request),
-		UploadID: string(uploadId),
+		UploadID: string(uploadID),
 		Status:   statusCode,
 	}
 	if event.Status == 0 {
@@ -154,19 +154,19 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 		logging.Default().WithError(err).
 			Fatal("failed getting access key using authenticator ")
 	}
-	accessKeyId := authContext.GetAccessKeyId()
-	creds, err := authService.GetCredentials(accessKeyId)
+	accessKeyID := authContext.GetAccessKeyID()
+	creds, err := authService.GetCredentials(accessKeyID)
 	if err != nil {
 		logging.Default().
 			WithError(err).
-			WithFields(logging.Fields{"Access Key": accessKeyId}).
+			WithFields(logging.Fields{"Access Key": accessKeyID}).
 			Fatal("failed getting credentials")
 	}
 	conf := &PlayBackMockConf{
 		BareDomain:      bareDomain,
-		AccessKeyId:     accessKeyId,
+		AccessKeyID:     accessKeyID,
 		AccessSecretKey: creds.AccessSecretKey,
-		UserId:          creds.UserId,
+		UserID:          creds.UserID,
 		Region:          region,
 	}
 	confByte, err := json.Marshal(conf)
@@ -175,7 +175,7 @@ func createConfFile(r *http.Request, authService GatewayAuthService, region, bar
 			WithError(err).
 			Fatal("couldn't marshal configuration")
 	}
-	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0644)
+	err = ioutil.WriteFile(filepath.Join(recordingDir, SimulationConfig), confByte, 0644) //nolint:gosec
 	if err != nil {
 		logging.Default().
 			WithError(err).

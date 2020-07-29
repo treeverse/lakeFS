@@ -36,11 +36,11 @@ var commitCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		branchUri := uri.Must(uri.Parse(args[0]))
+		branchURI := uri.Must(uri.Parse(args[0]))
 
 		// do commit
 		client := getClient()
-		commit, err := client.Commit(context.Background(), branchUri.Repository, branchUri.Ref, message, kvPairs)
+		commit, err := client.Commit(context.Background(), branchURI.Repository, branchURI.Ref, message, kvPairs)
 		if err != nil {
 			DieErr(err)
 		}
@@ -48,7 +48,7 @@ var commitCmd = &cobra.Command{
 		Write(commitCreateTemplate, struct {
 			Branch *uri.URI
 			Commit *models.Commit
-		}{branchUri, commit})
+		}{branchURI, commit})
 	},
 }
 
