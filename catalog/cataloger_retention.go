@@ -16,10 +16,10 @@ import (
 // TODO(ariels) Move retention policy CRUD from retention service to
 // here.
 
-const entriesTable = "entries"
+const entriesTable = "catalog_entries"
 
 func byRepository(repository string) sq.Sqlizer {
-	return sq.Expr("repositories.name = ?", repository)
+	return sq.Expr("catalog_repositories.name = ?", repository)
 }
 
 func byPathPrefix(pathPrefix string) sq.Sqlizer {
@@ -27,7 +27,7 @@ func byPathPrefix(pathPrefix string) sq.Sqlizer {
 		return sq.Eq{}
 	}
 	parts := strings.SplitN(pathPrefix, "/", 2)
-	branchExpr := sq.Eq{"branches.name": parts[0]}
+	branchExpr := sq.Eq{"catalog_branches.name": parts[0]}
 	if len(parts) == 1 || parts[1] == "" {
 		return branchExpr
 	}
@@ -36,7 +36,7 @@ func byPathPrefix(pathPrefix string) sq.Sqlizer {
 }
 
 func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
-	return sq.Expr("NOW() - entries.creation_date > make_interval(hours => ?)", int(hours))
+	return sq.Expr("NOW() - catalog_entries.creation_date > make_interval(hours => ?)", int(hours))
 }
 
 type retentionQueryRecord struct {
@@ -49,7 +49,7 @@ type retentionQueryRecord struct {
 
 func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
 	var (
-		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < max_commit_id()")
+		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
 		byUncommitted = sq.Expr("min_commit = 0")
 	)
 
@@ -87,11 +87,11 @@ func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.Sel
 		ruleSelectors = append(ruleSelectors, selector)
 	}
 
-	query := psql.Select("physical_address", "branches.name AS branch", "branch_id", "path", "min_commit").
+	query := psql.Select("physical_address", "catalog_branches.name AS branch", "branch_id", "path", "min_commit").
 		From(entriesTable).
 		Where(sq.And{repositorySelector, sq.Or(ruleSelectors)})
-	query = query.Join("branches ON entries.branch_id = branches.id").
-		Join("repositories on branches.repository_id = repositories.id")
+	query = query.Join("catalog_branches ON catalog_entries.branch_id = catalog_branches.id").
+		Join("catalog_repositories on catalog_branches.repository_id = catalog_repositories.id")
 	return query
 }
 
@@ -184,7 +184,7 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 			return nil, fmt.Errorf("executing: %w", err)
 		}
 
-		result, err := tx.Exec(`UPDATE entries SET is_expired = true
+		result, err := tx.Exec(`UPDATE catalog_entries SET is_expired = true
 		    WHERE (path, branch_id, min_commit) IN (SELECT path, branch_id, min_commit FROM temp_expiry)`)
 		if err != nil {
 			return nil, fmt.Errorf("updating entries to expire: %w", err)

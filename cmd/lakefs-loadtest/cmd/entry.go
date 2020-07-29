@@ -104,7 +104,7 @@ var entryCmd = &cobra.Command{
 			uid := strings.ReplaceAll(uuid.New().String(), "-", "")
 			go func() {
 				res, err := database.Transact(func(tx db.Tx) (interface{}, error) {
-					const q = `SELECT b.id FROM branches b join repositories r ON r.id = b.repository_id WHERE r.name = $1 AND b.name = $2`
+					const q = `SELECT b.id FROM catalog_branches b join catalog_repositories r ON r.id = b.repository_id WHERE r.name = $1 AND b.name = $2`
 					if err != nil {
 						return 0, err
 					}
@@ -179,9 +179,9 @@ func insertEntryPgx(ctx context.Context, pool *pgxpool.Pool, branchID int64, ent
 	defer conn.Release()
 
 	var ctid string
-	err = conn.QueryRow(ctx, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
+	err = conn.QueryRow(ctx, `INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
 			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=max_commit_id()
+			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=catalog_max_commit_id()
 			RETURNING ctid`,
 		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata).
 		Scan(&ctid)
@@ -191,9 +191,9 @@ func insertEntryPgx(ctx context.Context, pool *pgxpool.Pool, branchID int64, ent
 func insertEntry(ctx context.Context, database db.Database, branchID int64, entry *catalog.Entry) error {
 	_, err := database.Transact(func(tx db.Tx) (interface{}, error) {
 		var ctid string
-		err := tx.Get(&ctid, `INSERT INTO entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
+		err := tx.Get(&ctid, `INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata) VALUES ($1,$2,$3,$4,$5,$6)
 			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=max_commit_id()
+			DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, max_commit=catalog_max_commit_id()
 			RETURNING ctid`,
 			branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata)
 		return ctid, err
