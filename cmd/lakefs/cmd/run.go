@@ -10,8 +10,6 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/treeverse/lakefs/dedup"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -19,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -46,6 +45,7 @@ var runCmd = &cobra.Command{
 
 		// validate service names and turn on the right flags
 		dbConnString := cfg.GetDatabaseURI()
+
 		dbPool := cfg.BuildDatabaseConnection()
 		defer func() {
 			_ = dbPool.Close()
