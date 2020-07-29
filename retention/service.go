@@ -22,7 +22,7 @@ func (s *DBRetentionService) GetPolicy(repositoryName string) (*PolicyWithCreati
 		var policy PolicyWithCreationTime
 		err := tx.Get(
 			&policy,
-			`SELECT description, (value::json)->'Rules' as rules, created_at FROM repositories_config WHERE repository_id IN (SELECT repository_id FROM repositories WHERE name = $1) AND key = $2`,
+			`SELECT description, (value::json)->'Rules' as rules, created_at FROM catalog_repositories_config WHERE repository_id IN (SELECT repository_id FROM catalog_repositories WHERE name = $1) AND key = $2`,
 			repositoryName,
 			dbConfigKey,
 		)
@@ -38,9 +38,9 @@ func (s *DBRetentionService) GetPolicy(repositoryName string) (*PolicyWithCreati
 func (s *DBRetentionService) SetPolicy(repositoryName string, policy *Policy, creationDate time.Time) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return tx.Exec(
-			`INSERT INTO repositories_config
+			`INSERT INTO catalog_repositories_config
                          SELECT id AS repository_id, $2 AS key, $3 AS value, $4 AS description, $5 AS created_at
-                         FROM repositories WHERE name=$1
+                         FROM catalog_repositories WHERE name=$1
                          ON CONFLICT (repository_id, key)
                          DO UPDATE SET (value, description, created_at) = (EXCLUDED.value, EXCLUDED.description, EXCLUDED.created_at)`,
 			repositoryName, dbConfigKey, &RulesHolder{Rules: policy.Rules}, policy.Description, creationDate,

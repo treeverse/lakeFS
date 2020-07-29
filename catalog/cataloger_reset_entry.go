@@ -19,7 +19,7 @@ func (c *cataloger) ResetEntry(ctx context.Context, repository, branch string, p
 		if err != nil {
 			return nil, err
 		}
-		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id=$1 AND path=$2 AND min_commit=0`, branchID, path)
+		res, err := tx.Exec(`DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=0`, branchID, path)
 		if err != nil {
 			return nil, err
 		}

@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const diffResultsTableName = "diff_results"
+const diffResultsTableName = "catalog_diff_results"
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
 	if err := Validate(ValidateFields{
@@ -76,7 +76,7 @@ func (c *cataloger) diffFromFather(tx db.Tx, fatherID, sonID int64) (Differences
 		return nil, fmt.Errorf("father lineage failed: %w", err)
 	}
 	maxSonQuery, args, err := sq.Select("MAX(commit_id) as max_son_commit").
-		From("commits").
+		From("catalog_commits").
 		Where("branch_id = ? AND merge_type = 'from_father'", sonID).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
@@ -120,7 +120,7 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	}{}
 
 	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS father_effective_commit`, `merge_source_commit AS son_effective_commit`).
-		From("commits").
+		From("catalog_commits").
 		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_son'", fatherID, sonID).
 		OrderBy(`commit_id DESC`).
 		Limit(1).
@@ -137,7 +137,7 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	if effectiveCommitsNotFound {
 		effectiveCommits.SonEffectiveCommit = 1 // we need all commits from the son. so any small number will do
 		fatherEffectiveQuery, args, err := psql.Select("commit_id as father_effective_commit").
-			From("commits").
+			From("catalog_commits").
 			Where("branch_id = ? AND merge_source_branch = ?", sonID, fatherID).
 			OrderBy("commit_id").
 			Limit(1).

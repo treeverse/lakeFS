@@ -19,7 +19,7 @@ func (c *cataloger) DeleteMultipartUpload(ctx context.Context, repository string
 		if err != nil {
 			return nil, err
 		}
-		res, err := tx.Exec(`DELETE FROM multipart_uploads WHERE repository_id = $1 AND upload_id = $2`,
+		res, err := tx.Exec(`DELETE FROM catalog_multipart_uploads WHERE repository_id = $1 AND upload_id = $2`,
 			repoID, uploadID)
 		if err != nil {
 			return nil, err

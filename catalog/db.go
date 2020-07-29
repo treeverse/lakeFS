@@ -21,7 +21,7 @@ const (
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
 func getBranchID(tx db.Tx, repository, branch string, lockType LockType) (int64, error) {
-	const b = `SELECT b.id FROM branches b join repositories r 
+	const b = `SELECT b.id FROM catalog_branches b join catalog_repositories r 
 					ON r.id = b.repository_id
 					WHERE r.name = $1 AND b.name = $2`
 	q, err := formatSQLWithLockType(b, lockType)
@@ -50,26 +50,26 @@ func formatSQLWithLockType(sql string, lockType LockType) (string, error) {
 
 func getRepositoryID(tx db.Tx, repository string) (int, error) {
 	var repoID int
-	err := tx.Get(&repoID, `SELECT id FROM repositories WHERE name=$1`, repository)
+	err := tx.Get(&repoID, `SELECT id FROM catalog_repositories WHERE name=$1`, repository)
 	return repoID, err
 }
 
 func getLastCommitIDByBranchID(tx db.Tx, branchID int64) (CommitID, error) {
 	var commitID CommitID
-	err := tx.Get(&commitID, `SELECT max(commit_id) FROM commits where branch_id=$1`, branchID)
+	err := tx.Get(&commitID, `SELECT max(commit_id) FROM catalog_commits where branch_id=$1`, branchID)
 	return commitID, err
 }
 
 func getNextCommitID(tx db.Tx) (CommitID, error) {
 	var commitID CommitID
-	err := tx.Get(&commitID, `SELECT nextval('commit_id_seq');`)
+	err := tx.Get(&commitID, `SELECT nextval('catalog_commit_id_seq');`)
 	return commitID, err
 }
 
 func getRepository(tx db.Tx, repository string) (*Repository, error) {
 	var r Repository
 	err := tx.Get(&r, `SELECT r.name, r.storage_namespace, b.name as default_branch, r.creation_date
-			FROM repositories r, branches b
+			FROM catalog_repositories r, catalog_branches b
 			WHERE r.id = b.repository_id AND r.default_branch = b.id AND r.name = $1`,
 		repository)
 	if err != nil {
@@ -95,7 +95,7 @@ func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64
 	}
 	var isDirectRelation bool
 	err := tx.Get(&isDirectRelation,
-		`select lineage[1]=$1 from branches where id=$2`, olderBranch, youngerBranch)
+		`select lineage[1]=$1 from catalog_branches where id=$2`, olderBranch, youngerBranch)
 	if err != nil {
 		return RelationTypeNone, err
 	}
@@ -131,8 +131,8 @@ func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, e
 		effectiveCommit = MaxCommitID
 	}
 	sql := `SELECT * FROM UNNEST(
-				(SELECT lineage from branches WHERE id=$1),
-				(SELECT lineage_commits FROM commits WHERE branch_id=$1 AND merge_type='from_father' AND commit_id <= $2 ORDER BY commit_id DESC LIMIT 1)
+				(SELECT lineage from catalog_branches WHERE id=$1),
+				(SELECT lineage_commits FROM catalog_commits WHERE branch_id=$1 AND merge_type='from_father' AND commit_id <= $2 ORDER BY commit_id DESC LIMIT 1)
 			) as t(branch_id, commit_id)`
 	var requestedLineage []lineageCommit
 	err := tx.Select(&requestedLineage, sql, branchID, effectiveCommit)

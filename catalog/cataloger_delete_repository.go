@@ -14,7 +14,7 @@ func (c *cataloger) DeleteRepository(ctx context.Context, repository string) err
 	}
 
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		res, err := tx.Exec(`DELETE FROM repositories WHERE name=$1`, repository)
+		res, err := tx.Exec(`DELETE FROM catalog_repositories WHERE name=$1`, repository)
 		if err != nil {
 			return nil, err
 		}
