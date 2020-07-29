@@ -15,7 +15,6 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/logging"
 )
 
 const BlockstoreType = "mem"
@@ -110,12 +109,6 @@ func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadClose
 	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, fmt.Errorf("no data for key")
-	}
-	if expectedSize > 0 && int64(len(data)) != expectedSize {
-		logging.Default().WithFields(logging.Fields{
-			"expected_size": expectedSize,
-			"size":          len(data),
-		}).Warn("data size doesn't match")
 	}
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }

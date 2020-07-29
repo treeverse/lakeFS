@@ -331,9 +331,9 @@ func parseHexUint(v []byte) (n uint64, err error) {
 		case '0' <= b && b <= '9':
 			b -= '0'
 		case 'a' <= b && b <= 'f':
-			b -= 'a' + 10
+			b -= 'a' - 10
 		case 'A' <= b && b <= 'F':
-			b -= 'A' + 10
+			b -= 'A' - 10
 		default:
 			return 0, errors.New("invalid byte in chunk length")
 		}
