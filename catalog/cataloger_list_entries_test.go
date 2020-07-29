@@ -425,6 +425,69 @@ func TestCataloger_list_by_level_with_delete(t *testing.T) {
 	}
 }
 
+func TestCataloger_list_by_level_with_Directories_and_tombstones(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	for i := 0; i < 10; i++ {
+		for j := 0; j < 10; j++ {
+			testCatalogerCreateEntry(t, ctx, c, repo, "master", "xxx"+pathExt(i)+"/entry"+pathExt(j), nil, strconv.Itoa(i*10000))
+		}
+	}
+	_, err := c.Commit(ctx, repo, "master", "message", "committer1", nil)
+	testutil.MustDo(t, "commit to master", err)
+	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
+	for i := 0; i < 10; i += 2 {
+		for j := 0; j < 10; j += 2 {
+			testCatalogerCreateEntry(t, ctx, c, repo, "br_1", "xxx"+pathExt(i)+"/entry"+pathExt(j), nil, strconv.Itoa(i*10000))
+		}
+	}
+	_, err = c.Commit(ctx, repo, "br_1", "message", "committer1", nil)
+	testutil.MustDo(t, "commit to br_1", err)
+	testCatalogerBranch(t, ctx, c, repo, "br_2", "br_1")
+	for i := 0; i < 10; i += 3 {
+		for j := 0; j < 10; j++ {
+			testCatalogerCreateEntry(t, ctx, c, repo, "br_2", "xxx"+pathExt(i)+"/entry"+pathExt(j), nil, strconv.Itoa(i*10000))
+		}
+	}
+	_, err = c.Commit(ctx, repo, "br_2", "message", "committer1", nil)
+	testutil.MustDo(t, "commit to br_2", err)
+	for i := 0; i < 10; i += 3 {
+		for j := 0; j < 10; j++ {
+			testutil.MustDo(t, "delete entry "+"xxx"+pathExt(i)+"/entry"+pathExt(j),
+				c.DeleteEntry(ctx, repo, "br_2", "xxx"+pathExt(i)+"/entry"+pathExt(j)))
+		}
+	}
+	got, gotMore, _ := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
+	if len(got) != 6 {
+		t.Fatalf("expected 6 result, got %d ", len(got))
+	}
+	wantEntries := []string{"xxx001/", "xxx002/", "xxx004/", "xxx005/", "xxx007/", "xxx008/"}
+	for i := 0; i < 6; i++ {
+		if got[i].Path != wantEntries[i] {
+			t.Errorf(" expectd %s, got %s\n", wantEntries[i], got[i].Path)
+		}
+	}
+	if gotMore != false {
+		t.Fatalf("wrong answer to more entries")
+	}
+	got, gotMore, _ = c.ListEntries(ctx, repo, "br_2", "xxx002/", "", "/", 20)
+	if len(got) != 10 {
+		t.Fatalf("expected 6 result, got %d ", len(got))
+	}
+	wantEntries = []string{"xxx002/entry000", "xxx002/entry001", "xxx002/entry002", "xxx002/entry003", "xxx002/entry004", "xxx002/entry005", "xxx002/entry006",
+		"xxx002/entry007", "xxx002/entry008", "xxx002/entry009"}
+	for i := 0; i < 10; i++ {
+		if got[i].Path != wantEntries[i] {
+			t.Errorf(" expectd %s, got %s\n", wantEntries[i], got[i].Path)
+		}
+	}
+	if gotMore != false {
+		t.Fatalf("wrong answer to more entries")
+	}
+}
+
 func pathExt(i int) string {
 	return fmt.Sprintf("%03d", i)
 }
