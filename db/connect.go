@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/dlmiddlecote/sqlstats"
 	"github.com/jmoiron/sqlx"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/treeverse/lakefs/logging"
 )
 
