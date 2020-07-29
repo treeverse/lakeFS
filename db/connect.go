@@ -24,5 +24,15 @@ func ConnectDB(driver string, uri string) (Database, error) {
 		"driver": driver,
 		"uri":    uri,
 	}).Info("initialized DB connection")
+
+	registerPrometheusCollector(conn)
 	return NewSqlxDatabase(conn), nil
+}
+
+func registerPrometheusCollector(conn *sqlx.DB) {
+	collector := sqlstats.NewStatsCollector("lakefs", conn)
+	err := prometheus.Register(collector)
+	if err != nil {
+		logging.Default().WithError(err).Error("failed to register db stats collector")
+	}
 }
