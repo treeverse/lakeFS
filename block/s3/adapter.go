@@ -234,8 +234,11 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			Error("bad S3 PutObject response")
 		return "", err
 	}
-	etag := resp.Header.Get("etag")
-	return etag, nil
+	etag, ok := resp.Header["etag"]
+	if !ok || len(etag) == 0 {
+		return "", ErrMissingETag
+	}
+	return etag[0], nil
 }
 
 func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {

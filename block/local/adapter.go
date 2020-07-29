@@ -169,7 +169,7 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 }
 
 func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
-	ETag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
+	etag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
 	partFiles, err := l.getPartFiles(uploadID)
 	if err != nil {
 		return nil, -1, fmt.Errorf("part files not found for %s: %w", uploadID, err)
@@ -179,7 +179,7 @@ func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 		return nil, -1, fmt.Errorf("multipart upload unite for %s: %w", uploadID, err)
 	}
 	l.removePartFiles(partFiles)
-	return &ETag, size, nil
+	return &etag, size, nil
 }
 
 func computeETag(parts []*s3.CompletedPart) string {

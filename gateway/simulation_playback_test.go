@@ -103,7 +103,6 @@ func buildEventList(t *testing.T) []simulationEvent {
 		evt.uploadID = []byte(se.UploadID)
 		evt.request = []byte(se.Request)
 		simulationEvents = append(simulationEvents, *evt)
-
 	}
 	return simulationEvents
 }
