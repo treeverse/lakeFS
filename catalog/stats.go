@@ -5,12 +5,12 @@ import (
 	"github.com/prometheus/client_golang/prometheus/promauto"
 )
 
-var dedupBatchSizeCounter = promauto.NewCounterVec(
-	prometheus.CounterOpts{
-		Name: "dedup_batch_size_count",
-		Help: "A counter for each batch size used by dedup",
+var dedupBatchSizeHistogram = promauto.NewHistogram(
+	prometheus.HistogramOpts{
+		Name:    "dedup_batch_size",
+		Help:    "Dedup batch size histogram",
+		Buckets: prometheus.ExponentialBuckets(1, 4, 5),
 	},
-	[]string{"size"},
 )
 
 var dedupRemoveObjectDroppedCounter = promauto.NewCounter(
