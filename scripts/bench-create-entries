@@ -1,2 +1,0 @@
-#!/bin/sh -x
-wrk2 -R 150k -t 8 -c 100 -s post.lua 'http://localhost:8001'

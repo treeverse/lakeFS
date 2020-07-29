@@ -30,13 +30,13 @@ lakeFS secret key: ```fs.s3a.secret.key```
  In the following examples we set AWS credentials at runtime, for clarity. In production, these properties should be set using one of Hadoop's standard ways of [Authenticating with S3](https://hadoop.apache.org/docs/current/hadoop-aws/tools/hadoop-aws/index.html#Authenticating_with_S3){:target="_blank"}. 
  {: .note}
  
-For example we could add the configurations to thie file ``` hdfs-site.xml```:
+For example, we could add the configurations to the file ``` hdfs-site.xml```:
 ```xml
 <configuration>
 ...
 ...
-<property><name>fs.s3a.secret.key</name><value>dq50hnfLB1qd1zQ8I9l3TeqKnP+1wKr81Bw1BSz1</value></property>
-<property><name>fs.s3a.access.key</name><value>AKIAJF4EV2DBC56IOAOQ</value></property>
+<property><name>fs.s3a.secret.key</name><value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value></property>
+<property><name>fs.s3a.access.key</name><value>AKIAIOSFODNN7EXAMPLE</value></property>
 <property><name>fs.s3a.endpoint</name><value>http://s3.localdev.treeverse.io:8000</value></property>
 </configuration>
 ```

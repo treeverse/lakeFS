@@ -63,7 +63,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 	for _, cas := range cases {
 		t.Run(cas.Name, func(t *testing.T) {
 			// this is just boilerplate to create a signature
-			keys := credentials.NewStaticCredentials("AKIAJIEMTME6UEVWXB2Q", "vlJMuY24GyMRXLca7+V2Xc6IEEAyZTnZ29NJsspN", "")
+			keys := credentials.NewStaticCredentials("AKIAIOSFODNN7EXAMPLE", "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY", "")
 			sigTime, _ := time.Parse("Jan 2 15:04:05 2006 -0700", "Apr 7 15:13:13 2005 -0700")
 			req, _ := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/example/foo", nil)
 			req.Header.Set("Content-Encoding", "aws-chunked")
