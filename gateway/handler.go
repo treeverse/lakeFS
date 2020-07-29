@@ -70,8 +70,6 @@ func (h *Handler) servePathBased(r *http.Request) http.Handler {
 
 		return h.repositoryBasedHandler(r.Method, repository)
 	}
-	var handler operations.AuthenticatedOperationHandler
-
 	// no repository given
 	if r.Method == http.MethodGet {
 		h.operationID = "list_buckets"
