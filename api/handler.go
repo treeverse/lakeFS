@@ -5,9 +5,12 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"strconv"
+	"time"
 
 	"github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
+	"github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi"
@@ -138,7 +141,7 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	// health check
 	mux.Handle("/_health", httputil.ServeHealth())
 	// metrics
-	mux.Handle("/_metrics", promhttp.Handler())
+	mux.Handle("/metrics", promhttp.Handler())
 	// pprof endpoint
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
@@ -163,23 +166,22 @@ func (s *Handler) buildAPI() {
 	}
 	api.BasicAuthAuth = s.BasicAuth()
 	api.JwtTokenAuth = s.JwtTokenAuth()
-
 	// bind our handlers to the server
 	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedupCleaner, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
 	s.apiServer.ConfigureAPI()
-
 	s.setupHandler(
 		// api handler
 		httputil.LoggingMiddleware(
 			RequestIDHeaderName,
 			logging.Fields{"service_name": LoggerServiceName},
 			promhttp.InstrumentHandlerCounter(requestCounter,
-				cookieToAPIHeader(
-					s.apiServer.GetHandler(),
-				),
+				metricsMiddleware(api.Context(),
+					cookieToAPIHeader(
+						s.apiServer.GetHandler(),
+					)),
 			),
 		),
 
@@ -206,5 +208,19 @@ func cookieToAPIHeader(next http.Handler) http.Handler {
 		// header found
 		r.Header.Set(JWTAuthorizationHeaderName, cookie.Value)
 		next.ServeHTTP(w, r)
+	})
+}
+
+func metricsMiddleware(ctx *middleware.Context, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		route, _, ok := ctx.RouteInfo(r)
+		start := time.Now()
+		mrw := httputil.NewMetricResponseWriter(w)
+		next.ServeHTTP(mrw, r)
+		if ok {
+			requestHistograms.
+				WithLabelValues(route.Operation.ID, strconv.Itoa(mrw.StatusCode)).
+				Observe(time.Since(start).Seconds())
+		}
 	})
 }
