@@ -112,7 +112,7 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 		// using an existing repo, no need to create a client
 		return nil, nil
 	}
-	apiClient, err = api.NewClient(t.Config.ServerAddress, t.Config.Credentials.AccessKeyId, t.Config.Credentials.AccessSecretKey)
+	apiClient, err = api.NewClient(t.Config.ServerAddress, t.Config.Credentials.AccessKeyID, t.Config.Credentials.AccessSecretKey)
 	if err != nil {
 		return nil, errors.New("failed to create lakeFS client")
 	}
@@ -183,6 +183,7 @@ func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 	go func() {
 		defer close(errs)
 		for tgt := range in {
+			tgt := tgt // pin
 			err := encoder.Encode(&tgt)
 			if err != nil {
 				errs <- err
@@ -194,5 +195,5 @@ func (t *Loader) streamRequests(in <-chan vegeta.Target) <-chan error {
 }
 
 func getAuth(credentials *model.Credential) string {
-	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyId + ":" + credentials.AccessSecretKey))
+	return base64.StdEncoding.EncodeToString([]byte(credentials.AccessKeyID + ":" + credentials.AccessSecretKey))
 }

@@ -40,7 +40,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 
 	t.Run("list no repos", func(t *testing.T) {
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
-			httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+			httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 
 		if err != nil {
 			t.Fatal(err)
@@ -62,7 +62,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 		testutil.Must(t, deps.cataloger.CreateRepository(ctx, "foo3", "s3://foo1", "master"))
 
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{},
-			httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+			httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 
 		if err != nil {
 			t.Fatal(err)
@@ -80,7 +80,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 		// write some repos
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
 			Amount: swag.Int64(2),
-		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 
 		if err != nil {
 			t.Fatal(err)
@@ -103,7 +103,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 		resp, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{
 			Amount: swag.Int64(2),
 			After:  swag.String("foo2"),
-		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 
 		if err != nil {
 			t.Fatal(err)
@@ -140,7 +140,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 	t.Run("get missing repo", func(t *testing.T) {
 		_, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
 			Repository: "foo1",
-		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 
 		if err == nil {
 			t.Fatalf("expected err calling missing repo")
@@ -157,7 +157,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 			deps.cataloger.CreateRepository(context.Background(), "foo1", "s3://foo1", testBranchName))
 		resp, err := clt.Repositories.GetRepository(&repositories.GetRepositoryParams{
 			Repository: "foo1",
-		}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+		}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 
 		if err != nil {
 			t.Fatalf("unexpected err calling get repo, %v", err)
@@ -176,7 +176,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -234,7 +234,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -292,7 +292,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -343,7 +343,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -392,7 +392,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -459,7 +459,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -537,7 +537,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -586,7 +586,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -644,7 +644,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -690,7 +690,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -778,7 +778,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -886,7 +886,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 	ctx := context.Background()
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -996,7 +996,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -1082,7 +1082,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
@@ -1155,7 +1155,7 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default

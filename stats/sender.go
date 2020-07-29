@@ -19,7 +19,7 @@ var (
 )
 
 type Sender interface {
-	SendEvent(ctx context.Context, installationId, processId string, m []Metric) error
+	SendEvent(ctx context.Context, installationID, processID string, m []Metric) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
 }
 
@@ -86,7 +86,9 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
-
+	defer func() {
+		_ = res.Body.Close()
+	}()
 	if res.StatusCode != http.StatusCreated {
 		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
 	}

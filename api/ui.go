@@ -48,7 +48,7 @@ func UIHandler(authService auth.Service) http.Handler {
 			return
 		}
 		// get user
-		user, err := authService.GetUserById(credentials.UserId)
+		user, err := authService.GetUserByID(credentials.UserID)
 		if err != nil {
 			w.WriteHeader(http.StatusUnauthorized)
 			return

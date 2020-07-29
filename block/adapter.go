@@ -58,27 +58,27 @@ type Adapter interface {
 	Remove(obj ObjectPointer) error
 	CreateMultiPartUpload(obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
 	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
-	AbortMultiPartUpload(obj ObjectPointer, uploadId string) error
-	CompleteMultiPartUpload(obj ObjectPointer, uploadId string, MultipartList *MultipartUploadCompletion) (*string, int64, error)
+	AbortMultiPartUpload(obj ObjectPointer, uploadID string) error
+	CompleteMultiPartUpload(obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*string, int64, error)
 	// ValidateConfiguration validates an appropriate bucket
 	// configuration and returns a validation error or nil.
 	ValidateConfiguration(storageNamespace string) error
 }
 
-type UploadIdTranslator interface {
-	SetUploadId(uploadId string) string
-	TranslateUploadId(simulationId string) string
-	RemoveUploadId(inputUploadId string)
+type UploadIDTranslator interface {
+	SetUploadID(uploadID string) string
+	TranslateUploadID(simulationID string) string
+	RemoveUploadID(inputUploadID string)
 }
 
 // the uploadId translator is required to enable re-play of recorded requests (playback_test)
 // the NoOp translator is the default for non-simulated runs. a playback translator is implemented in playback_test
 type NoOpTranslator struct{}
 
-func (d *NoOpTranslator) SetUploadId(uploadId string) string {
-	return uploadId
+func (d *NoOpTranslator) SetUploadID(uploadID string) string {
+	return uploadID
 }
-func (d *NoOpTranslator) TranslateUploadId(uploadId string) string {
-	return uploadId
+func (d *NoOpTranslator) TranslateUploadID(uploadID string) string {
+	return uploadID
 }
-func (d *NoOpTranslator) RemoveUploadId(_ string) {}
+func (d *NoOpTranslator) RemoveUploadID(_ string) {}

@@ -30,6 +30,7 @@ var (
 
 )
 
+//nolint:gochecknoinits
 func init() {
 	interestingResourcesContainer := []string{
 		"accelerate", "acl", "cors", "defaultObjectAcl",
@@ -66,12 +67,12 @@ func init() {
 }
 
 type v2Context struct {
-	accessKeyId string
+	accessKeyID string
 	signature   []byte
 }
 
-func (a v2Context) GetAccessKeyId() string {
-	return a.accessKeyId
+func (a v2Context) GetAccessKeyID() string {
+	return a.accessKeyID
 }
 
 type V2SigAuthenticator struct {
@@ -100,7 +101,7 @@ func (a *V2SigAuthenticator) Parse() (SigContext, error) {
 				result[name] = match[i]
 			}
 		}
-		ctx.accessKeyId = result["AccessKeyId"]
+		ctx.accessKeyID = result["AccessKeyId"]
 		// parse signature
 		sig, err := base64.StdEncoding.DecodeString(result["Signature"])
 		if err != nil {
@@ -196,7 +197,7 @@ func canonicalString(method string, query url.Values, path string, headers http.
 
 func signCanonicalString(msg string, signature []byte) (digest []byte) {
 	h := hmac.New(sha1.New, signature)
-	h.Write([]byte(msg))
+	_, _ = h.Write([]byte(msg))
 	digest = h.Sum(nil)
 	return
 }

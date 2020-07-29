@@ -99,7 +99,7 @@ func (r *requestBodyTracer) Close() error {
 	return r.body.Close()
 }
 
-func TracingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+func TracingMiddleware(requestIDHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		responseWriter := newResponseTracingWriter(w, RequestTracingMaxResponseBodySize)
@@ -116,7 +116,7 @@ func TracingMiddleware(requestIdHeaderName string, fields logging.Fields, next h
 			requestFields[k] = v
 		}
 		r = r.WithContext(logging.AddFields(r.Context(), requestFields))
-		responseWriter.Header().Set(requestIdHeaderName, reqID)
+		responseWriter.Header().Set(requestIDHeaderName, reqID)
 
 		// record request body as well
 		requestBodyTracer := newRequestBodyTracer(r.Body, RequestTracingMaxRequestBodySize)

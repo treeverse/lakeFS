@@ -2,6 +2,7 @@ run:
   tests: false
   skip-dirs:
     - api/gen
+    - metastore/give/gen-go
   timeout: 5m
 
 linters:
@@ -11,9 +12,7 @@ linters:
     - deadcode
     - depguard
     - dogsled
-    - dupl
     - errcheck
-    - funlen
     - gochecknoinits
     - goconst
     - gocritic
