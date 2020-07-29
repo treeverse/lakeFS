@@ -29,12 +29,17 @@ layout: table_wrappers
     </symbol>
     <symbol id="svg-menu" viewBox="0 0 24 24">
         <title>Menu</title>
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none"
-             stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+        <svg xmlns="http://www.w3.org/2000/svg" width="20px" height="16px" viewBox="0 0 20 16" version="1.1"
              class="feather feather-menu">
-            <line x1="3" y1="12" x2="21" y2="12"></line>
-            <line x1="3" y1="6" x2="21" y2="6"></line>
-            <line x1="3" y1="18" x2="21" y2="18"></line>
+            <g id="Symbols" stroke="none" stroke-width="1" fill="none" fill-rule="evenodd">
+                <g id="header-/-mobile" transform="translate(-30.000000, -32.000000)" fill="#279890">
+                    <g id="Group" transform="translate(30.000000, 32.000000)">
+                        <path
+                                d="M20,14 L20,16 L0,16 L0,14 L20,14 Z M20,7 L20,9 L0,9 L0,7 L20,7 Z M20,0 L20,2 L0,2 L0,0 L20,0 Z"
+                                id="mobile-menu" />
+                    </g>
+                </g>
+            </g>
         </svg>
     </symbol>
     <symbol id="svg-arrow-right" viewBox="0 0 24 24">
@@ -65,54 +70,30 @@ layout: table_wrappers
                 </svg>
             </a>
         </div>
-
-        {% if site.search_enabled != false %}
-        <div class="search">
-            <div class="search-input-wrap">
-                <input type="text" id="search-input" class="search-input" tabindex="0"
-                       placeholder="Search {{ site.title }}" aria-label="Search {{ site.title }}"
-                       autocomplete="off">
-                <label for="search-input" class="search-label"><svg viewBox="0 0 24 24" class="search-icon">
-                        <use xlink:href="#svg-search"></use>
-                    </svg></label>
-            </div>
-            <div id="search-results" class="search-results"></div>
-        </div>
-        {% endif %}
         <nav role="navigation" aria-label="Main" id="site-nav" class="site-nav">
+            {% if site.search_enabled != false %}
+            <div class="search">
+                <div class="search-input-wrap">
+                    <input type="text" id="search-input" class="search-input" tabindex="0"
+                           placeholder="Search {{ site.title }}" aria-label="Search {{ site.title }}"
+                           autocomplete="off">
+                    <label for="search-input" class="search-label"><svg viewBox="0 0 24 24" class="search-icon">
+                            <use xlink:href="#svg-search"></use>
+                        </svg></label>
+                </div>
+                <div id="search-results" class="search-results"></div>
+            </div>
+            {% endif %}
+
             {% include nav.html %}
+            <div class="mobile-menu">
+                {% include header_menu.html %}</div>
         </nav>
 
     </div>
     <div class="main" id="top">
         <div id="main-header" class="main-header">
-
-            {% if site.aux_links %}
-            <nav aria-label="Auxiliary" class="aux-nav">
-                <ul class="aux-nav-list">
-                    {% if site.aux_links %}
-                    {% for link in site.aux_links %}
-                    <li class="aux-nav-list-item">
-                        <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %}
-                           target="_blank" rel="noopener noreferrer" {% endif %}>
-                            {{ link.first }}
-                        </a>
-                    </li>
-                    {% endfor %}
-                    {% endif %}
-                    {% if site.buttons %}
-                    {% for button in site.buttons %}
-                    <li class="aux-nav-list-item button">
-                        <a href="{{ button.last }}" class="site-button" {% if site.aux_links_new_tab %}
-                           target="_blank" rel="noopener noreferrer" {% endif %}>
-                            {{ button.first }}
-                        </a>
-                    </li>
-                    {% endfor %}
-                    {% endif %}
-                </ul>
-            </nav>
-            {% endif %}
+            {% include header_menu.html %}
         </div>
         <div id="main-content-wrap" class="main-content-wrap">
             {% unless page.url == "/" %}
