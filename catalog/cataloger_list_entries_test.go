@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"reflect"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -373,4 +374,57 @@ func TestCataloger_ListEntries_ByLevelDeleted(t *testing.T) {
 	if hasMore {
 		t.Errorf("ListEntriesByLevel() hasMore = %t, expected fasle", hasMore)
 	}
+}
+
+func TestCataloger_list_by_level_with_delete(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	for i := 0; i < 150; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repo, "master", "xxx/entry"+pathExt(i), nil, strconv.Itoa(i*10000))
+	}
+	_, err := c.Commit(ctx, repo, "master", "message", "committer1", nil)
+	testutil.MustDo(t, "commit to master", err)
+	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
+	//_, err = c.Merge(ctx, repo, "master", "br_1", "ijojo", "ijhuihi", nil)
+	//testutil.MustDo(t, "merge from  master", err)
+
+	testCatalogerBranch(t, ctx, c, repo, "br_2", "br_1")
+	for i := 0; i < 100; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repo, "br_2", "xxx/entry"+pathExt(i), nil, strconv.Itoa(i*10000))
+	}
+	for i := 0; i < 100; i++ {
+		testCatalogerCreateEntry(t, ctx, c, repo, "br_1", "xxx/entry"+pathExt(i), nil, strconv.Itoa(i*10000))
+	}
+
+	//_, err = c.Commit(ctx, repo, "br_2", "message", "committer1", nil)
+	//testutil.MustDo(t, "commit to br_2", err)
+	_, err = c.Commit(ctx, repo, "br_1", "message", "committer1", nil)
+	testutil.MustDo(t, "commit to br_1", err)
+
+	for i := 0; i < 100; i++ {
+		testutil.MustDo(t, "delete entry "+"xxx/entry"+pathExt(i),
+			c.DeleteEntry(ctx, repo, "br_2", "xxx/entry"+pathExt(i)))
+	}
+
+	//_, err = c.Merge(ctx, repo, "master", "br_1", "ijojo", "ijhuihi", nil)
+	//testutil.MustDo(t, "merge from  master", err)
+	//_, err = c.Merge(ctx, repo, "br_1", "br_2", "ijojo", "ijhuihi", nil)
+	//testutil.MustDo(t, "merge from  master", err)
+
+	got, gotMore, err := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
+	if len(got) != 1 {
+		t.Fatalf("expected 1 result, got %d ", len(got))
+	}
+	if got[0].Path != "xxx/" {
+		t.Fatalf("expected xxx/, got %s\n", got[0].Path)
+	}
+	if gotMore != false {
+		t.Fatalf("wrong answer to more entries")
+	}
+}
+
+func pathExt(i int) string {
+	return fmt.Sprintf("%03d", i)
 }

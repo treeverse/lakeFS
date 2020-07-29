@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -175,16 +174,13 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		}
 		resultRows := make([]resultRow, 0, branchBatchSize*len(lineage)+1)
 		err = tx.Select(&resultRows, unionSQL, args...)
-		if errors.Is(err, db.ErrNotFound) {
-			return markerList, nil
-		}
 		if err != nil {
 			return nil, err
 		}
 		if len(resultRows) == 0 {
 			return markerList, nil
 		}
-		pathSuffixes := findCommonPrefix(resultRows, delimiter, branchPriorityMap, limit-len(markerList), readParams)
+		pathSuffixes := processSinglePrefix(resultRows, delimiter, branchPriorityMap, limit-len(markerList), readParams)
 		markerList = append(markerList, pathSuffixes...)
 		if len(pathSuffixes) == 0 || len(markerList) >= limit {
 			return markerList, nil
@@ -197,7 +193,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	}
 }
 
-func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
+func processSinglePrefix(response []resultRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
 	// split results by branch
 	branchRanges := make(map[int64][]resultRow, len(branchPriorityMap))
 	for _, result := range response {
@@ -212,7 +208,7 @@ func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap 
 	for { // exit loop by return
 		b := findLowestResultInBranches(branchRanges, branchPriorityMap)
 		p := branchRanges[b][0].PathSuffix
-		pathResults := getBranchResultRowsForPath(p, b, &branchRanges, readParams)
+		pathResults := getBranchResultRowsForPath(p, b, branchRanges, readParams)
 		if checkPathNotDeleted(pathResults) { // minimal path was found
 			pos := strings.Index(p, delimiter)
 			if pos > -1 {
@@ -228,7 +224,7 @@ func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap 
 		// if the path is not at the start of a result array - nothing happens
 		for branch := range branchRanges {
 			if branch != b {
-				getBranchResultRowsForPath(p, branch, &branchRanges, readParams)
+				getBranchResultRowsForPath(p, branch, branchRanges, readParams)
 			}
 		}
 		if len(branchRanges) == 0 { // no more to read
@@ -238,29 +234,29 @@ func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap 
 	return nil // will never be executed
 }
 
-func getBranchResultRowsForPath(path string, branch int64, branchRanges *map[int64][]resultRow, readParams readPramsType) []resultRow {
+func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) []resultRow {
 	i := 0
-	resultLen := len((*branchRanges)[branch])
-	for (*branchRanges)[branch][i].PathSuffix == path {
+	resultLen := len(branchRanges[branch])
+	for branchRanges[branch][i].PathSuffix == path {
 		i++
 		if i == resultLen {
-			minCommit := (*branchRanges)[branch][i-1].MinCommit
+			minCommit := branchRanges[branch][i-1].MinCommit
 			err := getMoreRows(path, minCommit, branch, branchRanges, readParams)
 			if err != nil { // assume that no more entries for this branch. so it is removed from branchRanges
-				returnSlice := (*branchRanges)[branch]
-				delete(*branchRanges, branch)
+				returnSlice := branchRanges[branch]
+				delete(branchRanges, branch)
 				return returnSlice
 			}
 			i = 0
-			resultLen = len((*branchRanges)[branch])
+			resultLen = len(branchRanges[branch])
 		}
 	}
-	returnSlice := (*branchRanges)[branch][:i]
-	(*branchRanges)[branch] = (*branchRanges)[branch][i:]
+	returnSlice := branchRanges[branch][:i]
+	branchRanges[branch] = branchRanges[branch][i:]
 	return returnSlice
 }
 
-func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges *map[int64][]resultRow, readParams readPramsType) error {
+func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) error {
 	var topCommitID CommitID
 	if branch == readParams.branchID { // it is the base branch
 		topCommitID = readParams.topCommitID
@@ -275,7 +271,7 @@ func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges *ma
 	// have to re-read the last entry, because otherwise the expression becomes complex and the optimizer gets NUTS
 	//so read size must be the batch size + whhatever results were left from the last entry
 	// If readBuf is not extended - there will be an endless loop if number of results is bigger than batch size.
-	requiredBufferSize := readParams.branchBatchSize + len((*branchRanges)[branch])
+	requiredBufferSize := readParams.branchBatchSize + len(branchRanges[branch])
 	readBuf := make([]resultRow, 0, requiredBufferSize)
 	singleSelect := selectSingleBranch(branch, branch == readParams.branchID, requiredBufferSize, readParams.lowestCommitID, topCommitID, len(readParams.prefix))
 	requestedPath := readParams.prefix + path
@@ -288,13 +284,13 @@ func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges *ma
 	}
 
 	err = readParams.tx.Select(&readBuf, s, args...)
-	if len((*branchRanges)[branch]) == len(readBuf) {
+	if len(branchRanges[branch]) == len(readBuf) {
 		err = sql.ErrNoRows
 	}
 	if err != nil {
 		return err
 	}
-	(*branchRanges)[branch] = readBuf
+	branchRanges[branch] = readBuf
 	return nil
 }
 
