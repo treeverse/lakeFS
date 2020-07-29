@@ -30,7 +30,7 @@ footer:
   'img-bottom':
     - '/assets/by-treeverse.png'
   'img-bottom-link':
-    - 'https://docs.lakefs.io/'
+    - 'https://www.treeverse.io/'
 
 footer_links:
   'Docs':
