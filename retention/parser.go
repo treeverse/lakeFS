@@ -44,6 +44,12 @@ type RulesHolder struct {
 	Rules Rules
 }
 
+const (
+	hoursInADay             = 24
+	daysInAWeek             = 7
+	hoursMinAllowExpiration = 2
+)
+
 func (a *RulesHolder) Value() (driver.Value, error) {
 	return json.Marshal(a)
 }
@@ -57,17 +63,17 @@ func (a *Rules) Scan(value interface{}) error {
 }
 
 func ParseTimePeriod(model models.TimePeriod) (TimePeriodHours, error) {
-	ret := TimePeriodHours(24 * (model.Days + 7*model.Weeks))
-	if ret < TimePeriodHours(2) {
-		return TimePeriodHours(0), fmt.Errorf("Minimal allowable expiration is 2 hours")
+	ret := TimePeriodHours(hoursInADay * (model.Days + 7*model.Weeks))
+	if ret < TimePeriodHours(hoursMinAllowExpiration) {
+		return TimePeriodHours(0), fmt.Errorf("minimal allowable expiration is 2 hours")
 	}
 	return ret, nil
 }
 
 func RenderTimePeriod(timePeriod TimePeriodHours) *models.TimePeriod {
 	// Time periods are used for deletion, so safest to round them UP
-	totalDays := (timePeriod + 23) / 24
-	return &models.TimePeriod{Weeks: int32(totalDays / 7), Days: int32(totalDays % 7)}
+	totalDays := (timePeriod + hoursInADay - 1) / hoursInADay
+	return &models.TimePeriod{Weeks: int32(totalDays / daysInAWeek), Days: int32(totalDays % daysInAWeek)}
 }
 
 func ParseExpiration(model models.RetentionPolicyRuleExpiration) (*Expiration, error) {
@@ -122,7 +128,7 @@ func ParseRule(model models.RetentionPolicyRule) (*Rule, error) {
 		rule.FilterPrefix = model.Filter.Prefix
 	}
 	if model.Expiration == nil {
-		return nil, fmt.Errorf("Missing required expiration field")
+		return nil, fmt.Errorf("missing required expiration field")
 	}
 	expiration, err := ParseExpiration(*model.Expiration)
 	if err != nil {
@@ -167,8 +173,8 @@ func ParsePolicy(model models.RetentionPolicy) (*Policy, error) {
 
 func RenderPolicy(policy *Policy) *models.RetentionPolicy {
 	modelRules := make([]*models.RetentionPolicyRule, 0, len(policy.Rules))
-	for _, rule := range policy.Rules {
-		modelRules = append(modelRules, RenderRule(&rule))
+	for i := range policy.Rules {
+		modelRules = append(modelRules, RenderRule(&policy.Rules[i]))
 	}
 	return &models.RetentionPolicy{Description: policy.Description, Rules: modelRules}
 }

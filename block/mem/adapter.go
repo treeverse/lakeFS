@@ -25,10 +25,10 @@ type mpu struct {
 }
 
 func newMPU() *mpu {
-	UUIDBytes := [16]byte(uuid.New())
-	uploadId := hex.EncodeToString(UUIDBytes[:])
+	uid := uuid.New()
+	uploadID := hex.EncodeToString(uid[:])
 	return &mpu{
-		id:    uploadId,
+		id:    uploadID,
 		parts: make(map[int64][]byte),
 	}
 }
@@ -51,13 +51,13 @@ type Adapter struct {
 	mpu                map[string]*mpu
 	properties         map[string]block.Properties
 	mutex              *sync.RWMutex
-	uploadIdTranslator block.UploadIdTranslator
+	uploadIDTranslator block.UploadIDTranslator
 }
 
 func New(opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		ctx:                context.Background(),
-		uploadIdTranslator: &block.NoOpTranslator{},
+		uploadIDTranslator: &block.NoOpTranslator{},
 		data:               make(map[string][]byte),
 		mpu:                make(map[string]*mpu),
 		properties:         make(map[string]block.Properties),
@@ -69,9 +69,9 @@ func New(opts ...func(a *Adapter)) *Adapter {
 	return a
 }
 
-func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
+func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
-		a.uploadIdTranslator = t
+		a.uploadIDTranslator = t
 	}
 }
 
@@ -86,7 +86,7 @@ func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 		mpu:                a.mpu,
 		properties:         a.properties,
 		mutex:              a.mutex,
-		uploadIdTranslator: a.uploadIdTranslator,
+		uploadIDTranslator: a.uploadIDTranslator,
 	}
 }
 
@@ -145,15 +145,15 @@ func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	defer a.mutex.Unlock()
 	mpu := newMPU()
 	a.mpu[mpu.id] = mpu
-	tid := a.uploadIdTranslator.SetUploadId(mpu.id)
+	tid := a.uploadIDTranslator.SetUploadID(mpu.id)
 	return tid, nil
 }
 
-func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
-	mpu, ok := a.mpu[uploadId]
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
+	mpu, ok := a.mpu[uploadID]
 	if !ok {
 		return "", fmt.Errorf("multipart ID not found")
 	}
@@ -171,24 +171,24 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	return fmt.Sprintf("%x", code), nil
 }
 
-func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
+func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
-	_, ok := a.mpu[uploadId]
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
+	_, ok := a.mpu[uploadID]
 	if !ok {
 		return fmt.Errorf("multipart ID not found")
 	}
-	delete(a.mpu, uploadId)
-	a.uploadIdTranslator.RemoveUploadId(uploadId)
+	delete(a.mpu, uploadID)
+	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	return nil
 }
 
-func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, _ *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*string, int64, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
-	mpu, ok := a.mpu[uploadId]
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
+	mpu, ok := a.mpu[uploadID]
 	if !ok {
 		return nil, 0, fmt.Errorf("multipart ID not found")
 	}
@@ -200,7 +200,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	}
 	code := h.Sum(nil)
 	hexCode := fmt.Sprintf("%x", code)
-	a.uploadIdTranslator.RemoveUploadId(uploadId)
+	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	a.data[getKey(obj)] = data
 	return &hexCode, int64(len(data)), nil
 }

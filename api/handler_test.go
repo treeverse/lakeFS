@@ -34,7 +34,7 @@ const (
 
 var (
 	pool        *dockertest.Pool
-	databaseUri string
+	databaseURI string
 )
 
 func TestMain(m *testing.M) {
@@ -44,7 +44,7 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("Could not connect to Docker: %s", err)
 	}
-	databaseUri, closer = testutil.GetDBInstance(pool)
+	databaseURI, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
 	closer() // cleanup
 	os.Exit(code)
@@ -76,7 +76,7 @@ func (m *mockCollector) CollectMetadata(_ map[string]string) {}
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
-	conn, handlerDatabaseURI := testutil.GetDB(t, databaseUri, opts...)
+	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 
 	cataloger := catalog.NewCataloger(conn)
@@ -146,14 +146,14 @@ func TestServer_BasicAuth(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("valid Auth", func(t *testing.T) {
-		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyId, creds.AccessSecretKey))
+		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
 		if err != nil {
 			t.Fatalf("did not expect error when passing valid credentials")
 		}
 	})
 
 	t.Run("invalid Auth secret", func(t *testing.T) {
-		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyId, "foobarbaz"))
+		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyID, "foobarbaz"))
 		if err == nil {
 			t.Fatalf("expect error when passing invalid credentials")
 		}

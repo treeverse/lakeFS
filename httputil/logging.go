@@ -50,7 +50,7 @@ func RequestID(r *http.Request) (*http.Request, string) {
 	return r, reqID
 }
 
-func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+func DebugLoggingMiddleware(requestIDHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		startTime := time.Now()
 		writer := &ResponseRecordingWriter{Writer: w, StatusCode: http.StatusOK}
@@ -67,7 +67,7 @@ func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, n
 			requestFields[k] = v
 		}
 		r = r.WithContext(logging.AddFields(r.Context(), requestFields))
-		writer.Header().Set(requestIdHeaderName, reqID)
+		writer.Header().Set(requestIDHeaderName, reqID)
 		next.ServeHTTP(writer, r) // handle the request
 
 		logging.FromContext(r.Context()).WithFields(logging.Fields{
@@ -78,9 +78,9 @@ func DebugLoggingMiddleware(requestIdHeaderName string, fields logging.Fields, n
 	})
 }
 
-func LoggingMiddleware(requestIdHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
+func LoggingMiddleware(requestIDHeaderName string, fields logging.Fields, next http.Handler) http.Handler {
 	if logging.Level() == "trace" {
-		return TracingMiddleware(requestIdHeaderName, fields, next)
+		return TracingMiddleware(requestIDHeaderName, fields, next)
 	}
-	return DebugLoggingMiddleware(requestIdHeaderName, fields, next)
+	return DebugLoggingMiddleware(requestIDHeaderName, fields, next)
 }

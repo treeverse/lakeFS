@@ -82,7 +82,11 @@ var entryCmd = &cobra.Command{
 				fmt.Printf("failed to create trace output file: %s\n", err)
 				os.Exit(1)
 			}
-			defer f.Close()
+			defer func() {
+				if err := f.Close(); err != nil {
+					fmt.Printf("Failed to close 'trace.out': %s\n", err)
+				}
+			}()
 
 			if err := trace.Start(f); err != nil {
 				fmt.Printf("failed to start trace: %s\n", err)

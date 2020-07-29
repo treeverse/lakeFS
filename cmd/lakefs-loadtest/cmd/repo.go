@@ -58,7 +58,9 @@ var repoCmd = &cobra.Command{
 				fmt.Printf("failed to create trace output file: %s\n", err)
 				os.Exit(1)
 			}
-			defer f.Close()
+			defer func() {
+				_ = f.Close()
+			}()
 
 			if err := trace.Start(f); err != nil {
 				fmt.Printf("failed to start trace: %s\n", err)

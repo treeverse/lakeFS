@@ -16,7 +16,7 @@ func TestNewClient(t *testing.T) {
 		if req.URL.Path != expectedPath {
 			t.Fatalf("Client request path %s, expected %s", req.URL.Path, expectedPath)
 		}
-		rw.Write([]byte(`OK`))
+		_, _ = rw.Write([]byte(`OK`))
 	}))
 	// Close the server when test finishes
 	defer server.Close()
