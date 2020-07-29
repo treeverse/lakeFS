@@ -134,7 +134,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    ```bash
    $ aws configure --profile local
-   AWS Access Key ID [None]: AKIAJNYOQZSWBSSXURPQ
+   AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
    AWS Secret Access Key [None]: ****************************************
    Default region name [None]:
    Default output format [None]:
@@ -180,7 +180,7 @@ Here's how to get started with the CLI:
    ```bash
    $ lakectl config
    Config file /home/janedoe/.lakectl.yaml will be used
-   Access key ID: AKIAJNYOQZSWBSSXURPQ
+   Access key ID: AKIAIOSFODNN7EXAMPLE
    Secret access key: ****************************************
    Server endpoint URL: http://localhost:8000/api/v1
    ```

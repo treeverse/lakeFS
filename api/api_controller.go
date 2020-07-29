@@ -40,10 +40,13 @@ import (
 	"github.com/treeverse/lakefs/upload"
 )
 
+type contextKey string
+
 const (
 	// Maximum amount of results returned for paginated queries to the API
-	MaxResultsPerPage int64 = 1000
-	lakeFSPrefix            = "symlinks"
+	MaxResultsPerPage            = 1000
+	lakeFSPrefix                 = "symlinks"
+	UserContextKey    contextKey = "user"
 )
 
 type Dependencies struct {
@@ -108,7 +111,6 @@ func (c *Controller) Context() context.Context {
 // Configure attaches our API operations to a generated swagger API stub
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (c *Controller) Configure(api *operations.LakefsAPI) {
-
 	// Register operations here
 	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
 	api.AuthListUsersHandler = c.ListUsersHandler()
@@ -169,13 +171,12 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
 	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
-
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
 	// add user to context
 	ctx := logging.AddFields(r.Context(), logging.Fields{"user": user.ID})
-	ctx = context.WithValue(ctx, "user", user)
+	ctx = context.WithValue(ctx, UserContextKey, user)
 	deps := c.deps.WithContext(ctx)
 	return deps, authorize(deps.Auth, user, permissions)
 }
@@ -191,8 +192,8 @@ func createPaginator(nextToken string, amountResults int) *models.Pagination {
 
 func pageAmount(i *int64) int {
 	inti := int(swag.Int64Value(i))
-	if inti > int(MaxResultsPerPage) {
-		return int(MaxResultsPerPage)
+	if inti > MaxResultsPerPage {
+		return MaxResultsPerPage
 	}
 	if inti <= 0 {
 		return 100
@@ -259,17 +260,17 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 
 func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	// amount
-	after := ""
 	amount := MaxResultsPerPage
 	if swagAmount != nil {
-		amount = swag.Int64Value(swagAmount)
+		amount = int(swag.Int64Value(swagAmount))
 	}
 
 	// paginate after
+	after := ""
 	if swagAfter != nil {
 		after = swag.StringValue(swagAfter)
 	}
-	return after, int(amount)
+	return after, amount
 }
 
 func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
@@ -2117,9 +2118,9 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		var stats *onboard.InventoryImportStats
+		var importStats *onboard.InventoryImportStats
 		if *params.DryRun {
-			stats, err = importer.Import(deps.ctx, true)
+			importStats, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2141,7 +2142,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-			stats, err = importer.Import(params.HTTPRequest.Context(), false)
+			importStats, err = importer.Import(params.HTTPRequest.Context(), false)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2149,10 +2150,10 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		}
 		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
 			IsDryRun:           *params.DryRun,
-			PreviousImportDate: stats.PreviousImportDate.Unix(),
-			PreviousManifest:   stats.PreviousInventoryURL,
-			AddedOrChanged:     int64(stats.AddedOrChanged),
-			Deleted:            int64(stats.Deleted),
+			PreviousImportDate: importStats.PreviousImportDate.Unix(),
+			PreviousManifest:   importStats.PreviousInventoryURL,
+			AddedOrChanged:     int64(importStats.AddedOrChanged),
+			Deleted:            int64(importStats.Deleted),
 		})
 	})
 }

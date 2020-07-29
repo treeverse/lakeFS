@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -61,7 +62,7 @@ func (c *cataloger) listEntries(ctx context.Context, repository string, ref *Ref
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		entriesSql, args, err := psql.
+		entriesSQL, args, err := psql.
 			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
 			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
 			// Listing also shows expired objects!
@@ -73,7 +74,7 @@ func (c *cataloger) listEntries(ctx context.Context, repository string, ref *Ref
 			return nil, fmt.Errorf("build sql: %w", err)
 		}
 		var entries []*Entry
-		if err := tx.Select(&entries, entriesSql, args...); err != nil {
+		if err := tx.Select(&entries, entriesSQL, args...); err != nil {
 			return nil, err
 		}
 		return entries, nil
@@ -166,8 +167,6 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 				unionQueryParts[j].Where("path > ? and path < ?", listAfter, endOfPrefixRange), ")"))
 		}
 		fullQuery := sq.Select("*").FromSelect(unionSelect, "u")
-		deb := sq.DebugSqlizer(fullQuery)
-		_ = deb
 		unionSQL, args, err := fullQuery.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, err
@@ -240,8 +239,7 @@ func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int6
 	for branchRanges[branch][i].PathSuffix == path {
 		i++
 		if i == resultLen {
-			minCommit := branchRanges[branch][i-1].MinCommit
-			err := getMoreRows(path, minCommit, branch, branchRanges, readParams)
+			err := getMoreRows(path, branch, branchRanges, readParams)
 			if err != nil { // assume that no more entries for this branch. so it is removed from branchRanges
 				returnSlice := branchRanges[branch]
 				delete(branchRanges, branch)
@@ -256,7 +254,7 @@ func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int6
 	return returnSlice
 }
 
-func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) error {
+func getMoreRows(path string, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) error {
 	var topCommitID CommitID
 	if branch == readParams.branchID { // it is the base branch
 		topCommitID = readParams.topCommitID
@@ -269,15 +267,13 @@ func getMoreRows(path string, minCommit CommitID, branch int64, branchRanges map
 		}
 	}
 	// have to re-read the last entry, because otherwise the expression becomes complex and the optimizer gets NUTS
-	//so read size must be the batch size + whhatever results were left from the last entry
+	//so read size must be the batch size + whatever results were left from the last entry
 	// If readBuf is not extended - there will be an endless loop if number of results is bigger than batch size.
 	requiredBufferSize := readParams.branchBatchSize + len(branchRanges[branch])
 	readBuf := make([]resultRow, 0, requiredBufferSize)
 	singleSelect := selectSingleBranch(branch, branch == readParams.branchID, requiredBufferSize, readParams.lowestCommitID, topCommitID, len(readParams.prefix))
 	requestedPath := readParams.prefix + path
 	singleSelect = singleSelect.Where("path >= ? and path < ?", requestedPath, readParams.prefix+DirectoryTermination)
-	deb := sq.DebugSqlizer(singleSelect)
-	_ = deb
 	s, args, err := singleSelect.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return err
@@ -330,21 +326,21 @@ func checkPathNotDeleted(pathResults []resultRow) bool {
 	return true
 }
 
-func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int, lowestCommitId, topCommitID CommitID, prefixLen int) []sq.SelectBuilder {
+func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int, lowestCommitID, topCommitID CommitID, prefixLen int) []sq.SelectBuilder {
 	unionParts := make([]sq.SelectBuilder, len(lineage)+1)
-	unionParts[0] = selectSingleBranch(baseBranchID, true, branchEntryLimit, lowestCommitId, topCommitID, prefixLen)
+	unionParts[0] = selectSingleBranch(baseBranchID, true, branchEntryLimit, lowestCommitID, topCommitID, prefixLen)
 	for i, l := range lineage {
 		unionParts[i+1] = selectSingleBranch(l.BranchID, false, branchEntryLimit, 1, l.CommitID, prefixLen)
 	}
 	return unionParts
 }
 
-func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, lowestCommitId, topCommitID CommitID, prefixLen int) sq.SelectBuilder {
+func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, lowestCommitID, topCommitID CommitID, prefixLen int) sq.SelectBuilder {
 	rawSelect := sq.Select("branch_id", "min_commit").
 		Column("substr(path,?) as path_postfix", prefixLen+1).
 		From("entries").
 		Where("branch_id = ?", branchID).
-		Where("min_commit between ? and  ? ", lowestCommitId, topCommitID).
+		Where("min_commit between ? and  ? ", lowestCommitID, topCommitID).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(branchBatchSize))
 	var query sq.SelectBuilder

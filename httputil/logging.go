@@ -9,8 +9,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+type contextKey string
+
 const (
-	RequestIdContextKey = "request_id"
+	RequestIDContextKey contextKey = "request_id"
 )
 
 type ResponseRecordingWriter struct {
@@ -36,12 +38,12 @@ func (w *ResponseRecordingWriter) WriteHeader(statusCode int) {
 
 func RequestID(r *http.Request) (*http.Request, string) {
 	ctx := r.Context()
-	resp := ctx.Value(RequestIdContextKey)
+	resp := ctx.Value(RequestIDContextKey)
 	var reqID string
 	if resp == nil {
 		// assign a request ID for this request
 		reqID = uuid.New().String()
-		r = r.WithContext(context.WithValue(ctx, RequestIdContextKey, reqID))
+		r = r.WithContext(context.WithValue(ctx, RequestIDContextKey, reqID))
 	} else {
 		reqID = resp.(string)
 	}

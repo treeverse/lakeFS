@@ -44,11 +44,11 @@ In the following examples, replace the first access key pair with your lakeFS ke
 ### From S3 to lakeFs
 ```bash
 hadoop distcp \
-  -Dfs.s3a.bucket.example-repo.access.key="AKIAIOSFOLAKEEXAMPLE" \
-  -Dfs.s3a.bucket.example-repo.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRLAKEEXAMPLEKEY" \
+  -Dfs.s3a.bucket.example-repo.access.key="AKIAIOSFODNN7EXAMPLE" \
+  -Dfs.s3a.bucket.example-repo.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -Dfs.s3a.bucket.example-repo.endpoint="https://s3.lakefs.example.com" \
-  -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNS3EXAMPLE" \
-  -Dfs.s3a.bucket.example-bucket.secret.key="aaalrXUtnFEMI/K7MDENG/bPxRfiS3EXAMPLEKEY" \
+  -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNN3EXAMPLE" \
+  -Dfs.s3a.bucket.example-bucket.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
   "s3a://example-bucket/example-file.parquet" \
   "s3a://example-repo/master/example-file.parquet"
 ```
@@ -56,11 +56,11 @@ hadoop distcp \
 ### From lakeFS to S3
 ```bash
 hadoop distcp \
-  -Dfs.s3a.bucket.example-repo.access.key="AKIAIOSFOLAKEEXAMPLE" \
-  -Dfs.s3a.bucket.example-repo.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRLAKEEXAMPLEKEY" \
+  -Dfs.s3a.bucket.example-repo.access.key="AKIAIOSFODNN7EXAMPLE" \
+  -Dfs.s3a.bucket.example-repo.secret.key="wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY" \
   -Dfs.s3a.bucket.example-repo.endpoint="https://s3.lakefs.example.com" \
-  -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNS3EXAMPLE" \
-  -Dfs.s3a.bucket.example-bucket.secret.key="aaalrXUtnFEMI/K7MDENG/bPxRfiS3EXAMPLEKEY" \
+  -Dfs.s3a.bucket.example-bucket.access.key="AKIAIOSFODNN3EXAMPLE" \
+  -Dfs.s3a.bucket.example-bucket.secret.key="wJalrXUtnFEMI/K3MDENG/bPxRfiCYEXAMPLEKEY" \
   "s3a://example-repo/master/myfile" \
   "s3a://example-bucket/myfile"
 ```

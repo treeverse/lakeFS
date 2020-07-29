@@ -54,7 +54,7 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	if err != nil {
 		return fmt.Errorf("could not make HTTP request: %s: %w", err, ErrSendError)
 	}
-
+	_ = res.Body.Close()
 	if res.StatusCode != http.StatusCreated {
 		return fmt.Errorf("bad status code received. status=%d: %w", res.StatusCode, ErrSendError)
 	}
@@ -95,7 +95,7 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 
 type dummySender struct{}
 
-func (s *dummySender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
+func (s *dummySender) SendEvent(_ context.Context, installationID, processID string, metrics []Metric) error {
 	logging.Default().WithFields(logging.Fields{
 		"installation_id": installationID,
 		"process_id":      processID,
