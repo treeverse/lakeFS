@@ -1,0 +1,59 @@
+<footer>
+    <div class="footer-sidebar"></div>
+    <div class="footer-main">
+        <div class="row">
+            <a href="{{ '/' | absolute_url }}" class="site-title lh-tight">
+                <div class="site-logo"></div>
+            </a>
+        </div>
+        <div class="row">
+            <div class="left">
+                <ul class="footer-links">
+                    {% if site.footer_links %}
+                    {% for link in site.footer_links %}
+                    <li class="aux-nav-list-item">
+                        <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
+                           rel="noopener noreferrer" {% endif %}>
+                            {{ link.first }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+            <div class="right">
+                <ul class="footer-social">
+                    {% if site.footer_social %}
+                    {% for link in site.footer_social %}
+                    <li class="aux-nav-list-item">
+                        <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
+                           rel="noopener noreferrer" {% endif %}>
+                            <img src="{{ '/' | absolute_url }}assets/icons/{{ link.first }}.svg" />
+                        </a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+        <div class="row top-border">
+            <div class="left"><a href="{{ site.footer.img-bottom-link }}">
+                    <div class="other-logo"><img src="{{ '/' | absolute_url }}{{ site.footer.img-bottom }}" /></div>
+                </a></div>
+            <div class="right">
+                <ul class="bottom-footer-links">
+                    {% if site.footer_bottom_links %}
+                    {% for link in site.footer_bottom_links %}
+                    <li class="aux-nav-list-item">
+                        <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
+                           rel="noopener noreferrer" {% endif %}>
+                            {{ link.first }}
+                        </a>
+                    </li>
+                    {% endfor %}
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+    </div>
+</footer>

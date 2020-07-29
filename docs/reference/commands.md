@@ -17,7 +17,7 @@ has_children: false
 
 ### Installing the lakectl command locally
 
-The `lakectl` command is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
+The `lakectl` is distributed as a single binary, with no external dependencies - and is available for MacOS, Windows and Linux.
 
 [Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
 
@@ -29,7 +29,7 @@ Once you've installed the lakectl command, run:
 ```bash
 $ lakectl config
 Config file /home/janedoe/.lakectl.yaml will be used
-Access key ID: AKIAJNYOQZSWBSSXURPQ
+Access key ID: AKIAIOSFODNN7EXAMPLE
 Secret access key: ****************************************
 Server endpoint URL: http://localhost:8000/api/v1
 ```
@@ -99,7 +99,7 @@ revert changes: there are four different ways to revert changes:
 				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
 				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
 				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
-				4. revert uncommited changes for specific object  - revert lakefs://myrepo@master  --object path
+				4. revert uncommitted changes for specific object  - revert lakefs://myrepo@master  --object path
 
 Usage:
   lakectl branch revert [branch uri] [flags]
@@ -773,6 +773,77 @@ Global Flags:
 
 ```
 
+#### `lakectl metastore copy`
+````text
+copy or merge table. the destination table will point to the selected branch
+
+Usage:
+  lakectl metastore copy [flags]
+
+Flags:
+      --catalog-id string      Glue catalog ID
+      --from-schema string     source schema name
+      --from-table string      source table name
+  -h, --help                   help for copy
+      --metastore-uri string   Hive metastore URI
+  -p, --partition strings      partition to copy
+      --serde string           serde to set copy to  [default is  to-table]
+      --to-branch string       lakeFS branch name
+      --to-schema string       destination schema name [default is from-branch]
+      --to-table string        destination table name [default is  from-table] 
+      --type string            metastore type [hive, glue]
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+````
+
+#### `lakectl metastore diff`
+````text
+show column and partition differences between two tables
+
+Usage:
+  lakectl metastore diff [flags]
+
+Flags:
+      --catalog-id string      Glue catalog ID
+      --from-schema string     source schema name
+      --from-table string      source table name
+  -h, --help                   help for diff
+      --metastore-uri string   Hive metastore URI
+      --to-schema string       destination schema name 
+      --to-table string        destination table name [default is from-table]
+      --type string            metastore type [hive, glue]
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+````
+#### `lakectl metastore create-symlink`
+````text
+create table with symlinks, and create the symlinks in s3 in order to access from external devices that could only access s3 directly (e.g athena)
+
+Usage:
+  lakectl metastore create-symlink [flags]
+
+Flags:
+      --branch string        lakeFS branch name
+      --catalog-id string    Glue catalog ID
+      --from-schema string   source schema name
+      --from-table string    source table name
+  -h, --help                 help for create-symlink
+      --path string          path to table on lakeFS
+      --repo string          lakeFS repository name
+      --to-schema string     destination schema name
+      --to-table string      destination table name
+
+Global Flags:
+  -c, --config string   config file (default is $HOME/.lakectl.yaml)
+      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+
+````
 
 ### lakeFS URI pattern
 

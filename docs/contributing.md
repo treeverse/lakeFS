@@ -36,6 +36,7 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
     1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as apt or brew)
     1. [Docker](https://docs.docker.com/get-docker/)
     1. [Go 1.14](https://golang.org/doc/install)
+    1. [Node.js & npm](https://www.npmjs.com/get-npm)
     1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 1. Install statik:
    

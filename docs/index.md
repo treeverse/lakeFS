@@ -7,7 +7,7 @@ nav_order: 0
 # What is lakeFS
 {: .no_toc }  
 
-lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open source platform that delivers resilience and manageability to object-storage based data lakes.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
@@ -20,9 +20,9 @@ lakeFS is API compatible with AWS S3 and works seamlessly with all modern data f
 
 ## Why you need lakeFS and what it can do
 
-lakeFS provides a [Git-like branching and committing model]() that scales to Petabytes of data by utilizing S3 for storage.
+lakeFS provides a [Git-like branching and committing model](branching/model.md) that scales to Petabytes of data by utilizing S3 for storage.
 
-This branching model makes your data lake [ACID compliant]() by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
+This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
@@ -45,7 +45,7 @@ lakeFS overcomes these obstacles by providing:
 * **Atomic Operations** - lakeFS allows data producers to manipulate multiple objects as a single, atomic operation. If something fails half-way, all changes can be instantly rolled back. lakeFS enables this by allowing branch creation. When creating a branch, all objects manipulated within that branch are only visible inside it. Once processing completes successfully, merging to the "main" branch is an atomic operation. If something fails mid-way, we can simply (and atomically) revert our branch to its previous committed state.
 * **Consistency** - lakeFS enables object-level and cross-collection consistency:
     * **object-level** consistency ensures all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
-    * **cross-collection** consistency is achieved by providing [snapshot isolation](). Using branches, writers can provide consistency guarantees across different logical collections - merging to "main" is only done after several datasets have been created successfully.
+    * **cross-collection** consistency is achieved by providing [snapshot isolation](https://en.wikipedia.org/wiki/Snapshot_isolation){: target="_blank" }. Using branches, writers can provide consistency guarantees across different logical collections - merging to "main" is only done after several datasets have been created successfully.
 * **History** - By using a branch/commit model, we can atomically and safely rollback any set of changes made to the lake. By making commit history available for a configurable amount of time - we can read from the lake at any given point in time, compare changes made - and undo them if necessary.
 
 
@@ -82,7 +82,6 @@ Data engineers can now define rules such as:
 
 ## Next steps
 
-Read about lakeFS' [branching model]() or run lakeFS locally and see how it works for yourself!
+Read about the [branching model](branching/model.md) of lakeFS or run it locally and see how it works for yourself!
 
 Check out the [Quick Start Guide](quickstart.md)
-

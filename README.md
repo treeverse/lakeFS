@@ -79,10 +79,11 @@ Alternatively, you can download the lakeFS binaries and run them directly.
 Binaries are available at [https://releases.lakefs.io](https://releases.lakefs.io).
 
 
-## Getting started
+#### Setting up a repository
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart.html#setting-up-a-repository) to set up your local lakeFS installation.
 
+For more detailed inforamation on how to setup lakeFS, please visit [the documentation](https://docs.lakefs.io/)
 
 ## Community
 

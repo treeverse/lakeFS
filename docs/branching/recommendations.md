@@ -81,6 +81,14 @@ This is similar to the previous case, except we now have several jobs that produ
 
 A common use case for this are "materialized views" - i.e. the same data but partitioned by different columns or sorted differently to optimize for different readers.
 
+In production data pipelines, we require the following guarantees:
+
+1. **Isolation** - Isolation of each job in the pipeline, but also, isolating the entire pipeline until it has completed.
+1. **Reproducibility** - Every job should be reproducible, but also the pipeline as a whole.
+1. **Atomicity** - We want to make our changes available as one atomic unit, at both job and pipeline level.
+1. **Production safety** - We want to be able to "rewind" to our initial state if something went wrong.
+1. **Data Validation** - The ability to test and validate the entire pipeline's output before it is made available to its consumers
+
 **Recommended model:** Branch per job, merged into pipeline branch, merged into main after all jobs complete
 {: .note .note-info }
 
@@ -121,6 +129,10 @@ This is a great for production safety - but re-reading will also mean duplicatio
 1. When rewinding an offset we also know exactly which objects to delete from previous runs
 1. Alternatively, we were very careful when designing our consumer to ensure it is absolutely idempotent, even in the face of failure.
 
+When streaming data into a data lake, we require the following guarantees:
+
+1. **Production safety** - We want to be able to "rewind" to a previous state in case anything goes wrong.
+1. **Atomicity** - We want to make our changes available as one atomic unit, usually defined by a time interval (i.e. this is all the data for the current minute/hour/day)
 
 **Recommended model:** Branch per consumer type, periodic commits with stream offset, merge when ready for consumption
 {: .note .note-info }
@@ -218,6 +230,11 @@ If the input data changes between different runs, it's impossible to determine i
 
 Additionally, we want some form of quality assurance - being able to run the algorithm as it existed at a given point in time, with the same exact input data that existed when it initially ran.
 
+Data science requires experimentation - We want to adjust a model or refine hyper-parameters and see how the changes we made influence the accuracy of our model, hence we need:
+
+1. **Reproducibility** - The data set used to build the model should be available for reproducibility and quality validation of different versions of the model
+1. **Data CI/CD** - when we update the model in production we want to monitor the accuracy of the model, and the assumption we had on the properties of the data
+
 **Recommended model:** Branch per experiment type, commit per run with algorithm parameters as metadata*
 {: .note .note-info }
 
@@ -268,6 +285,11 @@ new: 2592 modified: 12 removed: 1439
 ## Use case #5 - Ad-hoc exploration and experimentation
 
 Sometimes we don't have a structured experiment or workflow, we simply want to play with the data - test out completely new algorithms, introduce new technologies or simply try out something we're not sure of its results.
+
+For this, the following guarantees are required:
+
+1. **Isolation** - We want our experiments to have no effect on production unless we explicitly decide otherwise.
+1. **Production safety** - We want to be able to "rewind" to a previous state in case anything goes wrong.
 
 **Recommended model:** Branch(es) per user, keeps up-to-date from a main branch, never merged back
 {: .note .note-info }

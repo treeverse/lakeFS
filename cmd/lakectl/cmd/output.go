@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/go-openapi/swag"
-
 	"github.com/jedib0t/go-pretty/table"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -89,15 +88,13 @@ func WriteTo(tpl string, ctx interface{}, w io.Writer) {
 			}
 			return ""
 		},
-		"lower": func(s string) string {
-			return strings.ToLower(s)
-		},
+		"lower": strings.ToLower,
 		"human_bytes": func(b int64) string {
 			var unit int64 = 1000
 			if b < unit {
 				return fmt.Sprintf("%d B", b)
 			}
-			div, exp := int64(unit), 0
+			div, exp := unit, 0
 			for n := b / unit; n >= unit; n /= unit {
 				div *= unit
 				exp++

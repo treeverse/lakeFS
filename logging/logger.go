@@ -7,13 +7,15 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type contextKey string
+
 const (
-	LogFieldsContextKey = "log_fields"
+	LogFieldsContextKey = contextKey("log_fields")
 )
 
 var (
 	formatterInitOnce sync.Once
-	defaultLogger     *logrus.Logger = logrus.StandardLogger()
+	defaultLogger     = logrus.StandardLogger()
 )
 
 func Level() string {

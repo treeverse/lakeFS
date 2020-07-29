@@ -12,3 +12,10 @@ var requestCounter = promauto.NewCounterVec(
 	},
 	[]string{"code", "method"},
 )
+
+var requestHistograms = promauto.NewHistogramVec(
+	prometheus.HistogramOpts{
+		Name: "api_request_duration_seconds",
+		Help: "request durations for lakeFS API",
+	},
+	[]string{"operation", "code"})

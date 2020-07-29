@@ -35,16 +35,9 @@ const (
 )
 
 var (
-	// AWS4-HMAC-SHA256 Credential=AKIAJKKRUNSYM5MZSHDQ/20191031/us-east-1/s3/aws4_request,SignedHeaders=date;host;x-amz-content-sha256;x-amz-date,Signature=54ff856d2908e13d3bee41d1f78f808068d0ee27a9af212561dc0ea56e8cf633
 	V4AuthHeaderRegexp      = regexp.MustCompile(`AWS4-HMAC-SHA256 Credential=(?P<AccessKeyId>[A-Z0-9]{20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request,\s*SignedHeaders=(?P<SignatureHeaders>[\w\-\;]+),\s*Signature=(?P<Signature>[abcdef0123456789]{64})`)
 	V4CredentialScopeRegexp = regexp.MustCompile(`(?P<AccessKeyId>[A-Z0-9]{20})/(?P<Date>\d{8})/(?P<Region>[\w\-]+)/(?P<Service>[\w\-]+)/aws4_request`)
 )
-
-// Authorization:
-// 		AWS4-HMAC-SHA256
-// 		Credential=AKIDEXAMPLE/20150830/us-east-1/iam/aws4_request,
-// 		SignedHeaders=content-type;host;x-amz-date,
-// 		Signature=5d672d79c15b13162d9279b0855cfba6789a8edb4c82c400e06b5924a6f2b5d7
 
 type V4Auth struct {
 	AccessKeyId         string
