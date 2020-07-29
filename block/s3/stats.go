@@ -19,8 +19,8 @@ var requestSizeHistograms = promauto.NewHistogramVec(
 		Buckets: prometheus.ExponentialBuckets(1, 10, 10),
 	}, []string{"operation", "error"})
 
-func reportMetrics(operation string, start time.Time, sizeBytes *int64, err error) {
-	isErrStr := fmt.Sprintf("%t", err != nil)
+func reportMetrics(operation string, start time.Time, sizeBytes *int64, err *error) {
+	isErrStr := fmt.Sprintf("%t", *err != nil)
 	durationHistograms.WithLabelValues(operation, isErrStr).Observe(time.Since(start).Seconds())
 	if sizeBytes != nil {
 		requestSizeHistograms.WithLabelValues(operation, isErrStr).Observe(float64(*sizeBytes))
