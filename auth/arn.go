@@ -12,35 +12,46 @@ type Arn struct {
 	Partition  string
 	Service    string
 	Region     string
-	AccountId  string
-	ResourceId string
+	AccountID  string
+	ResourceID string
 }
+
+const (
+	fieldIndexArn = iota
+	fieldIndexPartition
+	fieldIndexService
+	fieldIndexRegion
+	fieldIndexAccount
+	fieldIndexResource
+
+	fieldIndexLast = fieldIndexResource
+)
 
 func arnParseField(arn *Arn, field string, fieldIndex int) error {
 	switch fieldIndex {
-	case 0:
-		if !strings.EqualFold(field, "arn") {
+	case fieldIndexArn:
+		if field != "arn" {
 			return ErrInvalidArn
 		}
-	case 1:
-		if !strings.EqualFold(field, "lakefs") {
+	case fieldIndexPartition:
+		if field != "lakefs" {
 			return ErrInvalidArn
 		}
 		arn.Partition = field
-	case 2:
+	case fieldIndexService:
 		if len(field) < 1 {
 			return ErrInvalidArn
 		}
 		arn.Service = field
-	case 3:
+	case fieldIndexRegion:
 		arn.Region = field
-	case 4:
-		arn.AccountId = field
-	case 5:
+	case fieldIndexAccount:
+		arn.AccountID = field
+	case fieldIndexResource:
 		if len(field) < 1 {
 			return ErrInvalidArn
 		}
-		arn.ResourceId = field
+		arn.ResourceID = field
 	}
 	return nil
 }
@@ -69,7 +80,7 @@ func ParseARN(arnString string) (*Arn, error) {
 			return a, err
 		}
 	}
-	if currField < 5 {
+	if currField < fieldIndexLast {
 		return nil, ErrInvalidArn
 	}
 	return a, nil
@@ -93,11 +104,11 @@ func ArnMatch(src, dst string) bool {
 	if source.Partition != dest.Partition {
 		return false
 	}
-	if source.AccountId != dest.AccountId {
+	if source.AccountID != dest.AccountID {
 		return false
 	}
 	// wildcards are allowed for resources only
-	if wildcard.Match(source.ResourceId, dest.ResourceId) {
+	if wildcard.Match(source.ResourceID, dest.ResourceID) {
 		return true
 	}
 	return false

@@ -125,7 +125,7 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}
-		userData, err := s.authService.GetUserById(credentials.UserId)
+		userData, err := s.authService.GetUserByID(credentials.UserID)
 		if err != nil {
 			logger.WithField("access_key", accessKey).Warn("could not find user for key pair")
 			return nil, ErrAuthenticationFailed

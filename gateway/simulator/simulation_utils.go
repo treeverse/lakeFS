@@ -17,16 +17,16 @@ import (
 
 type PlayBackMockConf struct {
 	BareDomain      string `json:"bare_domain"`
-	AccessKeyId     string `json:"access_key_id"`
+	AccessKeyID     string `json:"access_key_id"`
 	AccessSecretKey string `json:"access_secret_Key"`
-	UserId          int    `json:"user_id"`
+	UserID          int    `json:"user_id"`
 	Region          string `json:"region"`
 }
 
 // a limited service interface for the gateway, used by simulation playback
 type GatewayAuthService interface {
 	GetCredentials(accessKey string) (*model.Credential, error)
-	GetUserById(userId int) (*model.User, error)
+	GetUserByID(userID int) (*model.User, error)
 	Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error)
 }
 
@@ -83,31 +83,17 @@ func (l *LazyOutput) Close() error {
 
 var PlaybackParams struct {
 	IsPlayback                bool
-	CurrentUploadId           []byte // used at playback to set the upload id in
+	CurrentUploadID           []byte // used at playback to set the upload id in
 	RecordingDir, PlaybackDir string
 }
 
-func IsPlayback() bool {
-	return PlaybackParams.IsPlayback
-}
-
-func GetUploadId() string {
-	if PlaybackParams.CurrentUploadId != nil {
-		t := string(PlaybackParams.CurrentUploadId)
-		PlaybackParams.CurrentUploadId = nil
-		return t
-	} else {
-		panic("Reading uploadId when there is none\n")
-	}
-}
-
 type ResponseWriter struct {
-	uploadId       []byte
+	uploadID       []byte
 	OriginalWriter http.ResponseWriter
 	ResponseLog    *LazyOutput
 	StatusCode     int
 	Headers        http.Header
-	UploadIdRegexp *regexp.Regexp
+	UploadIDRegexp *regexp.Regexp
 }
 
 func (w *ResponseWriter) Header() http.Header {
@@ -132,10 +118,10 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 func (w *ResponseWriter) Write(data []byte) (int, error) {
 	written, err := w.OriginalWriter.Write(data)
 	if err == nil {
-		if w.UploadIdRegexp != nil && len(w.uploadId) == 0 {
-			rx := w.UploadIdRegexp.FindSubmatch(data)
+		if w.UploadIDRegexp != nil && len(w.uploadID) == 0 {
+			rx := w.UploadIDRegexp.FindSubmatch(data)
 			if len(rx) > 1 {
-				w.uploadId = rx[1]
+				w.uploadID = rx[1]
 			}
 		}
 		writtenSlice := data[:written]
@@ -153,18 +139,17 @@ func (w *ResponseWriter) WriteHeader(statusCode int) {
 }
 
 func (m *PlayBackMockConf) GetCredentials(accessKey string) (*model.Credential, error) {
-	if accessKey != m.AccessKeyId {
+	if accessKey != m.AccessKeyID {
 		logging.Default().Fatal("access key in recording different than configuration")
 	}
 	aCred := new(model.Credential)
-	aCred.AccessKeyId = accessKey
+	aCred.AccessKeyID = accessKey
 	aCred.AccessSecretKey = m.AccessSecretKey
-	aCred.UserId = m.UserId
+	aCred.UserID = m.UserID
 	return aCred, nil
-
 }
 
-func (m *PlayBackMockConf) GetUserById(userId int) (*model.User, error) {
+func (m *PlayBackMockConf) GetUserByID(userID int) (*model.User, error) {
 	return &model.User{
 		CreatedAt:   time.Now(),
 		DisplayName: "user",
@@ -172,5 +157,5 @@ func (m *PlayBackMockConf) GetUserById(userId int) (*model.User, error) {
 }
 
 func (m *PlayBackMockConf) Authorize(req *auth.AuthorizationRequest) (*auth.AuthorizationResponse, error) {
-	return &auth.AuthorizationResponse{true, nil}, nil
+	return &auth.AuthorizationResponse{Allowed: true}, nil
 }

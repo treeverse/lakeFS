@@ -16,7 +16,7 @@ import (
 
 var (
 	pool        *dockertest.Pool
-	databaseUri string
+	databaseURI string
 )
 
 func TestMain(m *testing.M) {
@@ -26,19 +26,19 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		logging.Default().Fatalf("Could not connect to Docker: %s", err)
 	}
-	databaseUri, closer = testutil.GetDBInstance(pool)
+	databaseURI, closer = testutil.GetDBInstance(pool)
 	code := m.Run()
 	closer() // cleanup
 	os.Exit(code)
 }
 
 func setupService(t *testing.T, opts ...testutil.GetDBOption) *retention.DBRetentionService {
+	t.Helper()
 	ctx := context.Background()
-	cdb, _ := testutil.GetDB(t, databaseUri, opts...)
+	cdb, _ := testutil.GetDB(t, databaseURI, opts...)
 	cataloger := catalog.NewCataloger(cdb)
-
-	cataloger.CreateRepository(ctx, "repo", "s3://repo", "master")
-
+	testutil.MustDo(t, "create repository",
+		cataloger.CreateRepository(ctx, "repo", "s3://repo", "master"))
 	return retention.NewDBRetentionService(cdb)
 }
 

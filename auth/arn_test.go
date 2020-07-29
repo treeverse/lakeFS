@@ -18,32 +18,32 @@ func TestParseARN(t *testing.T) {
 			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "a",
-			AccountId:  "b",
-			ResourceId: "myrepo"}},
+			AccountID:  "b",
+			ResourceID: "myrepo"}},
 		{Input: "arn:lakefs:repos:a:b/myrepo", Arn: auth.Arn{
 			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "a",
-			AccountId:  "b",
-			ResourceId: "myrepo"}},
+			AccountID:  "b",
+			ResourceID: "myrepo"}},
 		{Input: "arn:lakefs:repos:a::myrepo", Arn: auth.Arn{
 			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "a",
-			AccountId:  "",
-			ResourceId: "myrepo"}},
+			AccountID:  "",
+			ResourceID: "myrepo"}},
 		{Input: "arn:lakefs:repos::b:myrepo", Arn: auth.Arn{
 			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "",
-			AccountId:  "b",
-			ResourceId: "myrepo"}},
+			AccountID:  "b",
+			ResourceID: "myrepo"}},
 		{Input: "arn:lakefs:repos::/myrepo", Arn: auth.Arn{
 			Partition:  "lakefs",
 			Service:    "repos",
 			Region:     "",
-			AccountId:  "",
-			ResourceId: "myrepo"}},
+			AccountID:  "",
+			ResourceID: "myrepo"}},
 	}
 
 	for _, c := range cases {
@@ -55,8 +55,8 @@ func TestParseARN(t *testing.T) {
 		} else if c.Error {
 			t.Fatalf("expected error parsing arn: \"%s\"", c.Input)
 		}
-		if got.AccountId != c.Arn.AccountId {
-			t.Fatalf("got unexpected account ID parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.AccountId, c.Arn.AccountId)
+		if got.AccountID != c.Arn.AccountID {
+			t.Fatalf("got unexpected account ID parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.AccountID, c.Arn.AccountID)
 		}
 		if got.Region != c.Arn.Region {
 			t.Fatalf("got unexpected region parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.Region, c.Arn.Region)
@@ -67,8 +67,8 @@ func TestParseARN(t *testing.T) {
 		if got.Service != c.Arn.Service {
 			t.Fatalf("got unexpected service parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.Service, c.Arn.Service)
 		}
-		if got.ResourceId != c.Arn.ResourceId {
-			t.Fatalf("got unexpected resource ID parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.ResourceId, c.Arn.ResourceId)
+		if got.ResourceID != c.Arn.ResourceID {
+			t.Fatalf("got unexpected resource ID parsing arn: \"%s\": \"%s\" (expected \"%s\")", c.Input, got.ResourceID, c.Arn.ResourceID)
 		}
 	}
 }

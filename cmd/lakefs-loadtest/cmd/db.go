@@ -30,6 +30,7 @@ func connectToDB(connectionString string) db.Database {
 	return database
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(dbCmd)
 
