@@ -10,7 +10,6 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository, branch string,
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "prefix", IsValid: ValidatePath(prefix)},
 	}); err != nil {
 		return err
 	}

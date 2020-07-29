@@ -13,9 +13,11 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "path", IsValid: ValidatePath(path)},
 	}); err != nil {
 		return err
+	}
+	if path == "" {
+		return db.ErrNotFound
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
