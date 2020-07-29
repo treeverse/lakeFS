@@ -2,6 +2,7 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/ioutil"
@@ -26,6 +27,8 @@ const (
 
 	ExpireObjectS3Tag = "lakefs_expire_object"
 )
+
+var ErrMissingETag = errors.New("missing ETag")
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
@@ -156,7 +159,7 @@ func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 		return "", err
 	}
 	if etag == "" {
-		return "", fmt.Errorf("etag not returned")
+		return "", ErrMissingETag
 	}
 	return etag, nil
 }

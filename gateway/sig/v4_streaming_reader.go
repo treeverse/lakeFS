@@ -21,6 +21,7 @@ package sig
 import (
 	"bufio"
 	"bytes"
+	"crypto/sha256"
 	"encoding/hex"
 	"errors"
 	"hash"
@@ -29,9 +30,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/auth/model"
-	errors2 "github.com/treeverse/lakefs/gateway/errors"
-
-	"crypto/sha256"
+	gwerrors "github.com/treeverse/lakefs/gateway/errors"
 )
 
 // Streaming AWS Signature Version '4' constants.
@@ -235,7 +234,7 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			// Calculate the chunk signature.
 			newSignature := getChunkSignature(cr.cred, cr.seedSignature, cr.region, cr.service, cr.seedDate, hashedChunk)
 			if !Equal([]byte(cr.chunkSignature), []byte(newSignature)) {
-				return 0, errors2.ErrSignatureDoesNotMatch
+				return 0, gwerrors.ErrSignatureDoesNotMatch
 			}
 			// Newly calculated signature becomes the seed for the next chunk
 			// this follows the chaining.
@@ -332,9 +331,9 @@ func parseHexUint(v []byte) (n uint64, err error) {
 		case '0' <= b && b <= '9':
 			b -= '0'
 		case 'a' <= b && b <= 'f':
-			b = b - 'a' + 10
+			b -= 'a' + 10
 		case 'A' <= b && b <= 'F':
-			b = b - 'A' + 10
+			b -= 'A' + 10
 		default:
 			return 0, errors.New("invalid byte in chunk length")
 		}

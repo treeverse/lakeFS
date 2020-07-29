@@ -84,7 +84,6 @@ func (t *TargetGenerator) GenerateMergeToMasterTarget(repo, branch string) veget
 		fmt.Sprintf("%s/repositories/%s/refs/%s/merge/master", t.ServerAddress, repo, branch),
 		"{}",
 		"merge")
-
 }
 
 func (t *TargetGenerator) GenerateListTarget(repo, branch string, amount int) vegeta.Target {

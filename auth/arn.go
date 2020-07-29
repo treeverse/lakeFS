@@ -23,6 +23,8 @@ const (
 	fieldIndexRegion
 	fieldIndexAccount
 	fieldIndexResource
+
+	fieldIndexLast = fieldIndexResource
 )
 
 func arnParseField(arn *Arn, field string, fieldIndex int) error {
@@ -78,7 +80,7 @@ func ParseARN(arnString string) (*Arn, error) {
 			return a, err
 		}
 	}
-	if currField < fieldIndexResource {
+	if currField < fieldIndexLast {
 		return nil, ErrInvalidArn
 	}
 	return a, nil

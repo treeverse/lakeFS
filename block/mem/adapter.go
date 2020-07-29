@@ -13,6 +13,8 @@ import (
 	"sort"
 	"sync"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 )
@@ -103,12 +105,18 @@ func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	return nil
 }
 
-func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadCloser, error) {
 	a.mutex.RLock()
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
 	if !ok {
 		return nil, fmt.Errorf("no data for key")
+	}
+	if expectedSize > 0 && int64(len(data)) != expectedSize {
+		logging.Default().WithFields(logging.Fields{
+			"expected_size": expectedSize,
+			"size":          len(data),
+		}).Warn("data size doesn't match")
 	}
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
