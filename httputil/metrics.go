@@ -8,7 +8,7 @@ type MetricResponseWriter struct {
 }
 
 func NewMetricResponseWriter(w http.ResponseWriter) *MetricResponseWriter {
-	return &MetricResponseWriter{w, http.StatusOK}
+	return &MetricResponseWriter{ResponseWriter: w, StatusCode: http.StatusOK}
 }
 
 func (mrw *MetricResponseWriter) WriteHeader(code int) {

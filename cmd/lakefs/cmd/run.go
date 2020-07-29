@@ -3,16 +3,12 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"github.com/dlmiddlecote/sqlstats"
-	"github.com/prometheus/client_golang/prometheus"
 	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
 	"syscall"
 	"time"
-
-	"github.com/treeverse/lakefs/dedup"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
@@ -21,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -50,11 +47,6 @@ var runCmd = &cobra.Command{
 		dbConnString := cfg.GetDatabaseURI()
 
 		dbPool := cfg.BuildDatabaseConnection()
-		collector := sqlstats.NewStatsCollector("lakefs", dbPool)
-		err := prometheus.Register(collector)
-		if err != nil {
-			logger.WithError(err).Error("failed to register db stats collector")
-		}
 		defer func() {
 			_ = dbPool.Close()
 		}()

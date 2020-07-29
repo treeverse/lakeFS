@@ -141,7 +141,7 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	// health check
 	mux.Handle("/_health", httputil.ServeHealth())
 	// metrics
-	mux.Handle("/_metrics", promhttp.Handler())
+	mux.Handle("/metrics", promhttp.Handler())
 	// pprof endpoint
 	mux.Handle("/_pprof/", httputil.ServePPROF("/_pprof/"))
 	// api handler
