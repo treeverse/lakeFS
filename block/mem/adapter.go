@@ -13,10 +13,9 @@ import (
 	"sort"
 	"sync"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const BlockstoreType = "mem"
