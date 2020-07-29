@@ -20,8 +20,8 @@ func ObjectArn(repoID, key string) string {
 	return fSArnPrefix + "repository/" + repoID + "/object/" + key
 }
 
-func BranchArn(repoID, branchId string) string {
-	return fSArnPrefix + "repository/" + repoID + "/branch/" + branchId
+func BranchArn(repoID, branchID string) string {
+	return fSArnPrefix + "repository/" + repoID + "/branch/" + branchID
 }
 
 func UserArn(userID string) string {

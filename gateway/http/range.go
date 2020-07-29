@@ -10,26 +10,27 @@ var (
 	ErrBadRange = fmt.Errorf("unsatisfiable range")
 )
 
-// HttpRange represents an RFC 2616 HTTP Range
-type HttpRange struct {
+// Range represents an RFC 2616 HTTP Range
+type Range struct {
 	StartOffset int64
 	EndOffset   int64
 }
 
-func (r HttpRange) String() string {
+func (r Range) String() string {
 	return fmt.Sprintf("start=%d, end=%d (total=%d)", r.StartOffset, r.EndOffset, r.EndOffset-r.StartOffset+1)
 }
 
-// ParseHTTPRange parses an HTTP RFC 2616 Range header value and returns an HttpRange object for the given object length
-func ParseHTTPRange(spec string, length int64) (HttpRange, error) {
+// ParseRange parses an HTTP RFC 2616 Range header value and returns an Range object for the given object length
+func ParseRange(spec string, length int64) (Range, error) {
 	// Amazon S3 doesn't support retrieving multiple ranges of data per GET request.
-	var r HttpRange
+	var r Range
 	if !strings.HasPrefix(spec, "bytes=") {
 		return r, ErrBadRange
 	}
 	spec = strings.TrimPrefix(spec, "bytes=")
 	parts := strings.Split(spec, "-")
-	if len(parts) != 2 {
+	const rangeParts = 2
+	if len(parts) != rangeParts {
 		return r, ErrBadRange
 	}
 

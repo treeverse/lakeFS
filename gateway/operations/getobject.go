@@ -70,12 +70,12 @@ func (controller *GetObject) Handle(o *PathOperation) {
 	// range query
 	var expected int64
 	var data io.ReadCloser
-	var rng ghttp.HttpRange
+	var rng ghttp.Range
 	rng.StartOffset = -1
 	// range query
 	rangeSpec := o.Request.Header.Get("Range")
 	if len(rangeSpec) > 0 {
-		rng, err = ghttp.ParseHTTPRange(rangeSpec, entry.Size)
+		rng, err = ghttp.ParseRange(rangeSpec, entry.Size)
 		if err != nil {
 			o.Log().WithError(err).WithField("range", rangeSpec).Debug("invalid range spec")
 		}

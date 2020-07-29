@@ -141,8 +141,8 @@ func (c *Config) buildS3Adapter() (block.Adapter, error) {
 }
 
 func (c *Config) buildLocalAdapter() (block.Adapter, error) {
-	location := viper.GetString("blockstore.local.path")
-	location, err := homedir.Expand(location)
+	localPath := viper.GetString("blockstore.local.path")
+	location, err := homedir.Expand(localPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse blockstore location URI: %w", err)
 	}

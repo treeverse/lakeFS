@@ -15,9 +15,9 @@ import (
 )
 
 const (
-	ConfigAccessKeyId       = "credentials.access_key_id"
+	ConfigAccessKeyID       = "credentials.access_key_id"
 	ConfigSecretAccessKey   = "credentials.secret_access_key"
-	ConfigServerEndpointUrl = "server.endpoint_url"
+	ConfigServerEndpointURL = "server.endpoint_url"
 )
 
 var (
@@ -52,8 +52,8 @@ lakectl is a CLI tool allowing exploration and manipulation of a lakeFS environm
 
 func getClient() api.Client {
 	client, err := api.NewClient(
-		viper.GetString(ConfigServerEndpointUrl),
-		viper.GetString(ConfigAccessKeyId),
+		viper.GetString(ConfigServerEndpointURL),
+		viper.GetString(ConfigAccessKeyID),
 		viper.GetString(ConfigSecretAccessKey),
 	)
 	if err != nil {
@@ -98,6 +98,7 @@ func ParseDocument(dest interface{}, filename string, fileTitle string) {
 	}
 }
 
+//nolint:gochecknoinits
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,

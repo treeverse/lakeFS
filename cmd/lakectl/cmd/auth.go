@@ -239,7 +239,7 @@ var authUsersCredentialsDelete = &cobra.Command{
 	Short: "delete user credentials",
 	Run: func(cmd *cobra.Command, args []string) {
 		id, _ := cmd.Flags().GetString("id")
-		accessKeyId, _ := cmd.Flags().GetString("access-key-id")
+		accessKeyID, _ := cmd.Flags().GetString("access-key-id")
 		clt := getClient()
 
 		if id == "" {
@@ -250,7 +250,7 @@ var authUsersCredentialsDelete = &cobra.Command{
 			id = user.ID
 		}
 
-		err := clt.DeleteCredentials(context.Background(), id, accessKeyId)
+		err := clt.DeleteCredentials(context.Background(), id, accessKeyID)
 		if err != nil {
 			DieErr(err)
 		}

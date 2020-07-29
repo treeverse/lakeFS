@@ -76,8 +76,8 @@ var branchCreateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
 		client := getClient()
-		sourceRawUri, _ := cmd.Flags().GetString("source")
-		sourceURI, err := uri.Parse(sourceRawUri)
+		sourceRawURI, _ := cmd.Flags().GetString("source")
+		sourceURI, err := uri.Parse(sourceRawURI)
 		if err != nil {
 			DieFmt("failed to parse source URI: %s", err)
 		}

@@ -162,7 +162,6 @@ func (cs chunkState) String() string {
 		stateString = "verifyChunk"
 	case eofChunk:
 		stateString = "eofChunk"
-
 	}
 	return stateString
 }
@@ -216,7 +215,9 @@ func (cr *s3ChunkedReader) Read(buf []byte) (n int, err error) {
 			}
 
 			// Calculate sha256.
-			cr.chunkSHA256Writer.Write(rbuf[:n0])
+			if _, err := cr.chunkSHA256Writer.Write(rbuf[:n0]); err != nil {
+				return 0, err
+			}
 			// Update the bytes read into request buffer so far.
 			n += n0
 			buf = buf[n0:]
@@ -329,7 +330,7 @@ func parseHexUint(v []byte) (n uint64, err error) {
 	for i, b := range v {
 		switch {
 		case '0' <= b && b <= '9':
-			b = b - '0'
+			b -= '0'
 		case 'a' <= b && b <= 'f':
 			b = b - 'a' + 10
 		case 'A' <= b && b <= 'F':

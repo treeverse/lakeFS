@@ -51,7 +51,7 @@ type Adapter struct {
 	mpu                map[string]*mpu
 	properties         map[string]block.Properties
 	mutex              *sync.RWMutex
-	uploadIdTranslator block.UploadIdTranslator
+	uploadIdTranslator block.UploadIDTranslator
 }
 
 func New(opts ...func(a *Adapter)) *Adapter {
@@ -69,7 +69,7 @@ func New(opts ...func(a *Adapter)) *Adapter {
 	return a
 }
 
-func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
+func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.uploadIdTranslator = t
 	}
@@ -145,14 +145,14 @@ func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	defer a.mutex.Unlock()
 	mpu := newMPU()
 	a.mpu[mpu.id] = mpu
-	tid := a.uploadIdTranslator.SetUploadId(mpu.id)
+	tid := a.uploadIdTranslator.SetUploadID(mpu.id)
 	return tid, nil
 }
 
 func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
+	uploadId = a.uploadIdTranslator.TranslateUploadID(uploadId)
 	mpu, ok := a.mpu[uploadId]
 	if !ok {
 		return "", fmt.Errorf("multipart ID not found")
@@ -174,20 +174,20 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
+	uploadId = a.uploadIdTranslator.TranslateUploadID(uploadId)
 	_, ok := a.mpu[uploadId]
 	if !ok {
 		return fmt.Errorf("multipart ID not found")
 	}
 	delete(a.mpu, uploadId)
-	a.uploadIdTranslator.RemoveUploadId(uploadId)
+	a.uploadIdTranslator.RemoveUploadID(uploadId)
 	return nil
 }
 
 func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, _ *block.MultipartUploadCompletion) (*string, int64, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
-	uploadId = a.uploadIdTranslator.TranslateUploadId(uploadId)
+	uploadId = a.uploadIdTranslator.TranslateUploadID(uploadId)
 	mpu, ok := a.mpu[uploadId]
 	if !ok {
 		return nil, 0, fmt.Errorf("multipart ID not found")
@@ -200,7 +200,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 	}
 	code := h.Sum(nil)
 	hexCode := fmt.Sprintf("%x", code)
-	a.uploadIdTranslator.RemoveUploadId(uploadId)
+	a.uploadIdTranslator.RemoveUploadID(uploadId)
 	a.data[getKey(obj)] = data
 	return &hexCode, int64(len(data)), nil
 }

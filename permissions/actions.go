@@ -62,7 +62,8 @@ var serviceSet = map[string]struct{}{
 
 func IsValidAction(name string) error {
 	parts := strings.Split(name, ":")
-	if len(parts) != 2 {
+	const actionParts = 2
+	if len(parts) != actionParts {
 		return fmt.Errorf("%s: %w", name, ErrInvalidAction)
 	}
 	if _, ok := serviceSet[parts[0]]; !ok {
