@@ -88,12 +88,12 @@ var PlaybackParams struct {
 }
 
 type ResponseWriter struct {
-	uploadId       []byte
+	uploadID       []byte
 	OriginalWriter http.ResponseWriter
 	ResponseLog    *LazyOutput
 	StatusCode     int
 	Headers        http.Header
-	UploadIdRegexp *regexp.Regexp
+	UploadIDRegexp *regexp.Regexp
 }
 
 func (w *ResponseWriter) Header() http.Header {
@@ -118,10 +118,10 @@ func (w *ResponseWriter) SaveHeaders(fName string) {
 func (w *ResponseWriter) Write(data []byte) (int, error) {
 	written, err := w.OriginalWriter.Write(data)
 	if err == nil {
-		if w.UploadIdRegexp != nil && len(w.uploadId) == 0 {
-			rx := w.UploadIdRegexp.FindSubmatch(data)
+		if w.UploadIDRegexp != nil && len(w.uploadID) == 0 {
+			rx := w.UploadIDRegexp.FindSubmatch(data)
 			if len(rx) > 1 {
-				w.uploadId = rx[1]
+				w.uploadID = rx[1]
 			}
 		}
 		writtenSlice := data[:written]
@@ -147,7 +147,6 @@ func (m *PlayBackMockConf) GetCredentials(accessKey string) (*model.Credential, 
 	aCred.AccessSecretKey = m.AccessSecretKey
 	aCred.UserID = m.UserID
 	return aCred, nil
-
 }
 
 func (m *PlayBackMockConf) GetUserByID(userID int) (*model.User, error) {

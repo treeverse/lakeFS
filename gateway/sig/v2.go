@@ -30,6 +30,7 @@ var (
 
 )
 
+//nolint:gochecknoinits
 func init() {
 	interestingResourcesContainer := []string{
 		"accelerate", "acl", "cors", "defaultObjectAcl",

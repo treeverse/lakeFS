@@ -30,7 +30,7 @@ const (
 type simulationEvent struct {
 	eventTime    time.Time
 	request      []byte
-	uploadId     []byte
+	uploadID     []byte
 	statusCode   int
 	baseName     string
 	bodyReader   *os.File
@@ -100,7 +100,7 @@ func buildEventList(t *testing.T) []simulationEvent {
 			logging.Default().WithError(err).Fatal("Failed to unmarshal event " + file + "\n")
 		}
 		evt.statusCode = se.Status
-		evt.uploadId = []byte(se.UploadID)
+		evt.uploadID = []byte(se.UploadID)
 		evt.request = []byte(se.Request)
 		simulationEvents = append(simulationEvents, *evt)
 
@@ -122,8 +122,8 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 		if err != nil {
 			logging.Default().WithError(err).Fatal("could not create Request from URL")
 		}
-		if len(event.uploadId) > 0 {
-			IdTranslator.ExpectedID = string(event.uploadId)
+		if len(event.uploadID) > 0 {
+			IdTranslator.ExpectedID = string(event.uploadID)
 		}
 
 		secondDiff := time.Duration(float64(event.eventTime.Add(durationToAdd).Sub(time.Now())) / playbackSpeed)

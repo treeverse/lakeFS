@@ -88,7 +88,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			respWriter.Headers = make(http.Header)
 			rawQuery := r.URL.RawQuery
 			if (rawQuery == "uploads=") || (rawQuery == "uploads") { // initial post for s3 multipart upload
-				respWriter.UploadIdRegexp = uploadIDRegexp
+				respWriter.UploadIDRegexp = uploadIDRegexp
 			}
 			newBody := &recordingBodyReader{recorder: NewLazyOutput(filepath.Join(recordingDir, nameBase+RequestBodyExtension)),
 				originalBody: r.Body}
@@ -99,7 +99,7 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 				_ = newBody.recorder.Close()
 			}()
 			next.ServeHTTP(respWriter, r)
-			logRequest(r, respWriter.uploadId, nameBase, respWriter.StatusCode, recordingDir)
+			logRequest(r, respWriter.uploadID, nameBase, respWriter.StatusCode, recordingDir)
 		})
 }
 
