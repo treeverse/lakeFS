@@ -13,13 +13,16 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/push"
 	"github.com/treeverse/lakefs/dedup"
+	"github.com/treeverse/lakefs/gateway"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
@@ -66,8 +69,19 @@ func TestGatewayRecording(t *testing.T) {
 			os.RemoveAll(simulator.PlaybackParams.RecordingDir)
 			os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
 			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
+			stopCh := make(chan struct{})
+			go func() {
+				push.New("http://192.168.1.4:9091", "lakeFS").Gatherer(prometheus.DefaultGatherer).Push()
+				time.Sleep(2 * time.Second)
+				select {
+				case <-stopCh:
+					return
+				default:
+				}
+			}()
 			handler, _ := getBasicHandler(t, basename)
 			DoTestRun(handler, false, 1.0, t)
+			close(stopCh)
 		})
 	}
 }

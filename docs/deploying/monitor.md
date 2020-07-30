@@ -31,7 +31,11 @@ scrape_configs:
 ```
 
 ## Metrics exposed by lakeFS
-In addition to the default Prometheus metrics for Go, lakeFS exposes metrics to help monitor your deployment. 
+By default, Prometheus exports metrics with OS process information like memory and CPU.
+It also includes Go-specific metrics like details about GC and number of goroutines.
+You can learn about these default metrics in this [post](https://povilasv.me/prometheus-go-metrics/){: target="_blan" }.
+
+In addition, lakeFS exposes the following metrics to help monitor your deployment: 
 
 | Name in Prometheus               | Description     | Labels                                                                                           
 | api_requests_total               | [lakeFS API](../reference/api.md) requests (counter)| **code**: http status<br/>**method**: http method                                         
@@ -56,9 +60,10 @@ sum by (operation)(histogram_quantile(0.99, rate(api_request_duration_seconds_bu
 ```
 sum by (operation)(rate(gateway_request_duration_seconds_sum[1m]) / rate(gateway_request_duration_seconds_count[1m]))
 ```
+
 ### Number of errors in outgoing S3 requests
 ```
-sum by (operation) (increase(s3_operation_duration_seconds_count{error="false"}[1m]))
+sum by (operation) (increase(s3_operation_duration_seconds_count{error="true"}[1m]))
 ```
 
 ### Number of open connections to the database
