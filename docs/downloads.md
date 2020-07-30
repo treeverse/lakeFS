@@ -21,7 +21,7 @@ has_children: false
 
 ## Binary Releases
 
-Binary packages are available for Linux/macOS/Windows at [https://releases.lakefs.io/](https://releases.lakefs.io){: target="_blank" }
+Binary packages are available for Linux/macOS/Windows on [GitHub Releases](https://github.com/treeverse/lakeFS/releases){: target="_blank" }
 
 ## Docker Images
 
