@@ -1,48 +1,12 @@
 package retention
 
 import (
-	"database/sql/driver"
-	"encoding/json"
-	"errors"
 	"fmt"
-	"time"
 
 	"github.com/go-openapi/strfmt"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/catalog"
 )
-
-// Avoid rounding by keeping whole hours (not Durations)
-type TimePeriodHours int
-
-type Expiration struct {
-	All         *TimePeriodHours `json:",omitempty"`
-	Uncommitted *TimePeriodHours `json:",omitempty"`
-	Noncurrent  *TimePeriodHours `json:",omitempty"`
-}
-
-type Rule struct {
-	Enabled      bool
-	FilterPrefix string `json:",omitempty"`
-	Expiration   Expiration
-}
-
-type Rules []Rule
-
-type Policy struct {
-	Rules       Rules
-	Description string
-}
-
-type PolicyWithCreationTime struct {
-	Policy
-	CreatedAt time.Time `db:"created_at"`
-}
-
-// RulesHolder is a dummy struct for helping pg serialization: it has
-// poor support for passing an array-valued parameter.
-type RulesHolder struct {
-	Rules Rules
-}
 
 const (
 	hoursInADay             = 24
@@ -50,34 +14,22 @@ const (
 	hoursMinAllowExpiration = 2
 )
 
-func (a *RulesHolder) Value() (driver.Value, error) {
-	return json.Marshal(a)
-}
-
-func (a *Rules) Scan(value interface{}) error {
-	b, ok := value.([]byte)
-	if !ok {
-		return errors.New("type assertion to []byte failed")
-	}
-	return json.Unmarshal(b, a)
-}
-
-func ParseTimePeriod(model models.TimePeriod) (TimePeriodHours, error) {
-	ret := TimePeriodHours(hoursInADay * (model.Days + 7*model.Weeks))
-	if ret < TimePeriodHours(hoursMinAllowExpiration) {
-		return TimePeriodHours(0), fmt.Errorf("minimal allowable expiration is 2 hours")
+func ParseTimePeriod(model models.TimePeriod) (catalog.TimePeriodHours, error) {
+	ret := catalog.TimePeriodHours(hoursInADay * (model.Days + 7*model.Weeks))
+	if ret < catalog.TimePeriodHours(hoursMinAllowExpiration) {
+		return catalog.TimePeriodHours(0), fmt.Errorf("minimal allowable expiration is 2 hours")
 	}
 	return ret, nil
 }
 
-func RenderTimePeriod(timePeriod TimePeriodHours) *models.TimePeriod {
+func RenderTimePeriod(timePeriod catalog.TimePeriodHours) *models.TimePeriod {
 	// Time periods are used for deletion, so safest to round them UP
 	totalDays := (timePeriod + hoursInADay - 1) / hoursInADay
 	return &models.TimePeriod{Weeks: int32(totalDays / daysInAWeek), Days: int32(totalDays % daysInAWeek)}
 }
 
-func ParseExpiration(model models.RetentionPolicyRuleExpiration) (*Expiration, error) {
-	ret := Expiration{}
+func ParseExpiration(model models.RetentionPolicyRuleExpiration) (*catalog.Expiration, error) {
+	ret := catalog.Expiration{}
 	if model.All != nil {
 		hours, err := ParseTimePeriod(*model.All)
 		if err != nil {
@@ -105,7 +57,7 @@ func ParseExpiration(model models.RetentionPolicyRuleExpiration) (*Expiration, e
 	return &ret, nil
 }
 
-func RenderExpiration(expiration *Expiration) *models.RetentionPolicyRuleExpiration {
+func RenderExpiration(expiration *catalog.Expiration) *models.RetentionPolicyRuleExpiration {
 	ret := models.RetentionPolicyRuleExpiration{}
 	if expiration.All != nil {
 		ret.All = RenderTimePeriod(*expiration.All)
@@ -119,8 +71,8 @@ func RenderExpiration(expiration *Expiration) *models.RetentionPolicyRuleExpirat
 	return &ret
 }
 
-func ParseRule(model models.RetentionPolicyRule) (*Rule, error) {
-	rule := Rule{}
+func ParseRule(model models.RetentionPolicyRule) (*catalog.Rule, error) {
+	rule := catalog.Rule{}
 	rule.Enabled = *model.Status == "enabled"
 	if model.Filter == nil {
 		rule.FilterPrefix = ""
@@ -143,7 +95,7 @@ var (
 	Disabled = "disabled"
 )
 
-func RenderRule(rule *Rule) *models.RetentionPolicyRule {
+func RenderRule(rule *catalog.Rule) *models.RetentionPolicyRule {
 	ret := models.RetentionPolicyRule{}
 	if rule.Enabled {
 		ret.Status = &Enabled
@@ -157,8 +109,8 @@ func RenderRule(rule *Rule) *models.RetentionPolicyRule {
 	return &ret
 }
 
-func ParsePolicy(model models.RetentionPolicy) (*Policy, error) {
-	rules := make([]Rule, 0, len(model.Rules))
+func ParsePolicy(model models.RetentionPolicy) (*catalog.Policy, error) {
+	rules := make([]catalog.Rule, 0, len(model.Rules))
 
 	for index, modelRule := range model.Rules {
 		rule, err := ParseRule(*modelRule)
@@ -168,10 +120,10 @@ func ParsePolicy(model models.RetentionPolicy) (*Policy, error) {
 		rules = append(rules, *rule)
 	}
 
-	return &Policy{Description: model.Description, Rules: rules}, nil
+	return &catalog.Policy{Description: model.Description, Rules: rules}, nil
 }
 
-func RenderPolicy(policy *Policy) *models.RetentionPolicy {
+func RenderPolicy(policy *catalog.Policy) *models.RetentionPolicy {
 	modelRules := make([]*models.RetentionPolicyRule, 0, len(policy.Rules))
 	for i := range policy.Rules {
 		modelRules = append(modelRules, RenderRule(&policy.Rules[i]))
@@ -180,7 +132,7 @@ func RenderPolicy(policy *Policy) *models.RetentionPolicy {
 }
 
 // PolicyWithCreationDate never converted in, only out
-func RenderPolicyWithCreationDate(policy *PolicyWithCreationTime) *models.RetentionPolicyWithCreationDate {
+func RenderPolicyWithCreationDate(policy *catalog.PolicyWithCreationTime) *models.RetentionPolicyWithCreationDate {
 	serializableCreationDate := strfmt.DateTime(policy.CreatedAt)
 	return &models.RetentionPolicyWithCreationDate{
 		RetentionPolicy: *RenderPolicy(&policy.Policy),
