@@ -85,7 +85,8 @@ var expireCmd = &cobra.Command{
 				// (not a failure)
 				continue
 			}
-			expiryRows, err := cataloger.QueryExpired(ctx, repo.Name, &policy.Policy)
+			// TODO(ariels): Rewrite this!
+			expiryRows, err := cataloger.QueryEntriesToExpire(ctx, repo.Name, &policy.Policy)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to query for expired (skip repo)")
 				numFailures++
@@ -98,7 +99,7 @@ var expireCmd = &cobra.Command{
 				continue
 			}
 
-			errCh := retention.ExpireOnS3(ctx, s3ControlClient, s3Client, cataloger, expiryReader, &expiryParams)
+			errCh := retention.ExpireOnS3(ctx, s3ControlClient, s3Client, cataloger, repo, expiryReader, &expiryParams)
 
 			repoOk := true
 			for err := range errCh {
