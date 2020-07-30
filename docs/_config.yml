@@ -4,7 +4,7 @@ search_enabled: true
 # Enable support for hyphenated search words:
 search_tokenizer_separator: /[\s/]+/
 
-ga_tracking: UA-167126751-1
+aux_links_new_tab: true
 
 logo: '/assets/logo.svg'
 logo_link: 'https://lakefs.io'
@@ -13,48 +13,48 @@ remote_theme: pmarsceill/just-the-docs
 
 # Aux links for the upper right navigation
 aux_links:
-  'Docs':
-    - 'https://docs.lakefs.io/'
-  'Github':
-    - 'https://github.com/treeverse/lakeFS'
-  'Blog':
-    - 'https://www.lakefs.io/blog'
+    'Docs':
+        - 'https://docs.lakefs.io/'
+    'Github':
+        - 'http://localhost:4000/'
+    'Blog':
+        - 'https://lakefs.daniellakh.com/'
 
 buttons:
-  'Get Started':
-    - 'https://docs.lakefs.io/'
+    'Get Started':
+        - 'https://docs.lakefs.io/'
 
 # FOOTER
 # use "footer_content" for simple footer
 # footer_content: 'Copyright &copy; 2020 Treeverse Labs LTD.'
 footer:
-  'img-bottom':
-    - '/assets/by-treeverse.png'
-  'img-bottom-link':
-    - 'https://www.treeverse.io/'
+    'img-bottom':
+        - '/assets/by-treeverse.png'
+    'img-bottom-link':
+        - 'http://www.treeverse.io/'
 
 footer_links:
-  'Docs':
-    - 'https://docs.lakefs.io/'
-  'Github':
-    - 'https://github.com/treeverse/lakeFS'
-  'Blog':
-    - 'https://www.lakefs.io/blog'
-  'Contact Us':
-    - 'mailto:hello@treeverse.io'
+    'Docs':
+        - 'https://docs.lakefs.io/'
+    'Github':
+        - 'http://localhost:4000/'
+    'Blog':
+        - 'https://lakefs.daniellakh.com/'
+    'Contact Us':
+        - 'https://lakefs.daniellakh.com/'
 
 footer_social:
-  'linkedin':
-    - 'https://www.linkedin.com/company/treeverse'
-  'github':
-    - 'https://github.com/treeverse/lakeFS'
-  'twitter':
-    - 'https://twitter.com/lakeFS'
-  'slack':
-    - 'https://join.slack.com/t/lakefs/shared_invite/zt-fm6e2ncx-6wR3yW5jABXBuqN2NnLCDA'
+    'linkedin':
+        - 'https://www.linkedin.com/company/treeverse'
+    'github':
+        - 'https://github.com/treeverse/lakeFS'
+    'twitter':
+        - 'https://twitter.com/lakeFS'
+    'slack':
+        - 'https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw'
 
 footer_bottom_links:
-  'Terms of use':
-    - 'https://docs.lakefs.io/'
-  'Privacy Policy':
-    - '/https://docs.lakefs.io/'
+    'Terms of use':
+        - 'https://docs.lakefs.io/'
+    'Privacy Policy':
+        - 'http://localhost:4000/'
