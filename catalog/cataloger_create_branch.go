@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	createBranchCommitMessage = "Branch created"
+	createBranchCommitMessage = "Branch '%s' created, source branch '%s'"
 )
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error) {
@@ -53,6 +53,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 			CommitID          CommitID `db:"commit_id"`
 			MergeSourceCommit CommitID `db:"merge_source_commit"`
 		}{}
+		commitMsg := fmt.Sprintf(createBranchCommitMessage, branch, sourceBranch)
 		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,$4,$5,'from_father',
@@ -61,7 +62,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 						where branch_id=$5 and merge_type='from_father' order by branch_id,commit_id desc))
 						,(select max(commit_id) from catalog_commits where branch_id=$5 ))
 			RETURNING commit_id,merge_source_commit`,
-			branchID, CatalogerCommitter, createBranchCommitMessage, creationDate, sourceBranchID)
+			branchID, CatalogerCommitter, commitMsg, creationDate, sourceBranchID)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}
