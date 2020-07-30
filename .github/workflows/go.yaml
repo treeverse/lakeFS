@@ -16,8 +16,8 @@ jobs:
         run: |
           make checks-validator
       - name: gitLeaks
-        uses: zricethezav/gitleaks-action@master
-       
+        uses: treeverse/gitleaks-action@v5.0.1
+
   test:
     name: Run Test Suite
     runs-on: ubuntu-latest
