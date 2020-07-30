@@ -123,7 +123,7 @@ CREATE TABLE catalog_commits (
 
 CREATE TABLE catalog_entries (
     branch_id bigint NOT NULL,
-    path character varying NOT NULL,
+    path character varying COLLATE "C" NOT NULL,
     physical_address character varying,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     size bigint NOT NULL,
@@ -159,7 +159,7 @@ CREATE VIEW catalog_entries_v AS
 CREATE TABLE catalog_multipart_uploads (
     repository_id integer NOT NULL,
     upload_id character varying NOT NULL,
-    path character varying NOT NULL,
+    path character varying COLLATE "C" NOT NULL,
     creation_date timestamp with time zone DEFAULT now() NOT NULL,
     physical_address character varying
 );
