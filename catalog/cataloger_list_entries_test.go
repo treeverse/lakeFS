@@ -323,7 +323,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, DefaultPathDelimiter, tt.args.limit)
 			if (err != nil) != tt.wantErr {
-				t.Fatalf("ListEntriesByLevel() err = %s, expected error %t", err, tt.wantErr)
+				t.Fatalf("ListEntries() err = %s, expected error %t", err, tt.wantErr)
 			}
 			// test that directories have null entries, and vice versa
 			var gotNames []string
@@ -338,10 +338,10 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 			}
 
 			if !reflect.DeepEqual(gotNames, tt.wantEntries) {
-				t.Errorf("ListEntriesByLevel got = %s, want = %s", spew.Sdump(gotNames), spew.Sdump(tt.wantEntries))
+				t.Errorf("ListEntries got = %s, want = %s", spew.Sdump(gotNames), spew.Sdump(tt.wantEntries))
 			}
 			if gotMore != tt.wantMore {
-				t.Errorf("ListEntriesByLevel gotMore = %t, want = %t", gotMore, tt.wantMore)
+				t.Errorf("ListEntries gotMore = %t, want = %t", gotMore, tt.wantMore)
 			}
 		})
 	}
@@ -372,11 +372,11 @@ func TestCataloger_ListEntries_ByLevelDeleted(t *testing.T) {
 		t.Errorf("Expected two entries, got = %s", spew.Sdump(entries))
 	}
 	if hasMore {
-		t.Errorf("ListEntriesByLevel() hasMore = %t, expected fasle", hasMore)
+		t.Errorf("ListEntries() hasMore = %t, expected fasle", hasMore)
 	}
 }
 
-func TestCataloger_list_by_level_with_delete(t *testing.T) {
+func TestCataloger_ListByLevel_Delete(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -387,8 +387,6 @@ func TestCataloger_list_by_level_with_delete(t *testing.T) {
 	_, err := c.Commit(ctx, repo, "master", "message", "committer1", nil)
 	testutil.MustDo(t, "commit to master", err)
 	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
-	//_, err = c.Merge(ctx, repo, "master", "br_1", "ijojo", "ijhuihi", nil)
-	//testutil.MustDo(t, "merge from  master", err)
 
 	testCatalogerBranch(t, ctx, c, repo, "br_2", "br_1")
 	for i := 0; i < 100; i++ {
@@ -398,8 +396,6 @@ func TestCataloger_list_by_level_with_delete(t *testing.T) {
 		testCatalogerCreateEntry(t, ctx, c, repo, "br_1", "xxx/entry"+pathExt(i), nil, strconv.Itoa(i*10000))
 	}
 
-	//_, err = c.Commit(ctx, repo, "br_2", "message", "committer1", nil)
-	//testutil.MustDo(t, "commit to br_2", err)
 	_, err = c.Commit(ctx, repo, "br_1", "message", "committer1", nil)
 	testutil.MustDo(t, "commit to br_1", err)
 
@@ -407,11 +403,6 @@ func TestCataloger_list_by_level_with_delete(t *testing.T) {
 		testutil.MustDo(t, "delete entry "+"xxx/entry"+pathExt(i),
 			c.DeleteEntry(ctx, repo, "br_2", "xxx/entry"+pathExt(i)))
 	}
-
-	//_, err = c.Merge(ctx, repo, "master", "br_1", "ijojo", "ijhuihi", nil)
-	//testutil.MustDo(t, "merge from  master", err)
-	//_, err = c.Merge(ctx, repo, "br_1", "br_2", "ijojo", "ijhuihi", nil)
-	//testutil.MustDo(t, "merge from  master", err)
 
 	got, gotMore, err := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
 	if len(got) != 1 {
@@ -421,11 +412,11 @@ func TestCataloger_list_by_level_with_delete(t *testing.T) {
 		t.Fatalf("expected xxx/, got %s\n", got[0].Path)
 	}
 	if gotMore != false {
-		t.Fatalf("wrong answer to more entries")
+		t.Fatalf("got more expected to be false")
 	}
 }
 
-func TestCataloger_list_by_level_with_Directories_and_tombstones(t *testing.T) {
+func TestCataloger_ListByLevel_DirectoriesAndTombstones(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -460,17 +451,12 @@ func TestCataloger_list_by_level_with_Directories_and_tombstones(t *testing.T) {
 		}
 	}
 	got, gotMore, _ := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
-	if len(got) != 6 {
-		t.Fatalf("expected 6 result, got %d ", len(got))
-	}
 	wantEntries := []string{"xxx001/", "xxx002/", "xxx004/", "xxx005/", "xxx007/", "xxx008/"}
-	for i := 0; i < 6; i++ {
-		if got[i].Path != wantEntries[i] {
-			t.Errorf(" expectd %s, got %s\n", wantEntries[i], got[i].Path)
-		}
+	if !reflect.DeepEqual(got, wantEntries) {
+		t.Errorf("ListEntries got = %s, want = %s", spew.Sdump(got), spew.Sdump(wantEntries))
 	}
 	if gotMore != false {
-		t.Fatalf("wrong answer to more entries")
+		t.Fatalf("got more should be false")
 	}
 	got, gotMore, _ = c.ListEntries(ctx, repo, "br_2", "xxx002/", "", "/", 20)
 	if len(got) != 10 {
@@ -480,11 +466,11 @@ func TestCataloger_list_by_level_with_Directories_and_tombstones(t *testing.T) {
 		"xxx002/entry007", "xxx002/entry008", "xxx002/entry009"}
 	for i := 0; i < 10; i++ {
 		if got[i].Path != wantEntries[i] {
-			t.Errorf(" expectd %s, got %s\n", wantEntries[i], got[i].Path)
+			t.Errorf("expectd %s, got %s\n", wantEntries[i], got[i].Path)
 		}
 	}
 	if gotMore != false {
-		t.Fatalf("wrong answer to more entries")
+		t.Fatalf("got more should be false")
 	}
 }
 
