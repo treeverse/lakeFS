@@ -17,8 +17,8 @@ class transition.
 
 ## Configuration
 
-Configuration uses a [JSON configuration][json-ref] input (which can
-also be specified in more readable [YAML][yaml-ref]).  For example:
+Configuration uses a [JSON configuration][json-ref] input.  For
+example:
 
 ```json
 {
@@ -64,12 +64,32 @@ To load a new retention policy for a bucket, use:
 lakectl repo retention set lakefs://repo/ --policy-file /path/to/policy.yml
 ```
 
-You can also specify [YAML format][yaml-ref] with the `--yaml` flag.
-
 ### Format
 
-Exact format is given in `swagger.yml` in the definition of
-`retention_policy`.  *TODO(ariels):* Document this format properly!
+Exact format is given by `swagger.yml` in the definition of
+`retention_policy`.
+
+A configuration is a single [JSON document][json-ref].  It applies to a single
+repository and holds similar fields to AWS Lifecycle Policy documents.
+It is an object with a single field `rules`, which holds an array of
+rules.
+
+Every **rule** is an object with these fields:
+* a **filter**: an object with a field **prefix**.  A prefix has the
+  form *branch*/*path* and matches all objects on *branch* starting
+  with the prefix *path*.  If no prefix is present, the filter matches
+  all objects.
+* a **status**: `enabled` or `disabled`.
+* an **expiration**: must specify expiration time periods for at least one
+  of these types of files:
+  - `all`: expire all objects after this time period
+  - `uncommitted`: expire all uncommitted objects after this time
+    period
+  - `noncurrent`: expire all committed objects that are not at HEAD
+    after this time period
+
+A **time period** is an object with integer-valued properties `days`
+and `weeks`.
 
 ## Operation
 
@@ -127,7 +147,7 @@ types are supported:
 
 1. Object lifecycles respect the underlying branch model.
 1. Only expiration is supported.
-1. Lifecycle is configured in JSON (or YAML) format, not XML.
+1. Lifecycle is configured in JSON format, not XML.
 1. S3 object versioning is not supported by LakeFS (however _LakeFS_
    versions are of course supported).
 1. Expiration on a [specific date][s3-lifecycle-specific-date] is not
@@ -138,5 +158,4 @@ types are supported:
 [s3-lifecycle]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html
 [s3-lifecycle-specific-date]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html#intro-lifecycle-rules-date
 [json-ref]: https://www.json.org/json-en.html
-[yaml-ref]: https://yaml.org/spec/1.2/spec.html
 [http-gone]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
