@@ -1152,10 +1152,10 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
 			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
-		case models.RevertCreationTypeTREE:
-			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeRESET:
 			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)
+		case models.RevertCreationTypeTREE:
+			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeOBJECT:
 			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Revert.Path)
 		default:
@@ -1163,7 +1163,7 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 				WithPayload(responseError("revert type not found"))
 		}
 		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewRevertBranchNotFound().WithPayload(responseError("branch not found"))
+			return branches.NewRevertBranchNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
 			return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
