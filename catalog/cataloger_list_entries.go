@@ -144,9 +144,6 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		listAfter = prefix
 	} else {
 		listAfter = after
-		if strings.HasSuffix(listAfter, delimiter) {
-			listAfter += DirectoryTermination
-		}
 	}
 	var markerList []string
 	readParams := readPramsType{
@@ -158,12 +155,20 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		topCommitID:     topCommitID,
 		branchID:        branchID,
 	}
+	first := true
 	for {
-		unionSelect := unionQueryParts[0].Where("path > ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
+		var pathCond string
+		if first {
+			first = false
+			pathCond = ">="
+		} else {
+			pathCond = ">"
+		}
+		unionSelect := unionQueryParts[0].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
 		for j := 1; j < len(lineage)+1; j++ {
 			// add the path condition to each union part
 			unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
-				unionQueryParts[j].Where("path > ? and path < ?", listAfter, endOfPrefixRange), ")"))
+				unionQueryParts[j].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange), ")"))
 		}
 		fullQuery := sq.Select("*").FromSelect(unionSelect, "u")
 		unionSQL, args, err := fullQuery.PlaceholderFormat(sq.Dollar).ToSql()
@@ -229,7 +234,6 @@ func processSinglePrefix(response []resultRow, delimiter string, branchPriorityM
 			return resultPaths
 		}
 	}
-	return nil // will never be executed
 }
 
 func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) []resultRow {
@@ -350,7 +354,6 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 			Column("CASE WHEN max_commit >= ? THEN catalog_max_commit_id() ELSE max_commit END AS max_commit", topCommitID)
 	}
 	return query
-
 }
 
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*Entry, error) {
