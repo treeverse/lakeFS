@@ -451,9 +451,13 @@ func TestCataloger_ListByLevel_DirectoriesAndTombstones(t *testing.T) {
 		}
 	}
 	got, gotMore, _ := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
+	var entries []string
+	for _, entry := range got {
+		entries = append(entries, entry.Path)
+	}
 	wantEntries := []string{"xxx001/", "xxx002/", "xxx004/", "xxx005/", "xxx007/", "xxx008/"}
-	if !reflect.DeepEqual(got, wantEntries) {
-		t.Errorf("ListEntries got = %s, want = %s", spew.Sdump(got), spew.Sdump(wantEntries))
+	if !reflect.DeepEqual(entries, wantEntries) {
+		t.Errorf("ListEntries got = %s, want = %s", spew.Sdump(entries), spew.Sdump(wantEntries))
 	}
 	if gotMore != false {
 		t.Fatalf("got more should be false")
