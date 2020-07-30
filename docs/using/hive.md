@@ -45,14 +45,24 @@ For example, we could add the configurations to the file ``` hdfs-site.xml```:
 
 ### Example with schema
 
-```hiveql
-CREATE  SCHEMA example  LOCATION 's3a://example/master/' ;
-CREATE TABLE example.request_logs (request_time timestamp, url string, ip string, user_agent string );
+```sql
+CREATE  SCHEMA example LOCATION 's3a://example/master/' ;
+CREATE TABLE example.request_logs (
+    request_time timestamp,
+    url string,
+    ip string,
+    user_agent string
+);
 ```
 ### Example with external table
 
-```hiveql
-CREATE EXTERNAL TABLE request_logs (request_time timestamp, url string, ip string, user_agent string ) LOCATION 's3a://example/master/request_logs' ;
+```sql
+CREATE EXTERNAL TABLE request_logs (
+    request_time timestamp,
+    url string,
+    ip string,
+    user_agent string
+) LOCATION 's3a://example/master/request_logs' ;
 ```
 
 
