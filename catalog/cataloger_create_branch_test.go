@@ -3,6 +3,8 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"strconv"
+	"sync"
 	"testing"
 
 	"github.com/treeverse/lakefs/testutil"
@@ -101,4 +103,23 @@ func TestCataloger_CreateBranch_Existing(t *testing.T) {
 	if err == nil {
 		t.Fatalf("CreateBranch expected to fail on create branch '%s' already exists", branchName)
 	}
+}
+
+func TestCataloger_CreateBranch_Parallel(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	const workers = 10
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func(id int) {
+			defer wg.Done()
+			branchName := "branch" + strconv.Itoa(id)
+			_, err := c.CreateBranch(ctx, repo, branchName, "master")
+			testutil.MustDo(t, "create test branch "+branchName, err)
+		}(i)
+	}
+	wg.Wait()
 }
