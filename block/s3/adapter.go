@@ -239,7 +239,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			Error("bad S3 PutObject response")
 		return "", err
 	}
-	etag, ok := resp.Header["etag"]
+	etag, ok := resp.Header["Etag"]
 	if !ok || len(etag) == 0 {
 		return "", ErrMissingETag
 	}
