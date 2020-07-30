@@ -3,7 +3,6 @@ package catalog
 import (
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
 	"strings"
 
@@ -173,16 +172,13 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		}
 		resultRows := make([]resultRow, 0, branchBatchSize*len(lineage)+1)
 		err = tx.Select(&resultRows, unionSQL, args...)
-		if errors.Is(err, db.ErrNotFound) {
-			return markerList, nil
-		}
 		if err != nil {
 			return nil, err
 		}
 		if len(resultRows) == 0 {
 			return markerList, nil
 		}
-		pathSuffixes := findCommonPrefix(resultRows, delimiter, branchPriorityMap, limit-len(markerList), readParams)
+		pathSuffixes := processSinglePrefix(resultRows, delimiter, branchPriorityMap, limit-len(markerList), readParams)
 		markerList = append(markerList, pathSuffixes...)
 		if len(pathSuffixes) == 0 || len(markerList) >= limit {
 			return markerList, nil
@@ -195,7 +191,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	}
 }
 
-func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
+func processSinglePrefix(response []resultRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
 	// split results by branch
 	branchRanges := make(map[int64][]resultRow, len(branchPriorityMap))
 	for _, result := range response {
@@ -233,6 +229,7 @@ func findCommonPrefix(response []resultRow, delimiter string, branchPriorityMap 
 			return resultPaths
 		}
 	}
+	return nil // will never be executed
 }
 
 func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) []resultRow {
@@ -353,6 +350,7 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 			Column("CASE WHEN max_commit >= ? THEN catalog_max_commit_id() ELSE max_commit END AS max_commit", topCommitID)
 	}
 	return query
+
 }
 
 func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, commitID CommitID, lineage []lineageCommit, delimiter, prefix string) ([]*Entry, error) {
