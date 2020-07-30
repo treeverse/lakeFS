@@ -161,7 +161,8 @@ func (c *cataloger) diffFromSon(tx db.Tx, sonID, fatherID int64) (Differences, e
 	}
 
 	sonLineageValues := getLineageAsValues(sonLineage, sonID)
-	diffFromSonSQL, args, err := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues).
+	mainDiffFromSon := sqDiffFromSonV(fatherID, sonID, effectiveCommits.FatherEffectiveCommit, effectiveCommits.SonEffectiveCommit, fatherLineage, sonLineageValues)
+	diffFromSonSQL, args, err := mainDiffFromSon.
 		Prefix("CREATE TEMP TABLE " + diffResultsTableName + " ON COMMIT DROP AS").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
