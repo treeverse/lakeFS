@@ -7,6 +7,7 @@ search_tokenizer_separator: /[\s/]+/
 ga_tracking: UA-167126751-1
 
 logo: '/assets/logo.svg'
+logo_link: 'https://lakefs.io'
 
 remote_theme: pmarsceill/just-the-docs
 
