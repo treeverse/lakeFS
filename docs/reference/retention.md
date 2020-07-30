@@ -69,7 +69,28 @@ You can also specify [YAML format][yaml-ref] with the `--yaml` flag.
 ### Format
 
 Exact format is given in `swagger.yml` in the definition of
-`retention_policy`.  *TODO(ariels):* Document this format properly!
+`retention_policy`.
+
+A configuration document applies to a single repository and holds
+similar fields to AWS Lifecycle Policy documents.  It is an object
+with a single field `rules`, which holds an array of rules.
+
+Every **rule** is an object with these fields:
+* a **filter**: an object with a field **prefix**.  A prefix has the
+  form *branch*/*path* and matches all objects on *branch* starting
+  with the prefix *path*.  If no prefix is present, the filter matches
+  all objects.
+* a **status**: `enabled` or `disabled`.
+* an **expiration**: must specify expiration time periods for at least one
+  of these types of files:
+  - `all`: expire all objects after this time period
+  - `uncommitted`: expire all uncommitted objects after this time
+    period
+  - `noncurrent`: expire all committed objects that are not at HEAD
+    after this time period
+
+A time period is an object with integer-valued properties `days` and
+`weeks`.
 
 ## Operation
 
