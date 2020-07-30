@@ -13,7 +13,7 @@
                     {% for link in site.footer_links %}
                     <li class="aux-nav-list-item">
                         <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
-                           rel="noopener noreferrer" {% endif %}>
+                            rel="noopener noreferrer" {% endif %}>
                             {{ link.first }}
                         </a>
                     </li>
@@ -27,8 +27,9 @@
                     {% for link in site.footer_social %}
                     <li class="aux-nav-list-item">
                         <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
-                           rel="noopener noreferrer" {% endif %}>
-                            <img src="{{ '/' | absolute_url }}assets/icons/{{ link.first }}.svg" />
+                            rel="noopener noreferrer" {% endif %}>
+                            <img src="{{ '/' | absolute_url }}assets/icons/{{ link.first }}.svg" class="no-hover" />
+                            <img src="{{ '/' | absolute_url }}assets/icons/{{ link.first }}-hover.svg" class="hover" />
                         </a>
                     </li>
                     {% endfor %}
@@ -46,7 +47,7 @@
                     {% for link in site.footer_bottom_links %}
                     <li class="aux-nav-list-item">
                         <a href="{{ link.last }}" class="site-button" {% if site.aux_links_new_tab %} target="_blank"
-                           rel="noopener noreferrer" {% endif %}>
+                            rel="noopener noreferrer" {% endif %}>
                             {{ link.first }}
                         </a>
                     </li>
