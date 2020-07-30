@@ -89,7 +89,7 @@ For more detailed inforamation on how to setup lakeFS, please visit [the documen
 
 Keep up to date and get lakeFS support via:
 
-- Join our [Community Slack Channel](https://join.slack.com/t/lakefs/shared_invite/zt-fm6e2ncx-6wR3yW5jABXBuqN2NnLCDA) to get help from our team and other users.
+- Join our [Community Slack Channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) to get help from our team and other users.
 - Follow us on [Twitter](https://twitter.com/lake_FS).
 - [Contact us](mailto:hello@treeverse.io)
 
