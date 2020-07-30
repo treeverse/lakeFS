@@ -21,21 +21,19 @@ type HashingReader struct {
 }
 
 func (s *HashingReader) Read(p []byte) (int, error) {
-	l, err := s.originalReader.Read(p)
-	s.CopiedSize += int64(l)
-	if l > 0 {
-		if s.Md5 != nil {
-			if _, err2 := s.Md5.Write(p[0:l]); err2 != nil {
-				return l, err2
-			}
-		}
-		if s.Sha256 != nil {
-			if _, err2 := s.Sha256.Write(p[0:l]); err2 != nil {
-				return l, err2
-			}
+	nb, err := s.originalReader.Read(p)
+	s.CopiedSize += int64(nb)
+	if s.Md5 != nil {
+		if _, err2 := s.Md5.Write(p[0:nb]); err2 != nil {
+			return nb, err2
 		}
 	}
-	return l, err
+	if s.Sha256 != nil {
+		if _, err2 := s.Sha256.Write(p[0:nb]); err2 != nil {
+			return nb, err2
+		}
+	}
+	return nb, err
 }
 
 func NewHashingReader(body io.Reader, hashTypes ...int) *HashingReader {
