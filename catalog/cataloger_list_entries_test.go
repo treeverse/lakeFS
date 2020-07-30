@@ -474,3 +474,70 @@ func testCatalogerListEntriesVerifyResponse(t *testing.T, got []*Entry, gotMore 
 func pathExt(i int) string {
 	return fmt.Sprintf("%03d", i)
 }
+
+func TestCataloger_ListEntries_Prefix(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	// produce test data
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	prefixes := []string{"aaa", "bbb", "ccc"}
+	for _, prefix := range prefixes {
+		testCatalogerCreateEntry(t, ctx, c, repo, "master", prefix+"/index.txt", nil, "")
+		for i := 0; i < 3; i++ {
+			testCatalogerCreateEntry(t, ctx, c, repo, "master", prefix+"/file."+strconv.Itoa(i), nil, "")
+		}
+	}
+
+	tests := []struct {
+		name        string
+		path        string
+		want        []string
+		wantByLevel []string
+	}{
+		{
+			name:        "specific file",
+			path:        "bbb/file.2",
+			want:        []string{"bbb/file.2"},
+			wantByLevel: []string{"bbb/file.2"},
+		},
+	}
+	for _, tt := range tests {
+		// without delimiter
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", "", -1)
+			if err != nil {
+				t.Fatalf("ListEntries err = %s, expected no error", err)
+			}
+			if len(got) != len(tt.want) {
+				t.Fatalf("ListEntries got %d entries, expected %d", len(got), len(tt.want))
+			}
+			for i := 0; i < len(got); i++ {
+				if got[i].Path != tt.want[i] {
+					t.Fatalf("ListEntries entry at %d - %s, expected %s", i, got[i].Path, tt.want[i])
+				}
+			}
+			if gotMore != false {
+				t.Fatal("ListEntries got more should be false")
+			}
+		})
+		// by level
+		t.Run(tt.name+"-by level", func(t *testing.T) {
+			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", DefaultPathDelimiter, -1)
+			if err != nil {
+				t.Fatalf("ListEntries by level - err = %s, expected no error", err)
+			}
+			if len(got) != len(tt.wantByLevel) {
+				t.Fatalf("ListEntries by level - got %d entries, expected %d", len(got), len(tt.wantByLevel))
+			}
+			for i := 0; i < len(got); i++ {
+				if got[i].Path != tt.wantByLevel[i] {
+					t.Fatalf("ListEntries by level - entry at %d - %s, expected %s", i, got[i].Path, tt.wantByLevel[i])
+				}
+			}
+			if gotMore != false {
+				t.Fatal("ListEntries got more should be false")
+			}
+		})
+	}
+}
