@@ -391,7 +391,7 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 	entries := make([]*Entry, len(markerList))
 	entriesReader := sqEntriesLineageV(branchID, commitID, lineage)
 	for _, r := range entryRuns {
-		entriesSql, args, err := sq.
+		entriesSQL, args, err := sq.
 			Select("path", "physical_address", "creation_date", "size", "checksum", "metadata").
 			Where("NOT is_deleted AND path between ? and ?", prefix+r.startEntryRun, prefix+r.endEntryRun).
 			FromSelect(entriesReader, "e").
@@ -401,7 +401,7 @@ func loadEntriesIntoMarkerList(markerList []string, tx db.Tx, branchID int64, co
 			return nil, fmt.Errorf("build entries sql: %w", err)
 		}
 		var entriesList []Entry
-		err = tx.Select(&entriesList, entriesSql, args...)
+		err = tx.Select(&entriesList, entriesSQL, args...)
 		if err != nil {
 			return nil, fmt.Errorf("select entries: %w", err)
 		}
