@@ -183,5 +183,4 @@ func (d *SqlxDatabase) getAuroraVersion() (string, error) {
 
 func (d *SqlxDatabase) Stats() sql.DBStats {
 	return d.db.Stats()
-
 }
