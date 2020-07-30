@@ -62,10 +62,10 @@ gen-api: ## Run the go-swagger code generator (Docker required)
 validate-swagger:  ## Validate swagger.yaml
 	$(SWAGGER) validate swagger.yml
 
-DEFINE_LD_VARS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
+LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
-	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKEFS_BINARY_NAME)
-	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags "-X github.com/treeverse/lakefs/config.Version=$(VERSION)" -v ./cmd/$(LAKECTL_BINARY_NAME)
+	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
+	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: gen ## Lint code
 	$(DOCKER) run --rm -it -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v
