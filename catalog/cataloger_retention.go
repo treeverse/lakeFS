@@ -2,16 +2,64 @@ package catalog
 
 import (
 	"context"
+	"database/sql/driver"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 )
+
+// Avoid rounding by keeping whole hours (not Durations)
+type TimePeriodHours int
+
+type Expiration struct {
+	All         *TimePeriodHours `json:",omitempty"`
+	Uncommitted *TimePeriodHours `json:",omitempty"`
+	Noncurrent  *TimePeriodHours `json:",omitempty"`
+}
+
+type Rule struct {
+	Enabled      bool
+	FilterPrefix string `json:",omitempty"`
+	Expiration   Expiration
+}
+
+type Rules []Rule
+
+type Policy struct {
+	Rules       Rules
+	Description string
+}
+
+type PolicyWithCreationTime struct {
+	Policy
+	CreatedAt time.Time `db:"created_at"`
+}
+
+// RulesHolder is a dummy struct for helping pg serialization: it has
+// poor support for passing an array-valued parameter.
+type RulesHolder struct {
+	Rules Rules
+}
+
+func (a *RulesHolder) Value() (driver.Value, error) {
+	return json.Marshal(a)
+}
+
+func (a *Rules) Scan(value interface{}) error {
+	b, ok := value.([]byte)
+	if !ok {
+		return errors.New("type assertion to []byte failed")
+	}
+	return json.Unmarshal(b, a)
+}
 
 // TODO(ariels) Move retention policy CRUD from retention service to
 // here.
@@ -35,7 +83,7 @@ func byPathPrefix(pathPrefix string) sq.Sqlizer {
 	return sq.And{branchExpr, pathPrefixExpr}
 }
 
-func byExpiration(hours retention.TimePeriodHours) sq.Sqlizer {
+func byExpiration(hours TimePeriodHours) sq.Sqlizer {
 	return sq.Expr("NOW() - catalog_entries.creation_date > make_interval(hours => ?)", int(hours))
 }
 
@@ -47,7 +95,7 @@ type retentionQueryRecord struct {
 	Path            string   `db:"path"`
 }
 
-func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.SelectBuilder {
+func buildRetentionQuery(repositoryName string, policy *Policy) sq.SelectBuilder {
 	var (
 		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
 		byUncommitted = sq.Expr("min_commit = 0")
@@ -98,7 +146,7 @@ func buildRetentionQuery(repositoryName string, policy *retention.Policy) sq.Sel
 // expiryRows implements ExpiryRows.
 type expiryRows struct {
 	rows           *sqlx.Rows
-	repositoryName string
+	RepositoryName string
 }
 
 func (e *expiryRows) Next() bool {
@@ -120,7 +168,7 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 		return nil, err
 	}
 	return &ExpireResult{
-		Repository:      e.repositoryName,
+		Repository:      e.RepositoryName,
 		Branch:          record.Branch,
 		PhysicalAddress: record.PhysicalAddress,
 		InternalReference: (&InternalObjectRef{
@@ -131,30 +179,51 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 	}, nil
 }
 
-// QueryExpired returns ExpiryRows iterating over all objects to expire on repositoryName
-// according to policy to channel out.
-func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error) {
-	logger := logging.Default().WithContext(ctx).WithField("policy", *policy)
+func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error) {
+	logger := logging.FromContext(ctx).WithField("policy", *policy)
 
-	query := buildRetentionQuery(repositoryName, policy)
-	queryString, args, err := query.ToSql()
+	// TODO(ariels): Get lowest possible isolation level here.
+	expiryByEntriesQuery := buildRetentionQuery(repositoryName, policy)
+	expiryByEntriesQueryString, args, err := expiryByEntriesQuery.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("building query: %w", err)
 	}
 
-	logger = logger.WithFields(logging.Fields{"query": queryString, "args": args})
-	logger.Info("retention query")
+	// Hold retention query results as a CTE in a WITH prefix.  Everything must live in a
+	// single SQL statement because multiple statements would occur on separate connections,
+	// and using a transaction would close the returned rows iterator on exit... preventing
+	// the caller from reading the returned rows.
 
-	// TODO(ariels): Get lowest possible isolation level here.
-	rows, err := c.db.Queryx(queryString, args...)
+	dedupedQuery := fmt.Sprintf(`
+                    WITH to_expire AS (%s) SELECT * FROM to_expire
+                    WHERE physical_address IN (
+                        SELECT a.physical_address FROM
+                            ((SELECT physical_address, COUNT(*) c FROM to_expire GROUP BY physical_address) AS a JOIN
+                             (SELECT physical_address, COUNT(*) c FROM catalog_entries GROUP BY physical_address) AS b
+                             ON a.physical_address = b.physical_address)
+                            WHERE a.c = b.c)
+                    `,
+		expiryByEntriesQueryString,
+	)
+
+	logger.WithFields(logging.Fields{
+		"dedupe_query": dedupedQuery,
+		"args":         args,
+	}).Info("retention dedupe")
+	// Return only those entries to expire for which *all* entry references are due:
+	// An object may have been deduped onto several branches with different names
+	// and will have multiple entries; it can only be remove once it expires from
+	// all of those.
+	rows, err := c.db.Queryx(dedupedQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("running query: %w", err)
 	}
-	return &expiryRows{rows, repositoryName}, nil
+	var ret ExpiryRows = &expiryRows{rows: rows, RepositoryName: repositoryName}
+	return ret, nil
 }
 
 func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
-	logger := logging.Default().WithContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
+	logger := logging.FromContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
 
 	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`CREATE TEMPORARY TABLE temp_expiry (
