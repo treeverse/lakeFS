@@ -21,6 +21,7 @@ type Database interface {
 	Queryx(query string, args ...interface{}) (*Rows, error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
+	Stats() sql.DBStats
 }
 
 type SqlxDatabase struct {
@@ -178,4 +179,8 @@ func (d *SqlxDatabase) getAuroraVersion() (string, error) {
 		return "", err
 	}
 	return v.(string), err
+}
+
+func (d *SqlxDatabase) Stats() sql.DBStats {
+	return d.db.Stats()
 }
