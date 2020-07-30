@@ -405,15 +405,7 @@ func TestCataloger_ListByLevel_Delete(t *testing.T) {
 	}
 
 	got, gotMore, err := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
-	if len(got) != 1 {
-		t.Fatalf("expected 1 result, got %d ", len(got))
-	}
-	if got[0].Path != "xxx/" {
-		t.Fatalf("expected xxx/, got %s\n", got[0].Path)
-	}
-	if gotMore != false {
-		t.Fatalf("got more expected to be false")
-	}
+	testCatalogerListEntriesVerifyResponse(t, got, gotMore, err, []string{"xxx/"})
 }
 
 func TestCataloger_ListByLevel_DirectoriesAndTombstones(t *testing.T) {
@@ -450,31 +442,32 @@ func TestCataloger_ListByLevel_DirectoriesAndTombstones(t *testing.T) {
 				c.DeleteEntry(ctx, repo, "br_2", "xxx"+pathExt(i)+"/entry"+pathExt(j)))
 		}
 	}
-	got, gotMore, _ := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
-	var entries []string
-	for _, entry := range got {
-		entries = append(entries, entry.Path)
-	}
 	wantEntries := []string{"xxx001/", "xxx002/", "xxx004/", "xxx005/", "xxx007/", "xxx008/"}
-	if !reflect.DeepEqual(entries, wantEntries) {
-		t.Errorf("ListEntries got = %s, want = %s", spew.Sdump(entries), spew.Sdump(wantEntries))
+	got, gotMore, err := c.ListEntries(ctx, repo, "br_2", "", "", "/", 20)
+	testCatalogerListEntriesVerifyResponse(t, got, gotMore, err, wantEntries)
+
+	wantEntries = []string{"xxx002/entry000", "xxx002/entry001", "xxx002/entry002", "xxx002/entry003",
+		"xxx002/entry004", "xxx002/entry005", "xxx002/entry006", "xxx002/entry007", "xxx002/entry008",
+		"xxx002/entry009"}
+	got, gotMore, err = c.ListEntries(ctx, repo, "br_2", "xxx002/", "", "/", 20)
+	testCatalogerListEntriesVerifyResponse(t, got, gotMore, err, wantEntries)
+}
+
+func testCatalogerListEntriesVerifyResponse(t *testing.T, got []*Entry, gotMore bool, gotErr error, entries []string) {
+	t.Helper()
+	if gotErr != nil {
+		t.Fatalf("Got expected error: %s", gotErr)
 	}
-	if gotMore != false {
-		t.Fatalf("got more should be false")
+	if len(entries) != len(got) {
+		t.Fatalf("Got %d entries, expected %d", len(got), len(entries))
 	}
-	got, gotMore, _ = c.ListEntries(ctx, repo, "br_2", "xxx002/", "", "/", 20)
-	if len(got) != 10 {
-		t.Fatalf("expected 6 result, got %d ", len(got))
-	}
-	wantEntries = []string{"xxx002/entry000", "xxx002/entry001", "xxx002/entry002", "xxx002/entry003", "xxx002/entry004", "xxx002/entry005", "xxx002/entry006",
-		"xxx002/entry007", "xxx002/entry008", "xxx002/entry009"}
-	for i := 0; i < 10; i++ {
-		if got[i].Path != wantEntries[i] {
-			t.Errorf("expectd %s, got %s\n", wantEntries[i], got[i].Path)
+	for i, p := range entries {
+		if p != got[i].Path {
+			t.Fatalf("Entry path '%s', expected '%s'", p, got[i].Path)
 		}
 	}
-	if gotMore != false {
-		t.Fatalf("got more should be false")
+	if gotMore {
+		t.Fatalf("not expected more")
 	}
 }
 
