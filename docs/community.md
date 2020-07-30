@@ -9,15 +9,15 @@ has_children: false
 
 ### DockerHub
 
-lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/r/treeverse/){: target="_blank" }.
+lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/r/treeverse/).
 
 ### Support
 
-Feedback and questions are welcome at [hello@treeverse.io](mailto:hello@treeverse.io){: target="_blank" }
+Feedback and questions are welcome at [support@treeverse.io](mailto:support@treeverse.io).
 
 ### Slack Channel
 
-Coming soon
+Join our [channel](https://join.slack.com/t/lakefs/shared_invite/zt-fm6e2ncx-6wR3yW5jABXBuqN2NnLCDA) to get help from our team and other users
 
 ### Forum
 
