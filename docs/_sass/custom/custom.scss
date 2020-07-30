@@ -1,3 +1,5 @@
+@import url('pygments/github.css');
+
 @font-face {
 	font-family: GalanoGrotesque-ExtraLight;
 	src: local(GalanoGrotesque-ExtraLight),
@@ -9,11 +11,6 @@
 		url('../fonts/Rene Bieder - Galano Grotesque.otf');
 }
 @font-face {
-	font-family: GalanoGrotesque-Medium;
-	src: local(GalanoGrotesque-Medium),
-		url('../fonts/Rene Bieder - Galano Grotesque Medium.otf');
-}
-@font-face {
 	font-family: GalanoGrotesque-Bold;
 	src: local(GalanoGrotesque-Bold),
 		url('../fonts/Rene Bieder - Galano Grotesque Bold.otf');
@@ -22,6 +19,8 @@
 $white: #ffffff;
 $pale-grey: #f1f9f9;
 $light-blue-grey: #def1f1;
+$info-blue: #3498db;
+$info-blue-highlight: #2980b9;
 $teal-green: #279890;
 $black: #000000;
 $battleship-grey: #6e7171;
@@ -53,7 +52,7 @@ body {
 			float: right;
 			position: relative;
 			.main-content-wrap {
-				max-width: 800px;
+				max-width: 1200px;
 				padding: 80px;
 			}
 		}
@@ -74,7 +73,7 @@ body {
 
 	h1 {
 		margin-top: 40px !important;
-		font-family: GalanoGrotesque-Medium;
+		font-family: GalanoGrotesque;
 		font-size: 42px;
 		color: $black;
 	}
@@ -82,7 +81,7 @@ body {
 		margin-top: 40px !important;
 		font-size: 28px;
 		&#table-of-contents {
-			font-family: GalanoGrotesque-Medium;
+			font-family: GalanoGrotesque;
 			color: $black;
 			font-size: 16px !important;
 		}
@@ -91,7 +90,7 @@ body {
 	h3 {
 		margin-top: 25px !important;
 		font-size: 20px;
-		font-family: GalanoGrotesque-Medium;
+		font-family: GalanoGrotesque;
 	}
 	h4,
 	.text-delta {
@@ -124,38 +123,15 @@ body {
 			}
 		}
 	}
-	.language-markdown,
-	code,
-	pre.highlight,
-	figure.highlight {
-		background: white;
-		color: $battleship-grey;
-	}
-	figure.highlight,
-	pre.highlight {
-		border-radius: 2px;
-		border: solid 1px $border-grey;
 
-		color: $teal-green;
-		.gu,
-		.gh,
-		.nt,
-		.kd,
-		.k,
-		.kc,
-		.nb {
-			color: $teal-green;
-		}
-		.nv,
-		.p,
-		.o {
-			color: $battleship-grey;
-		}
+	pre code {
+		background-color: initial;
 	}
+
 	.btn {
 		padding: 6px 14px;
 		color: $charcoal;
-		font-family: GalanoGrotesque-Medium;
+		font-family: GalanoGrotesque;
 		border-radius: 4px;
 		background: $white;
 		border: solid 2px $charcoal;
@@ -172,11 +148,21 @@ body {
 		border-radius: 2px;
 		padding: 8px 20px;
 	}
-	code.language-plaintext.highlighter-rouge {
-		background: #f3f3f3;
-		color: $charcoal;
-		font-size: 12px;
+	.note-info {
+		background-color: $info-blue;
+		border-left: 4px solid $info-blue-highlight;
+		color: $white;
+
+		a {
+			color: $white-two;
+			font-weight: 500;
+		}
+
+		code {
+			color: $battleship-grey;
+		}
 	}
+
 
 	.main-content {
 		h1,
@@ -364,7 +350,7 @@ body {
 					&:hover {
 						background-color: #ededed;
 						background-image: none;
-						font-family: GalanoGrotesque-Medium;
+						font-family: GalanoGrotesque;
 					}
 				}
 				.nav-list-expander {

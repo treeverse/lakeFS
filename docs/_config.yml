@@ -12,14 +12,16 @@ logo_link: 'https://lakefs.io'
 
 remote_theme: pmarsceill/just-the-docs
 
+
+
 # Aux links for the upper right navigation
 aux_links:
-'Docs':
-  - 'https://docs.lakefs.io/'
-'Github':
-  - 'https://github.com/treeverse/lakeFS'
-'Blog':
-  - 'https://www.lakefs.io/blog'
+  'Docs':
+    - 'https://docs.lakefs.io/'
+  'Github':
+    - 'https://github.com/treeverse/lakeFS'
+  'Blog':
+    - 'https://www.lakefs.io/blog'
 
 buttons:
   'Get Started':
@@ -29,10 +31,10 @@ buttons:
 # use "footer_content" for simple footer
 # footer_content: 'Copyright &copy; 2020 Treeverse Labs LTD.'
 footer:
-    'img-bottom':
-        - '/assets/by-treeverse.png'
-    'img-bottom-link':
-        - 'https://www.treeverse.io/'
+  'img-bottom':
+    - '/assets/by-treeverse.png'
+  'img-bottom-link':
+    - 'https://www.treeverse.io/'
 
 footer_links:
   'Docs':
@@ -46,16 +48,16 @@ footer_links:
 
 footer_social:
   'linkedin':
-      - 'https://www.linkedin.com/company/treeverse'
+    - 'https://www.linkedin.com/company/treeverse'
   'github':
-      - 'https://github.com/treeverse/lakeFS'
+    - 'https://github.com/treeverse/lakeFS'
   'twitter':
-      - 'https://twitter.com/lakeFS'
+    - 'https://twitter.com/lakeFS'
   'slack':
-      - 'https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw'
+    - 'https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw'
 
 footer_bottom_links:
   'Terms of use':
-      - 'https://lakefs.io/terms-of-use/'
+    - 'https://lakefs.io/terms-of-use/'
   'Privacy Policy':
-      - 'https://lakefs.io/privacy-policy/'
+    - 'https://lakefs.io/privacy-policy/'
