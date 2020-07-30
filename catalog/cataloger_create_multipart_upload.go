@@ -22,7 +22,7 @@ func (c *cataloger) CreateMultipartUpload(ctx context.Context, repository string
 		if err != nil {
 			return nil, err
 		}
-		_, err = tx.Exec(`INSERT INTO multipart_uploads (repository_id, upload_id, path, creation_date, physical_address)
+		_, err = tx.Exec(`INSERT INTO catalog_multipart_uploads (repository_id,upload_id,path,creation_date,physical_address)
 			VALUES ($1, $2, $3, $4, $5)`,
 			repoID, uploadID, path, creationTime, physicalAddress)
 		return nil, err

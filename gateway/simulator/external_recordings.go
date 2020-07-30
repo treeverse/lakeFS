@@ -74,7 +74,9 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 	if err != nil {
 		return err
 	}
-	defer f.Close()
+	defer func() {
+		_ = f.Close()
+	}()
 	// Write the contents of S3 Object to the file
 	n, err := d.downloader.Download(f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),

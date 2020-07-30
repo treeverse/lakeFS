@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/gateway/http"
 )
 
-func TestParseHTTPRange(t *testing.T) {
+func TestParseRange(t *testing.T) {
 	cases := []struct {
 		Spec          string
 		Length        int
@@ -33,12 +33,12 @@ func TestParseHTTPRange(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(fmt.Sprintf("%s_length_%d", c.Spec, c.Length), func(t *testing.T) {
-			r, err := http.ParseHTTPRange(c.Spec, int64(c.Length))
-			if err != nil && !c.ExpectedError {
-				t.Fatalf("got unexpected error parsing: %v", err)
+			r, err := http.ParseRange(c.Spec, int64(c.Length))
+			if (err != nil) != c.ExpectedError {
+				t.Fatalf("got err=%s, expected error %t", err, c.ExpectedError)
 			}
-			if err == nil && c.ExpectedError {
-				t.Fatalf("expected error parsing spec, didnt get one")
+			if err != nil {
+				return
 			}
 			if r.EndOffset != int64(c.ExpectedEnd) {
 				t.Fatalf("expected end offset: %d, got %d", c.ExpectedEnd, r.EndOffset)

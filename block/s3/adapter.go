@@ -2,7 +2,9 @@ package s3
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"net/http"
 	"time"
@@ -13,11 +15,8 @@ import (
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	_ "github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/logging"
-
-	"io"
 )
 
 const (
@@ -28,6 +27,8 @@ const (
 
 	ExpireObjectS3Tag = "lakefs_expire_object"
 )
+
+var ErrMissingETag = errors.New("missing ETag")
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
@@ -44,7 +45,7 @@ type Adapter struct {
 	s3                    s3iface.S3API
 	httpClient            *http.Client
 	ctx                   context.Context
-	uploadIdTranslator    block.UploadIdTranslator
+	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
 }
@@ -73,9 +74,9 @@ func WithContext(ctx context.Context) func(a *Adapter) {
 	}
 }
 
-func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
+func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
-		a.uploadIdTranslator = t
+		a.uploadIDTranslator = t
 	}
 }
 
@@ -84,7 +85,7 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
 		s3:                    s3,
 		httpClient:            http.DefaultClient,
 		ctx:                   context.Background(),
-		uploadIdTranslator:    &block.NoOpTranslator{},
+		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
 	}
@@ -99,7 +100,7 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 		s3:                    s.s3,
 		httpClient:            s.httpClient,
 		ctx:                   ctx,
-		uploadIdTranslator:    s.uploadIdTranslator,
+		uploadIDTranslator:    s.uploadIDTranslator,
 		streamingChunkSize:    s.streamingChunkSize,
 		streamingChunkTimeout: s.streamingChunkTimeout,
 	}
@@ -143,45 +144,42 @@ func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 	return err
 }
 
-func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
 	}
-	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
+	uploadID = s.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
 		PartNumber: aws.Int64(partNumber),
-		UploadId:   aws.String(uploadId),
+		UploadId:   aws.String(uploadID),
 	}
 	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
-	resp, err := s.streamToS3(sdkRequest, sizeBytes, reader)
-	if err == nil && resp != nil {
-		etagList, ok := resp.Header["Etag"]
-		if ok && len(etagList) > 0 {
-			return etagList[0], nil
-		}
+	etag, err := s.streamToS3(sdkRequest, sizeBytes, reader)
+	if err != nil {
+		return "", err
 	}
-	if err == nil {
-		err = fmt.Errorf("Etag not returned")
+	if etag == "" {
+		return "", ErrMissingETag
 	}
-	return "", err
+	return etag, nil
 }
 
-func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (*http.Response, error) {
+func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (string, error) {
 	sigTime := time.Now()
 	log := s.log().WithField("operation", "PutObject")
 
 	if err := sdkRequest.Build(); err != nil {
-		return nil, err
+		return "", err
 	}
 
 	req, err := http.NewRequest(sdkRequest.HTTPRequest.Method, sdkRequest.HTTPRequest.URL.String(), nil)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 	req.Header.Set("Content-Encoding", StreamingContentEncoding)
 	req.Header.Set("Transfer-Encoding", "chunked")
@@ -194,13 +192,13 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
-		return nil, err
+		return "", err
 	}
 
 	sigSeed, err := v4.GetSignedRequestSignature(req)
 	if err != nil {
 		log.WithError(err).Error("failed to get seed signature")
-		return nil, err
+		return "", err
 	}
 
 	req.Body = ioutil.NopCloser(&StreamingReader{
@@ -221,8 +219,9 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			Error("error making request request")
-		return nil, err
+		return "", err
 	}
+
 	defer func() {
 		_ = resp.Body.Close()
 	}()
@@ -238,9 +237,13 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			WithField("status_code", resp.StatusCode).
 			Error("bad S3 PutObject response")
-		return nil, err
+		return "", err
 	}
-	return resp, nil
+	etag, ok := resp.Header["etag"]
+	if !ok || len(etag) == 0 {
+		return "", ErrMissingETag
+	}
+	return etag[0], nil
 }
 
 func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
@@ -349,35 +352,35 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	if err != nil {
 		return "", err
 	}
-	uploadId := *resp.UploadId
-	uploadId = s.uploadIdTranslator.SetUploadId(uploadId)
+	uploadID := *resp.UploadId
+	uploadID = s.uploadIDTranslator.SetUploadID(uploadID)
 	s.log().WithFields(logging.Fields{
 		"upload_id":            *resp.UploadId,
-		"translated_upload_id": uploadId,
+		"translated_upload_id": uploadID,
 		"qualified_ns":         qualifiedKey.StorageNamespace,
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	}).Debug("created multipart upload")
-	return uploadId, err
+	return uploadID, err
 }
 
-func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
+func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
 	var err error
 	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
 	}
-	uploadId = s.uploadIdTranslator.TranslateUploadId(uploadId)
+	uploadID = s.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(qualifiedKey.StorageNamespace),
 		Key:      aws.String(qualifiedKey.Key),
-		UploadId: aws.String(uploadId),
+		UploadId: aws.String(uploadID),
 	}
 	_, err = s.s3.AbortMultipartUpload(input)
-	s.uploadIdTranslator.RemoveUploadId(uploadId)
+	s.uploadIDTranslator.RemoveUploadID(uploadID)
 	s.log().WithFields(logging.Fields{
-		"upload_id":     uploadId,
+		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.StorageNamespace,
 		"qualified_key": qualifiedKey.Key,
 		"key":           obj.Identifier,
@@ -385,7 +388,7 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	return err
 }
 
-func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -393,16 +396,16 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 		return nil, 0, err
 	}
 	cmpu := &s3.CompletedMultipartUpload{Parts: multipartList.Part}
-	translatedUploadId := s.uploadIdTranslator.TranslateUploadId(uploadId)
+	translatedUploadID := s.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),
 		Key:             aws.String(qualifiedKey.Key),
-		UploadId:        aws.String(translatedUploadId),
+		UploadId:        aws.String(translatedUploadID),
 		MultipartUpload: cmpu,
 	}
 	lg := s.log().WithFields(logging.Fields{
-		"upload_id":            uploadId,
-		"translated_upload_id": translatedUploadId,
+		"upload_id":            uploadID,
+		"translated_upload_id": translatedUploadID,
 		"qualified_ns":         qualifiedKey.StorageNamespace,
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
@@ -414,7 +417,7 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId stri
 		return nil, -1, err
 	}
 	lg.Debug("completed multipart upload")
-	s.uploadIdTranslator.RemoveUploadId(translatedUploadId)
+	s.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
 	headResp, err := s.s3.HeadObject(headInput)
 	if err != nil {
@@ -457,7 +460,7 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 	config, err := s.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("Bucket %s has no lifecycle configuration", storageNamespace)
+			return fmt.Errorf("bucket %s has no lifecycle configuration", storageNamespace)
 		}
 		return err
 	}
@@ -477,7 +480,7 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 
 	if !hasMatchingRule {
 		// TODO(oz): Add a "to fix, ..." message?
-		return fmt.Errorf("Bucket %s lifecycle rules not configured to expire objects tagged \"%s\"", storageNamespace, ExpireObjectS3Tag)
+		return fmt.Errorf("bucket %s lifecycle rules not configured to expire objects tagged \"%s\"", storageNamespace, ExpireObjectS3Tag)
 	}
 	return nil
 }

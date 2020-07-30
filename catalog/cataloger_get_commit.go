@@ -26,8 +26,8 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		}
 		query := `SELECT c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 			COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
-			FROM commits c JOIN branches b ON b.id = c.branch_id 
-				LEFT JOIN branches bb ON bb.id = c.merge_source_branch
+			FROM catalog_commits c JOIN catalog_branches b ON b.id = c.branch_id 
+				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
 			WHERE b.id=$1 AND c.commit_id=$2`
 		var rawCommit commitLogRaw
 		if err := tx.Get(&rawCommit, query, branchID, ref.CommitID); err != nil {

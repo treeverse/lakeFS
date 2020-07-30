@@ -53,11 +53,11 @@ func Test_setupLakeFSHandler(t *testing.T) {
 			t.Fatal("Decode response", err)
 		}
 
-		if len(credKeys.AccessKeyId) == 0 {
+		if len(credKeys.AccessKeyID) == 0 {
 			t.Fatal("Credential key id is missing")
 		}
 
-		foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyId)
+		foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyID)
 		if err != nil {
 			t.Fatal("Get API credentials key id for created access key", err)
 		}
@@ -76,7 +76,9 @@ func Test_setupLakeFSHandler(t *testing.T) {
 		if err != nil {
 			t.Fatal("Post setup request to server", err)
 		}
-		defer res.Body.Close()
+		defer func() {
+			_ = res.Body.Close()
+		}()
 
 		const expectedStatusCode = http.StatusConflict
 		if res.StatusCode != expectedStatusCode {

@@ -12,9 +12,9 @@ import (
 )
 
 const (
-	ConfigAccessKeyId       = "credentials.access_key_id"
+	ConfigAccessKeyID       = "credentials.access_key_id"
 	ConfigSecretAccessKey   = "credentials.secret_access_key"
-	ConfigServerEndpointUrl = "server.endpoint_url"
+	ConfigServerEndpointURL = "server.endpoint_url"
 )
 
 var (
@@ -38,6 +38,7 @@ func Execute() {
 	}
 }
 
+//nolint:gochecknoinits
 func init() {
 	cobra.OnInitialize(initConfig)
 	runCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "Config file (default is $HOME/.lakectl.yaml)")

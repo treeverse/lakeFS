@@ -13,11 +13,12 @@ func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, refere
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
-		{Name: "path", IsValid: ValidatePath(path)},
 	}); err != nil {
 		return nil, err
 	}
-
+	if path == "" {
+		return nil, db.ErrNotFound
+	}
 	ref, err := ParseRef(reference)
 	if err != nil {
 		return nil, err

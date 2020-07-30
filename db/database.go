@@ -2,7 +2,6 @@ package db
 
 import (
 	"database/sql"
-	"fmt"
 	"io"
 	"strconv"
 	"strings"
@@ -113,40 +112,37 @@ func (d *SqlxDatabase) Metadata() (map[string]string, error) {
 	}
 
 	m, err := d.Transact(func(tx Tx) (interface{}, error) {
-		metadata := make(map[string]string)
-
 		// select name,setting from pg_settings
 		// where name in ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')
 		type pgSettings struct {
 			Name    string `db:"name"`
 			Setting string `db:"setting"`
 		}
-		pgs := make([]pgSettings, 0)
+		var pgs []pgSettings
 		err = tx.Select(&pgs,
 			`SELECT name, setting FROM pg_settings
 					WHERE name IN ('data_directory', 'rds.extensions', 'TimeZone', 'work_mem')`)
 		if err != nil {
 			return nil, err
 		}
+		settings := make(map[string]string)
 		for _, setting := range pgs {
 			if setting.Name == "data_directory" {
 				isRDS := strings.HasPrefix(setting.Setting, "/rdsdata")
-				metadata["postgresql_setting_is_rds"] = strconv.FormatBool(isRDS)
+				settings["is_rds"] = strconv.FormatBool(isRDS)
 				continue
 			}
-			metadata[fmt.Sprintf("postgresql_setting_%s", setting.Name)] = setting.Setting
+			settings[setting.Name] = setting.Setting
 		}
-
-		return metadata, nil
-
+		return settings, nil
 	}, ReadOnly())
 	if err != nil {
 		return metadata, nil
 	}
-
+	// set pgs settings under the metadata with key prefix
 	settings := m.(map[string]string)
 	for k, v := range settings {
-		metadata[k] = v
+		metadata["postgresql_setting_"+k] = v
 	}
 	return metadata, nil
 }

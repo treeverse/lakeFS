@@ -5,6 +5,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/jmoiron/sqlx"
+
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/auth/wildcard"
@@ -29,7 +31,7 @@ type Service interface {
 	// users
 	CreateUser(user *model.User) error
 	DeleteUser(userDisplayName string) error
-	GetUserById(userId int) (*model.User, error)
+	GetUserByID(userID int) (*model.User, error)
 	GetUser(userDisplayName string) (*model.User, error)
 	ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error)
 
@@ -53,9 +55,9 @@ type Service interface {
 
 	// credentials
 	CreateCredentials(userDisplayName string) (*model.Credential, error)
-	DeleteCredentials(userDisplayName, accessKeyId string) error
-	GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error)
-	GetCredentials(accessKeyId string) (*model.Credential, error)
+	DeleteCredentials(userDisplayName, accessKeyID string) error
+	GetCredentialsForUser(userDisplayName, accessKeyID string) (*model.Credential, error)
+	GetCredentials(accessKeyID string) (*model.Credential, error)
 	ListUserCredentials(userDisplayName string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error)
 
 	// policy<->user attachments
@@ -100,7 +102,7 @@ func getPolicy(tx db.Tx, policyDisplayName string) (*model.Policy, error) {
 	return policy, nil
 }
 
-func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
+func deleteOrNotFound(tx sqlx.Execer, stmt string, args ...interface{}) error {
 	res, err := tx.Exec(stmt, args...)
 	if err != nil {
 		return err
@@ -115,13 +117,15 @@ func deleteOrNotFound(tx db.Tx, stmt string, args ...interface{}) error {
 	return nil
 }
 
-func genAccessKeyId() string {
-	key := KeyGenerator(14)
+func genAccessKeyID() string {
+	const accessKeyLength = 14
+	key := KeyGenerator(accessKeyLength)
 	return fmt.Sprintf("%s%s%s", "AKIAJ", key, "Q")
 }
 
 func genAccessSecretKey() string {
-	return Base64StringGenerator(30)
+	const secretKeyLength = 30
+	return Base64StringGenerator(secretKeyLength)
 }
 
 type DBAuthService struct {
@@ -178,7 +182,7 @@ func (s *DBAuthService) DB() db.Database {
 
 func (s *DBAuthService) CreateUser(user *model.User) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityId(user.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityID(user.DisplayName); err != nil {
 			return nil, err
 		}
 		err := tx.Get(user, `INSERT INTO auth_users (display_name, created_at) VALUES ($1, $2) RETURNING id`, user.DisplayName, user.CreatedAt)
@@ -206,11 +210,11 @@ func (s *DBAuthService) GetUser(userDisplayName string) (*model.User, error) {
 	})
 }
 
-func (s *DBAuthService) GetUserById(userId int) (*model.User, error) {
-	return s.cache.GetUserByID(userId, func() (*model.User, error) {
+func (s *DBAuthService) GetUserByID(userID int) (*model.User, error) {
+	return s.cache.GetUserByID(userID, func() (*model.User, error) {
 		user, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 			user := &model.User{}
-			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userId)
+			err := tx.Get(user, `SELECT * FROM auth_users WHERE id = $1`, userID)
 			if err != nil {
 				return nil, err
 			}
@@ -280,7 +284,7 @@ func (s *DBAuthService) ListUserCredentials(userDisplayName string, params *mode
 			// we have more pages
 			credentials = credentials[0:params.Amount]
 			p.Amount = params.Amount
-			p.NextPageToken = credentials[len(credentials)-1].AccessKeyId
+			p.NextPageToken = credentials[len(credentials)-1].AccessKeyID
 			return &res{credentials, p}, nil
 		}
 		p.Amount = len(credentials)
@@ -430,7 +434,6 @@ func (s *DBAuthService) getEffectivePolicies(userDisplayName string, params *mod
 		}
 		p.Amount = len(policies)
 		return &res{policies, p}, nil
-
 	}, db.ReadOnly())
 	if err != nil {
 		return nil, nil, err
@@ -498,7 +501,7 @@ func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model
 
 func (s *DBAuthService) CreateGroup(group *model.Group) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityId(group.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityID(group.DisplayName); err != nil {
 			return nil, err
 		}
 		return nil, tx.Get(group, `INSERT INTO auth_groups (display_name, created_at) VALUES ($1, $2) RETURNING id`,
@@ -572,7 +575,6 @@ func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string)
 			return nil, fmt.Errorf("group membership: %w", db.ErrAlreadyExists)
 		}
 		return nil, err
-
 	})
 	return err
 }
@@ -680,7 +682,7 @@ func (s *DBAuthService) ListGroupUsers(groupDisplayName string, params *model.Pa
 
 func (s *DBAuthService) WritePolicy(policy *model.Policy) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if err := model.ValidateAuthEntityId(policy.DisplayName); err != nil {
+		if err := model.ValidateAuthEntityID(policy.DisplayName); err != nil {
 			return nil, err
 		}
 		for _, stmt := range policy.Statement {
@@ -762,7 +764,7 @@ func (s *DBAuthService) ListPolicies(params *model.PaginationParams) ([]*model.P
 
 func (s *DBAuthService) CreateCredentials(userDisplayName string) (*model.Credential, error) {
 	now := time.Now()
-	accessKey := genAccessKeyId()
+	accessKey := genAccessKeyID()
 	secretKey := genAccessSecretKey()
 	encryptedKey, err := s.encryptSecret(secretKey)
 	if err != nil {
@@ -774,19 +776,19 @@ func (s *DBAuthService) CreateCredentials(userDisplayName string) (*model.Creden
 			return nil, err
 		}
 		c := &model.Credential{
-			AccessKeyId:                   accessKey,
+			AccessKeyID:                   accessKey,
 			AccessSecretKey:               secretKey,
 			AccessSecretKeyEncryptedBytes: encryptedKey,
 			IssuedDate:                    now,
-			UserId:                        user.Id,
+			UserID:                        user.ID,
 		}
 		_, err = tx.Exec(`
 			INSERT INTO auth_credentials (access_key_id, access_secret_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
-			c.AccessKeyId,
+			c.AccessKeyID,
 			encryptedKey,
 			c.IssuedDate,
-			c.UserId,
+			c.UserID,
 		)
 		return c, err
 	})
@@ -796,14 +798,14 @@ func (s *DBAuthService) CreateCredentials(userDisplayName string) (*model.Creden
 	return credentials.(*model.Credential), err
 }
 
-func (s *DBAuthService) DeleteCredentials(userDisplayName, accessKeyId string) error {
+func (s *DBAuthService) DeleteCredentials(userDisplayName, accessKeyID string) error {
 	_, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return nil, deleteOrNotFound(tx, `
 			DELETE FROM auth_credentials USING auth_users
 			WHERE auth_credentials.user_id = auth_users.id
 				AND auth_users.display_name = $1
 				AND auth_credentials.access_key_id = $2`,
-			userDisplayName, accessKeyId)
+			userDisplayName, accessKeyID)
 	})
 	return err
 }
@@ -849,7 +851,7 @@ func (s *DBAuthService) DetachPolicyFromGroup(policyDisplayName, groupDisplayNam
 	return err
 }
 
-func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId string) (*model.Credential, error) {
+func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyID string) (*model.Credential, error) {
 	credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 		if _, err := getUser(tx, userDisplayName); err != nil {
 			return nil, err
@@ -860,7 +862,7 @@ func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId strin
 			FROM auth_credentials
 			INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
 			WHERE auth_credentials.access_key_id = $1
-				AND auth_users.display_name = $2`, accessKeyId, userDisplayName)
+				AND auth_users.display_name = $2`, accessKeyID, userDisplayName)
 		if err != nil {
 			return nil, err
 		}
@@ -872,12 +874,12 @@ func (s *DBAuthService) GetCredentialsForUser(userDisplayName, accessKeyId strin
 	return credentials.(*model.Credential), nil
 }
 
-func (s *DBAuthService) GetCredentials(accessKeyId string) (*model.Credential, error) {
-	return s.cache.GetCredential(accessKeyId, func() (*model.Credential, error) {
+func (s *DBAuthService) GetCredentials(accessKeyID string) (*model.Credential, error) {
+	return s.cache.GetCredential(accessKeyID, func() (*model.Credential, error) {
 		credentials, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
 			credentials := &model.Credential{}
 			err := tx.Get(credentials, `
-			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyId)
+			SELECT * FROM auth_credentials WHERE auth_credentials.access_key_id = $1`, accessKeyID)
 			if err != nil {
 				return nil, err
 			}

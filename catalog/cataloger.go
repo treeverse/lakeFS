@@ -11,7 +11,6 @@ import (
 	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
-	"github.com/treeverse/lakefs/retention"
 )
 
 const (
@@ -98,7 +97,10 @@ type EntryCataloger interface {
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-	QueryExpired(ctx context.Context, repositoryName string, policy *retention.Policy) (ExpiryRows, error)
+
+	// QueryExpired returns ExpiryRows iterating over all objects to expire on
+	// repositoryName according to policy.
+	QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error)
 	// MarkExpired marks all entries identified by expire as expired.  It is a batch operation.
 	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
 	DedupReportChannel() chan *DedupReport
@@ -290,7 +292,7 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			}
 
 			// add dedup record
-			res, err := tx.Exec(`INSERT INTO object_dedup (repository_id, dedup_id, physical_address) values ($1, decode($2,'hex'), $3)
+			res, err := tx.Exec(`INSERT INTO catalog_object_dedup (repository_id, dedup_id, physical_address) values ($1, decode($2,'hex'), $3)
 				ON CONFLICT DO NOTHING`,
 				repoID, r.DedupID, r.Entry.PhysicalAddress)
 			if err != nil {
@@ -304,14 +306,14 @@ func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 			}
 
 			// fill the address into the right location
-			err = tx.Get(&addresses[i], `SELECT physical_address FROM object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
+			err = tx.Get(&addresses[i], `SELECT physical_address FROM catalog_object_dedup WHERE repository_id=$1 AND dedup_id=decode($2,'hex')`,
 				repoID, r.DedupID)
 			if err != nil {
 				return nil, err
 			}
 
 			// update the entry with new address physical address
-			_, err = tx.Exec(`UPDATE entries SET physical_address=$2 WHERE ctid=$1 AND physical_address=$3`,
+			_, err = tx.Exec(`UPDATE catalog_entries SET physical_address=$2 WHERE ctid=$1 AND physical_address=$3`,
 				r.EntryCTID, addresses[i], r.Entry.PhysicalAddress)
 			if err != nil {
 				return nil, err

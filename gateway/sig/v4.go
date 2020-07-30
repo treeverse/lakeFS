@@ -40,7 +40,7 @@ var (
 )
 
 type V4Auth struct {
-	AccessKeyId         string
+	AccessKeyID         string
 	Date                string
 	Region              string
 	Service             string
@@ -49,8 +49,8 @@ type V4Auth struct {
 	Signature           string
 }
 
-func (a V4Auth) GetAccessKeyId() string {
-	return a.AccessKeyId
+func (a V4Auth) GetAccessKeyID() string {
+	return a.AccessKeyID
 }
 
 func splitHeaders(headers string) []string {
@@ -76,7 +76,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 			}
 		}
 		headers := splitHeaders(result["SignatureHeaders"])
-		ctx.AccessKeyId = result["AccessKeyId"]
+		ctx.AccessKeyID = result["AccessKeyId"]
 		ctx.Date = result["Date"]
 		ctx.Region = result["Region"]
 		ctx.Service = result["Service"]
@@ -108,7 +108,7 @@ func ParseV4AuthContext(r *http.Request) (V4Auth, error) {
 			credsResult[name] = credsMatch[i]
 		}
 	}
-	ctx.AccessKeyId = credsResult["AccessKeyId"]
+	ctx.AccessKeyID = credsResult["AccessKeyId"]
 	ctx.Date = credsResult["Date"]
 	ctx.Region = credsResult["Region"]
 	ctx.Service = credsResult["Service"]
@@ -205,13 +205,12 @@ func (ctx *verificationCtx) trimAll(str string) string {
 	inSpace := false
 	var buf strings.Builder
 	for _, ch := range str {
-		if unicode.IsSpace(ch) && !inSpace {
-			// first space to appear
-			buf.WriteRune(ch)
-			inSpace = true
-		} else if unicode.IsSpace(ch) && inSpace {
-			// consecutive space
-			continue
+		if unicode.IsSpace(ch) {
+			if !inSpace {
+				// first space to appear
+				buf.WriteRune(ch)
+				inSpace = true
+			}
 		} else {
 			// not a space
 			buf.WriteRune(ch)
@@ -277,13 +276,13 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 	}
 
 	// parse signature date
-	sigTs, err := time.Parse(v4shortTimeFormat, ctx.AuthValue.Date)
+	sigTS, err := time.Parse(v4shortTimeFormat, ctx.AuthValue.Date)
 	if err != nil {
 		return "", errors.ErrMalformedCredentialDate
 	}
 
 	// ensure same date
-	if sigTs.Year() != ts.Year() || sigTs.Month() != ts.Month() || sigTs.Day() != ts.Day() {
+	if sigTS.Year() != ts.Year() || sigTS.Month() != ts.Month() || sigTS.Day() != ts.Day() {
 		return "", errors.ErrMalformedCredentialDate
 	}
 
@@ -292,7 +291,7 @@ func (ctx *verificationCtx) getAmzDate() (string, error) {
 
 func sign(key []byte, msg string) []byte {
 	h := hmac.New(sha256.New, key)
-	h.Write([]byte(msg))
+	_, _ = h.Write([]byte(msg))
 	return h.Sum(nil)
 }
 
@@ -318,7 +317,9 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 		return "", err
 	}
 	h := sha256.New()
-	h.Write([]byte(canonicalRequest))
+	if _, err := h.Write([]byte(canonicalRequest)); err != nil {
+		return "", err
+	}
 	hashedCanonicalRequest := hex.EncodeToString(h.Sum(nil))
 	stringToSign := strings.Join([]string{
 		algorithm,
@@ -328,6 +329,7 @@ func (ctx *verificationCtx) buildSignedString(canonicalRequest string) (string, 
 	}, "\n")
 	return stringToSign, nil
 }
+
 func (ctx *verificationCtx) isStreaming() bool {
 	payloadHash := ctx.payloadHash()
 	return strings.EqualFold(payloadHash, v4StreamingPayloadHash)

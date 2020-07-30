@@ -48,6 +48,14 @@ func formatPathWithNamespace(namespacePath, keyPath string) string {
 	return namespacePath + "/" + keyPath
 }
 
+// IsResolvableKey returns true if a key will be resolved into the default namespace of its
+// bucket.  Resolvable keys are subject to expiry, so it errs on the side of calling keys *not*
+// resolvable.
+func IsResolvableKey(key string) bool {
+	_, err := url.ParseRequestURI(key)
+	return err != nil
+}
+
 func ResolveNamespace(defaultNamespace, key string) (QualifiedKey, error) {
 	// check if the key is fully qualified
 	parsedKey, err := url.ParseRequestURI(key)

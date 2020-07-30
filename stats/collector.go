@@ -162,7 +162,6 @@ func (s *BufferedCollector) send(metrics []Metric) {
 			WithField("service", "stats_collector").
 			Debug("could not send stats")
 	}
-
 }
 
 func (s *BufferedCollector) CollectEvent(class, action string) {

@@ -26,7 +26,7 @@ const BlockstoreType = "local"
 type Adapter struct {
 	path               string
 	ctx                context.Context
-	uploadIdTranslator block.UploadIdTranslator
+	uploadIDTranslator block.UploadIDTranslator
 }
 
 var nilPutOpts = block.PutOpts{}
@@ -35,13 +35,13 @@ func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
 		path:               l.path,
 		ctx:                ctx,
-		uploadIdTranslator: l.uploadIdTranslator,
+		uploadIDTranslator: l.uploadIDTranslator,
 	}
 }
 
-func WithTranslator(t block.UploadIdTranslator) func(a *Adapter) {
+func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	return func(a *Adapter) {
-		a.uploadIdTranslator = t
+		a.uploadIDTranslator = t
 	}
 }
 
@@ -58,7 +58,7 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (block.Adapter, error) {
 	}
 	adapter := &Adapter{
 		path: path, ctx: context.Background(),
-		uploadIdTranslator: &block.NoOpTranslator{},
+		uploadIDTranslator: &block.NoOpTranslator{},
 	}
 	for _, opt := range opts {
 		opt(adapter)
@@ -146,9 +146,9 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 		}
 	}
 	uidBytes := uuid.New()
-	uploadId := hex.EncodeToString(uidBytes[:])
-	uploadId = l.uploadIdTranslator.SetUploadId(uploadId)
-	return uploadId, nil
+	uploadID := hex.EncodeToString(uidBytes[:])
+	uploadID = l.uploadIDTranslator.SetUploadID(uploadID)
+	return uploadID, nil
 }
 
 func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
@@ -159,8 +159,8 @@ func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	return etag, err
 }
 
-func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string) error {
-	files, err := l.getPartFiles(uploadId)
+func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
+	files, err := l.getPartFiles(uploadID)
 	if err != nil {
 		return err
 	}
@@ -168,18 +168,18 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadId string)
 	return nil
 }
 
-func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadId string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
-	ETag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
-	partFiles, err := l.getPartFiles(uploadId)
+func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+	etag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
+	partFiles, err := l.getPartFiles(uploadID)
 	if err != nil {
-		return nil, -1, fmt.Errorf("part files not found for %s: %w", uploadId, err)
+		return nil, -1, fmt.Errorf("part files not found for %s: %w", uploadID, err)
 	}
 	size, err := l.unitePartFiles(obj.Identifier, partFiles)
 	if err != nil {
-		return nil, -1, fmt.Errorf("multipart upload unite for %s: %w", uploadId, err)
+		return nil, -1, fmt.Errorf("multipart upload unite for %s: %w", uploadID, err)
 	}
 	l.removePartFiles(partFiles)
-	return &ETag, size, nil
+	return &etag, size, nil
 }
 
 func computeETag(parts []*s3.CompletedPart) string {
@@ -229,8 +229,8 @@ func (l *Adapter) removePartFiles(files []string) {
 	}
 }
 
-func (l *Adapter) getPartFiles(uploadId string) ([]string, error) {
-	globPathPattern := l.getPath(uploadId) + "-*"
+func (l *Adapter) getPartFiles(uploadID string) ([]string, error) {
+	globPathPattern := l.getPath(uploadID) + "-*"
 	names, err := filepath.Glob(globPathPattern)
 	if err != nil {
 		return nil, err
