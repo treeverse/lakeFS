@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"io"
-	"strconv"
 	"sync"
 	"time"
 
@@ -282,7 +281,7 @@ func (c *cataloger) processDedupBatches() {
 
 func (c *cataloger) dedupBatch(batch []*dedupRequest) {
 	ctx := context.Background()
-	dedupBatchSizeCounter.WithLabelValues(strconv.Itoa(len(batch))).Inc()
+	dedupBatchSizeHistogram.Observe(float64(len(batch)))
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		addresses := make([]string, len(batch))
 		for i, r := range batch {
