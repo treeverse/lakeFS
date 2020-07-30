@@ -9,9 +9,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/go-test/deep"
-
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
