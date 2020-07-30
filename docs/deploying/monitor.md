@@ -71,3 +71,6 @@ sum by (operation) (increase(s3_operation_duration_seconds_count{error="true"}[1
 go_sql_stats_connections_open
 ```
 
+### Example Grafana dashboard
+
+[![Grafana dashboard example](../assets/img/grafana.png)](../assets/img/grafana.png){: target="_blank" }
