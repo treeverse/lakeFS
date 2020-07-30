@@ -32,7 +32,7 @@ footer:
     'img-bottom':
         - '/assets/by-treeverse.png'
     'img-bottom-link':
-        - 'http://www.treeverse.io/'
+        - 'https://www.treeverse.io/'
 
 footer_links:
   'Docs':
