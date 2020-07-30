@@ -17,7 +17,7 @@ Feedback and questions are welcome at [support@treeverse.io](mailto:support@tree
 
 ### Slack Channel
 
-Join our [channel](https://join.slack.com/t/lakefs/shared_invite/zt-fm6e2ncx-6wR3yW5jABXBuqN2NnLCDA) to get help from our team and other users
+Join our [channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) to get help from our team and other users
 
 ### Forum
 

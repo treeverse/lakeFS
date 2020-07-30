@@ -20,7 +20,7 @@ To add the remote to Rclone, choose one of the following options:
 ### Option 1: add an entry in your Rclone configuration file
 *   Find the path to your Rclone configuration file and copy it for the next step.
     
-    ```
+    ```shell
     $ rclone config file
     Configuration file is stored at:
     /home/myuser/.config/rclone/rclone.conf
@@ -28,7 +28,7 @@ To add the remote to Rclone, choose one of the following options:
     
 *   If your lakeFS access key is already set in an AWS profile or environment variables, just run the following command, replacing the endpoint property with your lakeFS endpoint:
 
-    ```
+    ```shell
     cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
     [lakefs]
     type = s3
@@ -40,7 +40,7 @@ To add the remote to Rclone, choose one of the following options:
 
 *   Otherwise, also include your lakeFS access key pair in the Rclone configuration file:
 
-    ```
+    ```shell
     cat <<EOT >> /home/myuser/.config/rclone/rclone.conf
     [lakefs]
     type = s3
@@ -55,7 +55,7 @@ To add the remote to Rclone, choose one of the following options:
 ### Option 2: use Rclone interactive config command
 
 Run this command and follow the instructions:
-```bash
+```shell
 $ rclone config
 ```
 Choose AWS S3 as your type of storage, and enter your lakeFS endpoint as your S3 endpoint.
@@ -66,12 +66,12 @@ or to enter the lakeFS access key pair into the Rclone configuration.
 
 ### Syncing your data from S3 to lakeFS
 
-``` bash
+```shell
 $ rclone sync mys3remote://mybucket/path/ lakefs:example-repo/master/path
 ```
 
 ### Syncing a local directory to lakeFS
 
-```bash
+```shell
 $ rclone sync /home/myuser/path/ lakefs:example-repo/master/path
 ```

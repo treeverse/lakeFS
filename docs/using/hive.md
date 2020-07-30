@@ -33,11 +33,19 @@ lakeFS secret key: ```fs.s3a.secret.key```
 For example, we could add the configurations to the file ``` hdfs-site.xml```:
 ```xml
 <configuration>
-...
-...
-<property><name>fs.s3a.secret.key</name><value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value></property>
-<property><name>fs.s3a.access.key</name><value>AKIAIOSFODNN7EXAMPLE</value></property>
-<property><name>fs.s3a.endpoint</name><value>http://s3.localdev.treeverse.io:8000</value></property>
+    ...
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value>
+    </property>
+    <property>
+        <name>fs.s3a.access.key</name>
+        <value>AKIAIOSFODNN7EXAMPLE</value>
+    </property>
+    <property>
+        <name>fs.s3a.endpoint</name>
+        <value>https://s3.lakefs.example.com</value>
+    </property>
 </configuration>
 ```
 
@@ -45,7 +53,7 @@ For example, we could add the configurations to the file ``` hdfs-site.xml```:
 
 ### Example with schema
 
-```sql
+```hql
 CREATE  SCHEMA example LOCATION 's3a://example/master/' ;
 CREATE TABLE example.request_logs (
     request_time timestamp,
@@ -56,7 +64,7 @@ CREATE TABLE example.request_logs (
 ```
 ### Example with external table
 
-```sql
+```hql
 CREATE EXTERNAL TABLE request_logs (
     request_time timestamp,
     url string,
