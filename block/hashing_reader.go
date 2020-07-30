@@ -23,17 +23,16 @@ type HashingReader struct {
 func (s *HashingReader) Read(p []byte) (int, error) {
 	l, err := s.originalReader.Read(p)
 	s.CopiedSize += int64(l)
-	if l <= 0 || err != nil {
-		return l, err
-	}
-	if s.Md5 != nil {
-		if _, err := s.Md5.Write(p[0:l]); err != nil {
-			return l, err
+	if l > 0 {
+		if s.Md5 != nil {
+			if _, err2 := s.Md5.Write(p[0:l]); err2 != nil {
+				return l, err2
+			}
 		}
-	}
-	if s.Sha256 != nil {
-		if _, err := s.Sha256.Write(p[0:l]); err != nil {
-			return l, err
+		if s.Sha256 != nil {
+			if _, err2 := s.Sha256.Write(p[0:l]); err2 != nil {
+				return l, err2
+			}
 		}
 	}
 	return l, err
