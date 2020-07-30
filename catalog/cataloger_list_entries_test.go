@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -249,7 +250,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file2/",
 				limit:      2,
 			},
-			wantEntries: []string{"file3/", "file4"},
+			wantEntries: []string{"file2/", "file3/"},
 			wantMore:    true,
 			wantErr:     false,
 		},
@@ -262,7 +263,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file1",
 				limit:      100,
 			},
-			wantEntries: []string{"file2", "file2/", "rip0"},
+			wantEntries: []string{"file1", "file2", "file2/", "rip0"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -314,7 +315,20 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file6/ccc",
 				limit:      100,
 			},
-			wantEntries: []string{"file6/yyy", "file6/zzz/"},
+			wantEntries: []string{"file6/ccc", "file6/yyy", "file6/zzz/"},
+			wantMore:    false,
+			wantErr:     false,
+		},
+		{
+			name: "specific file",
+			args: args{
+				repository: repo,
+				reference:  "master",
+				path:       "file6/zzz/zzz",
+				after:      "",
+				limit:      100,
+			},
+			wantEntries: []string{"file6/zzz/zzz"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -473,4 +487,71 @@ func testCatalogerListEntriesVerifyResponse(t *testing.T, got []*Entry, gotMore 
 
 func pathExt(i int) string {
 	return fmt.Sprintf("%03d", i)
+}
+
+func TestCataloger_ListEntries_Prefix(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	// produce test data
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	prefixes := []string{"aaa", "bbb", "ccc"}
+	for _, prefix := range prefixes {
+		testCatalogerCreateEntry(t, ctx, c, repo, "master", prefix+"/index.txt", nil, "")
+		for i := 0; i < 3; i++ {
+			testCatalogerCreateEntry(t, ctx, c, repo, "master", prefix+"/file."+strconv.Itoa(i), nil, "")
+		}
+	}
+
+	tests := []struct {
+		name        string
+		path        string
+		want        []string
+		wantByLevel []string
+	}{
+		{
+			name:        "specific file",
+			path:        "bbb/file.2",
+			want:        []string{"bbb/file.2"},
+			wantByLevel: []string{"bbb/file.2"},
+		},
+	}
+	for _, tt := range tests {
+		// without delimiter
+		t.Run(tt.name, func(t *testing.T) {
+			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", "", -1)
+			if err != nil {
+				t.Fatalf("ListEntries err = %s, expected no error", err)
+			}
+			gotPaths := extractEntriesPaths(got)
+			if diff := deep.Equal(gotPaths, tt.wantByLevel); diff != nil {
+				t.Fatal("ListEntries", diff)
+			}
+			if gotMore != false {
+				t.Fatal("ListEntries got more should be false")
+			}
+		})
+		// by level
+		t.Run(tt.name+"-by level", func(t *testing.T) {
+			got, gotMore, err := c.ListEntries(ctx, repo, "master", tt.path, "", DefaultPathDelimiter, -1)
+			if err != nil {
+				t.Fatalf("ListEntries by level - err = %s, expected no error", err)
+			}
+			gotPaths := extractEntriesPaths(got)
+			if diff := deep.Equal(gotPaths, tt.wantByLevel); diff != nil {
+				t.Fatal("ListEntries by level", diff)
+			}
+			if gotMore != false {
+				t.Fatal("ListEntries got more should be false")
+			}
+		})
+	}
+}
+
+func extractEntriesPaths(entries []*Entry) []string {
+	result := make([]string, len(entries))
+	for i, ent := range entries {
+		result[i] = ent.Path
+	}
+	return result
 }
