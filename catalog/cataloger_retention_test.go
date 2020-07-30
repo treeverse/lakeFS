@@ -9,6 +9,8 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func makeHours(hours int) *TimePeriodHours {
@@ -16,17 +18,16 @@ func makeHours(hours int) *TimePeriodHours {
 	return &ret
 }
 
-func readExpired(t *testing.T, ctx context.Context, c Cataloger, repository string, policy *Policy) ([]*ExpireResult, error) {
-	rows, err := c.QueryExpired(ctx, repository, policy)
-	defer func() {
-		err := rows.Close()
-		if err != nil {
-			t.Fatalf("close rows from expire result %s", err)
-		}
-	}()
+func readEntriesToExpire(t *testing.T, ctx context.Context, c Cataloger, repository string, policy *Policy) ([]*ExpireResult, error) {
+	rows, err := c.QueryEntriesToExpire(ctx, repository, policy)
 	if err != nil {
 		t.Fatalf("scan for expired failed: %s", err)
 	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			t.Fatalf("close rows from expire result %s", err)
+		}
+	}()
 	ret := make([]*ExpireResult, 0, 10)
 	for rows.Next() {
 		e, err := rows.Read()
@@ -73,10 +74,34 @@ type expiryTestCase struct {
 	wantErr bool
 }
 
+func readExpiringPhysicalAddresses(t *testing.T, conn db.Database) []string {
+	rows, err := conn.Queryx("SELECT physical_address FROM object_dedup WHERE deleting")
+	if err != nil {
+		t.Fatalf("scan for objects marked deleting failed: %s", err)
+	}
+	defer func() {
+		if err := rows.Close(); err != nil {
+			t.Fatalf("close rows from deleting objects result: %s", err)
+		}
+	}()
+	ret := make([]string, 0, 10)
+	for rows.Next() {
+		var physicalAddress string
+		err := rows.Scan(&physicalAddress)
+		if err != nil {
+			t.Fatalf("read deleting objects row: %s", err)
+		}
+		ret = append(ret, physicalAddress)
+	}
+	return ret[2:]
+}
+
 func verifyExpiry(t *testing.T, ctx context.Context, c Cataloger, repository string, tests []expiryTestCase) {
+	conn, _ := testutil.GetDB(t, databaseURI)
+
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := readExpired(t, ctx, c, repository, tt.policy)
+			got, err := readEntriesToExpire(t, ctx, c, repository, tt.policy)
 
 			if err != nil {
 				t.Fatalf("scan for expired failed: %s", err)
@@ -89,7 +114,25 @@ func verifyExpiry(t *testing.T, ctx context.Context, c Cataloger, repository str
 				t.Errorf("did not expire as expected, diffs %s", diffs)
 				t.Errorf("expected %+v, got %+v", tt.want, got)
 			}
+
+			// // Verify everything is marked "deleting"
+			// gotDeleting := readDeletingPhysicalAddresses(t, conn)
+			// sort.Strings(gotDeleting)
+			// fmt.Printf("[DEBUG] gotDeleting %v", gotDeleting)
+			// wantDeleting := make([]string, len(tt.want))
+			// fmt.Printf("[DEBUG] wantDeleting %v", wantDeleting)
+			// for i := 0; i < len(tt.want); i++ {
+			// 	wantDeleting[i] = tt.want[i].PhysicalAddress
+			// }
+			// if diffs := deep.Equal(wantDeleting, gotDeleting); diffs != nil {
+			// 	t.Errorf("wrong physical addresses marked deleting, diffs %s", diffs)
+			// 	t.Errorf("expected %v, got %v", wantDeleting, gotDeleting)
+			// }
 		})
+		// Reset "deleting" fields that were set.
+		if _, err := conn.Queryx("UPDATE catalog_object_dedup SET deleting=false"); err != nil {
+			t.Fatalf("Failed to wipe deleting markers from catalog_object_dedup: %s", err)
+		}
 	}
 }
 
@@ -184,7 +227,7 @@ func TestCataloger_ScanExpired(t *testing.T) {
 	// Get all expire results; we shall pick-and-choose from them for more specific tests.
 	// Hard to forge expire results because of their package-specific fields, most notably
 	// minCommit.
-	allResults, err := readExpired(t, ctx, c, repository, &Policy{
+	allResults, err := readEntriesToExpire(t, ctx, c, repository, &Policy{
 		Rules: []Rule{
 			{Enabled: true, FilterPrefix: "", Expiration: Expiration{All: makeHours(0)}},
 		},
@@ -406,7 +449,7 @@ func TestCataloger_ScanExpiredWithDupes(t *testing.T) {
 	// Hard to forge expire results because of their package-specific fields, most notably
 	// minCommit.
 
-	allResults, err := readExpired(t, ctx, c, repository, &Policy{
+	allResults, err := readEntriesToExpire(t, ctx, c, repository, &Policy{
 		Rules: []Rule{
 			{Enabled: true, FilterPrefix: "", Expiration: Expiration{All: makeHours(0)}},
 		},
@@ -502,7 +545,7 @@ func TestCataloger_MarkExpired(t *testing.T) {
 		t.Fatalf("failed to commit: %s", err)
 	}
 
-	expireResults, err := readExpired(t, ctx, c, repository, &Policy{
+	expireResults, err := readEntriesToExpire(t, ctx, c, repository, &Policy{
 		Rules: []Rule{
 			{Enabled: true, FilterPrefix: "", Expiration: Expiration{All: makeHours(0)}},
 		},
