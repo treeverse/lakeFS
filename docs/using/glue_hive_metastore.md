@@ -1,10 +1,12 @@
 ---
 layout: default
-title: Metastore tools
-nav_order: 13
+title: Glue / Hive metastore 
+parent: Using lakeFS with...
+nav_order: 11
+has_children: false
 ---
 
-# Metastore Tools
+# Glue / Hive metastore 
 {: .no_toc }
 When working with Glue or Hive metastore, each table can point only to one lakeFS branch.
 When creating a new branch, you may want to have a similar table pointing to the new branch.  
@@ -30,7 +32,7 @@ Insert the Hive metastore uri in the metastore-uri flag ``` --metastore-uri thri
 
 It's recommended to configure these fields in the lakectl configuration file:
 
-```
+``` yaml
 metastore:
   type: hive
   hive:
@@ -50,7 +52,7 @@ Configure aws credentials for accessing Glue catalog:
 
 In the lakectl configuration file add the credentials:
 
-```
+``` yaml
 metastore:
   glue:
     region: us-east-1
@@ -62,7 +64,7 @@ metastore:
 
 It is recommended to set the type and catalog-id in the configuration file:
 
-```
+``` yaml
 metastore:
   type: glue
   glue:
@@ -104,17 +106,17 @@ We create a new branch `exmpale_branch` .
 we would like to create a copy of the table `example_by_dt` in schema `example_branch` pointing to the new branch.   
 
 Recommended:
-```
+``` bash
 lakectl metastore copy  --from-schema default --from-table exmpale_by_dt --to-branch example_branch 
 ```
 
 Glue:
-```
+``` bash
 lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table exmpale_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example_branch 
 ```
 
 Hive:
-```
+``` bash
 lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch exmample-branch
 ```
 
@@ -131,23 +133,23 @@ Suppose we merged back the data to master, and we want the data to be available 
 We would like to merge back the partition:  
 
 Recommended:
-```
+``` bash
 lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
 ```
 
 Glue:
-```
+``` bash
 lakectl metastore copy --type glue --address 123456789012 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
 ```
 
 Hive:
-```
+``` bash
 lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
 ```
 
 In case our table is partitioned by more than one value, for example partitioned by year/month/day for year ```2020``` month ```08``` day ```01``` 
 
-```
+``` bash
 lakectl metastore copy --from-schema example_branch --from-table branch_example_by_dt --to-schema default --to-branch master -p 2020 -p 08 -p 01
 ```
 
@@ -162,17 +164,17 @@ Example:
 Suppose that we made some changes on the copied table `exmample_by_dt` on schema `example_branch` and we want to see the changes before merging back to `example_by_dt` on schema `default`. 
 
 Recommended:
-```
+``` bash
 lakectl metastore diff --from-schema default --from-table branch_example_by_dt --to-schema example_branch 
 ```
 
 Glue:
-```
+``` bash
 lakectl metastore diff --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
 Hive:
-```
+``` bash
 lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
@@ -205,7 +207,7 @@ The table is pointing to repo `example-repo` branch `master` and the data is loc
 We want to query the table using Amazon Athena.
 
 To do this, we run the command:
-```
+``` bash
  metastore create-symlink --address 123456789012 --branch master --from-schema default --from-table branch_example_by_dt --to-schema default --to-table sym_example_by_dt --repo example-repository --path path/to/table/in/lakeFS
 ```
 

@@ -79,7 +79,7 @@ func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
 	}
 	var mergeMaxCommitID CommitID
 	err = tx.Get(&mergeMaxCommitID, `SELECT DISTINCT on (branch_id) merge_source_commit 
-		FROM commits
+		FROM catalog_commits
 		WHERE branch_id = $1 AND merge_source_branch = $2
 		ORDER BY branch_id, commit_id DESC`,
 		rightID, leftID)
@@ -87,7 +87,7 @@ func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
 		return false, fmt.Errorf("max source commit id: %w", err)
 	}
 	if errors.Is(err, db.ErrNotFound) { // can happen only in from son merge, on the first merge
-		err = tx.Get(&mergeMaxCommitID, `SELECT MIN(commit_id) FROM commits WHERE branch_id = $1`, leftID)
+		err = tx.Get(&mergeMaxCommitID, `SELECT MIN(commit_id) FROM catalog_commits WHERE branch_id = $1`, leftID)
 		if err != nil {
 			return false, fmt.Errorf("min commit from left branch: %w", err)
 		}
@@ -127,7 +127,7 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 }
 
 func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, fatherID, sonID int64, committer string, msg string, metadata Metadata) error {
-	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
+	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = $3 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
 		sonID, previousMaxCommitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
@@ -135,9 +135,9 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 	}
 
 	// DifferenceTypeChanged - create entries into this commit based on father branch
-	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
+	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
-				FROM entries e
+				FROM catalog_entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
 		sonID, nextCommitID, DifferenceTypeChanged)
 	if err != nil {
@@ -149,7 +149,7 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 	}
 
 	var fatherLastLineage string
-	err = tx.Get(&fatherLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM commits 
+	err = tx.Get(&fatherLastLineage, `SELECT DISTINCT ON (branch_id) ARRAY_TO_STRING(lineage_commits,',') FROM catalog_commits 
 												WHERE branch_id = $1 AND merge_type = 'from_father' ORDER BY branch_id,commit_id DESC`, fatherID)
 	if err != nil && !errors.As(err, &db.ErrNotFound) {
 		return err
@@ -160,7 +160,7 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 		sonNewLineage += "," + fatherLastLineage
 	}
 
-	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
+	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
                      lineage_commits)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_father',$8,$9,string_to_array($10,',')::bigint[])`,
 		sonID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, fatherID, fatherLastCommitID, sonNewLineage)
@@ -172,8 +172,8 @@ func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID 
 
 func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, sonID int64, fatherID int64, committer string, msg string, metadata Metadata) error {
 	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries in father branch
-	_, err := tx.Exec(`UPDATE entries SET max_commit = $2
-			WHERE branch_id = $1 AND max_commit = max_commit_id()
+	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
+			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id()
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		fatherID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
@@ -181,16 +181,16 @@ func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID Com
 	}
 
 	// DifferenceTypeChanged or DifferenceTypeAdded - create entries into this commit based on father branch
-	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
+	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
-				FROM entries e
+				FROM catalog_entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		fatherID, nextCommitID, DifferenceTypeAdded, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
 	// DifferenceTypeRemoved - create tombstones if father "sees" those entries from lineage branches
-	_, err = tx.Exec(`INSERT INTO entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
+	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,size,checksum,metadata,min_commit,max_commit)
 				SELECT $1,path,'',0,'','{}',$2,0
 				FROM `+diffResultsTableName+`
 				WHERE diff_type=$3 AND source_branch<>$1`,
@@ -202,7 +202,7 @@ func (c *cataloger) mergeFromSon(tx db.Tx, previousMaxCommitID, nextCommitID Com
 	if err != nil {
 		return err
 	}
-	_, err = tx.Exec(`INSERT INTO commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit)
+	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,creation_date,metadata,merge_type,merge_source_branch,merge_source_commit)
 		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_son',$8,$9)`,
 		fatherID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, sonID, sonLastCommitID)
 	return err

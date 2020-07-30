@@ -10,6 +10,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/dlmiddlecote/sqlstats"
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -50,6 +52,7 @@ var runCmd = &cobra.Command{
 		defer func() {
 			_ = dbPool.Close()
 		}()
+		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
 		migrator := db.NewDatabaseMigrator(dbConnString)
 
@@ -153,6 +156,14 @@ var runCmd = &cobra.Command{
 		cancelFn()
 		<-stats.Done()
 	},
+}
+
+func registerPrometheusCollector(db db.Database) {
+	collector := sqlstats.NewStatsCollector("lakefs", db)
+	err := prometheus.Register(collector)
+	if err != nil {
+		logging.Default().WithError(err).Error("failed to register db stats collector")
+	}
 }
 
 func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {

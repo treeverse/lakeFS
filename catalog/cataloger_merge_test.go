@@ -512,7 +512,6 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 }
 
 func TestCataloger_Merge_FromSonNewEntrySameEntry(t *testing.T) {
-	t.Skip("TBD")
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -552,7 +551,6 @@ func TestCataloger_Merge_FromSonNewEntrySameEntry(t *testing.T) {
 	if !IsValidReference(res.Reference) {
 		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
 	}
-	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0", Deleted: true}})
 	expectedDifferences = Differences{}
 	if !res.Differences.Equal(expectedDifferences) {
 		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))

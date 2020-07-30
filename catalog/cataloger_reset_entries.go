@@ -10,7 +10,6 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository, branch string,
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "prefix", IsValid: ValidatePath(prefix)},
 	}); err != nil {
 		return err
 	}
@@ -20,7 +19,7 @@ func (c *cataloger) ResetEntries(ctx context.Context, repository, branch string,
 			return nil, err
 		}
 		prefixCond := db.Prefix(prefix)
-		_, err = tx.Exec(`DELETE FROM entries WHERE branch_id=$1 AND path LIKE $2 AND min_commit=0`, branchID, prefixCond)
+		_, err = tx.Exec(`DELETE FROM catalog_entries WHERE branch_id=$1 AND path LIKE $2 AND min_commit=0`, branchID, prefixCond)
 		return nil, err
 	}, c.txOpts(ctx)...)
 	return err

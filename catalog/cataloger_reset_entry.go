@@ -10,16 +10,18 @@ func (c *cataloger) ResetEntry(ctx context.Context, repository, branch string, p
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
-		{Name: "path", IsValid: ValidatePath(path)},
 	}); err != nil {
 		return err
+	}
+	if path == "" {
+		return db.ErrNotFound
 	}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
 		}
-		res, err := tx.Exec(`DELETE FROM entries WHERE branch_id=$1 AND path=$2 AND min_commit=0`, branchID, path)
+		res, err := tx.Exec(`DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=0`, branchID, path)
 		if err != nil {
 			return nil, err
 		}

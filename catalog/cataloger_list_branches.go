@@ -25,7 +25,7 @@ func (c *cataloger) ListBranches(ctx context.Context, repository string, prefix 
 		}
 
 		query := `SELECT $2 AS repository, name
-			FROM branches
+			FROM catalog_branches
 			WHERE repository_id = $1 AND name like $3 AND name > $4
 			ORDER BY name
 			LIMIT $5`

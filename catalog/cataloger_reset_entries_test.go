@@ -90,7 +90,7 @@ func TestCataloger_ResetEntries_Basics(t *testing.T) {
 				branch:     branch,
 				prefix:     "",
 			},
-			wantErr: true,
+			wantErr: false,
 		},
 	}
 	for _, tt := range tests {
