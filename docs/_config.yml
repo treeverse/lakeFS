@@ -43,8 +43,8 @@ footer_links:
     - 'https://github.com/treeverse/lakeFS'
   'Blog':
     - 'https://www.lakefs.io/blog'
-  'Contact Us':
-    - 'mailto:hello@treeverse.io'
+  'Contact':
+    - 'https://lakefs.io/contact-us/'
 
 footer_social:
   'linkedin':
