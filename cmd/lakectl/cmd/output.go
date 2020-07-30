@@ -155,8 +155,8 @@ type APIError interface {
 
 func DieErr(err error) {
 	errData := struct{ Error string }{}
-	apiError, isApiError := err.(APIError)
-	if isApiError {
+	apiError, isAPIError := err.(APIError)
+	if isAPIError {
 		errData.Error = apiError.GetPayload().Message
 	}
 	if errData.Error == "" {

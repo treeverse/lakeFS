@@ -64,39 +64,44 @@ func (u *URI) String() string {
 }
 
 func Parse(str string) (*URI, error) {
-	var uri URI
-
 	// start with protocol
 	protoParts := strings.Split(str, ProtocolSeparator)
-	if len(protoParts) != 2 {
+	const uriParts = 2
+	if len(protoParts) != uriParts {
 		return nil, ErrMalformedURI
 	}
 	if !strings.EqualFold(protoParts[0], LakeFSProtocol) {
 		return nil, ErrMalformedURI
 	}
+
+	var uri URI
 	uri.Protocol = protoParts[0]
 
 	var state = stateInRepo
 	var buf strings.Builder
 	for _, ch := range protoParts[1] {
-		if ch == RefSeparator && state == stateInRepo {
+		switch {
+		case ch == RefSeparator && state == stateInRepo:
 			uri.Repository = buf.String()
 			state = stateInRef
 			buf.Reset()
-		} else if ch == PathSeparator && state == stateInRef {
+		case ch == PathSeparator && state == stateInRef:
 			uri.Ref = buf.String()
 			state = stateInPath
 			buf.Reset()
-		} else {
+		default:
 			buf.WriteRune(ch)
 		}
 	}
-	if buf.Len() > 0 && state == stateInRepo {
-		uri.Repository = buf.String()
-	} else if buf.Len() > 0 && state == stateInRef {
-		uri.Ref = buf.String()
-	} else if buf.Len() > 0 && state == stateInPath {
-		uri.Path = buf.String()
+	if buf.Len() > 0 {
+		switch state {
+		case stateInRepo:
+			uri.Repository = buf.String()
+		case stateInRef:
+			uri.Ref = buf.String()
+		case stateInPath:
+			uri.Path = buf.String()
+		}
 	}
 	return &uri, nil
 }

@@ -5,34 +5,34 @@ import (
 	"testing"
 )
 
-type UploadIdTranslator struct {
-	TransMap   map[string]string
-	ExpectedId string
+type UploadIDTranslator struct {
 	T          *testing.T
+	TransMap   map[string]string
+	ExpectedID string
 	mux        sync.Mutex
 }
 
-func (d *UploadIdTranslator) SetUploadId(uploadId string) string {
+func (d *UploadIDTranslator) SetUploadID(uploadID string) string {
 	d.mux.Lock()
 	defer d.mux.Unlock()
-	d.TransMap[d.ExpectedId] = uploadId
-	return d.ExpectedId
+	d.TransMap[d.ExpectedID] = uploadID
+	return d.ExpectedID
 }
-func (d *UploadIdTranslator) TranslateUploadId(simulationId string) string {
-	id, ok := d.TransMap[simulationId]
+func (d *UploadIDTranslator) TranslateUploadID(simulationID string) string {
+	id, ok := d.TransMap[simulationID]
 	if !ok {
-		d.T.Error("upload id " + simulationId + " not in map")
-		return simulationId
+		d.T.Error("upload id " + simulationID + " not in map")
+		return simulationID
 	} else {
 		return id
 	}
 }
-func (d *UploadIdTranslator) RemoveUploadId(inputUploadId string) {
+func (d *UploadIDTranslator) RemoveUploadID(inputUploadID string) {
 	var keyToRemove string
 	d.mux.Lock()
 	defer d.mux.Unlock()
 	for k, v := range d.TransMap {
-		if v == inputUploadId {
+		if v == inputUploadID {
 			keyToRemove = k
 			break
 		}

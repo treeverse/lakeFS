@@ -4,17 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/spf13/viper"
-
-	"github.com/treeverse/lakefs/metastore"
-
-	"github.com/treeverse/lakefs/config"
-
-	"github.com/treeverse/lakefs/metastore/glue"
-
-	"github.com/treeverse/lakefs/metastore/hive"
-
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/metastore"
+	"github.com/treeverse/lakefs/metastore/glue"
+	"github.com/treeverse/lakefs/metastore/hive"
 )
 
 var metastoreCmd = &cobra.Command{
@@ -230,5 +225,4 @@ func init() {
 	_ = glueSymlinkCmd.MarkFlagRequired("to-schema")
 	_ = glueSymlinkCmd.Flags().String("to-table", "", "destination table name")
 	_ = glueSymlinkCmd.MarkFlagRequired("to-table")
-
 }

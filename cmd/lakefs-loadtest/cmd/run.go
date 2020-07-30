@@ -56,10 +56,10 @@ var runCmd = &cobra.Command{
 			StorageNamespace: storageNamespace,
 			KeepRepo:         isKeep,
 			Credentials: model.Credential{
-				AccessKeyId:     viper.GetString(ConfigAccessKeyId),
+				AccessKeyID:     viper.GetString(ConfigAccessKeyID),
 				AccessSecretKey: viper.GetString(ConfigSecretAccessKey),
 			},
-			ServerAddress: viper.GetString(ConfigServerEndpointUrl),
+			ServerAddress: viper.GetString(ConfigServerEndpointURL),
 		}
 		loader := loadtest.NewLoader(testConfig)
 		err = loader.Run()

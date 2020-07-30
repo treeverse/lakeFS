@@ -188,7 +188,7 @@ func (a APIErrorCode) ToAPIErr() APIError {
 	return Codes.ToAPIErr(a)
 }
 
-// error code to APIError structure, these fields carry respective
+// Codes - error code to APIError structure, these fields carry respective
 // descriptions for all the error responses.
 var Codes = errorCodeMap{
 	ErrInvalidCopyDest: {

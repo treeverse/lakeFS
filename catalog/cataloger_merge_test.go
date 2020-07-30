@@ -511,6 +511,54 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	}
 }
 
+func TestCataloger_Merge_FromSonNewEntrySameEntry(t *testing.T) {
+	t.Skip("TBD")
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+
+	// create new file and commit to branch
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "/file0", nil, "")
+	_, err := c.Commit(ctx, repository, "branch1", "Add new file", "tester", nil)
+	testutil.MustDo(t, "add new file to branch", err)
+
+	// merge branch to master
+	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
+	if err != nil {
+		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
+	}
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
+	}
+	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0"}})
+	expectedDifferences := Differences{
+		Difference{Type: DifferenceTypeAdded, Path: "/file0"},
+	}
+	if !res.Differences.Equal(expectedDifferences) {
+		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
+	}
+
+	// create same file and commit to branch
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "/file0", nil, "")
+	_, err = c.Commit(ctx, repository, "branch1", "Add same file", "tester", nil)
+	testutil.MustDo(t, "add same file to branch", err)
+
+	// merge branch to master
+	res, err = c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
+	if err != nil {
+		t.Fatalf("Merge from branch1 to master err=%s, expected none", err)
+	}
+	if !IsValidReference(res.Reference) {
+		t.Fatalf("Merge reference = %s, expected valid reference", res.Reference)
+	}
+	testVerifyEntries(t, ctx, c, repository, "master", []testEntryInfo{{Path: "/file0", Deleted: true}})
+	expectedDifferences = Differences{}
+	if !res.Differences.Equal(expectedDifferences) {
+		t.Fatalf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
+	}
+}
+
 func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)

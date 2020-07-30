@@ -35,7 +35,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 			return nil, err
 		}
 		query := `SELECT c.commit_id, c.committer, c.message, c.creation_date, c.metadata
-			FROM commits c JOIN branches b ON b.id = c.branch_id 
+			FROM catalog_commits c JOIN catalog_branches b ON b.id = c.branch_id 
 			WHERE b.id = $1 AND c.commit_id < $2
 			ORDER BY c.commit_id DESC
 			LIMIT $3`
