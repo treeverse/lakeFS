@@ -372,8 +372,15 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 		return h.pathBasedHandler(r.Method, repository, ref, key)
 	}
 
-	// Paths for repository and ref only (none exist)
-	if _, ok := SplitFirst(r.URL.Path, 2); ok {
+	// paths for repository and ref only (none exist)
+	if parts, ok := SplitFirst(r.URL.Path, 2); ok {
+		repository := parts[0]
+		ref := parts[1]
+
+		// s3 allows trailing slash for bucket name
+		if ref == "" {
+			return h.repositoryBasedHandler(r.Method, repository)
+		}
 		return h.NotFoundHandler
 	}
 
