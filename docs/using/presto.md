@@ -27,13 +27,13 @@ It is done using the [Hive connector](https://prestodb.io/docs/current/connector
 
 ### Configure Hive connector
 Create ```/etc/catalog/hive.properties``` with the following contents to mount the ```hive-hadoop2``` connector as the ```hive``` catalog, replacing ```example.net:9083``` with the correct host and port for your Hive metastore Thrift service:
-```
+```properties
 connector.name=hive-hadoop2
 hive.metastore.uri=thrift://example.net:9083
 ```
 
 Add to ```/etc/catalog/hive.properties``` the lakeFS configurations in the corresponding S3 configuration properties:
-```
+```properties
 hive.s3.aws-access-key=AKIAIOSFODNN7EXAMPLE
 hive.s3.aws-secret-key=wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY
 hive.s3.endpoint=https://s3.lakefs.example.com
@@ -45,13 +45,19 @@ If we want to be able to write data to lakeFS we will need to configure hive as 
 In file ``` hdfs-site.xml``` add to the configuration:
 ```xml
 <configuration>
-...
-...
-<property><name>fs.s3a.access.key</name><value>AKIAIOSFODNN7EXAMPLE</value></property>
-<property><name>fs.s3a.secret.key</name><value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value></property>
-<property><name>fs.s3a.endpoint</name><value>https://s3.lakefs.example.com</value></property>
+    ...
+    <property>
+        <name>fs.s3a.access.key</name>
+        <value>AKIAIOSFODNN7EXAMPLE</value></property>
+    <property>
+        <name>fs.s3a.secret.key</name>
+        <value>wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY</value>
+    </property>
+    <property>
+        <name>fs.s3a.endpoint</name>
+        <value>https://s3.lakefs.example.com</value>
+    </property>
 </configuration>
-
 ```
  
 
@@ -68,7 +74,7 @@ WITH (location = 's3a://example/master')
 
 Create a new Hive table named ```page_views``` in the ```web``` schema that is stored using the ORC file format,
  partitioned by date and country, and bucketed by user into ```50``` buckets (note that Hive requires the partition columns to be the last columns in the table):
-```postgresql
+```sql
 CREATE TABLE master.page_views (
   view_time timestamp,
   user_id bigint,
@@ -86,7 +92,7 @@ WITH (
 ### Example with External table
 Create an external Hive table named ```request_logs``` that points at existing data in lakeFS:
 
-```postgresql
+```sql
 CREATE TABLE master.request_logs (
   request_time timestamp,
   url varchar,
@@ -101,8 +107,8 @@ WITH (
 
 ### Example of copying a table with [metastore tools](glue_hive_metastore.md):
 Copy the created table `page_views` on schema `master` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
-```
-lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
+```shell
+$ lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
 ```
 
 

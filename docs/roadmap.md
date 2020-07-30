@@ -7,20 +7,16 @@ has_children: false
 
 # Roadmap
 
-- [ ] **General**{: .label } Monitoring & Alerting
-- [ ] **Index**{: .label } Data model improvements: version ranges
-- [ ] **Auth**{: .label } User, Group and role administration
+- [ ] **General**{: .label } Improved Monitoring
+- [ ] **Block Adapter**{: .label } Additional storage Adapters (GCS?)
+- [ ] **Integrations**{: .label } native Hadoop/Spark Filesystem & OutputCommitter
+- [ ] **Integrations**{: .label } Python SDK
+- [ ] **Integrations**{: .label } Java SDK
+- [ ] **Integrations**{: .label } Airflow Operator
 - [ ] **Auth**{: .label } Support instance Profiles
-- [ ] **Auth**{: .label } Some form of IAM/KMS integration
+- [ ] **Auth**{: .label } IAM/KMS integration
 - [ ] **Ops**{: .label } Kubernetes support, Helm chart
 - [ ] **CI**{: .label } Web Hook support
 - [ ] **CI**{: .label } Protected branches
-- [ ] **On-Boarding**{: .label } track S3 bucket changes
-- [ ] **Documentation**{: .label } integrations
-- [ ] **Index**{: .label } Metadata database schema management, rolling upgrades
 - [ ] **UI**{: .label } better pagination and data exploration
-- [ ] **Integrations**{: .label } Hive Metastore integration
-- [ ] **Integrations**{: .label } Python SDK
-- [ ] **Integrations**{: .label } Airflow Operator
-- [ ] **Integrations**{: .label } Java SDK
-- [ ] **Integrations**{: .label } Athena connector
+
