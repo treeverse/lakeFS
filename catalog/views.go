@@ -126,7 +126,9 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 											 (l.commit_id > f.max_commit OR NOT f.is_deleted))
 										   ))) 
 											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
-		FromSelect(sqEntriesV(CommittedID).
+		FromSelect(sqEntriesV(CommittedID).Distinct().
+			Options(" on (branch_id,path)").
+			OrderBy("branch_id", "path", "min_commit desc").
 			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
 		JoinClause(sqFather.Prefix("LEFT JOIN (").Suffix(") AS f ON f.path = s.path"))
 	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromSonInternalQ, "t").Where("NOT (same_object OR both_deleted)")

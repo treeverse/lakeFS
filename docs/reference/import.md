@@ -55,11 +55,11 @@ when accessing it through other branches. In a sense, your original bucket becom
 The import API can accessed from the web interface, through the repository settings page.
 In the dialog, provide the URL for you inventory manifest.json file. You can press the *Test* button to have lakeFS read your manifest and display the expected number of added files. 
  
-![Object Added](../assets/img/import_webui.png)
+![Import web UI](../assets/img/import_webui.png)
 
 Then, press `Import` to start the process. When finished, you will see a summary of the import.
 
-![Object Added](../assets/img/import_success.png)
+![Import successful](../assets/img/import_success.png)
 
 After importing, note that a commit was added to your `import-from-inventory` branch, and that you can see the files in the web interface under this branch.
 
