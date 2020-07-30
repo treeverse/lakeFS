@@ -19,11 +19,18 @@
 -- Avoid superfluous output (such as "CREATE FUNCTION)
 \set QUIET 1
 
+CREATE FUNCTION pg_temp.maybe_concat_slash(p text)
+RETURNS text
+LANGUAGE sql IMMUTABLE STRICT
+AS $$
+   SELECT regexp_replace(p, '/$', '') || '/';
+$$;
+
 CREATE FUNCTION pg_temp.join_paths(p text, q text)
 RETURNS text
 LANGUAGE sql IMMUTABLE STRICT
 AS $$
-   SELECT regexp_replace(p, '/$', '') || '/' || q;
+   SELECT pg_temp.maybe_concat_slash(p) || q;
 $$;
 
 -- encode URI from https://stackoverflow.com/a/60260190/192263
@@ -71,7 +78,7 @@ CREATE FUNCTION pg_temp.get_rest(path text)
 RETURNS text
 LANGUAGE sql IMMUTABLE STRICT
 AS $$
-   SELECT CASE WHEN tail = '' THEN '' ELSE concat(tail, '/') END FROM (
+   SELECT CASE WHEN tail = '' THEN '' ELSE pg_temp.maybe_concat_slash(tail) END FROM (
       SELECT substr($1, length(pg_temp.get_head($1)) + 7) tail
    ) i;
 $$;
@@ -83,18 +90,28 @@ $$;
 -- TODO(ariels): Works just for S3-based namespaces.  Current
 -- alternatives (mem, local) do not require support, future may be
 -- different.
-SELECT regexp_replace(pg_temp.get_bucket(repository.storage_namespace), '^s3://', 'arn:aws:s3:::') src_bucket_arn,
+SELECT
+DISTINCT ON (physical_address)
+     regexp_replace(pg_temp.get_bucket(storage_namespace), '^s3://', 'arn:aws:s3:::') src_bucket_arn,
      pg_temp.encode_uri_component(json_build_object(
 	 'dstBucket', :'dst_bucket_name',
-	 'dstKey', pg_temp.join_paths(repository.name, entry.path),
-	 'srcKey', concat(pg_temp.get_rest(repository.storage_namespace), entry.physical_address)) #>> '{}')
-FROM (entries entry
-      JOIN branches branch ON entry.branch_id = branch.id
-      JOIN repositories repository ON branch.repository_id = repository.id)
-WHERE repository.name = :'repository_name' AND
-      branch.name = :'branch_name' AND
-      -- uncommitted        OR                          current
-      (entry.min_commit = 0 OR entry.min_commit > 0 AND entry.max_commit = max_commit_id()) AND
-      -- Skip explicit physical addresses: imported from elsewhere
-      -- with meaningful name so do not export
-      regexp_match(entry.physical_address, '^[a-zA-Z0-9]+://') IS NULL;
+	 'dstKey', pg_temp.join_paths(:'repository_name', path),
+	 'srcKey', concat(pg_temp.get_rest(storage_namespace), physical_address)) #>> '{}')
+FROM (
+    SELECT entry.path path, entry.physical_address physical_address, entry.min_commit min_commit,
+    	   entry.max_commit = 0 tombstone, -- true for an uncommitted deletion
+           repository.storage_namespace storage_namespace
+    FROM (catalog_entries entry
+          JOIN catalog_branches branch ON entry.branch_id = branch.id
+          JOIN catalog_repositories repository ON branch.repository_id = repository.id)
+    WHERE repository.name = :'repository_name' AND
+          branch.name = :'branch_name' AND
+          -- uncommitted        OR                          current
+          (entry.min_commit = 0 OR entry.min_commit > 0 AND entry.max_commit = catalog_max_commit_id()) AND
+          -- Skip explicit physical addresses: imported from elsewhere
+          -- with meaningful name so do not export
+          regexp_match(entry.physical_address, '^[a-zA-Z0-9]+://') IS NULL
+) i
+WHERE NOT tombstone
+ORDER BY physical_address, min_commit;
+
