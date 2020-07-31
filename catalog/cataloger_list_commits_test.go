@@ -3,15 +3,14 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"reflect"
 	"strconv"
 	"strings"
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/testutil"
+	"github.com/go-test/deep"
 
-	"github.com/davecgh/go-spew/spew"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_ListCommits(t *testing.T) {
@@ -47,9 +46,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Y"}},
 				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
@@ -64,8 +63,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         2,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -93,7 +92,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -147,8 +146,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				got[i].CreationDate = time.Time{}
 			}
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ListCommits() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
+			if diff := deep.Equal(got, tt.want); diff != nil {
+				t.Error("ListCommits", diff)
 			}
 			if gotMore != tt.wantMore {
 				t.Errorf("ListCommits() gotMore = %v, want = %v", gotMore, tt.wantMore)
