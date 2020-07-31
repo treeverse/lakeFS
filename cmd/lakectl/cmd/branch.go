@@ -121,12 +121,12 @@ var branchDeleteCmd = &cobra.Command{
 // lakectl branch revert lakefs://myrepo@master --commit commitId --tree path --object path
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert <branch uri> [flags]",
-	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path ",
+	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path",
 	Long: `revert changes: there are four different ways to revert changes:
-				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
-				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
+				1. revert to previous commit, set HEAD of branch to given commit - revert lakefs://myrepo@master --commit commitId
+				2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master 
 				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
-				4. revert uncommitted changes for specific object  - revert lakefs://myrepo@master  --object path`,
+				4. revert uncommitted changes for specific object - revert lakefs://myrepo@master  --object path`,
 	Args: ValidationChain(
 		HasNArgs(1),
 		IsRefURI(0),
@@ -147,35 +147,29 @@ var branchRevertCmd = &cobra.Command{
 		if err != nil {
 			DieErr(err)
 		}
-		isCommit := len(commitID) > 0
-		isTree := len(tree) > 0
-		isObject := len(object) > 0
-
-		if isCommit || isTree || isObject {
-			Die("can't revert by multiple commands, please choose only one [commit, tree, object]!", 1)
-		}
 
 		var revert models.RevertCreation
 		var confirmationMsg string
-		if isCommit {
+		switch {
+		case len(commitID) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s", commitID)
 			revert = models.RevertCreation{
 				Commit: commitID,
 				Type:   swag.String(models.RevertCreationTypeCOMMIT),
 			}
-		} else if isTree {
+		case len(tree) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit", tree)
 			revert = models.RevertCreation{
 				Path: tree,
 				Type: swag.String(models.RevertCreationTypeTREE),
 			}
-		} else if isObject {
+		case len(object) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit", object)
 			revert = models.RevertCreation{
 				Path: object,
 				Type: swag.String(models.RevertCreationTypeOBJECT),
 			}
-		} else {
+		default:
 			confirmationMsg = "Are you sure you want to revert all uncommitted changes"
 			revert = models.RevertCreation{
 				Type: swag.String(models.RevertCreationTypeRESET),
