@@ -6,17 +6,13 @@ DROP TABLE IF EXISTS auth_policies;
 DROP TABLE IF EXISTS auth_groups;
 DROP TABLE IF EXISTS auth_users;
 DROP TABLE IF EXISTS auth_installation_metadata;
-
-ALTER TABLE IF EXISTS catalog_repositories
-    DROP CONSTRAINT IF EXISTS  catalog_repositories_branches_id_fk;
-
 DROP TABLE IF EXISTS catalog_repositories_config;
 DROP TABLE IF EXISTS catalog_object_dedup;
 DROP TABLE IF EXISTS catalog_multipart_uploads;
 DROP VIEW IF EXISTS catalog_entries_v;
 DROP TABLE IF EXISTS catalog_entries;
 DROP TABLE IF EXISTS catalog_commits;
-DROP TABLE IF EXISTS catalog_branches;
+DROP TABLE IF EXISTS catalog_branches CASCADE ;
 DROP TYPE IF EXISTS catalog_merge_type;
 DROP TYPE IF EXISTS catalog_commit_status;
 DROP TABLE IF EXISTS catalog_repositories;
