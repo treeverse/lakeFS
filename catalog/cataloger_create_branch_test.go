@@ -109,6 +109,7 @@ func TestCataloger_CreateBranch_Parallel(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+
 	const workers = 10
 	var wg sync.WaitGroup
 	wg.Add(workers)

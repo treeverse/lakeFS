@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	"github.com/davecgh/go-spew/spew"
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -262,7 +263,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file1",
 				limit:      100,
 			},
-			wantEntries: []string{"file2", "file2/", "rip0"},
+			wantEntries: []string{"file1", "file2", "file2/", "rip0"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -314,7 +315,20 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file6/ccc",
 				limit:      100,
 			},
-			wantEntries: []string{"file6/yyy", "file6/zzz/"},
+			wantEntries: []string{"file6/ccc", "file6/yyy", "file6/zzz/"},
+			wantMore:    false,
+			wantErr:     false,
+		},
+		{
+			name: "specific file",
+			args: args{
+				repository: repo,
+				reference:  "master",
+				path:       "file6/zzz/zzz",
+				after:      "",
+				limit:      100,
+			},
+			wantEntries: []string{"file6/zzz/zzz"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -509,13 +523,9 @@ func TestCataloger_ListEntries_Prefix(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ListEntries err = %s, expected no error", err)
 			}
-			if len(got) != len(tt.want) {
-				t.Fatalf("ListEntries got %d entries, expected %d", len(got), len(tt.want))
-			}
-			for i := 0; i < len(got); i++ {
-				if got[i].Path != tt.want[i] {
-					t.Fatalf("ListEntries entry at %d - %s, expected %s", i, got[i].Path, tt.want[i])
-				}
+			gotPaths := extractEntriesPaths(got)
+			if diff := deep.Equal(gotPaths, tt.wantByLevel); diff != nil {
+				t.Fatal("ListEntries", diff)
 			}
 			if gotMore != false {
 				t.Fatal("ListEntries got more should be false")
@@ -527,17 +537,21 @@ func TestCataloger_ListEntries_Prefix(t *testing.T) {
 			if err != nil {
 				t.Fatalf("ListEntries by level - err = %s, expected no error", err)
 			}
-			if len(got) != len(tt.wantByLevel) {
-				t.Fatalf("ListEntries by level - got %d entries, expected %d", len(got), len(tt.wantByLevel))
-			}
-			for i := 0; i < len(got); i++ {
-				if got[i].Path != tt.wantByLevel[i] {
-					t.Fatalf("ListEntries by level - entry at %d - %s, expected %s", i, got[i].Path, tt.wantByLevel[i])
-				}
+			gotPaths := extractEntriesPaths(got)
+			if diff := deep.Equal(gotPaths, tt.wantByLevel); diff != nil {
+				t.Fatal("ListEntries by level", diff)
 			}
 			if gotMore != false {
 				t.Fatal("ListEntries got more should be false")
 			}
 		})
 	}
+}
+
+func extractEntriesPaths(entries []*Entry) []string {
+	result := make([]string, len(entries))
+	for i, ent := range entries {
+		result[i] = ent.Path
+	}
+	return result
 }
