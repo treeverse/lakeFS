@@ -119,7 +119,7 @@ func DefaultTxOptions() *TxOptions {
 	return &TxOptions{
 		logger:         logging.Default(),
 		ctx:            context.Background(),
-		isolationLevel: sql.LevelSerializable,
+		isolationLevel: sql.LevelRepeatableRead,
 		readOnly:       false,
 	}
 }

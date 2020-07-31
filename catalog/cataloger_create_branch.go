@@ -21,11 +21,14 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		//_, err := tx.Exec("LOCK TABLE catalog_branches IN  SHARE UPDATE EXCLUSIVE MODE")
+		//if err != nil {
+		//	return nil, err
+		//}
 		repoID, err := c.getRepositoryIDCache(tx, repository)
 		if err != nil {
 			return nil, err
 		}
-
 		// get source branch id and
 		var sourceBranchID int
 		if err := tx.Get(&sourceBranchID, `SELECT id FROM catalog_branches WHERE repository_id=$1 AND name=$2`,
