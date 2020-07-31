@@ -34,8 +34,10 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, err
 		}
-		query := `SELECT c.commit_id, c.committer, c.message, c.creation_date, c.metadata
-			FROM catalog_commits c JOIN catalog_branches b ON b.id = c.branch_id 
+		query := `SELECT c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
+				COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
+			FROM catalog_commits c JOIN catalog_branches b ON b.id=c.branch_id
+				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
 			WHERE b.id = $1 AND c.commit_id < $2
 			ORDER BY c.commit_id DESC
 			LIMIT $3`

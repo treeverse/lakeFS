@@ -56,9 +56,9 @@ or [increase](https://prometheus.io/docs/prometheus/latest/querying/functions/#i
 sum by (operation)(histogram_quantile(0.99, rate(api_request_duration_seconds_bucket[1m])))
 ```
 
-### Average latency of S3-compatible API
+### 50th percentile of S3-compatible API latencies
 ```
-sum by (operation)(rate(gateway_request_duration_seconds_sum[1m]) / rate(gateway_request_duration_seconds_count[1m]))
+sum by (operation)(histogram_quantile(0.5, rate(gateway_request_duration_seconds_bucket[1m])))
 ```
 
 ### Number of errors in outgoing S3 requests
