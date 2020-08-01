@@ -1,6 +1,8 @@
 package db
 
 import (
+	"errors"
+
 	"github.com/jackc/pgconn"
 	"github.com/jackc/pgerrcode"
 )
@@ -14,7 +16,8 @@ func IsUniqueViolation(err error) bool {
 }
 
 func isPGCode(err error, code string) bool {
-	if pgErr, ok := err.(*pgconn.PgError); ok {
+	var pgErr *pgconn.PgError
+	if err != nil && errors.As(err, &pgErr) {
 		return pgErr.Code == code
 	}
 	return false
