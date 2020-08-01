@@ -423,7 +423,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
-		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
+		dummyData = "this is dummy data - created by lakeFS in order to check accessibility "
 	)
 
 	err := adapter.Put(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)), block.PutOpts{})
@@ -994,7 +994,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			c.Context(),
 			params.Repository,
 			params.Ref,
-			swag.StringValue(params.Tree),
+			swag.StringValue(params.Prefix),
 			after,
 			delimiter,
 			amount)
@@ -1012,7 +1012,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
 					Path:     entry.Path,
-					PathType: models.ObjectStatsPathTypeTREE,
+					PathType: models.ObjectStatsPathTypeCOMMONPREFIX,
 				}
 			} else {
 				var mtime int64
@@ -1152,7 +1152,7 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
 			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
-		case models.RevertCreationTypeTREE:
+		case models.RevertCreationTypeCOMMONPREFIX:
 			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeRESET:
 			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)

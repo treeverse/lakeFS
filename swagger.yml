@@ -76,7 +76,7 @@ definitions:
         type: string
       path_type:
         type: string
-        enum: [TREE, OBJECT]
+        enum: [COMMON_PREFIX, OBJECT]
 
   repository_creation:
     type: object
@@ -110,7 +110,7 @@ definitions:
         format: int64
       path_type:
         type: string
-        enum: [TREE, OBJECT]
+        enum: [COMMON_PREFIX, OBJECT]
 
   underlying_object_properties:
     type: object
@@ -129,7 +129,7 @@ definitions:
         type: string
       path_type:
         type: string
-        enum: [TREE, OBJECT]
+        enum: [COMMON_PREFIX, OBJECT]
 
   revert_creation:
     type: object
@@ -138,7 +138,7 @@ definitions:
     properties:
       type:
         type: string
-        enum: [OBJECT, TREE, COMMIT, RESET]
+        enum: [OBJECT, COMMON_PREFIX, COMMIT, RESET]
       commit:
         type: string
       path:
@@ -1842,7 +1842,7 @@ paths:
         type: string
         description: a reference (could be either a branch or a commit ID)
       - in: query
-        name: tree
+        name: prefix
         required: false
         type: string
       - in: query
@@ -1855,7 +1855,7 @@ paths:
       tags:
         - objects
       operationId: listObjects
-      summary: list objects under a given tree
+      summary: list objects under a given prefix
       responses:
         200:
           description: entry list
@@ -1869,7 +1869,7 @@ paths:
                 items:
                   $ref: "#/definitions/object_stats"
         404:
-          description: tree or branch not found
+          description: prefix or branch not found
           schema:
             $ref: "#/definitions/error"
         401:

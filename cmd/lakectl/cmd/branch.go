@@ -167,7 +167,7 @@ var branchRevertCmd = &cobra.Command{
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit", tree)
 			revert = models.RevertCreation{
 				Path: tree,
-				Type: swag.String(models.RevertCreationTypeTREE),
+				Type: swag.String(models.RevertCreationTypeCOMMONPREFIX),
 			}
 		} else if isObject {
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit", object)
