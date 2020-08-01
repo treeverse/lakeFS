@@ -34,13 +34,15 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, err
 		}
-		query := `SELECT c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
+		query := `SELECT b_name.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 				COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
-			FROM catalog_commits c JOIN catalog_branches b ON b.id=c.branch_id
+			FROM catalog_commits c JOIN catalog_branches b ON b.id = $1 AND c.branch_id = ANY (b.lineage || $1::bigint)
+				JOIN catalog_branches b_name ON c.branch_id = b_name.id
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
-			WHERE b.id = $1 AND c.commit_id < $2
+			WHERE   c.commit_id < $2
 			ORDER BY c.commit_id DESC
 			LIMIT $3`
+
 		var rawCommits []*commitLogRaw
 		if err := tx.Select(&rawCommits, query, branchID, fromCommitID, limit+1); err != nil {
 			return nil, err
