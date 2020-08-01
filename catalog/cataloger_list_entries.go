@@ -139,11 +139,14 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	unionQueryParts := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
 	endOfPrefixRange := prefix + DirectoryTermination
 
+	var exactFirst bool
 	var listAfter string
 	if len(after) == 0 {
 		listAfter = prefix
+		exactFirst = true
 	} else {
 		listAfter = after
+		exactFirst = false
 	}
 	var markerList []string
 	readParams := readPramsType{
@@ -155,11 +158,11 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		topCommitID:     topCommitID,
 		branchID:        branchID,
 	}
-	first := true
+
 	for {
 		var pathCond string
-		if first {
-			first = false
+		if exactFirst {
+			exactFirst = false
 			pathCond = ">="
 		} else {
 			pathCond = ">"
