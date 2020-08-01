@@ -802,10 +802,10 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		// read repo
 		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
-			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
@@ -1069,7 +1069,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		// workaround in order to extract file content-length using swagger
 		file, ok := params.Content.(*runtime.File)
 		if !ok {
-			return objects.NewUploadObjectNotFound().WithPayload(responseError("failed extracting size from file"))
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseError("failed extracting size from file"))
 		}
 		byteSize := file.Header.Size
 
