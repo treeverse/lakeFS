@@ -1163,7 +1163,7 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 				WithPayload(responseError("revert type not found"))
 		}
 		if errors.Is(err, db.ErrNotFound) {
-			return branches.NewRevertBranchNotFound().WithPayload(responseError("branch not found"))
+			return branches.NewRevertBranchNotFound().WithPayload(responseErrorFrom(err))
 		}
 		if err != nil {
 			return branches.NewRevertBranchDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
