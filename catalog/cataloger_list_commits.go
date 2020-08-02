@@ -2,6 +2,7 @@ package catalog
 
 import (
 	"context"
+	"fmt"
 	"math"
 
 	"github.com/treeverse/lakefs/db"
@@ -34,17 +35,21 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, err
 		}
+		lineage, err := getLineage(tx, branchID, CommittedID)
+		if err != nil {
+			return nil, fmt.Errorf("get lineage: %w", err)
+		}
 		query := `SELECT b_name.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 				COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
-			FROM catalog_commits c JOIN catalog_branches b ON b.id = $1 AND c.branch_id = ANY (b.lineage || $1::bigint)
+			FROM catalog_commits c JOIN (SELECT * FROM ` + getLineageAsValues(lineage, branchID) + `) l  ON  c.branch_id = l.branch_id and c.commit_id <= l.commit_id
 				JOIN catalog_branches b_name ON c.branch_id = b_name.id
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
-			WHERE   c.commit_id < $2
+			WHERE   c.commit_id < $1
 			ORDER BY c.commit_id DESC
-			LIMIT $3`
+			LIMIT $2`
 
 		var rawCommits []*commitLogRaw
-		if err := tx.Select(&rawCommits, query, branchID, fromCommitID, limit+1); err != nil {
+		if err := tx.Select(&rawCommits, query, fromCommitID, limit+1); err != nil {
 			return nil, err
 		}
 		commits := convertRawCommits(branch, rawCommits)
