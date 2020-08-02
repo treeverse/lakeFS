@@ -59,16 +59,16 @@ func FmtDiff(diff *models.Diff, withDirection bool) {
 	var action string
 
 	switch diff.Type {
-	case models.DiffTypeADDED:
+	case models.DiffTypeAdded:
 		color = text.FgGreen
 		action = "+ added"
-	case models.DiffTypeREMOVED:
+	case models.DiffTypeRemoved:
 		color = text.FgRed
 		action = "- removed"
-	case models.DiffTypeCHANGED:
+	case models.DiffTypeChanged:
 		color = text.FgYellow
 		action = "~ modified"
-	case models.DiffTypeCONFLICT:
+	case models.DiffTypeConflict:
 		color = text.FgHiYellow
 		action = "* conflict"
 	default:
