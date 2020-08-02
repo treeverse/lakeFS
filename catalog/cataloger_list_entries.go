@@ -318,20 +318,13 @@ func findLowestResultInBranches(branchRanges map[int64][]resultRow, branchPriori
 }
 
 func checkPathNotDeleted(pathResults []resultRow) bool {
-	if len(pathResults) == 0 {
-		return true
-	}
 	lastRow := pathResults[len(pathResults)-1]
-	if lastRow.MinCommit == 0 { // uncommitted
-		if lastRow.MaxCommit == 0 { // uncommitted tombstone
-			return false
-		} else { // uncommitted entry.
-			return true
-		}
-	}
-
 	firstRow := pathResults[0]
-	return firstRow.MaxCommit == MaxCommitID
+	if lastRow.MinCommit == 0 { // uncommitted
+		return lastRow.MaxCommit == MaxCommitID // true if uncommitted entry, false if tombstone
+	} else { // no uncommitted entry
+		return firstRow.MaxCommit == MaxCommitID // true if result with highest min_commit is not deleted
+	}
 }
 
 func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int, lowestCommitID, topCommitID CommitID, prefixLen int) []sq.SelectBuilder {
