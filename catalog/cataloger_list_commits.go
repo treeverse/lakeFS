@@ -2,7 +2,7 @@ package catalog
 
 import (
 	"context"
-	"math"
+	"fmt"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -25,7 +25,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		limit = ListCommitsMaxLimit
 	}
 	// we start from the newest to the oldest
-	fromCommitID := CommitID(math.MaxInt64)
+	fromCommitID := MaxCommitID
 	if ref.CommitID > 0 {
 		fromCommitID = ref.CommitID
 	}
@@ -34,18 +34,25 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, err
 		}
-		query := `SELECT c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
+		lineage, err := getLineage(tx, branchID, CommittedID)
+		if err != nil {
+			return nil, fmt.Errorf("get lineage: %w", err)
+		}
+		lineageAsValuesTable := getLineageAsValues(lineage, branchID)
+		query := `SELECT b_name.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 				COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
-			FROM catalog_commits c JOIN catalog_branches b ON b.id=c.branch_id
+			FROM catalog_commits c JOIN (SELECT * FROM ` + lineageAsValuesTable + `) l  ON  c.branch_id = l.branch_id and c.commit_id <= l.commit_id
+				JOIN catalog_branches b_name ON c.branch_id = b_name.id
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
-			WHERE b.id = $1 AND c.commit_id < $2
+			WHERE c.commit_id < $1
 			ORDER BY c.commit_id DESC
-			LIMIT $3`
+			LIMIT $2`
+
 		var rawCommits []*commitLogRaw
-		if err := tx.Select(&rawCommits, query, branchID, fromCommitID, limit+1); err != nil {
+		if err := tx.Select(&rawCommits, query, fromCommitID, limit+1); err != nil {
 			return nil, err
 		}
-		commits := convertRawCommits(branch, rawCommits)
+		commits := convertRawCommits(rawCommits)
 		return commits, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 
@@ -57,10 +64,10 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 	return commits, hasMore, err
 }
 
-func convertRawCommits(branch string, rawCommits []*commitLogRaw) []*CommitLog {
+func convertRawCommits(rawCommits []*commitLogRaw) []*CommitLog {
 	commits := make([]*CommitLog, len(rawCommits))
 	for i, commit := range rawCommits {
-		commits[i] = convertRawCommit(branch, commit)
+		commits[i] = convertRawCommit(commit)
 	}
 	return commits
 }

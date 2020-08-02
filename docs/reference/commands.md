@@ -95,11 +95,11 @@ Global Flags:
 
 ##### `lakectl branch revert`
 ````text
-revert changes: there are four different ways to revert changes:
-				1. revert to previous commit, set HEAD of branch to given commit -  revert lakefs://myrepo@master --commit commitId
-				2. revert all uncommitted changes (reset) -  revert lakefs://myrepo@master 
-				3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master  --tree path
-				4. revert uncommitted changes for specific object  - revert lakefs://myrepo@master  --object path
+revert changes - there are four different ways to revert changes:
+  1. revert to previous commit, set HEAD of branch to given commit - revert lakefs://myrepo@master --commit commitId
+  2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master
+  3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master --prefix path
+  4. revert uncommitted changes for specific object - revert lakefs://myrepo@master --object path
 
 Usage:
   lakectl branch revert [branch uri] [flags]
