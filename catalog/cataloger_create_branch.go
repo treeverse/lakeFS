@@ -8,7 +8,7 @@ import (
 )
 
 const (
-	createBranchCommitMessage = "Branch '%s' created, source branch '%s'"
+	createBranchCommitMessageFormat = "Branch '%s' created, source branch '%s'"
 )
 
 func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string, sourceBranch string) (*CommitLog, error) {
@@ -58,7 +58,7 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 			CommitID          CommitID `db:"commit_id"`
 			MergeSourceCommit CommitID `db:"merge_source_commit"`
 		}{}
-		commitMsg := fmt.Sprintf(createBranchCommitMessage, branch, sourceBranch)
+		commitMsg := fmt.Sprintf(createBranchCommitMessageFormat, branch, sourceBranch)
 		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
 			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,$4,$5,'from_father',
@@ -73,9 +73,10 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		}
 		reference := MakeReference(branch, insertReturns.CommitID)
 		parentReference := MakeReference(sourceBranch, insertReturns.MergeSourceCommit)
+
 		commitLog := &CommitLog{
 			Committer:    CatalogerCommitter,
-			Message:      createBranchCommitMessage,
+			Message:      commitMsg,
 			CreationDate: creationDate,
 			Reference:    reference,
 			Parents:      []string{parentReference},
@@ -85,5 +86,6 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 	if err != nil {
 		return nil, err
 	}
-	return res.(*CommitLog), nil
+	commitLog := res.(*CommitLog)
+	return commitLog, nil
 }

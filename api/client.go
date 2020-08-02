@@ -71,7 +71,7 @@ type RepositoryClient interface {
 	GetCommitLog(ctx context.Context, repository, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error)
 
 	StatObject(ctx context.Context, repository, ref, path string) (*models.ObjectStats, error)
-	ListObjects(ctx context.Context, repository, ref, tree, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
+	ListObjects(ctx context.Context, repository, ref, prefix, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
 	GetObject(ctx context.Context, repository, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
 	UploadObject(ctx context.Context, repository, branchId, path string, r io.Reader) (*models.ObjectStats, error)
 	DeleteObject(ctx context.Context, repository, branchId, path string) error
@@ -615,13 +615,13 @@ func (c *client) StatObject(ctx context.Context, repoID, ref, path string) (*mod
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListObjects(ctx context.Context, repoID, ref, tree, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
+func (c *client) ListObjects(ctx context.Context, repoID, ref, prefix, after string, amount int) ([]*models.ObjectStats, *models.Pagination, error) {
 	resp, err := c.remote.Objects.ListObjects(&objects.ListObjectsParams{
 		After:      swag.String(after),
 		Amount:     swag.Int64(int64(amount)),
 		Ref:        ref,
 		Repository: repoID,
-		Tree:       swag.String(tree),
+		Prefix:     swag.String(prefix),
 		Context:    ctx,
 	}, c.auth)
 	if err != nil {

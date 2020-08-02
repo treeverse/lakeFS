@@ -9,9 +9,6 @@ has_children: false
 # Deploying on AWS
 {: .no_toc }
 
-**Warning:** lakeFS is currently in POC - this is a pre-alpha version that *should not be used in production*. The API and data model are likely to change.
-{: .note .pb-3 }
-
 ## Table of contents
 {: .no_toc .text-delta }
 
