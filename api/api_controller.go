@@ -387,6 +387,9 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
+		if errors.Is(err, db.ErrNotFound) {
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch not found"))
+		}
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -423,7 +426,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 func ensureStorageNamespaceRW(adapter block.Adapter, storageNamespace string) error {
 	const (
 		dummyKey  = "dummy"
-		dummyData = "this is dummy data - created by lakefs in order to check accessibility "
+		dummyData = "this is dummy data - created by lakeFS in order to check accessibility "
 	)
 
 	err := adapter.Put(block.ObjectPointer{StorageNamespace: storageNamespace, Identifier: dummyKey}, int64(len(dummyData)), bytes.NewReader([]byte(dummyData)), block.PutOpts{})
@@ -802,10 +805,10 @@ func (c *Controller) ObjectsGetUnderlyingPropertiesHandler() objects.GetUnderlyi
 		// read repo
 		repo, err := cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return objects.NewGetObjectNotFound().WithPayload(responseError("resource not found"))
+			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("resource not found"))
 		}
 		if err != nil {
-			return objects.NewGetObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+			return objects.NewGetUnderlyingPropertiesDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
 
 		entry, err := cataloger.GetEntry(c.Context(), params.Repository, params.Ref, params.Path, catalog.GetEntryParams{})
@@ -994,7 +997,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			c.Context(),
 			params.Repository,
 			params.Ref,
-			swag.StringValue(params.Tree),
+			swag.StringValue(params.Prefix),
 			after,
 			delimiter,
 			amount)
@@ -1012,7 +1015,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
 					Path:     entry.Path,
-					PathType: models.ObjectStatsPathTypeTREE,
+					PathType: models.ObjectStatsPathTypeCOMMONPREFIX,
 				}
 			} else {
 				var mtime int64
@@ -1069,7 +1072,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		// workaround in order to extract file content-length using swagger
 		file, ok := params.Content.(*runtime.File)
 		if !ok {
-			return objects.NewUploadObjectNotFound().WithPayload(responseError("failed extracting size from file"))
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseError("failed extracting size from file"))
 		}
 		byteSize := file.Header.Size
 
@@ -1152,10 +1155,10 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 		switch swag.StringValue(params.Revert.Type) {
 		case models.RevertCreationTypeCOMMIT:
 			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
+		case models.RevertCreationTypeCOMMONPREFIX:
+			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeRESET:
 			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)
-		case models.RevertCreationTypeTREE:
-			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
 		case models.RevertCreationTypeOBJECT:
 			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Revert.Path)
 		default:

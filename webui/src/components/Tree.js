@@ -178,14 +178,14 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     let button;
     if (entry.diff_type === 'REMOVED') {
         button = (<span>{buttonText}</span>);
-    } else if (entry.path_type === 'TREE') {
+    } else if (entry.path_type === 'COMMON_PREFIX') {
         button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
     } else {
         button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
 
     let size;
-    if (entry.diff_type === 'REMOVED' || entry.path_type === 'TREE') {
+    if (entry.diff_type === 'REMOVED' || entry.path_type === 'COMMON_PREFIX') {
         size = (<Na/>);
     } else {
         size = (
@@ -196,7 +196,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let modified;
-    if (entry.diff_type === 'REMOVED' || entry.path_type === 'TREE') {
+    if (entry.diff_type === 'REMOVED' || entry.path_type === 'COMMON_PREFIX') {
         modified = (<Na/>);
     } else {
         modified = (
@@ -251,7 +251,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {diffIndicator}
             </td>
             <td className="tree-path">
-                {entry.path_type === 'TREE' ? <FileDirectoryIcon/> : <FileIcon/>} {' '}
+                {entry.path_type === 'COMMON_PREFIX' ? <FileDirectoryIcon/> : <FileIcon/>} {' '}
                 {button}
             </td>
             <td className="tree-size">
@@ -293,12 +293,12 @@ const merge = (path, entriesAtPath, diffResults) => {
                 // if there's an exact 'CHANGE' or 'ADD' diff for it, color it that way.
                 return {...entry,  diff_type: diff.type};
             }
-            if (diff.path_type === 'TREE' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
+            if (diff.path_type === 'COMMON_PREFIX' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
                 // for any entry descendant from a TREE event that was ADD, color it as ADD
                 return {...entry, diff_type: 'ADDED'};
             }
 
-            if (entry.path_type === 'TREE' && isDescendantOf(entry.path, diff.path)) {
+            if (entry.path_type === 'COMMON_PREFIX' && isDescendantOf(entry.path, diff.path)) {
                 // for any TREE that has CHANGE/ADD/REMOVE descendants, color it a CHANGE
                 return {...entry, diff_type: 'CHANGED'};
             }
