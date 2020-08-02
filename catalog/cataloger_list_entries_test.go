@@ -566,25 +566,21 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 	testutil.MustDo(t, "delete the first committed file",
 		c.DeleteEntry(ctx, repo, "master", "my_entry"))
 	// an uncommitted tombstone "hides" a committed entry
-	got, _, err := c.ListEntries(ctx, repo, "master", "", "", "/", -1)
-	if err != nil {
-		t.Fatalf("ListEntries err = %s, expected no error", err)
-	}
+	got, _, err := c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
 	if len(got) != 0 {
-		t.Fatalf("ListEntries listLen = %d, expected no error", len(got))
+		t.Fatalf("ListEntries %d entries, expected none", len(got))
 	}
+
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
 	// an uncommitted entry is detected
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", "/", -1)
-	if err != nil {
-		t.Fatalf("ListEntries err = %s, expected 0", err)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
+	expectedPaths := []string{"my_entry"}
+	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
+		t.Fatal("ListEntries", diff)
 	}
-	if len(got) != 1 {
-		t.Fatalf("ListEntries listLen = %d, expected 1", len(got))
-	}
-	if got[0].Path != "my_entry" {
-		t.Fatalf("ListEntries got entry = %s, expected my_entry", got[0].Path)
-	}
+
 	_, err = c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
 	testutil.MustDo(t, "commit my_entry", err)
 	testutil.MustDo(t, "delete the first committed file",
@@ -592,25 +588,17 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 	_, err = c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
 	testutil.MustDo(t, "commit my_entry deletion", err)
 	// deleted entry will not be displayed
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", "/", -1)
-	if err != nil {
-		t.Fatalf("ListEntries err = %s, expected no error", err)
-	}
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
 	if len(got) != 0 {
-		t.Fatalf("ListEntries listLen = %d, expected no error", len(got))
+		t.Fatalf("ListEntries %d entries, expected none", len(got))
 	}
 
-	testutil.MustDo(t, "commit my_entry", err)
 	// an uncommitted entry is detected even if the entry is deleted
 	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
-	got, _, err = c.ListEntries(ctx, repo, "master", "", "", "/", -1)
-	if err != nil {
-		t.Fatalf("ListEntries err = %s, expected 0", err)
-	}
-	if len(got) != 1 {
-		t.Fatalf("ListEntries listLen = %d, expected 1", len(got))
-	}
-	if got[0].Path != "my_entry" {
-		t.Fatalf("ListEntries got entry = %s, expected my_entry", got[0].Path)
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
+	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
+		t.Fatal("ListEntries", diff)
 	}
 }
