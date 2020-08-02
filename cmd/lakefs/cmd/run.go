@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
+	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
@@ -181,6 +182,7 @@ func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutte
 			os.Exit(1)
 		}
 	}
+	simulator.ShutdownRecorder()
 	close(done)
 }
 
