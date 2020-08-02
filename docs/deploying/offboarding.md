@@ -57,6 +57,8 @@ assuming the underlying S3 bucket is intact. Here's how to do it:
 1. Once we have a manifest, let's define a S3 batch job that will copy all files for us.
 To do this, let's start by creating an IAM role called `lakeFSExportJobRole`, and grant it permissions as described in ["Granting permissions for Batch Operations"](https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html#batch-ops-iam-role-policies-create){: target="_blank" }
 1. Once we have an IAM role, let's install the [`treeverse-distcp` lambda function](https://github.com/treeverse/treeverse-distcp/blob/master/lambda_handler.py){: target="_blank" }
+
+   Make a note of the Lambda function ARN -- this is required for running an S3 Batch Job.
 1. Take note of your account ID - this is required for running an S3 Batch Job:
    
    ```shell
@@ -73,4 +75,3 @@ To do this, let's start by creating an IAM role called `lakeFSExportJobRole`, an
        --lambda-handler-arn "arn:lambda:..."
    ```
 1. You will get a job number. Now go to the [AWS S3 Batch Operations Console](https://s3.console.aws.amazon.com/s3/jobs){: target="_blank" }, switch to the region of your bucket, and confirm execution of that job.
-
