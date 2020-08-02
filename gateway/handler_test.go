@@ -13,7 +13,7 @@ import (
 func setupTest(t *testing.T, method, target string, body io.Reader) *http.Response {
 	h, _ := getBasicHandler(t, &simulator.PlayBackMockConf{
 		BareDomain:      "example.com",
-		AccessKeyID:     "AKIAJLQLVNL2XZ7EH6RQ",
+		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
 		AccessSecretKey: "MockAccessSecretKey",
 		UserID:          1,
 		Region:          "MockRegion",
@@ -24,7 +24,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 	req.Header["X-Amz-Content-Sha256"] = []string{"e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"}
 	req.Header["X-Amz-Date"] = []string{"20200517T093907Z"}
 	req.Header["Host"] = []string{"host.domain.com"}
-	req.Header["Authorization"] = []string{"AWS4-HMAC-SHA256 Credential=AKIAJLQLVNL2XZ7EH6RQ/20200517/us-east-1/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=cdb193f2140d1d0c093adc7aba9a62bc3c75f84b117100888553115900f39223"}
+	req.Header["Authorization"] = []string{"AWS4-HMAC-SHA256 Credential=AKIAIO5FODNN7EXAMPLE/20200517/us-east-1/s3/aws4_request, SignedHeaders=content-type;host;x-amz-content-sha256;x-amz-date, Signature=cdb193f2140d1d0c093adc7aba9a62bc3c75f84b117100888553115900f39223"}
 	h.ServeHTTP(rr, req)
 	return rr.Result()
 }

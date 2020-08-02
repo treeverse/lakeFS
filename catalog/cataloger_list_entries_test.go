@@ -555,3 +555,50 @@ func extractEntriesPaths(entries []*Entry) []string {
 	}
 	return result
 }
+
+func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
+	_, err := c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
+	testutil.MustDo(t, "commit my_entry", err)
+	testutil.MustDo(t, "delete the first committed file",
+		c.DeleteEntry(ctx, repo, "master", "my_entry"))
+	// an uncommitted tombstone "hides" a committed entry
+	got, _, err := c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
+	if len(got) != 0 {
+		t.Fatalf("ListEntries %d entries, expected none", len(got))
+	}
+
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
+	// an uncommitted entry is detected
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
+	expectedPaths := []string{"my_entry"}
+	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
+		t.Fatal("ListEntries", diff)
+	}
+
+	_, err = c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
+	testutil.MustDo(t, "commit my_entry", err)
+	testutil.MustDo(t, "delete the first committed file",
+		c.DeleteEntry(ctx, repo, "master", "my_entry"))
+	_, err = c.Commit(ctx, repo, "master", "commit test files", "tester", nil)
+	testutil.MustDo(t, "commit my_entry deletion", err)
+	// deleted entry will not be displayed
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
+	if len(got) != 0 {
+		t.Fatalf("ListEntries %d entries, expected none", len(got))
+	}
+
+	// an uncommitted entry is detected even if the entry is deleted
+	testCatalogerCreateEntry(t, ctx, c, repo, "master", "my_entry", nil, "abcd")
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.MustDo(t, "ListEntries", err)
+	if diff := deep.Equal(extractEntriesPaths(got), expectedPaths); diff != nil {
+		t.Fatal("ListEntries", diff)
+	}
+}

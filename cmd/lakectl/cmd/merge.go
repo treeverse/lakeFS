@@ -40,7 +40,7 @@ var mergeCmd = &cobra.Command{
 		if errors.Is(err, catalog.ErrConflictFound) {
 			_, _ = os.Stdout.WriteString("Conflicts:\n")
 			for _, line := range result {
-				if line.Type == models.DiffTypeCONFLICT {
+				if line.Type == models.DiffTypeConflict {
 					FmtMerge(line)
 				}
 			}
@@ -52,11 +52,11 @@ var mergeCmd = &cobra.Command{
 		var added, changed, removed int
 		for _, r := range result {
 			switch r.Type {
-			case models.DiffTypeADDED:
+			case models.DiffTypeAdded:
 				added++
-			case models.DiffTypeCHANGED:
+			case models.DiffTypeChanged:
 				changed++
-			case models.DiffTypeREMOVED:
+			case models.DiffTypeRemoved:
 				removed++
 			}
 		}
@@ -69,16 +69,16 @@ func FmtMerge(diff *models.MergeResult) {
 	var action string
 
 	switch diff.Type {
-	case models.DiffTypeADDED:
+	case models.DiffTypeAdded:
 		color = text.FgGreen
 		action = "+ added"
-	case models.DiffTypeREMOVED:
+	case models.DiffTypeRemoved:
 		color = text.FgRed
 		action = "- removed"
-	case models.DiffTypeCHANGED:
+	case models.DiffTypeChanged:
 		color = text.FgYellow
 		action = "~ modified"
-	case models.DiffTypeCONFLICT:
+	case models.DiffTypeConflict:
 		color = text.FgHiYellow
 		action = "* conflict"
 	default:
