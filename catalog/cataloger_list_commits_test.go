@@ -154,6 +154,47 @@ func TestCataloger_ListCommits(t *testing.T) {
 			}
 		})
 	}
+	testCatalogerBranch(t, ctx, c, repository, "br_1", "master")
+	testCatalogerBranch(t, ctx, c, repository, "br_2", "br_1")
+	master_commits, _, err := c.ListCommits(ctx, repository, "master", "", 100)
+	br_1_commits, _, err := c.ListCommits(ctx, repository, "br_1", "", 100)
+	if diff := deep.Equal(master_commits, br_1_commits[1:]); diff != nil {
+		t.Error("br_1 did not inherit commits correctly", diff)
+	}
+	br_2_commits, _, err := c.ListCommits(ctx, repository, "br_2", "", 100)
+	_ = br_2_commits
+	if err != nil {
+		t.Fatalf("ListCommits() error = %s", err)
+	}
+	if len(br_2_commits) != 6 {
+		t.Fatalf("ListCommits() error = %s", err)
+	}
+	// hack - remove the timestamp in order to compare everything except the time
+	// consider create entry will control creation time
+
+	//if diff := deep.Equal(got, tt.want); diff != nil {
+	//	t.Error("ListCommits", diff)
+	//}
+
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "master-file",
+		Checksum:        "ssss",
+		PhysicalAddress: "xxxxxxx",
+		Size:            10000,
+	}, CreateEntryParams{}); err != nil {
+		t.Fatal("Write entry for list repository commits failed", err)
+	}
+	commitLog, err := c.Commit(ctx, repository, "master", "commit master", "tester", nil)
+	_ = commitLog
+	if err != nil {
+		t.Fatalf("Commit for list repository commits failed '%s': %s", "master commit failed", err)
+	}
+	_, err = c.Merge(ctx, repository, "master", "br_1", "tester", "", nil)
+
+	got, _, err := c.ListCommits(ctx, repository, "br_2", "", 100)
+	_ = got
+	got, _, err = c.ListCommits(ctx, repository, "br_1", "", 100)
+
 }
 
 func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger, repository, branch string) []*CommitLog {
@@ -176,5 +217,6 @@ func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger
 		}
 		commits = append(commits, commitLog)
 	}
+
 	return commits
 }
