@@ -1457,7 +1457,7 @@ paths:
         401:
           $ref: "#/responses/Unauthorized"
         404:
-          description: commit/branch not found
+          description: resource not found
           schema:
             $ref: "#/definitions/error"
         default:
@@ -1599,7 +1599,7 @@ paths:
           schema:
             $ref: "#/responses/Unauthorized"
         404:
-          description: branch not found
+          description: reference not found
           schema:
             $ref: "#/definitions/error"
         default:
@@ -1678,7 +1678,7 @@ paths:
         401:
           $ref: "#/responses/Unauthorized"
         404:
-          description: path or ref not found
+          description: resource not found
           schema:
             $ref: "#/definitions/error"
         410:
