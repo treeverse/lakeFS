@@ -45,12 +45,16 @@ func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string)
 	}
 	res.rowsPerFile = make([]int, len(res.Manifest.Files))
 	for i := range res.Manifest.Files {
-		pr, closeReader, err := res.getParquetReader(res.ctx, res.S3, res.inventoryBucket, res.Manifest.Files[i].Key)
+		key := res.Manifest.Files[i].Key
+		pr, closeReader, err := res.getParquetReader(res.ctx, res.S3, res.inventoryBucket, key)
 		if err != nil {
 			return nil, err
 		}
 		res.rowsPerFile[i] = int(pr.GetNumRows())
-		_ = closeReader()
+		err = closeReader()
+		if err != nil {
+			res.logger.Errorf("failed to close parquet reader of file. bucket=%s, key=%s", invBucket, key)
+		}
 	}
 	return res, nil
 }
@@ -92,13 +96,17 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 }
 
 func (it *InventoryIterator) fillBuffer() bool {
-	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.inventoryBucket, it.Manifest.Files[it.currentManifestFileIdx].Key)
+	key := it.Manifest.Files[it.currentManifestFileIdx].Key
+	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.inventoryBucket, key)
 	if err != nil {
 		it.err = err
 		return false
 	}
 	defer func() {
-		_ = closeReader()
+		err = closeReader()
+		if err != nil {
+			it.logger.Errorf("failed to close parquet reader of file. bucket=%s, key=%s", it.inventoryBucket, key)
+		}
 	}()
 	// skip the rows that have already been read:
 	err = pr.SkipRows(int64(it.nextRowInParquet))
