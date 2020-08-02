@@ -15,7 +15,7 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 )
 
-type  PlayBackMockConf struct {
+type PlayBackMockConf struct {
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyID     string `json:"access_key_id"`
 	AccessSecretKey string `json:"access_secret_Key"`
