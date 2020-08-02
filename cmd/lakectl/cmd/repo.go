@@ -176,6 +176,7 @@ var setPolicyCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	retentionCmd.AddCommand(setPolicyCmd)
 	retentionCmd.AddCommand(getPolicyCmd)
@@ -190,5 +191,4 @@ func init() {
 	repoListCmd.Flags().String("after", "", "show results after this value (used for pagination)")
 
 	repoCreateCmd.Flags().StringP("default-branch", "d", DefaultBranch, "the default branch of this repository")
-
 }

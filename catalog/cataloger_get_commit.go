@@ -6,8 +6,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-// TODO(barak): support get commit information based on branch
-
 func (c *cataloger) GetCommit(ctx context.Context, repository, reference string) (*CommitLog, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},

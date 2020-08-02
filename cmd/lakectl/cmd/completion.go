@@ -56,6 +56,7 @@ $ lakectl completion fish > ~/.config/fish/completions/lakectl.fish
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(completionCmd)
 }

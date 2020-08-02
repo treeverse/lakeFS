@@ -36,13 +36,13 @@ var expireCmd = &cobra.Command{
 		// TODO(ariels: fail on failure!
 		awsCfg := cfg.GetAwsConfig()
 
-		accountId, err := config.GetAccount(awsCfg)
+		accountID, err := config.GetAccount(awsCfg)
 		if err != nil {
 			logger.WithError(err).Fatal("cannot get account ID")
 		}
 
 		expiryParams := retention.ExpireOnS3Params{
-			AccountId: accountId,
+			AccountId: accountID,
 			RoleArn:   awsRetentionConfig.RoleArn,
 			ManifestUrlForBucket: func(x string) string {
 				u, err := url.Parse(x)
@@ -117,7 +117,7 @@ var expireCmd = &cobra.Command{
 	Hidden: true,
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(expireCmd)
-	// No flags
 }
