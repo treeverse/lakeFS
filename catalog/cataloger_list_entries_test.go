@@ -602,3 +602,36 @@ func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 		t.Fatal("ListEntries", diff)
 	}
 }
+
+func TestCataloger_ListEntries_Reading_uncommitted_from_lineage(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	for i := 0; i < 10; i++ {
+		z := fmt.Sprintf("%03d", i)
+		path := "my_entry" + z
+		testCatalogerCreateEntry(t, ctx, c, repo, "master", path, nil, "abcd"+z)
+	}
+	_, err := c.Commit(ctx, repo, "master", "commit first 10 in master", "tester", nil)
+	testutil.MustDo(t, "commit first 10 in master", err)
+	testutil.MustDo(t, "delete the first committed file",
+		c.DeleteEntry(ctx, repo, "master", "my_entry001"))
+	// an uncommitted tombstone "hides" a committed entry
+	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
+	for i := 10; i < 20; i++ {
+		z := fmt.Sprintf("%03d", i)
+		path := "my_entry/sub-" + z
+		testCatalogerCreateEntry(t, ctx, c, repo, "br_1", path, nil, "abcd"+z)
+	}
+	// create unreadable in ancestore
+	for i := 20; i < 70; i++ {
+		z := fmt.Sprintf("%03d", i)
+		path := "my_entry" + z
+		testCatalogerCreateEntry(t, ctx, c, repo, "br_1", path, nil, "abcd"+z)
+	}
+	//_, err = c.Commit(ctx, repo, "master", "commit 20-70 in master", "tester", nil)
+	//testutil.MustDo(t, "commit 20-70 in master", err)
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	_ = got
+
+}
