@@ -2,14 +2,14 @@
 layout: default
 title: Monitoring using Prometheus
 parent: Deployment
-nav_order: 10
+nav_order: 3
 has_children: false
 ---
 
 # Monitoring using Prometheus
 {: .no_toc }
 
-{: .note .pb-3 }
+{: .pb-3 }
 
 ## Table of contents
 {: .no_toc .text-delta }
