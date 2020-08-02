@@ -41,13 +41,13 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	objName := hex.EncodeToString(uuidBytes[:])
 	storageClass := StorageClassFromHeader(o.Request.Header)
 	opts := block.CreateMultiPartUploadOpts{StorageClass: storageClass}
-	uploadId, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, o.Request, opts)
+	uploadID, err := o.BlockStore.CreateMultiPartUpload(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: objName}, o.Request, opts)
 	if err != nil {
 		o.Log().WithError(err).Error("could not create multipart upload")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	err = o.Cataloger.CreateMultipartUpload(o.Context(), o.Repository.Name, uploadId, o.Path, objName, time.Now())
+	err = o.Cataloger.CreateMultipartUpload(o.Context(), o.Repository.Name, uploadID, o.Path, objName, time.Now())
 	if err != nil {
 		o.Log().WithError(err).Error("could not write multipart upload to DB")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
@@ -56,7 +56,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
 		Bucket:   o.Repository.Name,
 		Key:      o.Path,
-		UploadId: uploadId,
+		UploadId: uploadID,
 	}, http.StatusOK)
 }
 
