@@ -1,10 +1,17 @@
-
 GOCMD=$(shell which go)
 DOCKER=$(shell which docker)
 GOBINPATH=$(shell $(GOCMD) env GOPATH)
 NPM=$(shell which npm)
 STATIK=$(GOBINPATH)/bin/statik
 GOLANGCILINT_VERSION=v1.25.1
+
+# check for mandatory dependencies - binaries can be overridden.
+$(if $(GOCMD),,$(error "Missing dependency - no go in PATH"))
+$(if $(DOCKER),,$(error "Missing dependency - no docker in PATH"))
+$(if $(NPM),,$(error "Missing dependency - no npm in PATH"))
+ifeq ($(shell test -e $(STATIK) && echo yes),)
+    $(error "Missing statik pkg - get it with `go get github.com/rakyll/statik`")
+endif
 
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
