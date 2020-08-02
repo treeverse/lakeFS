@@ -23,6 +23,7 @@ type manifest struct {
 	Files              []manifestFile `json:"files"`
 	Format             string         `json:"fileFormat"`
 	invBucket          string
+	firstKeyByFilename map[string]string
 	numRowsByFilename  map[string]int
 }
 
@@ -49,10 +50,13 @@ func GenerateInventory(ctx context.Context, manifestURL string, s3 s3iface.S3API
 	if err != nil {
 		return nil, err
 	}
-	err = sortManifestFiles(ctx, s3, getParquetReader, m)
+	err = readFileMetadata(ctx, s3, getParquetReader, m)
 	if err != nil {
 		return nil, err
 	}
+	sort.Slice(m.Files, func(i, j int) bool {
+		return m.firstKeyByFilename[m.Files[i].Key] < m.firstKeyByFilename[m.Files[j].Key]
+	})
 	return &Inventory{Manifest: m, S3: s3, getParquetReader: getParquetReader}, nil
 }
 
@@ -75,10 +79,9 @@ func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
 }
 
-func sortManifestFiles(ctx context.Context, s3 s3iface.S3API, getParquetReader parquetReaderGetter, m *manifest) error {
+func readFileMetadata(ctx context.Context, s3 s3iface.S3API, getParquetReader parquetReaderGetter, m *manifest) error {
 	m.numRowsByFilename = make(map[string]int, len(m.Files))
-	firstKeys := make([]string, len(m.Files))
-
+	m.firstKeyByFilename = make(map[string]string, len(m.Files))
 	for i := range m.Files {
 		pr, closeReader, err := getParquetReader(ctx, s3, m.invBucket, m.Files[i].Key)
 		if err != nil {
@@ -91,13 +94,10 @@ func sortManifestFiles(ctx context.Context, s3 s3iface.S3API, getParquetReader p
 			return err
 		}
 		if len(rows) != 0 {
-			firstKeys[i] = rows[0].Key
+			m.firstKeyByFilename[m.Files[i].Key] = rows[0].Key
 		}
 		_ = closeReader()
 	}
-	sort.Slice(m.Files, func(i, j int) bool {
-		return firstKeys[i] < firstKeys[j]
-	})
 	return nil
 }
 
