@@ -1,8 +1,6 @@
 package s3
 
 import (
-	"context"
-
 	"github.com/treeverse/lakefs/block"
 )
 
@@ -25,38 +23,23 @@ func (o *ParquetInventoryObject) GetPhysicalAddress() string {
 type InventoryIterator struct {
 	*Inventory
 	ReadBatchSize          int
-	ctx                    context.Context
-	inventoryBucket        string
 	err                    error
 	val                    block.InventoryObject
 	buffer                 []ParquetInventoryObject
 	currentManifestFileIdx int
 	nextRowInParquet       int
-	rowsPerFile            []int
 	valIndexInBuffer       int
 }
 
-func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string) (*InventoryIterator, error) {
-	res := &InventoryIterator{
-		ctx:             ctx,
-		Inventory:       inv,
-		ReadBatchSize:   DefaultReadBatchSize,
-		inventoryBucket: invBucket,
+func NewInventoryIterator(inv *Inventory) *InventoryIterator {
+	return &InventoryIterator{
+		Inventory:     inv,
+		ReadBatchSize: DefaultReadBatchSize,
 	}
-	res.rowsPerFile = make([]int, len(res.Manifest.Files))
-	for i := range res.Manifest.Files {
-		pr, closeReader, err := res.getParquetReader(res.ctx, res.S3, res.inventoryBucket, res.Manifest.Files[i].Key)
-		if err != nil {
-			return nil, err
-		}
-		res.rowsPerFile[i] = int(pr.GetNumRows())
-		_ = closeReader()
-	}
-	return res, nil
 }
 
 func (it *InventoryIterator) Next() bool {
-	if len(it.rowsPerFile) == 0 {
+	if len(it.Manifest.numRowsByFilename) == 0 {
 		// empty manifest
 		return false
 	}
@@ -71,7 +54,8 @@ func (it *InventoryIterator) Next() bool {
 		// value not found in buffer, need to reload the buffer
 		it.valIndexInBuffer = -1
 		// if needed, try to move on to the next manifest file:
-		if it.nextRowInParquet >= it.rowsPerFile[it.currentManifestFileIdx] && !it.moveToNextManifestFile() {
+		currentManifestFileKey := it.Manifest.Files[it.currentManifestFileIdx].Key
+		if it.nextRowInParquet >= it.Manifest.numRowsByFilename[currentManifestFileKey] && !it.moveToNextManifestFile() {
 			// no more files left
 			return false
 		}
@@ -92,7 +76,7 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 }
 
 func (it *InventoryIterator) fillBuffer() bool {
-	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.inventoryBucket, it.Manifest.Files[it.currentManifestFileIdx].Key)
+	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.Manifest.invBucket, it.Manifest.Files[it.currentManifestFileIdx].Key)
 	if err != nil {
 		it.err = err
 		return false

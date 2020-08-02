@@ -3,12 +3,12 @@ package block
 import "context"
 
 type InventoryGenerator interface {
-	GenerateInventory(inventoryURL string) (Inventory, error)
+	GenerateInventory(ctx context.Context, inventoryURL string) (Inventory, error)
 }
 
 // Inventory represents a snapshot of the storage space
 type Inventory interface {
-	Iterator(ctx context.Context) (InventoryIterator, error)
+	Iterator() InventoryIterator
 	SourceName() string
 	InventoryURL() string
 }

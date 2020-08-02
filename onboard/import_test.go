@@ -2,10 +2,11 @@ package onboard_test
 
 import (
 	"context"
-	"github.com/treeverse/lakefs/onboard"
 	"reflect"
 	"strconv"
 	"testing"
+
+	"github.com/treeverse/lakefs/onboard"
 )
 
 func TestImport(t *testing.T) {
@@ -76,7 +77,7 @@ func TestImport(t *testing.T) {
 					previousCommitInventory: previousInventoryURL,
 				}
 			}
-			importer, err := onboard.CreateImporter(nil, &mockInventoryGenerator{
+			importer, err := onboard.CreateImporter(nil, nil, &mockInventoryGenerator{
 				newInventoryURL:      newInventoryURL,
 				previousInventoryURL: previousInventoryURL,
 				newInventory:         test.NewInventory,

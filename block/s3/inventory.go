@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -21,6 +22,8 @@ type manifest struct {
 	SourceBucket       string         `json:"sourceBucket"`
 	Files              []manifestFile `json:"files"`
 	Format             string         `json:"fileFormat"`
+	invBucket          string
+	numRowsByFilename  map[string]int
 }
 
 type manifestFile struct {
@@ -37,31 +40,31 @@ type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket 
 
 type CloseFunc func() error
 
-func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error) {
-	return GenerateInventory(manifestURL, s.s3, getParquetReader)
+func (s *Adapter) GenerateInventory(ctx context.Context, manifestURL string) (block.Inventory, error) {
+	return GenerateInventory(ctx, manifestURL, s.s3, getParquetReader)
 }
 
-func GenerateInventory(manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
-	manifest, err := loadManifest(manifestURL, s3)
+func GenerateInventory(ctx context.Context, manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
+	m, err := loadManifest(manifestURL, s3)
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: manifest, S3: s3, getParquetReader: getParquetReader}, nil
+	err = sortManifestFiles(ctx, s3, getParquetReader, m)
+	if err != nil {
+		return nil, err
+	}
+	return &Inventory{Manifest: m, S3: s3, getParquetReader: getParquetReader}, nil
 }
 
 type Inventory struct {
 	S3               s3iface.S3API
 	Manifest         *manifest
+	ctx              context.Context
 	getParquetReader parquetReaderGetter
 }
 
-func (inv *Inventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {
-	inventoryBucketArn, err := arn.Parse(inv.Manifest.InventoryBucketArn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
-	}
-	invBucket := inventoryBucketArn.Resource
-	return NewInventoryIterator(ctx, inv, invBucket)
+func (inv *Inventory) Iterator() block.InventoryIterator {
+	return NewInventoryIterator(inv)
 }
 
 func (inv *Inventory) SourceName() string {
@@ -70,6 +73,32 @@ func (inv *Inventory) SourceName() string {
 
 func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
+}
+
+func sortManifestFiles(ctx context.Context, s3 s3iface.S3API, getParquetReader parquetReaderGetter, m *manifest) error {
+	m.numRowsByFilename = make(map[string]int, len(m.Files))
+	firstKeys := make([]string, len(m.Files))
+
+	for i := range m.Files {
+		pr, closeReader, err := getParquetReader(ctx, s3, m.invBucket, m.Files[i].Key)
+		if err != nil {
+			return err
+		}
+		m.numRowsByFilename[m.Files[i].Key] = int(pr.GetNumRows())
+		rows := make([]ParquetInventoryObject, 1)
+		err = pr.Read(&rows)
+		if err != nil {
+			return err
+		}
+		if len(rows) != 0 {
+			firstKeys[i] = rows[0].Key
+		}
+		_ = closeReader()
+	}
+	sort.Slice(m.Files, func(i, j int) bool {
+		return firstKeys[i] < firstKeys[j]
+	})
+	return nil
 }
 
 func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
@@ -90,6 +119,11 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 		return nil, errors.New("currently only parquet inventories are supported. got: " + m.Format)
 	}
 	m.URL = manifestURL
+	inventoryBucketArn, err := arn.Parse(m.InventoryBucketArn)
+	if err != nil {
+		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
+	}
+	m.invBucket = inventoryBucketArn.Resource
 	return &m, nil
 }
 
