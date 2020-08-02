@@ -155,24 +155,24 @@ var branchRevertCmd = &cobra.Command{
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes to commit: %s", commitID)
 			revert = models.RevertCreation{
 				Commit: commitID,
-				Type:   swag.String(models.RevertCreationTypeCOMMIT),
+				Type:   swag.String(models.RevertCreationTypeCommit),
 			}
 		case len(prefix) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes from path: %s to last commit", prefix)
 			revert = models.RevertCreation{
 				Path: prefix,
-				Type: swag.String(models.RevertCreationTypeCOMMONPREFIX),
+				Type: swag.String(models.RevertCreationTypeCommonPrefix),
 			}
 		case len(object) > 0:
 			confirmationMsg = fmt.Sprintf("Are you sure you want to revert all changes for object: %s to last commit", object)
 			revert = models.RevertCreation{
 				Path: object,
-				Type: swag.String(models.RevertCreationTypeOBJECT),
+				Type: swag.String(models.RevertCreationTypeObject),
 			}
 		default:
 			confirmationMsg = "Are you sure you want to revert all uncommitted changes"
 			revert = models.RevertCreation{
-				Type: swag.String(models.RevertCreationTypeRESET),
+				Type: swag.String(models.RevertCreationTypeReset),
 			}
 		}
 
