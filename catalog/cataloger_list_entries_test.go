@@ -598,6 +598,8 @@ func TestCataloger_ListEntries_ByLevelAfter(t *testing.T) {
 				after = entries[len(entries)-1].Path
 			}
 		})
+	}
+}
 
 func TestCataloger_ListEntries_Uncommitted(t *testing.T) {
 	ctx := context.Background()
