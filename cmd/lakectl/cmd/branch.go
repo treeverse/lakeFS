@@ -122,7 +122,7 @@ var branchDeleteCmd = &cobra.Command{
 var branchRevertCmd = &cobra.Command{
 	Use:   "revert <branch uri> [flags]",
 	Short: "revert changes to specified commit, or revert uncommitted changes - all changes, or by path",
-	Long: `revert changes - there are four different ways to revert changes:
+	Long: `revert changes.  There are four different ways to revert changes:
   1. revert to previous commit, set HEAD of branch to given commit - revert lakefs://myrepo@master --commit commitId
   2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master 
   3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master --prefix path
