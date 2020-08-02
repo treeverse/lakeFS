@@ -51,7 +51,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err := tx.Select(&rawCommits, query, limit+1); err != nil {
 			return nil, err
 		}
-		commits := convertRawCommits(branch, rawCommits)
+		commits := convertRawCommits(rawCommits)
 		return commits, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 
@@ -63,10 +63,10 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 	return commits, hasMore, err
 }
 
-func convertRawCommits(branch string, rawCommits []*commitLogRaw) []*CommitLog {
+func convertRawCommits(rawCommits []*commitLogRaw) []*CommitLog {
 	commits := make([]*CommitLog, len(rawCommits))
 	for i, commit := range rawCommits {
-		commits[i] = convertRawCommit(branch, commit)
+		commits[i] = convertRawCommit(commit)
 	}
 	return commits
 }
