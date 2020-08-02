@@ -114,9 +114,16 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.Log().WithError(err).Warn("could not delete multipart record")
 	}
 
-	// TODO: pass scheme instead of hard-coding http instead of https
+	// use url scheme and forwarded proto to identify http/https scheme
+	scheme := "http"
+	if o.Request.URL.Scheme == "https" {
+		scheme = "https"
+	} else if o.Request.Header.Get("X-Forwarded-Proto") == "https" {
+		scheme = "https"
+	}
+	location := fmt.Sprintf("%s://%s.%s/%s/%s", scheme, o.Repository, o.FQDN, o.Reference, o.Path)
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
-		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repository, o.FQDN, o.Reference, o.Path),
+		Location: location,
 		Bucket:   o.Repository.Name,
 		Key:      o.Path,
 		ETag:     *etag,
