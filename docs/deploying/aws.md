@@ -2,7 +2,7 @@
 layout: default
 title: Deploying on AWS
 parent: Deployment
-nav_order: 0
+nav_order: 2
 has_children: false
 ---
 

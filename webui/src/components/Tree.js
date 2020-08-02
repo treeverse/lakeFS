@@ -160,13 +160,13 @@ const EntryRowActions = ({ repo, refId, entry, onDelete }) => {
 const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions }) => {
     let rowClass = 'tree-row ';
     switch(entry.diff_type) {
-        case 'CHANGED':
+        case 'changed':
             rowClass += 'diff-changed';
             break;
-        case 'ADDED':
+        case 'added':
             rowClass += 'diff-added';
             break;
-        case 'REMOVED':
+        case 'removed':
             rowClass += 'diff-removed';
             break;
         default:
@@ -176,16 +176,16 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
 
     let button;
-    if (entry.diff_type === 'REMOVED') {
+    if (entry.diff_type === 'removed') {
         button = (<span>{buttonText}</span>);
-    } else if (entry.path_type === 'COMMON_PREFIX') {
+    } else if (entry.path_type === 'common_prefix') {
         button = (<Link onClick={(e) => { onNavigate(entry.path); e.preventDefault() }} to="#">{buttonText}</Link>);
     } else {
         button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
 
     let size;
-    if (entry.diff_type === 'REMOVED' || entry.path_type === 'COMMON_PREFIX') {
+    if (entry.diff_type === 'removed' || entry.path_type === 'common_prefix') {
         size = (<Na/>);
     } else {
         size = (
@@ -196,7 +196,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let modified;
-    if (entry.diff_type === 'REMOVED' || entry.path_type === 'COMMON_PREFIX') {
+    if (entry.diff_type === 'removed' || entry.path_type === 'common_prefix') {
         modified = (<Na/>);
     } else {
         modified = (
@@ -208,7 +208,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
 
     let diffIndicator;
     switch(entry.diff_type) {
-        case 'REMOVED':
+        case 'removed':
             diffIndicator = (
                 <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed in diff</Tooltip>)}>
                     <span>
@@ -217,7 +217,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 </OverlayTrigger>
             );
             break;
-        case 'ADDED':
+        case 'added':
             diffIndicator = (
                 <OverlayTrigger placement="bottom" overlay={(<Tooltip>added in diff</Tooltip>)}>
                     <span>
@@ -226,7 +226,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 </OverlayTrigger>
             );
             break;
-        case 'CHANGED':
+        case 'changed':
             diffIndicator = (
                 <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed in diff</Tooltip>)}>
                     <span>
@@ -240,7 +240,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
     }
 
     let entryActions;
-    if (showActions && entry.path_type === 'OBJECT' && (entry.diff_type !== 'REMOVED')) {
+    if (showActions && entry.path_type === 'object' && (entry.diff_type !== 'removed')) {
         entryActions = <EntryRowActions repo={repo} refId={refId} entry={entry} onDelete={onDelete}></EntryRowActions>;
     }
 
@@ -251,7 +251,7 @@ const EntryRow = ({ repo, refId, path, entry, onNavigate, onDelete, showActions 
                 {diffIndicator}
             </td>
             <td className="tree-path">
-                {entry.path_type === 'COMMON_PREFIX' ? <FileDirectoryIcon/> : <FileIcon/>} {' '}
+                {entry.path_type === 'common_prefix' ? <FileDirectoryIcon/> : <FileIcon/>} {' '}
                 {button}
             </td>
             <td className="tree-size">
@@ -275,11 +275,11 @@ const merge = (path, entriesAtPath, diffResults) => {
 
     const entries = [...entriesAtPath];
     diffResults.forEach(diff => {
-       if (isChildOf(path, diff.path) && diff.type === 'REMOVED') {
+       if (isChildOf(path, diff.path) && diff.type === 'removed') {
            entries.push({
                path: diff.path,
                path_type: diff.path_type,
-               diff_type: 'REMOVED'
+               diff_type: 'removed'
            });
        }
     });
@@ -293,14 +293,14 @@ const merge = (path, entriesAtPath, diffResults) => {
                 // if there's an exact 'CHANGE' or 'ADD' diff for it, color it that way.
                 return {...entry,  diff_type: diff.type};
             }
-            if (diff.path_type === 'COMMON_PREFIX' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'ADDED') {
+            if (diff.path_type === 'common_prefix' && isDescendantOf(diff.path, entry.path) &&  diff.type === 'added') {
                 // for any entry descendant from a TREE event that was ADD, color it as ADD
-                return {...entry, diff_type: 'ADDED'};
+                return {...entry, diff_type: 'added'};
             }
 
-            if (entry.path_type === 'COMMON_PREFIX' && isDescendantOf(entry.path, diff.path)) {
+            if (entry.path_type === 'common_prefix' && isDescendantOf(entry.path, diff.path)) {
                 // for any TREE that has CHANGE/ADD/REMOVE descendants, color it a CHANGE
-                return {...entry, diff_type: 'CHANGED'};
+                return {...entry, diff_type: 'changed'};
             }
         }
         return {...entry, diff_type: 'NONE'};

@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
+	"github.com/ory/dockertest/v3"
 	"io"
 	"io/ioutil"
 	"log"
@@ -16,7 +17,6 @@ import (
 
 	"github.com/treeverse/lakefs/dedup"
 
-	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/gateway"
@@ -66,7 +66,7 @@ func TestGatewayRecording(t *testing.T) {
 			_ = os.RemoveAll(simulator.PlaybackParams.RecordingDir)
 			_ = os.MkdirAll(simulator.PlaybackParams.RecordingDir, 0755)
 			deCompressRecordings(filename, simulator.PlaybackParams.RecordingDir)
-			handler, _ := getBasicHandler(t, basename)
+			handler, _ := getBasicHandlerPlayback(t)
 			DoTestRun(handler, false, 1.0, t)
 		})
 	}
@@ -106,7 +106,12 @@ func (m *mockCollector) CollectEvent(class, action string) {
 
 var IdTranslator *testutil.UploadIDTranslator
 
-func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies) {
+func getBasicHandlerPlayback(t *testing.T) (http.Handler, *dependencies) {
+	authService := newGatewayAuthFromFile(t, simulator.PlaybackParams.RecordingDir)
+	return getBasicHandler(t, authService)
+}
+
+func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (http.Handler, *dependencies) {
 	IdTranslator = &testutil.UploadIDTranslator{TransMap: make(map[string]string),
 		ExpectedID: "",
 		T:          t,
@@ -123,8 +128,6 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 		_ = cataloger.Close()
 		_ = dedupCleaner.Close()
 	})
-
-	authService := newGatewayAuth(t, simulator.PlaybackParams.RecordingDir)
 
 	ctx := context.Background()
 	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
@@ -145,7 +148,7 @@ func getBasicHandler(t *testing.T, testDir string) (http.Handler, *dependencies)
 	}
 }
 
-func newGatewayAuth(t *testing.T, directory string) *simulator.PlayBackMockConf {
+func newGatewayAuthFromFile(t *testing.T, directory string) *simulator.PlayBackMockConf {
 	m := new(simulator.PlayBackMockConf)
 	fName := filepath.Join(directory, simulator.SimulationConfig)
 	confStr, err := ioutil.ReadFile(fName)
