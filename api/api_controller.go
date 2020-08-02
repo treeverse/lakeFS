@@ -1069,6 +1069,14 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+		// check if branch exists - it is still a possibility, but we don't want to upload large object when the branch was not there in the first place
+		branchExists, err := cataloger.IsBranchExists(c.Context(), params.Repository, params.Branch)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		if !branchExists {
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("branch not found"))
+		}
 		// workaround in order to extract file content-length using swagger
 		file, ok := params.Content.(*runtime.File)
 		if !ok {
@@ -1098,6 +1106,9 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 					StorageNamespace: repo.StorageNamespace,
 				},
 			})
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewUploadObjectNotFound().WithPayload(responseErrorFrom(err))
+		}
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
