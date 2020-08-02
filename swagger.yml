@@ -71,12 +71,12 @@ definitions:
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
+        enum: [added, removed, changed, conflict]
       path:
         type: string
       path_type:
         type: string
-        enum: [COMMON_PREFIX, OBJECT]
+        enum: [common_prefix, object]
 
   repository_creation:
     type: object
@@ -110,7 +110,7 @@ definitions:
         format: int64
       path_type:
         type: string
-        enum: [COMMON_PREFIX, OBJECT]
+        enum: [common_prefix, object]
 
   underlying_object_properties:
     type: object
@@ -124,12 +124,12 @@ definitions:
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
+        enum: [added, removed, changed, conflict]
       path:
         type: string
       path_type:
         type: string
-        enum: [COMMON_PREFIX, OBJECT]
+        enum: [common_prefix, object]
 
   revert_creation:
     type: object
@@ -138,7 +138,7 @@ definitions:
     properties:
       type:
         type: string
-        enum: [OBJECT, COMMON_PREFIX, COMMIT, RESET]
+        enum: [object, common_prefix, commit, reset]
       commit:
         type: string
       path:
@@ -264,7 +264,7 @@ definitions:
     properties:
       effect:
         type: string
-        enum: ["Allow", "Deny"]
+        enum: [allow, deny]
       resource:
         type: string
       action:
@@ -325,7 +325,7 @@ definitions:
     properties:
       status:
         type: string
-        enum: ["enabled", "disabled"]
+        enum: [enabled, disabled]
       filter:
         type: object
         properties:
