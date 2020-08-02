@@ -21,16 +21,18 @@ func TestCataloger_CreateBranch(t *testing.T) {
 		sourceBranch string
 	}
 	tests := []struct {
-		name           string
-		args           args
-		wantBranchName string
-		wantErr        bool
+		name              string
+		args              args
+		wantBranchName    string
+		wantCommitMessage string
+		wantErr           bool
 	}{
 		{
-			name:           "new",
-			args:           args{repository: repo, branch: "b1", sourceBranch: "master"},
-			wantBranchName: "b1",
-			wantErr:        false,
+			name:              "new",
+			args:              args{repository: repo, branch: "b1", sourceBranch: "master"},
+			wantCommitMessage: "Branch 'b1' created, source branch 'master'",
+			wantBranchName:    "b1",
+			wantErr:           false,
 		},
 		{
 			name:           "self",
@@ -62,6 +64,8 @@ func TestCataloger_CreateBranch(t *testing.T) {
 			}
 			if commitLog == nil {
 				t.Fatal("CreateBranch() no error, missing commit log")
+			} else if tt.wantCommitMessage != commitLog.Message {
+				t.Fatalf("CreateBranch() commit log '%s', expected '%s'", commitLog.Message, tt.wantCommitMessage)
 			}
 		})
 	}

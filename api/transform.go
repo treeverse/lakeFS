@@ -23,7 +23,7 @@ func transformDifferenceToMergeResult(difference catalog.Difference) *models.Mer
 	}
 
 	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
-		mr.PathType = models.MergeResultPathTypeTREE
+		mr.PathType = models.MergeResultPathTypeCOMMONPREFIX
 	} else {
 		mr.PathType = models.MergeResultPathTypeOBJECT
 	}
@@ -46,7 +46,7 @@ func transformDifferenceToDiff(difference catalog.Difference) *models.Diff {
 	}
 
 	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
-		d.PathType = models.DiffPathTypeTREE
+		d.PathType = models.DiffPathTypeCOMMONPREFIX
 	} else {
 		d.PathType = models.DiffPathTypeOBJECT
 	}
