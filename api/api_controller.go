@@ -777,7 +777,7 @@ func (c *Controller) ObjectsStatObjectHandler() objects.StatObjectHandler {
 			Checksum:  entry.Checksum,
 			Mtime:     entry.CreationDate.Unix(),
 			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeOBJECT,
+			PathType:  models.ObjectStatsPathTypeObject,
 			SizeBytes: entry.Size,
 		}
 
@@ -1015,7 +1015,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 			if entry.CommonLevel {
 				objList[i] = &models.ObjectStats{
 					Path:     entry.Path,
-					PathType: models.ObjectStatsPathTypeCOMMONPREFIX,
+					PathType: models.ObjectStatsPathTypeCommonPrefix,
 				}
 			} else {
 				var mtime int64
@@ -1026,7 +1026,7 @@ func (c *Controller) ObjectsListObjectsHandler() objects.ListObjectsHandler {
 					Checksum:  entry.Checksum,
 					Mtime:     mtime,
 					Path:      entry.Path,
-					PathType:  models.ObjectStatsPathTypeOBJECT,
+					PathType:  models.ObjectStatsPathTypeObject,
 					SizeBytes: entry.Size,
 				}
 			}
@@ -1105,7 +1105,7 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 			Checksum:  blob.Checksum,
 			Mtime:     writeTime.Unix(),
 			Path:      params.Path,
-			PathType:  models.ObjectStatsPathTypeOBJECT,
+			PathType:  models.ObjectStatsPathTypeObject,
 			SizeBytes: blob.Size,
 		})
 	})
@@ -1153,13 +1153,13 @@ func (c *Controller) RevertBranchHandler() branches.RevertBranchHandler {
 
 		ctx := c.Context()
 		switch swag.StringValue(params.Revert.Type) {
-		case models.RevertCreationTypeCOMMIT:
+		case models.RevertCreationTypeCommit:
 			err = cataloger.RollbackCommit(ctx, params.Repository, params.Revert.Commit)
-		case models.RevertCreationTypeCOMMONPREFIX:
+		case models.RevertCreationTypeCommonPrefix:
 			err = cataloger.ResetEntries(ctx, params.Repository, params.Branch, params.Revert.Path)
-		case models.RevertCreationTypeRESET:
+		case models.RevertCreationTypeReset:
 			err = cataloger.ResetBranch(ctx, params.Repository, params.Branch)
-		case models.RevertCreationTypeOBJECT:
+		case models.RevertCreationTypeObject:
 			err = cataloger.ResetEntry(ctx, params.Repository, params.Branch, params.Revert.Path)
 		default:
 			return branches.NewRevertBranchNotFound().
