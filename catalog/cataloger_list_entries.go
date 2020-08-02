@@ -145,6 +145,9 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		listAfter = prefix
 		exactFirst = true
 	} else {
+		if strings.HasSuffix(after, delimiter) {
+			after += DirectoryTermination
+		}
 		listAfter = after
 		exactFirst = false
 	}
