@@ -39,7 +39,7 @@ const RevertButton = connect(
 
     const onSubmit = () => {
         if (disabled) return;
-        revertBranch(repo.id, refId.id, {type: "RESET"});
+        revertBranch(repo.id, refId.id, {type: "reset"});
         setShow(false);
     };
 
