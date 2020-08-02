@@ -2,12 +2,13 @@ package catalog
 
 import (
 	"strconv"
+	"unicode/utf8"
 
 	sq "github.com/Masterminds/squirrel"
 )
 
 const (
-	DirectoryTerminationValue = 1_000_000
+	DirectoryTerminationValue = utf8.MaxRune
 	DirectoryTermination      = string(rune(DirectoryTerminationValue))
 )
 
