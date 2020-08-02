@@ -250,7 +250,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file2/",
 				limit:      2,
 			},
-			wantEntries: []string{"file2/", "file3/"},
+			wantEntries: []string{"file3/", "file4"},
 			wantMore:    true,
 			wantErr:     false,
 		},
@@ -263,7 +263,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file1",
 				limit:      100,
 			},
-			wantEntries: []string{"file1", "file2", "file2/", "rip0"},
+			wantEntries: []string{"file2", "file2/", "rip0"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -315,7 +315,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file6/ccc",
 				limit:      100,
 			},
-			wantEntries: []string{"file6/ccc", "file6/yyy", "file6/zzz/"},
+			wantEntries: []string{"file6/yyy", "file6/zzz/"},
 			wantMore:    false,
 			wantErr:     false,
 		},
@@ -361,7 +361,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListEntries_ByLevelDeleted(t *testing.T) {
+func TestCataloger_ListEntries_ByLevel_Deleted(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -554,6 +554,51 @@ func extractEntriesPaths(entries []*Entry) []string {
 		result[i] = ent.Path
 	}
 	return result
+}
+
+func TestCataloger_ListEntries_ByLevelAfter(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	// produce test data
+	const namesCount = 10
+	names := make([]string, namesCount)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	for i := 0; i < namesCount; i++ {
+		p := "file." + strconv.Itoa(i)
+		testCatalogerCreateEntry(t, ctx, c, repo, "master", p, nil, "")
+		names[i] = p
+	}
+
+	const testLimit = 2
+	delimiters := []string{"", DefaultPathDelimiter}
+	for _, delimiter := range delimiters {
+		t.Run("delimiter_"+strconv.FormatBool(delimiter != ""), func(t *testing.T) {
+			var after string
+			var namesIdx int
+			for {
+				entries, more, err := c.ListEntries(ctx, repo, "master", "", after, delimiter, testLimit)
+				testutil.MustDo(t, "list entries", err)
+				// compare the names we got so far
+				for i, ent := range entries {
+					if namesIdx >= len(names) {
+						t.Fatalf("ListEntries exceeded range of expected names. Index %d, when %d names", namesIdx, len(names))
+					} else if names[namesIdx] != ent.Path {
+						t.Fatalf("ListEntries pos %d, path %s - expected %s (index %d)", i, ent.Path, names[namesIdx], namesIdx)
+					}
+					namesIdx += 1
+				}
+				// prepare for the next page if needed
+				if !more {
+					break
+				}
+				if len(entries) == 0 {
+					t.Fatal("ListEntries got more, but got no entries")
+				}
+				after = entries[len(entries)-1].Path
+			}
+		})
+	}
 }
 
 func TestCataloger_ListEntries_Uncommitted(t *testing.T) {

@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/go-test/deep"
-
 	"github.com/treeverse/lakefs/testutil"
 )
 
