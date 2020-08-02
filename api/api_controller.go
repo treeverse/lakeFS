@@ -387,6 +387,9 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		after, amount := getPaginationParams(params.After, params.Amount)
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
+		if errors.Is(err, db.ErrNotFound) {
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch not found"))
+		}
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
