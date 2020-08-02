@@ -24,7 +24,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err != nil {
 			return nil, err
 		}
-		query := `SELECT c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
+		query := `SELECT b.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 			COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
 			FROM catalog_commits c JOIN catalog_branches b ON b.id = c.branch_id 
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
@@ -33,7 +33,7 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 		if err := tx.Get(&rawCommit, query, branchID, ref.CommitID); err != nil {
 			return nil, err
 		}
-		commit := convertRawCommit(ref.Branch, &rawCommit)
+		commit := convertRawCommit(&rawCommit)
 		return commit, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
@@ -42,9 +42,9 @@ func (c *cataloger) GetCommit(ctx context.Context, repository, reference string)
 	return res.(*CommitLog), err
 }
 
-func convertRawCommit(branch string, raw *commitLogRaw) *CommitLog {
+func convertRawCommit(raw *commitLogRaw) *CommitLog {
 	c := &CommitLog{
-		Reference:    MakeReference(branch, raw.CommitID),
+		Reference:    MakeReference(raw.BranchName, raw.CommitID),
 		Committer:    raw.Committer,
 		Message:      raw.Message,
 		CreationDate: raw.CreationDate,
@@ -55,7 +55,7 @@ func convertRawCommit(branch string, raw *commitLogRaw) *CommitLog {
 		c.Parents = append(c.Parents, reference)
 	}
 	if raw.PreviousCommitID > 0 {
-		reference := MakeReference(branch, raw.PreviousCommitID)
+		reference := MakeReference(raw.BranchName, raw.PreviousCommitID)
 		c.Parents = append(c.Parents, reference)
 	}
 	return c
