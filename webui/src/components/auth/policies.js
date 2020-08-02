@@ -270,7 +270,7 @@ const PolicyDisplay = ({ policy, asJsonToggle }) => {
                         <tr key={`statement-${i}`}>
                             <td><code>{statement.action.join(", ")}</code></td>
                             <td><code>{statement.resource}</code></td>
-                            <td><strong style={{'color': (statement.effect === "Allow") ? 'green':'red'}}>{statement.effect}</strong></td>
+                            <td><strong style={{'color': (statement.effect === "allow") ? 'green':'red'}}>{statement.effect}</strong></td>
                         </tr>
                     );
                 })}
