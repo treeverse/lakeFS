@@ -53,7 +53,7 @@ func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string)
 		res.rowsPerFile[i] = int(pr.GetNumRows())
 		err = closeReader()
 		if err != nil {
-			res.logger.Errorf("failed to close parquet reader of file. bucket=%s, key=%s", invBucket, key)
+			res.logger.Errorf("failed to close parquet reader in NewInventoryIterator. bucket=%s, key=%s", invBucket, key)
 		}
 	}
 	return res, nil
@@ -105,7 +105,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 	defer func() {
 		err = closeReader()
 		if err != nil {
-			it.logger.Errorf("failed to close parquet reader of file. bucket=%s, key=%s", it.inventoryBucket, key)
+			it.logger.Errorf("failed to close parquet reader in fillBuffer. bucket=%s, key=%s", it.inventoryBucket, key)
 		}
 	}()
 	// skip the rows that have already been read:
