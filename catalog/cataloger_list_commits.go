@@ -17,18 +17,18 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 	}); err != nil {
 		return nil, false, err
 	}
-	//ref, err := ParseRef(fromReference)
-	//if err != nil {
-	//	return nil, false, err
-	//}
+	ref, err := ParseRef(fromReference)
+	if err != nil {
+		return nil, false, err
+	}
 	if limit < 0 || limit > ListCommitsMaxLimit {
 		limit = ListCommitsMaxLimit
 	}
 	// we start from the newest to the oldest
-	//fromCommitID := CommitID(math.MaxInt64)
-	//if ref.CommitID > 0 {
-	//	fromCommitID = ref.CommitID
-	//}
+	fromCommitID := MaxCommitID
+	if ref.CommitID > 0 {
+		fromCommitID = ref.CommitID
+	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
@@ -44,11 +44,12 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 			FROM catalog_commits c JOIN (SELECT * FROM ` + lineageAsValuesTable + `) l  ON  c.branch_id = l.branch_id and c.commit_id <= l.commit_id
 				JOIN catalog_branches b_name ON c.branch_id = b_name.id
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
+			WHERE c.commit_id < $1
 			ORDER BY c.commit_id DESC
-			LIMIT $1`
+			LIMIT $2`
 
 		var rawCommits []*commitLogRaw
-		if err := tx.Select(&rawCommits, query, limit+1); err != nil {
+		if err := tx.Select(&rawCommits, query, fromCommitID, limit+1); err != nil {
 			return nil, err
 		}
 		commits := convertRawCommits(rawCommits)
