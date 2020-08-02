@@ -83,18 +83,22 @@ func readFileMetadata(ctx context.Context, s3 s3iface.S3API, getParquetReader pa
 	m.numRowsByFilename = make(map[string]int, len(m.Files))
 	m.firstKeyByFilename = make(map[string]string, len(m.Files))
 	for i := range m.Files {
-		pr, closeReader, err := getParquetReader(ctx, s3, m.invBucket, m.Files[i].Key)
+		filename := m.Files[i].Key
+		pr, closeReader, err := getParquetReader(ctx, s3, m.invBucket, filename)
 		if err != nil {
 			return err
 		}
-		m.numRowsByFilename[m.Files[i].Key] = int(pr.GetNumRows())
+		m.numRowsByFilename[filename] = int(pr.GetNumRows())
+
+		// read first row from file to store the first key:
 		rows := make([]ParquetInventoryObject, 1)
 		err = pr.Read(&rows)
 		if err != nil {
 			return err
 		}
+		m.firstKeyByFilename[filename] = ""
 		if len(rows) != 0 {
-			m.firstKeyByFilename[m.Files[i].Key] = rows[0].Key
+			m.firstKeyByFilename[filename] = rows[0].Key
 		}
 		_ = closeReader()
 	}
