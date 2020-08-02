@@ -833,7 +833,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Ref:        "master",
 			Repository: "repo1",
-			Tree:       swag.String("foo/"),
+			Prefix:     swag.String("foo/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -846,7 +846,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		resp, err = clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Ref:        "master:HEAD",
 			Repository: "repo1",
-			Tree:       swag.String("/"),
+			Prefix:     swag.String("/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -861,7 +861,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			Amount:     swag.Int64(2),
 			Ref:        "master",
 			Repository: "repo1",
-			Tree:       swag.String("foo/"),
+			Prefix:     swag.String("foo/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
