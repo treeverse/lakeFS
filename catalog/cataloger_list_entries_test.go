@@ -250,7 +250,7 @@ func TestCataloger_ListEntries_ByLevel(t *testing.T) {
 				after:      "file2/",
 				limit:      2,
 			},
-			wantEntries: []string{"file3/"},
+			wantEntries: []string{"file3/", "file4"},
 			wantMore:    true,
 			wantErr:     false,
 		},
