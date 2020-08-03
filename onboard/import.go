@@ -7,6 +7,7 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -19,6 +20,7 @@ type Importer struct {
 	inventoryGenerator block.InventoryGenerator
 	inventory          block.Inventory
 	CatalogActions     RepoActions
+	logger             logging.Logger
 }
 
 type InventoryImportStats struct {
@@ -29,12 +31,12 @@ type InventoryImportStats struct {
 	PreviousImportDate   time.Time
 }
 
-func CreateImporter(cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
+func CreateImporter(logger logging.Logger, cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
 	res := &Importer{
 		repository:         repository,
 		inventoryGenerator: inventoryGenerator,
 	}
-	res.inventory, err = inventoryGenerator.GenerateInventory(inventoryURL)
+	res.inventory, err = inventoryGenerator.GenerateInventory(logger, inventoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
@@ -47,7 +49,7 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	if previousInventoryURL == "" {
 		return nil, fmt.Errorf("no inventory_url in commit Metadata. commit_ref=%s", commit.Reference)
 	}
-	previousInv, err := s.inventoryGenerator.GenerateInventory(previousInventoryURL)
+	previousInv, err := s.inventoryGenerator.GenerateInventory(s.logger, previousInventoryURL)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
 	}
