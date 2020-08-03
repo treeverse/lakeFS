@@ -41,10 +41,6 @@ archives:
     amd64: x86_64
 checksum:
   name_template: 'checksums.txt'
-blobs:
-  - provider: s3
-    region: us-east-1
-    bucket: releases-lakefs
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
