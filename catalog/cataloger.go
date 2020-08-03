@@ -101,8 +101,8 @@ type EntryCataloger interface {
 	// QueryEntriesToExpire returns ExpiryRows iterating over all objects to expire on
 	// repositoryName according to policy.
 	QueryEntriesToExpire(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error)
-	// MarkExpired marks all entries identified by expire as expired.  It is a batch operation.
-	MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
+	// MarkEntriesExpired marks all entries identified by expire as expired.  It is a batch operation.
+	MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error
 	// MarkObjectsForDeletion marks objects in catalog_object_dedup as "deleting" if all
 	// their entries are expired, and returns the new total number of objects marked (or an
 	// error).  These objects are not yet safe to delete: there could be a race between
@@ -111,10 +111,10 @@ type EntryCataloger interface {
 	MarkObjectsForDeletion(ctx context.Context, repositoryName string) (int64, error)
 	// DeleteOrUnmarkObjectsForDeletion scans objects in catalog_object_dedup for objects
 	// marked "deleting" and returns an iterator over physical addresses of those objects
-	// all of whose referring entries are still expired.  If called after MarkExpired and
-	// MarkObjectsForDeletion this is safe, because no further entries can refer to expired
-	// objects.  It also removes the "deleting" mark from those objects _not_ marked as
-	// expiring.
+	// all of whose referring entries are still expired.  If called after MarkEntriesExpired
+	// and MarkObjectsForDeletion this is safe, because no further entries can refer to
+	// expired objects.  It also removes the "deleting" mark from those objects that have an
+	// entry _not_ marked as expiring and therefore were not on the returned rows.
 	DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (StringRows, error)
 
 	DedupReportChannel() chan *DedupReport

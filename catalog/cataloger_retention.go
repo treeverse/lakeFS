@@ -242,7 +242,7 @@ func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName str
 	return ret, nil
 }
 
-func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
+func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
 	logger := logging.FromContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
 
 	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
