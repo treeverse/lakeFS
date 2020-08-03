@@ -19,7 +19,7 @@ var (
 	ErrInvalidReference        = errors.New("invalid reference")
 	ErrBranchNotFound          = fmt.Errorf("branch %w", db.ErrNotFound)
 	ErrCommitNotFound          = fmt.Errorf("commit %w", db.ErrNotFound)
-	ErrRepoNotFound            = fmt.Errorf("repository %w", db.ErrNotFound)
+	ErrRepositoryNotFound      = fmt.Errorf("repository %w", db.ErrNotFound)
 	ErrMultipartUploadNotFound = fmt.Errorf("multipart upload %w", db.ErrNotFound)
 	ErrEntryNotFound           = fmt.Errorf("entry %w", db.ErrNotFound)
 )
