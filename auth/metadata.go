@@ -53,7 +53,7 @@ func writeMetadata(tx sqlx.Execer, items map[string]string) error {
 func (d *DBMetadataManager) InstallationID() (string, error) {
 	installationID, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return getInstallationID(tx)
-	}, db.ReadOnly())
+	}, db.WithLogger(logging.Dummy()), db.ReadOnly())
 	if err != nil {
 		return "", err
 	}
