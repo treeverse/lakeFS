@@ -1,5 +1,7 @@
 name: Go
-on: [push]
+on: 
+  push:
+  pull_request:
 jobs:
   validator:
     name: Run Linters and Checkers
