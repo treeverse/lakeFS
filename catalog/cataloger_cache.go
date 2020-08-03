@@ -16,7 +16,10 @@ func (c *cataloger) getRepositoryCache(tx db.Tx, repository string) (*Repository
 		}
 		return repo, nil
 	})
-	return repo, catalogerTransformCacheError(err)
+	if errors.Is(err, cache.ErrCacheItemNotFound) {
+		return repo, ErrRepositoryNotFound
+	}
+	return repo, err
 }
 
 func (c *cataloger) getRepositoryIDCache(tx db.Tx, repository string) (int, error) {
@@ -27,7 +30,10 @@ func (c *cataloger) getRepositoryIDCache(tx db.Tx, repository string) (int, erro
 		}
 		return repoID, nil
 	})
-	return repoID, catalogerTransformCacheError(err)
+	if errors.Is(err, cache.ErrCacheItemNotFound) {
+		return repoID, ErrRepositoryNotFound
+	}
+	return repoID, err
 }
 
 func (c *cataloger) getBranchIDCache(tx db.Tx, repository string, branch string) (int64, error) {
@@ -38,12 +44,8 @@ func (c *cataloger) getBranchIDCache(tx db.Tx, repository string, branch string)
 		}
 		return branchID, nil
 	})
-	return branchID, catalogerTransformCacheError(err)
-}
-
-func catalogerTransformCacheError(err error) error {
 	if errors.Is(err, cache.ErrCacheItemNotFound) {
-		return db.ErrNotFound
+		return branchID, ErrBranchNotFound
 	}
-	return err
+	return branchID, err
 }
