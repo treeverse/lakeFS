@@ -391,6 +391,20 @@ func TestCataloger_ScanExpired(t *testing.T) {
 				masterCommitted19Hours,
 				masterUncommitted2Hours,
 			},
+		}, {
+			name: "ignore disabled rules",
+			policy: &Policy{
+				Rules: []Rule{
+					{
+						Enabled:      false,
+						FilterPrefix: "",
+						Expiration: Expiration{
+							All: makeHours(0),
+						},
+					},
+				},
+			},
+			want: []*ExpireResult{},
 		},
 	}
 
