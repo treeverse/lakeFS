@@ -103,7 +103,7 @@ fmt-validator:  ## Validate go format
 		echo "$${res}"; \
 		exit 1; \
 	else \
-		echo Your code formating is according gofmt standards; \
+		echo Your code formatting is according to gofmt standards; \
 	fi
 
 checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps

@@ -37,6 +37,7 @@ type CommitLog struct {
 }
 
 type commitLogRaw struct {
+	BranchName            string    `db:"branch_name"`
 	CommitID              CommitID  `db:"commit_id"`
 	PreviousCommitID      CommitID  `db:"previous_commit_id"`
 	Committer             string    `db:"committer"`
