@@ -144,8 +144,6 @@ type Cataloger interface {
 	io.Closer
 }
 
-type DedupFoundCallback func(repository string, dedupID string, previousAddress, newAddress string)
-
 type dedupRequest struct {
 	Repository       string
 	StorageNamespace string
