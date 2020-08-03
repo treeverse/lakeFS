@@ -21,7 +21,7 @@ func (c *cataloger) DeleteRepository(ctx context.Context, repository string) err
 		if affected, err := res.RowsAffected(); err != nil {
 			return nil, err
 		} else if affected != 1 {
-			return nil, ErrRepoNotFound
+			return nil, ErrRepositoryNotFound
 		}
 		return nil, nil
 	}, c.txOpts(ctx)...)
