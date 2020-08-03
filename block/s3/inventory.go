@@ -39,7 +39,6 @@ type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket 
 type CloseFunc func() error
 
 func (s *Adapter) GenerateInventory(logger logging.Logger, manifestURL string) (block.Inventory, error) {
-	s.log().WithField("operation", "invent")
 	return GenerateInventory(logger, manifestURL, s.s3, getParquetReader)
 }
 
