@@ -290,9 +290,9 @@ type ExpireOnS3Params struct {
 	ReportS3PrefixURL    *string
 }
 
-// MarkedExpiredInChunks scans expiryResultsReader in chunks of up to chunkSize entries and
+// MarkedEntriesExpiredInChunks scans expiryResultsReader in chunks of up to chunkSize entries and
 // marks all entries in each chunk as expired.  It writes all errors to errCh.
-func MarkExpiredInChunks(ctx context.Context, c catalog.Cataloger, repositoryName string, expiryResultsReader io.Reader, chunkSize int, errCh chan error) {
+func MarkEntriesExpiredInChunks(ctx context.Context, c catalog.Cataloger, repositoryName string, expiryResultsReader io.Reader, chunkSize int, errCh chan error) {
 	errFields := FromLoggerContext(ctx)
 
 	decoder := json.NewDecoder(expiryResultsReader)
@@ -313,7 +313,7 @@ func MarkExpiredInChunks(ctx context.Context, c catalog.Cataloger, repositoryNam
 			}
 			chunk = append(chunk, &record)
 		}
-		if err := c.MarkExpired(ctx, repositoryName, chunk); err != nil {
+		if err := c.MarkEntriesExpired(ctx, repositoryName, chunk); err != nil {
 			errCh <- MapError{errFields.WithFields(
 				Fields{"chunk_size": len(chunk), "first_record_number": recordNumber - len(chunk)}),
 				fmt.Errorf("failed to mark expired: %w", err),
@@ -345,7 +345,7 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 		// failed some entries won't be expired, so their files might not be deleted.
 		// But this is safe, so keep going -- we may still succeed for the other
 		// entries.
-		MarkExpiredInChunks(ctx, c, repository.Name, expiryResultsReader, markExpiredChunkSize, errCh)
+		MarkEntriesExpiredInChunks(ctx, c, repository.Name, expiryResultsReader, markExpiredChunkSize, errCh)
 
 		// Mark object with no unexpired objects as intended for deletion, so no further
 		// dedupes will occur on them.
