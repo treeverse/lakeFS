@@ -119,6 +119,19 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 }
 
 func (controller *PutObject) Handle(o *PathOperation) {
+	// verify branch before we upload data - fail early
+	branchExists, err := o.Cataloger.BranchExists(o.Context(), o.Repository.Name, o.Reference)
+	if err != nil {
+		o.Log().WithError(err).Error("could not check if branch exists")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
+		return
+	}
+	if !branchExists {
+		o.Log().Debug("branch not found")
+		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrNoSuchBucket))
+		return
+	}
+
 	// check if this is a copy operation (i.e. https://docs.aws.amazon.com/AmazonS3/latest/API/API_CopyObject.html)
 	// A copy operation is identified by the existence of an "x-amz-copy-source" header
 	storageClass := StorageClassFromHeader(o.Request.Header)
