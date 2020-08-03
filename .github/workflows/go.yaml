@@ -1,5 +1,5 @@
 name: Go
-on: 
+on:
   push:
     branches:
       -master
@@ -46,3 +46,8 @@ jobs:
       - name: Run tests
         run: |
           make test
+      - name: Publish coverage
+        uses: codecov/codecov-action@v1
+        with:
+          files: ./cover.out,api/cover.out
+          fail_ci_if_error: false
