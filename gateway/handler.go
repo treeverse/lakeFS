@@ -379,7 +379,7 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 
 		// s3 allows trailing slash for bucket name
 		if ref == "" {
-			return h.repositoryBasedHandler(r.Method, repository)
+			return h.repositoryBasedHandlerIfValid(r.Method, repository)
 		}
 		return h.NotFoundHandler
 	}
@@ -387,11 +387,7 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 	if parts, ok := SplitFirst(r.URL.Path, 1); ok {
 		// Paths for bare repository
 		repository := parts[0]
-		if !catalog.IsValidRepositoryName(repository) {
-			return h.NotFoundHandler
-		}
-
-		return h.repositoryBasedHandler(r.Method, repository)
+		return h.repositoryBasedHandlerIfValid(r.Method, repository)
 	}
 	// no repository given
 	if r.Method == http.MethodGet {
@@ -457,6 +453,14 @@ func (h *handler) pathBasedHandler(method, repository, ref, path string) http.Ha
 	}
 	h.operationID = reflect.TypeOf(handler).Elem().Name()
 	return PathOperationHandler(h.sc, repository, ref, path, handler)
+}
+
+func (h *handler) repositoryBasedHandlerIfValid(method, repository string) http.Handler {
+	if !catalog.IsValidRepositoryName(repository) {
+		return h.NotFoundHandler
+	}
+
+	return h.repositoryBasedHandler(method, repository)
 }
 
 func (h *handler) repositoryBasedHandler(method, repository string) http.Handler {

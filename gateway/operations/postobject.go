@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/serde"
+	"github.com/treeverse/lakefs/httputil"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/permissions"
 )
 
@@ -114,9 +114,10 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 		o.Log().WithError(err).Warn("could not delete multipart record")
 	}
 
-	// TODO: pass scheme instead of hard-coding http instead of https
+	scheme := httputil.RequestScheme(o.Request)
+	location := fmt.Sprintf("%s://%s.%s/%s/%s", scheme, o.Repository, o.FQDN, o.Reference, o.Path)
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
-		Location: fmt.Sprintf("http://%s.%s/%s/%s", o.Repository, o.FQDN, o.Reference, o.Path),
+		Location: location,
 		Bucket:   o.Repository.Name,
 		Key:      o.Path,
 		ETag:     *etag,
