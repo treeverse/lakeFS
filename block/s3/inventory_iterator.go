@@ -53,7 +53,8 @@ func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string)
 		res.rowsPerFile[i] = int(pr.GetNumRows())
 		err = closeReader()
 		if err != nil {
-			res.logger.Errorf("failed to close parquet reader in NewInventoryIterator. bucket=%s, key=%s", invBucket, key)
+			res.logger.WithFields(logging.Fields{"bucket":  invBucket, "key": key}).
+			    Error("failed to close parquet reader in NewInventoryIterator)
 		}
 	}
 	return res, nil
