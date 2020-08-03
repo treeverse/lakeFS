@@ -3,8 +3,10 @@ package onboard_test
 import (
 	"context"
 	"errors"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 )
 
@@ -38,7 +40,7 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(inventoryURL string) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ logging.Logger, inventoryURL string) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
 		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
 	}
