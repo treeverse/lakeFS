@@ -128,8 +128,9 @@ var repoDeleteCmd = &cobra.Command{
 }
 
 var retentionCmd = &cobra.Command{
-	Use:   "retention [sub-command]",
-	Short: "manage repository retention policies",
+	Use:    "retention [sub-command]",
+	Short:  "manage repository retention policies",
+	Hidden: true,
 }
 
 var getPolicyCmd = &cobra.Command{
