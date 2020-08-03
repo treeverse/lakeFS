@@ -8,11 +8,9 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/dgrijalva/jwt-go.v3"
-
-	"github.com/treeverse/lakefs/auth"
-
 	"github.com/rakyll/statik/fs"
+	"github.com/treeverse/lakefs/auth"
+	"gopkg.in/dgrijalva/jwt-go.v3"
 )
 
 const (
@@ -23,6 +21,23 @@ const (
 type loginData struct {
 	AccessKeyID     string `json:"access_key_id"`
 	AccessSecretKey string `json:"secret_access_key"`
+}
+
+var noCacheHeaders = map[string]string{
+	"Expires":         time.Unix(0, 0).Format(time.RFC1123),
+	"Cache-Control":   "no-cache, private, max-age=0",
+	"Pragma":          "no-cache",
+	"X-Accel-Expires": "0",
+}
+
+func NoCache(h http.Handler) http.Handler {
+	fn := func(w http.ResponseWriter, r *http.Request) {
+		for k, v := range noCacheHeaders {
+			w.Header().Set(k, v)
+		}
+		h.ServeHTTP(w, r)
+	}
+	return http.HandlerFunc(fn)
 }
 
 func UIHandler(authService auth.Service) http.Handler {
@@ -90,7 +105,7 @@ func UIHandler(authService auth.Service) http.Handler {
 			SameSite: http.SameSiteStrictMode,
 		})
 	})
-	mux.Handle("/", HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/"))
+	mux.Handle("/", NoCache(HandlerWithDefault(staticFiles, http.FileServer(staticFiles), "/")))
 	return mux
 }
 
