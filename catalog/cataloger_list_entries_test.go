@@ -770,6 +770,45 @@ func TestCataloger_ListEntries_many_delets(t *testing.T) {
 	}
 }
 
+func TestCataloger_ListEntries_ignor_delets_by_lineage(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	generateAndUpdate(t, ctx, c, repo, "master", 50, 100, 1)
+	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
+	for i := 0; i < 100; i++ {
+		testutil.MustDo(t, "delete files in master",
+			c.DeleteEntry(ctx, repo, "master", "my_entry"+fmt.Sprintf("%03d", i)))
+	}
+	// br_1 ignores uncommitted tombstones on master
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 100 {
+		t.Fatalf("expected 100 entries on br_1, read %d", len(got))
+	}
+	// master is really deleted
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 entries on master, read %d", len(got))
+	}
+	_, err = c.Commit(ctx, repo, "master", "commit  master ", "tester", nil)
+	testutil.MustDo(t, "commit master ", err)
+	// br_1 ignores deleted committed entried on master
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 100 {
+		t.Fatalf("expected 100 entries on br_1, read %d", len(got))
+	}
+	// now merge master to br_1
+	_, err = c.Merge(ctx, repo, "master", "br_1", "tzahi", "merge deletions", nil)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 entries on br_1, read %d", len(got))
+	}
+}
+
 func generateAndUpdate(t *testing.T, ctx context.Context, c Cataloger, repo, branch string, numIterations, numEntries, skip int) {
 	for i := 0; i < numIterations; i++ {
 		for j := 0; j < numEntries; j += skip {
