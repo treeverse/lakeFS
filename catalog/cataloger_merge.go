@@ -128,8 +128,8 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 
 func (c *cataloger) mergeFromFather(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, fatherID, sonID int64, committer string, msg string, metadata Metadata) error {
 	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
-			WHERE branch_id = $1 AND max_commit = $3 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($4,$5))`,
-		sonID, previousMaxCommitID, MaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
+			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id() AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
+		sonID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
