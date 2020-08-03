@@ -209,6 +209,12 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
 
    Under `Storage Namespace`, be sure to use the name of the bucket you've created in [Setting up an S3 bucket for data storage](#setting-up-an-s3-bucket-for-data-storage) above.
    
+### Import an existing S3 bucket into lakeFS
+
+Assuming you already have an S3 based data lake, you can [import it into lakeFS](../reference/import.md).
+
+lakeFS will create read-only references to objects in you bucket and will never alter its content.
+
 ### Next steps
 
 Check out the usage guides under [using lakeFS with...](../using) to start using lakeFS with your existing systems!
