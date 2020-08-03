@@ -120,7 +120,7 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 
 func (controller *PutObject) Handle(o *PathOperation) {
 	// verify branch before we upload data - fail early
-	branchExists, err := o.Cataloger.IsBranchExists(o.Context(), o.Repository.Name, o.Reference)
+	branchExists, err := o.Cataloger.BranchExists(o.Context(), o.Repository.Name, o.Reference)
 	if err != nil {
 		o.Log().WithError(err).Error("could not check if branch exists")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))

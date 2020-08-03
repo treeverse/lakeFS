@@ -7,7 +7,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) IsBranchExists(ctx context.Context, repository, branch string) (bool, error) {
+func (c *cataloger) BranchExists(ctx context.Context, repository, branch string) (bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
