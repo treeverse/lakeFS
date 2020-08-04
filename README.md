@@ -56,6 +56,7 @@ All reads from that branch are    guaranteed to always return the same results.
           LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
         entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
       postgres:
         image: "postgres:11"
