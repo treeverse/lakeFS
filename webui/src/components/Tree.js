@@ -167,13 +167,13 @@ const EntryRow = ({repo, refId, path, entry, onNavigate, onDelete, showActions})
     const buttonText = (path.length > 0) ? entry.path.substr(path.length) : entry.path;
 
     let button;
-    if (entry.diff_type === 'removed' && entry.path_type !== 'common_prefix') {
-        button = (<span>{buttonText}</span>);
-    } else if (entry.path_type === 'common_prefix') {
+    if (entry.path_type === 'common_prefix') {
         button = (<Link onClick={(e) => {
             onNavigate(entry.path);
             e.preventDefault()
         }} to="#">{buttonText}</Link>);
+    } else if (entry.diff_type === 'removed') {
+        button = (<span>{buttonText}</span>);
     } else {
         button = (<PathLink path={entry.path} refId={refId} repoId={repo.id}>{buttonText}</PathLink>);
     }
@@ -271,7 +271,7 @@ const isCommonPrefix = (path, child) => {
     return child.indexOf("/", path.length) > -1;
 }
 const getCommonPrefix = (path, child) => {
-    return path + child.substr(path.length).split('/')[0] + "/"
+    return path + child.substr(path.length).split('/')[0] + "/";
 }
 
 const merge = (path, entriesAtPath, diffResults) => {
