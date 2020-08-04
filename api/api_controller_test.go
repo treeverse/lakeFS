@@ -1043,6 +1043,20 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		}
 	})
 
+	t.Run("upload object missing branch", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world this is my awesome content")
+		_, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "masterX",
+			Content:    runtime.NamedReader("content", buf),
+			Path:       "foo/bar",
+			Repository: "repo1",
+		}, bauth)
+		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
+			t.Fatal("Missing branch should return not found")
+		}
+	})
+
 	t.Run("upload objects dedup", func(t *testing.T) {
 		t.Skip("api implements async dedup - consider removing the test code")
 		const content = "They do not love that do not show their love"
