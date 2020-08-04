@@ -213,7 +213,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
 
 Assuming you already have an S3 based data lake, you can [import it into lakeFS](../reference/import.md).
 
-lakeFS will create read-only references to objects in you bucket and will never alter its content.
+lakeFS will create read-only references to objects in your bucket and will never alter its content.
 
 ### Next steps
 
