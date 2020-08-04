@@ -388,7 +388,7 @@ func (c *Controller) CommitsGetBranchCommitLogHandler() commits.GetBranchCommitL
 		// get commit log
 		commitLog, hasMore, err := cataloger.ListCommits(c.Context(), params.Repository, params.Branch, after, amount)
 		if errors.Is(err, db.ErrNotFound) {
-			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch not found"))
+			return commits.NewGetBranchCommitLogNotFound().WithPayload(responseError("branch '%s' not found", params.Branch))
 		}
 		if err != nil {
 			return commits.NewGetBranchCommitLogDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
@@ -571,7 +571,7 @@ func (c *Controller) GetBranchHandler() branches.GetBranchHandler {
 		reference, err := deps.Cataloger.GetBranchReference(c.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewGetBranchNotFound().
-				WithPayload(responseError("branch not found"))
+				WithPayload(responseError("branch '%s' not found", params.Branch))
 		}
 		if err != nil {
 			return branches.NewGetBranchDefault(http.StatusInternalServerError).
@@ -622,7 +622,7 @@ func (c *Controller) DeleteBranchHandler() branches.DeleteBranchHandler {
 		err = cataloger.DeleteBranch(c.Context(), params.Repository, params.Branch)
 		if errors.Is(err, db.ErrNotFound) {
 			return branches.NewDeleteBranchNotFound().
-				WithPayload(responseError("branch not found"))
+				WithPayload(responseError("branch '%s' not found", params.Branch))
 		}
 		if err != nil {
 			return branches.NewDeleteBranchDefault(http.StatusInternalServerError).
@@ -1069,6 +1069,14 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
+		// check if branch exists - it is still a possibility, but we don't want to upload large object when the branch was not there in the first place
+		branchExists, err := cataloger.BranchExists(c.Context(), params.Repository, params.Branch)
+		if err != nil {
+			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
+		}
+		if !branchExists {
+			return objects.NewUploadObjectNotFound().WithPayload(responseError("branch '%s' not found", params.Branch))
+		}
 		// workaround in order to extract file content-length using swagger
 		file, ok := params.Content.(*runtime.File)
 		if !ok {
@@ -1098,6 +1106,9 @@ func (c *Controller) ObjectsUploadObjectHandler() objects.UploadObjectHandler {
 					StorageNamespace: repo.StorageNamespace,
 				},
 			})
+		if errors.Is(err, db.ErrNotFound) {
+			return objects.NewUploadObjectNotFound().WithPayload(responseErrorFrom(err))
+		}
 		if err != nil {
 			return objects.NewUploadObjectDefault(http.StatusInternalServerError).WithPayload(responseErrorFrom(err))
 		}
@@ -2117,7 +2128,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		if err == nil {
 			username = userModel.DisplayName
 		}
-		importer, err := onboard.CreateImporter(deps.Cataloger, deps.BlockAdapter, username, params.ManifestURL, params.Repository)
+		importer, err := onboard.CreateImporter(deps.logger, deps.Cataloger, deps.BlockAdapter, username, params.ManifestURL, params.Repository)
 		if err != nil {
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

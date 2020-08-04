@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const BlockstoreType = "mem"
@@ -209,6 +210,6 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (a *Adapter) GenerateInventory(_ string) (block.Inventory, error) {
+func (a *Adapter) GenerateInventory(_ logging.Logger, _ string) (block.Inventory, error) {
 	return nil, errors.New("inventory feature not implemented for memory storage adapter")
 }
