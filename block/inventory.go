@@ -1,9 +1,13 @@
 package block
 
-import "context"
+import (
+	"context"
+
+	"github.com/treeverse/lakefs/logging"
+)
 
 type InventoryGenerator interface {
-	GenerateInventory(inventoryURL string) (Inventory, error)
+	GenerateInventory(logger logging.Logger, inventoryURL string) (Inventory, error)
 }
 
 // Inventory represents a snapshot of the storage space
