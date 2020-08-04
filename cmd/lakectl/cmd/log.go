@@ -66,6 +66,7 @@ var logCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(logCmd)
 	logCmd.Flags().Int("amount", -1, "how many results to return, or-1 for all results (used for pagination)")
