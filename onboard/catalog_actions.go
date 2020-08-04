@@ -69,7 +69,6 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 				return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 			}
 		}
-
 	}
 	if it.Err() != nil {
 		return nil, it.Err()

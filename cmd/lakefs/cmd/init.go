@@ -68,6 +68,7 @@ var initCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(initCmd)
 	initCmd.Flags().String("user-name", "", "display name for the user (e.g. \"jane.doe\")")

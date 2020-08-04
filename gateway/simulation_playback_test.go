@@ -5,9 +5,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-
-	"github.com/treeverse/lakefs/logging"
-
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -20,6 +17,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/gateway/simulator"
+	"github.com/treeverse/lakefs/logging"
 )
 
 const (
@@ -114,7 +112,7 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 	}()
 	allStatusEqual := true
 	firstEventTime := eventsList[0].eventTime
-	durationToAdd := time.Now().Sub(firstEventTime)
+	durationToAdd := time.Since(firstEventTime)
 	for _, event := range eventsList {
 		bReader := bufio.NewReader(bytes.NewReader(event.request))
 		request, err := http.ReadRequest(bReader)
@@ -125,7 +123,7 @@ func runEvents(eventsList []simulationEvent, handler http.Handler, timedPlayback
 			IdTranslator.ExpectedID = string(event.uploadID)
 		}
 
-		secondDiff := time.Duration(float64(event.eventTime.Add(durationToAdd).Sub(time.Now())) / playbackSpeed)
+		secondDiff := time.Duration(float64(time.Until(event.eventTime.Add(durationToAdd))) / playbackSpeed)
 		if secondDiff > 0 && timedPlayback {
 			t.Log("\nwait: ", secondDiff, "\n")
 			time.Sleep(secondDiff)
