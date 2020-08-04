@@ -10,6 +10,7 @@ produces:
 - application/json
 schemes:
 - http
+- https
 basePath: /api/v1
 
 
@@ -70,12 +71,12 @@ definitions:
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
+        enum: [added, removed, changed, conflict]
       path:
         type: string
       path_type:
         type: string
-        enum: [TREE, OBJECT]
+        enum: [common_prefix, object]
 
   repository_creation:
     type: object
@@ -109,7 +110,7 @@ definitions:
         format: int64
       path_type:
         type: string
-        enum: [TREE, OBJECT]
+        enum: [common_prefix, object]
 
   underlying_object_properties:
     type: object
@@ -123,12 +124,12 @@ definitions:
     properties:
       type:
         type: string
-        enum: [ADDED, REMOVED, CHANGED, CONFLICT]
+        enum: [added, removed, changed, conflict]
       path:
         type: string
       path_type:
         type: string
-        enum: [TREE, OBJECT]
+        enum: [common_prefix, object]
 
   revert_creation:
     type: object
@@ -137,7 +138,7 @@ definitions:
     properties:
       type:
         type: string
-        enum: [OBJECT, TREE, COMMIT, RESET]
+        enum: [object, common_prefix, commit, reset]
       commit:
         type: string
       path:
@@ -263,7 +264,7 @@ definitions:
     properties:
       effect:
         type: string
-        enum: ["Allow", "Deny"]
+        enum: [allow, deny]
       resource:
         type: string
       action:
@@ -324,7 +325,7 @@ definitions:
     properties:
       status:
         type: string
-        enum: ["enabled", "disabled"]
+        enum: [enabled, disabled]
       filter:
         type: object
         properties:
@@ -1329,17 +1330,18 @@ paths:
         name: branch
         required: true
         type: string
-      - in: query
-        name: after
-        type: string
-      - in: query
-        name: amount
-        type: integer
     get:
       tags:
         - commits
       operationId: getBranchCommitLog
       summary: get commit log for branch
+      parameters:
+        - in: query
+          name: after
+          type: string
+        - in: query
+          name: amount
+          type: integer
       responses:
         200:
           description: commit log
@@ -1455,7 +1457,7 @@ paths:
         401:
           $ref: "#/responses/Unauthorized"
         404:
-          description: commit/branch not found
+          description: resource not found
           schema:
             $ref: "#/definitions/error"
         default:
@@ -1505,7 +1507,7 @@ paths:
           schema:
             $ref: "#/responses/Unauthorized"
         404:
-          description: ref not found
+          description: reference not found
           schema:
             $ref: "#/definitions/error"
         409:
@@ -1571,12 +1573,12 @@ paths:
         name: leftRef
         required: true
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: a reference (could be either a branch or a commit ID)
       - in: path
         name: rightRef
         required: true
         type: string
-        description: a reference (could be either a branch ID or a commit ID) to compare against
+        description: a reference (could be either a branch or a commit ID) to compare against
     get:
       tags:
         - refs
@@ -1597,7 +1599,7 @@ paths:
           schema:
             $ref: "#/responses/Unauthorized"
         404:
-          description: branch not found
+          description: reference not found
           schema:
             $ref: "#/definitions/error"
         default:
@@ -1646,7 +1648,7 @@ paths:
         name: ref
         required: true
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
         required: true
@@ -1676,7 +1678,7 @@ paths:
         401:
           $ref: "#/responses/Unauthorized"
         404:
-          description: path or ref not found
+          description: resource not found
           schema:
             $ref: "#/definitions/error"
         410:
@@ -1762,7 +1764,7 @@ paths:
         name: ref
         required: true
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
         required: true
@@ -1802,7 +1804,7 @@ paths:
         name: ref
         required: true
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: a reference (could be either a branch or a commit ID)
       - in: query
         name: path
         required: true
@@ -1838,9 +1840,9 @@ paths:
         name: ref
         required: true
         type: string
-        description: a reference (could be either a branch ID or a commit ID)
+        description: a reference (could be either a branch or a commit ID)
       - in: query
-        name: tree
+        name: prefix
         required: false
         type: string
       - in: query
@@ -1853,7 +1855,7 @@ paths:
       tags:
         - objects
       operationId: listObjects
-      summary: list objects under a given tree
+      summary: list objects under a given prefix
       responses:
         200:
           description: entry list
@@ -1867,7 +1869,7 @@ paths:
                 items:
                   $ref: "#/definitions/object_stats"
         404:
-          description: tree or branch not found
+          description: prefix or branch not found
           schema:
             $ref: "#/definitions/error"
         401:

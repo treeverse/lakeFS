@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/logging"
 
 	s32 "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
@@ -114,7 +115,7 @@ func TestIterator(t *testing.T) {
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
 		for _, batchSize := range []int{1, 2, 3, 4, 5, 7, 9, 11, 15, 100, 1000, 10000} {
-			inv, err := s3.GenerateInventory(context.Background(), manifestURL, &mockS3Client{
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, &mockS3Client{
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}, mockParquetReaderGetter)
 			if !test.ErrExpected && err != nil {

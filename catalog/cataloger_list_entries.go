@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ListEntriesMaxLimit        = 10000
+	ListEntriesMaxLimit        = 1000
 	ListEntriesBranchBatchSize = 32
 )
 
@@ -113,9 +113,9 @@ type readPramsType struct {
 	tx                          db.Tx
 	prefix                      string
 	branchBatchSize             int
-	lineage                     []lineageCommit
 	lowestCommitID, topCommitID CommitID
 	branchID                    int64
+	branchQueryMap              map[int64]sq.SelectBuilder
 }
 
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
@@ -136,39 +136,46 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		branchPriorityMap[l.BranchID] = i + 1
 	}
 	limit += 1 // increase limit to get indication of more rows to come
-	unionQueryParts := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
+	branchQueryMap := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
 	endOfPrefixRange := prefix + DirectoryTermination
 
+	var exactFirst bool
 	var listAfter string
 	if len(after) == 0 {
 		listAfter = prefix
+		exactFirst = true
 	} else {
+		if strings.HasSuffix(after, delimiter) {
+			after += DirectoryTermination
+		}
 		listAfter = after
+		exactFirst = false
 	}
 	var markerList []string
 	readParams := readPramsType{
 		tx:              tx,
 		prefix:          prefix,
 		branchBatchSize: branchBatchSize,
-		lineage:         lineage,
 		lowestCommitID:  lowestCommitID,
 		topCommitID:     topCommitID,
 		branchID:        branchID,
+		branchQueryMap:  branchQueryMap,
 	}
-	first := true
+
 	for {
 		var pathCond string
-		if first {
-			first = false
+		if exactFirst {
+			exactFirst = false
 			pathCond = ">="
 		} else {
 			pathCond = ">"
 		}
-		unionSelect := unionQueryParts[0].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
-		for j := 1; j < len(lineage)+1; j++ {
+		unionSelect := branchQueryMap[branchID].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
+		for j := 0; j < len(lineage); j++ {
 			// add the path condition to each union part
+			b := lineage[j].BranchID
 			unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
-				unionQueryParts[j].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange), ")"))
+				branchQueryMap[b].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange), ")"))
 		}
 		fullQuery := sq.Select("*").FromSelect(unionSelect, "u")
 		unionSQL, args, err := fullQuery.PlaceholderFormat(sq.Dollar).ToSql()
@@ -258,30 +265,18 @@ func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int6
 }
 
 func getMoreRows(path string, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) error {
-	var topCommitID CommitID
-	if branch == readParams.branchID { // it is the base branch
-		topCommitID = readParams.topCommitID
-	} else {
-		for _, l := range readParams.lineage {
-			if branch == l.BranchID {
-				topCommitID = l.CommitID
-				break
-			}
-		}
-	}
 	// have to re-read the last entry, because otherwise the expression becomes complex and the optimizer gets NUTS
 	//so read size must be the batch size + whatever results were left from the last entry
 	// If readBuf is not extended - there will be an endless loop if number of results is bigger than batch size.
 	requiredBufferSize := readParams.branchBatchSize + len(branchRanges[branch])
 	readBuf := make([]resultRow, 0, requiredBufferSize)
-	singleSelect := selectSingleBranch(branch, branch == readParams.branchID, requiredBufferSize, readParams.lowestCommitID, topCommitID, len(readParams.prefix))
+	singleSelect := readParams.branchQueryMap[branch]
 	requestedPath := readParams.prefix + path
-	singleSelect = singleSelect.Where("path >= ? and path < ?", requestedPath, readParams.prefix+DirectoryTermination)
+	singleSelect = singleSelect.Where("path >= ? and path < ?", requestedPath, readParams.prefix+DirectoryTermination).Limit(uint64(requiredBufferSize))
 	s, args, err := singleSelect.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return err
 	}
-
 	err = readParams.tx.Select(&readBuf, s, args...)
 	if len(branchRanges[branch]) == len(readBuf) {
 		err = sql.ErrNoRows
@@ -318,24 +313,23 @@ func findLowestResultInBranches(branchRanges map[int64][]resultRow, branchPriori
 }
 
 func checkPathNotDeleted(pathResults []resultRow) bool {
-	if pathResults[0].MaxCommit != MaxCommitID { // top is deleted
-		return false
-	} // top path not deleted, but may have uncommitted tombstone
-	for _, r := range pathResults[1:] {
-		if r.MinCommit == 0 && r.MaxCommit == 0 { // uncommitted tombstone - has precedence
-			return false
-		}
+	lastRow := pathResults[len(pathResults)-1]
+	firstRow := pathResults[0]
+	if lastRow.MinCommit == 0 { // uncommitted
+		return lastRow.MaxCommit == MaxCommitID // true if uncommitted entry, false if tombstone
+	} else { // no uncommitted entry
+		return firstRow.MaxCommit == MaxCommitID // true if result with highest min_commit is not deleted
 	}
-	return true
 }
 
-func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int, lowestCommitID, topCommitID CommitID, prefixLen int) []sq.SelectBuilder {
-	unionParts := make([]sq.SelectBuilder, len(lineage)+1)
-	unionParts[0] = selectSingleBranch(baseBranchID, true, branchEntryLimit, lowestCommitID, topCommitID, prefixLen)
-	for i, l := range lineage {
-		unionParts[i+1] = selectSingleBranch(l.BranchID, false, branchEntryLimit, 1, l.CommitID, prefixLen)
+func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int,
+	lowestCommitID, topCommitID CommitID, prefixLen int) map[int64]sq.SelectBuilder {
+	unionMap := make(map[int64]sq.SelectBuilder)
+	unionMap[baseBranchID] = selectSingleBranch(baseBranchID, true, branchEntryLimit, lowestCommitID, topCommitID, prefixLen)
+	for _, l := range lineage {
+		unionMap[l.BranchID] = selectSingleBranch(l.BranchID, false, branchEntryLimit, 1, l.CommitID, prefixLen)
 	}
-	return unionParts
+	return unionMap
 }
 
 func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, lowestCommitID, topCommitID CommitID, prefixLen int) sq.SelectBuilder {

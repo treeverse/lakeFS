@@ -2,12 +2,13 @@ package catalog
 
 import (
 	"strconv"
+	"unicode/utf8"
 
 	sq "github.com/Masterminds/squirrel"
 )
 
 const (
-	DirectoryTerminationValue = 1_000_000
+	DirectoryTerminationValue = utf8.MaxRune
 	DirectoryTermination      = string(rune(DirectoryTerminationValue))
 )
 
@@ -125,7 +126,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 											(l.commit_id >= f.min_commit AND
 											 (l.commit_id > f.max_commit OR NOT f.is_deleted))
 										   ))) 
-											AS DifferenceTypeConflict `, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
+											AS DifferenceTypeConflict`, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
 		FromSelect(sqEntriesV(CommittedID).Distinct().
 			Options(" on (branch_id,path)").
 			OrderBy("branch_id", "path", "min_commit desc").

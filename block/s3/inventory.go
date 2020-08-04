@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
 )
@@ -41,23 +42,23 @@ type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket 
 
 type CloseFunc func() error
 
-func (s *Adapter) GenerateInventory(ctx context.Context, manifestURL string) (block.Inventory, error) {
-	return GenerateInventory(ctx, manifestURL, s.s3, getParquetReader)
+func (s *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string) (block.Inventory, error) {
+	return GenerateInventory(ctx, logger, manifestURL, s.s3, getParquetReader)
 }
 
-func GenerateInventory(ctx context.Context, manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
+func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
 	m, err := loadManifest(manifestURL, s3)
 	if err != nil {
 		return nil, err
 	}
-	err = readFileMetadata(ctx, s3, getParquetReader, m)
-	if err != nil {
-		return nil, err
+	err = readFileMetadata(ctx, logger, s3, getParquetReader, m)
+	if logger == nil {
+		logger = logging.Default()
 	}
 	sort.Slice(m.Files, func(i, j int) bool {
 		return m.firstKeyByFilename[m.Files[i].Key] < m.firstKeyByFilename[m.Files[j].Key]
 	})
-	return &Inventory{Manifest: m, S3: s3, getParquetReader: getParquetReader}, nil
+	return &Inventory{Manifest: m, S3: s3, getParquetReader: getParquetReader, logger: logger}, nil
 }
 
 type Inventory struct {
@@ -65,6 +66,7 @@ type Inventory struct {
 	Manifest         *manifest
 	ctx              context.Context
 	getParquetReader parquetReaderGetter
+	logger           logging.Logger
 }
 
 func (inv *Inventory) Iterator() block.InventoryIterator {
@@ -79,7 +81,7 @@ func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
 }
 
-func readFileMetadata(ctx context.Context, s3 s3iface.S3API, getParquetReader parquetReaderGetter, m *manifest) error {
+func readFileMetadata(ctx context.Context, logger logging.Logger, s3 s3iface.S3API, getParquetReader parquetReaderGetter, m *manifest) error {
 	m.numRowsByFilename = make(map[string]int, len(m.Files))
 	m.firstKeyByFilename = make(map[string]string, len(m.Files))
 	for i := range m.Files {
@@ -100,7 +102,11 @@ func readFileMetadata(ctx context.Context, s3 s3iface.S3API, getParquetReader pa
 		if len(rows) != 0 {
 			m.firstKeyByFilename[filename] = rows[0].Key
 		}
-		_ = closeReader()
+		err = closeReader()
+		if err != nil {
+			logger.WithFields(logging.Fields{"bucket": m.invBucket, "key": filename}).
+				Error("failed to close parquet reader in readFileMetadata")
+		}
 	}
 	return nil
 }

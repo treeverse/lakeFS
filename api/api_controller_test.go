@@ -833,7 +833,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Ref:        "master",
 			Repository: "repo1",
-			Tree:       swag.String("foo/"),
+			Prefix:     swag.String("foo/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -846,7 +846,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 		resp, err = clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Ref:        "master:HEAD",
 			Repository: "repo1",
-			Tree:       swag.String("/"),
+			Prefix:     swag.String("/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -861,7 +861,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			Amount:     swag.Int64(2),
 			Ref:        "master",
 			Repository: "repo1",
-			Tree:       swag.String("foo/"),
+			Prefix:     swag.String("foo/"),
 		}, bauth)
 		if err != nil {
 			t.Fatal(err)
@@ -1040,6 +1040,20 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 		}
 		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
 			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+		}
+	})
+
+	t.Run("upload object missing branch", func(t *testing.T) {
+		buf := new(bytes.Buffer)
+		buf.WriteString("hello world this is my awesome content")
+		_, err := clt.Objects.UploadObject(&objects.UploadObjectParams{
+			Branch:     "masterX",
+			Content:    runtime.NamedReader("content", buf),
+			Path:       "foo/bar",
+			Repository: "repo1",
+		}, bauth)
+		if _, ok := err.(*objects.UploadObjectNotFound); !ok {
+			t.Fatal("Missing branch should return not found")
 		}
 	})
 

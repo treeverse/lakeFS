@@ -8,10 +8,6 @@ has_children: false
 # Downloads
 {: .no_toc }
 
-**Disclaimer:** This is an early access version intended for collecting feedback and should not be used in production. API and data model are expected to change.
-{: .note .pb-3 }
-
-
 ## Table of contents
 {: .no_toc .text-delta }
 

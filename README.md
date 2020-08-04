@@ -18,7 +18,7 @@ lakeFS is API compatible with AWS S3 and works seamlessly with all modern data f
   <img src="docs/assets/img/wrapper.png"/>
 </p>
 
-For more information see the [Official Documentation](https://docs.lakefs.io/).
+For more information see the [Official Documentation](https://docs.lakefs.io).
 
 ## Capabilities
 
@@ -56,6 +56,7 @@ All reads from that branch are    guaranteed to always return the same results.
           LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
           LAKEFS_BLOCKSTORE_TYPE: local
           LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
         entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
       postgres:
         image: "postgres:11"
@@ -76,27 +77,27 @@ All reads from that branch are    guaranteed to always return the same results.
 
 Alternatively, you can download the lakeFS binaries and run them directly.
 
-Binaries are available at [https://releases.lakefs.io](https://releases.lakefs.io).
+Binaries are available at [https://github.com/treeverse/lakeFS/releases](https://github.com/treeverse/lakeFS/releases).
 
 
 #### Setting up a repository
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart.html#setting-up-a-repository) to set up your local lakeFS installation.
 
-For more detailed inforamation on how to setup lakeFS, please visit [the documentation](https://docs.lakefs.io/)
+For more detailed inforamation on how to setup lakeFS, please visit [the documentation](https://docs.lakefs.io)
 
 ## Community
 
 Keep up to date and get lakeFS support via:
 
 - Join our [Community Slack Channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) to get help from our team and other users.
-- Follow us on [Twitter](https://twitter.com/lake_FS).
-- [Contact us](mailto:hello@treeverse.io)
+- Follow us on [Twitter](https://twitter.com/lakeFS).
+- [Contact us](https://lakefs.io/contact-us/)
 
 ## More information
 
-- [lakeFS documentation](https://docs.lakefs.io/)
-- If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing/).
+- [lakeFS documentation](https://docs.lakefs.io)
+- If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
 
 ## Licensing
 

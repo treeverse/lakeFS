@@ -13,19 +13,19 @@ func transformDifferenceToMergeResult(difference catalog.Difference) *models.Mer
 	}
 	switch difference.Type {
 	case catalog.DifferenceTypeAdded:
-		mr.Type = models.MergeResultTypeADDED
+		mr.Type = models.MergeResultTypeAdded
 	case catalog.DifferenceTypeRemoved:
-		mr.Type = models.MergeResultTypeREMOVED
+		mr.Type = models.MergeResultTypeRemoved
 	case catalog.DifferenceTypeChanged:
-		mr.Type = models.MergeResultTypeCHANGED
+		mr.Type = models.MergeResultTypeChanged
 	case catalog.DifferenceTypeConflict:
-		mr.Type = models.MergeResultTypeCONFLICT
+		mr.Type = models.MergeResultTypeConflict
 	}
 
 	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
-		mr.PathType = models.MergeResultPathTypeTREE
+		mr.PathType = models.MergeResultPathTypeCommonPrefix
 	} else {
-		mr.PathType = models.MergeResultPathTypeOBJECT
+		mr.PathType = models.MergeResultPathTypeObject
 	}
 	return mr
 }
@@ -36,19 +36,19 @@ func transformDifferenceToDiff(difference catalog.Difference) *models.Diff {
 	}
 	switch difference.Type {
 	case catalog.DifferenceTypeAdded:
-		d.Type = models.DiffTypeADDED
+		d.Type = models.DiffTypeAdded
 	case catalog.DifferenceTypeRemoved:
-		d.Type = models.DiffTypeREMOVED
+		d.Type = models.DiffTypeRemoved
 	case catalog.DifferenceTypeChanged:
-		d.Type = models.DiffTypeCHANGED
+		d.Type = models.DiffTypeChanged
 	case catalog.DifferenceTypeConflict:
-		d.Type = models.DiffTypeCONFLICT
+		d.Type = models.DiffTypeConflict
 	}
 
 	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
-		d.PathType = models.DiffPathTypeTREE
+		d.PathType = models.DiffPathTypeCommonPrefix
 	} else {
-		d.PathType = models.DiffPathTypeOBJECT
+		d.PathType = models.DiffPathTypeObject
 	}
 	return d
 }
