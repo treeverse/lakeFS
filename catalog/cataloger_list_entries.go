@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	ListEntriesMaxLimit        = 10000
+	ListEntriesMaxLimit        = 1000
 	ListEntriesBranchBatchSize = 32
 )
 
@@ -136,7 +136,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		branchPriorityMap[l.BranchID] = i + 1
 	}
 	limit += 1 // increase limit to get indication of more rows to come
-	unionQueryParts, branchQueryMap := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
+	branchQueryMap := buildBaseLevelQuery(branchID, lineage, branchBatchSize, lowestCommitID, topCommitID, len(prefix))
 	endOfPrefixRange := prefix + DirectoryTermination
 
 	var exactFirst bool
@@ -170,11 +170,12 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		} else {
 			pathCond = ">"
 		}
-		unionSelect := unionQueryParts[0].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
-		for j := 1; j < len(lineage)+1; j++ {
+		unionSelect := branchQueryMap[branchID].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange).Prefix("(").Suffix(")")
+		for j := 0; j < len(lineage); j++ {
 			// add the path condition to each union part
+			b := lineage[j].BranchID
 			unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
-				unionQueryParts[j].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange), ")"))
+				branchQueryMap[b].Where("path "+pathCond+" ? and path < ?", listAfter, endOfPrefixRange), ")"))
 		}
 		fullQuery := sq.Select("*").FromSelect(unionSelect, "u")
 		unionSQL, args, err := fullQuery.PlaceholderFormat(sq.Dollar).ToSql()
@@ -322,16 +323,13 @@ func checkPathNotDeleted(pathResults []resultRow) bool {
 }
 
 func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntryLimit int,
-	lowestCommitID, topCommitID CommitID, prefixLen int) ([]sq.SelectBuilder, map[int64]sq.SelectBuilder) {
-	unionParts := make([]sq.SelectBuilder, len(lineage)+1)
+	lowestCommitID, topCommitID CommitID, prefixLen int) map[int64]sq.SelectBuilder {
 	unionMap := make(map[int64]sq.SelectBuilder)
-	unionParts[0] = selectSingleBranch(baseBranchID, true, branchEntryLimit, lowestCommitID, topCommitID, prefixLen)
-	unionMap[baseBranchID] = unionParts[0]
-	for i, l := range lineage {
-		unionParts[i+1] = selectSingleBranch(l.BranchID, false, branchEntryLimit, 1, l.CommitID, prefixLen)
-		unionMap[l.BranchID] = unionParts[i+1]
+	unionMap[baseBranchID] = selectSingleBranch(baseBranchID, true, branchEntryLimit, lowestCommitID, topCommitID, prefixLen)
+	for _, l := range lineage {
+		unionMap[l.BranchID] = selectSingleBranch(l.BranchID, false, branchEntryLimit, 1, l.CommitID, prefixLen)
 	}
-	return unionParts, unionMap
+	return unionMap
 }
 
 func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, lowestCommitID, topCommitID CommitID, prefixLen int) sq.SelectBuilder {
