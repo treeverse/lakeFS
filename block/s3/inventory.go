@@ -11,6 +11,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
 )
@@ -37,22 +38,26 @@ type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket 
 
 type CloseFunc func() error
 
-func (s *Adapter) GenerateInventory(manifestURL string) (block.Inventory, error) {
-	return GenerateInventory(manifestURL, s.s3, getParquetReader)
+func (s *Adapter) GenerateInventory(logger logging.Logger, manifestURL string) (block.Inventory, error) {
+	return GenerateInventory(logger, manifestURL, s.s3, getParquetReader)
 }
 
-func GenerateInventory(manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
+func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
 	manifest, err := loadManifest(manifestURL, s3)
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: manifest, S3: s3, getParquetReader: getParquetReader}, nil
+	if logger == nil {
+		logger = logging.Default()
+	}
+	return &Inventory{Manifest: manifest, S3: s3, getParquetReader: getParquetReader, logger: logger}, nil
 }
 
 type Inventory struct {
 	S3               s3iface.S3API
 	Manifest         *manifest
 	getParquetReader parquetReaderGetter
+	logger           logging.Logger
 }
 
 func (inv *Inventory) Iterator(ctx context.Context) (block.InventoryIterator, error) {

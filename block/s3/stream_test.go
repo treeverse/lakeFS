@@ -68,7 +68,7 @@ func TestS3StreamingReader_Read(t *testing.T) {
 			req, _ := http.NewRequest(http.MethodPut, "https://s3.amazonaws.com/example/foo", nil)
 			req.Header.Set("Content-Encoding", "aws-chunked")
 			req.Header.Set("Transfer-Encoding", "chunked")
-			req.Header.Set("x-amz-content-sha", fmt.Sprintf("STREAMING-AWS4-HMAC-SHA256-PAYLOAD"))
+			req.Header.Set("x-amz-content-sha", "STREAMING-AWS4-HMAC-SHA256-PAYLOAD")
 			req.Header.Set("x-amz-decoded-content-length", fmt.Sprintf("%d", len(cas.Input)))
 			req.Header.Set("Expect", "100-Continue")
 			baseSigner := v4.NewSigner(keys)

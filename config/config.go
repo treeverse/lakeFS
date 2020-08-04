@@ -123,7 +123,7 @@ func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
 		errors = append(errors, "blockstore.s3.retention.role_arn")
 	}
 
-	manifestBaseUrl, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
+	manifestBaseURL, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("blockstore.s3.retention.manifest_base_url: %s", err))
 	}
@@ -132,7 +132,7 @@ func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
 	}
 	return AwsS3RetentionConfig{
 		RoleArn:         roleArn,
-		ManifestBaseUrl: manifestBaseUrl,
+		ManifestBaseUrl: manifestBaseURL,
 	}
 }
 
@@ -162,12 +162,12 @@ func GetAccount(awsConfig *aws.Config) (string, error) {
 	}
 	sess.ClientConfig(sts.ServiceName)
 	svc := sts.New(sess)
-	accessKeyId := viper.GetString("blockstore.s3.credentials.access_key_id")
+	accessKeyID := viper.GetString("blockstore.s3.credentials.access_key_id")
 	account, err := svc.GetAccessKeyInfo(&sts.GetAccessKeyInfoInput{
-		AccessKeyId: aws.String(accessKeyId),
+		AccessKeyId: aws.String(accessKeyID),
 	})
 	if err != nil {
-		return "", fmt.Errorf("get access key info for %s: %w", accessKeyId, err)
+		return "", fmt.Errorf("get access key info for %s: %w", accessKeyID, err)
 	}
 	return *account.Account, nil
 }
