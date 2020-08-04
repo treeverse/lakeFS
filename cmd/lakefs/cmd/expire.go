@@ -44,13 +44,14 @@ var expireCmd = &cobra.Command{
 		expiryParams := retention.ExpireOnS3Params{
 			AccountId: accountID,
 			RoleArn:   awsRetentionConfig.RoleArn,
-			ManifestUrlForBucket: func(x string) string {
+			ManifestURLForBucket: func(x string) string {
 				u, err := url.Parse(x)
 				if err != nil {
 					panic(fmt.Sprintf("failed to create URL from %s: %s", x, err))
 				}
-				return awsRetentionConfig.ManifestBaseUrl.ResolveReference(u).String()
+				return awsRetentionConfig.ManifestBaseURL.ResolveReference(u).String()
 			},
+			ReportS3PrefixURL: awsRetentionConfig.ReportS3PrefixURL,
 		}
 
 		s3ControlSession := session.Must(session.NewSession(awsCfg))

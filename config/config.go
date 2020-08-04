@@ -112,8 +112,9 @@ func (c *Config) BuildDatabaseConnection() db.Database {
 }
 
 type AwsS3RetentionConfig struct {
-	RoleArn         string
-	ManifestBaseUrl *url.URL
+	RoleArn           string
+	ManifestBaseURL   *url.URL
+	ReportS3PrefixURL *string
 }
 
 func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
@@ -130,9 +131,15 @@ func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
 	if len(errors) > 0 {
 		panic(fmt.Sprintf("need %s to handle retention on S3", strings.Join(errors, ", ")))
 	}
+	var reportS3PrefixURL *string
+	prefixURL := viper.GetString("blockstore.s3.retention.report_s3_prefix_url")
+	if prefixURL != "" {
+		reportS3PrefixURL = &prefixURL
+	}
 	return AwsS3RetentionConfig{
-		RoleArn:         roleArn,
-		ManifestBaseUrl: manifestBaseURL,
+		RoleArn:           roleArn,
+		ManifestBaseURL:   manifestBaseURL,
+		ReportS3PrefixURL: reportS3PrefixURL,
 	}
 }
 
