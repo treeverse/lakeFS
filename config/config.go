@@ -155,14 +155,26 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	return cfg
 }
 
+func GetAwsAccessKeyID(awsConfig *aws.Config) (string, error) {
+	awsCredentials, err := awsConfig.Credentials.Get()
+	if err != nil {
+		return "", fmt.Errorf("access AWS credentials: %w", err)
+	}
+	return awsCredentials.AccessKeyID, nil
+}
+
 func GetAccount(awsConfig *aws.Config) (string, error) {
+	accessKeyID, err := GetAwsAccessKeyID(awsConfig)
+	if err != nil {
+		return "", err
+	}
 	sess, err := session.NewSession(awsConfig)
 	if err != nil {
 		return "", fmt.Errorf("get AWS session: %w", err)
 	}
 	sess.ClientConfig(sts.ServiceName)
 	svc := sts.New(sess)
-	accessKeyID := viper.GetString("blockstore.s3.credentials.access_key_id")
+
 	account, err := svc.GetAccessKeyInfo(&sts.GetAccessKeyInfoInput{
 		AccessKeyId: aws.String(accessKeyID),
 	})
