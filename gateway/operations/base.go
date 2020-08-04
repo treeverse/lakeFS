@@ -9,11 +9,10 @@ import (
 	"io/ioutil"
 	"net/http"
 
-	"github.com/treeverse/lakefs/dedup"
-
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway/errors"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/httputil"
@@ -37,7 +36,7 @@ type Operation struct {
 	DedupCleaner   *dedup.Cleaner
 }
 
-func (o *Operation) RequestId() string {
+func (o *Operation) RequestID() string {
 	req, rid := httputil.RequestID(o.Request)
 	o.Request = req
 	return rid
@@ -131,7 +130,7 @@ func (o *Operation) EncodeError(e errors.APIError) {
 		Key:        "",
 		Resource:   "",
 		Region:     o.Region,
-		RequestID:  o.RequestId(),
+		RequestID:  o.RequestID(),
 		HostID:     auth.HexStringGenerator(8), // just for compatibility, meaningless in our case
 	}, e.HTTPStatusCode)
 	if err != nil {
@@ -157,7 +156,7 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 		Key:        "",
 		Resource:   o.Repository.Name,
 		Region:     o.Region,
-		RequestID:  o.RequestId(),
+		RequestID:  o.RequestID(),
 		HostID:     auth.HexStringGenerator(8),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
@@ -183,7 +182,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		Key:        o.Path,
 		Resource:   fmt.Sprintf("%s@%s", o.Reference, o.Repository.Name),
 		Region:     o.Region,
-		RequestID:  o.RequestId(),
+		RequestID:  o.RequestID(),
 		HostID:     auth.HexStringGenerator(8),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {

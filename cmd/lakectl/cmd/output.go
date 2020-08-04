@@ -30,6 +30,7 @@ const resourceListTemplate = `{{.Table | table -}}
 {{.Pagination | paginate }}
 `
 
+//nolint:gochecknoinits
 func init() {
 	// disable colors if we're not attached to interactive TTY
 	if !terminal.IsTerminal(int(os.Stdout.Fd())) || os.Getenv(LakectlInteractive) == LakectlInteractiveDisable || noColorRequested {
