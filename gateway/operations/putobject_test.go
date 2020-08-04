@@ -14,7 +14,6 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/logging"
-
 	"github.com/treeverse/lakefs/upload"
 )
 
@@ -93,9 +92,8 @@ func (s *mockAdapter) GenerateInventory(_ logging.Logger, _ string) (block.Inven
 }
 
 var (
-	expensiveString    = "EXPENSIVE"
-	cheapString        = "CHEAP"
-	neverCreatedString = "NEVER_CREATED"
+	expensiveString = "EXPENSIVE"
+	cheapString     = "CHEAP"
 )
 
 func TestReadBlob(t *testing.T) {

@@ -137,6 +137,7 @@ var fsCmd = &cobra.Command{
 	Short: "view and manipulate objects",
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(fsCmd)
 	fsCmd.AddCommand(fsStatCmd)

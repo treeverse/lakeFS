@@ -201,17 +201,8 @@ func insertEntry(ctx context.Context, database db.Database, branchID int64, entr
 	return err
 }
 
+//nolint:gochecknoinits
 func init() {
 	dbCmd.AddCommand(entryCmd)
-
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// entryCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// entryCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
 	entryCmd.Flags().BoolP("trace", "t", false, "Run trace")
 }
