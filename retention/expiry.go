@@ -166,29 +166,56 @@ type BatchTagOnS3BucketParams struct {
 	BucketName string
 
 	// Path to use for manifest on S3, in "S3BatchOperations_CSV_20180820" format
-	ManifestUrl string
+	ManifestURL string
+
+	// If present, S3 prefix for reporting
+	ReportS3PrefixURL *string
+}
+
+type s3Pointer struct {
+	Bucket string
+	Key    string
+}
+
+func (sp s3Pointer) GetBucketArn() string {
+	return fmt.Sprintf("arn:aws:s3:::%s", sp.Bucket)
+}
+
+func (sp s3Pointer) GetArn() string {
+	return fmt.Sprintf("arn:aws:s3:::%s/%s", sp.Bucket, sp.Key)
+}
+
+func parseS3URL(s3URL string) (s3Pointer, error) {
+	url, err := url.Parse(s3URL)
+	if err != nil {
+		return s3Pointer{}, fmt.Errorf("parse S3 URL %s: %w", s3URL, err)
+	}
+	if url.Scheme != "s3" {
+		return s3Pointer{}, fmt.Errorf("URL %s not on S3: %w", s3URL, err)
+	}
+	trimmedPath := strings.TrimPrefix(url.Path, "/")
+	return s3Pointer{
+		Bucket: url.Host,
+		Key:    trimmedPath,
+	}, nil
 }
 
 // BatchTagOnS3Bucket uses client (which should be on the right region) to start an AWS S3 batch
 // tagging operation in bucket according to the CSV contents of reader.
 func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, reader io.ReadSeeker, params *BatchTagOnS3BucketParams) error {
-	manifestUrl, err := url.Parse(params.ManifestUrl)
+	manifestURL, err := parseS3URL(params.ManifestURL)
 	if err != nil {
-		return fmt.Errorf("parse manifest URL %s: %w", params.ManifestUrl, err)
+		return fmt.Errorf("manifest: %w", err)
 	}
 	logger := logging.FromContext(ctx).WithFields(logging.Fields{
-		"manifest": params.ManifestUrl,
+		"manifest": params.ManifestURL,
 		"bucket":   params.BucketName,
 	})
-	if manifestUrl.Scheme != "s3" {
-		return fmt.Errorf("manifest URL %s not on S3", params.ManifestUrl)
-	}
-	trimmedPath := strings.TrimPrefix(manifestUrl.Path, "/")
 	// Upload to S3 and get ETag.
 	manifestParams := s3.PutObjectInput{
 		Body:    reader,
-		Bucket:  &manifestUrl.Host,
-		Key:     &trimmedPath,
+		Bucket:  &manifestURL.Bucket,
+		Key:     &manifestURL.Key,
 		Tagging: aws.String("service=lakeFS&type=retention-manifest"),
 	}
 	upload, err := s3Client.PutObject(&manifestParams)
@@ -198,7 +225,22 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 	// PutObject includes _quotes_ around the etag.  Strip it.
 	etag := strings.TrimSuffix(strings.TrimPrefix(*upload.ETag, "\""), "\"")
 	logger.WithField("etag", etag).Info("Manifest uploaded")
-	manifestArn := fmt.Sprintf("arn:aws:s3:::%s/%s", manifestUrl.Host, trimmedPath)
+
+	report := s3control.JobReport{
+		Enabled: aws.Bool(false),
+	}
+	if params.ReportS3PrefixURL != nil {
+		reportS3PrefixURL, err := parseS3URL(*params.ReportS3PrefixURL)
+		if err != nil {
+			return fmt.Errorf("report: %w", err)
+		}
+		report.SetEnabled(true)
+		report.SetFormat(s3control.JobReportFormatReportCsv20180820)
+		report.SetBucket(reportS3PrefixURL.GetBucketArn())
+		report.SetPrefix(reportS3PrefixURL.Key)
+		// TODO(ariels): Configure to report failed tasks only?
+		report.SetReportScope(s3control.JobReportScopeAllTasks)
+	}
 
 	input := s3control.CreateJobInput{
 		AccountId:            &params.AccountId,
@@ -208,7 +250,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 		Manifest: &s3control.JobManifest{
 			Location: &s3control.JobManifestLocation{
 				ETag:      aws.String(etag),
-				ObjectArn: aws.String(manifestArn),
+				ObjectArn: aws.String(manifestURL.GetArn()),
 			},
 			Spec: &s3control.JobManifestSpec{
 				Fields: []*string{aws.String("Bucket"), aws.String("Key")},
@@ -223,9 +265,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 		// TODO(ariels): allow configuration
 		Priority: aws.Int64(10),
 		// TODO(ariels): allow configuration of Report field
-		Report: &s3control.JobReport{
-			Enabled: aws.Bool(false),
-		},
+		Report:  &report,
 		RoleArn: &params.RoleArn,
 		Tags: []*s3control.S3Tag{
 			{Key: aws.String("service"), Value: aws.String("lakeFS")},
@@ -249,7 +289,8 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 type ExpireOnS3Params struct {
 	AccountId            string
 	RoleArn              string
-	ManifestUrlForBucket func(string) string
+	ManifestURLForBucket func(string) string
+	ReportS3PrefixURL    *string
 }
 
 // ExpireOnS3 starts a goroutine to expire all entries on expiryResultsReader and returns a
@@ -271,16 +312,17 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 		}
 		tagCh := make(chan doneRec)
 		for bucketName, manifestReader := range manifests {
-			manifestUrl := params.ManifestUrlForBucket(bucketName)
-			bucketLogger := logger.WithFields(logging.Fields{"bucket": bucketName, "manifest_url": manifestUrl})
-			bucketFields := errFields.WithFields(Fields{"bucket": bucketName, "manifest_url": manifestUrl})
+			manifestURL := params.ManifestURLForBucket(bucketName)
+			bucketLogger := logger.WithFields(logging.Fields{"bucket": bucketName, "manifest_url": manifestURL})
+			bucketFields := errFields.WithFields(Fields{"bucket": bucketName, "manifest_url": manifestURL})
 			bucketLogger.Info("start expiry on S3")
 			go func(bucketName string, manifestReader io.ReadSeeker) {
 				params := BatchTagOnS3BucketParams{
-					AccountId:   params.AccountId,
-					RoleArn:     params.RoleArn,
-					BucketName:  bucketName,
-					ManifestUrl: manifestUrl,
+					AccountId:         params.AccountId,
+					RoleArn:           params.RoleArn,
+					BucketName:        bucketName,
+					ManifestURL:       manifestURL,
+					ReportS3PrefixURL: params.ReportS3PrefixURL,
 				}
 				err := BatchTagOnS3Bucket(ctx, s3ControlClient, s3Client, manifestReader, &params)
 				if err != nil {
