@@ -23,13 +23,13 @@ type manifest struct {
 	SourceBucket       string         `json:"sourceBucket"`
 	Files              []manifestFile `json:"files"`
 	Format             string         `json:"fileFormat"`
-	invBucket          string
-	firstKeyByFilename map[string]string
-	numRowsByFilename  map[string]int
+	inventoryBucket    string
 }
 
 type manifestFile struct {
-	Key string `json:"key"`
+	Key      string `json:"key"`
+	firstKey string
+	numRows  int
 }
 
 type ParquetReader interface {
@@ -38,7 +38,7 @@ type ParquetReader interface {
 	SkipRows(int64) error
 }
 
-type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, CloseFunc, error)
+type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, inventoryBucket string, manifestFileKey string) (ParquetReader, CloseFunc, error)
 
 type CloseFunc func() error
 
@@ -51,12 +51,15 @@ func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL s
 	if err != nil {
 		return nil, err
 	}
-	err = readFileMetadata(ctx, logger, s3, getParquetReader, m)
+	err = m.readFileMetadata(ctx, logger, s3, getParquetReader)
+	if err != nil {
+		return nil, err
+	}
 	if logger == nil {
 		logger = logging.Default()
 	}
 	sort.Slice(m.Files, func(i, j int) bool {
-		return m.firstKeyByFilename[m.Files[i].Key] < m.firstKeyByFilename[m.Files[j].Key]
+		return m.Files[i].firstKey < m.Files[j].firstKey
 	})
 	return &Inventory{Manifest: m, S3: s3, getParquetReader: getParquetReader, logger: logger}, nil
 }
@@ -81,31 +84,27 @@ func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
 }
 
-func readFileMetadata(ctx context.Context, logger logging.Logger, s3 s3iface.S3API, getParquetReader parquetReaderGetter, m *manifest) error {
-	m.numRowsByFilename = make(map[string]int, len(m.Files))
-	m.firstKeyByFilename = make(map[string]string, len(m.Files))
+func (m *manifest) readFileMetadata(ctx context.Context, logger logging.Logger, s3 s3iface.S3API, getParquetReader parquetReaderGetter) error {
 	for i := range m.Files {
 		filename := m.Files[i].Key
-		pr, closeReader, err := getParquetReader(ctx, s3, m.invBucket, filename)
+		pr, closeReader, err := getParquetReader(ctx, s3, m.inventoryBucket, filename)
 		if err != nil {
 			return err
 		}
-		m.numRowsByFilename[filename] = int(pr.GetNumRows())
-
+		m.Files[i].numRows = int(pr.GetNumRows())
 		// read first row from file to store the first key:
 		rows := make([]ParquetInventoryObject, 1)
 		err = pr.Read(&rows)
 		if err != nil {
 			return err
 		}
-		m.firstKeyByFilename[filename] = ""
-		if len(rows) != 0 {
-			m.firstKeyByFilename[filename] = rows[0].Key
-		}
 		err = closeReader()
 		if err != nil {
-			logger.WithFields(logging.Fields{"bucket": m.invBucket, "key": filename}).
-				Error("failed to close parquet reader in readFileMetadata")
+			logger.WithFields(logging.Fields{"bucket": m.inventoryBucket, "key": filename}).
+				Error("failed to close parquet reader after reading metadata")
+		}
+		if len(rows) != 0 {
+			m.Files[i].firstKey = rows[0].Key
 		}
 	}
 	return nil
@@ -133,12 +132,12 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
-	m.invBucket = inventoryBucketArn.Resource
+	m.inventoryBucket = inventoryBucketArn.Resource
 	return &m, nil
 }
 
-func getParquetReader(ctx context.Context, svc s3iface.S3API, invBucket string, manifestFileKey string) (ParquetReader, CloseFunc, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, invBucket, manifestFileKey)
+func getParquetReader(ctx context.Context, svc s3iface.S3API, inventoryBucket string, manifestFileKey string) (ParquetReader, CloseFunc, error) {
+	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, svc, inventoryBucket, manifestFileKey)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
