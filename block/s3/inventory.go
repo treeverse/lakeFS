@@ -67,7 +67,7 @@ func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL s
 type Inventory struct {
 	S3               s3iface.S3API
 	Manifest         *manifest
-	ctx              context.Context
+	ctx              context.Context //nolint:structcheck // known issue: https://github.com/golangci/golangci-lint/issues/826)
 	getParquetReader parquetReaderGetter
 	logger           logging.Logger
 }
