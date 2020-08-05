@@ -167,11 +167,7 @@ CREATE TABLE catalog_multipart_uploads (
 CREATE TABLE catalog_object_dedup (
     repository_id integer NOT NULL,
     dedup_id bytea NOT NULL,
-    physical_address character varying NOT NULL,
-    -- Set before deleting an object to indicate it is going to be
-    -- removed by an AWS S3 batch operation and cannot be used for new
-    -- dedupes.
-    deleting boolean DEFAULT false NOT NULL
+    physical_address character varying NOT NULL
 );
 
 CREATE TABLE catalog_repositories (
@@ -212,7 +208,7 @@ ALTER TABLE ONLY catalog_multipart_uploads
     ADD CONSTRAINT catalog_multipart_uploads_pk PRIMARY KEY (upload_id);
 
 ALTER TABLE ONLY catalog_object_dedup
-    ADD CONSTRAINT catalog_object_dedup_pk PRIMARY KEY (repository_id, dedup_id, deleting);
+    ADD CONSTRAINT catalog_object_dedup_pk PRIMARY KEY (repository_id, dedup_id);
 
 ALTER TABLE ONLY catalog_repositories
     ADD CONSTRAINT catalog_repositories_pk PRIMARY KEY (id);
