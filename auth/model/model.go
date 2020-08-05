@@ -49,6 +49,10 @@ type Statement struct {
 
 type Statements []Statement
 
+var (
+	ErrInvalidStatementSrcFormat = errors.New("invalid statements src format")
+)
+
 func (s Statements) Value() (driver.Value, error) {
 	if s == nil {
 		return json.Marshal([]struct{}{})
@@ -62,7 +66,7 @@ func (s *Statements) Scan(src interface{}) error {
 	}
 	data, ok := src.([]byte)
 	if !ok {
-		return errors.New("invalid statements src format")
+		return ErrInvalidStatementSrcFormat
 	}
 	return json.Unmarshal(data, s)
 }

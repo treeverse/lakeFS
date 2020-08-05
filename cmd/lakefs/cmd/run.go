@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -146,7 +147,7 @@ var runCmd = &cobra.Command{
 		}
 
 		go func() {
-			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
 				os.Exit(1)
 			}

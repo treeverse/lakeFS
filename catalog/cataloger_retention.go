@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -56,7 +55,7 @@ func (a *RulesHolder) Value() (driver.Value, error) {
 func (a *Rules) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
-		return errors.New("type assertion to []byte failed")
+		return ErrByteSliceTypeAssertion
 	}
 	return json.Unmarshal(b, a)
 }

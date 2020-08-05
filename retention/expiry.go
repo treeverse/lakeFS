@@ -309,7 +309,10 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 		defer close(errCh)
 		manifests, err := WriteExpiryManifestsFromReader(ctx, c, expiryResultsReader)
 		if err != nil {
-			errCh <- MapError{errFields, fmt.Errorf("write per-bucket manifests for expiry: %s (no expiry performed)", err)}
+			errCh <- MapError{
+				Fields:       errFields,
+				WrappedError: fmt.Errorf("write per-bucket manifests for expiry: %w (no expiry performed)", err),
+			}
 			return
 		}
 		type doneRec struct {
@@ -377,7 +380,7 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 			recordFields = recordFields.WithField("record", record)
 			repository, err := c.GetRepository(ctx, record.Repository)
 			if err != nil {
-				errCh <- MapError{recordFields, fmt.Errorf("failed to get repository URI: %s; keep going, already lost this expiry", err)}
+				errCh <- MapError{recordFields, fmt.Errorf("failed to get repository URI: %w; keep going, already lost this expiry", err)}
 				continue
 			}
 			qualifiedKey, err := block.ResolveNamespace(repository.StorageNamespace, record.PhysicalAddress)

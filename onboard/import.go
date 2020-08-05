@@ -2,6 +2,7 @@ package onboard
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -31,6 +32,8 @@ type InventoryImportStats struct {
 	PreviousImportDate   time.Time
 }
 
+var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")
+
 func CreateImporter(logger logging.Logger, cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
 	res := &Importer{
 		repository:         repository,
@@ -47,7 +50,7 @@ func CreateImporter(logger logging.Logger, cataloger catalog.Cataloger, inventor
 func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (Iterator, error) {
 	previousInventoryURL := ExtractInventoryURL(commit.Metadata)
 	if previousInventoryURL == "" {
-		return nil, fmt.Errorf("no inventory_url in commit Metadata. commit_ref=%s", commit.Reference)
+		return nil, fmt.Errorf("%w. commit_ref=%s", ErrNoInventoryURL, commit.Reference)
 	}
 	previousInv, err := s.inventoryGenerator.GenerateInventory(s.logger, previousInventoryURL)
 	if err != nil {

@@ -110,7 +110,8 @@ func ParseInternalObjectRef(refString string) (InternalObjectRef, error) {
 	internalRef := string(internalRefBytes)
 	parts := strings.SplitN(internalRef, InternalObjectRefSeparator, InternalObjectRefParts)
 	if len(parts) < InternalObjectRefParts {
-		return InternalObjectRef{}, fmt.Errorf("<%d parts in internal object contents %d", InternalObjectRefParts, len(parts))
+		return InternalObjectRef{}, fmt.Errorf("%w, expected %d parts in internal object contents got %d",
+			ErrInvalidReference, InternalObjectRefParts, len(parts))
 	}
 	branchID, err := strconv.ParseInt(parts[0], 16, 64)
 	if err != nil {
