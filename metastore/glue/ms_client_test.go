@@ -163,6 +163,16 @@ func (h GlueMsMock) GetTable(input *glue.GetTableInput) (*glue.GetTableOutput, e
 	return &glue.GetTableOutput{Table: MockToTable(mockTable)}, nil
 }
 
+func (h GlueMsMock) BatchDeletePartition(input *glue.BatchDeletePartitionInput) (*glue.BatchDeletePartitionOutput, error) {
+	for _, partition := range input.PartitionsToDelete {
+		err := h.MockStore.DropPartition(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableName), aws.StringValueSlice(partition.Values))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
 func (h GlueMsMock) UpdateTable(input *glue.UpdateTableInput) (*glue.UpdateTableOutput, error) {
 	return nil, h.MockStore.AlterTable(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableInput.Name), tableToMock(input.DatabaseName, input.TableInput))
 }
@@ -322,7 +332,6 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	//verify first partition (enough)
-
 	firstPartition := copiedPartitions[0]
 	firstPartitionName := aws.StringValue(firstPartition.StorageDescriptor.SerdeInfo.Name)
 	if firstPartitionName != toTableName {
@@ -337,6 +346,14 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 			t.Fatalf("wrong column data for column %s", aws.StringValue(expectedColumn.Name))
 		}
 	}
+
+	// drop partition 17
+	partition17 := copiedPartitions[17]
+	err = client.removePartitions(toDBName, toTableName, []*glue.Partition{partition17})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	//add columns to existing partition
 	partition19 := copiedPartitions[19]
 	addColumn := &glue.Column{
@@ -375,7 +392,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 		t.Errorf("wrong location expected:%s got:%s", location, mergedSdLocation)
 	}
 
-	if len(mergedPartitions) != numOfPartitions+1 {
+	if len(mergedPartitions) != numOfPartitions {
 		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions+1, len(mergedPartitions))
 	}
 

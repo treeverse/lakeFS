@@ -129,8 +129,8 @@ func (m MetaStore) AlterPartitions(dbName string, tableName string, newPartition
 	return nil
 }
 
-func (m MetaStore) DropPartition(db string, table string, vals []string) error {
-	key := getPartitionKey(db, table, vals)
+func (m MetaStore) DropPartition(db string, table string, partitions []string) error {
+	key := getPartitionKey(db, table, partitions)
 	if m.partitionMap[key] == nil {
 		return fmt.Errorf("trying to remove missing partition with key %s", key)
 	}
