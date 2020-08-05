@@ -186,7 +186,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 				return
 			}
 			if len(ent) != i+1 {
-				t.Errorf("List commited files got %d entries, expected %d", len(ent), i+1)
+				t.Errorf("List committed files got %d entries, expected %d", len(ent), i+1)
 			}
 		}
 	})

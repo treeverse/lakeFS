@@ -703,6 +703,7 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 	testutil.MustDo(t, "delete committed file on master",
 		c.DeleteEntry(ctx, repository, "master", "/file0"))
 	_, err = c.Commit(ctx, repository, "master", "commit file0 deletion", "tester", nil)
+	testutil.Must(t, err)
 
 	testCatalogerGetEntry(t, ctx, c, repository, "branch2", "/file0", true)
 	testCatalogerGetEntry(t, ctx, c, repository, "branch1", "/file0", true)
@@ -792,6 +793,8 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 
 	// push file111 delete
 	_, err = c.Merge(ctx, repository, "branch1", "branch2", "tester", "delete /file111 up", nil)
+	testutil.Must(t, err)
+
 	testutil.MustDo(t, "delete committed file on branch1",
 		c.DeleteEntry(ctx, repository, "branch1", "/file111"))
 	_, err = c.Commit(ctx, repository, "branch1", "commit file111 deletion", "tester", nil)

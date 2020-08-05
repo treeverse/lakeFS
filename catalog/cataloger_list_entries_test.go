@@ -125,6 +125,7 @@ func TestCataloger_ListEntries(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, gotMore, err := c.ListEntries(ctx, tt.args.repository, tt.args.reference, tt.args.path, tt.args.after, "", tt.args.limit)
 			if (err != nil) != tt.wantErr {
@@ -802,6 +803,7 @@ func TestCataloger_ListEntries_IgnoreDeleteByLineage(t *testing.T) {
 	}
 	// now merge master to br_1
 	_, err = c.Merge(ctx, repo, "master", "br_1", "tester", "merge deletions", nil)
+	testutil.Must(t, err)
 	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 0 {
