@@ -14,6 +14,9 @@ jobs:
         with:
           go-version: 1.14
         id: go
+      - name: Setup statik
+        run: |
+          go get github.com/rakyll/statik
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
       - name: Checks validator
