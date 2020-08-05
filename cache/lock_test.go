@@ -20,7 +20,6 @@ func TestChanLocker_LockAfterLock(t *testing.T) {
 	if !acq {
 		t.Fatalf("expected second lock to acquire")
 	}
-
 }
 
 func TestChanLocker_Lock(t *testing.T) {
@@ -29,45 +28,56 @@ func TestChanLocker_Lock(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(3)
 
-	go func() {
-		acq := c.Lock("foo", func() {
-			fmt.Printf("foo update called!\n")
+	var foo50, getFoo50 bool
+	go func(acq *bool, getter *bool) {
+		*acq = c.Lock("foo", func() {
 			time.Sleep(time.Millisecond * 50)
+			*getter = true
 			wg.Done()
 		})
+	}(&foo50, &getFoo50)
 
-		if !acq {
-			t.Fatalf("expected to acquire foo lock")
-		}
-	}()
-
-	go func() {
+	var foo10, getFoo10 bool
+	go func(acq *bool, getter *bool) {
 		time.Sleep(10 * time.Millisecond)
-		acq := c.Lock("foo", func() {
-			t.Fatalf("foo shouldnt be called!\n")
+		*acq = c.Lock("foo", func() {
+			*getter = true
 		})
-		if acq {
-			t.Fatalf("foo shouldnt be called!\n")
-		}
 		wg.Done()
-	}()
+	}(&foo10, &getFoo10)
 
-	go func() {
+	var bar10 bool
+	var getBar10 bool
+	go func(acq *bool, getter *bool) {
 		time.Sleep(10 * time.Millisecond)
-		acq := c.Lock("bar", func() {
-			fmt.Printf("bar update called!\n")
+		*acq = c.Lock("bar", func() {
+			*getter = true
 			wg.Done()
 		})
-		if !acq {
-			t.Fatalf("expected to acquire bar lock")
-		}
-	}()
+	}(&bar10, &getBar10)
 
 	wg.Wait()
+	if foo10 {
+		t.Error("expected to not acquire foo after 10ms")
+	}
+	if getFoo10 {
+		t.Error("expected foo (10ms) getter not to be called")
+	}
+	if !getFoo50 {
+		t.Error("expected foo (50ms) getter to be called")
+	}
+	if !foo50 {
+		t.Error("expected to acquire foo after 50ms")
+	}
+	if !getBar10 {
+		t.Error("expected bar getter to be called")
+	}
+	if !bar10 {
+		t.Error("expected to acquire bar")
+	}
 }
 
 func TestNewLRUCache(t *testing.T) {
-
 	m := make(chan struct{})
 
 	go func() {
