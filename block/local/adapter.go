@@ -244,6 +244,6 @@ func (l *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (l *Adapter) GenerateInventory(_ logging.Logger, _ string) (block.Inventory, error) {
+func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
 	return nil, errors.New("inventory feature not implemented for local storage adapter")
 }
