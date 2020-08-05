@@ -22,7 +22,7 @@ const (
 
 type ListObjects struct{}
 
-func (controller *ListObjects) RequiredPermissions(request *http.Request, repoId string) ([]permissions.Permission, error) {
+func (controller *ListObjects) RequiredPermissions(request *http.Request, repoID string) ([]permissions.Permission, error) {
 	// check if we're listing files in a branch, or listing branches
 	params := request.URL.Query()
 	delimiter := params.Get("delimiter")
@@ -31,7 +31,7 @@ func (controller *ListObjects) RequiredPermissions(request *http.Request, repoId
 		return []permissions.Permission{
 			{
 				Action:   permissions.ListBranchesAction,
-				Resource: permissions.RepoArn(repoId),
+				Resource: permissions.RepoArn(repoID),
 			},
 		}, nil
 	}
@@ -40,7 +40,7 @@ func (controller *ListObjects) RequiredPermissions(request *http.Request, repoId
 	return []permissions.Permission{
 		{
 			Action:   permissions.ListObjectsAction,
-			Resource: permissions.RepoArn(repoId),
+			Resource: permissions.RepoArn(repoID),
 		},
 	}, nil
 }

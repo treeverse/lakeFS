@@ -74,7 +74,6 @@ type expiryTestCase struct {
 
 func verifyExpiry(t *testing.T, ctx context.Context, c Cataloger, repository string, tests []expiryTestCase) {
 	for _, tt := range tests {
-		tt := tt
 		t.Run(tt.name, func(t *testing.T) {
 			got, err := readExpired(t, ctx, c, repository, tt.policy)
 

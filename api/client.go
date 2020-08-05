@@ -6,8 +6,6 @@ import (
 	"net/url"
 	"path"
 
-	"github.com/treeverse/lakefs/api/gen/client/metadata"
-
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
@@ -16,6 +14,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/metadata"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
@@ -26,32 +25,32 @@ import (
 
 type AuthClient interface {
 	GetCurrentUser(ctx context.Context) (*models.User, error)
-	GetUser(ctx context.Context, userId string) (*models.User, error)
+	GetUser(ctx context.Context, userID string) (*models.User, error)
 	ListUsers(ctx context.Context, after string, amount int) ([]*models.User, *models.Pagination, error)
-	DeleteUser(ctx context.Context, userId string) error
-	CreateUser(ctx context.Context, userId string) (*models.User, error)
-	GetGroup(ctx context.Context, groupId string) (*models.Group, error)
+	DeleteUser(ctx context.Context, userID string) error
+	CreateUser(ctx context.Context, userID string) (*models.User, error)
+	GetGroup(ctx context.Context, groupID string) (*models.Group, error)
 	ListGroups(ctx context.Context, after string, amount int) ([]*models.Group, *models.Pagination, error)
-	CreateGroup(ctx context.Context, groupId string) (*models.Group, error)
-	DeleteGroup(ctx context.Context, groupId string) error
+	CreateGroup(ctx context.Context, groupID string) (*models.Group, error)
+	DeleteGroup(ctx context.Context, groupID string) error
 	ListPolicies(ctx context.Context, after string, amount int) ([]*models.Policy, *models.Pagination, error)
 	CreatePolicy(ctx context.Context, policy *models.Policy) (*models.Policy, error)
-	GetPolicy(ctx context.Context, policyId string) (*models.Policy, error)
-	DeletePolicy(ctx context.Context, policyId string) error
-	ListGroupMembers(ctx context.Context, groupId string, after string, amount int) ([]*models.User, *models.Pagination, error)
-	AddGroupMembership(ctx context.Context, groupId, userId string) error
-	DeleteGroupMembership(ctx context.Context, groupId, userId string) error
-	ListUserCredentials(ctx context.Context, userId string, after string, amount int) ([]*models.Credentials, *models.Pagination, error)
-	CreateCredentials(ctx context.Context, userId string) (*models.CredentialsWithSecret, error)
-	DeleteCredentials(ctx context.Context, userId, accessKeyId string) error
-	GetCredentials(ctx context.Context, userId, accessKeyId string) (*models.Credentials, error)
-	ListUserGroups(ctx context.Context, userId string, after string, amount int) ([]*models.Group, *models.Pagination, error)
-	ListUserPolicies(ctx context.Context, userId string, effective bool, after string, amount int) ([]*models.Policy, *models.Pagination, error)
-	AttachPolicyToUser(ctx context.Context, userId, policyId string) error
-	DetachPolicyFromUser(ctx context.Context, userId, policyId string) error
-	ListGroupPolicies(ctx context.Context, groupId string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
-	AttachPolicyToGroup(ctx context.Context, groupId, policyId string) error
-	DetachPolicyFromGroup(ctx context.Context, groupId, policyId string) error
+	GetPolicy(ctx context.Context, policyID string) (*models.Policy, error)
+	DeletePolicy(ctx context.Context, policyID string) error
+	ListGroupMembers(ctx context.Context, groupID string, after string, amount int) ([]*models.User, *models.Pagination, error)
+	AddGroupMembership(ctx context.Context, groupID, userID string) error
+	DeleteGroupMembership(ctx context.Context, groupID, userID string) error
+	ListUserCredentials(ctx context.Context, userID string, after string, amount int) ([]*models.Credentials, *models.Pagination, error)
+	CreateCredentials(ctx context.Context, userID string) (*models.CredentialsWithSecret, error)
+	DeleteCredentials(ctx context.Context, userID, accessKeyID string) error
+	GetCredentials(ctx context.Context, userID, accessKeyID string) (*models.Credentials, error)
+	ListUserGroups(ctx context.Context, userID string, after string, amount int) ([]*models.Group, *models.Pagination, error)
+	ListUserPolicies(ctx context.Context, userID string, effective bool, after string, amount int) ([]*models.Policy, *models.Pagination, error)
+	AttachPolicyToUser(ctx context.Context, userID, policyID string) error
+	DetachPolicyFromUser(ctx context.Context, userID, policyID string) error
+	ListGroupPolicies(ctx context.Context, groupID string, after string, amount int) ([]*models.Policy, *models.Pagination, error)
+	AttachPolicyToGroup(ctx context.Context, groupID, policyID string) error
+	DetachPolicyFromGroup(ctx context.Context, groupID, policyID string) error
 }
 
 type RepositoryClient interface {
@@ -61,20 +60,20 @@ type RepositoryClient interface {
 	DeleteRepository(ctx context.Context, repository string) error
 
 	ListBranches(ctx context.Context, repository string, from string, amount int) ([]string, *models.Pagination, error)
-	GetBranch(ctx context.Context, repository, branchId string) (string, error)
+	GetBranch(ctx context.Context, repository, branchID string) (string, error)
 	CreateBranch(ctx context.Context, repository string, branch *models.BranchCreation) (string, error)
-	DeleteBranch(ctx context.Context, repository, branchId string) error
-	RevertBranch(ctx context.Context, repository, branchId string, revertProps *models.RevertCreation) error
+	DeleteBranch(ctx context.Context, repository, branchID string) error
+	RevertBranch(ctx context.Context, repository, branchID string, revertProps *models.RevertCreation) error
 
-	Commit(ctx context.Context, repository, branchId, message string, metadata map[string]string) (*models.Commit, error)
-	GetCommit(ctx context.Context, repository, commitId string) (*models.Commit, error)
-	GetCommitLog(ctx context.Context, repository, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error)
+	Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error)
+	GetCommit(ctx context.Context, repository, commitID string) (*models.Commit, error)
+	GetCommitLog(ctx context.Context, repository, branchID, after string, amount int) ([]*models.Commit, *models.Pagination, error)
 
 	StatObject(ctx context.Context, repository, ref, path string) (*models.ObjectStats, error)
 	ListObjects(ctx context.Context, repository, ref, prefix, from string, amount int) ([]*models.ObjectStats, *models.Pagination, error)
 	GetObject(ctx context.Context, repository, ref, path string, w io.Writer) (*objects.GetObjectOK, error)
-	UploadObject(ctx context.Context, repository, branchId, path string, r io.Reader) (*models.ObjectStats, error)
-	DeleteObject(ctx context.Context, repository, branchId, path string) error
+	UploadObject(ctx context.Context, repository, branchID, path string, r io.Reader) (*models.ObjectStats, error)
+	DeleteObject(ctx context.Context, repository, branchID, path string) error
 
 	DiffRefs(ctx context.Context, repository, leftRef, rightRef string) ([]*models.Diff, error)
 	Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error)
@@ -83,7 +82,7 @@ type RepositoryClient interface {
 
 	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
 	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
-	Symlink(ctx context.Context, repoId, ref, path string) (string, error)
+	Symlink(ctx context.Context, repoID, ref, path string) (string, error)
 }
 
 type Client interface {
@@ -106,9 +105,9 @@ func (c *client) GetCurrentUser(ctx context.Context) (*models.User, error) {
 	return resp.GetPayload().User, nil
 }
 
-func (c *client) GetUser(ctx context.Context, userId string) (*models.User, error) {
+func (c *client) GetUser(ctx context.Context, userID string) (*models.User, error) {
 	resp, err := c.remote.Auth.GetUser(&auth.GetUserParams{
-		UserID:  userId,
+		UserID:  userID,
 		Context: ctx,
 	}, c.auth)
 	if err != nil {
@@ -129,18 +128,18 @@ func (c *client) ListUsers(ctx context.Context, after string, amount int) ([]*mo
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) DeleteUser(ctx context.Context, userId string) error {
+func (c *client) DeleteUser(ctx context.Context, userID string) error {
 	_, err := c.remote.Auth.DeleteUser(&auth.DeleteUserParams{
-		UserID:  userId,
+		UserID:  userID,
 		Context: ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) CreateUser(ctx context.Context, userId string) (*models.User, error) {
+func (c *client) CreateUser(ctx context.Context, userID string) (*models.User, error) {
 	resp, err := c.remote.Auth.CreateUser(&auth.CreateUserParams{
 		User: &models.UserCreation{
-			ID: swag.String(userId),
+			ID: swag.String(userID),
 		},
 		Context: ctx,
 	}, c.auth)
@@ -150,9 +149,9 @@ func (c *client) CreateUser(ctx context.Context, userId string) (*models.User, e
 	return resp.GetPayload(), err
 }
 
-func (c *client) GetGroup(ctx context.Context, groupId string) (*models.Group, error) {
+func (c *client) GetGroup(ctx context.Context, groupID string) (*models.Group, error) {
 	resp, err := c.remote.Auth.GetGroup(&auth.GetGroupParams{
-		GroupID: groupId,
+		GroupID: groupID,
 		Context: ctx,
 	}, c.auth)
 	if err != nil {
@@ -173,10 +172,10 @@ func (c *client) ListGroups(ctx context.Context, after string, amount int) ([]*m
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) CreateGroup(ctx context.Context, groupId string) (*models.Group, error) {
+func (c *client) CreateGroup(ctx context.Context, groupID string) (*models.Group, error) {
 	resp, err := c.remote.Auth.CreateGroup(&auth.CreateGroupParams{
 		Group: &models.GroupCreation{
-			ID: swag.String(groupId),
+			ID: swag.String(groupID),
 		},
 		Context: ctx,
 	}, c.auth)
@@ -186,9 +185,9 @@ func (c *client) CreateGroup(ctx context.Context, groupId string) (*models.Group
 	return resp.GetPayload(), err
 }
 
-func (c *client) DeleteGroup(ctx context.Context, groupId string) error {
+func (c *client) DeleteGroup(ctx context.Context, groupID string) error {
 	_, err := c.remote.Auth.DeleteGroup(&auth.DeleteGroupParams{
-		GroupID: groupId,
+		GroupID: groupID,
 		Context: ctx,
 	}, c.auth)
 	return err
@@ -217,9 +216,9 @@ func (c *client) CreatePolicy(ctx context.Context, policy *models.Policy) (*mode
 	return resp.GetPayload(), err
 }
 
-func (c *client) GetPolicy(ctx context.Context, policyId string) (*models.Policy, error) {
+func (c *client) GetPolicy(ctx context.Context, policyID string) (*models.Policy, error) {
 	resp, err := c.remote.Auth.GetPolicy(&auth.GetPolicyParams{
-		PolicyID: policyId,
+		PolicyID: policyID,
 		Context:  ctx,
 	}, c.auth)
 	if err != nil {
@@ -228,18 +227,18 @@ func (c *client) GetPolicy(ctx context.Context, policyId string) (*models.Policy
 	return resp.GetPayload(), nil
 }
 
-func (c *client) DeletePolicy(ctx context.Context, policyId string) error {
+func (c *client) DeletePolicy(ctx context.Context, policyID string) error {
 	_, err := c.remote.Auth.DeletePolicy(&auth.DeletePolicyParams{
-		PolicyID: policyId,
+		PolicyID: policyID,
 		Context:  ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) ListGroupMembers(ctx context.Context, groupId string, after string, amount int) ([]*models.User, *models.Pagination, error) {
+func (c *client) ListGroupMembers(ctx context.Context, groupID string, after string, amount int) ([]*models.User, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListGroupMembers(&auth.ListGroupMembersParams{
 		Amount:  swag.Int64(int64(amount)),
-		GroupID: groupId,
+		GroupID: groupID,
 		After:   swag.String(after),
 		Context: ctx,
 	}, c.auth)
@@ -249,29 +248,29 @@ func (c *client) ListGroupMembers(ctx context.Context, groupId string, after str
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) AddGroupMembership(ctx context.Context, groupId, userId string) error {
+func (c *client) AddGroupMembership(ctx context.Context, groupID, userID string) error {
 	_, err := c.remote.Auth.AddGroupMembership(&auth.AddGroupMembershipParams{
-		GroupID: groupId,
-		UserID:  userId,
+		GroupID: groupID,
+		UserID:  userID,
 		Context: ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) DeleteGroupMembership(ctx context.Context, groupId, userId string) error {
+func (c *client) DeleteGroupMembership(ctx context.Context, groupID, userID string) error {
 	_, err := c.remote.Auth.DeleteGroupMembership(&auth.DeleteGroupMembershipParams{
-		GroupID: groupId,
-		UserID:  userId,
+		GroupID: groupID,
+		UserID:  userID,
 		Context: ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) ListUserCredentials(ctx context.Context, userId string, after string, amount int) ([]*models.Credentials, *models.Pagination, error) {
+func (c *client) ListUserCredentials(ctx context.Context, userID string, after string, amount int) ([]*models.Credentials, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListUserCredentials(&auth.ListUserCredentialsParams{
 		Amount:     swag.Int64(int64(amount)),
 		After:      swag.String(after),
-		UserID:     userId,
+		UserID:     userID,
 		Context:    ctx,
 		HTTPClient: nil,
 	}, c.auth)
@@ -281,9 +280,9 @@ func (c *client) ListUserCredentials(ctx context.Context, userId string, after s
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) CreateCredentials(ctx context.Context, userId string) (*models.CredentialsWithSecret, error) {
+func (c *client) CreateCredentials(ctx context.Context, userID string) (*models.CredentialsWithSecret, error) {
 	resp, err := c.remote.Auth.CreateCredentials(&auth.CreateCredentialsParams{
-		UserID:     userId,
+		UserID:     userID,
 		Context:    ctx,
 		HTTPClient: nil,
 	}, c.auth)
@@ -293,19 +292,19 @@ func (c *client) CreateCredentials(ctx context.Context, userId string) (*models.
 	return resp.GetPayload(), err
 }
 
-func (c *client) DeleteCredentials(ctx context.Context, userId, accessKeyId string) error {
+func (c *client) DeleteCredentials(ctx context.Context, userID, accessKeyID string) error {
 	_, err := c.remote.Auth.DeleteCredentials(&auth.DeleteCredentialsParams{
-		AccessKeyID: accessKeyId,
-		UserID:      userId,
+		AccessKeyID: accessKeyID,
+		UserID:      userID,
 		Context:     ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) GetCredentials(ctx context.Context, userId, accessKeyId string) (*models.Credentials, error) {
+func (c *client) GetCredentials(ctx context.Context, userID, accessKeyID string) (*models.Credentials, error) {
 	resp, err := c.remote.Auth.GetCredentials(&auth.GetCredentialsParams{
-		AccessKeyID: accessKeyId,
-		UserID:      userId,
+		AccessKeyID: accessKeyID,
+		UserID:      userID,
 		Context:     ctx,
 	}, c.auth)
 	if err != nil {
@@ -314,11 +313,11 @@ func (c *client) GetCredentials(ctx context.Context, userId, accessKeyId string)
 	return resp.GetPayload(), nil
 }
 
-func (c *client) ListUserGroups(ctx context.Context, userId string, after string, amount int) ([]*models.Group, *models.Pagination, error) {
+func (c *client) ListUserGroups(ctx context.Context, userID string, after string, amount int) ([]*models.Group, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListUserGroups(&auth.ListUserGroupsParams{
 		Amount:  swag.Int64(int64(amount)),
 		After:   swag.String(after),
-		UserID:  userId,
+		UserID:  userID,
 		Context: ctx,
 	}, c.auth)
 	if err != nil {
@@ -327,12 +326,12 @@ func (c *client) ListUserGroups(ctx context.Context, userId string, after string
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) ListUserPolicies(ctx context.Context, userId string, effective bool, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
+func (c *client) ListUserPolicies(ctx context.Context, userID string, effective bool, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListUserPolicies(&auth.ListUserPoliciesParams{
 		After:     swag.String(after),
 		Amount:    swag.Int64(int64(amount)),
 		Effective: swag.Bool(effective),
-		UserID:    userId,
+		UserID:    userID,
 		Context:   ctx,
 	}, c.auth)
 	if err != nil {
@@ -341,29 +340,29 @@ func (c *client) ListUserPolicies(ctx context.Context, userId string, effective 
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) AttachPolicyToUser(ctx context.Context, userId, policyId string) error {
+func (c *client) AttachPolicyToUser(ctx context.Context, userID, policyID string) error {
 	_, err := c.remote.Auth.AttachPolicyToUser(&auth.AttachPolicyToUserParams{
-		PolicyID: policyId,
-		UserID:   userId,
+		PolicyID: policyID,
+		UserID:   userID,
 		Context:  ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) DetachPolicyFromUser(ctx context.Context, userId, policyId string) error {
+func (c *client) DetachPolicyFromUser(ctx context.Context, userID, policyID string) error {
 	_, err := c.remote.Auth.DetachPolicyFromUser(&auth.DetachPolicyFromUserParams{
-		PolicyID: policyId,
-		UserID:   userId,
+		PolicyID: policyID,
+		UserID:   userID,
 		Context:  ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) ListGroupPolicies(ctx context.Context, groupId string, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
+func (c *client) ListGroupPolicies(ctx context.Context, groupID string, after string, amount int) ([]*models.Policy, *models.Pagination, error) {
 	resp, err := c.remote.Auth.ListGroupPolicies(&auth.ListGroupPoliciesParams{
 		Amount:  swag.Int64(int64(amount)),
 		After:   swag.String(after),
-		GroupID: groupId,
+		GroupID: groupID,
 		Context: ctx,
 	}, c.auth)
 	if err != nil {
@@ -372,19 +371,19 @@ func (c *client) ListGroupPolicies(ctx context.Context, groupId string, after st
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) AttachPolicyToGroup(ctx context.Context, groupId, policyId string) error {
+func (c *client) AttachPolicyToGroup(ctx context.Context, groupID, policyID string) error {
 	_, err := c.remote.Auth.AttachPolicyToGroup(&auth.AttachPolicyToGroupParams{
-		PolicyID: policyId,
-		GroupID:  groupId,
+		PolicyID: policyID,
+		GroupID:  groupID,
 		Context:  ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) DetachPolicyFromGroup(ctx context.Context, groupId, policyId string) error {
+func (c *client) DetachPolicyFromGroup(ctx context.Context, groupID, policyID string) error {
 	_, err := c.remote.Auth.DetachPolicyFromGroup(&auth.DetachPolicyFromGroupParams{
-		PolicyID: policyId,
-		GroupID:  groupId,
+		PolicyID: policyID,
+		GroupID:  groupID,
 		Context:  ctx,
 	}, c.auth)
 	return err
@@ -442,9 +441,9 @@ func (c *client) DeleteRepository(ctx context.Context, repository string) error 
 	return err
 }
 
-func (c *client) GetBranch(ctx context.Context, repository, branchId string) (string, error) {
+func (c *client) GetBranch(ctx context.Context, repository, branchID string) (string, error) {
 	resp, err := c.remote.Branches.GetBranch(&branches.GetBranchParams{
-		Branch:     branchId,
+		Branch:     branchID,
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)
@@ -466,18 +465,18 @@ func (c *client) CreateBranch(ctx context.Context, repository string, branch *mo
 	return resp.GetPayload(), nil
 }
 
-func (c *client) DeleteBranch(ctx context.Context, repository, branchId string) error {
+func (c *client) DeleteBranch(ctx context.Context, repository, branchID string) error {
 	_, err := c.remote.Branches.DeleteBranch(&branches.DeleteBranchParams{
-		Branch:     branchId,
+		Branch:     branchID,
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)
 	return err
 }
 
-func (c *client) RevertBranch(ctx context.Context, repository, branchId string, revertProps *models.RevertCreation) error {
+func (c *client) RevertBranch(ctx context.Context, repository, branchID string, revertProps *models.RevertCreation) error {
 	_, err := c.remote.Branches.RevertBranch(&branches.RevertBranchParams{
-		Branch:     branchId,
+		Branch:     branchID,
 		Revert:     revertProps,
 		Repository: repository,
 		Context:    ctx,
@@ -485,9 +484,9 @@ func (c *client) RevertBranch(ctx context.Context, repository, branchId string, 
 	return err
 }
 
-func (c *client) Commit(ctx context.Context, repository, branchId, message string, metadata map[string]string) (*models.Commit, error) {
+func (c *client) Commit(ctx context.Context, repository, branchID, message string, metadata map[string]string) (*models.Commit, error) {
 	commit, err := c.remote.Commits.Commit(&commits.CommitParams{
-		Branch: branchId,
+		Branch: branchID,
 		Commit: &models.CommitCreation{
 			Message:  &message,
 			Metadata: metadata,
@@ -501,9 +500,9 @@ func (c *client) Commit(ctx context.Context, repository, branchId, message strin
 	return commit.GetPayload(), nil
 }
 
-func (c *client) GetCommit(ctx context.Context, repository, commitId string) (*models.Commit, error) {
+func (c *client) GetCommit(ctx context.Context, repository, commitID string) (*models.Commit, error) {
 	commit, err := c.remote.Commits.GetCommit(&commits.GetCommitParams{
-		CommitID:   commitId,
+		CommitID:   commitID,
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)
@@ -513,11 +512,11 @@ func (c *client) GetCommit(ctx context.Context, repository, commitId string) (*m
 	return commit.GetPayload(), nil
 }
 
-func (c *client) GetCommitLog(ctx context.Context, repository, branchId, after string, amount int) ([]*models.Commit, *models.Pagination, error) {
+func (c *client) GetCommitLog(ctx context.Context, repository, branchID, after string, amount int) ([]*models.Commit, *models.Pagination, error) {
 	resp, err := c.remote.Commits.GetBranchCommitLog(&commits.GetBranchCommitLogParams{
 		Amount:     swag.Int64(int64(amount)),
 		After:      swag.String(after),
-		Branch:     branchId,
+		Branch:     branchID,
 		Repository: repository,
 		Context:    ctx,
 	}, c.auth)
@@ -570,11 +569,11 @@ func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*mode
 	}
 	return diff.GetPayload().Results, nil
 }
-func (c *client) Symlink(ctx context.Context, repoId, branch, path string) (string, error) {
+func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (string, error) {
 	resp, err := c.remote.Metadata.CreateSymlink(&metadata.CreateSymlinkParams{
 		Location:   swag.String(path),
 		Branch:     branch,
-		Repository: repoId,
+		Repository: repoID,
 		Context:    ctx,
 	}, c.auth)
 	if err != nil {
@@ -644,9 +643,9 @@ func (c *client) GetObject(ctx context.Context, repoID, ref, path string, writer
 	return resp, nil
 }
 
-func (c *client) UploadObject(ctx context.Context, repoID, branchId, path string, r io.Reader) (*models.ObjectStats, error) {
+func (c *client) UploadObject(ctx context.Context, repoID, branchID, path string, r io.Reader) (*models.ObjectStats, error) {
 	resp, err := c.remote.Objects.UploadObject(&objects.UploadObjectParams{
-		Branch:     branchId,
+		Branch:     branchID,
 		Content:    runtime.NamedReader("content", r),
 		Path:       path,
 		Repository: repoID,
@@ -658,9 +657,9 @@ func (c *client) UploadObject(ctx context.Context, repoID, branchId, path string
 	return resp.GetPayload(), nil
 }
 
-func (c *client) DeleteObject(ctx context.Context, repository, branchId, path string) error {
+func (c *client) DeleteObject(ctx context.Context, repository, branchID, path string) error {
 	_, err := c.remote.Objects.DeleteObject(&objects.DeleteObjectParams{
-		Branch:     branchId,
+		Branch:     branchID,
 		Path:       path,
 		Repository: repository,
 		Context:    ctx,
@@ -668,7 +667,7 @@ func (c *client) DeleteObject(ctx context.Context, repository, branchId, path st
 	return err
 }
 
-func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error) {
+func NewClient(endpointURL, accessKeyID, secretAccessKey string) (Client, error) {
 	parsedURL, err := url.Parse(endpointURL)
 	if err != nil {
 		return nil, err
@@ -678,6 +677,6 @@ func NewClient(endpointURL, accessKeyId, secretAccessKey string) (Client, error)
 	}
 	return &client{
 		remote: genclient.New(httptransport.New(parsedURL.Host, parsedURL.Path, []string{parsedURL.Scheme}), strfmt.Default),
-		auth:   httptransport.BasicAuth(accessKeyId, secretAccessKey),
+		auth:   httptransport.BasicAuth(accessKeyID, secretAccessKey),
 	}, nil
 }

@@ -158,7 +158,8 @@ func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r 
 // BatchTagOnS3BucketParams holds tagging configuration for BatchTagOnS3Bucket.
 type BatchTagOnS3BucketParams struct {
 	// Account to perform tagging (required for S3 API)
-	AccountId string
+	AccountID string
+
 	// Role for performing tagging
 	RoleArn string
 
@@ -243,7 +244,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 	}
 
 	input := s3control.CreateJobInput{
-		AccountId:            &params.AccountId,
+		AccountId:            &params.AccountID,
 		ConfirmationRequired: aws.Bool(false),
 		// TODO(ariels): use ClientRequestToken to help avoid flooding?
 		Description: aws.String("automated tag to expire objects"),
@@ -287,7 +288,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 
 // ExpireOnS3Params holds configuration for ExpireOnS3.
 type ExpireOnS3Params struct {
-	AccountId            string
+	AccountID            string
 	RoleArn              string
 	ManifestURLForBucket func(string) string
 	ReportS3PrefixURL    *string
@@ -318,7 +319,7 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 			bucketLogger.Info("start expiry on S3")
 			go func(bucketName string, manifestReader io.ReadSeeker) {
 				params := BatchTagOnS3BucketParams{
-					AccountId:         params.AccountId,
+					AccountID:         params.AccountID,
 					RoleArn:           params.RoleArn,
 					BucketName:        bucketName,
 					ManifestURL:       manifestURL,

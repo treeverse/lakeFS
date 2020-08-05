@@ -123,7 +123,7 @@ var runCmd = &cobra.Command{
 		go func() {
 			// avoid a thundering herd in case we have many lakeFS instances starting together
 			const maxSplay = 10 * time.Second
-			randSource := rand.New(rand.NewSource(time.Now().UnixNano()))
+			randSource := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 			time.Sleep(time.Duration(randSource.Intn(int(maxSplay))))
 
 			metadata, err := meta.Write()
@@ -159,7 +159,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-func registerPrometheusCollector(db db.Database) {
+func registerPrometheusCollector(db sqlstats.StatsGetter) {
 	collector := sqlstats.NewStatsCollector("lakefs", db)
 	err := prometheus.Register(collector)
 	if err != nil {

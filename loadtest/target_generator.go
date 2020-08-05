@@ -24,7 +24,7 @@ func randomFilepath(basename string) string {
 	const maxDirSuffixes = 3
 	depth := rand.Intn(maxDepthLevel) //nolint:gosec
 	for i := 0; i < depth; i++ {
-		dirSuffix := rand.Intn(maxDirSuffixes)
+		dirSuffix := rand.Intn(maxDirSuffixes) //nolint:gosec
 		sb.WriteString(fmt.Sprintf("dir%d/", dirSuffix))
 	}
 	return sb.String() + basename

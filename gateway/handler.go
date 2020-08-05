@@ -44,6 +44,8 @@ type ServerContext struct {
 	dedupCleaner *dedup.Cleaner
 }
 
+const operationIDNotFound = "not_found_operation"
+
 func (c *ServerContext) WithContext(ctx context.Context) *ServerContext {
 	return &ServerContext{
 		ctx:          ctx,
@@ -332,7 +334,7 @@ func unsupportedOperationHandler() http.Handler {
 	})
 }
 
-func notFound(w http.ResponseWriter, r *http.Request) {
+func notFound(w http.ResponseWriter, _ *http.Request) {
 	w.WriteHeader(http.StatusNotFound)
 }
 
@@ -394,7 +396,7 @@ func (h *handler) servePathBased(r *http.Request) http.Handler {
 		h.operationID = "list_buckets"
 		return OperationHandler(h.sc, &operations.ListBuckets{})
 	}
-	h.operationID = "not_found_operation"
+	h.operationID = operationIDNotFound
 	return h.NotFoundHandler
 }
 
@@ -448,7 +450,7 @@ func (h *handler) pathBasedHandler(method, repository, ref, path string) http.Ha
 	case http.MethodPut:
 		handler = &operations.PutObject{}
 	default:
-		h.operationID = "not_found_operation"
+		h.operationID = operationIDNotFound
 		return h.NotFoundHandler
 	}
 	h.operationID = reflect.TypeOf(handler).Elem().Name()
@@ -476,7 +478,7 @@ func (h *handler) repositoryBasedHandler(method, repository string) http.Handler
 	case http.MethodGet:
 		handler = &operations.ListObjects{}
 	default:
-		h.operationID = "not_found_operation"
+		h.operationID = operationIDNotFound
 		return h.NotFoundHandler
 	}
 	h.operationID = reflect.TypeOf(handler).Elem().Name()

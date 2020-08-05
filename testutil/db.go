@@ -28,7 +28,7 @@ const (
 
 	envKeyUseS3BlockAdapter = "USE_S3_BLOCK_ADAPTER"
 	envKeyAwsKeyID          = "AWS_ACCESS_KEY_ID"
-	envKeyAwsSecretKey      = "AWS_SECRET_ACCESS_KEY"
+	envKeyAwsSecretKey      = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
 	envKeyAwsRegion         = "AWS_DEFAULT_REGION"
 )
 

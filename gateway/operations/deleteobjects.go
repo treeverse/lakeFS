@@ -59,7 +59,10 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 
 		lg := o.Log().WithField("key", obj.Key)
 		err = o.Cataloger.DeleteEntry(o.Context(), o.Repository.Name, resolvedPath.Ref, resolvedPath.Path)
-		if err != nil && !errors.Is(err, db.ErrNotFound) {
+		switch {
+		case errors.Is(err, db.ErrNotFound):
+			lg.Debug("tried to delete a non-existent object")
+		case err != nil:
 			lg.WithError(err).Error("failed deleting object")
 			errs = append(errs, serde.DeleteError{
 				Code:    "ErrDeletingKey",
@@ -67,9 +70,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 				Message: fmt.Sprintf("error deleting object: %s", err),
 			})
 			continue
-		} else if errors.Is(err, db.ErrNotFound) {
-			lg.Debug("tried to delete a non-existent object")
-		} else if err == nil {
+		default:
 			lg.Debug("object set for deletion")
 		}
 		if !req.Quiet {

@@ -71,15 +71,15 @@ func (s *mockAdapter) CreateMultiPartUpload(_ block.ObjectPointer, r *http.Reque
 	panic("try to create multipart in mock adaptor ")
 }
 
-func (s *mockAdapter) UploadPart(_ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (s *mockAdapter) UploadPart(_ block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	panic("try to upload part in mock adaptor ")
 
 }
-func (s *mockAdapter) AbortMultiPartUpload(_ block.ObjectPointer, uploadId string) error {
+func (s *mockAdapter) AbortMultiPartUpload(_ block.ObjectPointer, uploadID string) error {
 	panic("try to abort multipart in mock adaptor ")
 
 }
-func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadId string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (s *mockAdapter) CompleteMultiPartUpload(_ block.ObjectPointer, uploadID string, MultipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	panic("try to complete multipart in mock adaptor ")
 }
 
