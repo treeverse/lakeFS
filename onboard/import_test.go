@@ -78,7 +78,7 @@ func TestImport(t *testing.T) {
 					previousCommitInventory: previousInventoryURL,
 				}
 			}
-			importer, err := onboard.CreateImporter(logging.Default(), nil, &mockInventoryGenerator{
+			importer, err := onboard.CreateImporter(nil, logging.Default(), nil, &mockInventoryGenerator{
 				newInventoryURL:      newInventoryURL,
 				previousInventoryURL: previousInventoryURL,
 				newInventory:         test.NewInventory,

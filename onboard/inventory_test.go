@@ -1,10 +1,10 @@
 package onboard_test
 
 import (
-	"context"
-	"github.com/treeverse/lakefs/onboard"
 	"reflect"
 	"testing"
+
+	"github.com/treeverse/lakefs/onboard"
 )
 
 func TestDiff(t *testing.T) {
@@ -66,14 +66,8 @@ func TestDiff(t *testing.T) {
 	for _, test := range data {
 		rightInv := &mockInventory{rows: test.RightInv}
 		leftInv := &mockInventory{rows: test.LeftInv}
-		leftIt, err := leftInv.Iterator(context.Background())
-		if err != nil {
-			t.Fatalf("got error: %v", err)
-		}
-		rightIt, err := rightInv.Iterator(context.Background())
-		if err != nil {
-			t.Fatalf("got error: %v", err)
-		}
+		leftIt := leftInv.Iterator()
+		rightIt := rightInv.Iterator()
 		it := onboard.NewDiffIterator(leftIt, rightIt)
 		actualAdded := make([]string, 0, len(test.ExpectedDiffAdded))
 		actualDeleted := make([]string, 0, len(test.ExpectedDiffDeleted))
