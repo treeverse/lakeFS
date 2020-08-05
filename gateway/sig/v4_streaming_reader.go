@@ -326,18 +326,20 @@ func parseChunkSignature(chunk []byte) []byte {
 
 // parse hex to uint64.
 func parseHexUint(v []byte) (n uint64, err error) {
+	const maxChunkLength = 16
+	const letterOffset = 10
 	for i, b := range v {
 		switch {
 		case '0' <= b && b <= '9':
 			b -= '0'
 		case 'a' <= b && b <= 'f':
-			b -= 'a' - 10
+			b -= 'a' - letterOffset
 		case 'A' <= b && b <= 'F':
-			b -= 'A' - 10
+			b -= 'A' - letterOffset
 		default:
 			return 0, errors.New("invalid byte in chunk length")
 		}
-		if i == 16 {
+		if i == maxChunkLength {
 			return 0, errors.New("http chunk length too large")
 		}
 		n <<= 4

@@ -22,6 +22,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	defaultPriority = 10
+)
+
 // WriteExpiryResultsToSeekableReader returns a file-backed (Seeker) Reader holding the contents of expiryRows.
 func WriteExpiryResultsToSeekableReader(ctx context.Context, expiryRows catalog.ExpiryRows) (fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
@@ -187,16 +191,16 @@ func (sp s3Pointer) GetArn() string {
 }
 
 func parseS3URL(s3URL string) (s3Pointer, error) {
-	url, err := url.Parse(s3URL)
+	u, err := url.Parse(s3URL)
 	if err != nil {
 		return s3Pointer{}, fmt.Errorf("parse S3 URL %s: %w", s3URL, err)
 	}
-	if url.Scheme != "s3" {
+	if u.Scheme != "s3" {
 		return s3Pointer{}, fmt.Errorf("URL %s not on S3: %w", s3URL, err)
 	}
-	trimmedPath := strings.TrimPrefix(url.Path, "/")
+	trimmedPath := strings.TrimPrefix(u.Path, "/")
 	return s3Pointer{
-		Bucket: url.Host,
+		Bucket: u.Host,
 		Key:    trimmedPath,
 	}, nil
 }
@@ -264,7 +268,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 			},
 		},
 		// TODO(ariels): allow configuration
-		Priority: aws.Int64(10),
+		Priority: aws.Int64(defaultPriority),
 		// TODO(ariels): allow configuration of Report field
 		Report:  &report,
 		RoleArn: &params.RoleArn,
@@ -297,7 +301,8 @@ type ExpireOnS3Params struct {
 // ExpireOnS3 starts a goroutine to expire all entries on expiryResultsReader and returns a
 // channel that will receive all error results.
 func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, c catalog.Cataloger, expiryResultsReader fileutil.RewindableReader, params *ExpireOnS3Params) chan error {
-	errCh := make(chan error, 100)
+	const errChannelSize = 100
+	errCh := make(chan error, errChannelSize)
 	logger := logging.FromContext(ctx)
 	errFields := FromLoggerContext(ctx)
 	go func() {
