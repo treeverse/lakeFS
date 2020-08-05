@@ -259,7 +259,7 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 		}
 		count, err := result.RowsAffected()
 		if err != nil {
-			return nil, fmt.Errorf("getting number of updated rows: %s", err)
+			return nil, fmt.Errorf("getting number of updated rows: %w", err)
 		}
 		return int(count), nil
 	})

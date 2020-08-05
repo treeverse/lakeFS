@@ -145,7 +145,7 @@ func TestParseInternalObjectRefStringFailures(t *testing.T) {
 	}{
 		{name: "bad prefix", refString: "int:xpm:foo", errMatch: "unpack internal object format prefix"},
 		{name: "bad base58 (colon)", refString: "int:pbm:2sCXVG8dD:Y", errMatch: "invalid base58 digit"},
-		{name: "only 2 parts", refString: "int:pbm:ZdUu", errMatch: "<3 parts"},
+		{name: "only 2 parts", refString: "int:pbm:ZdUu", errMatch: "expected 3 parts in internal object content"},
 		{name: "bad branch id number (hex digit g)", refString: "int:pbm:vr3f9T8qYB3eTsfY", errMatch: "bad branchID"},
 		{name: "bad min commit number (too large)", refString: "int:pbm:NfebWHSvY5YeEoVu2sAoohJ6UYq4HMna2LuwuSV45yD862jWJ", errMatch: "bad minCommit"},
 	}
