@@ -59,6 +59,10 @@ func TestIterator(t *testing.T) {
 			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
+			InventoryFiles:  []string{"f3", "f2", "f1"},
+			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+		},
+		{
 			InventoryFiles:  []string{},
 			ExpectedObjects: []string{},
 		},
@@ -72,6 +76,10 @@ func TestIterator(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{"f5", "f6"},
+			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+		},
+		{
+			InventoryFiles:  []string{"f6", "f5"},
 			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
 		},
 		{
@@ -95,6 +103,10 @@ func TestIterator(t *testing.T) {
 			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
 		},
 		{
+			InventoryFiles:  []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
+			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+		},
+		{
 			InventoryFiles:  []string{"empty_file"},
 			ExpectedObjects: []string{},
 		},
@@ -103,18 +115,16 @@ func TestIterator(t *testing.T) {
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
 		for _, batchSize := range []int{1, 2, 3, 4, 5, 7, 9, 11, 15, 100, 1000, 10000} {
-			inv, err := s3.GenerateInventory(logging.Default(), manifestURL, &mockS3Client{
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, &mockS3Client{
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}, mockParquetReaderGetter)
-			if err != nil {
+			if !test.ErrExpected && err != nil {
 				t.Fatalf("error: %v", err)
+			} else if err != nil {
+				continue
 			}
-			it, err := inv.Iterator(context.Background())
+			it := inv.Iterator()
 			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
-
-			if err != nil {
-				t.Fatalf("error: %v", err)
-			}
 			objects := make([]string, 0, len(test.ExpectedObjects))
 			for it.Next() {
 				objects = append(objects, it.Get().Key)
@@ -149,7 +159,7 @@ func (m *mockParquetReader) Read(dstInterface interface{}) error {
 	dst := dstInterface.(*[]s3.ParquetInventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
 		if m.rows[i] == nil {
-			return fmt.Errorf("got empty key")
+			return fmt.Errorf("got empty key") // for test - simulate file with error
 		}
 		res = append(res, *m.rows[i])
 	}
