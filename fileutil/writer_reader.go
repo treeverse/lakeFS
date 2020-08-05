@@ -40,20 +40,20 @@ func NewFileWriterThenReader(basename string) (WriterThenReader, error) {
 	if err = os.Remove(file.Name()); err != nil {
 		return nil, fmt.Errorf("removing file %s from directory: %w", file.Name(), err)
 	}
-	return fileWriterThenReader{file: file}, nil
+	return &fileWriterThenReader{file: file}, nil
 }
 
 func (f fileWriterThenReader) Write(p []byte) (int, error) {
 	return f.file.Write(p)
 }
 
-func (f fileWriterThenReader) StartReading() (RewindableReader, int64, error) {
-	offset, err := f.file.Seek(0, os.SEEK_END)
+func (f *fileWriterThenReader) StartReading() (RewindableReader, int64, error) {
+	offset, err := f.file.Seek(0, io.SeekEnd)
 	if err != nil {
-		return fileRewindableReader{}, -1, err
+		return nil, -1, err
 	}
-	_, err = f.file.Seek(0, os.SEEK_SET)
-	ret := fileRewindableReader{file: f.file}
+	_, err = f.file.Seek(0, io.SeekStart)
+	ret := &fileRewindableReader{file: f.file}
 	// Break future attempts to use f
 	f.file = nil
 	return ret, offset, err
@@ -72,7 +72,7 @@ func (f fileRewindableReader) Seek(offset int64, whence int) (int64, error) {
 }
 
 func (f fileRewindableReader) Rewind() error {
-	_, err := f.file.Seek(0, os.SEEK_SET)
+	_, err := f.file.Seek(0, io.SeekStart)
 	return err
 }
 

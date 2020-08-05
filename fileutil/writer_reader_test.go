@@ -40,10 +40,6 @@ func TestWriterThenReader(t *testing.T) {
 		}
 	}
 
-	if err != nil {
-		t.Fatalf("start reading from fileWriterThenReader: %s", err)
-	}
-
 	// Re-read data again
 	err = reader.Rewind()
 	if err != nil {
