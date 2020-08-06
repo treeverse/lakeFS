@@ -2,7 +2,7 @@
 layout: default
 title: Deploying on AWS
 parent: Deployment
-nav_order: 2
+nav_order: 20
 has_children: false
 ---
 
@@ -14,18 +14,6 @@ has_children: false
 
 1. TOC
 {:toc}
-
-
-## Running PostgreSQL
-### On RDS
-
-1. Follow the official [AWS documentation](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/CHAP_GettingStarted.CreatingConnecting.PostgreSQL.html){: target="_blank" } on how to create a PostgreSQL instance and connect to it.  
-You may use the default PostgreSQL engine, or [Aurora PostgreSQL](https://docs.aws.amazon.com/AmazonRDS/latest/AuroraUserGuide/Aurora.AuroraPostgreSQL.html){: target="_blank" }. Make sure you're using PostgreSQL version >= 11.
-2. Once your RDS is set up and the server is in `Available` state, take note of the endpoint and port.
-
-   ![RDS Connection String](../assets/img/rds_conn.png)
-
-3. Make sure your security group rules allow you to connect to the database instance. 
 
 ## Setting up an S3 bucket for data storage
 

@@ -2,7 +2,7 @@
 layout: default
 title: Migrating away from lakeFS
 parent: Deployment
-nav_order: 3
+nav_order: 40
 has_children: false
 ---
 
