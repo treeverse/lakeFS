@@ -198,7 +198,7 @@ const RefDropdown = ({ repo, selected, selectRef, onCancel, prefix = '', emptyTe
     }, []);
 
     const popover = (
-        <Overlay target={target.current} show={show} placement="bottom">
+        <Overlay target={target.current} show={show} placement="bottom" rootClose={true} onHide={() => setShow(false)}>
             <Popover className="ref-popover">
                 <Popover.Content>
                     <BranchSelector
