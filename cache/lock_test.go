@@ -28,14 +28,14 @@ func TestChanLocker_Lock(t *testing.T) {
 	var wg sync.WaitGroup
 	wg.Add(3)
 
-	var foo50, getFoo50 bool
+	var foo100, getFoo100 bool
 	go func(acq *bool, getter *bool) {
 		*acq = c.Lock("foo", func() {
-			time.Sleep(time.Millisecond * 50)
+			time.Sleep(time.Millisecond * 100)
 			*getter = true
 			wg.Done()
 		})
-	}(&foo50, &getFoo50)
+	}(&foo100, &getFoo100)
 
 	var foo10, getFoo10 bool
 	go func(acq *bool, getter *bool) {
@@ -63,11 +63,11 @@ func TestChanLocker_Lock(t *testing.T) {
 	if getFoo10 {
 		t.Error("expected foo (10ms) getter not to be called")
 	}
-	if !getFoo50 {
-		t.Error("expected foo (50ms) getter to be called")
+	if !getFoo100 {
+		t.Error("expected foo (100ms) getter to be called")
 	}
-	if !foo50 {
-		t.Error("expected to acquire foo after 50ms")
+	if !foo100 {
+		t.Error("expected to acquire foo after 100ms")
 	}
 	if !getBar10 {
 		t.Error("expected bar getter to be called")
