@@ -226,7 +226,7 @@ func validatePartitionLocations(partitions []*hive_metastore.Partition, location
 		partitionLocation := fmt.Sprintf("part=%d", i)
 		expectedLocation := fmt.Sprintf("%s/%s", location, partitionLocation)
 		if partition.GetSd().GetLocation() != expectedLocation {
-			return fmt.Errorf("wrong partition location, expected: %s got: %s", expectedLocation, partition.GetSd().GetLocation())
+			return fmt.Errorf("%w, expected: %s got: %s", ErrWrongPartitionLocation, expectedLocation, partition.GetSd().GetLocation())
 		}
 	}
 	return nil
@@ -302,17 +302,17 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 	expectedLocation := fmt.Sprintf("%s/%s/%s", repoLocation, toBranch, tableDir)
 	if copiedTable.GetSd().GetLocation() != expectedLocation {
-		t.Errorf("wrong location expected:%s got:%s", expectedLocation, copiedTable.GetSd().GetLocation())
+		t.Errorf("%w:%s got:%s", ErrWrongLocationExpected, expectedLocation, copiedTable.GetSd().GetLocation())
 	}
 
 	expectedColumns := getCols()
 	gotColumns := copiedTable.GetSd().GetCols()
 	for i, expectedColumn := range expectedColumns {
 		if expectedColumn.Name != gotColumns[i].Name {
-			t.Errorf("wrong column expected:%s got:%s ", expectedColumn.Name, gotColumns[i].Name)
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, expectedColumn.Name, gotColumns[i].Name)
 		}
 		if !FieldSchemaEqual(expectedColumn, gotColumns[i]) {
-			t.Fatalf("wrong column data for column %s", expectedColumn.Name)
+			t.Fatalf("%w for column %s", ErrWrongColumnData, expectedColumn.Name)
 		}
 	}
 
@@ -342,10 +342,10 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	gotColumns = firstPartition.GetSd().GetCols()
 	for i, expectedColumn := range expectedColumns {
 		if expectedColumn.Name != gotColumns[i].Name {
-			t.Errorf("wrong column expected:%s got:%s ", expectedColumn.Name, gotColumns[i].Name)
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, expectedColumn.Name, gotColumns[i].Name)
 		}
 		if !FieldSchemaEqual(expectedColumn, gotColumns[i]) {
-			t.Fatalf("wrong column data for column %s", expectedColumn.Name)
+			t.Fatalf("%w for column %s", ErrWrongColumnData, expectedColumn.Name)
 		}
 	}
 

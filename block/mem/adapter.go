@@ -20,6 +20,13 @@ import (
 
 const BlockstoreType = "mem"
 
+var (
+	ErrNoDataForKey            = fmt.Errorf("no data for key")
+	ErrMultiPartNotFound       = fmt.Errorf("multipart ID not found")
+	ErrNoPropertiesForKey      = fmt.Errorf("no properties for key")
+	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for memory storage adapter")
+)
+
 type mpu struct {
 	id    string
 	parts map[int64][]byte
@@ -109,7 +116,7 @@ func (a *Adapter) Get(obj block.ObjectPointer, expectedSize int64) (io.ReadClose
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
 	if !ok {
-		return nil, fmt.Errorf("no data for key")
+		return nil, ErrNoDataForKey
 	}
 	return ioutil.NopCloser(bytes.NewReader(data)), nil
 }
@@ -119,7 +126,7 @@ func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	defer a.mutex.RUnlock()
 	data, ok := a.data[getKey(obj)]
 	if !ok {
-		return nil, fmt.Errorf("no data for key")
+		return nil, ErrNoDataForKey
 	}
 	return ioutil.NopCloser(io.NewSectionReader(bytes.NewReader(data), startPosition, endPosition-startPosition+1)), nil
 }
@@ -129,7 +136,7 @@ func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 	defer a.mutex.RUnlock()
 	props, ok := a.properties[getKey(obj)]
 	if !ok {
-		return block.Properties{}, fmt.Errorf("no properties for key")
+		return block.Properties{}, ErrNoPropertiesForKey
 	}
 	return props, nil
 }
@@ -156,7 +163,7 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
-		return "", fmt.Errorf("multipart ID not found")
+		return "", ErrMultiPartNotFound
 	}
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
@@ -178,7 +185,7 @@ func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	_, ok := a.mpu[uploadID]
 	if !ok {
-		return fmt.Errorf("multipart ID not found")
+		return ErrMultiPartNotFound
 	}
 	delete(a.mpu, uploadID)
 	a.uploadIDTranslator.RemoveUploadID(uploadID)
@@ -191,7 +198,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	mpu, ok := a.mpu[uploadID]
 	if !ok {
-		return nil, 0, fmt.Errorf("multipart ID not found")
+		return nil, 0, ErrMultiPartNotFound
 	}
 	data := mpu.get()
 	h := sha256.New()
@@ -211,5 +218,5 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 }
 
 func (a *Adapter) GenerateInventory(_ logging.Logger, _ string) (block.Inventory, error) {
-	return nil, errors.New("inventory feature not implemented for memory storage adapter")
+	return nil, ErrInventoryNotImplemented
 }

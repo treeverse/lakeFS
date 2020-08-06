@@ -35,9 +35,10 @@ func (p *FSCollection) CompareWith(i int, v interface{}, j int) metastore.Compar
 	if partition, ok := v.(*FSCollection); ok {
 		return compareFieldSchema(p.fsList[i], partition.fsList[j])
 	}
-	err := fmt.Errorf("expected to get value of type *hive.FSCollection gor: %T", v)
+	err := fmt.Errorf("%w *hive.FSCollection got: %T", ErrExpectedType, v)
 	panic(err)
 }
+
 func compareFieldSchema(fsA, fsB *hive_metastore.FieldSchema) metastore.CompareResult {
 	if fsA.GetName() < fsB.GetName() {
 		return metastore.ItemLess

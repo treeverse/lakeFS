@@ -17,6 +17,8 @@ import (
 
 const BlockstoreType = "transient"
 
+var ErrInventoryNotImplemented = errors.New("inventory feature not implemented for transient storage adapter")
+
 type Adapter struct{}
 
 func New() *Adapter {
@@ -105,5 +107,5 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 }
 
 func (a *Adapter) GenerateInventory(_ logging.Logger, _ string) (block.Inventory, error) {
-	return nil, errors.New("inventory feature not implemented for transient storage adapter")
+	return nil, ErrInventoryNotImplemented
 }

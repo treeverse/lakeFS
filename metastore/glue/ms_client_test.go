@@ -241,7 +241,7 @@ func validatePartitionLocations(partitions []*glue.Partition, location string) e
 		expectedLocation := fmt.Sprintf("%s/%s", location, partitionLocation)
 		gotLocation := aws.StringValue(partition.StorageDescriptor.Location)
 		if gotLocation != expectedLocation {
-			return fmt.Errorf("wrong partition location, expected: %s got: %s", expectedLocation, gotLocation)
+			return fmt.Errorf("%w, expected: %s got: %s", ErrWrongPartitionLocation, expectedLocation, gotLocation)
 		}
 	}
 	return nil
@@ -300,14 +300,14 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	expectedLocation := fmt.Sprintf("%s/%s/%s", repoLocation, toBranch, tableDir)
 	gotLocation := aws.StringValue(copiedTable.StorageDescriptor.Location)
 	if gotLocation != expectedLocation {
-		t.Errorf("wrong location expected:%s got:%s", expectedLocation, gotLocation)
+		t.Errorf("%w:%s got:%s", ErrWrongLocationExpected, expectedLocation, gotLocation)
 	}
 
 	expectedColumns := getCols()
 	gotColumns := copiedTable.StorageDescriptor.Columns
 	for i, expectedColumn := range expectedColumns {
 		if aws.StringValue(expectedColumn.Name) != aws.StringValue(gotColumns[i].Name) {
-			t.Errorf("wrong column expected:%s got:%s ", aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
 		}
 		if !ColumnEqual(expectedColumn, gotColumns[i]) {
 			t.Fatalf("wrong column data for column %s", aws.StringValue(expectedColumn.Name))
@@ -340,7 +340,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	gotColumns = firstPartition.StorageDescriptor.Columns
 	for i, expectedColumn := range expectedColumns {
 		if aws.StringValue(expectedColumn.Name) != aws.StringValue(gotColumns[i].Name) {
-			t.Errorf("wrong column expected:%s got:%s ", aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
 		}
 		if !ColumnEqual(expectedColumn, gotColumns[i]) {
 			t.Fatalf("wrong column data for column %s", aws.StringValue(expectedColumn.Name))
@@ -389,7 +389,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 
 	mergedSdLocation := aws.StringValue(merged.StorageDescriptor.Location)
 	if mergedSdLocation != location {
-		t.Errorf("wrong location expected:%s got:%s", location, mergedSdLocation)
+		t.Errorf("%w:%s got:%s", ErrWrongLocationExpected, location, mergedSdLocation)
 	}
 
 	if len(mergedPartitions) != numOfPartitions {

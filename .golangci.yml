@@ -31,7 +31,6 @@ linters:
     - nakedret
     - rowserrcheck
     - scopelint
-    - sqlclosecheck
     - staticcheck
     - structcheck
     - stylecheck
@@ -41,3 +40,4 @@ linters:
     - unused
     - varcheck
     - whitespace
+

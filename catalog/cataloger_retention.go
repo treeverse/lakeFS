@@ -268,7 +268,7 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 	}
 	count := result.(int)
 	if count != len(expireResults) {
-		return fmt.Errorf("tried to expire %d entries but expired only %d entries", len(expireResults), count)
+		return fmt.Errorf("%w: tried to expire %d entries but expired only %d entries", ErrUnexpected, len(expireResults), count)
 	}
 	logger.WithField("count", count).Info("expired records")
 	return nil

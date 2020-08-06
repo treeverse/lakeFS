@@ -37,7 +37,7 @@ func (p *PartitionCollection) CompareWith(i int, v interface{}, j int) metastore
 	if otherIter, ok := v.(*PartitionCollection); ok {
 		return comparePartitions(p.partitions[i], otherIter.partitions[j])
 	}
-	err := fmt.Errorf("expected type *glue.PartitionCollection, got %T", v)
+	err := fmt.Errorf("%w *glue.PartitionCollection, got %T", ErrExpectedType, v)
 	panic(err)
 }
 
