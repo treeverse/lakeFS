@@ -19,8 +19,8 @@ has_children: false
 
 ###  Using Docker Compose
 
-**Note** This configuration stores data locally inside the container.
-It is only intended for testing purposes
+**Note** This configuration is for learning purposes, and stores data locally inside a container.
+For a production deployment, see [Deploying on AWS](deploying/aws.md).
 {: .note }
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
