@@ -67,7 +67,7 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: ## Lint code
-	$(DOCKER) run --rm -it -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v
+	$(DOCKER) run --rm -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v
 
 test: gen run-test  ## Run tests for the project
 
