@@ -312,7 +312,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, expectedColumn.Name, gotColumns[i].Name)
 		}
 		if !FieldSchemaEqual(expectedColumn, gotColumns[i]) {
-			t.Fatalf("%w for column %s", ErrWrongColumnData, expectedColumn.Name)
+			t.Fatalf("wrong column data for column %s", expectedColumn.Name)
 		}
 	}
 
@@ -345,7 +345,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, expectedColumn.Name, gotColumns[i].Name)
 		}
 		if !FieldSchemaEqual(expectedColumn, gotColumns[i]) {
-			t.Fatalf("%w for column %s", ErrWrongColumnData, expectedColumn.Name)
+			t.Fatalf("wrong column data for column %s", expectedColumn.Name)
 		}
 	}
 
