@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/client/auth"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
@@ -1162,6 +1164,103 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 			t.Fatalf("expected file to be gone now")
 		}
 	})
+}
+
+func TestController_CreatePolicyHandler(t *testing.T) {
+	handler, deps := getHandler(t)
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	t.Run("valid_policy", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fs:ReadObject"},
+						Effect:   swag.String("allow"),
+						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err != nil {
+			t.Fatalf("unexpected error creating valid policy: %v", err)
+		}
+	})
+
+	t.Run("invalid_policy_action", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fsx:ReadObject"},
+						Effect:   swag.String("allow"),
+						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error creating invalid policy: action")
+		}
+	})
+
+	t.Run("invalid_policy_effect", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fs:ReadObject"},
+						Effect:   swag.String("Allow"),
+						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error creating invalid policy: effect")
+		}
+	})
+
+	t.Run("invalid_policy_arn", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fs:ReadObject"},
+						Effect:   swag.String("Allow"),
+						Resource: swag.String("arn:lakefs:fs:repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error creating invalid policy: arn")
+		}
+	})
+
 }
 
 func TestHandler_RetentionPolicyHandlers(t *testing.T) {
