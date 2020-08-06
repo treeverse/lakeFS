@@ -1,7 +1,6 @@
 package cache_test
 
 import (
-	"fmt"
 	"sync"
 	"testing"
 	"time"
@@ -29,30 +28,33 @@ func TestChanLocker_Lock(t *testing.T) {
 	wg.Add(3)
 
 	var foo100, getFoo100 bool
-	go func(acq *bool, getter *bool) {
+	ch := make(chan bool)
+	go func(acq *bool, getter *bool, ch chan bool) {
+		close(ch)
+		defer wg.Done()
 		*acq = c.Lock("foo", func() {
-			time.Sleep(time.Millisecond * 100)
 			*getter = true
-			wg.Done()
+			time.Sleep(time.Millisecond * 100)
 		})
-	}(&foo100, &getFoo100)
+	}(&foo100, &getFoo100, ch)
+	<-ch // wait until goroutine starts
 
 	var foo10, getFoo10 bool
 	go func(acq *bool, getter *bool) {
+		defer wg.Done()
 		time.Sleep(10 * time.Millisecond)
 		*acq = c.Lock("foo", func() {
 			*getter = true
 		})
-		wg.Done()
 	}(&foo10, &getFoo10)
 
 	var bar10 bool
 	var getBar10 bool
 	go func(acq *bool, getter *bool) {
+		defer wg.Done()
 		time.Sleep(10 * time.Millisecond)
 		*acq = c.Lock("bar", func() {
 			*getter = true
-			wg.Done()
 		})
 	}(&bar10, &getBar10)
 
@@ -75,18 +77,4 @@ func TestChanLocker_Lock(t *testing.T) {
 	if !bar10 {
 		t.Error("expected to acquire bar")
 	}
-}
-
-func TestNewLRUCache(t *testing.T) {
-	m := make(chan struct{})
-
-	go func() {
-		fmt.Printf("gonna read from m...\n")
-		v := <-m
-		fmt.Printf("read fron m! %v\n", v)
-	}()
-
-	time.Sleep(3 * time.Second)
-	fmt.Printf("done sleeping! closing")
-	close(m)
 }
