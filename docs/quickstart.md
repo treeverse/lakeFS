@@ -8,20 +8,19 @@ has_children: false
 # Quick Start
 {: .no_toc }
 
+**Note** This tutorial is for learning purposes, and stores data locally inside a container.
+For a production deployment, see [Deploying on AWS](deploying/aws.md).
+{: .note }
+
 ## Table of contents
 {: .no_toc .text-delta }
 
 1. TOC
 {:toc}
 
-
 ## Running a local server for testing
 
 ###  Using Docker Compose
-
-**Note** This configuration is for learning purposes, and stores data locally inside a container.
-For a production deployment, see [Deploying on AWS](deploying/aws.md).
-{: .note }
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
