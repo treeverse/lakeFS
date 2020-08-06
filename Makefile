@@ -98,7 +98,7 @@ fmt-validator:  ## Validate go format
 		echo Your code formatting is according to gofmt standards; \
 	fi
 
-checks-validator: lint validate-swagger ## Run all validation/linting steps
+checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
