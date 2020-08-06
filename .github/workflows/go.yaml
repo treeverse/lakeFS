@@ -14,14 +14,14 @@ jobs:
         with:
           go-version: 1.14
         id: go
-      - name: Setup statik
-        run: |
-          go get github.com/rakyll/statik
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
+      - name: Setup statik
+        run: go get github.com/rakyll/statik
+      - name: Generated code
+        run: make gen
       - name: Checks validator
-        run: |
-          make checks-validator
+        run: make checks-validator
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v1
         with:
