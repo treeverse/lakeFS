@@ -37,6 +37,9 @@ Github workflow will be triggered when all other workflows finished successfully
 The workflow will run the lakeFS app with local postgres DB on a dedicated server,
 execute the tests binary and report the results. Failed run will block the PR merge.
 
-S3 bucket will be created once for all test runs.
-Objects will be deleted by setting S3 expiry for the entire bucket.
-Each test will have its own file prefix determined by the lakeFS namespaces.
+Underline storage (S3/GCS/Minio/other) will be created once for all test runs.
+Tests are orthogonal to the lakeFS setup which could vary in the backing storage layer,
+postgres version and other configurations.
+
+Objects will be deleted by setting expiry for the entire bucket in the storage layer.
+Isolation is kept by setting unique file prefixes which is determined by the lakeFS namespaces.
