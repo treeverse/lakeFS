@@ -40,7 +40,7 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(_ logging.Logger, inventoryURL string) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
 		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
 	}
@@ -117,10 +117,10 @@ func (m *mockInventoryIterator) Get() *block.InventoryObject {
 	return &m.rows[*m.idx]
 }
 
-func (m *mockInventory) Iterator(_ context.Context) (block.InventoryIterator, error) {
+func (m *mockInventory) Iterator() block.InventoryIterator {
 	return &mockInventoryIterator{
 		rows: rows(m.rows...),
-	}, nil
+	}
 }
 
 func (m *mockInventory) SourceName() string {

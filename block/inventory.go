@@ -7,12 +7,12 @@ import (
 )
 
 type InventoryGenerator interface {
-	GenerateInventory(logger logging.Logger, inventoryURL string) (Inventory, error)
+	GenerateInventory(ctx context.Context, logger logging.Logger, inventoryURL string) (Inventory, error)
 }
 
 // Inventory represents a snapshot of the storage space
 type Inventory interface {
-	Iterator(ctx context.Context) (InventoryIterator, error)
+	Iterator() InventoryIterator
 	SourceName() string
 	InventoryURL() string
 }
