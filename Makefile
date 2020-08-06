@@ -66,7 +66,7 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
-lint: gen ## Lint code
+lint: ## Lint code
 	$(DOCKER) run --rm -it -v $(CURDIR):/app -w /app golangci/golangci-lint:$(GOLANGCILINT_VERSION) golangci-lint run -v
 
 test: gen run-test  ## Run tests for the project
@@ -98,7 +98,7 @@ fmt-validator:  ## Validate go format
 		echo Your code formatting is according to gofmt standards; \
 	fi
 
-checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps
+checks-validator: lint validate-swagger ## Run all validation/linting steps
 
 $(UI_DIR)/node_modules:
 	cd $(UI_DIR) && $(NPM) install
