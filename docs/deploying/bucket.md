@@ -8,7 +8,7 @@ has_children: false
 
 # Creating the S3 bucket
 
-In this section we create the S3 bucket, which will provide the data storage layer for our installation:
+We now create the S3 bucket, which will provide the data storage layer for our installation:
 
 1. From the S3 Administration console, choose `Create Bucket` (you can use an existing bucket with a path prefix, but creating a dedicated bucket is recommended).
 2. Make sure you:

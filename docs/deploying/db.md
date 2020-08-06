@@ -9,7 +9,7 @@ has_children: false
 # Creating the database
 
 Before installing lakeFS, you need to have a PostgreSQL database. 
-In this guide we show you how to set it up on AWS RDS, but you can use a different database as long as its accessible by your lakeFS installation.
+In this guide we show you how to set it up on AWS RDS, but you can use a different database as long as it's accessible by your lakeFS installation.
 
 ## On RDS
 
