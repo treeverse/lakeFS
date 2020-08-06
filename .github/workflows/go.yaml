@@ -22,6 +22,10 @@ jobs:
       - name: Checks validator
         run: |
           make checks-validator
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v1
+        with:
+          version: v1.30
       - name: gitLeaks
         uses: zricethezav/gitleaks-action@v1.1.2
 
