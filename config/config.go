@@ -112,8 +112,9 @@ func (c *Config) BuildDatabaseConnection() db.Database {
 }
 
 type AwsS3RetentionConfig struct {
-	RoleArn         string
-	ManifestBaseUrl *url.URL
+	RoleArn           string
+	ManifestBaseURL   *url.URL
+	ReportS3PrefixURL *string
 }
 
 func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
@@ -123,16 +124,22 @@ func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
 		errors = append(errors, "blockstore.s3.retention.role_arn")
 	}
 
-	manifestBaseUrl, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
+	manifestBaseURL, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
 	if err != nil {
 		errors = append(errors, fmt.Sprintf("blockstore.s3.retention.manifest_base_url: %s", err))
 	}
 	if len(errors) > 0 {
 		panic(fmt.Sprintf("need %s to handle retention on S3", strings.Join(errors, ", ")))
 	}
+	var reportS3PrefixURL *string
+	prefixURL := viper.GetString("blockstore.s3.retention.report_s3_prefix_url")
+	if prefixURL != "" {
+		reportS3PrefixURL = &prefixURL
+	}
 	return AwsS3RetentionConfig{
-		RoleArn:         roleArn,
-		ManifestBaseUrl: manifestBaseUrl,
+		RoleArn:           roleArn,
+		ManifestBaseURL:   manifestBaseURL,
+		ReportS3PrefixURL: reportS3PrefixURL,
 	}
 }
 
@@ -155,19 +162,31 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	return cfg
 }
 
+func GetAwsAccessKeyID(awsConfig *aws.Config) (string, error) {
+	awsCredentials, err := awsConfig.Credentials.Get()
+	if err != nil {
+		return "", fmt.Errorf("access AWS credentials: %w", err)
+	}
+	return awsCredentials.AccessKeyID, nil
+}
+
 func GetAccount(awsConfig *aws.Config) (string, error) {
+	accessKeyID, err := GetAwsAccessKeyID(awsConfig)
+	if err != nil {
+		return "", err
+	}
 	sess, err := session.NewSession(awsConfig)
 	if err != nil {
 		return "", fmt.Errorf("get AWS session: %w", err)
 	}
 	sess.ClientConfig(sts.ServiceName)
 	svc := sts.New(sess)
-	accessKeyId := viper.GetString("blockstore.s3.credentials.access_key_id")
+
 	account, err := svc.GetAccessKeyInfo(&sts.GetAccessKeyInfoInput{
-		AccessKeyId: aws.String(accessKeyId),
+		AccessKeyId: aws.String(accessKeyID),
 	})
 	if err != nil {
-		return "", fmt.Errorf("get access key info for %s: %w", accessKeyId, err)
+		return "", fmt.Errorf("get access key info for %s: %w", accessKeyID, err)
 	}
 	return *account.Account, nil
 }

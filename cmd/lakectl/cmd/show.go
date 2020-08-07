@@ -55,6 +55,7 @@ var showCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(showCmd)
 

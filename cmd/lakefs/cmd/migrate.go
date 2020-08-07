@@ -76,6 +76,7 @@ var gotoCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(migrateCmd)
 	migrateCmd.AddCommand(versionCmd)

@@ -604,6 +604,7 @@ func addPaginationFlags(cmd *cobra.Command) {
 	cmd.Flags().String("after", "", "show results after this value (used for pagination)")
 }
 
+//nolint:gochecknoinits
 func init() {
 	// users
 	authUsersCreate.Flags().String("id", "", "user identifier")

@@ -59,6 +59,7 @@ var configCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(configCmd)
 }

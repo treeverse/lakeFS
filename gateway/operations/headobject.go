@@ -14,11 +14,11 @@ import (
 
 type HeadObject struct{}
 
-func (controller *HeadObject) RequiredPermissions(request *http.Request, repoId, branchId, path string) ([]permissions.Permission, error) {
+func (controller *HeadObject) RequiredPermissions(request *http.Request, repoID, branchID, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.ReadObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }

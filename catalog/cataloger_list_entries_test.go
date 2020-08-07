@@ -689,6 +689,140 @@ func TestCataloger_ListEntries_ReadingUncommittedFromLineage(t *testing.T) {
 	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 11 {
-		t.Fatalf("expected 10 entries, read %d", len(got))
+		t.Fatalf("expected 11 entries, read %d", len(got))
+	}
+}
+
+func TestCataloger_ListEntries_MultipleDelete(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	testListEntriesCreateEntries(t, ctx, c, repo, "master", 50, 100, 1)
+	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
+	testListEntriesCreateEntries(t, ctx, c, repo, "br_1", 51, 100, 2)
+
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 100 {
+		t.Fatalf("expected 100 entries, read %d", len(got))
+	}
+	for i, ent := range got {
+		if i%2 == 0 {
+			if ent.Size != 50 {
+				t.Errorf("entry %s size not 50, is %d", ent.Path, ent.Size)
+			}
+		} else {
+			if ent.Size != 49 {
+				t.Errorf("entry %s size not 50, is %d", ent.Path, ent.Size)
+			}
+		}
+	}
+	// check identifying uncommitted delete
+	for i := 0; i < 100; i += 2 {
+		p := fmt.Sprintf("my_entry%03d", i)
+		testutil.MustDo(t, "delete files in br_1", c.DeleteEntry(ctx, repo, "br_1", p))
+	}
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 50 {
+		t.Fatalf("expected 50 entries, read %d", len(got))
+	}
+	for _, ent := range got {
+		if ent.Size != 49 {
+			t.Errorf("entry %s size not 49, is %d", ent.Path, ent.Size)
+		}
+	}
+	// check it can identify committed tombstones
+	_, err = c.Commit(ctx, repo, "br_1", "commit  br_1 after delete ", "tester", nil)
+	testutil.MustDo(t, "commit br_1 after delete ", err)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 50 {
+		t.Fatalf("expected 50 entries, read %d", len(got))
+	}
+	for _, ent := range got {
+		if ent.Size != 49 {
+			t.Errorf("entry %s size not 49, is %d", ent.Path, ent.Size)
+		}
+	}
+	// create tombstones for entries in master
+	for i := 1; i < 100; i += 2 {
+		p := fmt.Sprintf("my_entry%03d", i)
+		testutil.MustDo(t, "delete files in br_1", c.DeleteEntry(ctx, repo, "br_1", p))
+	}
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 entries, read %d", len(got))
+	}
+	// check after commit
+	_, err = c.Commit(ctx, repo, "br_1", "commit br_1 after delete ", "tester", nil)
+	testutil.MustDo(t, "commit br_1 after delete ", err)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 entries, read %d", len(got))
+	}
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 100 {
+		t.Fatalf("expected 100 entries, read %d", len(got))
+	}
+}
+
+func TestCataloger_ListEntries_IgnoreDeleteByLineage(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
+	testListEntriesCreateEntries(t, ctx, c, repo, "master", 50, 100, 1)
+	testCatalogerBranch(t, ctx, c, repo, "br_1", "master")
+	for i := 0; i < 100; i++ {
+		p := fmt.Sprintf("my_entry%03d", i)
+		testutil.MustDo(t, "delete files in master", c.DeleteEntry(ctx, repo, "master", p))
+	}
+	// br_1 ignores uncommitted tombstones on master
+	got, _, err := c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 100 {
+		t.Fatalf("expected 100 entries on br_1, read %d", len(got))
+	}
+	// master is really deleted
+	got, _, err = c.ListEntries(ctx, repo, "master", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 entries on master, read %d", len(got))
+	}
+	_, err = c.Commit(ctx, repo, "master", "commit master", "tester", nil)
+	testutil.MustDo(t, "commit master ", err)
+	// br_1 ignores deleted committed entries on master
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 100 {
+		t.Fatalf("expected 100 entries on br_1, read %d", len(got))
+	}
+	// now merge master to br_1
+	_, err = c.Merge(ctx, repo, "master", "br_1", "tester", "merge deletions", nil)
+	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
+	testutil.Must(t, err)
+	if len(got) != 0 {
+		t.Fatalf("expected 0 entries on br_1, read %d", len(got))
+	}
+}
+
+func testListEntriesCreateEntries(t *testing.T, ctx context.Context, c Cataloger, repo, branch string, numIterations, numEntries, skip int) {
+	t.Helper()
+	for i := 0; i < numIterations; i++ {
+		for j := 0; j < numEntries; j += skip {
+			path := fmt.Sprintf("my_entry%03d", j)
+			seed := strconv.Itoa(i)
+			checksum := testCreateEntryCalcChecksum(path, seed)
+			err := c.CreateEntry(ctx, repo, branch, Entry{Path: path, Checksum: checksum, PhysicalAddress: checksum, Size: int64(i)}, CreateEntryParams{})
+			if err != nil {
+				t.Fatalf("Failed to create entry %s on branch %s, repository %s: %s", path, branch, repo, err)
+			}
+		}
+		msg := fmt.Sprintf("commit %s cycle %d", branch, i)
+		_, err := c.Commit(ctx, repo, branch, msg, "tester", nil)
+		testutil.MustDo(t, msg, err)
 	}
 }

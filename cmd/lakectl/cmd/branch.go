@@ -206,6 +206,7 @@ var branchShowCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(branchCmd)
 	branchCmd.AddCommand(branchCreateCmd)

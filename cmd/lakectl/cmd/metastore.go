@@ -174,6 +174,7 @@ var glueSymlinkCmd = &cobra.Command{
 	},
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(metastoreCmd)
 	metastoreCmd.AddCommand(metastoreCopyCmd)

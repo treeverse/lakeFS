@@ -1,9 +1,8 @@
-
-GOCMD=$(shell which go)
-DOCKER=$(shell which docker)
+GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
+DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)
-NPM=$(shell which npm)
-STATIK=$(GOBINPATH)/bin/statik
+NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
+STATIK=$(or $(shell test -e "$(GOBINPATH)/bin/statik" && echo "$(GOBINPATH)/bin/statik"), $(error "Missing statik pkg - get it with `go get github.com/rakyll/statik`"))
 GOLANGCILINT_VERSION=v1.25.1
 
 GOBUILD=$(GOCMD) build
@@ -96,7 +95,7 @@ fmt-validator:  ## Validate go format
 		echo "$${res}"; \
 		exit 1; \
 	else \
-		echo Your code formating is according gofmt standards; \
+		echo Your code formatting is according to gofmt standards; \
 	fi
 
 checks-validator: fmt-validator validate-swagger ## Run all validation/linting steps

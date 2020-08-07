@@ -86,6 +86,7 @@ func FmtDiff(diff *models.Diff, withDirection bool) {
 	)
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(diffCmd)
 }

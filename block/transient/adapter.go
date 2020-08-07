@@ -104,6 +104,6 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (a *Adapter) GenerateInventory(_ logging.Logger, _ string) (block.Inventory, error) {
+func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
 	return nil, errors.New("inventory feature not implemented for transient storage adapter")
 }

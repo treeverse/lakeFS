@@ -465,7 +465,6 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 		}
 		return err
 	}
-	// TODO(oz): Is this too chatty for a command?
 	s.log().WithFields(logging.Fields{
 		"Bucket":          storageNamespace,
 		"LifecyclePolicy": config.GoString(),
@@ -480,7 +479,6 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 	}
 
 	if !hasMatchingRule {
-		// TODO(oz): Add a "to fix, ..." message?
 		return fmt.Errorf("bucket %s lifecycle rules not configured to expire objects tagged \"%s\"", storageNamespace, ExpireObjectS3Tag)
 	}
 	return nil

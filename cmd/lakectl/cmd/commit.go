@@ -68,6 +68,7 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	return kv, nil
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(commitCmd)
 

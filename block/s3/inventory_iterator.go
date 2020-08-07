@@ -1,8 +1,6 @@
 package s3
 
 import (
-	"context"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -26,43 +24,23 @@ func (o *ParquetInventoryObject) GetPhysicalAddress() string {
 type InventoryIterator struct {
 	*Inventory
 	ReadBatchSize          int
-	ctx                    context.Context
-	inventoryBucket        string
 	err                    error
 	val                    block.InventoryObject
 	buffer                 []ParquetInventoryObject
 	currentManifestFileIdx int
 	nextRowInParquet       int
-	rowsPerFile            []int
 	valIndexInBuffer       int
 }
 
-func NewInventoryIterator(ctx context.Context, inv *Inventory, invBucket string) (*InventoryIterator, error) {
-	res := &InventoryIterator{
-		ctx:             ctx,
-		Inventory:       inv,
-		ReadBatchSize:   DefaultReadBatchSize,
-		inventoryBucket: invBucket,
+func NewInventoryIterator(inv *Inventory) *InventoryIterator {
+	return &InventoryIterator{
+		Inventory:     inv,
+		ReadBatchSize: DefaultReadBatchSize,
 	}
-	res.rowsPerFile = make([]int, len(res.Manifest.Files))
-	for i := range res.Manifest.Files {
-		key := res.Manifest.Files[i].Key
-		pr, closeReader, err := res.getParquetReader(res.ctx, res.S3, res.inventoryBucket, key)
-		if err != nil {
-			return nil, err
-		}
-		res.rowsPerFile[i] = int(pr.GetNumRows())
-		err = closeReader()
-		if err != nil {
-			res.logger.WithFields(logging.Fields{"bucket": invBucket, "key": key}).
-				Error("failed to close parquet reader in NewInventoryIterator")
-		}
-	}
-	return res, nil
 }
 
 func (it *InventoryIterator) Next() bool {
-	if len(it.rowsPerFile) == 0 {
+	if len(it.Manifest.Files) == 0 {
 		// empty manifest
 		return false
 	}
@@ -77,7 +55,8 @@ func (it *InventoryIterator) Next() bool {
 		// value not found in buffer, need to reload the buffer
 		it.valIndexInBuffer = -1
 		// if needed, try to move on to the next manifest file:
-		if it.nextRowInParquet >= it.rowsPerFile[it.currentManifestFileIdx] && !it.moveToNextManifestFile() {
+		file := it.Manifest.Files[it.currentManifestFileIdx]
+		if it.nextRowInParquet >= file.numRows && !it.moveToNextManifestFile() {
 			// no more files left
 			return false
 		}
@@ -99,7 +78,7 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 
 func (it *InventoryIterator) fillBuffer() bool {
 	key := it.Manifest.Files[it.currentManifestFileIdx].Key
-	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.inventoryBucket, key)
+	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.Manifest.inventoryBucket, key)
 	if err != nil {
 		it.err = err
 		return false
@@ -107,8 +86,8 @@ func (it *InventoryIterator) fillBuffer() bool {
 	defer func() {
 		err = closeReader()
 		if err != nil {
-			it.logger.WithFields(logging.Fields{"bucket": it.inventoryBucket, "key": key}).
-				Error("failed to close parquet reader in fillBuffer")
+			it.logger.WithFields(logging.Fields{"bucket": it.Manifest.inventoryBucket, "key": key}).
+				Error("failed to close parquet reader after filling buffer")
 		}
 	}()
 	// skip the rows that have already been read:

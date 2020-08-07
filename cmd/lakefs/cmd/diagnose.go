@@ -57,7 +57,7 @@ var diagnoseCmd = &cobra.Command{
 	Hidden: true,
 }
 
+//nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(diagnoseCmd)
-	// No flags
 }
