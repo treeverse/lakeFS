@@ -147,7 +147,7 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 }
 
 func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
-	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
+	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID, MaxCommitID)
 	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
 	sqSon := sq.Select("*").
 		FromSelect(sonLineage, "s").
