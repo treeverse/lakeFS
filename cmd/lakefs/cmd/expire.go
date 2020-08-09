@@ -70,10 +70,11 @@ var expireCmd = &cobra.Command{
 		numFailures := 0
 		ok := true
 		for _, repo := range repos {
-			repoLogger := logger.WithFields(logging.Fields{
+			repoCtx := logging.AddFields(ctx, logging.Fields{
 				"repository": repo.Name,
 				"storage":    repo.StorageNamespace,
 			})
+			repoLogger := logging.FromContext(repoCtx)
 			policy, err := retentionService.GetPolicy(repo.Name)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to get retention policy (skip repo)")
@@ -86,20 +87,20 @@ var expireCmd = &cobra.Command{
 				continue
 			}
 			// TODO(ariels): Rewrite this!
-			expiryRows, err := cataloger.QueryEntriesToExpire(ctx, repo.Name, &policy.Policy)
+			expiryRows, err := cataloger.QueryEntriesToExpire(repoCtx, repo.Name, &policy.Policy)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to query for expired (skip repo)")
 				numFailures++
 				continue
 			}
-			expiryReader, err := retention.WriteExpiryResultsToSeekableReader(ctx, expiryRows)
+			expiryReader, err := retention.WriteExpiryResultsToSeekableReader(repoCtx, expiryRows)
 			if err != nil {
 				repoLogger.WithError(err).Error("failed to write expiry results (skip repo)")
 				numFailures++
 				continue
 			}
 
-			errCh := retention.ExpireOnS3(ctx, s3ControlClient, s3Client, cataloger, repo, expiryReader, &expiryParams)
+			errCh := retention.ExpireOnS3(repoCtx, s3ControlClient, s3Client, cataloger, repo, expiryReader, &expiryParams)
 
 			repoOk := true
 			for err := range errCh {
