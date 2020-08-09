@@ -94,7 +94,7 @@ type retentionQueryRecord struct {
 	Path            string   `db:"path"`
 }
 
-func buildRetentionQuery(repositoryName string, policy *Policy) sq.SelectBuilder {
+func buildRetentionQuery(repositoryName string, policy *Policy, afterRow *sqlx.Row, limit *uint64) (sq.SelectBuilder, error) {
 	var (
 		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
 		byUncommitted = sq.Expr("min_commit = 0")
@@ -134,12 +134,28 @@ func buildRetentionQuery(repositoryName string, policy *Policy) sq.SelectBuilder
 		ruleSelectors = append(ruleSelectors, selector)
 	}
 
+	filter := sq.And{repositorySelector, sq.Or(ruleSelectors)}
+	if afterRow != nil {
+		var r retentionQueryRecord
+		if err := afterRow.Scan(&r); err != nil {
+			return sq.SelectBuilder{}, fmt.Errorf("failed to unwrap last row %v: %w", afterRow, err)
+		}
+		filter = sq.And{
+			filter,
+			sq.Expr("(physical_address, branch_id, min_commit) > (?, ?, ?)", r.PhysicalAddress, r.BranchID, r.MinCommit),
+		}
+	}
+
 	query := psql.Select("physical_address", "catalog_branches.name AS branch", "branch_id", "path", "min_commit").
 		From(entriesTable).
-		Where(sq.And{repositorySelector, sq.Or(ruleSelectors)})
+		Where(filter)
 	query = query.Join("catalog_branches ON catalog_entries.branch_id = catalog_branches.id").
 		Join("catalog_repositories on catalog_branches.repository_id = catalog_repositories.id")
-	return query
+	if limit != nil {
+		query = query.OrderBy("physical_address", "branch_id", "min_commit").
+			Limit(*limit)
+	}
+	return query, nil
 }
 
 // expiryRows implements ExpiryRows.
@@ -178,14 +194,18 @@ func (e *expiryRows) Read() (*ExpireResult, error) {
 	}, nil
 }
 
-func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error) {
+func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error) {
 	logger := logging.FromContext(ctx).WithField("policy", *policy)
 
-	// TODO(ariels): Get lowest possible isolation level here.
-	expiryByEntriesQuery := buildRetentionQuery(repositoryName, policy)
-	expiryByEntriesQueryString, args, err := expiryByEntriesQuery.ToSql()
+	// TODO(ariels): page!
+	expiryByEntriesQuery, err := buildRetentionQuery(repositoryName, policy, nil, nil)
 	if err != nil {
 		return nil, fmt.Errorf("building query: %w", err)
+	}
+	// TODO(ariels): Get lowest possible isolation level here.
+	expiryByEntriesQueryString, args, err := expiryByEntriesQuery.ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("converting query to SQL: %w", err)
 	}
 
 	// Hold retention query results as a CTE in a WITH prefix.  Everything must live in a
@@ -221,8 +241,13 @@ func (c *cataloger) QueryExpired(ctx context.Context, repositoryName string, pol
 	return ret, nil
 }
 
-func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
+func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
 	logger := logging.FromContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
+
+	if len(expireResults) == 0 {
+		logger.Info("nothing to expire")
+		return nil
+	}
 
 	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`CREATE TEMPORARY TABLE temp_expiry (
@@ -272,4 +297,66 @@ func (c *cataloger) MarkExpired(ctx context.Context, repositoryName string, expi
 	}
 	logger.WithField("count", count).Info("expired records")
 	return nil
+}
+
+// TODO(ariels): chunk.
+func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName string) (int64, error) {
+	// TODO(ariels): This query is difficult to chunk.  One way: Perform the inner SELECT
+	// once into a temporary table, then in a separate transaction chunk the UPDATE by
+	// dedup_id (this is not yet the real deletion).
+	result, err := c.db.Exec(`
+                    UPDATE catalog_object_dedup SET deleting=true
+                    WHERE repository_id IN (SELECT id FROM catalog_repositories WHERE name = $1) AND
+                          physical_address IN (
+                              SELECT physical_address FROM (
+                                SELECT physical_address, bool_and(is_expired) all_expired
+                                FROM catalog_entries
+                                GROUP BY physical_address
+                              ) physical_addresses_with_expiry
+                              WHERE all_expired)`, repositoryName)
+	return result, err
+}
+
+type StringRows struct {
+	rows *sqlx.Rows
+}
+
+func (s *StringRows) Next() bool {
+	return s.rows.Next()
+}
+
+func (s *StringRows) Err() error {
+	return s.rows.Err()
+}
+
+func (s *StringRows) Close() error {
+	return s.rows.Close()
+}
+
+func (s *StringRows) Read() (string, error) {
+	var ret string
+	err := s.rows.Scan(&ret)
+	return ret, err
+}
+
+// TODO(ariels): Process in chunks.  Can store the inner physical_address query in a table for
+//     the duration.
+func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (StringRows, error) {
+	rows, err := c.db.Queryx(`
+		WITH ids AS (SELECT id repository_id FROM catalog_repositories WHERE name = $1),
+		    update_result AS (
+			UPDATE catalog_object_dedup SET deleting=all_expired
+			 FROM (
+			     SELECT physical_address, bool_and(is_expired) all_expired
+			     FROM catalog_entries
+			     GROUP BY physical_address
+			 ) AS by_entries
+			 WHERE repository_id IN (SELECT repository_id FROM ids) AND
+			       catalog_object_dedup.physical_address = by_entries.physical_address
+			 RETURNING by_entries.physical_address, all_expired
+		    )
+		SELECT physical_address FROM update_result WHERE all_expired`,
+		repositoryName,
+	)
+	return StringRows{rows}, err
 }

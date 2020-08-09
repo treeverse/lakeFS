@@ -20,10 +20,15 @@ type testEntryInfo struct {
 	Deleted bool
 }
 
-func testCataloger(t testing.TB, options ...CatalogerOption) Cataloger {
+type TestCataloger struct {
+	Cataloger
+	DbConnURI string
+}
+
+func testCataloger(t testing.TB, options ...CatalogerOption) TestCataloger {
 	t.Helper()
-	conn, _ := testutil.GetDB(t, databaseURI)
-	return NewCataloger(conn, options...)
+	conn, uri := testutil.GetDB(t, databaseURI)
+	return TestCataloger{Cataloger: NewCataloger(conn, options...), DbConnURI: uri}
 }
 
 func testCatalogerUniqueID() string {
