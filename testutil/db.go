@@ -28,7 +28,7 @@ const (
 
 	envKeyUseS3BlockAdapter = "USE_S3_BLOCK_ADAPTER"
 	envKeyAwsKeyID          = "AWS_ACCESS_KEY_ID"
-	envKeyAwsSecretKey      = "AWS_SECRET_ACCESS_KEY"
+	envKeyAwsSecretKey      = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
 	envKeyAwsRegion         = "AWS_DEFAULT_REGION"
 )
 
@@ -37,7 +37,6 @@ func GetDBInstance(pool *dockertest.Pool) (string, func()) {
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
 		"POSTGRES_DB=lakefs_db",
-		"LC_COLLATE=C",
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)
