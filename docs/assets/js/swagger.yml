@@ -222,6 +222,14 @@ definitions:
     required:
       - id
 
+  setup:
+    type: object
+    properties:
+      display_name:
+        type: string
+    required:
+      - display_name
+
   credentials:
     type: object
     properties:
@@ -357,6 +365,36 @@ definitions:
     minProperties: 1
 
 paths:
+
+  /setup_lakefs:
+    post:
+      tags:
+        - setup
+      operationId: setupLakeFS
+      summary: setup lakeFS and create the first user
+      parameters:
+        - in: body
+          name: user
+          schema:
+            $ref: "#/definitions/setup"
+      responses:
+        200:
+          description: user created successfully
+          schema:
+            $ref: "#/definitions/credentials_with_secret"
+            description: first user credentials
+        400:
+          description: bad request
+          schema:
+            $ref: "#/definitions/error"
+        409:
+          description: setup was already called
+          schema:
+            $ref: "#/definitions/error"
+        default:
+          description: generic error response
+          schema:
+            $ref: "#/definitions/error"
 
   /user:
     get:
