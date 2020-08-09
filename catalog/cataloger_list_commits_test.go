@@ -385,4 +385,29 @@ func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
 	if diff := deep.Equal(masterList[6:], br_1_1_list[9:]); diff != nil {
 		t.Error("master 5 first different from br_1_1 [1:6]", diff)
 	}
+	// test that a change to br_2_2 does not prpagate to master
+	if err := c.CreateEntry(ctx, repository, "br_2_2", Entry{
+		Path:            "no-propagate-file",
+		Checksum:        "aaaaaaaa",
+		PhysicalAddress: "yybbbbbbyyy",
+		Size:            20000,
+	}, CreateEntryParams{}); err != nil {
+		t.Fatal("Write no-propagate-file to br_2_2 failed", err)
+	}
+	_, err = c.Commit(ctx, repository, "br_2_2", "commit master-file to br_2_2", "tester", nil)
+	if err != nil {
+		t.Fatalf("no-propagate-Commit for list repository commits failed '%s': %s", "br_2_2  commit failed", err)
+	}
+	_, err = c.Merge(ctx, repository, "br_2_2", "br_2_1", "tester", "merge br_2_2 to br_2_1", nil)
+	testutil.MustDo(t, "second merge br_2_2  into br_2_1", err)
+	new_br_2_1_list, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
+	testutil.MustDo(t, "second list br_2_1 commits", err)
+	if diff := deep.Equal(br_2_1_list, new_br_2_1_list); diff == nil {
+		t.Error("br_2_1 commits did not changed after merge", diff)
+	}
+	new_master_list, _, err := c.ListCommits(ctx, repository, "master", "", 100)
+	testutil.MustDo(t, "third list master commits", err)
+	if diff := deep.Equal(new_master_list, masterList); diff != nil {
+		t.Error("br_2_1 commits did not changed after merge", diff)
+	}
 }
