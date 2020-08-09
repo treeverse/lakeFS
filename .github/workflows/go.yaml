@@ -5,18 +5,8 @@ on:
       -master
   pull_request:
 jobs:
-  lint:
-    name: Lint
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v1
-        with:
-          version: v1.30
-
   validator:
-    name: Checks
+    name: Lint and Checks
     runs-on: ubuntu-latest
     steps:
       - name: Check-out code
