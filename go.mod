@@ -5,7 +5,7 @@ go 1.14
 require (
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
-	github.com/aws/aws-sdk-go v1.33.16
+	github.com/aws/aws-sdk-go v1.34.0
 	github.com/benbjohnson/clock v1.0.3
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
@@ -23,13 +23,14 @@ require (
 	github.com/go-openapi/validate v0.19.10
 	github.com/go-test/deep v1.0.7
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
-	github.com/golang-migrate/migrate/v4 v4.12.1
+	github.com/golang-migrate/migrate/v4 v4.12.2
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/hnlq715/golang-lru v0.2.0
 	github.com/influxdata/tdigest v0.0.1 // indirect
 	github.com/jackc/pgconn v1.6.4
 	github.com/jackc/pgerrcode v0.0.0-20190803225404-afa3381909a6
+	github.com/jackc/pgproto3/v2 v2.0.4 // indirect
 	github.com/jackc/pgx/v4 v4.8.1
 	github.com/jamiealquiza/tachymeter v2.0.0+incompatible
 	github.com/jedib0t/go-pretty v4.3.0+incompatible
@@ -49,27 +50,29 @@ require (
 	github.com/ory/dockertest/v3 v3.6.0
 	github.com/pelletier/go-toml v1.8.0 // indirect
 	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/common v0.11.1 // indirect
 	github.com/rakyll/statik v0.1.7
 	github.com/schollz/progressbar/v3 v3.3.4
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v1.1.1 // indirect
-	github.com/spf13/afero v1.3.2 // indirect
+	github.com/spf13/afero v1.3.3 // indirect
 	github.com/spf13/cast v1.3.1 // indirect
 	github.com/spf13/cobra v1.0.0
 	github.com/spf13/jwalterweatherman v1.1.0 // indirect
 	github.com/spf13/pflag v1.0.5
-	github.com/spf13/viper v1.7.0
+	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.3
 	github.com/xitongsys/parquet-go v1.5.2
-	github.com/xitongsys/parquet-go-source v0.0.0-20200611103345-88e6b030070d
+	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	golang.org/x/sys v0.0.0-20200728102440-3e129f6d46b1 // indirect
+	golang.org/x/sys v0.0.0-20200808120158-1030fc2bf1d9 // indirect
+	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	gopkg.in/ini.v1 v1.57.0 // indirect
