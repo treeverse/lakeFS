@@ -24,6 +24,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
 	retentionop "github.com/treeverse/lakefs/api/gen/restapi/operations/retention"
+	setupop "github.com/treeverse/lakefs/api/gen/restapi/operations/setup"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
@@ -58,6 +59,9 @@ type Dependencies struct {
 	Stats        stats.Collector
 	Retention    retention.Service
 	Dedup        *dedup.Cleaner
+	Meta         auth.MetadataManager
+	Migrator     db.Migrator
+	Collector    stats.Collector
 	logger       logging.Logger
 }
 
@@ -70,6 +74,9 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		Stats:        d.Stats,
 		Retention:    d.Retention,
 		Dedup:        d.Dedup,
+		Meta:         d.Meta,
+		Migrator:     d.Migrator,
+		Collector:    d.Collector,
 		logger:       d.logger.WithContext(ctx),
 	}
 }
@@ -86,7 +93,8 @@ type Controller struct {
 	deps *Dependencies
 }
 
-func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service, dedupCleaner *dedup.Cleaner, logger logging.Logger) *Controller {
+func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter block.Adapter, stats stats.Collector, retention retention.Service,
+	dedupCleaner *dedup.Cleaner, meta auth.MetadataManager, migrator db.Migrator, collector stats.Collector, logger logging.Logger) *Controller {
 	c := &Controller{
 		deps: &Dependencies{
 			ctx:          context.Background(),
@@ -96,6 +104,9 @@ func NewController(cataloger catalog.Cataloger, auth auth.Service, blockAdapter 
 			Stats:        stats,
 			Retention:    retention,
 			Dedup:        dedupCleaner,
+			Meta:         meta,
+			Migrator:     migrator,
+			Collector:    collector,
 			logger:       logger,
 		},
 	}
@@ -113,6 +124,8 @@ func (c *Controller) Context() context.Context {
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (c *Controller) Configure(api *operations.LakefsAPI) {
 	// Register operations here
+	api.SetupSetupLakeFSHandler = c.SetupLakeFSHandler()
+
 	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
 	api.AuthListUsersHandler = c.ListUsersHandler()
 	api.AuthGetUserHandler = c.GetUserHandler()
@@ -200,6 +213,64 @@ func pageAmount(i *int64) int {
 		return DefaultResultsPerPage
 	}
 	return inti
+}
+
+func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
+	return setupop.SetupLakeFSHandlerFunc(func(setupReq setupop.SetupLakeFSParams) middleware.Responder {
+		// skip migrate in case we have an active installation
+		if _, err := c.deps.Meta.InstallationID(); err == nil {
+			return setupop.NewSetupLakeFSConflict().
+				WithPayload(&models.Error{
+					Message: "lakeFS already initialized",
+				})
+		}
+
+		ctx := setupReq.HTTPRequest.Context()
+		err := c.deps.Migrator.Migrate(ctx)
+		if err != nil {
+			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
+				WithPayload(&models.Error{
+					Message: err.Error(),
+				})
+		}
+
+		metadata, err := c.deps.Meta.Write()
+		if err != nil {
+			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
+				WithPayload(&models.Error{
+					Message: err.Error(),
+				})
+		}
+
+		c.deps.Collector.SetInstallationID(metadata["installation_id"])
+		c.deps.Collector.CollectMetadata(metadata)
+		c.deps.Collector.CollectEvent("global", "init")
+
+		if len(*setupReq.User.DisplayName) == 0 {
+			return setupop.NewSetupLakeFSBadRequest().
+				WithPayload(&models.Error{
+					Message: "empty display name",
+				})
+		}
+
+		adminUser := &model.User{
+			CreatedAt:   time.Now(),
+			DisplayName: *setupReq.User.DisplayName,
+		}
+		cred, err := auth.SetupAdminUser(c.deps.Auth, adminUser)
+		if err != nil {
+			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
+				WithPayload(&models.Error{
+					Message: err.Error(),
+				})
+		}
+
+		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
+			AccessKeyID:     cred.AccessKeyID,
+			AccessSecretKey: cred.AccessSecretKey,
+			CreationDate:    adminUser.CreatedAt.Unix(),
+		})
+	})
 }
 
 func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
