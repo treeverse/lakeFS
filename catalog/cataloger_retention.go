@@ -245,6 +245,11 @@ func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName str
 func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName string, expireResults []*ExpireResult) error {
 	logger := logging.FromContext(ctx).WithFields(logging.Fields{"repository_name": repositoryName, "num_records": len(expireResults)})
 
+	if len(expireResults) == 0 {
+		logger.Info("nothing to expire")
+		return nil
+	}
+
 	result, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		_, err := tx.Exec(`CREATE TEMPORARY TABLE temp_expiry (
 				path text NOT NULL, branch_id bigint NOT NULL, min_commit bigint NOT NULL)
