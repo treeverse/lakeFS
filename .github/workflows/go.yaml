@@ -6,7 +6,7 @@ on:
   pull_request:
 jobs:
   lint:
-    name: Run Linters and Checkers
+    name: Lint
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
@@ -16,7 +16,7 @@ jobs:
           version: v1.30
 
   validator:
-    name: golangci-ling
+    name: Checks
     runs-on: ubuntu-latest
     steps:
       - name: Check-out code
