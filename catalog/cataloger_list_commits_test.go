@@ -45,9 +45,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Y"}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Y"}},
 				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
@@ -62,8 +62,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         2,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -91,7 +91,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
 			},
 			wantMore: true,
 			wantErr:  false,
