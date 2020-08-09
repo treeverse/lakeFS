@@ -364,6 +364,7 @@ func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
 	if merge_2.Differences[0].Type != DifferenceTypeChanged || merge_2.Differences[0].Path != "master-file" {
 		t.Error("merge br_2_1 into master with unexpected results", merge_2.Differences[0])
 	}
+
 	masterList, _, err = c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "list master commits", err)
 	if diff := deep.Equal(br_2_1_list, masterList[1:]); diff != nil {
@@ -408,6 +409,6 @@ func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
 	new_master_list, _, err := c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "third list master commits", err)
 	if diff := deep.Equal(new_master_list, masterList); diff != nil {
-		t.Error("br_2_1 commits did not changed after merge", diff)
+		t.Error("master commits  changed without merge", diff)
 	}
 }

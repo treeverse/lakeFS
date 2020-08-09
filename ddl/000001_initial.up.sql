@@ -107,32 +107,40 @@ CREATE SEQUENCE catalog_commit_id_seq
     NO MAXVALUE
     CACHE 10;
 
-CREATE TABLE catalog_commits (
-    branch_id           bigint                                 NOT NULL,
-    commit_id           bigint                                 NOT NULL,
-    previous_commit_id  bigint                                 NOT NULL,
-    committer           character varying,
-    message             character varying,
-    creation_date       timestamp with time zone DEFAULT now() NOT NULL,
-    metadata            jsonb,
-    merge_source_branch bigint,
-    merge_source_commit bigint,
-    merge_type          catalog_merge_type               DEFAULT 'none'::catalog_merge_type,
-    lineage_commits     bigint[]                 DEFAULT array []::bigint[]
+CREATE TABLE catalog_commits(
+                                branch_id           bigint                                 NOT NULL,
+                                commit_id           bigint                                 NOT NULL,
+                                previous_commit_id  bigint                                 NOT NULL,
+                                committer           character varying,
+                                message             character varying,
+                                creation_date       timestamp with time zone DEFAULT now() NOT NULL,
+                                metadata            jsonb,
+                                merge_source_branch bigint,
+                                merge_source_commit bigint,
+                                merge_type          catalog_merge_type       DEFAULT 'none'::catalog_merge_type,
+                                lineage_commits     bigint[]                 DEFAULT array []::bigint[]
 );
 
-CREATE TABLE catalog_entries (
-    branch_id bigint NOT NULL,
-    path character varying COLLATE "C" NOT NULL,
+CREATE INDEX commits_lineage_idx
+    ON catalog_commits USING btree
+        (merge_type ASC NULLS LAST, branch_id ASC NULLS LAST, commit_id DESC NULLS LAST)
+    INCLUDE (lineage_commits, merge_source_branch, merge_source_commit)
+    TABLESPACE pg_default
+    WHERE merge_type in ('from_father'::merge_type, 'from_son'::merge_type);
+
+CREATE TABLE catalog_entries
+(
+    branch_id        bigint                                                   NOT NULL,
+    path             character varying COLLATE "C"                            NOT NULL,
     physical_address character varying,
-    creation_date timestamp with time zone DEFAULT now() NOT NULL,
-    size bigint NOT NULL,
-    checksum character varying(64) NOT NULL,
-    metadata jsonb,
-    min_commit bigint DEFAULT 0 NOT NULL,
-    max_commit bigint DEFAULT catalog_max_commit_id() NOT NULL,
+    creation_date    timestamp with time zone DEFAULT now()                   NOT NULL,
+    size             bigint                                                   NOT NULL,
+    checksum         character varying(64)                                    NOT NULL,
+    metadata         jsonb,
+    min_commit       bigint                   DEFAULT 0                       NOT NULL,
+    max_commit       bigint                   DEFAULT catalog_max_commit_id() NOT NULL,
     -- If set, entry has expired.  Requests to retrieve may return "410 Gone".
-    is_expired BOOLEAN DEFAULT false NOT NULL
+    is_expired       BOOLEAN                  DEFAULT false                   NOT NULL
 );
 ALTER TABLE ONLY catalog_entries ALTER COLUMN path SET STATISTICS 10000;
 
