@@ -3,12 +3,13 @@
 package api
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"time"
 
-	"github.com/go-openapi/errors"
+	openapierr "github.com/go-openapi/errors"
 	"github.com/go-openapi/loads"
 	"github.com/go-openapi/runtime/middleware"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -35,7 +36,8 @@ const (
 )
 
 var (
-	ErrAuthenticationFailed = errors.New(http.StatusUnauthorized, "error authenticating request")
+	ErrAuthenticationFailed    = openapierr.New(http.StatusUnauthorized, "error authenticating request")
+	ErrUnexpectedSigningMethod = errors.New("unexpected signing method")
 )
 
 type Handler struct {
@@ -88,7 +90,7 @@ func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 		claims := &jwt.StandardClaims{}
 		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (interface{}, error) {
 			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-				return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+				return nil, fmt.Errorf("%w: %s", ErrUnexpectedSigningMethod, token.Header["alg"])
 			}
 
 			return s.authService.SecretStore().SharedSecret(), nil

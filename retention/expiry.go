@@ -22,6 +22,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	defaultPriority = 10
+)
+
 // WriteExpiryResultsToSeekableReader returns a file-backed (Seeker) Reader holding the contents of expiryRows.
 func WriteExpiryResultsToSeekableReader(ctx context.Context, expiryRows catalog.ExpiryRows) (fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
@@ -155,7 +159,8 @@ func WriteExpiryManifestsFromRows(ctx context.Context, c catalog.Cataloger, repo
 // BatchTagOnS3BucketParams holds tagging configuration for BatchTagOnS3Bucket.
 type BatchTagOnS3BucketParams struct {
 	// Account to perform tagging (required for S3 API)
-	AccountId string
+	AccountID string
+
 	// Role for performing tagging
 	RoleArn string
 
@@ -183,16 +188,16 @@ func (sp s3Pointer) GetArn() string {
 }
 
 func parseS3URL(s3URL string) (s3Pointer, error) {
-	url, err := url.Parse(s3URL)
+	u, err := url.Parse(s3URL)
 	if err != nil {
 		return s3Pointer{}, fmt.Errorf("parse S3 URL %s: %w", s3URL, err)
 	}
-	if url.Scheme != "s3" {
+	if u.Scheme != "s3" {
 		return s3Pointer{}, fmt.Errorf("URL %s not on S3: %w", s3URL, err)
 	}
-	trimmedPath := strings.TrimPrefix(url.Path, "/")
+	trimmedPath := strings.TrimPrefix(u.Path, "/")
 	return s3Pointer{
-		Bucket: url.Host,
+		Bucket: u.Host,
 		Key:    trimmedPath,
 	}, nil
 }
@@ -240,7 +245,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 	}
 
 	input := s3control.CreateJobInput{
-		AccountId:            &params.AccountId,
+		AccountId:            &params.AccountID,
 		ConfirmationRequired: aws.Bool(false),
 		// TODO(ariels): use ClientRequestToken to help avoid flooding?
 		Description: aws.String("automated tag to expire objects"),
@@ -260,7 +265,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 			},
 		},
 		// TODO(ariels): allow configuration
-		Priority: aws.Int64(10),
+		Priority: aws.Int64(defaultPriority),
 		// TODO(ariels): allow configuration of Report field
 		Report:  &report,
 		RoleArn: &params.RoleArn,
@@ -284,7 +289,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 
 // ExpireOnS3Params holds configuration for ExpireOnS3.
 type ExpireOnS3Params struct {
-	AccountId            string
+	AccountID            string
 	RoleArn              string
 	ManifestURLForBucket func(string) string
 	ReportS3PrefixURL    *string
@@ -329,7 +334,8 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 
 	// TODO(ariels): Lock something for this "session" (e.g. process)
 
-	errCh := make(chan error, 100)
+	const errChannelSize = 100
+	errCh := make(chan error, errChannelSize)
 	logger := logging.FromContext(ctx)
 	errFields := FromLoggerContext(ctx)
 
@@ -370,7 +376,10 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 
 		manifests, err := WriteExpiryManifestsFromRows(ctx, c, repository, expiryPhysicalAddressRows)
 		if err != nil {
-			errCh <- MapError{errFields, fmt.Errorf("write per-bucket manifests for expiry: %s (no expiry performed)", err)}
+			errCh <- MapError{
+				Fields:       errFields,
+				WrappedError: fmt.Errorf("write per-bucket manifests for expiry: %w (no expiry performed)", err),
+			}
 			return
 		}
 
@@ -386,7 +395,7 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 			bucketLogger.Info("start expiry on S3")
 			go func(bucketName string, manifestReader io.ReadSeeker) {
 				params := BatchTagOnS3BucketParams{
-					AccountId:         params.AccountId,
+					AccountID:         params.AccountID,
 					RoleArn:           params.RoleArn,
 					BucketName:        bucketName,
 					ManifestURL:       manifestURL,

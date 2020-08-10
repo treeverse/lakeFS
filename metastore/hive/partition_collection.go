@@ -25,7 +25,7 @@ func (p *PartitionCollection) CompareWith(i int, v interface{}, j int) metastore
 		return compare(p.partitionList[i], partition.partitionList[j])
 	}
 
-	err := fmt.Errorf("expected to get value of type *hive.PartitionCollection gor:%T", v)
+	err := fmt.Errorf("%w *hive.PartitionCollection got:%T", ErrExpectedType, v)
 	panic(err)
 }
 

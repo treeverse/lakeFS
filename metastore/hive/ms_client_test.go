@@ -9,9 +9,9 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/metastore/mock"
-
 	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
+	"github.com/treeverse/lakefs/metastore/mock"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 type HiveMsMock struct {
@@ -165,7 +165,6 @@ func (h HiveMsMock) AddPartitions(_ context.Context, partitions []*hive_metastor
 func (h HiveMsMock) GetPartitions(_ context.Context, dbName string, tableName string, _ int16) (r []*hive_metastore.Partition, err error) {
 	partitions := h.MockStore.GetPartitions(dbName, tableName)
 	return MockToPartitions(partitions), nil
-
 }
 
 func (h HiveMsMock) AlterPartitions(_ context.Context, dbName string, tableName string, newPartitions []*hive_metastore.Partition) (err error) {
@@ -227,9 +226,8 @@ func validatePartitionLocations(partitions []*hive_metastore.Partition, location
 		partitionLocation := fmt.Sprintf("part=%d", i)
 		expectedLocation := fmt.Sprintf("%s/%s", location, partitionLocation)
 		if partition.GetSd().GetLocation() != expectedLocation {
-			return fmt.Errorf("wrong partition location, expected: %s got: %s", expectedLocation, partition.GetSd().GetLocation())
+			return fmt.Errorf("%w, expected: %s got: %s", ErrWrongPartitionLocation, expectedLocation, partition.GetSd().GetLocation())
 		}
-
 	}
 	return nil
 }
@@ -304,14 +302,14 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 	expectedLocation := fmt.Sprintf("%s/%s/%s", repoLocation, toBranch, tableDir)
 	if copiedTable.GetSd().GetLocation() != expectedLocation {
-		t.Errorf("wrong location expected:%s got:%s", expectedLocation, copiedTable.GetSd().GetLocation())
+		t.Errorf("%w:%s got:%s", ErrWrongLocationExpected, expectedLocation, copiedTable.GetSd().GetLocation())
 	}
 
 	expectedColumns := getCols()
 	gotColumns := copiedTable.GetSd().GetCols()
 	for i, expectedColumn := range expectedColumns {
 		if expectedColumn.Name != gotColumns[i].Name {
-			t.Errorf("wrong column expected:%s got:%s ", expectedColumn.Name, gotColumns[i].Name)
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, expectedColumn.Name, gotColumns[i].Name)
 		}
 		if !FieldSchemaEqual(expectedColumn, gotColumns[i]) {
 			t.Fatalf("wrong column data for column %s", expectedColumn.Name)
@@ -323,6 +321,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	copiedPartitions, err := client.client.GetPartitions(client.context, toDBName, toTableName, 1000)
+	testutil.Must(t, err)
 	//compare partitions
 	if len(copiedPartitions) != numOfPartitions {
 		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions, len(copiedPartitions))
@@ -343,7 +342,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	gotColumns = firstPartition.GetSd().GetCols()
 	for i, expectedColumn := range expectedColumns {
 		if expectedColumn.Name != gotColumns[i].Name {
-			t.Errorf("wrong column expected:%s got:%s ", expectedColumn.Name, gotColumns[i].Name)
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, expectedColumn.Name, gotColumns[i].Name)
 		}
 		if !FieldSchemaEqual(expectedColumn, gotColumns[i]) {
 			t.Fatalf("wrong column data for column %s", expectedColumn.Name)
@@ -382,46 +381,39 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-
 	merged, err := client.client.GetTable(client.context, dbName, tableName)
+	testutil.Must(t, err)
 	mergedPartitions, err := client.client.GetPartitions(client.context, dbName, tableName, 1000)
-
+	testutil.Must(t, err)
 	if merged.Sd.GetLocation() != location {
 		t.Errorf("wrong location expected:%s got:%s", location, merged.Sd.GetLocation())
-
 	}
-
 	if len(mergedPartitions) != numOfPartitions {
 		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions, len(mergedPartitions))
 	}
-
 	// check if partition 20 was added and has three columns, 19 was updated and 17 was deleted
-	partition19 = nil
-	partition17 = nil
-	partition20 = nil
+	m := make(map[string]*hive_metastore.Partition)
 	for _, partition := range mergedPartitions {
-		if partition.GetValues()[0] == "part=20" {
-			partition20 = partition
+		m[partition.Values[0]] = partition
+	}
+	existingPartitions := []string{"part=19", "part=20"}
+	for _, p := range existingPartitions {
+		// check partition exists
+		partition, ok := m[p]
+		if !ok {
+			t.Fatalf("expected to have a partition with value: %s after merge", p)
 		}
-		if partition.GetValues()[0] == "part=19" {
-			partition19 = partition
+		// check that columns are added
+		columns := partition.Sd.Cols
+		if len(columns) != 3 {
+			t.Fatalf("expected added partition (%s) to have 3 columns, found %d", p, len(columns))
 		}
-		if partition.GetValues()[0] == "part=17" {
-			partition17 = partition
+		columnName := columns[2].Name
+		if columnName != "column_three" {
+			t.Fatalf("expected added column to be column_three got: %s", columnName)
 		}
 	}
-	if partition19 == nil {
-		t.Fatalf("expected to have a partition with value: part=19 after merge")
-	}
-	if partition20 == nil {
-		t.Fatalf("expected to have a partition with value: part=20 after merge")
-	}
-	for _, mergedColumns := range [][]*hive_metastore.FieldSchema{partition19.Sd.Cols, partition20.Sd.Cols} {
-		if len(mergedColumns) != 3 {
-			t.Fatal("expected added partition to have 3 columns")
-		}
-		if mergedColumns[2].Name != "column_three" {
-			t.Fatalf("expected added column to be column_three got:%s", mergedColumns[2].Name)
-		}
+	if _, ok := m["part=17"]; ok {
+		t.Fatal("expected part=17 partition to be deleted")
 	}
 }
