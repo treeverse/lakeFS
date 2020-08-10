@@ -1,6 +1,6 @@
 GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
-GOBINPATH=$(shell $(GOCMD) env GOPATH)
+GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 GOBUILD=$(GOCMD) build
@@ -48,24 +48,28 @@ docs-serve: ### Serve local docs
 gen-metastore: ## Run Metastore Code generation
 	@thrift -r --gen go --gen go:package_prefix=github.com/treeverse/lakefs/metastore/hive/gen-go/ -o metastore/hive metastore/hive/hive_metastore.thrift
 
-gen-api: ## Run the go-swagger code generator
+$(GOBINPATH)/swagger:
+	go get github.com/go-swagger/go-swagger/cmd/swagger
+
+gen-api: $(GOBINPATH)/swagger ## Run the go-swagger code generator
 	@rm -rf $(API_BUILD_DIR)
 	@mkdir -p $(API_BUILD_DIR)
-	@go get github.com/go-swagger/go-swagger/cmd/swagger
-	swagger generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)
-	swagger generate server -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR) --exclude-main
+	$(GOBINPATH)/swagger generate client -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR)
+	$(GOBINPATH)/swagger generate server -q -A lakefs -f ./swagger.yml -P models.User -t $(API_BUILD_DIR) --exclude-main
 
-validate-swagger:  ## Validate swagger.yaml
-	swagger validate swagger.yml
+validate-swagger: $(GOBINPATH)/swagger  ## Validate swagger.yaml
+	$(GOBINPATH)/swagger validate swagger.yml
 
 LD_FLAGS := "-X github.com/treeverse/lakefs/config.Version=$(VERSION)-$(REVISION)"
 build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKEFS_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKEFS_BINARY_NAME)
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
-lint: ## Lint code
-	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
-	golangci-lint run $(GOLANGCI_LINT_FLAGS)
+$(GOBINPATH)/golangci-lint:
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint
+
+lint: $(GOBINPATH)/golangci-lint  ## Lint code
+	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
 test: gen  ## Run tests for the project
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
@@ -106,15 +110,16 @@ $(UI_DIR)/node_modules:
 ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
-ui-bundle: ui-build ## Bundle static built UI app
-	@go get github.com/rakyll/statik
-	statik -ns webui -m -f -src=$(UI_BUILD_DIR)
+$(GOBINPATH)/statik: 
+	go get github.com/rakyll/statik
+
+ui-bundle: ui-build $(GOBINPATH)/statik  ## Bundle static built UI app
+	$(GOBINPATH)/statik -ns webui -m -f -src=$(UI_BUILD_DIR)
 
 gen-ui: ui-bundle
 
-gen-ddl:  ## Embed data migration files into the resulting binary
-	@go get github.com/rakyll/statik
-	statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
+gen-ddl: $(GOBINPATH)/statik  ## Embed data migration files into the resulting binary
+	$(GOBINPATH)/statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
