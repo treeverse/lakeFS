@@ -22,10 +22,6 @@ jobs:
           go-version: 1.14
         id: go
 
-      - name: Setup statik
-        run: |
-          go get github.com/rakyll/statik
-
       - name: Generate code
         run: |
           make gen

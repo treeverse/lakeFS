@@ -16,8 +16,6 @@ jobs:
         with:
           go-version: 1.14
         id: go
-      - name: Setup statik
-        run: go get github.com/rakyll/statik
       - name: Generated code
         run: make gen
       - name: Checks validator
@@ -30,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       - name: Setup UI (node 10)
         uses: actions/setup-node@v1
         with:
@@ -39,13 +37,10 @@ jobs:
         run: npm install
         working-directory: ./webui
       - name: Set up Go 1.14
-        uses: actions/setup-go@v1
+        uses: actions/setup-go@v2
         with:
           go-version: 1.14
         id: go
-      - name: Setup statik
-        run: |
-          go get github.com/rakyll/statik
       - name: Run tests
         run: |
           make test

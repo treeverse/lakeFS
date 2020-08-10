@@ -67,7 +67,7 @@ lint: ## Lint code
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint
 	golangci-lint run -v
 
-test: gen run-test  ## Run tests for the project
+test: run-test | gen  ## Run tests for the project
 
 run-test:  ## Run tests without generating anything (faster if already generated)
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast $(GO_TEST_MODULES)
