@@ -3,7 +3,6 @@ DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PA
 GOBINPATH=$(shell $(GOCMD) env GOPATH)
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 STATIK=$(or $(shell test -e "$(GOBINPATH)/bin/statik" && echo "$(GOBINPATH)/bin/statik"), $(error "Missing statik pkg - get it with `go get github.com/rakyll/statik`"))
-GOLANGCILINT_VERSION=v1.30.0
 
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
@@ -67,7 +66,7 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: ## Lint code
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint@$(GOLANGCILINT_VERSION)
+	go get github.com/golangci/golangci-lint/cmd/golangci-lint
 	golangci-lint run -v
 
 test: gen run-test  ## Run tests for the project
