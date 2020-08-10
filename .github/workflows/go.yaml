@@ -20,6 +20,8 @@ jobs:
         run: make gen
       - name: Checks validator
         run: make checks-validator
+        env:
+          GOLANGCI_LINT_FLAGS: --out-format github-actions
       - name: gitLeaks
         uses: zricethezav/gitleaks-action@v1.1.2
 

@@ -65,7 +65,7 @@ build: gen docs ## Download dependencies and build the default binary
 
 lint: ## Lint code
 	go get github.com/golangci/golangci-lint/cmd/golangci-lint
-	golangci-lint run -v
+	golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
 test: run-test | gen  ## Run tests for the project
 
