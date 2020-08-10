@@ -24,7 +24,7 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		// next id for branch
 		var branchID int64
 		if err := tx.Get(&branchID, `SELECT nextval('catalog_branches_id_seq')`); err != nil {
-			return nil, fmt.Errorf("next next id: %s", err)
+			return nil, fmt.Errorf("next next id: %w", err)
 		}
 
 		// next id for repository

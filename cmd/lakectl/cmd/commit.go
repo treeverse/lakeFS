@@ -18,6 +18,9 @@ Timestamp: {{.Commit.CreationDate|date}}
 Parents: {{.Commit.Parents|join ", "}}
 
 `
+var (
+	errInvalidKeyValueFormat = fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
+)
 
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
@@ -57,11 +60,12 @@ func getKV(cmd *cobra.Command, name string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
+	const keyValueParts = 2
 	kv := make(map[string]string)
 	for _, pair := range kvList {
-		parts := strings.SplitN(pair, "=", 2)
-		if len(parts) != 2 {
-			return nil, fmt.Errorf("invalid key/value pair - should be separated by \"=\"")
+		parts := strings.SplitN(pair, "=", keyValueParts)
+		if len(parts) != keyValueParts {
+			return nil, errInvalidKeyValueFormat
 		}
 		kv[parts[0]] = parts[1]
 	}

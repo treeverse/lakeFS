@@ -1,6 +1,7 @@
 package config
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -53,6 +54,11 @@ const (
 	MetaStoreType          = "metastore.type"
 	MetaStoreHiveURI       = "metastore.hive.uri"
 	MetastoreGlueCatalogID = "metastore.glue.catalog-id"
+)
+
+var (
+	ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
+	ErrMissingSecretKey      = errors.New("auth.encrypt.secret_key cannot be empty")
 )
 
 type LogrusAWSAdapter struct {
@@ -118,18 +124,18 @@ type AwsS3RetentionConfig struct {
 }
 
 func (c *Config) GetAwsS3RetentionConfig() AwsS3RetentionConfig {
-	errors := []string{}
+	var errs []string
 	roleArn := viper.GetString("blockstore.s3.retention.role_arn")
 	if roleArn == "" {
-		errors = append(errors, "blockstore.s3.retention.role_arn")
+		errs = append(errs, "blockstore.s3.retention.role_arn")
 	}
 
 	manifestBaseURL, err := url.ParseRequestURI(viper.GetString("blockstore.s3.retention.manifest_base_url"))
 	if err != nil {
-		errors = append(errors, fmt.Sprintf("blockstore.s3.retention.manifest_base_url: %s", err))
+		errs = append(errs, fmt.Sprintf("blockstore.s3.retention.manifest_base_url: %s", err))
 	}
-	if len(errors) > 0 {
-		panic(fmt.Sprintf("need %s to handle retention on S3", strings.Join(errors, ", ")))
+	if len(errs) > 0 {
+		panic(fmt.Sprintf("need %s to handle retention on S3", strings.Join(errs, ", ")))
 	}
 	var reportS3PrefixURL *string
 	prefixURL := viper.GetString("blockstore.s3.retention.report_s3_prefix_url")
@@ -242,8 +248,8 @@ func (c *Config) BuildBlockAdapter() (block.Adapter, error) {
 	case transient.BlockstoreType:
 		return transient.New(), nil
 	default:
-		return nil, fmt.Errorf("blockstore '%s' is not a valid type, please choose one of %s",
-			blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
+		return nil, fmt.Errorf("%w '%s' please choose one of %s",
+			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
 	}
 }
 
@@ -259,7 +265,7 @@ func (c *Config) GetAuthCacheConfig() auth.ServiceCacheConfig {
 func (c *Config) GetAuthEncryptionSecret() []byte {
 	secret := viper.GetString("auth.encrypt.secret_key")
 	if len(secret) == 0 {
-		panic(fmt.Errorf("auth.encrypt.secret_key cannot be empty. Please set it to a unique, randomly generated value and store it somewhere safe"))
+		panic(fmt.Errorf("%w. Please set it to a unique, randomly generated value and store it somewhere safe", ErrMissingSecretKey))
 	}
 	return []byte(secret)
 }
