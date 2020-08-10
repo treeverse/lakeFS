@@ -42,7 +42,7 @@ var expireCmd = &cobra.Command{
 		}
 
 		expiryParams := retention.ExpireOnS3Params{
-			AccountId: accountID,
+			AccountID: accountID,
 			RoleArn:   awsRetentionConfig.RoleArn,
 			ManifestURLForBucket: func(x string) string {
 				u, err := url.Parse(x)

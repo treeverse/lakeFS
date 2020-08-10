@@ -13,7 +13,9 @@ import (
 )
 
 const (
-	DefaultBranch = "master"
+	DefaultBranch     = "master"
+	repoCreateCmdArgs = 2
+	setPolicyCmdArgs  = 2
 )
 
 // repoCmd represents the repo command
@@ -74,7 +76,7 @@ var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
 	Args: ValidationChain(
-		HasNArgs(2),
+		HasNArgs(repoCreateCmdArgs),
 		IsRepoURI(0),
 	),
 
@@ -160,7 +162,7 @@ var setPolicyCmd = &cobra.Command{
 	Short: "set retention policy",
 	Long:  "set retention policy from file, or stdin if \"-\" specified",
 	Args: ValidationChain(
-		HasNArgs(2),
+		HasNArgs(setPolicyCmdArgs),
 		IsRepoURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {

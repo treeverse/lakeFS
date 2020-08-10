@@ -118,7 +118,7 @@ func MigrateUp(connectionString string) error {
 	}
 	defer closeMigrate(m)
 	err = m.Up()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return nil
@@ -131,7 +131,7 @@ func MigrateDown(connectionString string) error {
 	}
 	defer closeMigrate(m)
 	err = m.Down()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return nil
@@ -152,7 +152,7 @@ func MigrateTo(connectionString string, version uint) error {
 	}
 	defer closeMigrate(m)
 	err = m.Migrate(version)
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return err
 	}
 	return nil
@@ -165,7 +165,7 @@ func MigrateVersion(connectionString string) (uint, bool, error) {
 	}
 	defer closeMigrate(m)
 	version, dirty, err := m.Version()
-	if err != nil && err != migrate.ErrNoChange {
+	if err != nil && !errors.Is(err, migrate.ErrNoChange) {
 		return 0, false, err
 	}
 	return version, dirty, err

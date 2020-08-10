@@ -4,14 +4,12 @@ import (
 	"context"
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
-
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -56,7 +54,7 @@ func (a *RulesHolder) Value() (driver.Value, error) {
 func (a *Rules) Scan(value interface{}) error {
 	b, ok := value.([]byte)
 	if !ok {
-		return errors.New("type assertion to []byte failed")
+		return ErrByteSliceTypeAssertion
 	}
 	return json.Unmarshal(b, a)
 }
@@ -95,7 +93,7 @@ type retentionQueryRecord struct {
 	Path            string   `db:"path"`
 }
 
-func buildRetentionQuery(repositoryName string, policy *Policy, afterRow *sqlx.Row, limit *uint64) (sq.SelectBuilder, error) {
+func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowScanner, limit *uint64) (sq.SelectBuilder, error) {
 	var (
 		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
 		byUncommitted = sq.Expr("min_commit = 0")
@@ -285,7 +283,7 @@ func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName strin
 		}
 		count, err := result.RowsAffected()
 		if err != nil {
-			return nil, fmt.Errorf("getting number of updated rows: %s", err)
+			return nil, fmt.Errorf("getting number of updated rows: %w", err)
 		}
 		return int(count), nil
 	})
@@ -294,7 +292,7 @@ func (c *cataloger) MarkEntriesExpired(ctx context.Context, repositoryName strin
 	}
 	count := result.(int)
 	if count != len(expireResults) {
-		return fmt.Errorf("tried to expire %d entries but expired only %d entries", len(expireResults), count)
+		return fmt.Errorf("%w: tried to expire %d entries but expired only %d entries", ErrUnexpected, len(expireResults), count)
 	}
 	logger.WithField("count", count).Info("expired records")
 	return nil

@@ -72,11 +72,16 @@ func getChunkSignature(cred *model.Credential, seedSignature string, region stri
 
 const maxLineLength = 4 * 1024
 
-// lineTooLong is generated as chunk header is bigger than 4KiB.
-var errLineTooLong = errors.New("header line too long")
+var (
+	// lineTooLong is generated as chunk header is bigger than 4KiB.
+	errLineTooLong = errors.New("header line too long")
 
-// Malformed encoding is generated when chunk header is wrongly formed.
-var errMalformedEncoding = errors.New("malformed chunked encoding")
+	// Malformed encoding is generated when chunk header is wrongly formed.
+	errMalformedEncoding = errors.New("malformed chunked encoding")
+
+	ErrInvalidByte   = errors.New("invalid byte in chunk length")
+	ErrChunkTooLarge = errors.New("http chunk length too large")
+)
 
 // newSignV4ChunkedReader returns a new s3ChunkedReader that translates the data read from r
 // out of HTTP "chunked" format before returning it.
@@ -276,7 +281,7 @@ func readChunkLine(b *bufio.Reader) ([]byte, []byte, error) {
 		// If the caller asked for a line, there should be a line.
 		if err == io.EOF {
 			err = io.ErrUnexpectedEOF
-		} else if err == bufio.ErrBufferFull {
+		} else if errors.Is(err, bufio.ErrBufferFull) {
 			err = errLineTooLong
 		}
 		return nil, nil, err
@@ -326,19 +331,21 @@ func parseChunkSignature(chunk []byte) []byte {
 
 // parse hex to uint64.
 func parseHexUint(v []byte) (n uint64, err error) {
+	const maxChunkLength = 16
+	const letterOffset = 10
 	for i, b := range v {
 		switch {
 		case '0' <= b && b <= '9':
 			b -= '0'
 		case 'a' <= b && b <= 'f':
-			b -= 'a' - 10
+			b -= 'a' - letterOffset
 		case 'A' <= b && b <= 'F':
-			b -= 'A' - 10
+			b -= 'A' - letterOffset
 		default:
-			return 0, errors.New("invalid byte in chunk length")
+			return 0, ErrInvalidByte
 		}
-		if i == 16 {
-			return 0, errors.New("http chunk length too large")
+		if i == maxChunkLength {
+			return 0, ErrChunkTooLarge
 		}
 		n <<= 4
 		n |= uint64(b)

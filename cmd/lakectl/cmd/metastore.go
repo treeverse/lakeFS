@@ -59,7 +59,7 @@ var metastoreCopyCmd = &cobra.Command{
 			}
 
 		case "default":
-			DieErr(fmt.Errorf("unknown type, expected hive or glue got: %s", msType))
+			Die("unknown type, expected hive or glue got: "+msType, 1)
 		}
 		if len(toDB) == 0 {
 			toDB = toBranch

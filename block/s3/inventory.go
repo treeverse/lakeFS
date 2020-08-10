@@ -42,6 +42,8 @@ type parquetReaderGetter func(ctx context.Context, svc s3iface.S3API, inventoryB
 
 type CloseFunc func() error
 
+var ErrParquetOnlySupport = errors.New("currently only parquet inventories are supported")
+
 func (s *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string) (block.Inventory, error) {
 	return GenerateInventory(ctx, logger, manifestURL, s.s3, getParquetReader)
 }
@@ -125,7 +127,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*manifest, error) {
 		return nil, err
 	}
 	if m.Format != "Parquet" {
-		return nil, errors.New("currently only parquet inventories are supported. got: " + m.Format)
+		return nil, fmt.Errorf("%w. got: %s", ErrParquetOnlySupport, m.Format)
 	}
 	m.URL = manifestURL
 	inventoryBucketArn, err := arn.Parse(m.InventoryBucketArn)

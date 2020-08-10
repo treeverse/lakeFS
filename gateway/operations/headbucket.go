@@ -8,11 +8,11 @@ import (
 
 type HeadBucket struct{}
 
-func (controller *HeadBucket) RequiredPermissions(_ *http.Request, repoId string) ([]permissions.Permission, error) {
+func (controller *HeadBucket) RequiredPermissions(_ *http.Request, repoID string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.ReadRepositoryAction,
-			Resource: permissions.RepoArn(repoId),
+			Resource: permissions.RepoArn(repoID),
 		},
 	}, nil
 }
