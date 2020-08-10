@@ -2,7 +2,6 @@ GOCMD=$(or $(shell which go), $(error "Missing dependency - no go in PATH"))
 DOCKER=$(or $(shell which docker), $(error "Missing dependency - no docker in PATH"))
 GOBINPATH=$(shell $(GOCMD) env GOPATH)
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
-STATIK=$(or $(shell test -e "$(GOBINPATH)/bin/statik" && echo "$(GOBINPATH)/bin/statik"), $(error "Missing statik pkg - get it with `go get github.com/rakyll/statik`"))
 
 GOBUILD=$(GOCMD) build
 GOCLEAN=$(GOCMD) clean
@@ -107,12 +106,14 @@ ui-build: $(UI_DIR)/node_modules  ## Build UI app
 	cd $(UI_DIR) && $(NPM) run build
 
 ui-bundle: ui-build ## Bundle static built UI app
-	$(STATIK) -ns webui -m -f -src=$(UI_BUILD_DIR)
+	@go get github.com/rakyll/statik
+	statik -ns webui -m -f -src=$(UI_BUILD_DIR)
 
 gen-ui: ui-bundle
 
 gen-ddl:  ## Embed data migration files into the resulting binary
-	$(STATIK) -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
+	@go get github.com/rakyll/statik
+	statik -ns ddl -m -f -p ddl -c "auto-generated SQL files for data migrations" -src ddl -include '*.sql'
 
 help:  ## Show Help menu
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'
