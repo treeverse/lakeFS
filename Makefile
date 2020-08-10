@@ -64,10 +64,11 @@ build: gen docs ## Download dependencies and build the default binary
 	$(GOBUILD) -o $(LAKECTL_BINARY_NAME) -ldflags $(LD_FLAGS) -v ./cmd/$(LAKECTL_BINARY_NAME)
 
 lint: ## Lint code
-	go get github.com/golangci/golangci-lint/cmd/golangci-lint
+	@go get github.com/golangci/golangci-lint/cmd/golangci-lint
 	golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
-test: run-test | gen  ## Run tests for the project
+test: gen  ## Run tests for the project
+	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
 
 run-test:  ## Run tests without generating anything (faster if already generated)
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -short -cover -failfast $(GO_TEST_MODULES)
