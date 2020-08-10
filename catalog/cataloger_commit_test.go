@@ -147,7 +147,7 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			ent, err := c.GetEntry(ctx, repository, "master:HEAD", "/file1", GetEntryParams{})
 			testutil.MustDo(t, "Get entry we just committed", err)
 			if ent.Size != int64(i+1) {
-				t.Errorf("Commited file size %d, expected %d", ent.Size, i+1)
+				t.Errorf("Committed file size %d, expected %d", ent.Size, i+1)
 			}
 		}
 	})
