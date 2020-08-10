@@ -7,7 +7,7 @@ nav_order: 0
 # What is lakeFS
 {: .no_toc }  
 
-lakeFS is an open source platform that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open source platform that delivers atomic verioned data lake over object-storage.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
