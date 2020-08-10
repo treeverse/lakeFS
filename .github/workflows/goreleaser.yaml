@@ -24,10 +24,6 @@ jobs:
         with:
           go-version: 1.14
 
-      - name: Setup statik
-        run: |
-          go get github.com/rakyll/statik
-
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v2
         with:
