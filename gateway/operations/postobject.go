@@ -25,11 +25,11 @@ const (
 
 type PostObject struct{}
 
-func (controller *PostObject) RequiredPermissions(_ *http.Request, repoId, _, path string) ([]permissions.Permission, error) {
+func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, path string) ([]permissions.Permission, error) {
 	return []permissions.Permission{
 		{
 			Action:   permissions.WriteObjectAction,
-			Resource: permissions.ObjectArn(repoId, path),
+			Resource: permissions.ObjectArn(repoID, path),
 		},
 	}, nil
 }
@@ -56,17 +56,12 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
 		Bucket:   o.Repository.Name,
 		Key:      o.Path,
-		UploadId: uploadID,
+		UploadID: uploadID,
 	}, http.StatusOK)
 }
 
 func trimQuotes(s string) string {
-	if len(s) >= 2 {
-		if s[0] == '"' && s[len(s)-1] == '"' {
-			return s[1 : len(s)-1]
-		}
-	}
-	return s
+	return strings.Trim(s, "\"")
 }
 
 func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
