@@ -6,8 +6,6 @@ import (
 	"strings"
 )
 
-var ErrNotFound = errors.New("not found")
-
 type Column struct {
 	Name    string
 	Type    string
@@ -30,6 +28,11 @@ type MetaStore struct {
 	partitionMap map[string]*MetastoreObject
 }
 
+var (
+	ErrNotFound      = errors.New("not found")
+	ErrAlreadyExists = errors.New("already exists")
+)
+
 func NewMockStore() MetaStore {
 	return MetaStore{
 		Tables:       make(map[string]*MetastoreObject),
@@ -44,7 +47,7 @@ func getKey(dbName, tableName string) string {
 func (m MetaStore) CreateTable(dbName, tableName string, mockTable *MetastoreObject) error {
 	key := getKey(dbName, tableName)
 	if m.Tables[key] != nil {
-		return fmt.Errorf("table exists alredy with key %s", key)
+		return fmt.Errorf("table %w - key %s", ErrAlreadyExists, key)
 	}
 	m.Tables[getKey(dbName, tableName)] = mockTable
 	return nil
@@ -66,7 +69,7 @@ func (m MetaStore) GetTable(dbname string, tableName string) (*MetastoreObject, 
 func (m MetaStore) AlterTable(db, tableName string, table *MetastoreObject) error {
 	key := getKey(db, tableName)
 	if m.Tables[key] == nil {
-		return fmt.Errorf("table with key does not exist %s", key)
+		return fmt.Errorf("table with key %s %w", key, ErrNotFound)
 	}
 	m.Tables[getKey(db, tableName)] = table
 	return nil
@@ -75,7 +78,7 @@ func (m MetaStore) AlterTable(db, tableName string, table *MetastoreObject) erro
 func (m MetaStore) AddPartition(newPartition *MetastoreObject) error {
 	key := getPartitionKey(newPartition.DBName, newPartition.TableName, newPartition.Values)
 	if m.partitionMap[key] != nil {
-		return fmt.Errorf("partition for key %s already exists", key)
+		return fmt.Errorf("partition for key %s %w", key, ErrAlreadyExists)
 	}
 	m.partitionMap[key] = newPartition
 	return nil
@@ -113,7 +116,7 @@ func (m MetaStore) GetPartitions(dbName string, tableName string) []*MetastoreOb
 func (m MetaStore) AlterPartition(dbName string, tableName string, newPartition *MetastoreObject) error {
 	key := getPartitionKey(dbName, tableName, newPartition.Values)
 	if m.partitionMap[key] == nil {
-		return fmt.Errorf("trying to alter missing partition with key %s", key)
+		return fmt.Errorf("missing partition with key %s - %w", key, ErrNotFound)
 	}
 	m.partitionMap[key] = newPartition
 	return nil
@@ -129,10 +132,10 @@ func (m MetaStore) AlterPartitions(dbName string, tableName string, newPartition
 	return nil
 }
 
-func (m MetaStore) DropPartition(db string, table string, vals []string) error {
-	key := getPartitionKey(db, table, vals)
+func (m MetaStore) DropPartition(db string, table string, partitions []string) error {
+	key := getPartitionKey(db, table, partitions)
 	if m.partitionMap[key] == nil {
-		return fmt.Errorf("trying to remove missing partition with key %s", key)
+		return fmt.Errorf("missing partition with key %s - %w", key, ErrNotFound)
 	}
 	delete(m.partitionMap, key)
 	return nil

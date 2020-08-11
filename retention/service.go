@@ -2,6 +2,7 @@ package retention
 
 import (
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -10,6 +11,8 @@ import (
 )
 
 const dbConfigKey = "retentionPolicy"
+
+var ErrPolicyNotFound = errors.New("policy not found")
 
 type DBRetentionService struct {
 	db db.Database
@@ -67,6 +70,9 @@ func (ts *ModelService) GetPolicy(repositoryID string) (*models.RetentionPolicyW
 	dbPolicy, err := ts.dbService.GetPolicy(repositoryID)
 	if err != nil {
 		return nil, err
+	}
+	if dbPolicy == nil {
+		return nil, fmt.Errorf("%w: repository %s", ErrPolicyNotFound, repositoryID)
 	}
 	return RenderPolicyWithCreationDate(dbPolicy), nil
 }

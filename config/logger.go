@@ -62,7 +62,7 @@ func setupLogger() {
 		filename := viper.GetString("logging.output")
 		handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
 		if err != nil {
-			panic(fmt.Errorf("could not open log file: %s", err))
+			panic(fmt.Errorf("could not open log file: %w", err))
 		}
 		log.SetOutput(handle)
 		// setup signal handler to reopen logfile on SIGHUP
@@ -76,7 +76,7 @@ func setupLogger() {
 				_ = handle.Close()
 				handle, err := os.OpenFile(filename, os.O_CREATE|os.O_WRONLY, 0755)
 				if err != nil {
-					panic(fmt.Errorf("could not open log file: %s", err))
+					panic(fmt.Errorf("could not open log file: %w", err))
 				}
 				log.SetOutput(handle)
 				log.Info("log file was rotated successfully")

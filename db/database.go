@@ -18,7 +18,9 @@ type Rows = sqlx.Rows
 
 type Database interface {
 	io.Closer
+	Get(dest interface{}, query string, args ...interface{}) error
 	Queryx(query string, args ...interface{}) (*Rows, error)
+	Exec(query string, args ...interface{}) (rowsAffected int64, err error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
@@ -36,8 +38,20 @@ func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
+func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+	return d.db.Get(dest, query, args...)
+}
+
 func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
 	return d.db.Queryx(query, args...)
+}
+
+func (d *SqlxDatabase) Exec(query string, args ...interface{}) (int64, error) {
+	res, err := d.db.Exec(query, args...)
+	if err != nil {
+		return 0, err
+	}
+	return res.RowsAffected()
 }
 
 func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {

@@ -17,6 +17,8 @@ import (
 
 const BlockstoreType = "transient"
 
+var ErrInventoryNotImplemented = errors.New("inventory feature not implemented for transient storage adapter")
+
 type Adapter struct{}
 
 func New() *Adapter {
@@ -65,7 +67,7 @@ func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	return uploadID, nil
 }
 
-func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	data, err := ioutil.ReadAll(reader)
 	if err != nil {
 		return "", err
@@ -105,5 +107,5 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 }
 
 func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
-	return nil, errors.New("inventory feature not implemented for transient storage adapter")
+	return nil, ErrInventoryNotImplemented
 }

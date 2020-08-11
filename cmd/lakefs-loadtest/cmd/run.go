@@ -20,6 +20,8 @@ const (
 	StorageNamespaceFlag = "storage-namespace"
 	KeepFlag             = "keep"
 	MaxWorkersFlag       = "max-workers"
+
+	defaultTestDuration = 30 * time.Second
 )
 
 // runCmd represents the run command
@@ -77,6 +79,6 @@ func init() {
 	runCmd.Flags().StringP(StorageNamespaceFlag, "s", "", "Storage namespace where data for the new repository will be stored (e.g.: s3://example-bucket/)")
 	runCmd.Flags().Bool(KeepFlag, false, "Do not delete repo at the end of the test")
 	runCmd.Flags().IntP(FrequencyFlag, "f", 5, "Number of requests to send per second")
-	runCmd.Flags().DurationP(DurationFlag, "d", 30*time.Second, "Duration of test")
+	runCmd.Flags().DurationP(DurationFlag, "d", defaultTestDuration, "Duration of test")
 	runCmd.Flags().Uint64(MaxWorkersFlag, math.MaxInt64, "Max workers used in the test")
 }

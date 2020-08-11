@@ -63,6 +63,7 @@ func (c *GetSetCache) GetOrSet(k interface{}, setFn SetFn) (v interface{}, err e
 
 func NewJitterFn(jitter time.Duration) JitterFn {
 	return func() time.Duration {
-		return time.Duration(rand.Intn(int(jitter)))
+		n := rand.Intn(int(jitter)) //nolint:gosec
+		return time.Duration(n)
 	}
 }
