@@ -160,7 +160,7 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 	err = metastore.DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) error {
 		partition, ok := value.(*hive_metastore.Partition)
 		if !ok {
-			return fmt.Errorf("unexpected value in diffIterable call. expected to get  *hive_metastore.Partition, but got: %T", value)
+			return fmt.Errorf("%w in diffIterable call. expected to get *hive_metastore. Partition, but got: %T", ErrExpectedType, value)
 		}
 
 		partition.DbName = toDB

@@ -22,6 +22,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	defaultPriority = 10
+)
+
 // WriteExpiryResultsToSeekableReader returns a file-backed (Seeker) Reader holding the contents of expiryRows.
 func WriteExpiryResultsToSeekableReader(ctx context.Context, expiryRows catalog.ExpiryRows) (fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
@@ -77,35 +81,30 @@ func (bw *BucketWriters) GetWriter(bucketName string) (*csv.Writer, error) {
 
 // WriteExpiryManifestFromSeekableReader reads from r ExpiryResults and returns Readers to CSV
 // files suitable for passing to AWS S3 batch tagging.
-func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r io.Reader) (map[string]fileutil.RewindableReader, error) {
+func WriteExpiryManifestsFromRows(ctx context.Context, c catalog.Cataloger, repository *catalog.Repository, rows catalog.StringRows) (map[string]fileutil.RewindableReader, error) {
 	logger := logging.FromContext(ctx)
-	decoder := json.NewDecoder(r)
 	bucketWriters := BucketWriters{}
 
 	var err error
-	for recordNumber := 0; ; recordNumber++ {
+	recordNumber := 0
+	for ; rows.Next(); recordNumber++ {
 		recordLogger := logger.WithField("record_number", recordNumber)
-		record := catalog.ExpireResult{}
-		err = decoder.Decode(&record)
-		if errors.Is(err, io.EOF) {
-			break
-		}
+		physicalAddress, err := rows.Read()
 		if err != nil {
 			recordLogger.WithError(err).Warning("failed to read record; keep going, lose this expiry")
 			continue
 		}
-		recordLogger = recordLogger.WithField("record", record)
-		repository, err := c.GetRepository(ctx, record.Repository)
+		recordLogger = recordLogger.WithField("physical_path", physicalAddress)
 		if err != nil {
 			recordLogger.WithError(err).Warning("failed to get repository URI; keep going, lose this expiry")
 			continue
 		}
-		recordLogger = recordLogger.WithField("repository", repository)
-		if !block.IsResolvableKey(record.PhysicalAddress) {
-			recordLogger.Warning("expiry requested for nonresolvable key %s; ignore it (possible misconfiguration)", record.PhysicalAddress)
+		recordLogger = recordLogger.WithField("repository", repository.Name)
+		if !block.IsResolvableKey(physicalAddress) {
+			recordLogger.Warning("expiry requested for nonresolvable key %s; ignore it (possible misconfiguration)", physicalAddress)
 			continue
 		}
-		qualifiedKey, err := block.ResolveNamespace(repository.StorageNamespace, record.PhysicalAddress)
+		qualifiedKey, err := block.ResolveNamespace(repository.StorageNamespace, physicalAddress)
 		if err != nil {
 			recordLogger.WithError(err).
 				Warning("could not resolve namespace; keep going, lose this expiry")
@@ -129,7 +128,9 @@ func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r 
 			continue
 		}
 	}
-	if !errors.Is(err, io.EOF) {
+	logger = logger.WithFields(logging.Fields{"num_records": recordNumber, "num_files": len(bucketWriters)})
+	logger.Info("encoded CSVs")
+	if err != nil && !errors.Is(err, io.EOF) {
 		return nil, err
 	}
 	ret := map[string]fileutil.RewindableReader{}
@@ -158,7 +159,8 @@ func WriteExpiryManifestsFromReader(ctx context.Context, c catalog.Cataloger, r 
 // BatchTagOnS3BucketParams holds tagging configuration for BatchTagOnS3Bucket.
 type BatchTagOnS3BucketParams struct {
 	// Account to perform tagging (required for S3 API)
-	AccountId string
+	AccountID string
+
 	// Role for performing tagging
 	RoleArn string
 
@@ -186,16 +188,16 @@ func (sp s3Pointer) GetArn() string {
 }
 
 func parseS3URL(s3URL string) (s3Pointer, error) {
-	url, err := url.Parse(s3URL)
+	u, err := url.Parse(s3URL)
 	if err != nil {
 		return s3Pointer{}, fmt.Errorf("parse S3 URL %s: %w", s3URL, err)
 	}
-	if url.Scheme != "s3" {
+	if u.Scheme != "s3" {
 		return s3Pointer{}, fmt.Errorf("URL %s not on S3: %w", s3URL, err)
 	}
-	trimmedPath := strings.TrimPrefix(url.Path, "/")
+	trimmedPath := strings.TrimPrefix(u.Path, "/")
 	return s3Pointer{
-		Bucket: url.Host,
+		Bucket: u.Host,
 		Key:    trimmedPath,
 	}, nil
 }
@@ -243,7 +245,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 	}
 
 	input := s3control.CreateJobInput{
-		AccountId:            &params.AccountId,
+		AccountId:            &params.AccountID,
 		ConfirmationRequired: aws.Bool(false),
 		// TODO(ariels): use ClientRequestToken to help avoid flooding?
 		Description: aws.String("automated tag to expire objects"),
@@ -263,7 +265,7 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 			},
 		},
 		// TODO(ariels): allow configuration
-		Priority: aws.Int64(10),
+		Priority: aws.Int64(defaultPriority),
 		// TODO(ariels): allow configuration of Report field
 		Report:  &report,
 		RoleArn: &params.RoleArn,
@@ -287,25 +289,100 @@ func BatchTagOnS3Bucket(ctx context.Context, s3ControlClient s3controliface.S3Co
 
 // ExpireOnS3Params holds configuration for ExpireOnS3.
 type ExpireOnS3Params struct {
-	AccountId            string
+	AccountID            string
 	RoleArn              string
 	ManifestURLForBucket func(string) string
 	ReportS3PrefixURL    *string
 }
 
+// MarkedEntriesExpiredInChunks scans expiryResultsReader in chunks of up to chunkSize entries and
+// marks all entries in each chunk as expired.  It writes all errors to errCh.
+func MarkEntriesExpiredInChunks(ctx context.Context, c catalog.Cataloger, repositoryName string, expiryResultsReader io.Reader, chunkSize int, errCh chan error) {
+	errFields := FromLoggerContext(ctx)
+
+	decoder := json.NewDecoder(expiryResultsReader)
+	done := false
+	for recordNumber := 0; !done; {
+		chunk := make([]*catalog.ExpireResult, 0, chunkSize)
+		for i := 0; i < chunkSize; i++ {
+			recordNumber++
+			record := catalog.ExpireResult{}
+			err := decoder.Decode(&record)
+			if errors.Is(err, io.EOF) {
+				done = true
+				break
+			}
+			if err != nil {
+				errCh <- MapError{errFields.WithField("record_number", recordNumber),
+					fmt.Errorf("failed to read record: %w; keep going, already lost this expiry", err)}
+			}
+			chunk = append(chunk, &record)
+		}
+		if err := c.MarkEntriesExpired(ctx, repositoryName, chunk); err != nil {
+			errCh <- MapError{errFields.WithFields(
+				Fields{"chunk_size": len(chunk), "first_record_number": recordNumber - len(chunk)}),
+				fmt.Errorf("failed to mark expired: %w", err),
+			}
+		}
+	}
+}
+
 // ExpireOnS3 starts a goroutine to expire all entries on expiryResultsReader and returns a
 // channel that will receive all error results.
-func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, c catalog.Cataloger, expiryResultsReader fileutil.RewindableReader, params *ExpireOnS3Params) chan error {
-	errCh := make(chan error, 100)
+func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI, s3Client s3iface.S3API, c catalog.Cataloger, repository *catalog.Repository, expiryResultsReader fileutil.RewindableReader, params *ExpireOnS3Params) chan error {
+	const markExpiredChunkSize = 50000
+
+	// TODO(ariels): Lock something for this "session" (e.g. process)
+
+	const errChannelSize = 100
+	errCh := make(chan error, errChannelSize)
 	logger := logging.FromContext(ctx)
 	errFields := FromLoggerContext(ctx)
+
 	go func() {
 		defer close(errCh)
-		manifests, err := WriteExpiryManifestsFromReader(ctx, c, expiryResultsReader)
+		err := expiryResultsReader.Rewind()
 		if err != nil {
-			errCh <- MapError{errFields, fmt.Errorf("write per-bucket manifests for expiry: %s (no expiry performed)", err)}
+			errCh <- MapError{errFields, fmt.Errorf("rewind expiry records file for marking entries: %w (no expiry performed)", err)}
 			return
 		}
+
+		// Mark repository entries "is_expired", their contents are now invisible.  If
+		// failed some entries won't be expired, so their files might not be deleted.
+		// But this is safe, so keep going -- we may still succeed for the other
+		// entries.
+		MarkEntriesExpiredInChunks(ctx, c, repository.Name, expiryResultsReader, markExpiredChunkSize, errCh)
+
+		// Mark object with no unexpired objects as intended for deletion, so no further
+		// dedupes will occur on them.
+		numToDelete, err := c.MarkObjectsForDeletion(ctx, repository.Name)
+		if err != nil {
+			errCh <- MapError{errFields, fmt.Errorf("mark deduped objects for deletion: %w", err)}
+			// Unsafe to keep going (because "this cannot happen")
+			return
+		}
+		logger = logger.WithField("num_objects_to_delete", numToDelete)
+		errFields = errFields.WithField("num_objects_to_delete", numToDelete)
+		logger.Info("Marked objects for deletion, start deleting where possible")
+
+		// Now for each object marked for deletion, if *still* there are only _expired_
+		// entries pointing at it then it is safe to delete.  Prepare the manifests and
+		// start the batch taggers.
+		expiryPhysicalAddressRows, err := c.DeleteOrUnmarkObjectsForDeletion(ctx, repository.Name)
+		if err != nil {
+			errCh <- MapError{errFields, fmt.Errorf("delete (or unmark) marked objects: %w", err)}
+			return
+		}
+
+		manifests, err := WriteExpiryManifestsFromRows(ctx, c, repository, expiryPhysicalAddressRows)
+		if err != nil {
+			errCh <- MapError{
+				Fields:       errFields,
+				WrappedError: fmt.Errorf("write per-bucket manifests for expiry: %w (no expiry performed)", err),
+			}
+			return
+		}
+
 		type doneRec struct {
 			bucketName string
 			err        error
@@ -318,7 +395,7 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 			bucketLogger.Info("start expiry on S3")
 			go func(bucketName string, manifestReader io.ReadSeeker) {
 				params := BatchTagOnS3BucketParams{
-					AccountId:         params.AccountId,
+					AccountID:         params.AccountID,
 					RoleArn:           params.RoleArn,
 					BucketName:        bucketName,
 					ManifestURL:       manifestURL,
@@ -343,59 +420,6 @@ func ExpireOnS3(ctx context.Context, s3ControlClient s3controliface.S3ControlAPI
 				continue
 			}
 			taggedBuckets[done.bucketName] = struct{}{}
-		}
-
-		// Filter entries from successful buckets
-		err = expiryResultsReader.Rewind()
-		if err != nil {
-			errCh <- MapError{errFields, fmt.Errorf("[SEVERE] rewind expiry entries to expire on DB: %w; entries may be lost", err)}
-			// TODO(ariels): attempt to cancel jobs?  (Tricky because those jobs are
-			// unlikely already to be available -- meanwhile failing to rewind a file is
-			// pretty much impossible.
-			return
-		}
-		decoder := json.NewDecoder(expiryResultsReader)
-
-		taggedRecordsByRepo := make(map[string] /*repositoryName*/ []*catalog.ExpireResult, 10000)
-		for recordNumber := 0; ; recordNumber++ {
-			recordFields := errFields.WithField("record_number", recordNumber)
-			record := catalog.ExpireResult{}
-			err = decoder.Decode(&record)
-			if errors.Is(err, io.EOF) {
-				break
-			}
-			if err != nil {
-				errCh <- MapError{recordFields, fmt.Errorf("failed to read record: %w; keep going, already lost this expiry", err)}
-				continue
-			}
-			recordFields = recordFields.WithField("record", record)
-			repository, err := c.GetRepository(ctx, record.Repository)
-			if err != nil {
-				errCh <- MapError{recordFields, fmt.Errorf("failed to get repository URI: %s; keep going, already lost this expiry", err)}
-				continue
-			}
-			qualifiedKey, err := block.ResolveNamespace(repository.StorageNamespace, record.PhysicalAddress)
-			if err != nil {
-				errCh <- MapError{recordFields, fmt.Errorf("could not resolve namespace: %w; keep going, already lost this expiry", err)}
-				continue
-			}
-			bucketName := qualifiedKey.StorageNamespace
-			if _, ok := taggedBuckets[bucketName]; !ok {
-				continue
-			}
-			taggedRecordsByRepo[record.Repository] = append(taggedRecordsByRepo[record.Repository], &record)
-		}
-		for repositoryName, records := range taggedRecordsByRepo {
-			repositoryLogger := logger.WithFields(logging.Fields{"repository": repositoryName, "num_records": len(records)})
-			repositoryFields := errFields.WithFields(Fields{"repository": repositoryName, "num_records": len(records)})
-			err := c.MarkExpired(ctx, repositoryName, records)
-			if err != nil {
-				// TODO(ariels): attempt to cancel jobs?  (Tricky because those jobs are
-				// unlikely already to be available.)
-				errCh <- MapError{repositoryFields, fmt.Errorf("[SEVERE] mark objects expired in catalog: %w; but S3 WILL expire them soon", err)}
-			} else {
-				repositoryLogger.Info("marked objects expired in catalog")
-			}
 		}
 	}()
 	return errCh

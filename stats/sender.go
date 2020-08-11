@@ -43,7 +43,7 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	}
 	serialized, err := json.MarshalIndent(m, "", "  ")
 	if err != nil {
-		return fmt.Errorf("failed to serialize account metadata: %v", err)
+		return fmt.Errorf("failed to serialize account metadata: %w", err)
 	}
 	req, err := http.NewRequest(http.MethodPost, s.addr+"/installation", bytes.NewBuffer(serialized))
 	if err != nil {

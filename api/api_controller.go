@@ -217,6 +217,13 @@ func pageAmount(i *int64) int {
 
 func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 	return setupop.SetupLakeFSHandlerFunc(func(setupReq setupop.SetupLakeFSParams) middleware.Responder {
+		if len(*setupReq.User.DisplayName) == 0 {
+			return setupop.NewSetupLakeFSBadRequest().
+				WithPayload(&models.Error{
+					Message: "empty display name",
+				})
+		}
+
 		// skip migrate in case we have an active installation
 		if _, err := c.deps.Meta.InstallationID(); err == nil {
 			return setupop.NewSetupLakeFSConflict().
@@ -245,13 +252,6 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		c.deps.Collector.SetInstallationID(metadata["installation_id"])
 		c.deps.Collector.CollectMetadata(metadata)
 		c.deps.Collector.CollectEvent("global", "init")
-
-		if len(*setupReq.User.DisplayName) == 0 {
-			return setupop.NewSetupLakeFSBadRequest().
-				WithPayload(&models.Error{
-					Message: "empty display name",
-				})
-		}
 
 		adminUser := &model.User{
 			CreatedAt:   time.Now(),

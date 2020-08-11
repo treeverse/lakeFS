@@ -43,13 +43,13 @@ func Base64StringGenerator(bytes int) string {
 
 func HexStringGenerator(bytes int) string {
 	var ret string
-	bbuf := make([]byte, bytes)
+	buf := make([]byte, bytes)
 	for {
-		_, err := crand.Read(bbuf)
+		_, err := crand.Read(buf)
 		if err != nil {
 			continue
 		}
-		ret = strings.ToUpper(hex.EncodeToString(bbuf))
+		ret = strings.ToUpper(hex.EncodeToString(buf))
 		break
 	}
 	return ret

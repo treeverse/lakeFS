@@ -10,8 +10,8 @@ type Error struct {
 	Code      string `xml:"Code"`
 	Message   string `xml:"Message"`
 	Region    string `xml:"Region"`
-	RequestId string `xml:"RequestId"`
-	HostId    string `xml:"HostId"`
+	RequestID string `xml:"RequestId"`
+	HostID    string `xml:"HostId"`
 }
 
 type Owner struct {
@@ -91,7 +91,7 @@ type ListBucketResult struct {
 
 type Object struct {
 	Key       string `xml:"Key"`
-	VersionId string `xml:"VersionId,omitempty"`
+	VersionID string `xml:"VersionId,omitempty"`
 }
 
 type Delete struct {
@@ -101,16 +101,16 @@ type Delete struct {
 
 type Deleted struct {
 	DeleteMarker          bool   `xml:"DeleteMarker,omitempty"`
-	DeleteMarkerVersionId string `xml:"DeleteMarkerVersionId,omitempty"`
+	DeleteMarkerVersionID string `xml:"DeleteMarkerVersionId,omitempty"`
 	Key                   string `xml:"Key"`
-	VersionId             string `xml:"versionId,omitempty"`
+	VersionID             string `xml:"versionId,omitempty"`
 }
 
 type DeleteError struct {
 	Code      string `xml:"Code"`
 	Key       string `xml:"Key"`
 	Message   string `xml:"Message"`
-	VersionId string `xml:"VersionId,omitempty"`
+	VersionID string `xml:"VersionId,omitempty"`
 }
 
 type DeleteResult struct {
@@ -127,7 +127,7 @@ type CopyObjectResult struct {
 type InitiateMultipartUploadResult struct {
 	Bucket   string `xml:"Bucket"`
 	Key      string `xml:"Key"`
-	UploadId string `xml:"UploadId"`
+	UploadID string `xml:"UploadId"`
 }
 
 type CompleteMultipartUploadPart struct {
