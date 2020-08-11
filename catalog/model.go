@@ -3,7 +3,6 @@ package catalog
 import (
 	"database/sql/driver"
 	"encoding/json"
-	"errors"
 	"time"
 )
 
@@ -79,7 +78,7 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	data, ok := src.([]byte)
 	if !ok {
-		return errors.New("invalid metadata src format")
+		return ErrInvalidMetadataSrcFormat
 	}
 	return json.Unmarshal(data, j)
 }

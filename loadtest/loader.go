@@ -40,6 +40,11 @@ type Config struct {
 	ServerAddress    string
 }
 
+var (
+	ErrCreateClient = errors.New("failed to create lakeFS client")
+	ErrTestErrors   = errors.New("got errors during loadtest, see output for details")
+)
+
 func NewLoader(config Config) *Loader {
 	reader, writer := io.Pipe()
 	res := &Loader{
@@ -85,7 +90,7 @@ func (t *Loader) Run() error {
 		return err
 	}
 	if hasErrors {
-		return errors.New("got errors during loadtest, see output for details")
+		return ErrTestErrors
 	}
 	return nil
 }
@@ -114,7 +119,7 @@ func (t *Loader) getClient() (apiClient api.Client, err error) {
 	}
 	apiClient, err = api.NewClient(t.Config.ServerAddress, t.Config.Credentials.AccessKeyID, t.Config.Credentials.AccessSecretKey)
 	if err != nil {
-		return nil, errors.New("failed to create lakeFS client")
+		return nil, ErrCreateClient
 	}
 	return apiClient, nil
 }

@@ -1,6 +1,7 @@
 package retention
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/go-openapi/strfmt"
@@ -14,10 +15,16 @@ const (
 	hoursMinAllowExpiration = 2
 )
 
+var (
+	ErrExpirationNotSet               = errors.New("expiration must specify at least one field")
+	ErrExpirationMinimalAllowable     = errors.New("minimal allowable expiration")
+	ErrExpirationMissingRequiredField = errors.New("missing required expiration field")
+)
+
 func ParseTimePeriod(model models.TimePeriod) (catalog.TimePeriodHours, error) {
 	ret := catalog.TimePeriodHours(hoursInADay * (model.Days + 7*model.Weeks))
 	if ret < catalog.TimePeriodHours(hoursMinAllowExpiration) {
-		return catalog.TimePeriodHours(0), fmt.Errorf("minimal allowable expiration is 2 hours")
+		return catalog.TimePeriodHours(0), fmt.Errorf("%w is %d hours", ErrExpirationMinimalAllowable, hoursMinAllowExpiration)
 	}
 	return ret, nil
 }
@@ -33,26 +40,26 @@ func ParseExpiration(model models.RetentionPolicyRuleExpiration) (*catalog.Expir
 	if model.All != nil {
 		hours, err := ParseTimePeriod(*model.All)
 		if err != nil {
-			return nil, fmt.Errorf("expiration all: %s", err)
+			return nil, fmt.Errorf("expiration all: %w", err)
 		}
 		ret.All = &hours
 	}
 	if model.Noncurrent != nil {
 		hours, err := ParseTimePeriod(*model.Noncurrent)
 		if err != nil {
-			return nil, fmt.Errorf("expiration noncurrent: %s", err)
+			return nil, fmt.Errorf("expiration noncurrent: %w", err)
 		}
 		ret.Noncurrent = &hours
 	}
 	if model.Uncommitted != nil {
 		hours, err := ParseTimePeriod(*model.Uncommitted)
 		if err != nil {
-			return nil, fmt.Errorf("expiration uncommitted: %s", err)
+			return nil, fmt.Errorf("expiration uncommitted: %w", err)
 		}
 		ret.Uncommitted = &hours
 	}
 	if ret.All == nil && ret.Noncurrent == nil && ret.Uncommitted == nil {
-		return nil, fmt.Errorf("expiration must specify at least one field")
+		return nil, ErrExpirationNotSet
 	}
 	return &ret, nil
 }
@@ -80,7 +87,7 @@ func ParseRule(model models.RetentionPolicyRule) (*catalog.Rule, error) {
 		rule.FilterPrefix = model.Filter.Prefix
 	}
 	if model.Expiration == nil {
-		return nil, fmt.Errorf("missing required expiration field")
+		return nil, ErrExpirationMissingRequiredField
 	}
 	expiration, err := ParseExpiration(*model.Expiration)
 	if err != nil {
@@ -115,7 +122,7 @@ func ParsePolicy(model models.RetentionPolicy) (*catalog.Policy, error) {
 	for index, modelRule := range model.Rules {
 		rule, err := ParseRule(*modelRule)
 		if err != nil {
-			return nil, fmt.Errorf("rule %d: %s", index, err)
+			return nil, fmt.Errorf("rule %d: %w", index, err)
 		}
 		rules = append(rules, *rule)
 	}

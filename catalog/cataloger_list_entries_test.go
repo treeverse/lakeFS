@@ -802,6 +802,7 @@ func TestCataloger_ListEntries_IgnoreDeleteByLineage(t *testing.T) {
 	}
 	// now merge master to br_1
 	_, err = c.Merge(ctx, repo, "master", "br_1", "tester", "merge deletions", nil)
+	testutil.Must(t, err)
 	got, _, err = c.ListEntries(ctx, repo, "br_1", "", "", DefaultPathDelimiter, -1)
 	testutil.Must(t, err)
 	if len(got) != 0 {

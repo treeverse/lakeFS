@@ -309,7 +309,7 @@ func (g *MSClient) merge(fromDB, fromTable, toDB, toTable, serde string, symlink
 	err = metastore.DiffIterable(partitionIter, toPartitionIter, func(difference catalog.DifferenceType, value interface{}, _ string) error {
 		partition, ok := value.(*glue.Partition)
 		if !ok {
-			return fmt.Errorf("unexpected value in diffIterable call. expected to get *glue.Partition, but got: %T", value)
+			return fmt.Errorf("%w in diffIterable call. expected to get *glue.Partition, but got: %T", ErrUnexpectedValue, value)
 		}
 		partition.SetDatabaseName(toDB)
 		partition.SetTableName(toTable)
