@@ -117,7 +117,6 @@ var expireCmd = &cobra.Command{
 			logger.Fatalf("Failed to expire on %d repositories; errors emitted above", numFailures)
 		}
 	},
-	Hidden: true,
 }
 
 //nolint:gochecknoinits
