@@ -28,7 +28,10 @@ const (
 	ExpireObjectS3Tag = "lakefs_expire_object"
 )
 
-var ErrMissingETag = errors.New("missing ETag")
+var (
+	ErrS3          = errors.New("s3 error")
+	ErrMissingETag = fmt.Errorf("%w: missing ETag", ErrS3)
+)
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	qualifiedKey, err := block.ResolveNamespace(obj.StorageNamespace, obj.Identifier)
@@ -229,9 +232,9 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			err = fmt.Errorf("s3 error: %d %s (unknown)", resp.StatusCode, resp.Status)
+			err = fmt.Errorf("%w: %d %s (unknown)", ErrS3, resp.StatusCode, resp.Status)
 		} else {
-			err = fmt.Errorf("s3 error: %s", body)
+			err = fmt.Errorf("%w: %s", ErrS3, body)
 		}
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
@@ -461,7 +464,7 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 	config, err := s.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("bucket %s has no lifecycle configuration", storageNamespace)
+			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
 		}
 		return err
 	}
@@ -479,7 +482,8 @@ func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
 	}
 
 	if !hasMatchingRule {
-		return fmt.Errorf("bucket %s lifecycle rules not configured to expire objects tagged \"%s\"", storageNamespace, ExpireObjectS3Tag)
+		return fmt.Errorf("%w: bucket %s lifecycle rules not configured to expire objects tagged \"%s\"",
+			ErrS3, storageNamespace, ExpireObjectS3Tag)
 	}
 	return nil
 }

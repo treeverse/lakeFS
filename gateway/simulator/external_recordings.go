@@ -51,7 +51,6 @@ func getLocalEtag(path string) (string, error) {
 }
 
 func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination string) error {
-
 	etag, err := getLocalEtag(destination)
 	if err != nil {
 		return err
@@ -89,6 +88,6 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 
 	//write the etag file
 	etagFileName := getEtagFileName(destination)
-	err = ioutil.WriteFile(etagFileName, []byte(s3Etag), 0644)
+	err = ioutil.WriteFile(etagFileName, []byte(s3Etag), 0644) //nolint:gosec
 	return err
 }
