@@ -2,7 +2,7 @@ package crypt
 
 import (
 	"crypto/rand"
-	"fmt"
+	"errors"
 	"io"
 
 	"golang.org/x/crypto/nacl/secretbox"
@@ -24,6 +24,10 @@ type SecretStore interface {
 type NaclSecretStore struct {
 	secret []byte
 }
+
+var (
+	ErrFailDecrypt = errors.New("could not decrypt value")
+)
 
 func NewSecretStore(secret []byte) *NaclSecretStore {
 	return &NaclSecretStore{secret: secret}
@@ -87,7 +91,7 @@ func (a *NaclSecretStore) Decrypt(encrypted []byte) ([]byte, error) {
 	// decrypt  the rest
 	decrypted, ok := secretbox.Open(nil, encrypted[KeySaltBytes+NonceSizeBytes:], &decryptNonce, &key)
 	if !ok {
-		return nil, fmt.Errorf("could not decrypt value")
+		return nil, ErrFailDecrypt
 	}
 	return decrypted, nil
 }
