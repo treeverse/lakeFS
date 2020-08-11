@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/api/gen/client/auth"
+
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/swag"
@@ -168,7 +170,6 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 				resp.GetPayload().DefaultBranch, testBranchName)
 		}
 	})
-
 }
 
 func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
@@ -703,14 +704,15 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	}
 
 	t.Run("get object stats", func(t *testing.T) {
-		err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-			Path:            "foo/bar",
-			PhysicalAddress: "this_is_bars_address",
-			CreationDate:    time.Now(),
-			Size:            666,
-			Checksum:        "this_is_a_checksum",
-			Metadata:        nil,
-		}, catalog.CreateEntryParams{})
+		testutil.Must(t,
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+				Path:            "foo/bar",
+				PhysicalAddress: "this_is_bars_address",
+				CreationDate:    time.Now(),
+				Size:            666,
+				Checksum:        "this_is_a_checksum",
+				Metadata:        nil,
+			}, catalog.CreateEntryParams{}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -742,15 +744,16 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 	})
 
 	t.Run("get expired object stats", func(t *testing.T) {
-		err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-			Path:            "foo/expired",
-			PhysicalAddress: "this_address_is_expired",
-			CreationDate:    time.Now(),
-			Size:            999999,
-			Checksum:        "eeee",
-			Metadata:        nil,
-			Expired:         true,
-		}, catalog.CreateEntryParams{})
+		testutil.Must(t,
+			deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+				Path:            "foo/expired",
+				PhysicalAddress: "this_address_is_expired",
+				CreationDate:    time.Now(),
+				Size:            999999,
+				Checksum:        "eeee",
+				Metadata:        nil,
+				Expired:         true,
+			}, catalog.CreateEntryParams{}))
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -778,63 +781,54 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
-	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+	basicAuth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
 
 	// setup client
 	clt := client.Default
 	clt.SetTransport(&handlerTransport{Handler: handler})
 	ctx := context.Background()
-	err := deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master")
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-		Path:            "foo/bar",
-		PhysicalAddress: "this_is_bars_address",
-		CreationDate:    time.Now(),
-		Size:            666,
-		Checksum:        "this_is_a_checksum",
-	}, catalog.CreateEntryParams{})
-	if err != nil {
-		t.Fatal(err)
-	}
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-		Path:            "foo/quuux",
-		PhysicalAddress: "this_is_quuxs_address_expired",
-		CreationDate:    time.Now(),
-		Size:            9999999,
-		Checksum:        "quux_checksum",
-		Expired:         true,
-	}, catalog.CreateEntryParams{})
-
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-		Path:            "foo/baz",
-		PhysicalAddress: "this_is_bazs_address",
-		CreationDate:    time.Now(),
-		Size:            666,
-		Checksum:        "baz_checksum",
-	}, catalog.CreateEntryParams{})
-	if err != nil {
-		t.Fatal(err)
-	}
-
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
-		Path:            "foo/a_dir/baz",
-		PhysicalAddress: "this_is_bazs_address",
-		CreationDate:    time.Now(),
-		Size:            666,
-		Checksum:        "baz_checksum",
-	}, catalog.CreateEntryParams{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Must(t,
+		deps.cataloger.CreateRepository(ctx, "repo1", "ns1", "master"))
+	testutil.Must(t,
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+			Path:            "foo/bar",
+			PhysicalAddress: "this_is_bars_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "this_is_a_checksum",
+		}, catalog.CreateEntryParams{}))
+	testutil.Must(t,
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+			Path:            "foo/quuux",
+			PhysicalAddress: "this_is_quuxs_address_expired",
+			CreationDate:    time.Now(),
+			Size:            9999999,
+			Checksum:        "quux_checksum",
+			Expired:         true,
+		}, catalog.CreateEntryParams{}))
+	testutil.Must(t,
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+			Path:            "foo/baz",
+			PhysicalAddress: "this_is_bazs_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "baz_checksum",
+		}, catalog.CreateEntryParams{}))
+	testutil.Must(t,
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", catalog.Entry{
+			Path:            "foo/a_dir/baz",
+			PhysicalAddress: "this_is_bazs_address",
+			CreationDate:    time.Now(),
+			Size:            666,
+			Checksum:        "baz_checksum",
+		}, catalog.CreateEntryParams{}))
 
 	t.Run("get object list", func(t *testing.T) {
 		resp, err := clt.Objects.ListObjects(&objects.ListObjectsParams{
 			Ref:        "master",
 			Repository: "repo1",
 			Prefix:     swag.String("foo/"),
-		}, bauth)
+		}, basicAuth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -847,7 +841,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			Ref:        "master:HEAD",
 			Repository: "repo1",
 			Prefix:     swag.String("/"),
-		}, bauth)
+		}, basicAuth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -862,7 +856,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 			Ref:        "master",
 			Repository: "repo1",
 			Prefix:     swag.String("foo/"),
-		}, bauth)
+		}, basicAuth)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -911,10 +905,8 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Size:            blob.Size,
 		Checksum:        blob.Checksum,
 	}
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Must(t,
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", entry, catalog.CreateEntryParams{}))
 
 	expired := catalog.Entry{
 		Path:            "foo/expired",
@@ -924,10 +916,8 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 		Checksum:        "b10b",
 		Expired:         true,
 	}
-	err = deps.cataloger.CreateEntry(ctx, "repo1", "master", expired, catalog.CreateEntryParams{})
-	if err != nil {
-		t.Fatal(err)
-	}
+	testutil.Must(t,
+		deps.cataloger.CreateEntry(ctx, "repo1", "master", expired, catalog.CreateEntryParams{}))
 
 	t.Run("get object", func(t *testing.T) {
 		buf := new(bytes.Buffer)
@@ -1039,7 +1029,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 			t.Fatalf("expected 38 bytes to be read, got back %d", len(result))
 		}
 		if !strings.EqualFold(rresp.ETag, httputil.ETag(resp.Payload.Checksum)) {
-			t.Fatalf("got unexpected etag: %s - expeced %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
+			t.Fatalf("got unexpected etag: %s - expected %s", rresp.ETag, httputil.ETag(resp.Payload.Checksum))
 		}
 	})
 
@@ -1162,6 +1152,103 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 			t.Fatalf("expected file to be gone now")
 		}
 	})
+}
+
+func TestController_CreatePolicyHandler(t *testing.T) {
+	handler, deps := getHandler(t)
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	t.Run("valid_policy", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fs:ReadObject"},
+						Effect:   swag.String("allow"),
+						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err != nil {
+			t.Fatalf("unexpected error creating valid policy: %v", err)
+		}
+	})
+
+	t.Run("invalid_policy_action", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fsx:ReadObject"},
+						Effect:   swag.String("allow"),
+						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error creating invalid policy: action")
+		}
+	})
+
+	t.Run("invalid_policy_effect", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fs:ReadObject"},
+						Effect:   swag.String("Allow"),
+						Resource: swag.String("arn:lakefs:fs:::repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error creating invalid policy: effect")
+		}
+	})
+
+	t.Run("invalid_policy_arn", func(t *testing.T) {
+		ctx := context.Background()
+		_, err := clt.Auth.CreatePolicy(&auth.CreatePolicyParams{
+			Policy: &models.Policy{
+				CreationDate: time.Now().Unix(),
+				ID:           swag.String("ValidPolicyID"),
+				Statement: []*models.Statement{
+					{
+						Action:   []string{"fs:ReadObject"},
+						Effect:   swag.String("Allow"),
+						Resource: swag.String("arn:lakefs:fs:repository/foo/object/*"),
+					},
+				},
+			},
+			Context: ctx,
+		}, bauth)
+		if err == nil {
+			t.Fatalf("expected error creating invalid policy: arn")
+		}
+	})
+
 }
 
 func TestHandler_RetentionPolicyHandlers(t *testing.T) {

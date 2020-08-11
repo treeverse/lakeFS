@@ -17,6 +17,7 @@ linters:
     - goconst
     - gocritic
     - gocyclo
+    - goerr113
     - gofmt
     - goimports
     - gomnd
@@ -39,3 +40,4 @@ linters:
     - unused
     - varcheck
     - whitespace
+

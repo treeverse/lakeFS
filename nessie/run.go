@@ -2,7 +2,6 @@ package nessie
 
 import (
 	"context"
-	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/strfmt"
 	"github.com/treeverse/lakefs/api/gen/client"
 )
@@ -16,17 +15,23 @@ type Config struct {
 //
 type testCase func(context.Context) error
 
+const (
+	adminUserName string = "nessie"
+)
+
 // Run runs system tests and reports on failures
 func Run(ctx context.Context, config Config) error {
 	// initialize the env/repo
 	client := client.NewHTTPClientWithConfig(strfmt.Default, &client.TransportConfig{
 		Host:     config.BaseURL,
 		BasePath: "",
-		Schemes:  nil,
 	})
 
-	// run tests one by one
+	//run tests one by one
+	res, err := client.HealthCheck.HealthCheck(nil)
+	if err != nil {
 
+	}
 	// aggregate and return the errors
 
 	return nil

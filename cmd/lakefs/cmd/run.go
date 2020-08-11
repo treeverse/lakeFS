@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math/rand"
 	"net/http"
@@ -123,7 +124,7 @@ var runCmd = &cobra.Command{
 		go func() {
 			// avoid a thundering herd in case we have many lakeFS instances starting together
 			const maxSplay = 10 * time.Second
-			randSource := rand.New(rand.NewSource(time.Now().UnixNano()))
+			randSource := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
 			time.Sleep(time.Duration(randSource.Intn(int(maxSplay))))
 
 			metadata, err := meta.Write()
@@ -146,7 +147,7 @@ var runCmd = &cobra.Command{
 		}
 
 		go func() {
-			if err := server.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			if err := server.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 				fmt.Printf("server failed to listen on %s: %v\n", cfg.GetListenAddress(), err)
 				os.Exit(1)
 			}
@@ -159,7 +160,7 @@ var runCmd = &cobra.Command{
 	},
 }
 
-func registerPrometheusCollector(db db.Database) {
+func registerPrometheusCollector(db sqlstats.StatsGetter) {
 	collector := sqlstats.NewStatsCollector("lakefs", db)
 	err := prometheus.Register(collector)
 	if err != nil {
