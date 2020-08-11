@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -32,49 +33,68 @@ const (
 	envKeyAwsRegion         = "AWS_DEFAULT_REGION"
 )
 
+var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
+var addrDB = flag.String("db", "", "DB address to use")
+
 func GetDBInstance(pool *dockertest.Pool) (string, func()) {
+	if len(*addrDB) > 0 {
+		// use supplied DB connection for testing
+		if err := verifyDBConnectionString(*addrDB); err != nil {
+			log.Fatalf("could not connect to postgres: %s", err)
+		}
+		return *addrDB, func() {}
+	}
 	resource, err := pool.Run("postgres", "11", []string{
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
 		"POSTGRES_DB=lakefs_db",
-		"LC_COLLATE=C",
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)
 	}
 
+	// expire the container, just to be on the safe side
+	if !*keepDB {
+		err = resource.Expire(DBContainerTimeoutSeconds)
+		if err != nil {
+			log.Fatalf("could not expire postgres container")
+		}
+	}
+
+	// format db uri
+	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable",
+		resource.GetPort("5432/tcp"))
+
+	// wait for container to start and connect to db
+	if err = pool.Retry(func() error {
+		return verifyDBConnectionString(uri)
+	}); err != nil {
+		log.Fatalf("could not connect to postgres: %s", err)
+	}
+
 	// set cleanup
 	closer := func() {
+		if *keepDB {
+			return
+		}
 		err := pool.Purge(resource)
 		if err != nil {
 			log.Fatalf("could not kill postgres container")
 		}
 	}
 
-	// expire, just to make sure
-	err = resource.Expire(DBContainerTimeoutSeconds)
-	if err != nil {
-		log.Fatalf("could not expire postgres container")
-	}
-
-	// create connection
-	var conn *sqlx.DB
-	uri := fmt.Sprintf("postgres://lakefs:lakefs@localhost:%s/lakefs_db?sslmode=disable",
-		resource.GetPort("5432/tcp"))
-	if err = pool.Retry(func() error {
-		var err error
-		conn, err = sqlx.Connect("pgx", uri)
-		if err != nil {
-			return err
-		}
-		return conn.Ping()
-	}); err != nil {
-		log.Fatalf("could not connect to postgres: %s", err)
-	}
-	_ = conn.Close()
-
-	// return DB
+	// return DB address and closer func
 	return uri, closer
+}
+
+func verifyDBConnectionString(uri string) error {
+	conn, err := sqlx.Connect("pgx", uri)
+	if err != nil {
+		return err
+	}
+	err = conn.Ping()
+	_ = conn.Close()
+	return err
 }
 
 type GetDBOptions struct {
