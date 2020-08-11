@@ -43,7 +43,27 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.credentials.access_secret_key` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to S3 (use a lower value for less reliable networks). Minimum is 8192.
-* `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN representing the S3 endpoint used by S3 clients to call this server (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for local development
+* `blockstore.s3.retention.role_arn` - ARN of IAM role to use to
+  perform AWS S3 Batch tagging operations.  This role must be
+  configured according to [Granting permissions for Amazon S3 Batch
+  Operations][aws-s3-batch-permissions] for "PUT object tagging", with
+  these permissions:
+  * `ListBucket` on all buckets used for storing repositories.
+  * `PutObjectTagging` and `PutObjectVersionTagging` on all buckets
+     and prefixes used for storing repositories.
+  * `GetObject` under `blockstore.s3.retention.manifest_base_url`,
+  * `PutObject` under `blockstore.s3.retention.report_s3_prefix_url`.
+* `blockstore.s3.retention.manifest_base_url` - Base S3 URL to use for
+  uploading batch tagging manifest files.  Must be readable by
+  `blockstore.s3.retention.role_arn` and writable by the configured
+  AWS role running `lakefs`.
+* `blockstore.s3.retention.report_s3_prefix_url` - Base S3 URL to use
+  for writing batch tagging completion reports.  Must be writable by
+  `blockstore.s3.retention.role_arn`.
+* `gateways.s3.domain_name` `(string : "s3.local.lakefs.io")` - a FQDN
+  representing the S3 endpoint used by S3 clients to call this server
+  (`*.s3.local.lakefs.io` always resolves to 127.0.0.1, useful for
+  local development
 * `gateways.s3.region` `(string : "us-east-1")` - AWS region we're pretending to be. Should match the region configuration used in AWS SDK clients
 * `stats.enabled` `(boolean : true)` - Whether or not to periodically collect anonymous usage statistics
 {: .ref-list }
@@ -114,3 +134,5 @@ gateways:
     domain_name: s3.my-company.com
     region: us-east-1
 ```
+
+[aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
