@@ -46,7 +46,7 @@ In lakeFS, different users can view different branches (or even commits, directl
 Objects in lakeFS are very similar to those found in S3 (or other object stores, for that matter). lakeFS is agnostic to what these objects contain: Parquet, CSV, ORC and even JPEG or other forms of unstructured data.   
 
 Unlike Git, lakeFS does not care about the contents of an object - if we try to merge two branches that both update the same file, it is up to the user to resolve this conflict.  
-This is because lakeFS doesn't assume anything about the structure of the object and so cannot try to merge both changesets into a single object (additionally, this operation makes little sense for machine generated files, and data in general).
+This is because lakeFS doesn't assume anything about the structure of the object and so cannot try to merge both changed sets into a single object (additionally, this operation makes little sense for machine generated files, and data in general).
 
 The actual data itself is not stored inside lakeFS directly, but rather stored in an underlying object store. lakeFS will manage these writes, and will store a pointer to the object in its metadata database.
 Addressing the object in the underlying object store is done using a dedupe ID - objects with the same content will receive the same ID, thus stored only once.
