@@ -10,12 +10,17 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
+const (
+	diffCmdMinArgs = 1
+	diffCmdMaxArgs = 2
+)
+
 var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
 	Args: ValidationChain(
-		HasRangeArgs(1, 2),
+		HasRangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
 		IsRefURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -23,7 +28,8 @@ var diffCmd = &cobra.Command{
 
 		var diff []*models.Diff
 		var err error
-		if len(args) == 2 {
+		const diffWithOtherArgsCount = 2
+		if len(args) == diffWithOtherArgsCount {
 			if err := IsRefURI(1)(args); err != nil {
 				DieErr(err)
 			}

@@ -14,13 +14,18 @@ import (
 	"github.com/treeverse/lakefs/uri"
 )
 
+const (
+	mergeCmdMinArgs = 2
+	mergeCmdMaxArgs = 2
+)
+
 // mergeCmd represents the merge command
 var mergeCmd = &cobra.Command{
 	Use:   "merge <source ref> <destination ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: ValidationChain(
-		HasRangeArgs(2, 2),
+		HasRangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
 		IsRefURI(0),
 		IsRefURI(1),
 	),

@@ -71,15 +71,16 @@ func (d *DiffIterator) Next() bool {
 		if !d.rightNext && !d.leftNext {
 			return false
 		}
-		if d.leftNext && (!d.rightNext || CompareKeys(d.leftInv.Get(), d.rightInv.Get())) {
+		switch {
+		case d.leftNext && (!d.rightNext || CompareKeys(d.leftInv.Get(), d.rightInv.Get())):
 			d.value = ImportObject{Obj: *d.leftInv.Get(), IsDeleted: true}
 			d.leftNext = d.leftInv.Next()
 			return true
-		} else if !d.leftNext || CompareKeys(d.rightInv.Get(), d.leftInv.Get()) {
+		case !d.leftNext || CompareKeys(d.rightInv.Get(), d.leftInv.Get()):
 			d.value = ImportObject{Obj: *d.rightInv.Get()}
 			d.rightNext = d.rightInv.Next()
 			return true
-		} else if d.leftInv.Get().Key == d.rightInv.Get().Key {
+		case d.leftInv.Get().Key == d.rightInv.Get().Key:
 			if d.leftInv.Get().Checksum != d.rightInv.Get().Checksum {
 				d.value = ImportObject{Obj: *d.rightInv.Get()}
 			}

@@ -19,6 +19,7 @@ import (
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
 	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
@@ -113,6 +114,8 @@ func (c *Controller) Context() context.Context {
 // Adding new handlers requires also adding them here so that the generated server will use them
 func (c *Controller) Configure(api *operations.LakefsAPI) {
 	// Register operations here
+	api.HealthCheckHealthCheckHandler = c.GetHealthCheckHandler()
+
 	api.AuthGetCurrentUserHandler = c.GetCurrentUserHandler()
 	api.AuthListUsersHandler = c.ListUsersHandler()
 	api.AuthGetUserHandler = c.GetUserHandler()
@@ -200,6 +203,12 @@ func pageAmount(i *int64) int {
 		return DefaultResultsPerPage
 	}
 	return inti
+}
+
+func (c *Controller) GetHealthCheckHandler() hcop.HealthCheckHandler {
+	return hcop.HealthCheckHandlerFunc(func(params hcop.HealthCheckParams) middleware.Responder {
+		return hcop.NewHealthCheckNoContent()
+	})
 }
 
 func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {

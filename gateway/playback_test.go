@@ -4,7 +4,6 @@ import (
 	"archive/zip"
 	"context"
 	"encoding/json"
-	"github.com/ory/dockertest/v3"
 	"io"
 	"io/ioutil"
 	"log"
@@ -15,10 +14,10 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/dedup"
-
+	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/gateway"
 	"github.com/treeverse/lakefs/gateway/simulator"
 	"github.com/treeverse/lakefs/logging"
@@ -36,8 +35,8 @@ const (
 )
 
 func TestGatewayRecording(t *testing.T) {
-	if !*integrationTest {
-		t.Skip("Not running integration tests")
+	if testing.Short() {
+		t.Skip("skipping playback test in short mode.")
 	}
 	testData := []string{
 		"s3://lakefs-recordings/presto.zip",
