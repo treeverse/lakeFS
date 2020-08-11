@@ -28,11 +28,11 @@ This reference uses `.` to denote the nesting of values.
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.
 * `auth.cache.ttl` `(time duration : "20s")` - How long to store an item in the auth cache. Using a higher value reduces load on the database, but will cause changes longer to take effect for cached users.
-* `auth.cache.jitter` `(time duration : "3s")` - A random amount of time between 0 and this value is added to each item's TTL. This is done to avoid a large bulk of keys expiring at once and overwhelming the database. 
-* `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing  
+* `auth.cache.jitter` `(time duration : "3s")` - A random amount of time between 0 and this value is added to each item's TTL. This is done to avoid a large bulk of keys expiring at once and overwhelming the database.
+* `auth.encrypt.secret_key` `(string : required)` - A random (cryptographically safe) generated string that is used for encryption and HMAC signing
 
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
-   {: .note } 
+   {: .note }
 
 * `blockstore.type` `(one of ["local", "s3", "mem"]: "mem")` - Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
@@ -50,7 +50,7 @@ This reference uses `.` to denote the nesting of values.
 
 ## Using Environment Variables
 
-All configuration variables can be set or overridden using environment variables.  
+All configuration variables can be set or overridden using environment variables.
 To set an environment variable, prepend `LAKEFS_` to its name, convert it to upper case, and replace `.` with `_`:
 
 For example, `logging.format` becomes `LAKEFS_LOGGING_FORMAT`, `blockstore.s3.region` becomes `LAKEFS_BLOCKSTORE_S3_REGION`, etc.
@@ -101,7 +101,7 @@ database:
 auth:
   encrypt:
     secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
-    
+
 blockstore:
   type: s3
   s3:
