@@ -8,6 +8,8 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/treeverse/lakefs/testutil"
+
 	"github.com/treeverse/lakefs/metastore/mock"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -140,7 +142,6 @@ func (h GlueMsMock) UpdatePartition(input *glue.UpdatePartitionInput) (*glue.Upd
 
 func (h GlueMsMock) CreatePartition(partition *glue.CreatePartitionInput) (*glue.CreatePartitionOutput, error) {
 	return nil, h.MockStore.AddPartition(partitionInputToMock(partition.DatabaseName, partition.TableName, partition.PartitionInput))
-
 }
 
 func (h GlueMsMock) DeletePartition(input *glue.DeletePartitionInput) (*glue.DeletePartitionOutput, error) {
@@ -162,6 +163,16 @@ func (h GlueMsMock) GetTable(input *glue.GetTableInput) (*glue.GetTableOutput, e
 	return &glue.GetTableOutput{Table: MockToTable(mockTable)}, nil
 }
 
+func (h GlueMsMock) BatchDeletePartition(input *glue.BatchDeletePartitionInput) (*glue.BatchDeletePartitionOutput, error) {
+	for _, partition := range input.PartitionsToDelete {
+		err := h.MockStore.DropPartition(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableName), aws.StringValueSlice(partition.Values))
+		if err != nil {
+			return nil, err
+		}
+	}
+	return nil, nil
+}
+
 func (h GlueMsMock) UpdateTable(input *glue.UpdateTableInput) (*glue.UpdateTableOutput, error) {
 	return nil, h.MockStore.AlterTable(aws.StringValue(input.DatabaseName), aws.StringValue(input.TableInput.Name), tableToMock(input.DatabaseName, input.TableInput))
 }
@@ -175,7 +186,6 @@ func (h GlueMsMock) GetPartitions(input *glue.GetPartitionsInput) (*glue.GetPart
 	return &glue.GetPartitionsOutput{
 		Partitions: MockToPartitions(partitions),
 	}, nil
-
 }
 
 func getCols() []*glue.Column {
@@ -231,7 +241,7 @@ func validatePartitionLocations(partitions []*glue.Partition, location string) e
 		expectedLocation := fmt.Sprintf("%s/%s", location, partitionLocation)
 		gotLocation := aws.StringValue(partition.StorageDescriptor.Location)
 		if gotLocation != expectedLocation {
-			return fmt.Errorf("wrong partition location, expected: %s got: %s", expectedLocation, gotLocation)
+			return fmt.Errorf("%w, expected: %s got: %s", ErrWrongPartitionLocation, expectedLocation, gotLocation)
 		}
 	}
 	return nil
@@ -290,14 +300,14 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	expectedLocation := fmt.Sprintf("%s/%s/%s", repoLocation, toBranch, tableDir)
 	gotLocation := aws.StringValue(copiedTable.StorageDescriptor.Location)
 	if gotLocation != expectedLocation {
-		t.Errorf("wrong location expected:%s got:%s", expectedLocation, gotLocation)
+		t.Errorf("%w:%s got:%s", ErrWrongLocationExpected, expectedLocation, gotLocation)
 	}
 
 	expectedColumns := getCols()
 	gotColumns := copiedTable.StorageDescriptor.Columns
 	for i, expectedColumn := range expectedColumns {
 		if aws.StringValue(expectedColumn.Name) != aws.StringValue(gotColumns[i].Name) {
-			t.Errorf("wrong column expected:%s got:%s ", aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
 		}
 		if !ColumnEqual(expectedColumn, gotColumns[i]) {
 			t.Fatalf("wrong column data for column %s", aws.StringValue(expectedColumn.Name))
@@ -310,6 +320,7 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	copiedPartitions, err := client.getAllPartitions(toDBName, toTableName)
+	testutil.Must(t, err)
 	//compare partitions
 	if len(copiedPartitions) != numOfPartitions {
 		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions, len(copiedPartitions))
@@ -321,7 +332,6 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	//verify first partition (enough)
-
 	firstPartition := copiedPartitions[0]
 	firstPartitionName := aws.StringValue(firstPartition.StorageDescriptor.SerdeInfo.Name)
 	if firstPartitionName != toTableName {
@@ -330,12 +340,20 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	gotColumns = firstPartition.StorageDescriptor.Columns
 	for i, expectedColumn := range expectedColumns {
 		if aws.StringValue(expectedColumn.Name) != aws.StringValue(gotColumns[i].Name) {
-			t.Errorf("wrong column expected:%s got:%s ", aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
+			t.Errorf("%w:%s got:%s ", ErrWrongColumnExpected, aws.StringValue(expectedColumn.Name), aws.StringValue(gotColumns[i].Name))
 		}
 		if !ColumnEqual(expectedColumn, gotColumns[i]) {
 			t.Fatalf("wrong column data for column %s", aws.StringValue(expectedColumn.Name))
 		}
 	}
+
+	// drop partition 17
+	partition17 := copiedPartitions[17]
+	err = client.removePartitions(toDBName, toTableName, []*glue.Partition{partition17})
+	if err != nil {
+		t.Fatal(err)
+	}
+
 	//add columns to existing partition
 	partition19 := copiedPartitions[19]
 	addColumn := &glue.Column{
@@ -365,42 +383,43 @@ func TestMSClient_CopyAndMergeBack(t *testing.T) {
 	}
 
 	merged, err := client.getTable(dbName, tableName)
+	testutil.Must(t, err)
 	mergedPartitions, err := client.getAllPartitions(dbName, tableName)
+	testutil.Must(t, err)
+
 	mergedSdLocation := aws.StringValue(merged.StorageDescriptor.Location)
 	if mergedSdLocation != location {
-		t.Errorf("wrong location expected:%s got:%s", location, mergedSdLocation)
-
+		t.Errorf("%w:%s got:%s", ErrWrongLocationExpected, location, mergedSdLocation)
 	}
 
-	if len(mergedPartitions) != numOfPartitions+1 {
+	if len(mergedPartitions) != numOfPartitions {
 		t.Fatalf("got wrong amount of partitions expected:%d, got:%d", numOfPartitions+1, len(mergedPartitions))
 	}
 
-	// check if partition 21 was added and has three columns
-	partition19 = nil
-	partition20 = nil
+	// check if partition 20 was added and has three columns, 19 was updated and 17 was deleted
+	m := make(map[string]*glue.Partition)
 	for _, partition := range mergedPartitions {
-		if aws.StringValue(partition.Values[0]) == "part=20" {
-			partition20 = partition
-		}
-		if aws.StringValue(partition.Values[0]) == "part=19" {
-			partition19 = partition
-		}
+		k := aws.StringValue(partition.Values[0])
+		m[k] = partition
 	}
-	if partition19 == nil {
-		t.Fatalf("expected to have a partition with value: part=19 after merge")
-	}
-	if partition20 == nil {
-		t.Fatalf("expected to have a partition with value: part=20 after merge")
-	}
-	for _, mergedColumns := range [][]*glue.Column{partition19.StorageDescriptor.Columns, partition20.StorageDescriptor.Columns} {
-		if len(mergedColumns) != 3 {
-			t.Fatal("expected added partition to have 3 columns")
+	existingPartitions := []string{"part=19", "part=20"}
+	for _, p := range existingPartitions {
+		// check partition exists
+		partition, ok := m[p]
+		if !ok {
+			t.Fatalf("expected to have a partition with value: %s after merge", p)
 		}
-		mcName := aws.StringValue(mergedColumns[2].Name)
-		if mcName != "column_three" {
-			t.Fatalf("expected added column to be column_three got:%s", mcName)
+		// check that columns are added
+		columns := partition.StorageDescriptor.Columns
+		if len(columns) != 3 {
+			t.Fatalf("expected added partition (%s) to have 3 columns, found %d", p, len(columns))
+		}
+		columnName := aws.StringValue(columns[2].Name)
+		if columnName != "column_three" {
+			t.Fatalf("expected added column to be column_three got: %s", columnName)
 		}
 	}
-
+	if _, ok := m["part=17"]; ok {
+		t.Fatal("expected part=17 partition to be deleted")
+	}
 }

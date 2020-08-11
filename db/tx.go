@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"strings"
 	"time"
 
@@ -75,7 +76,7 @@ func (d *dbTx) Get(dest interface{}, query string, args ...interface{}) error {
 		"query": queryToString(query),
 		"took":  time.Since(start),
 	})
-	if err == sql.ErrNoRows {
+	if errors.Is(err, sql.ErrNoRows) {
 		log.Trace("SQL query returned no results")
 		return ErrNotFound
 	}

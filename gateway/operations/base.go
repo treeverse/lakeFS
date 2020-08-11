@@ -131,11 +131,16 @@ func (o *Operation) EncodeError(e errors.APIError) {
 		Resource:   "",
 		Region:     o.Region,
 		RequestID:  o.RequestID(),
-		HostID:     auth.HexStringGenerator(8), // just for compatibility, meaningless in our case
+		HostID:     generateHostID(), // just for compatibility, meaningless in our case
 	}, e.HTTPStatusCode)
 	if err != nil {
 		o.Log().WithError(err).Error("encoding response failed")
 	}
+}
+
+func generateHostID() string {
+	const generatedHostIDLength = 8
+	return auth.HexStringGenerator(generatedHostIDLength)
 }
 
 type AuthenticatedOperation struct {
@@ -157,7 +162,7 @@ func (o *RepoOperation) EncodeError(err errors.APIError) {
 		Resource:   o.Repository.Name,
 		Region:     o.Region,
 		RequestID:  o.RequestID(),
-		HostID:     auth.HexStringGenerator(8),
+		HostID:     generateHostID(),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
 		o.Log().WithError(writeErr).Error("encoding response failed")
@@ -183,7 +188,7 @@ func (o *PathOperation) EncodeError(err errors.APIError) {
 		Resource:   fmt.Sprintf("%s@%s", o.Reference, o.Repository.Name),
 		Region:     o.Region,
 		RequestID:  o.RequestID(),
-		HostID:     auth.HexStringGenerator(8),
+		HostID:     generateHostID(),
 	}, err.HTTPStatusCode)
 	if writeErr != nil {
 		o.Log().WithError(writeErr).Error("encoding response failed")

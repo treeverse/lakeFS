@@ -30,7 +30,11 @@ type Adapter struct {
 	uploadIDTranslator block.UploadIDTranslator
 }
 
-var nilPutOpts = block.PutOpts{}
+var (
+	ErrPathNotValid          = errors.New("path provided is not a valid directory")
+	ErrPathNotWritable       = errors.New("path provided is not writable")
+	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
+)
 
 func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
@@ -52,10 +56,10 @@ func NewAdapter(path string, opts ...func(a *Adapter)) (block.Adapter, error) {
 		return nil, err
 	}
 	if !stt.IsDir() {
-		return nil, fmt.Errorf("path provided is not a valid directory")
+		return nil, ErrPathNotValid
 	}
 	if !isDirectoryWritable(path) {
-		return nil, fmt.Errorf("path provided is not writable")
+		return nil, ErrPathNotWritable
 	}
 	adapter := &Adapter{
 		path: path, ctx: context.Background(),
@@ -152,10 +156,10 @@ func (l *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	return uploadID, nil
 }
 
-func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadId string, partNumber int64) (string, error) {
+func (l *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	md5Read := block.NewHashingReader(reader, block.HashFunctionMD5)
-	fName := uploadId + fmt.Sprintf("-%05d", (partNumber))
-	err := l.Put(block.ObjectPointer{StorageNamespace: "", Identifier: fName}, -1, md5Read, nilPutOpts)
+	fName := uploadID + fmt.Sprintf("-%05d", (partNumber))
+	err := l.Put(block.ObjectPointer{StorageNamespace: "", Identifier: fName}, -1, md5Read, block.PutOpts{})
 	etag := "\"" + hex.EncodeToString(md5Read.Md5.Sum(nil)) + "\""
 	return etag, err
 }
@@ -245,5 +249,5 @@ func (l *Adapter) ValidateConfiguration(_ string) error {
 }
 
 func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
-	return nil, errors.New("inventory feature not implemented for local storage adapter")
+	return nil, ErrInventoryNotSupported
 }
