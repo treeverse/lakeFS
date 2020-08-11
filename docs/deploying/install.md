@@ -8,7 +8,7 @@ has_children: false
 
 # Installing lakeFS
 {: .no_toc }
-You are now ready to install the lakeFS server. Following are some options of how to do that.
+You are now ready to install the lakeFS server. Following are some options for doing that.
 
 ## Table of contents
 {: .no_toc .text-delta }
