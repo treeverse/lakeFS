@@ -15,7 +15,13 @@ class transition.
 
 # Retention
 
-## Configuration
+## System configuration
+
+lakeFS requires some global system configuration to be able to perform
+S3 lifecycle actions.  This is configured in [configuration
+variables][configuration] under `blockstore.s3.retention`.
+
+## Per-repo configuration
 
 Configuration uses a [JSON configuration][json-ref] input.  For
 example:
@@ -159,3 +165,4 @@ types are supported:
 [s3-lifecycle-specific-date]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html#intro-lifecycle-rules-date
 [json-ref]: https://www.json.org/json-en.html
 [http-gone]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
+[configuration]: reference/configuration.html
