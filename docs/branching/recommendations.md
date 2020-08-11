@@ -123,8 +123,8 @@ For this use case let's look at streaming systems, or real time ingest pipelines
 
 A common scenario would be data arriving to a message broker such as [Apache Kafka](https://kafka.apache.org/){: target="_blank" } or [AWS Kinesis](https://aws.amazon.com/kinesis/){: target="_blank" }, with a consumer that reads small batches from the stream and writes Parquet files to S3.
 
-These messaging systems generally have an [offset mechanism](https://kafka.apache.org/documentation/#intro_topics){: target="_blank" } that allows a consumer to "rewind" and re-read messages
-This is a great for production safety - but re-reading will also mean duplication of data in our data lake unless:
+These messaging systems generally have an [offset mechanism](https://kafka.apache.org/documentation/#intro_topics){: target="_blank" } that allows a consumer to "rewind" and re-read messages.
+This is great for production safety - but re-reading will also mean duplication of data in our data lake unless:
 
 1. When rewinding an offset we also know exactly which objects to delete from previous runs
 1. Alternatively, we were very careful when designing our consumer to ensure it is absolutely idempotent, even in the face of failure.
