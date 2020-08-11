@@ -36,7 +36,7 @@ func (c *ColumnCollection) CompareWith(i int, v interface{}, j int) metastore.Co
 	if otherIter, ok := v.(*ColumnCollection); ok {
 		return compareColumns(c.columns[i], otherIter.columns[j])
 	}
-	err := fmt.Errorf("expected type *glue.ColumnCollection, got %T", v)
+	err := fmt.Errorf("%w *glue.ColumnCollection, got %T", ErrExpectedType, v)
 	panic(err)
 }
 
