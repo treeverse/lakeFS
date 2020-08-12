@@ -138,7 +138,7 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 	}
 }
 
-func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Handler) {
+func (s *Handler) setupHandler(api http.Handler, ui http.Handler) {
 	mux := http.NewServeMux()
 	// health check
 	mux.Handle("/_health", httputil.ServeHealth())
@@ -150,8 +150,6 @@ func (s *Handler) setupHandler(api http.Handler, ui http.Handler, setup http.Han
 	mux.Handle("/api/", api)
 	// swagger
 	mux.Handle("/swagger.json", api)
-	// setup system
-	mux.Handle(SetupLakeFSRoute, setup)
 	// otherwise, serve  UI
 	mux.Handle("/", ui)
 
@@ -169,7 +167,7 @@ func (s *Handler) buildAPI() {
 	api.BasicAuthAuth = s.BasicAuth()
 	api.JwtTokenAuth = s.JwtTokenAuth()
 	// bind our handlers to the server
-	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedupCleaner, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedupCleaner, s.meta, s.migrator, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)
@@ -189,13 +187,6 @@ func (s *Handler) buildAPI() {
 
 		// ui handler
 		UIHandler(s.authService),
-
-		// setup handler
-		httputil.LoggingMiddleware(
-			RequestIDHeaderName,
-			logging.Fields{"service_name": LoggerServiceName},
-			setupLakeFSHandler(s.authService, s.meta, s.migrator, s.stats),
-		),
 	)
 }
 
