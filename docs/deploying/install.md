@@ -50,7 +50,7 @@ lakefsConfig: |
 ```
 
 You should give your Kubernetes nodes access to all S3 buckets you intend to use lakeFS with.
-If you can't provide such access, you can use an AWS key-pair to authenticate (see configurations below). 
+If you can't provide such access, lakeFS can be configured to use an AWS key-pair to authenticate (part of the `lakefsConfig` YAML below).
 
 ### Configurations
 
