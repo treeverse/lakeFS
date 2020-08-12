@@ -13,6 +13,7 @@ import (
 
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -200,16 +201,21 @@ func signCanonicalString(msg string, signature []byte) (digest []byte) {
 	return
 }
 
-func buildPath(host, bareDomain, path string) string {
-	if host == bareDomain {
+func buildPath(host string, bareDomain string, path string) string {
+	h := httputil.HostOnly(host)
+	b := httputil.HostOnly(bareDomain)
+	if h == b {
 		return path
 	}
-	if strings.HasSuffix(host, bareDomain) {
-		prePath := host[:len(host)-len(bareDomain)-1]
+	bareSuffix := "." + b
+	if strings.HasSuffix(h, bareSuffix) {
+		prePath := strings.TrimSuffix(h, bareSuffix)
 		return "/" + prePath + path
 	}
-	// bareDomain is not prefix of the path - how did we get here???
-	logging.Default().WithFields(logging.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
+	// bareDomain is not suffix of the path probably a bug
+	logging.Default().
+		WithFields(logging.Fields{"request_host": host, "bare_domain": bareDomain}).
+		Error("request host mismatch")
 	return ""
 }
 
