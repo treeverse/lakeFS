@@ -3,7 +3,10 @@ package api_test
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"net/http"
+	"net/http/httptest"
 	"strconv"
 	"strings"
 	"testing"
@@ -1307,4 +1310,81 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 			t.Errorf("expected to read back the same policy, got %s", diff)
 		}
 	})
+}
+
+func Test_setupLakeFSHandler(t *testing.T) {
+	// get handler with DB without apply the DDL
+	handler, deps := getHandler(t, testutil.WithGetDBApplyDDL(false))
+
+	srv := httptest.NewServer(handler)
+	defer srv.Close()
+
+	name := "admin"
+	user := models.Setup{
+		DisplayName: &name,
+	}
+	req, err := json.Marshal(user)
+	if err != nil {
+		t.Fatal("JSON marshal request", err)
+	}
+
+	reqURI := srv.URL + client.DefaultBasePath + "/setup_lakefs"
+	const contentType = "application/json"
+	t.Run("fresh start", func(t *testing.T) {
+		// request to setup
+		res := mustSetup(t, reqURI, contentType, req)
+		defer func() {
+			_ = res.Body.Close()
+		}()
+
+		const expectedStatusCode = http.StatusOK
+		if res.StatusCode != expectedStatusCode {
+			t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+		}
+
+		// read response
+		var credKeys *models.CredentialsWithSecret
+
+		err = json.NewDecoder(res.Body).Decode(&credKeys)
+		if err != nil {
+			t.Fatal("Decode response", err)
+		}
+
+		if len(credKeys.AccessKeyID) == 0 {
+			t.Fatal("Credential key id is missing")
+		}
+
+		foundCreds, err := deps.auth.GetCredentials(credKeys.AccessKeyID)
+		if err != nil {
+			t.Fatal("Get API credentials key id for created access key", err)
+		}
+		if foundCreds == nil {
+			t.Fatal("Get API credentials secret key for created access key")
+		}
+		if foundCreds.AccessSecretKey != credKeys.AccessSecretKey {
+			t.Fatalf("Access secret key '%s', expected '%s'", foundCreds.AccessSecretKey, credKeys.AccessSecretKey)
+		}
+	})
+
+	// now we ask again - should get status conflict
+	t.Run("existing setup", func(t *testing.T) {
+		// request to setup
+		res := mustSetup(t, reqURI, contentType, req)
+		defer func() {
+			_ = res.Body.Close()
+		}()
+
+		const expectedStatusCode = http.StatusConflict
+		if res.StatusCode != expectedStatusCode {
+			t.Fatalf("setup request returned %d status, expected %d", res.StatusCode, expectedStatusCode)
+		}
+	})
+}
+
+func mustSetup(t *testing.T, reqURI string, contentType string, req []byte) *http.Response {
+	res, err := http.Post(reqURI, contentType, bytes.NewReader(req))
+	if err != nil {
+		t.Fatal("Post setup request to server", err)
+	}
+	return res
 }

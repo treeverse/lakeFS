@@ -4,6 +4,7 @@ GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 GOBUILD=$(GOCMD) build
+GORUN=$(GOCMD) run
 GOCLEAN=$(GOCMD) clean
 GOTOOL=$(GOCMD) tool
 GOTEST=$(GOCMD) test
@@ -15,6 +16,7 @@ GO_TEST_MODULES=$(shell $(GOCMD) list ./... | grep -v 'lakefs/api/gen/')
 
 LAKEFS_BINARY_NAME=lakefs
 LAKECTL_BINARY_NAME=lakectl
+NESSIE_BINARY_NAME=nessie
 
 UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/build
@@ -71,6 +73,12 @@ $(GOBINPATH)/golangci-lint:
 lint: $(GOBINPATH)/golangci-lint  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
+nessie: gen ## Build nessie (system testing)
+	$(GOBUILD) -o $(NESSIE_BINARY_NAME) -v ./cmd/$(NESSIE_BINARY_NAME)
+
+nessie-run: gen ## Build nessie (system testing)
+	$(GORUN) -o $(NESSIE_BINARY_NAME) -v ./cmd/$(NESSIE_BINARY_NAME)
+
 test: gen  ## Run tests for the project
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
 
@@ -83,7 +91,7 @@ fast-test:  ## Run tests without race detector (faster)
 test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out
 
-build-docker: ## Build Docker image file (Docker required)
+build-docker: build ## Build Docker image file (Docker required)
 	$(DOCKER) build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 gofmt:  ## gofmt code formating
