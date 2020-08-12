@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Creating the S3 bucket
-parent: Deployment
+parent: AWS Deployment
 nav_order: 15
 has_children: false
 ---
