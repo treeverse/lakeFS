@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Creating the database
-parent: Deployment
+parent: AWS Deployment
 nav_order: 10
 has_children: false
 ---

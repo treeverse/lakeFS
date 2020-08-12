@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Migrating away from lakeFS
-parent: Deployment
+parent: AWS Deployment
 nav_order: 40
 has_children: false
 ---

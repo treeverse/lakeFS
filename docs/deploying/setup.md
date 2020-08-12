@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Setup
-parent: Deployment
+parent: AWS Deployment
 nav_order: 27
 has_children: false
 ---
@@ -23,7 +23,7 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
     
    ![Create Repository](../assets/img/repo_create.png)
 
-   Under `Storage Namespace`, be sure to use the name of the bucket you've created in [Setting up an S3 bucket for data storage](#setting-up-an-s3-bucket-for-data-storage) above.
+   Under `Storage Namespace`, be sure to use the name of the bucket you've created in a [previous step](./bucket.md).
    
    
 # Next steps

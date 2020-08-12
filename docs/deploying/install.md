@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Installing lakeFS
-parent: Deployment
+parent: AWS Deployment
 nav_order: 20
 has_children: false
 ---
@@ -32,12 +32,18 @@ helm install lakefs/lakefs -f conf-values.yaml --name example-lakefs
 Here is an example `conf-values.yaml`. See [below](#configurations) for more configuration options.
 
 ```yaml
-blockstore:
-  type: s3
-  s3:
-    region: us-east-1
-  databaseConnectionString: postgres://lakefs:lakefs@postgres/postgres
-  authEncryptSecretKey: <some random secret string>
+service:
+    type: LoadBalancer
+lakefsConfig: |
+  database:
+    connection_string: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
+  auth:
+    encrypt:
+      secret_key: <some random string>
+  blockstore:
+    type: s3
+    s3:
+      region: us-east-1
   gateways:
     s3:
       domain_name: s3.lakefs.example.com
@@ -50,16 +56,10 @@ If you can't provide such access, you can use an AWS key-pair to authenticate (s
 
 | **Parameter**                               | **Description**                                                                                            | **Default** |
 |---------------------------------------------|------------------------------------------------------------------------------------------------------------|-------------|
-| `blockstore.type`                           | Type of storage to use: `s3`, `local`, `mem`                                                               |             |
-| `blockstore.s3.region`                      | AWS region where to use for storage                                                                        |             |
-| `blockstore.s3.credentials.accessKeyId`     | AWS Access Key to use when accessing S3. Leave empty if your Kuberenets nodes have access to your buckets. |             |
-| `blockstore.s3.credentials.secretAccessKey` | AWS Secret Key to use when accessing S3. Leave empty if your Kuberenets nodes have access to your buckets. |             |
-| `gateways.s3.domain_name` | Domain name to be used by clients to call the lakeFS S3-compatible API |             |
-| `databaseConnectionString`                  | Connection string to your lakeFS database                                                                  |             |
-| `authEncryptSecretKey`                      | A cryptographically secure random string                                                                   |             |
+| `lakefsConfig`                              | lakeFS config YAML stringified, as shown above. See [reference](https://docs.lakefs.io/reference/configuration.html) for available configurations.                                                               |             |
 | `replicaCount`                              | Number of lakeFS pods                                                                                      | `1`         |
 | `resources`                                 | Pod resource requests & limits                                                                             | `{}`        |
-| `service.type`                              | Kubernetes service type                                                                                   | ClusterIP   |
+| `service.type`                              | Kuberenetes service type                                                                                   | ClusterIP   |
 | `service.port`                              | Kubernetes service external port                                                                           | 80          |
 
 ## Docker

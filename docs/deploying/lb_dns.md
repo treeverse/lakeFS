@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Load Balancing and DNS
-parent: Deployment
+parent: AWS Deployment
 nav_order: 25
 has_children: false
 ---
