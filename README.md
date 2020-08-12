@@ -90,9 +90,10 @@ For more detailed inforamation on how to setup lakeFS, please visit [the documen
 
 Keep up to date and get lakeFS support via:
 
-- Join our [Community Slack Channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) to get help from our team and other users.
-- Follow us on [Twitter](https://twitter.com/lakeFS).
-- [Contact us](https://lakefs.io/contact-us/)
+- [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) (to get help from our team and other users).
+- [Twitter](https://twitter.com/lakeFS) (follow for updates and news)
+- [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
+- [Contact us](https://lakefs.io/contact-us/) (for anything)
 
 ## More information
 
