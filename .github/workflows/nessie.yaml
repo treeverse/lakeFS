@@ -1,0 +1,26 @@
+name: Nessie
+on:
+  push:
+    branches:
+      -master
+jobs:
+  system-tests:
+    name: Run Nessie with latest lakeFS app
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check-out code
+        uses: actions/checkout@v2
+      - name: Setup go
+        uses: actions/setup-go@v2
+        with:
+          go-version: 1.14
+        id: go
+      - name: Build docker image
+        run: make build-docker
+      - name: Spin-up lakeFS for testing
+        run: docker-compose up
+        env:
+          TAG: dev
+          LAKEFS_BLOCKSTORE_TYPE: s3
+      - name: Run nessie
+        run: make nessie-run -e http://localhost:8000 -b "s3://nessie-system-testing"
