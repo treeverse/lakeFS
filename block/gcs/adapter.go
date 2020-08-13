@@ -433,6 +433,6 @@ func (s *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
+func (s *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
 	return nil, ErrInventoryNotImplemented
 }
