@@ -2,8 +2,8 @@
   <img src="logo_large.png"/>
 </p>
 
-[![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg)](https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster)
-[![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster)
+[![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++)
+[![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++)
 
 ## What is lakeFS
 
