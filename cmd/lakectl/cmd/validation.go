@@ -1,83 +1,89 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/uri"
 )
 
+var (
+	ErrInvalid      = errors.New("validation")
+	ErrNoValidation = errors.New("no validation function passed OR condition")
+)
+
 func uriAtPos(args []string, pos int) (*uri.URI, error) {
 	if pos > len(args)-1 {
-		return nil, fmt.Errorf("no uri supplied at argument %d", pos)
+		return nil, fmt.Errorf("%w - no uri supplied at argument %d", ErrInvalid, pos)
 	}
 	u, err := uri.Parse(args[pos])
 	if err != nil {
-		return nil, fmt.Errorf("argument at position: %d - %s", pos, err.Error())
+		return nil, fmt.Errorf("%w - argument at position: %d - %s", ErrInvalid, pos, err.Error())
 	}
 	return u, nil
 }
 
-func IsRefURI(pos int) validationFunc {
+func IsRefURI(pos int) ValidationFunc {
 	return func(args []string) error {
 		u, err := uriAtPos(args, pos)
 		if err != nil {
 			return err
 		}
 		if !u.IsRef() {
-			return fmt.Errorf("argument at position: %d - not a ref URI", pos)
+			return fmt.Errorf("%w - argument at position: %d - not a ref URI", ErrInvalid, pos)
 		}
 		return nil
 	}
 }
 
-func IsRepoURI(pos int) validationFunc {
+func IsRepoURI(pos int) ValidationFunc {
 	return func(args []string) error {
 		u, err := uriAtPos(args, pos)
 		if err != nil {
 			return err
 		}
 		if !u.IsRepository() {
-			return fmt.Errorf("argument at position: %d - not a repository URI", pos)
+			return fmt.Errorf("%w - argument at position: %d - not a repository URI", ErrInvalid, pos)
 		}
 		return nil
 	}
 }
 
-func IsPathURI(pos int) validationFunc {
+func IsPathURI(pos int) ValidationFunc {
 	return func(args []string) error {
 		u, err := uriAtPos(args, pos)
 		if err != nil {
 			return err
 		}
 		if !u.IsFullyQualified() {
-			return fmt.Errorf("argument at position: %d - not a path URI", pos)
+			return fmt.Errorf("%w - argument at position: %d - not a path URI", ErrInvalid, pos)
 		}
 		return nil
 	}
 }
 
-func HasNArgs(n int) validationFunc {
+func HasNArgs(n int) ValidationFunc {
 	return func(args []string) error {
 		if len(args) != n {
-			return fmt.Errorf("expected %d arguments", n)
+			return fmt.Errorf("%w - expected %d arguments", ErrInvalid, n)
 		}
 		return nil
 	}
 }
 
-func HasRangeArgs(n1, n2 int) validationFunc {
+func HasRangeArgs(n1, n2 int) ValidationFunc {
 	return func(args []string) error {
 		if len(args) < n1 || len(args) > n2 {
-			return fmt.Errorf("expected %d-%d arguments", n1, n2)
+			return fmt.Errorf("%w - expected %d-%d arguments", ErrInvalid, n1, n2)
 		}
 		return nil
 	}
 }
 
-type validationFunc func(args []string) error
+type ValidationFunc func(args []string) error
 
-func ValidationChain(funcs ...validationFunc) func(cmd *cobra.Command, args []string) error {
+func ValidationChain(funcs ...ValidationFunc) func(cmd *cobra.Command, args []string) error {
 	return func(cmd *cobra.Command, args []string) error {
 		for _, f := range funcs {
 			if err := f(args); err != nil {
@@ -88,13 +94,13 @@ func ValidationChain(funcs ...validationFunc) func(cmd *cobra.Command, args []st
 	}
 }
 
-func Or(funcs ...validationFunc) validationFunc {
+func Or(funcs ...ValidationFunc) ValidationFunc {
 	return func(args []string) error {
 		for _, f := range funcs {
 			if err := f(args); err == nil {
 				return nil
 			}
 		}
-		return fmt.Errorf("no validation function passed OR condition")
+		return ErrNoValidation
 	}
 }

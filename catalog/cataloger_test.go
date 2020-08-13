@@ -84,8 +84,8 @@ func testCatalogerGetEntry(t testing.TB, ctx context.Context, c Cataloger, repos
 
 func testCreateEntryCalcChecksum(key string, seed string) string {
 	h := sha256.New()
-	h.Write([]byte(seed))
-	h.Write([]byte(key))
+	_, _ = h.Write([]byte(seed))
+	_, _ = h.Write([]byte(key))
 	checksum := hex.EncodeToString(h.Sum(nil))
 	return checksum
 }

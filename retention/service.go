@@ -12,6 +12,8 @@ import (
 
 const dbConfigKey = "retentionPolicy"
 
+var ErrPolicyNotFound = errors.New("policy not found")
+
 type DBRetentionService struct {
 	db db.Database
 }
@@ -70,7 +72,7 @@ func (ts *ModelService) GetPolicy(repositoryID string) (*models.RetentionPolicyW
 		return nil, err
 	}
 	if dbPolicy == nil {
-		return nil, fmt.Errorf("repository %s has no policy", repositoryID)
+		return nil, fmt.Errorf("%w: repository %s", ErrPolicyNotFound, repositoryID)
 	}
 	return RenderPolicyWithCreationDate(dbPolicy), nil
 }

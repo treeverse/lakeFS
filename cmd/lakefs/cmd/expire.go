@@ -42,7 +42,7 @@ var expireCmd = &cobra.Command{
 		}
 
 		expiryParams := retention.ExpireOnS3Params{
-			AccountId: accountID,
+			AccountID: accountID,
 			RoleArn:   awsRetentionConfig.RoleArn,
 			ManifestURLForBucket: func(x string) string {
 				u, err := url.Parse(x)
@@ -117,7 +117,6 @@ var expireCmd = &cobra.Command{
 			logger.Fatalf("Failed to expire on %d repositories; errors emitted above", numFailures)
 		}
 	},
-	Hidden: true,
 }
 
 //nolint:gochecknoinits

@@ -69,10 +69,9 @@ func sortExpireResults(results []*ExpireResult) {
 }
 
 type expiryTestCase struct {
-	name    string
-	policy  *Policy
-	want    []*ExpireResult
-	wantErr bool
+	name   string
+	policy *Policy
+	want   []*ExpireResult
 }
 
 func readExpiringPhysicalAddresses(t *testing.T, conn db.Database) []string {

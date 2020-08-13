@@ -36,7 +36,7 @@ func chunkBoundary(signature []byte, length int) []byte {
 }
 
 func isEOF(err error) bool {
-	return err == io.EOF || err == io.ErrUnexpectedEOF
+	return err == io.EOF || errors.Is(err, io.ErrUnexpectedEOF)
 }
 
 func (s *StreamingReader) GetLastChunk() []byte {
