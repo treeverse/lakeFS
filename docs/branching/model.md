@@ -50,3 +50,8 @@ This is because lakeFS doesn't assume anything about the structure of the object
 
 The actual data itself is not stored inside lakeFS directly, but rather stored in an underlying object store. lakeFS will manage these writes, and will store a pointer to the object in its metadata database.
 Addressing the object in the underlying object store is done using a dedupe ID - objects with the same content will receive the same ID, thus stored only once.
+
+### Diff
+
+Diff operation between branch A and branch B (A -> B), will display all the changes made in branch B that are missing in branch A.  In case the same file with the same content was added on both sides it will consider it as no-change.
+
