@@ -22,6 +22,7 @@ UI_DIR=webui
 UI_BUILD_DIR=$(UI_DIR)/build
 API_BUILD_DIR=api/gen
 
+DOCKER_REPO=treeverse
 DOCKER_IMAGE=lakefs
 DOCKER_TAG=dev
 VERSION=dev
@@ -33,6 +34,10 @@ DIRTY=$(shell git diff-index --quiet HEAD -- || echo '.with.local.changes')
 GIT_REF=$(shell git rev-parse --short HEAD --)
 REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
+
+## System tests config
+API_ENDPOINT?=localhost:8000
+BUCKET?=s3://nessie-system-testing
 
 all: build
 
@@ -77,7 +82,7 @@ nessie: gen ## Build nessie (system testing)
 	$(GOBUILD) -o $(NESSIE_BINARY_NAME) -v ./cmd/$(NESSIE_BINARY_NAME)
 
 nessie-run: gen ## Build nessie (system testing)
-	$(GORUN) -o $(NESSIE_BINARY_NAME) -v ./cmd/$(NESSIE_BINARY_NAME)
+	$(GORUN) ./cmd/$(NESSIE_BINARY_NAME) --endpoint-url=$(API_ENDPOINT) --bucket=$(BUCKET)
 
 test: gen  ## Run tests for the project
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
@@ -92,7 +97,7 @@ test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out
 
 build-docker: build ## Build Docker image file (Docker required)
-	$(DOCKER) build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+	$(DOCKER) build -t $(DOCKER_REPO)/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
