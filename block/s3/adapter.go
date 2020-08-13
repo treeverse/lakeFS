@@ -83,7 +83,7 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) block.Adapter {
+func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		s3:                    s3,
 		httpClient:            http.DefaultClient,
