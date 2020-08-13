@@ -61,6 +61,7 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
+	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.3
 	github.com/xitongsys/parquet-go v1.5.2
