@@ -10,27 +10,19 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/block/gcs"
-	"github.com/treeverse/lakefs/block/local"
-	"github.com/treeverse/lakefs/block/mem"
-	s3a "github.com/treeverse/lakefs/block/s3"
-	"github.com/treeverse/lakefs/block/transient"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
+
+	auth_params "github.com/treeverse/lakefs/auth/params"
+	block_params "github.com/treeverse/lakefs/block/params"
 	"github.com/treeverse/lakefs/stats"
 )
 
 const (
-	DefaultDatabaseDriver     = "pgx"
 	DefaultDatabaseConnString = "postgres://localhost:5432/postgres?sslmode=disable"
 
 	DefaultBlockStoreType                    = "local"
@@ -62,8 +54,7 @@ const (
 )
 
 var (
-	ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
-	ErrMissingSecretKey      = errors.New("auth.encrypt.secret_key cannot be empty")
+	ErrMissingSecretKey = errors.New("auth.encrypt.secret_key cannot be empty")
 )
 
 type LogrusAWSAdapter struct {
@@ -118,14 +109,6 @@ func (c *Config) GetDatabaseURI() string {
 	return viper.GetString("database.connection_string")
 }
 
-func (c *Config) BuildDatabaseConnection() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI())
-	if err != nil {
-		panic(err)
-	}
-	return database
-}
-
 type AwsS3RetentionConfig struct {
 	RoleArn           string
 	ManifestBaseURL   *url.URL
@@ -174,6 +157,16 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.credentials.access_secret_key"),
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
+
+	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
+	if len(s3Endpoint) > 0 {
+		awsConfig = awsConfig.WithEndpoint(s3Endpoint)
+	}
+	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
+	if s3ForcePathStyle {
+		awsConfig = awsConfig.WithS3ForcePathStyle(true)
+	}
+
 	return cfg
 }
 
@@ -225,93 +218,32 @@ func GetAccount(awsConfig *aws.Config) (string, error) {
 	return *account.Account, nil
 }
 
-func (c *Config) buildS3Adapter() (block.Adapter, error) {
+func (c *Config) GetBlockstoreType() string {
+	return viper.GetString("blockstore.type")
+}
+
+func (c *Config) GetBlockAdapterS3Params() (block_params.S3, error) {
 	cfg := c.GetAwsConfig()
 
-	sess, err := session.NewSession(cfg)
-	if err != nil {
-		return nil, err
-	}
-	sess.ClientConfig(s3.ServiceName)
-
-	awsConfig := aws.NewConfig()
-	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
-	if len(s3Endpoint) > 0 {
-		awsConfig = awsConfig.WithEndpoint(s3Endpoint)
-	}
-	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
-	if s3ForcePathStyle {
-		awsConfig = awsConfig.WithS3ForcePathStyle(true)
-	}
-
-	svc := s3.New(sess, awsConfig)
-	adapter := s3a.NewAdapter(svc,
-		s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")),
-		s3a.WithStreamingChunkTimeout(viper.GetDuration("blockstore.s3.streaming_chunk_timeout")))
-	log.WithFields(log.Fields{
-		"type": "s3",
-	}).Info("initialized blockstore adapter")
-	return adapter, nil
+	return block_params.S3{
+		AwsConfig:             cfg,
+		StreamingChunkSize:    viper.GetInt("blockstore.s3.streaming_chunk_size"),
+		StreamingChunkTimeout: viper.GetDuration("blockstore.s3.streaming_chunk_timeout"),
+	}, nil
 }
 
-func (c *Config) buildGCSAdapter() (block.Adapter, error) {
-	cfg := c.GetGCSAwsConfig()
-	s3Endpoint := viper.GetString("blockstore.gcs.s3_endpoint")
-	sess, err := session.NewSession(cfg)
-	if err != nil {
-		return nil, err
-	}
-	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess, aws.NewConfig().WithEndpoint(s3Endpoint))
-	adapter := gcs.NewAdapter(svc,
-		gcs.WithStreamingChunkSize(viper.GetInt("blockstore.gcs.streaming_chunk_size")),
-		gcs.WithStreamingChunkTimeout(viper.GetDuration("blockstore.gcs.streaming_chunk_timeout")))
-	log.WithFields(log.Fields{"type": "gcs"}).Info("initialized blockstore adapter")
-	return adapter, nil
-}
-
-func (c *Config) buildLocalAdapter() (block.Adapter, error) {
+func (c *Config) GetBlockAdapterLocalParams() (block_params.Local, error) {
 	localPath := viper.GetString("blockstore.local.path")
-	location, err := homedir.Expand(localPath)
+	path, err := homedir.Expand(localPath)
 	if err != nil {
 		return nil, fmt.Errorf("could not parse blockstore location URI: %w", err)
 	}
 
-	adapter, err := local.NewAdapter(location)
-	if err != nil {
-		return nil, fmt.Errorf("got error opening a local block adapter with path %s: %w", location, err)
-	}
-	log.WithFields(log.Fields{
-		"type": "local",
-		"path": location,
-	}).Info("initialized blockstore adapter")
-	return adapter, nil
+	return block_params.Local{Path: path}, err
 }
 
-func (c *Config) BuildBlockAdapter() (block.Adapter, error) {
-	blockstore := viper.GetString("blockstore.type")
-	logging.Default().
-		WithField("type", blockstore).
-		Info("initialize blockstore adapter")
-	switch blockstore {
-	case local.BlockstoreType:
-		return c.buildLocalAdapter()
-	case s3a.BlockstoreType:
-		return c.buildS3Adapter()
-	case mem.BlockstoreType, "memory":
-		return mem.New(), nil
-	case transient.BlockstoreType:
-		return transient.New(), nil
-	case gcs.BlockstoreType:
-		return c.buildGCSAdapter()
-	default:
-		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gcs.BlockstoreType})
-	}
-}
-
-func (c *Config) GetAuthCacheConfig() auth.ServiceCacheConfig {
-	return auth.ServiceCacheConfig{
+func (c *Config) GetAuthCacheConfig() auth_params.ServiceCache {
+	return auth_params.ServiceCache{
 		Enabled:        viper.GetBool("auth.cache.enabled"),
 		Size:           viper.GetInt("auth.cache.size"),
 		TTL:            viper.GetDuration("auth.cache.ttl"),
