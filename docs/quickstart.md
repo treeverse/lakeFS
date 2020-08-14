@@ -8,20 +8,19 @@ has_children: false
 # Quick Start
 {: .no_toc }
 
+**Note** This tutorial is for learning purposes, and stores data locally inside a container.
+For a production deployment, see [Deploying on AWS](deploying/index.md).
+{: .note }
+
 ## Table of contents
 {: .no_toc .text-delta }
 
 1. TOC
 {:toc}
 
-
 ## Running a local server for testing
 
 ###  Using Docker Compose
-
-**Note** This configuration stores data locally inside the container.
-It is only intended for testing purposes
-{: .note }
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
@@ -215,5 +214,4 @@ Here's how to get started with the CLI:
 
 ## Next steps
 
-Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](deploying/aws.md).
-
+Once you're ready to test lakeFS with a real workflow, it's time to [deploy lakeFS to AWS](deploying/index.md).

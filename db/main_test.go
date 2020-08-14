@@ -26,7 +26,6 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 		"POSTGRES_USER=lakefs",
 		"POSTGRES_PASSWORD=lakefs",
 		"POSTGRES_DB=lakefs_db",
-		"LC_COLLATE=C",
 	})
 	if err != nil {
 		log.Fatalf("Could not start postgresql: %s", err)

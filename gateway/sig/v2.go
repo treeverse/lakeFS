@@ -9,12 +9,11 @@ import (
 	"net/url"
 	"regexp"
 	"sort"
-	str "strings"
-
-	"github.com/treeverse/lakefs/gateway/errors"
+	"strings"
 
 	"github.com/treeverse/lakefs/auth/model"
-
+	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -118,9 +117,9 @@ func headerValueToString(val []string) string {
 	var returnStr string
 	for i, item := range val {
 		if i == 0 {
-			returnStr = str.TrimSpace(item)
+			returnStr = strings.TrimSpace(item)
 		} else {
-			returnStr += "," + str.TrimSpace(item)
+			returnStr += "," + strings.TrimSpace(item)
 		}
 	}
 	return returnStr
@@ -131,7 +130,7 @@ func canonicalStandardHeaders(headers http.Header) string {
 	for _, hoi := range interestingHeaders {
 		foundHoi := false
 		for key, val := range headers {
-			if len(val) > 0 && str.ToLower(key) == hoi {
+			if len(val) > 0 && strings.ToLower(key) == hoi {
 				returnStr += headerValueToString(val) + "\n"
 				foundHoi = true
 				break
@@ -148,7 +147,7 @@ func canonicalCustomHeaders(headers http.Header) string {
 	var returnStr string
 	var foundKeys []string
 	for key := range headers {
-		if str.HasPrefix(str.ToLower(key), "x-amz-") {
+		if strings.HasPrefix(strings.ToLower(key), "x-amz-") {
 			foundKeys = append(foundKeys, key)
 		}
 	}
@@ -157,7 +156,7 @@ func canonicalCustomHeaders(headers http.Header) string {
 	}
 	sort.Strings(foundKeys)
 	for _, key := range foundKeys {
-		returnStr += fmt.Sprint(str.ToLower(key), ":", headerValueToString(headers[key]), "\n")
+		returnStr += fmt.Sprint(strings.ToLower(key), ":", headerValueToString(headers[key]), "\n")
 	}
 	return returnStr
 }
@@ -168,27 +167,27 @@ func canonicalResources(query url.Values, authPath string) string {
 	lowercaseQuery := make(url.Values)
 	if len(query) > 0 {
 		for key, val := range query {
-			lowercaseQuery[str.ToLower(key)] = val
+			lowercaseQuery[strings.ToLower(key)] = val
 		}
 		for _, r := range interestingResources { // the resulting array will be sorted by resource name, because interesting resources array is sorted
 			val, ok := lowercaseQuery[r]
 			if ok {
 				newValue := r
-				if len(str.Join(val, "")) > 0 {
-					newValue += "=" + str.Join(val, ",")
+				if len(strings.Join(val, "")) > 0 {
+					newValue += "=" + strings.Join(val, ",")
 				}
 				foundResources = append(foundResources, newValue)
 			}
 		}
 		if len(foundResources) > 0 {
-			foundResourcesStr = "?" + str.Join(foundResources, "&")
+			foundResourcesStr = "?" + strings.Join(foundResources, "&")
 		}
 	}
 	return authPath + foundResourcesStr
 }
 
 func canonicalString(method string, query url.Values, path string, headers http.Header) string {
-	cs := str.ToUpper(method) + "\n"
+	cs := strings.ToUpper(method) + "\n"
 	cs += canonicalStandardHeaders(headers)
 	cs += canonicalCustomHeaders(headers)
 	cs += canonicalResources(query, path)
@@ -202,16 +201,21 @@ func signCanonicalString(msg string, signature []byte) (digest []byte) {
 	return
 }
 
-func buildPath(host, bareDomain, path string) string {
-	if host == bareDomain {
+func buildPath(host string, bareDomain string, path string) string {
+	h := httputil.HostOnly(host)
+	b := httputil.HostOnly(bareDomain)
+	if h == b {
 		return path
 	}
-	if str.HasSuffix(host, bareDomain) {
-		prePath := host[:len(host)-len(bareDomain)-1]
+	bareSuffix := "." + b
+	if strings.HasSuffix(h, bareSuffix) {
+		prePath := strings.TrimSuffix(h, bareSuffix)
 		return "/" + prePath + path
 	}
-	// bareDomain is not prefix of the path - how did we get here???
-	logging.Default().WithFields(logging.Fields{"requestHost": host, "ourHost": bareDomain}).Panic("How this request got here???")
+	// bareDomain is not suffix of the path probably a bug
+	logging.Default().
+		WithFields(logging.Fields{"request_host": host, "bare_domain": bareDomain}).
+		Error("request host mismatch")
 	return ""
 }
 
@@ -239,10 +243,10 @@ func (a *V2SigAuthenticator) Verify(creds *model.Credential, bareDomain string) 
 		This replacements are necessary for Java. There is no description about GO, but I found the '=' needs treatment as well
 	*/
 
-	patchedPath := str.ReplaceAll(a.r.URL.Path, "=", "%3D")
-	patchedPath = str.ReplaceAll(patchedPath, "+", "%20")
-	patchedPath = str.ReplaceAll(patchedPath, "*", "%2A")
-	patchedPath = str.ReplaceAll(patchedPath, "%7E", "~")
+	patchedPath := strings.ReplaceAll(a.r.URL.Path, "=", "%3D")
+	patchedPath = strings.ReplaceAll(patchedPath, "+", "%20")
+	patchedPath = strings.ReplaceAll(patchedPath, "*", "%2A")
+	patchedPath = strings.ReplaceAll(patchedPath, "%7E", "~")
 	path := buildPath(a.r.Host, bareDomain, patchedPath)
 	stringToSigh := canonicalString(a.r.Method, a.r.URL.Query(), path, a.r.Header)
 	digest := signCanonicalString(stringToSigh, []byte(creds.AccessSecretKey))

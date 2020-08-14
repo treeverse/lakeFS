@@ -8,6 +8,12 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	DefaultMaxOpenConnections    = 25
+	DefaultMaxIdleConnections    = 25
+	DefaultConnectionMaxLifetime = 5 * time.Minute
+)
+
 func ConnectDB(driver string, uri string) (Database, error) {
 	log := logging.Default().WithFields(logging.Fields{
 		"driver": driver,
@@ -20,9 +26,9 @@ func ConnectDB(driver string, uri string) (Database, error) {
 		return nil, fmt.Errorf("could not open DB: %w", err)
 	}
 
-	conn.SetMaxOpenConns(25)
-	conn.SetMaxIdleConns(25)
-	conn.SetConnMaxLifetime(5 * time.Minute)
+	conn.SetMaxOpenConns(DefaultMaxOpenConnections)
+	conn.SetMaxIdleConns(DefaultMaxIdleConnections)
+	conn.SetConnMaxLifetime(DefaultConnectionMaxLifetime)
 
 	log.Info("initialized DB connection")
 	return NewSqlxDatabase(conn), nil

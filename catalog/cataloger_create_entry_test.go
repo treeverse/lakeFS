@@ -204,8 +204,6 @@ func TestCataloger_CreateEntry_Dedup(t *testing.T) {
 	ent1 := Entry{
 		Path:            "file1",
 		PhysicalAddress: firstAddr,
-		CreationDate:    time.Now(),
-		Size:            0,
 		Checksum:        "aa",
 	}
 	dedup1 := DedupParams{
@@ -223,8 +221,6 @@ func TestCataloger_CreateEntry_Dedup(t *testing.T) {
 	ent2 := Entry{
 		Path:            "file2",
 		PhysicalAddress: secondAddr,
-		CreationDate:    time.Now(),
-		Size:            0,
 		Checksum:        "aa",
 	}
 	testutil.MustDo(t, "create second entry, same content",
