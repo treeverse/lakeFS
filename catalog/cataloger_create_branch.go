@@ -61,10 +61,10 @@ func (c *cataloger) CreateBranch(ctx context.Context, repository, branch string,
 		commitMsg := fmt.Sprintf(createBranchCommitMessageFormat, branch, sourceBranch)
 		err = tx.Get(&insertReturns, `INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,
 			creation_date,merge_source_branch,merge_type,lineage_commits,merge_source_commit)
-			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,$4,$5,'from_father',
+			VALUES ($1,nextval('catalog_commit_id_seq'),0,$2,$3,$4,$5,'from_parent',
 				(select (select max(commit_id) from catalog_commits where branch_id=$5)|| 
 					(select distinct on (branch_id) lineage_commits from catalog_commits 
-						where branch_id=$5 and merge_type='from_father' order by branch_id,commit_id desc))
+						where branch_id=$5 and merge_type='from_parent' order by branch_id,commit_id desc))
 						,(select max(commit_id) from catalog_commits where branch_id=$5 ))
 			RETURNING commit_id,merge_source_commit`,
 			branchID, CatalogerCommitter, commitMsg, creationDate, sourceBranchID)
