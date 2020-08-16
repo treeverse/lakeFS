@@ -159,7 +159,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.credentials_file"),
 			viper.GetString("blockstore.s3.profile"))
 	}
-	if viper.IsSet("blockstore.s3.credentials") {
+	if viper.IsSet("blockstore.s3.credentials.access_key_id") {
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.s3.credentials.access_key_id"),
 			viper.GetString("blockstore.s3.credentials.access_secret_key"),
@@ -316,7 +316,7 @@ func GetMetastoreAwsConfig() *aws.Config {
 			viper.GetString("metastore.glue.credentials_file"),
 			viper.GetString("metastore.glue.profile"))
 	}
-	if viper.IsSet("metastore.glue.credentials") {
+	if viper.IsSet("metastore.glue.credentials.access_key_id") {
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("metastore.glue.credentials.access_key_id"),
 			viper.GetString("metastore.glue.credentials.access_secret_key"),
