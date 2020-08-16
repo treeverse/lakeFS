@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/stats"
 )
 
 // initCmd represents the init command
@@ -55,7 +56,8 @@ var initCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(metadata["installation_id"])
+		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
+		stats := stats.NewBufferedCollector(metadata["installation_id"], processID, bufferedCollectorArgs...)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")
