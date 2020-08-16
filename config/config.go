@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/block/gcs"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -21,6 +19,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/gcs"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
 	s3a "github.com/treeverse/lakefs/block/s3"
@@ -234,7 +233,14 @@ func (c *Config) buildS3Adapter() (block.Adapter, error) {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
+
+	var awsConfig *aws.Config
+	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
+	if len(s3Endpoint) > 0 {
+		awsConfig = aws.NewConfig().WithEndpoint(s3Endpoint)
+	}
+
+	svc := s3.New(sess, awsConfig)
 	adapter := s3a.NewAdapter(svc,
 		s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")),
 		s3a.WithStreamingChunkTimeout(viper.GetDuration("blockstore.s3.streaming_chunk_timeout")))
