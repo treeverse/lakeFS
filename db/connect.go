@@ -19,7 +19,7 @@ const (
 
 // BuildDatabaseConnection returns a database connection based on a pool for the configuration
 // in c.
-func BuildDatabaseConnection(params *params.Database) Database {
+func BuildDatabaseConnection(params params.Database) Database {
 	database, err := ConnectDB(DatabaseDriver, params.DatabaseURI)
 	if err != nil {
 		panic(err)
