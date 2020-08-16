@@ -283,16 +283,16 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return viper.GetDuration("stats.flush_interval")
 }
 
-func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
+func (c *Config) GetStatsBufferedCollectorArgs() (processID string, opts []stats.BufferedCollectorOpts) {
 	sender := stats.NewDummySender()
 	if c.GetStatsEnabled() && Version != UnreleasedVersion {
 		sender = stats.NewHTTPSender(c.GetStatsAddress(), time.Now)
 	}
-	return stats.NewBufferedCollector(
-		installationID,
-		uuid.Must(uuid.NewUUID()).String(),
-		stats.WithSender(sender),
-		stats.WithFlushInterval(c.GetStatsFlushInterval()))
+	return uuid.Must(uuid.NewUUID()).String(),
+		[]stats.BufferedCollectorOpts{
+			stats.WithSender(sender),
+			stats.WithFlushInterval(c.GetStatsFlushInterval()),
+		}
 }
 
 func GetMetastoreAwsConfig() *aws.Config {
