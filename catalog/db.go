@@ -142,9 +142,9 @@ func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, e
 	return requestedLineage, nil
 }
 
-func getLineageAsValues(lineage []lineageCommit, branchID int64) string {
+func getLineageAsValues(lineage []lineageCommit, branchID int64, commitID CommitID) string {
 	valArray := make([]string, 1, len(lineage)+1)
-	valArray[0] = fmt.Sprintf("(0,%d,%d)", branchID, MaxCommitID)
+	valArray[0] = fmt.Sprintf("(0,%d::bigint,%d::bigint)", branchID, commitID)
 	for precedence, lineageBranch := range lineage {
 		valArray = append(valArray, fmt.Sprintf("(%d,%d,%d)", precedence+1, lineageBranch.BranchID, lineageBranch.CommitID))
 	}
