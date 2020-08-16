@@ -271,7 +271,7 @@ func TestCataloger_ListCommits_Lineage(t *testing.T) {
 	}
 }
 
-func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
+func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 
@@ -321,9 +321,9 @@ func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
 	masterCommits, _, err = c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "list master commits", err)
 
-	br_1_1_base_list, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	br11BaseList, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
 	testutil.MustDo(t, "list br_1_1 commits", err)
-	if diff := deep.Equal(masterCommits[0], br_1_1_base_list[1]); diff != nil {
+	if diff := deep.Equal(masterCommits[0], br11BaseList[1]); diff != nil {
 		t.Error("br_1_1 did not inherit commits correctly", diff)
 	}
 
@@ -341,47 +341,47 @@ func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Commit for list repository commits failed '%s': %s", "br_2_2  commit failed", err)
 	}
-	br_2_2_list, _, err := c.ListCommits(ctx, repository, "br_2_2", "", 100)
+	br22List, _, err := c.ListCommits(ctx, repository, "br_2_2", "", 100)
 	testutil.MustDo(t, "list br_2_2  commits", err)
-	_ = br_2_2_list
+	_ = br22List
 	_, err = c.Merge(ctx, repository, "br_2_2", "br_2_1", "tester", "merge br_2_2 to br_2_1", nil)
 	testutil.MustDo(t, "merge br_2_2  into br_2_1", err)
-	br_2_1_list, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
+	br21List, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
 	testutil.MustDo(t, "list br_2_1  commits", err)
-	_ = br_2_1_list
+	_ = br21List
 	masterList, _, err := c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "list master commits", err)
 	if diff := deep.Equal(masterCommits, masterList); diff != nil {
-		t.Error("master commits changed befor merge", diff)
+		t.Error("master commits changed before merge", diff)
 	}
-	merge_2, err := c.Merge(ctx, repository, "br_2_1", "master", "tester", "merge br_2_1 to master", nil)
+	merge2, err := c.Merge(ctx, repository, "br_2_1", "master", "tester", "merge br_2_1 to master", nil)
 	testutil.MustDo(t, "merge br_2_1  into master", err)
-	if merge_2.Differences[0].Type != DifferenceTypeChanged || merge_2.Differences[0].Path != "master-file" {
-		t.Error("merge br_2_1 into master with unexpected results", merge_2.Differences[0])
+	if merge2.Differences[0].Type != DifferenceTypeChanged || merge2.Differences[0].Path != "master-file" {
+		t.Error("merge br_2_1 into master with unexpected results", merge2.Differences[0])
 	}
 
 	masterList, _, err = c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "list master commits", err)
-	if diff := deep.Equal(br_2_1_list, masterList[1:]); diff != nil {
+	if diff := deep.Equal(br21List, masterList[1:]); diff != nil {
 		t.Error("master commits list mismatch with br_2_1_list", diff)
 	}
 
-	br_1_1_list, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	br11List, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
 	testutil.MustDo(t, "list br_1_1 commits", err)
-	if diff := deep.Equal(br_1_1_base_list, br_1_1_list); diff != nil {
+	if diff := deep.Equal(br11BaseList, br11List); diff != nil {
 		t.Error("br_1_1 commits changed before merge", diff)
 	}
 	_, err = c.Merge(ctx, repository, "master", "br_1_1", "tester", "merge master to br_1_1", nil)
 	testutil.MustDo(t, "merge master  into br_1_1", err)
-	br_1_1_list, _, err = c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	br11List, _, err = c.ListCommits(ctx, repository, "br_1_1", "", 100)
 	testutil.MustDo(t, "list br_1_1 commits", err)
-	if diff := deep.Equal(masterList[:5], br_1_1_list[1:6]); diff != nil {
+	if diff := deep.Equal(masterList[:5], br11List[1:6]); diff != nil {
 		t.Error("master 5 first different from br_1_1 [1:6]", diff)
 	}
-	if diff := deep.Equal(masterList[6:], br_1_1_list[9:]); diff != nil {
+	if diff := deep.Equal(masterList[6:], br11List[9:]); diff != nil {
 		t.Error("master 5 first different from br_1_1 [1:6]", diff)
 	}
-	// test that a change to br_2_2 does not prpagate to master
+	// test that a change to br_2_2 does not propagate to master
 	if err := c.CreateEntry(ctx, repository, "br_2_2", Entry{
 		Path:            "no-propagate-file",
 		Checksum:        "aaaaaaaa",
@@ -396,14 +396,14 @@ func TestCataloger_ListCommits_Lineage_from_son(t *testing.T) {
 	}
 	_, err = c.Merge(ctx, repository, "br_2_2", "br_2_1", "tester", "merge br_2_2 to br_2_1", nil)
 	testutil.MustDo(t, "second merge br_2_2  into br_2_1", err)
-	new_br_2_1_list, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
+	newBr21List, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
 	testutil.MustDo(t, "second list br_2_1 commits", err)
-	if diff := deep.Equal(br_2_1_list, new_br_2_1_list); diff == nil {
+	if diff := deep.Equal(br21List, newBr21List); diff == nil {
 		t.Error("br_2_1 commits did not changed after merge", diff)
 	}
-	new_master_list, _, err := c.ListCommits(ctx, repository, "master", "", 100)
+	newMasterList, _, err := c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "third list master commits", err)
-	if diff := deep.Equal(new_master_list, masterList); diff != nil {
+	if diff := deep.Equal(newMasterList, masterList); diff != nil {
 		t.Error("master commits  changed without merge", diff)
 	}
 }

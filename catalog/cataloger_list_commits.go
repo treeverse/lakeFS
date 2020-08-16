@@ -44,7 +44,7 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
     select branch_id,commit_id from ` + lineageAsValuesTable + `
 	union all
 	select * from (Select distinct on (c.branch_id,c.merge_source_branch) merge_source_branch,merge_source_commit from catalog_commits c 
-	join lineage_graph l on l.branch_id = c.branch_id and c.merge_type='from_son'  and c.merge_source_commit < l.commit_id
+	join lineage_graph l on l.branch_id = c.branch_id and c.merge_type='from_child'  and c.merge_source_commit < l.commit_id
 	order by c.branch_id,c.merge_source_branch,c.commit_id desc )t)
 `
 		query := cte + `SELECT b_name.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
