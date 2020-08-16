@@ -26,6 +26,7 @@ import (
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
+	"github.com/treeverse/lakefs/stats"
 )
 
 const (
@@ -79,7 +80,8 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			installationID = "" // no installation ID is available
 		}
-		stats := cfg.BuildStats(installationID)
+		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
+		stats := stats.NewBufferedCollector("installation_id", processID, bufferedCollectorArgs...)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 		defer func() {
