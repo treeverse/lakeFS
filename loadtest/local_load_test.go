@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	db_params "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 
 	"github.com/ory/dockertest/v3"
@@ -15,6 +16,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
+	auth_params "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -56,10 +58,10 @@ func TestLocalLoad(t *testing.T) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 	cataloger := catalog.NewCataloger(conn)
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth.ServiceCacheConfig{})
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth_params.ServiceCache{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
-	migrator := db.NewDatabaseMigrator(databaseURI)
+	migrator := db.NewDatabaseMigrator(db_params.Database{DatabaseURI: databaseURI})
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
 		// order is important - close cataloger channel before dedup

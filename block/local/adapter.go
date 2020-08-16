@@ -36,7 +36,7 @@ var (
 	ErrInventoryNotSupported = errors.New("inventory feature not implemented for local storage adapter")
 )
 
-func (l *Adapter) WithContext(ctx context.Context) *Adapter {
+func (l *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
 		path:               l.path,
 		ctx:                ctx,

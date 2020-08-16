@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/block/mem"
 	lakefsS3 "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/db/params"
 )
 
 const (
@@ -142,7 +143,7 @@ func GetDB(t testing.TB, uri string, opts ...GetDBOption) (db.Database, string) 
 
 	if options.ApplyDDL {
 		// do the actual migration
-		err := db.MigrateUp(connURI)
+		err := db.MigrateUp(params.Database{DatabaseURI: connURI})
 		if err != nil {
 			t.Fatal("could not create schema:", err)
 		}
