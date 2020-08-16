@@ -160,7 +160,7 @@ func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) (Difference
 		return nil, fmt.Errorf("child lineage failed: %w", err)
 	}
 
-	childLineageValues := getLineageAsValues(childLineage, childID)
+	childLineageValues := getLineageAsValues(childLineage, childID, MaxCommitID)
 	mainDiffFromChild := sqDiffFromChildV(parentID, childID, effectiveCommits.ParentEffectiveCommit, effectiveCommits.ChildEffectiveCommit, parentLineage, childLineageValues)
 	diffFromChildSQL, args, err := mainDiffFromChild.
 		Prefix("CREATE TEMP TABLE " + diffResultsTableName + " ON COMMIT DROP AS").
