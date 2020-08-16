@@ -3,6 +3,7 @@ on:
   push:
     branches:
       -master
+  pull_request:
 jobs:
   run-system:
     name: Run latest lakeFS app
@@ -21,7 +22,6 @@ jobs:
         run: docker-compose up -d
         env:
           TAG: dev
-          REPO: local
           LAKEFS_BLOCKSTORE_TYPE: s3
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
