@@ -9,7 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/db/params"
+	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 
 	"github.com/go-openapi/runtime"
@@ -21,7 +21,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	authmodel "github.com/treeverse/lakefs/auth/model"
-	auth_params "github.com/treeverse/lakefs/auth/params"
+	authparams "github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -82,12 +82,12 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 
 	cataloger := catalog.NewCataloger(conn)
-	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), auth_params.ServiceCache{
+	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
 	meta := auth.NewDBMetadataManager("dev", conn)
 	retentionService := retention.NewService(conn)
-	migrator := db.NewDatabaseMigrator(params.Database{DatabaseURI: handlerDatabaseURI})
+	migrator := db.NewDatabaseMigrator(dbparams.Database{DatabaseURI: handlerDatabaseURI})
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
