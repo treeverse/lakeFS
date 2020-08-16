@@ -19,6 +19,7 @@ import (
 
 	auth_params "github.com/treeverse/lakefs/auth/params"
 	block_params "github.com/treeverse/lakefs/block/params"
+	db_params "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/stats"
 )
 
@@ -105,8 +106,8 @@ func setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-func (c *Config) GetDatabaseURI() string {
-	return viper.GetString("database.connection_string")
+func (c *Config) GetDatabaseParams() db_params.Database {
+	return db_params.Database{DatabaseURI: viper.GetString("database.connection_string")}
 }
 
 type AwsS3RetentionConfig struct {
@@ -236,7 +237,7 @@ func (c *Config) GetBlockAdapterLocalParams() (block_params.Local, error) {
 	localPath := viper.GetString("blockstore.local.path")
 	path, err := homedir.Expand(localPath)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse blockstore location URI: %w", err)
+		return block_params.Local{}, fmt.Errorf("could not parse blockstore location URI: %w", err)
 	}
 
 	return block_params.Local{Path: path}, err
