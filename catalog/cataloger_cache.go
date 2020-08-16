@@ -36,7 +36,7 @@ func (c *cataloger) getRepositoryIDCache(tx db.Tx, repository string) (int, erro
 	return repoID, err
 }
 
-func (c *cataloger) getBranchIDCache(tx db.Tx, repository string, branch string) (int64, error) {
+func (c *cataloger) getBranchIDCache(tx db.GetSelect, repository string, branch string) (int64, error) {
 	branchID, err := c.cache.BranchID(repository, branch, func(repository string, branch string) (int64, error) {
 		branchID, err := getBranchID(tx, repository, branch, LockTypeNone)
 		if err != nil {
