@@ -16,9 +16,9 @@ const (
 	ReadTimeout          = time.Second * 600
 	ScanTimeout          = time.Microsecond * 500
 	waitTimeout          = time.Microsecond * 1000
-	MaxEnteriesInRequest = 128
-	ReadersNum           = 8
-	ReadsPerConnection   = 500
+	MaxEnteriesInRequest = 64
+	ReadersNum           = 6
+	ReadsPerConnection   = 100
 )
 
 type pathRequest struct {
@@ -176,60 +176,60 @@ func readOrchestrator(c *cataloger) {
 func readEntriesBatch(c *cataloger, batchRead chan batchReadMessage) {
 	ctx := context.Background()
 	for {
+		message := <-batchRead
 		_, _ = c.db.Transact(func(tx db.Tx) (interface{}, error) {
-			for j := 0; j < ReadsPerConnection; j++ {
-				message := <-batchRead
-				bufKey := message.key
-				pathReqList := message.batch
-				branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
-				if err != nil {
-					return nil, err
-				}
-
-				lineage, err := getLineage(tx, branchID, bufKey.ref.CommitID)
-				if err != nil {
-					return nil, fmt.Errorf("get lineage: %w", err)
-				}
-
-				//var lineage = []lineageCommit{{3, 14}, {2, 6}, {1, 5}}
-
-				p := make([]string, len(pathReqList))
-				for i, s := range pathReqList {
-					p[i] = s.path
-				}
-				pathInExper := "('" + strings.Join(p, "','") + "')"
-				inExper := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
-					FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
-					Where("path in " + pathInExper + " and not is_deleted")
-				deb := sq.DebugSqlizer(inExper)
-				_ = deb
-				sql, args, err := inExper.PlaceholderFormat(sq.Dollar).ToSql()
-				if err != nil {
-					return nil, fmt.Errorf("build sql: %w", err)
-				}
-
-				var entList []*Entry
-				if err := tx.Select(&entList, sql, args...); err != nil {
-					return nil, err
-				}
-				entMap := make(map[string]*Entry)
-				for _, ent := range entList {
-					entMap[ent.Path] = ent
-				}
-				for _, pathReq := range pathReqList {
-					e, exists := entMap[pathReq.path]
-					if exists {
-						pathReq.replyChan <- readResponse{e, nil}
-					} else {
-						fmt.Print("NOT FOUND " + pathReq.path + " \n")
-						pathReq.replyChan <- readResponse{nil, db.ErrNotFound}
-					}
-
-				}
+			//for j := 0; j < ReadsPerConnection; j++ {
+			bufKey := message.key
+			pathReqList := message.batch
+			branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
+			if err != nil {
+				return nil, err
 			}
+
+			lineage, err := getLineage(tx, branchID, bufKey.ref.CommitID)
+			if err != nil {
+				return nil, fmt.Errorf("get lineage: %w", err)
+			}
+
+			//var lineage = []lineageCommit{{3, 14}, {2, 6}, {1, 5}}
+
+			p := make([]string, len(pathReqList))
+			for i, s := range pathReqList {
+				p[i] = s.path
+			}
+			pathInExper := "('" + strings.Join(p, "','") + "')"
+			inExper := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+				FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
+				Where("path in " + pathInExper + " and not is_deleted")
+			deb := sq.DebugSqlizer(inExper)
+			_ = deb
+			sql, args, err := inExper.PlaceholderFormat(sq.Dollar).ToSql()
+			if err != nil {
+				return nil, fmt.Errorf("build sql: %w", err)
+			}
+
+			var entList []*Entry
+			if err := tx.Select(&entList, sql, args...); err != nil {
+				return nil, err
+			}
+			entMap := make(map[string]*Entry)
+			for _, ent := range entList {
+				entMap[ent.Path] = ent
+			}
+			for _, pathReq := range pathReqList {
+				e, exists := entMap[pathReq.path]
+				if exists {
+					pathReq.replyChan <- readResponse{e, nil}
+				} else {
+					fmt.Print("NOT FOUND " + pathReq.path + " \n")
+					pathReq.replyChan <- readResponse{nil, db.ErrNotFound}
+				}
+
+			}
+			//}
 			return nil, nil
 		}, c.txOpts(ctx, db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))...)
-		fmt.Print("finished 500 reads in loop\n")
+		//fmt.Print("finished 500 reads in loop\n")
 	}
 }
 
