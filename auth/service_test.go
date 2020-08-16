@@ -3,8 +3,10 @@ package auth_test
 import (
 	"fmt"
 	"os"
+	"sort"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/google/uuid"
@@ -376,6 +378,60 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			if response.Error != testCase.expectedError {
 				t.Fatalf("expected error %v, got %v", testCase.expectedAllowed, response.Error)
 			}
+		})
+	}
+}
+
+func verifyListUsers(t *testing.T, s auth.Service, pageSize int, expectedUsers []string) {
+	t.Helper()
+	listUsers := make([]string, 0)
+	pagination := model.PaginationParams{After: "", Amount: pageSize}
+	for {
+		list, last, err := s.ListUsers(&pagination)
+		if err != nil {
+			t.Errorf("ListUsers: %s", err)
+		}
+		for _, user := range list {
+			listUsers = append(listUsers, user.DisplayName)
+		}
+		if last.NextPageToken == "" {
+			break
+		}
+		pagination.After = last.NextPageToken
+	}
+	sort.Strings(listUsers)
+	sort.Strings(expectedUsers)
+	if diffs := deep.Equal(expectedUsers, listUsers); diffs != nil {
+		t.Errorf("did not get expected user names: %s", diffs)
+	}
+}
+
+func TestDBAuthService_ListUsers(t *testing.T) {
+	cases := []struct {
+		name      string
+		userNames []string
+	}{
+		{
+			name:      "no_users",
+			userNames: []string{},
+		}, {
+			name:      "single_user",
+			userNames: []string{"foo"},
+		}, {
+			name:      "many_users",
+			userNames: []string{"foo", "bar", "baz", "quux"},
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			s := setupService(t)
+			for _, userName := range testCase.userNames {
+				if err := s.CreateUser(&model.User{DisplayName: userName}); err != nil {
+					t.Fatalf("CreateUser(%s): %s", userName, err)
+				}
+			}
+			verifyListUsers(t, s, 100, testCase.userNames)
+			verifyListUsers(t, s, 3, testCase.userNames)
 		})
 	}
 }
