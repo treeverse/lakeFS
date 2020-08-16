@@ -30,7 +30,6 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		fromCommitID = ref.CommitID
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
