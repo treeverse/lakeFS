@@ -188,7 +188,7 @@ func (c *Config) GetGCSAwsConfig() *aws.Config {
 			viper.GetString("blockstore.gcs.s3_credentials_file"),
 			viper.GetString("blockstore.gcs.s3_profile"))
 	}
-	if viper.IsSet("blockstore.gcs.s3_credentials") {
+	if viper.IsSet("blockstore.gcs.s3_credentials.access_key_id") {
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.gcs.s3_credentials.access_key_id"),
 			viper.GetString("blockstore.gcs.s3_credentials.access_secret_key"),

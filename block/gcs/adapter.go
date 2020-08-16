@@ -36,7 +36,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	if err != nil {
 		return qualifiedKey, err
 	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
+	if qualifiedKey.StorageType != block.StorageTypeGCS {
 		return qualifiedKey, block.ErrInvalidNamespace
 	}
 	return qualifiedKey, nil
