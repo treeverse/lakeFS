@@ -13,6 +13,7 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
 	"github.com/golang-migrate/migrate/v4/source/httpfs"
 	"github.com/rakyll/statik/fs"
+	"github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/ddl"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -22,12 +23,12 @@ type Migrator interface {
 }
 
 type DatabaseMigrator struct {
-	connectionString string
+	params params.Database
 }
 
-func NewDatabaseMigrator(connectionString string) *DatabaseMigrator {
+func NewDatabaseMigrator(params params.Database) *DatabaseMigrator {
 	return &DatabaseMigrator{
-		connectionString: connectionString,
+		params: params,
 	}
 }
 
@@ -37,7 +38,7 @@ func (d *DatabaseMigrator) Migrate(ctx context.Context) error {
 	lg := log.WithFields(logging.Fields{
 		"direction": "up",
 	})
-	err := MigrateUp(d.connectionString)
+	err := MigrateUp(d.params)
 	if err != nil {
 		lg.WithError(err).Error("Failed to migrate")
 		return err
@@ -77,7 +78,7 @@ func GetLastMigrationAvailable(from uint) (uint, error) {
 	}
 }
 
-func getMigrate(connectionString string) (*migrate.Migrate, error) {
+func getMigrate(params params.Database) (*migrate.Migrate, error) {
 	src, err := getStatikSrc()
 	if err != nil {
 		return nil, err
@@ -86,7 +87,7 @@ func getMigrate(connectionString string) (*migrate.Migrate, error) {
 		_ = src.Close()
 	}()
 
-	m, err := migrate.NewWithSourceInstance("httpfs", src, connectionString)
+	m, err := migrate.NewWithSourceInstance("httpfs", src, params.DatabaseURI)
 	if err != nil {
 		return nil, err
 	}
@@ -103,16 +104,16 @@ func closeMigrate(m *migrate.Migrate) {
 	}
 }
 
-func MigrateUp(connectionString string) error {
+func MigrateUp(params params.Database) error {
 	//make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", connectionString)
+	mdb, err := ConnectDB("pgx", params.DatabaseURI)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-	m, err := getMigrate(connectionString)
+	m, err := getMigrate(params)
 	if err != nil {
 		return err
 	}
@@ -124,8 +125,8 @@ func MigrateUp(connectionString string) error {
 	return nil
 }
 
-func MigrateDown(connectionString string) error {
-	m, err := getMigrate(connectionString)
+func MigrateDown(params params.Database) error {
+	m, err := getMigrate(params)
 	if err != nil {
 		return err
 	}
@@ -137,16 +138,16 @@ func MigrateDown(connectionString string) error {
 	return nil
 }
 
-func MigrateTo(connectionString string, version uint) error {
+func MigrateTo(params params.Database, version uint) error {
 	//make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", connectionString)
+	mdb, err := ConnectDB("pgx", params.DatabaseURI)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-	m, err := getMigrate(connectionString)
+	m, err := getMigrate(params)
 	if err != nil {
 		return err
 	}
@@ -158,8 +159,8 @@ func MigrateTo(connectionString string, version uint) error {
 	return nil
 }
 
-func MigrateVersion(connectionString string) (uint, bool, error) {
-	m, err := getMigrate(connectionString)
+func MigrateVersion(params params.Database) (uint, bool, error) {
+	m, err := getMigrate(params)
 	if err != nil {
 		return 0, false, err
 	}
