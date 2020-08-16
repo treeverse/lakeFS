@@ -10,7 +10,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
+func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -73,7 +73,7 @@ func TestCataloger_Merge_FromFatherNoChangesInChild(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
+func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -132,7 +132,7 @@ func TestCataloger_Merge_FromFatherConflicts(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
+func TestCataloger_Merge_FromParentNoChangesInParent(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -150,7 +150,7 @@ func TestCataloger_Merge_FromFatherNoChangesInFather(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
+func TestCataloger_Merge_FromParentChangesInBoth(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -216,7 +216,7 @@ func TestCataloger_Merge_FromFatherChangesInBoth(t *testing.T) {
 	})
 }
 
-func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
+func TestCataloger_Merge_FromParentThreeBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -279,7 +279,7 @@ func TestCataloger_Merge_FromFatherThreeBranches(t *testing.T) {
 	})
 }
 
-func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
+func TestCataloger_Merge_FromChildNoChanges(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -305,7 +305,7 @@ func TestCataloger_Merge_FromSonNoChanges(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
+func TestCataloger_Merge_FromChildChangesOnChild(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -333,7 +333,7 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 	const overFilename = "/file2"
 	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", overFilename, nil, "seed1")
 
-	// commit changes on son and merge
+	// commit changes on child and merge
 	_, err = c.Commit(ctx, repository, "branch1", "First commit to branch1", "tester", nil)
 	testutil.MustDo(t, "First commit to branch1", err)
 
@@ -362,7 +362,7 @@ func TestCataloger_Merge_FromSonChangesOnSon(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
+func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -461,7 +461,7 @@ func TestCataloger_Merge_FromSonThreeBranches(t *testing.T) {
 	})
 }
 
-func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
+func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -511,7 +511,7 @@ func TestCataloger_Merge_FromSonNewDelSameEntry(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromSonNewEntrySameEntry(t *testing.T) {
+func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -557,7 +557,7 @@ func TestCataloger_Merge_FromSonNewEntrySameEntry(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
+func TestCataloger_Merge_FromChildDelModifyGrandparentFiles(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -601,7 +601,7 @@ func TestCataloger_Merge_FromSonDelModifyGrandfatherFiles(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
+func TestCataloger_Merge_FromChildConflicts(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -638,7 +638,7 @@ func TestCataloger_Merge_FromSonConflicts(t *testing.T) {
 	}
 }
 
-func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
+func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
@@ -699,7 +699,7 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 		{Path: overFilename, Seed: "seed1"},
 		{Path: delFilename, Deleted: true},
 	})
-	// test that an object deleted at master becomes deleted at branch2 only after merges from both fathers
+	// test that an object deleted at master becomes deleted at branch2 only after merges from both parents
 	testutil.MustDo(t, "delete committed file on master",
 		c.DeleteEntry(ctx, repository, "master", "/file0"))
 	_, err = c.Commit(ctx, repository, "master", "commit file0 deletion", "tester", nil)
@@ -723,7 +723,7 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 	testCatalogerGetEntry(t, ctx, c, repository, "branch1", "/file0", false)
 	testCatalogerGetEntry(t, ctx, c, repository, "master", "/file0", false)
 
-	// test that the same object with the same name does not create a conflict in son to father , and is not a change
+	// test that the same object with the same name does not create a conflict in child to parent , and is not a change
 
 	testCatalogerCreateEntry(t, ctx, c, repository, "branch2", "/file0", nil, "seed1")
 	_, _ = c.Commit(ctx, repository, "branch2", "commit file0 creation", "tester", nil)
@@ -749,7 +749,7 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 		t.Errorf("unexpected Merge differences = %s", spew.Sdump(res.Differences))
 	}
 
-	// deletion in master will force  physically delete in grandson
+	// deletion in master will force  physically delete in grandchild
 	testutil.MustDo(t, "delete committed file on master",
 		c.DeleteEntry(ctx, repository, "master", "/file0"))
 	_, err = c.Commit(ctx, repository, "master", "commit file0 deletion", "tester", nil)
@@ -773,7 +773,7 @@ func TestCataloger_Merge_FromFatherThreeBranchesExtended1(t *testing.T) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
 	}
 
-	//identical entries created in son and grandfather do not create conflict - even when grandfather is uncommitted
+	//identical entries created in child and grandparent do not create conflict - even when grandparent is uncommitted
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "empty updates", nil)
 	testutil.MustDo(t, "merge branch2 to branch1", err)
 

@@ -9,7 +9,7 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
-func TestCataloger_Diff_FromSonThreeBranches(t *testing.T) {
+func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
 	repository := testCatalogerRepo(t, ctx, c, "repo", "master")

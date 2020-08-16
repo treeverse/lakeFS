@@ -34,14 +34,21 @@ func (c *cataloger) ListCommits(ctx context.Context, repository, branch string, 
 		if err != nil {
 			return nil, err
 		}
-		lineage, err := getLineage(tx, branchID, CommittedID)
+		lineage, err := getLineage(tx, branchID, fromCommitID)
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
-		lineageAsValuesTable := getLineageAsValues(lineage, branchID)
-		query := `SELECT b_name.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
+		lineageAsValuesTable := getLineageAsValues(lineage, branchID, fromCommitID)
+		cte := `WITH RECURSIVE lineage_graph AS (
+    select branch_id,commit_id from ` + lineageAsValuesTable + `
+	union all
+	select * from (Select distinct on (c.branch_id,c.merge_source_branch) merge_source_branch,merge_source_commit from catalog_commits c 
+	join lineage_graph l on l.branch_id = c.branch_id and c.merge_type='from_child'  and c.merge_source_commit < l.commit_id
+	order by c.branch_id,c.merge_source_branch,c.commit_id desc )t)
+`
+		query := cte + `SELECT b_name.name as branch_name,c.commit_id,c.previous_commit_id,c.committer,c.message,c.creation_date,c.metadata,
 				COALESCE(bb.name,'') as merge_source_branch_name,COALESCE(c.merge_source_commit,0) as merge_source_commit
-			FROM catalog_commits c JOIN (SELECT * FROM ` + lineageAsValuesTable + `) l  ON  c.branch_id = l.branch_id and c.commit_id <= l.commit_id
+			FROM catalog_commits c JOIN lineage_graph l  ON  c.branch_id = l.branch_id and c.commit_id <= l.commit_id
 				JOIN catalog_branches b_name ON c.branch_id = b_name.id
 				LEFT JOIN catalog_branches bb ON bb.id = c.merge_source_branch
 			WHERE c.commit_id < $1

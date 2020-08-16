@@ -97,13 +97,13 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 	return baseSelect
 }
 
-func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCommit CommitID, fatherUncommittedLineage []lineageCommit, sonLineageValues string) sq.SelectBuilder {
-	lineage := sqEntriesLineage(fatherID, UncommittedID, fatherUncommittedLineage)
-	sqFather := sq.Select("*").
+func sqDiffFromChildV(parentID, childID int64, parentEffectiveCommit, childEffectiveCommit CommitID, parentUncommittedLineage []lineageCommit, childLineageValues string) sq.SelectBuilder {
+	lineage := sqEntriesLineage(parentID, UncommittedID, parentUncommittedLineage)
+	sqParent := sq.Select("*").
 		FromSelect(lineage, "z").
-		Where("displayed_branch = ?", fatherID)
+		Where("displayed_branch = ?", parentID)
 	// Can diff with expired files, just not usefully!
-	fromSonInternalQ := sq.Select("s.path",
+	fromChildInternalQ := sq.Select("s.path",
 		"s.is_deleted AS DifferenceTypeRemoved",
 		"f.path IS NOT NULL AND NOT f.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(f.is_deleted, true) AND s.is_deleted AS both_deleted",
@@ -112,27 +112,27 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 		"f.source_branch",
 	).
 		//Conflict detection
-		Column(`-- father either created or deleted after last merge  - conflict
+		Column(`-- parent either created or deleted after last merge  - conflict
 			f.path IS NOT NULL AND ( NOT f.is_committed OR -- uncommitted entries always new
-									(f.source_branch = ? AND  -- it is the father branch - not from lineage
+									(f.source_branch = ? AND  -- it is the parent branch - not from lineage
 									( f.min_commit > ? OR -- created after last merge
 									 (f.max_commit >= ? AND f.is_deleted))) -- deleted after last merge
-									OR (f.source_branch != ? AND  -- an entry from father lineage
-				-- negative proof - if the son could see this object - than this is NOT a conflict
-				-- done by examining the son lineage against the father object
-									 NOT EXISTS ( SELECT * FROM`+sonLineageValues+` WHERE
+									OR (f.source_branch != ? AND  -- an entry from parent lineage
+				-- negative proof - if the child could see this object - than this is NOT a conflict
+				-- done by examining the child lineage against the parent object
+									 NOT EXISTS ( SELECT * FROM`+childLineageValues+` WHERE
 											l.branch_id = f.source_branch AND
-										-- prove that ancestor entry  was observable by the son
+										-- prove that ancestor entry  was observable by the child
 											(l.commit_id >= f.min_commit AND
 											 (l.commit_id > f.max_commit OR NOT f.is_deleted))
-										   ))) 
-											AS DifferenceTypeConflict`, fatherID, fatherEffectiveCommit, fatherEffectiveCommit, fatherID).
+										   )))
+											AS DifferenceTypeConflict`, parentID, parentEffectiveCommit, parentEffectiveCommit, parentID).
 		FromSelect(sqEntriesV(CommittedID).Distinct().
 			Options(" on (branch_id,path)").
 			OrderBy("branch_id", "path", "min_commit desc").
-			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", sonID, sonEffectiveCommit, sonEffectiveCommit), "s").
-		JoinClause(sqFather.Prefix("LEFT JOIN (").Suffix(") AS f ON f.path = s.path"))
-	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromSonInternalQ, "t").Where("NOT (same_object OR both_deleted)")
+			Where("branch_id = ? AND (min_commit >= ? OR max_commit >= ? and is_deleted)", childID, childEffectiveCommit, childEffectiveCommit), "s").
+		JoinClause(sqParent.Prefix("LEFT JOIN (").Suffix(") AS f ON f.path = s.path"))
+	RemoveNonRelevantQ := sq.Select("*").FromSelect(fromChildInternalQ, "t").Where("NOT (same_object OR both_deleted)")
 	return sq.Select().
 		Column(sq.Alias(sq.Case().When("DifferenceTypeConflict", "3").
 			When("DifferenceTypeRemoved", "1").
@@ -146,14 +146,14 @@ func sqDiffFromSonV(fatherID, sonID int64, fatherEffectiveCommit, sonEffectiveCo
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
 
-func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, fatherUncommittedLineage, sonUncommittedLineage []lineageCommit) sq.SelectBuilder {
-	sonLineageValues := getLineageAsValues(sonUncommittedLineage, sonID)
-	sonLineage := sqEntriesLineage(sonID, UncommittedID, sonUncommittedLineage)
-	sqSon := sq.Select("*").
-		FromSelect(sonLineage, "s").
-		Where("displayed_branch = ?", sonID)
+func sqDiffFromParentV(parentID, childID int64, lastChildMergeWithParent CommitID, parentUncommittedLineage, childUncommittedLineage []lineageCommit) sq.SelectBuilder {
+	childLineageValues := getLineageAsValues(childUncommittedLineage, childID, MaxCommitID)
+	childLineage := sqEntriesLineage(childID, UncommittedID, childUncommittedLineage)
+	sqChild := sq.Select("*").
+		FromSelect(childLineage, "s").
+		Where("displayed_branch = ?", childID)
 
-	fatherLineage := sqEntriesLineage(fatherID, CommittedID, fatherUncommittedLineage)
+	parentLineage := sqEntriesLineage(parentID, CommittedID, parentUncommittedLineage)
 	// Can diff with expired files, just not usefully!
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
@@ -162,25 +162,25 @@ func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, f
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		//both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
-		Column(`f.min_commit > l.commit_id  -- father created after commit
-			OR f.max_commit >= l.commit_id AND f.is_deleted -- father deleted after commit
-									AS father_changed`). // father was changed if son could no "see" it
+		Column(`f.min_commit > l.commit_id  -- parent created after commit
+			OR f.max_commit >= l.commit_id AND f.is_deleted -- parent deleted after commit
+									AS parent_changed`). // parent was changed if child could no "see" it
 		// this happens if min_commit is larger than the lineage commit
 		// or entry deletion max_commit is larger or equal than lineage commit
-		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_son", sonID).
+		Column("s.path IS NOT NULL AND s.source_branch = ? as entry_in_child", childID).
 		Column(`s.path IS NOT NULL AND s.source_branch = ? AND
 							(NOT s.is_committed -- uncommitted is new
 							 OR s.min_commit > ? -- created after last merge
                            OR (s.max_commit >= ? AND s.is_deleted)) -- deleted after last merge
-						  AS DifferenceTypeConflict`, sonID, lastSonMergeWithFather, lastSonMergeWithFather).
-		FromSelect(fatherLineage, "f").
-		Where("f.displayed_branch = ?", fatherID).
-		JoinClause(sqSon.Prefix("LEFT JOIN (").Suffix(") AS s ON f.path = s.path")).
-		Join(`(SELECT * FROM ` + sonLineageValues + `) l ON f.source_branch = l.branch_id`)
+						  AS DifferenceTypeConflict`, childID, lastChildMergeWithParent, lastChildMergeWithParent).
+		FromSelect(parentLineage, "f").
+		Where("f.displayed_branch = ?", parentID).
+		JoinClause(sqChild.Prefix("LEFT JOIN (").Suffix(") AS s ON f.path = s.path")).
+		Join(`(SELECT * FROM ` + childLineageValues + `) l ON f.source_branch = l.branch_id`)
 
 	RemoveNonRelevantQ := sq.Select("*").
 		FromSelect(internalV, "t").
-		Where("father_changed AND NOT (same_object OR both_deleted)")
+		Where("parent_changed AND NOT (same_object OR both_deleted)")
 
 	return sq.Select().
 		Column(sq.Alias(sq.Case().When("DifferenceTypeConflict", "3").
@@ -189,7 +189,7 @@ func sqDiffFromFatherV(fatherID, sonID int64, lastSonMergeWithFather CommitID, f
 			Else("0"), "diff_type")).
 		Column("path").
 		Column(sq.Alias(sq.Case().
-			When("DifferenceTypeChanged AND entry_in_son", "entry_ctid").
+			When("DifferenceTypeChanged AND entry_in_child", "entry_ctid").
 			Else("NULL"), "entry_ctid")).
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
