@@ -129,7 +129,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		topCommitID = MaxCommitID
 	}
 
-	// list of branches ordered form son to ancestors
+	// list of branches ordered from child to ancestors
 	branchPriorityMap := make(map[int64]int, len(lineage)+1)
 	branchPriorityMap[branchID] = 0
 	for i, l := range lineage {
