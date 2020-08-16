@@ -17,9 +17,9 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 
-	auth_params "github.com/treeverse/lakefs/auth/params"
-	block_params "github.com/treeverse/lakefs/block/params"
-	db_params "github.com/treeverse/lakefs/db/params"
+	authparams "github.com/treeverse/lakefs/auth/params"
+	blockparams "github.com/treeverse/lakefs/block/params"
+	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/stats"
 )
 
@@ -106,8 +106,8 @@ func setDefaults() {
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-func (c *Config) GetDatabaseParams() db_params.Database {
-	return db_params.Database{DatabaseURI: viper.GetString("database.connection_string")}
+func (c *Config) GetDatabaseParams() dbparams.Database {
+	return dbparams.Database{DatabaseURI: viper.GetString("database.connection_string")}
 }
 
 type AwsS3RetentionConfig struct {
@@ -223,28 +223,28 @@ func (c *Config) GetBlockstoreType() string {
 	return viper.GetString("blockstore.type")
 }
 
-func (c *Config) GetBlockAdapterS3Params() (block_params.S3, error) {
+func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	cfg := c.GetAwsConfig()
 
-	return block_params.S3{
+	return blockparams.S3{
 		AwsConfig:             cfg,
 		StreamingChunkSize:    viper.GetInt("blockstore.s3.streaming_chunk_size"),
 		StreamingChunkTimeout: viper.GetDuration("blockstore.s3.streaming_chunk_timeout"),
 	}, nil
 }
 
-func (c *Config) GetBlockAdapterLocalParams() (block_params.Local, error) {
+func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 	localPath := viper.GetString("blockstore.local.path")
 	path, err := homedir.Expand(localPath)
 	if err != nil {
-		return block_params.Local{}, fmt.Errorf("could not parse blockstore location URI: %w", err)
+		return blockparams.Local{}, fmt.Errorf("could not parse blockstore location URI: %w", err)
 	}
 
-	return block_params.Local{Path: path}, err
+	return blockparams.Local{Path: path}, err
 }
 
-func (c *Config) GetAuthCacheConfig() auth_params.ServiceCache {
-	return auth_params.ServiceCache{
+func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
+	return authparams.ServiceCache{
 		Enabled:        viper.GetBool("auth.cache.enabled"),
 		Size:           viper.GetInt("auth.cache.size"),
 		TTL:            viper.GetDuration("auth.cache.ttl"),
