@@ -29,7 +29,6 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
@@ -1047,7 +1046,7 @@ func writeSymlinkToS3(params metadataop.CreateSymlinkParams, repo *catalog.Repos
 	data := strings.Join(addresses, "\n")
 	symlinkReader := aws.ReadSeekCloser(strings.NewReader(data))
 	s3Adapter := deps.BlockAdapter
-	err := s3Adapter.(*s3.Adapter).PutWithoutStream(block.ObjectPointer{ //TODO: change to .Put without casting once bug is fixed
+	err := s3Adapter.Put(block.ObjectPointer{
 		StorageNamespace: repo.StorageNamespace,
 		Identifier:       address,
 	}, int64(len(data)), symlinkReader, block.PutOpts{})
