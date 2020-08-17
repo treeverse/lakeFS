@@ -8,6 +8,10 @@ jobs:
   run-system:
     name: Run latest lakeFS app
     runs-on: ubuntu-latest
+    env:
+      BUCKET: s3://nessie-system-testing/${{ github.run_number }}
+      AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+      AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
@@ -23,10 +27,13 @@ jobs:
         env:
           TAG: dev
           LAKEFS_BLOCKSTORE_TYPE: s3
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+          LAKEFS_STATS_ENABLED: false
       - name: Run nessie
-        run: make nessie-run
+        run: make nessie
         env:
           API_ENDPOINT: localhost:8000
-          BUCKET: s3://nessie-system-testing
+      - name: Export DB
+        if: ${{ always() }}
+        run: |
+          docker exec lakefs_postgres_1 pg_dumpall --username=lakefs | gzip > /tmp/dump.gz
+          aws s3 cp /tmp/dump.gz $BUCKET/dump.gz

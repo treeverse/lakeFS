@@ -19,6 +19,7 @@ import (
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/gcs"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
 	s3a "github.com/treeverse/lakefs/block/s3"
@@ -37,6 +38,10 @@ const (
 	DefaultBlockStoreS3Region                = "us-east-1"
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+
+	DefaultBlockStoreGCSS3Endpoint            = "https://storage.googleapis.com"
+	DefaultBlockStoreGCSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
+	DefaultBlockStoreGCSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
 	DefaultAuthCacheEnabled = true
 	DefaultAuthCacheSize    = 1024
@@ -100,6 +105,10 @@ func setDefaults() {
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
+	viper.SetDefault("blockstore.gcs.s3_endpoint", DefaultBlockStoreGCSS3Endpoint)
+	viper.SetDefault("blockstore.gcs.streaming_chunk_size", DefaultBlockStoreGCSStreamingChunkSize)
+	viper.SetDefault("blockstore.gcs.streaming_chunk_timeout", DefaultBlockStoreGCSStreamingChunkTimeout)
+
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
@@ -159,11 +168,30 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.credentials_file"),
 			viper.GetString("blockstore.s3.profile"))
 	}
-	if viper.IsSet("blockstore.s3.credentials") {
+	if viper.IsSet("blockstore.s3.credentials.access_key_id") {
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.s3.credentials.access_key_id"),
 			viper.GetString("blockstore.s3.credentials.access_secret_key"),
 			viper.GetString("blockstore.s3.credentials.session_token"))
+	}
+	return cfg
+}
+
+func (c *Config) GetGCSAwsConfig() *aws.Config {
+	cfg := &aws.Config{
+		Region: aws.String(viper.GetString("blockstore.gcs.s3_region")),
+		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
+	}
+	if viper.IsSet("blockstore.gcs.s3_profile") || viper.IsSet("blockstore.gcs.s3_credentials_file") {
+		cfg.Credentials = credentials.NewSharedCredentials(
+			viper.GetString("blockstore.gcs.s3_credentials_file"),
+			viper.GetString("blockstore.gcs.s3_profile"))
+	}
+	if viper.IsSet("blockstore.gcs.s3_credentials.access_key_id") {
+		cfg.Credentials = credentials.NewStaticCredentials(
+			viper.GetString("blockstore.gcs.s3_credentials.access_key_id"),
+			viper.GetString("blockstore.gcs.s3_credentials.access_secret_key"),
+			viper.GetString("blockstore.gcs.s3_credentials.session_token"))
 	}
 	return cfg
 }
@@ -205,13 +233,40 @@ func (c *Config) buildS3Adapter() (block.Adapter, error) {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
+
+	awsConfig := aws.NewConfig()
+	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
+	if len(s3Endpoint) > 0 {
+		awsConfig = awsConfig.WithEndpoint(s3Endpoint)
+	}
+	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
+	if s3ForcePathStyle {
+		awsConfig = awsConfig.WithS3ForcePathStyle(true)
+	}
+
+	svc := s3.New(sess, awsConfig)
 	adapter := s3a.NewAdapter(svc,
 		s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")),
 		s3a.WithStreamingChunkTimeout(viper.GetDuration("blockstore.s3.streaming_chunk_timeout")))
 	log.WithFields(log.Fields{
 		"type": "s3",
 	}).Info("initialized blockstore adapter")
+	return adapter, nil
+}
+
+func (c *Config) buildGCSAdapter() (block.Adapter, error) {
+	cfg := c.GetGCSAwsConfig()
+	s3Endpoint := viper.GetString("blockstore.gcs.s3_endpoint")
+	sess, err := session.NewSession(cfg)
+	if err != nil {
+		return nil, err
+	}
+	sess.ClientConfig(s3.ServiceName)
+	svc := s3.New(sess, aws.NewConfig().WithEndpoint(s3Endpoint))
+	adapter := gcs.NewAdapter(svc,
+		gcs.WithStreamingChunkSize(viper.GetInt("blockstore.gcs.streaming_chunk_size")),
+		gcs.WithStreamingChunkTimeout(viper.GetDuration("blockstore.gcs.streaming_chunk_timeout")))
+	log.WithFields(log.Fields{"type": "gcs"}).Info("initialized blockstore adapter")
 	return adapter, nil
 }
 
@@ -247,9 +302,11 @@ func (c *Config) BuildBlockAdapter() (block.Adapter, error) {
 		return mem.New(), nil
 	case transient.BlockstoreType:
 		return transient.New(), nil
+	case gcs.BlockstoreType:
+		return c.buildGCSAdapter()
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
+			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gcs.BlockstoreType})
 	}
 }
 
@@ -316,7 +373,7 @@ func GetMetastoreAwsConfig() *aws.Config {
 			viper.GetString("metastore.glue.credentials_file"),
 			viper.GetString("metastore.glue.profile"))
 	}
-	if viper.IsSet("metastore.glue.credentials") {
+	if viper.IsSet("metastore.glue.credentials.access_key_id") {
 		cfg.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("metastore.glue.credentials.access_key_id"),
 			viper.GetString("metastore.glue.credentials.access_secret_key"),

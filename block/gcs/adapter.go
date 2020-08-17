@@ -1,4 +1,4 @@
-package s3
+package gcs
 
 import (
 	"context"
@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
 	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -20,17 +19,16 @@ import (
 )
 
 const (
-	BlockstoreType = "s3"
+	BlockstoreType = "gcs"
 
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
-
-	ExpireObjectS3Tag = "lakefs_expire_object"
 )
 
 var (
-	ErrS3          = errors.New("s3 error")
-	ErrMissingETag = fmt.Errorf("%w: missing ETag", ErrS3)
+	ErrGCS                     = errors.New("gcs error")
+	ErrMissingETag             = fmt.Errorf("%w: missing ETag", ErrGCS)
+	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for gcs storage adapter")
 )
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
@@ -38,7 +36,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	if err != nil {
 		return qualifiedKey, err
 	}
-	if qualifiedKey.StorageType != block.StorageTypeS3 {
+	if qualifiedKey.StorageType != block.StorageTypeGCS {
 		return qualifiedKey, block.ErrInvalidNamespace
 	}
 	return qualifiedKey, nil
@@ -113,6 +111,22 @@ func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
+// work around, because put failed with trying to create symlinks
+func (s *Adapter) PutWithoutStream(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+	qualifiedKey, err := resolveNamespace(obj)
+	if err != nil {
+		return err
+	}
+	putObject := s3.PutObjectInput{
+		Body:         aws.ReadSeekCloser(reader),
+		Bucket:       aws.String(qualifiedKey.StorageNamespace),
+		Key:          aws.String(qualifiedKey.Key),
+		StorageClass: opts.StorageClass,
+	}
+	_, err = s.s3.PutObject(&putObject)
+	return err
+}
+
 func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
@@ -127,7 +141,7 @@ func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 		StorageClass: opts.StorageClass,
 	}
 	sdkRequest, _ := s.s3.PutObjectRequest(&putObject)
-	_, err = s.streamToS3(sdkRequest, sizeBytes, reader)
+	_, err = s.streamRequestData(sdkRequest, sizeBytes, reader)
 	return err
 }
 
@@ -146,7 +160,7 @@ func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 		UploadId:   aws.String(uploadID),
 	}
 	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
-	etag, err := s.streamToS3(sdkRequest, sizeBytes, reader)
+	etag, err := s.streamRequestData(sdkRequest, sizeBytes, reader)
 	if err != nil {
 		return "", err
 	}
@@ -156,7 +170,7 @@ func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	return etag, nil
 }
 
-func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (string, error) {
+func (s *Adapter) streamRequestData(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (string, error) {
 	sigTime := time.Now()
 	log := s.log().WithField("operation", "PutObject")
 
@@ -175,7 +189,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	req.Header.Set("Expect", "100-Continue")
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
-	baseSigner.DisableURIPathEscaping = true
+
 	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
@@ -216,14 +230,14 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			err = fmt.Errorf("%w: %d %s (unknown)", ErrS3, resp.StatusCode, resp.Status)
+			err = fmt.Errorf("%w: %d %s (unknown)", ErrGCS, resp.StatusCode, resp.Status)
 		} else {
-			err = fmt.Errorf("%w: %s", ErrS3, body)
+			err = fmt.Errorf("%w: %s", ErrGCS, body)
 		}
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			WithField("status_code", resp.StatusCode).
-			Error("bad S3 PutObject response")
+			Error("bad GCS PutObject response")
 		return "", err
 	}
 	etag := resp.Header.Get("Etag")
@@ -249,7 +263,7 @@ func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	}
 	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
-		log.WithError(err).Error("failed to get S3 object")
+		log.WithError(err).Error("failed to get GCS object")
 		return nil, err
 	}
 	sizeBytes = *objectOutput.ContentLength
@@ -275,7 +289,7 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 		log.WithError(err).WithFields(logging.Fields{
 			"start_position": startPosition,
 			"end_position":   endPosition,
-		}).Error("failed to get S3 object range")
+		}).Error("failed to get GCS object range")
 		return nil, err
 	}
 	sizeBytes = *objectOutput.ContentLength
@@ -313,7 +327,7 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 	}
 	_, err = s.s3.DeleteObject(deleteObjectParams)
 	if err != nil {
-		s.log().WithError(err).Error("failed to delete S3 object")
+		s.log().WithError(err).Error("failed to delete GCS object")
 		return err
 	}
 	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
@@ -415,59 +429,10 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	}
 }
 
-func contains(tags []*s3.Tag, pred func(string, string) bool) bool {
-	for _, tag := range tags {
-		if pred(*tag.Key, *tag.Value) {
-			return true
-		}
-	}
-	return false
-}
-
-func isExpirationRule(rule s3.LifecycleRule) bool {
-	return rule.Expiration != nil && // Check for *any* expiration -- not its details.
-		rule.Status != nil && *rule.Status == "Enabled" &&
-		rule.Filter != nil &&
-		rule.Filter.Tag != nil &&
-		*rule.Filter.Tag.Key == ExpireObjectS3Tag &&
-		*rule.Filter.Tag.Value == "1" ||
-		rule.Filter.And != nil &&
-			contains(rule.Filter.And.Tags,
-				func(key string, value string) bool {
-					return key == ExpireObjectS3Tag && value == "1"
-				},
-			)
-}
-
-// ValidateConfiguration on an S3 adapter checks for a usable bucket
-// lifecycle policy: the storageNamespace bucket should expire objects
-// marked with ExpireObjectS3Tag (with _some_ duration, even if
-// nonzero).
-func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
-	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
-	config, err := s.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
-	if err != nil {
-		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
-			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
-		}
-		return err
-	}
-	s.log().WithFields(logging.Fields{
-		"Bucket":          storageNamespace,
-		"LifecyclePolicy": config.GoString(),
-	}).Info("S3 bucket lifecycle policy")
-
-	hasMatchingRule := false
-	for _, a := range config.Rules {
-		if isExpirationRule(*a) {
-			hasMatchingRule = true
-			break
-		}
-	}
-
-	if !hasMatchingRule {
-		return fmt.Errorf("%w: bucket %s lifecycle rules not configured to expire objects tagged \"%s\"",
-			ErrS3, storageNamespace, ExpireObjectS3Tag)
-	}
+func (s *Adapter) ValidateConfiguration(_ string) error {
 	return nil
+}
+
+func (s *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
+	return nil, ErrInventoryNotImplemented
 }
