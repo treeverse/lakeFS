@@ -113,22 +113,6 @@ func (s *Adapter) log() logging.Logger {
 	return logging.FromContext(s.ctx)
 }
 
-// work around, because put failed with trying to create symlinks
-func (s *Adapter) PutWithoutStream(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
-	qualifiedKey, err := resolveNamespace(obj)
-	if err != nil {
-		return err
-	}
-	putObject := s3.PutObjectInput{
-		Body:         aws.ReadSeekCloser(reader),
-		Bucket:       aws.String(qualifiedKey.StorageNamespace),
-		Key:          aws.String(qualifiedKey.Key),
-		StorageClass: opts.StorageClass,
-	}
-	_, err = s.s3.PutObject(&putObject)
-	return err
-}
-
 func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
@@ -191,7 +175,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	req.Header.Set("Expect", "100-Continue")
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
-
+	baseSigner.DisableURIPathEscaping = true
 	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
