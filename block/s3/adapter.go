@@ -191,7 +191,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	req.Header.Set("Expect", "100-Continue")
 
 	baseSigner := v4.NewSigner(sdkRequest.Config.Credentials)
-
+	baseSigner.DisableURIPathEscaping = true
 	_, err = baseSigner.Sign(req, nil, s3.ServiceName, aws.StringValue(sdkRequest.Config.Region), sigTime)
 	if err != nil {
 		log.WithError(err).Error("failed to sign request")
