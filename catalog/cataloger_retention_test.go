@@ -74,28 +74,6 @@ type expiryTestCase struct {
 	want   []*ExpireResult
 }
 
-func readExpiringPhysicalAddresses(t *testing.T, conn db.Database) []string {
-	rows, err := conn.Queryx("SELECT physical_address FROM object_dedup WHERE deleting")
-	if err != nil {
-		t.Fatalf("scan for objects marked deleting failed: %s", err)
-	}
-	defer func() {
-		if err := rows.Close(); err != nil {
-			t.Fatalf("close rows from deleting objects result: %s", err)
-		}
-	}()
-	ret := make([]string, 0, 10)
-	for rows.Next() {
-		var physicalAddress string
-		err := rows.Scan(&physicalAddress)
-		if err != nil {
-			t.Fatalf("read deleting objects row: %s", err)
-		}
-		ret = append(ret, physicalAddress)
-	}
-	return ret[2:]
-}
-
 func verifyExpiry(t *testing.T, ctx context.Context, c Cataloger, repository string, tests []expiryTestCase) {
 	conn, _ := testutil.GetDB(t, databaseURI)
 

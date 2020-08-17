@@ -7,7 +7,7 @@ services:
     environment:
       LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
       LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-      LAKEFS_BLOCKSTORE_TYPE: ${BLOCKSTORE_TYPE}
+      LAKEFS_BLOCKSTORE_TYPE: ${LAKEFS_BLOCKSTORE_TYPE}
       LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
       LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
       LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
