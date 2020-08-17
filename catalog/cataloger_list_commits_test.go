@@ -407,3 +407,48 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 		t.Error("master commits  changed without merge", diff)
 	}
 }
+
+func TestCataloger_ListCommits_Order(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "first-master", nil, "")
+	const commit1Msg = "first commit to master"
+	_, err := c.Commit(ctx, repository, "master", commit1Msg, "tester", nil)
+	testutil.MustDo(t, commit1Msg, err)
+
+	testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+
+	const commit2Msg = "delete first-master from branch1"
+	testutil.MustDo(t, commit2Msg,
+		c.DeleteEntry(ctx, repository, "branch1", "first-master"))
+	_, err = c.Commit(ctx, repository, "branch1", commit2Msg, "tester", nil)
+	testutil.MustDo(t, commit2Msg, err)
+
+	const commit3Msg = "add file to branch1"
+	testCatalogerCreateEntry(t, ctx, c, repository, "branch1", "second-branch1", nil, "")
+	_, err = c.Commit(ctx, repository, "branch1", commit3Msg, "tester", nil)
+	testutil.MustDo(t, commit3Msg, err)
+
+	commitsLog, _, err := c.ListCommits(ctx, repository, "branch1", "", 100)
+	testutil.MustDo(t, "list branch1 commits", err)
+
+	// get all commits without the first one
+	commits := make([]string, len(commitsLog))
+	for i := range commitsLog {
+		commits[i] = commitsLog[i].Message
+	}
+	expectedCommits := []string{
+		commit3Msg,
+		commit2Msg,
+		"Branch 'branch1' created, source branch 'master'",
+		commit1Msg,
+		"Repository created",
+	}
+
+	if diff := deep.Equal(commits, expectedCommits); diff != nil {
+		t.Error("branch1 did not had the expected commits", diff)
+	}
+}
