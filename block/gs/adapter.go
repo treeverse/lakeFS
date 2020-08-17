@@ -1,4 +1,4 @@
-package gcs
+package gs
 
 import (
 	"context"
@@ -19,16 +19,16 @@ import (
 )
 
 const (
-	BlockstoreType = "gcs"
+	BlockstoreType = "gs"
 
 	DefaultStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultStreamingChunkTimeout = time.Second * 1 // if we haven't read DefaultStreamingChunkSize by this duration, write whatever we have as a chunk
 )
 
 var (
-	ErrGCS                     = errors.New("gcs error")
-	ErrMissingETag             = fmt.Errorf("%w: missing ETag", ErrGCS)
-	ErrInventoryNotImplemented = errors.New("inventory feature not implemented for gcs storage adapter")
+	ErrGS                      = errors.New("gs error")
+	ErrMissingETag             = fmt.Errorf("%w: missing ETag", ErrGS)
+	ErrInventoryNotImplemented = fmt.Errorf("%w: inventory feature not implemented", ErrGS)
 )
 
 func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
@@ -36,7 +36,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	if err != nil {
 		return qualifiedKey, err
 	}
-	if qualifiedKey.StorageType != block.StorageTypeGCS {
+	if qualifiedKey.StorageType != block.StorageTypeGS {
 		return qualifiedKey, block.ErrInvalidNamespace
 	}
 	return qualifiedKey, nil
@@ -230,14 +230,14 @@ func (s *Adapter) streamRequestData(sdkRequest *request.Request, sizeBytes int64
 	if resp.StatusCode != http.StatusOK {
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			err = fmt.Errorf("%w: %d %s (unknown)", ErrGCS, resp.StatusCode, resp.Status)
+			err = fmt.Errorf("%w: %d %s (unknown)", ErrGS, resp.StatusCode, resp.Status)
 		} else {
-			err = fmt.Errorf("%w: %s", ErrGCS, body)
+			err = fmt.Errorf("%w: %s", ErrGS, body)
 		}
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
 			WithField("status_code", resp.StatusCode).
-			Error("bad GCS PutObject response")
+			Error("bad gs PutObject response")
 		return "", err
 	}
 	etag := resp.Header.Get("Etag")
@@ -263,7 +263,7 @@ func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	}
 	objectOutput, err := s.s3.GetObject(&getObjectInput)
 	if err != nil {
-		log.WithError(err).Error("failed to get GCS object")
+		log.WithError(err).Error("failed to get gs object")
 		return nil, err
 	}
 	sizeBytes = *objectOutput.ContentLength
@@ -289,7 +289,7 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 		log.WithError(err).WithFields(logging.Fields{
 			"start_position": startPosition,
 			"end_position":   endPosition,
-		}).Error("failed to get GCS object range")
+		}).Error("failed to get gs object range")
 		return nil, err
 	}
 	sizeBytes = *objectOutput.ContentLength
@@ -327,7 +327,7 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 	}
 	_, err = s.s3.DeleteObject(deleteObjectParams)
 	if err != nil {
-		s.log().WithError(err).Error("failed to delete GCS object")
+		s.log().WithError(err).Error("failed to delete gs object")
 		return err
 	}
 	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
