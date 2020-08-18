@@ -161,33 +161,33 @@ func (c *Config) GetAwsConfig() *aws.Config {
 
 	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
 	if len(s3Endpoint) > 0 {
-		awsConfig = awsConfig.WithEndpoint(s3Endpoint)
+		cfg = cfg.WithEndpoint(s3Endpoint)
 	}
 	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
 	if s3ForcePathStyle {
-		awsConfig = awsConfig.WithS3ForcePathStyle(true)
+		cfg = cfg.WithS3ForcePathStyle(true)
 	}
 
 	return cfg
 }
 
 func (c *Config) GetGCSAwsConfig() *aws.Config {
-	cfg := &aws.Config{
+	awsConfig := &aws.Config{
 		Region: aws.String(viper.GetString("blockstore.gcs.s3_region")),
 		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
 	}
 	if viper.IsSet("blockstore.gcs.s3_profile") || viper.IsSet("blockstore.gcs.s3_credentials_file") {
-		cfg.Credentials = credentials.NewSharedCredentials(
+		awsConfig.Credentials = credentials.NewSharedCredentials(
 			viper.GetString("blockstore.gcs.s3_credentials_file"),
 			viper.GetString("blockstore.gcs.s3_profile"))
 	}
 	if viper.IsSet("blockstore.gcs.s3_credentials.access_key_id") {
-		cfg.Credentials = credentials.NewStaticCredentials(
+		awsConfig.Credentials = credentials.NewStaticCredentials(
 			viper.GetString("blockstore.gcs.s3_credentials.access_key_id"),
 			viper.GetString("blockstore.gcs.s3_credentials.access_secret_key"),
 			viper.GetString("blockstore.gcs.s3_credentials.session_token"))
 	}
-	return cfg
+	return awsConfig
 }
 
 func GetAwsAccessKeyID(awsConfig *aws.Config) (string, error) {
