@@ -5,7 +5,9 @@ import (
 	"os"
 	"sort"
 	"testing"
+	"time"
 
+	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/permissions"
 
@@ -434,4 +436,37 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 			verifyListUsers(t, s, 3, testCase.userNames)
 		})
 	}
+}
+
+func TestDBAuthService_ListUserCredentials(t *testing.T) {
+	const numCredentials = 5
+	const userName = "accredited"
+	s := setupService(t)
+	if err := s.CreateUser(&model.User{DisplayName: userName}); err != nil {
+		t.Fatalf("CreateUser(%s): %s", userName, err)
+	}
+	credential, err := s.CreateCredentials(userName)
+	if err != nil {
+		t.Errorf("CreateCredentials(%s): %s", userName, err)
+	}
+	credentials, _, err := s.ListUserCredentials(userName, &model.PaginationParams{Amount: 100})
+	if err != nil {
+		t.Errorf("ListUserCredentials(%s): %s", userName, err)
+	}
+	if len(credentials) != 1 || len(credentials[0].AccessKeyID) == 0 || len(credentials[0].AccessSecretKey) > 0 || len(credentials[0].AccessSecretKeyEncryptedBytes) == 0 {
+		t.Errorf("expected to receive single credential with nonempty AccessKeyId and AccessSecretKeyEncryptedBytes and empty AccessSecretKey, got %+v", spew.Sdump(credentials))
+	}
+	gotCredential := credentials[0]
+	if credential.AccessKeyID != gotCredential.AccessKeyID {
+		t.Errorf("expected to receive same access key ID %s, got %s", credential.AccessKeyID, gotCredential.AccessKeyID)
+	}
+	if credential.UserID != gotCredential.UserID {
+		t.Errorf("expected to receive same user ID %d, got %d", credential.UserID, gotCredential.UserID)
+	}
+	// Issued dates are somewhat different, make sure not _too_ different.
+	timeDiff := credential.IssuedDate.Sub(gotCredential.IssuedDate)
+	if timeDiff > time.Second || timeDiff < -1*time.Second {
+		t.Errorf("expected to receive issued date close to %s, got %s (diff %s)", credential.IssuedDate, gotCredential.IssuedDate, timeDiff)
+	}
+	// TODO(ariels): add more credentials (and test)
 }
