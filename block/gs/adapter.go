@@ -85,31 +85,6 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 	}
 }
 
-// work around, because put failed with trying to create symlinks
-func (s *Adapter) PutWithoutStream(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
-	var err error
-	defer reportMetrics("PutWithoutStream", time.Now(), &sizeBytes, &err)
-
-	qualifiedKey, err := resolveNamespace(obj)
-	if err != nil {
-		return err
-	}
-
-	w := s.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
-		NewWriter(s.ctx)
-	_, err = io.Copy(w, reader)
-	if err != nil {
-		return fmt.Errorf("io.Copy: %w", err)
-	}
-	err = w.Close()
-	if err != nil {
-		return fmt.Errorf("Writer.Close: %w", err)
-	}
-	return nil
-}
-
 func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
