@@ -13,6 +13,7 @@ const (
 	StorageTypeMem = iota
 	StorageTypeLocal
 	StorageTypeS3
+	StorageTypeGCS
 )
 
 var (
@@ -34,6 +35,8 @@ func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
 		return StorageTypeMem, nil
 	case "local":
 		return StorageTypeLocal, nil
+	case "gcs":
+		return StorageTypeGCS, nil
 	default:
 		return st, fmt.Errorf("%s: %w", namespaceURL.Scheme, ErrInvalidNamespace)
 	}

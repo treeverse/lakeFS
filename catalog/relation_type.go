@@ -4,7 +4,7 @@ type RelationType string
 
 const (
 	RelationTypeNone       RelationType = "none"
-	RelationTypeFromFather RelationType = "from_father"
-	RelationTypeFromSon    RelationType = "from_son"
+	RelationTypeFromParent RelationType = "from_parent"
+	RelationTypeFromChild  RelationType = "from_child"
 	RelationTypeNotDirect  RelationType = "non_direct"
 )

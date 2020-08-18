@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -45,9 +46,9 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         -1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
-				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Y"}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[0].Reference, Committer: "tester", Message: "commit1 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Y"}},
 				{Reference: initialCommitReference, Committer: CatalogerCommitter, Message: createRepositoryCommitMessage, Metadata: Metadata{}},
 			},
 			wantMore: false,
@@ -62,8 +63,8 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         2,
 			},
 			want: []*CommitLog{
-				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[2].Reference, Committer: "tester", Message: "commit3 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96a"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -91,7 +92,7 @@ func TestCataloger_ListCommits(t *testing.T) {
 				limit:         1,
 			},
 			want: []*CommitLog{
-				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
+				{Reference: commits[1].Reference, Committer: "tester", Message: "commit2 on branch master", Metadata: Metadata{}, Parents: []string{"~KJ8Wd1Rs96Z"}},
 			},
 			wantMore: true,
 			wantErr:  false,
@@ -204,7 +205,7 @@ func setupListCommitsByBranchData(t *testing.T, ctx context.Context, c Cataloger
 		}, CreateEntryParams{}); err != nil {
 			t.Fatal("Write entry for list repository commits failed", err)
 		}
-		message := "commit" + strconv.Itoa(i+1)
+		message := "commit" + strconv.Itoa(i+1) + " on branch " + branch
 		commitLog, err := c.Commit(ctx, repository, branch, message, "tester", nil)
 		if err != nil {
 			t.Fatalf("Commit for list repository commits failed '%s': %s", message, err)
@@ -269,4 +270,182 @@ func TestCataloger_ListCommits_Lineage(t *testing.T) {
 	if diff := deep.Equal(masterCommits[0], got[1]); diff != nil {
 		t.Error("br_1 did not inherit commits correctly", diff)
 	}
+}
+
+func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	_ = setupListCommitsByBranchData(t, ctx, c, repository, "master")
+
+	testCatalogerBranch(t, ctx, c, repository, "br_1_1", "master")
+	testCatalogerBranch(t, ctx, c, repository, "br_1_2", "br_1_1")
+	masterCommits, _, err := c.ListCommits(ctx, repository, "master", "", 100)
+	testutil.MustDo(t, "list master commits", err)
+
+	br1Commits, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	testutil.MustDo(t, "list br_1_1 commits", err)
+
+	// get all commits without the first one
+	if diff := deep.Equal(masterCommits, br1Commits[1:]); diff != nil {
+		t.Error("br_1_1 did not inherit commits correctly", diff)
+	}
+
+	b2Commits, _, err := c.ListCommits(ctx, repository, "br_1_2", "", 100)
+	testutil.MustDo(t, "list br_1_2 commits", err)
+
+	if diff := deep.Equal(br1Commits, b2Commits[1:]); diff != nil {
+		t.Error("br_1_2 did not inherit commits correctly", diff)
+	}
+
+	if err := c.CreateEntry(ctx, repository, "master", Entry{
+		Path:            "master-file",
+		Checksum:        "ssss",
+		PhysicalAddress: "xxxxxxx",
+		Size:            10000,
+	}, CreateEntryParams{}); err != nil {
+		t.Fatal("Write entry for list repository commits failed", err)
+	}
+	_, err = c.Commit(ctx, repository, "master", "commit master-file on master", "tester", nil)
+	if err != nil {
+		t.Fatalf("Commit for list repository commits failed '%s': %s", "master commit failed", err)
+	}
+	_, err = c.Merge(ctx, repository, "master", "br_1_1", "tester", "merge master to br_1_1", nil)
+	testutil.MustDo(t, "merge master  into br_1_1", err)
+
+	got, _, err := c.ListCommits(ctx, repository, "br_1_2", "", 100)
+	testutil.MustDo(t, "list br_1_2 commits", err)
+	if diff := deep.Equal(got, b2Commits); diff != nil {
+		t.Error("br_1_2 changed although not merged", diff)
+	}
+	masterCommits, _, err = c.ListCommits(ctx, repository, "master", "", 100)
+	testutil.MustDo(t, "list master commits", err)
+
+	br11BaseList, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	testutil.MustDo(t, "list br_1_1 commits", err)
+	if diff := deep.Equal(masterCommits[0], br11BaseList[1]); diff != nil {
+		t.Error("br_1_1 did not inherit commits correctly", diff)
+	}
+
+	testCatalogerBranch(t, ctx, c, repository, "br_2_1", "master")
+	testCatalogerBranch(t, ctx, c, repository, "br_2_2", "br_2_1")
+	if err := c.CreateEntry(ctx, repository, "br_2_2", Entry{
+		Path:            "master-file",
+		Checksum:        "zzzzz",
+		PhysicalAddress: "yyyyy",
+		Size:            20000,
+	}, CreateEntryParams{}); err != nil {
+		t.Fatal("Write entry to br_2_2 failed", err)
+	}
+	_, err = c.Commit(ctx, repository, "br_2_2", "commit master-file to br_2_2", "tester", nil)
+	if err != nil {
+		t.Fatalf("Commit for list repository commits failed '%s': %s", "br_2_2  commit failed", err)
+	}
+	br22List, _, err := c.ListCommits(ctx, repository, "br_2_2", "", 100)
+	testutil.MustDo(t, "list br_2_2  commits", err)
+	_ = br22List
+	_, err = c.Merge(ctx, repository, "br_2_2", "br_2_1", "tester", "merge br_2_2 to br_2_1", nil)
+	testutil.MustDo(t, "merge br_2_2  into br_2_1", err)
+	br21List, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
+	testutil.MustDo(t, "list br_2_1  commits", err)
+	_ = br21List
+	masterList, _, err := c.ListCommits(ctx, repository, "master", "", 100)
+	testutil.MustDo(t, "list master commits", err)
+	if diff := deep.Equal(masterCommits, masterList); diff != nil {
+		t.Error("master commits changed before merge", diff)
+	}
+	merge2, err := c.Merge(ctx, repository, "br_2_1", "master", "tester", "merge br_2_1 to master", nil)
+	testutil.MustDo(t, "merge br_2_1  into master", err)
+	if merge2.Differences[0].Type != DifferenceTypeChanged || merge2.Differences[0].Path != "master-file" {
+		t.Error("merge br_2_1 into master with unexpected results", merge2.Differences[0])
+	}
+
+	masterList, _, err = c.ListCommits(ctx, repository, "master", "", 100)
+	testutil.MustDo(t, "list master commits", err)
+	if diff := deep.Equal(br21List, masterList[1:]); diff != nil {
+		t.Error("master commits list mismatch with br_2_1_list", diff)
+	}
+
+	br11List, _, err := c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	testutil.MustDo(t, "list br_1_1 commits", err)
+	if diff := deep.Equal(br11BaseList, br11List); diff != nil {
+		t.Error("br_1_1 commits changed before merge", diff)
+	}
+	_, err = c.Merge(ctx, repository, "master", "br_1_1", "tester", "merge master to br_1_1", nil)
+	testutil.MustDo(t, "merge master  into br_1_1", err)
+	br11List, _, err = c.ListCommits(ctx, repository, "br_1_1", "", 100)
+	testutil.MustDo(t, "list br_1_1 commits", err)
+	if diff := deep.Equal(masterList[:5], br11List[1:6]); diff != nil {
+		t.Error("master 5 first different from br_1_1 [1:6]", diff)
+	}
+	if diff := deep.Equal(masterList[6:], br11List[9:]); diff != nil {
+		t.Error("master 5 first different from br_1_1 [1:6]", diff)
+	}
+	// test that a change to br_2_2 does not propagate to master
+	if err := c.CreateEntry(ctx, repository, "br_2_2", Entry{
+		Path:            "no-propagate-file",
+		Checksum:        "aaaaaaaa",
+		PhysicalAddress: "yybbbbbbyyy",
+		Size:            20000,
+	}, CreateEntryParams{}); err != nil {
+		t.Fatal("Write no-propagate-file to br_2_2 failed", err)
+	}
+	_, err = c.Commit(ctx, repository, "br_2_2", "commit master-file to br_2_2", "tester", nil)
+	if err != nil {
+		t.Fatalf("no-propagate-Commit for list repository commits failed '%s': %s", "br_2_2  commit failed", err)
+	}
+	_, err = c.Merge(ctx, repository, "br_2_2", "br_2_1", "tester", "merge br_2_2 to br_2_1", nil)
+	testutil.MustDo(t, "second merge br_2_2  into br_2_1", err)
+	newBr21List, _, err := c.ListCommits(ctx, repository, "br_2_1", "", 100)
+	testutil.MustDo(t, "second list br_2_1 commits", err)
+	if diff := deep.Equal(br21List, newBr21List); diff == nil {
+		t.Error("br_2_1 commits did not changed after merge", diff)
+	}
+	newMasterList, _, err := c.ListCommits(ctx, repository, "master", "", 100)
+	testutil.MustDo(t, "third list master commits", err)
+	if diff := deep.Equal(newMasterList, masterList); diff != nil {
+		t.Error("master commits  changed without merge", diff)
+	}
+}
+
+func TestCataloger_ListCommits_Order(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	var wg sync.WaitGroup
+	const concurrency = 5
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer wg.Done()
+			repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+			testCatalogerCreateEntry(t, ctx, c, repository, "master", "files/first", nil, "")
+			const commit1Msg = "first"
+			_, err := c.Commit(ctx, repository, "master", commit1Msg, "barak.amar", nil)
+			testutil.MustDo(t, commit1Msg, err)
+
+			testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+
+			commitsLog, _, err := c.ListCommits(ctx, repository, "branch1", "", 300)
+			testutil.MustDo(t, "list branch1 commits", err)
+
+			// get all commits without the first one
+			commits := make([]string, len(commitsLog))
+			for i := range commitsLog {
+				commits[i] = commitsLog[i].Message
+			}
+			expectedCommits := []string{
+				"Branch 'branch1' created, source branch 'master'",
+				commit1Msg,
+				"Repository created",
+			}
+
+			if diff := deep.Equal(commits, expectedCommits); diff != nil {
+				t.Error("branch1 did not had the expected commits", diff)
+			}
+		}()
+	}
+	wg.Wait()
 }

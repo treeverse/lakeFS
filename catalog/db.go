@@ -85,11 +85,11 @@ func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64
 		return RelationTypeNone, nil
 	}
 	if sourceBranchID > destinationBranchID {
-		possibleRelation = RelationTypeFromSon
+		possibleRelation = RelationTypeFromChild
 		youngerBranch = sourceBranchID
 		olderBranch = destinationBranchID
 	} else {
-		possibleRelation = RelationTypeFromFather
+		possibleRelation = RelationTypeFromParent
 		youngerBranch = destinationBranchID
 		olderBranch = sourceBranchID
 	}
@@ -132,7 +132,7 @@ func getLineage(tx db.GetSelect, branchID int64, commitID CommitID) ([]lineageCo
 	}
 	sql := `SELECT * FROM UNNEST(
 				(SELECT lineage from catalog_branches WHERE id=$1),
-				(SELECT lineage_commits FROM catalog_commits WHERE branch_id=$1 AND merge_type='from_father' AND commit_id <= $2 ORDER BY commit_id DESC LIMIT 1)
+				(SELECT lineage_commits FROM catalog_commits WHERE branch_id=$1 AND merge_type='from_parent' AND commit_id <= $2 ORDER BY commit_id DESC LIMIT 1)
 			) as t(branch_id, commit_id)`
 	var requestedLineage []lineageCommit
 	err := tx.Select(&requestedLineage, sql, branchID, effectiveCommit)
@@ -142,9 +142,9 @@ func getLineage(tx db.GetSelect, branchID int64, commitID CommitID) ([]lineageCo
 	return requestedLineage, nil
 }
 
-func getLineageAsValues(lineage []lineageCommit, branchID int64) string {
+func getLineageAsValues(lineage []lineageCommit, branchID int64, commitID CommitID) string {
 	valArray := make([]string, 1, len(lineage)+1)
-	valArray[0] = fmt.Sprintf("(0,%d,%d)", branchID, MaxCommitID)
+	valArray[0] = fmt.Sprintf("(0,%d::bigint,%d::bigint)", branchID, commitID)
 	for precedence, lineageBranch := range lineage {
 		valArray = append(valArray, fmt.Sprintf("(%d,%d,%d)", precedence+1, lineageBranch.BranchID, lineageBranch.CommitID))
 	}
