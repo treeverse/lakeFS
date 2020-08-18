@@ -135,7 +135,7 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	r, err := s.client.
 		Bucket(qualifiedKey.StorageNamespace).
 		Object(qualifiedKey.Key).
-		NewRangeReader(s.ctx, startPosition, endPosition-startPosition)
+		NewRangeReader(s.ctx, startPosition, endPosition-startPosition+1)
 	if err != nil {
 		return nil, err
 	}
