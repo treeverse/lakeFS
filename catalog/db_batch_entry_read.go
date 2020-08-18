@@ -13,11 +13,11 @@ import (
 
 const (
 	MaxReadQueue         = 10
-	ReadTimeout          = time.Second * 600
+	entryReadTimeout     = time.Second * 15
 	ScanTimeout          = time.Microsecond * 500
 	waitTimeout          = time.Microsecond * 1000
 	MaxEnteriesInRequest = 64
-	ReadersNum           = 6
+	ReadersNum           = 8
 )
 
 type pathRequest struct {
@@ -32,29 +32,6 @@ type readRequest struct {
 type readResponse struct {
 	entry *Entry
 	err   error
-}
-
-var readChan chan *readRequest
-
-func initBatchEntryRead(c *cataloger) {
-	readChan = make(chan *readRequest, MaxReadQueue)
-	go readOrchestrator(c)
-}
-
-func dbBatchEntryRead(repository, path string, ref Ref) (*Entry, error) {
-	replyChan := make(chan readResponse, 1)
-	defer close(replyChan)
-	request := &readRequest{
-		bufferingKey{repository, ref},
-		pathRequest{path, replyChan},
-	}
-	readChan <- request
-	select {
-	case response := <-replyChan:
-		return response.entry, response.err
-	case <-time.After(ReadTimeout):
-		return nil, ErrTimeout
-	}
 }
 
 type readBatch struct {
@@ -72,59 +49,74 @@ type batchReadMessage struct {
 	batch []pathRequest
 }
 
-func newReadBatch() *readBatch {
-	return &readBatch{
-		time.Now(),
-		make([]pathRequest, 0, MaxEnteriesInRequest),
+func (c *cataloger) initBatchEntryReader() {
+	go c.readOrchestrator()
+	c.wg.Add(1)
+	for i := 0; i < ReadersNum; i++ {
+		go c.readEntriesBatch()
+		c.wg.Add(1)
 	}
 }
 
-func readOrchestrator(c *cataloger) {
-	batchChan := make(chan batchReadMessage, 2)
-	for i := 0; i < ReadersNum; i++ {
-		go readEntriesBatch(c, batchChan)
+func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, error) {
+	replyChan := make(chan readResponse, 1) // channel closed by readEntriesBatch
+	request := &readRequest{
+		bufferingKey{repository, ref},
+		pathRequest{path, replyChan},
 	}
-	var moreEntries bool
+	c.readEntryRequestChan <- request
+	select {
+	case response := <-replyChan:
+		return response.entry, response.err
+	case <-time.After(entryReadTimeout):
+		return nil, ErrTimeout
+	}
+}
+
+func (c *cataloger) readOrchestrator() {
+	defer c.wg.Done()
 	bufferingMap := make(map[bufferingKey]*readBatch)
-	var request *readRequest
-	for true {
-		request = nil
+	timer := time.NewTimer(0)
+	for {
 		if len(bufferingMap) > 0 {
-			select {
-			case request, moreEntries = <-readChan:
-			case <-time.After(ScanTimeout):
+			timer.Reset(ScanTimeout)
+		}
+		select {
+		case request, moreEntries := <-c.readEntryRequestChan:
+			if !moreEntries {
+				return // shutdown
 			}
-		} else {
-			request, moreEntries = <-readChan // if there are no pending requests - no need for timeout
-		}
-		if !moreEntries {
-			return
-		}
-		var batch *readBatch
-		var exists bool
-		if request != nil {
-			batch, exists = bufferingMap[request.bufKey]
+			batch, exists := bufferingMap[request.bufKey]
 			if !exists {
-				batch = newReadBatch()
+				batch = &readBatch{
+					startTime: time.Now(),
+					pathList:  make([]pathRequest, 0, MaxEnteriesInRequest),
+				}
 				bufferingMap[request.bufKey] = batch
 			}
 			batch.pathList = append(batch.pathList, request.pathReq)
+		case <-timer.C:
 		}
+		// send pending batches that are either full, or passed the timeout
 		for k, v := range bufferingMap {
-			if len(v.pathList) == MaxEnteriesInRequest || time.Now().Sub(v.startTime) > waitTimeout {
-				batchChan <- batchReadMessage{k, v.pathList}
+			if len(v.pathList) == MaxEnteriesInRequest || time.Since(v.startTime) > waitTimeout {
+				c.entriesReadBatchChan <- batchReadMessage{k, v.pathList}
 				delete(bufferingMap, k)
 			}
 		}
 	}
 }
 
-func readEntriesBatch(c *cataloger, batchRead chan batchReadMessage) {
-	ctx := context.Background()
+func (c *cataloger) readEntriesBatch() {
+	defer c.wg.Done()
 	for {
-		message := <-batchRead
-		_, _ = c.db.Transact(func(tx db.Tx) (interface{}, error) {
-			//for j := 0; j < ReadsPerConnection; j++ {
+		message, more := <-c.entriesReadBatchChan
+		if !more {
+			return
+		}
+		ctx := context.Background()
+		retInterface, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+			var entList []*Entry
 			bufKey := message.key
 			pathReqList := message.batch
 			branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
@@ -151,27 +143,27 @@ func readEntriesBatch(c *cataloger, batchRead chan batchReadMessage) {
 			if err != nil {
 				return nil, fmt.Errorf("build sql: %w", err)
 			}
-
-			var entList []*Entry
-			if err := tx.Select(&entList, sql, args...); err != nil {
-				return nil, err
-			}
-			entMap := make(map[string]*Entry)
-			for _, ent := range entList {
-				entMap[ent.Path] = ent
-			}
-			for _, pathReq := range pathReqList {
-				e, exists := entMap[pathReq.path]
-				if exists {
-					pathReq.replyChan <- readResponse{e, nil}
-				} else {
-					fmt.Print("NOT FOUND " + pathReq.path + " \n")
-					pathReq.replyChan <- readResponse{nil, db.ErrNotFound}
-				}
-
-			}
-			//}
-			return nil, nil
+			err = tx.Select(&entList, sql, args...)
+			return entList, err
 		}, c.txOpts(ctx, db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))...)
+		// send  entries to each requestor on the provided one-time channel
+		if err != nil {
+			c.log.WithError(err).Warn("Error reading batch of entries\n ")
+		}
+		entList := retInterface.([]*Entry)
+		entMap := make(map[string]*Entry)
+		for _, ent := range entList {
+			entMap[ent.Path] = ent
+		}
+		for _, pathReq := range message.batch {
+			e, exists := entMap[pathReq.path]
+			if exists {
+				pathReq.replyChan <- readResponse{e, nil}
+			} else {
+				pathReq.replyChan <- readResponse{nil, db.ErrNotFound}
+			}
+			close(pathReq.replyChan)
+		}
+
 	}
 }

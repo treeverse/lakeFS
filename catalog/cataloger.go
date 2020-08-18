@@ -175,15 +175,17 @@ type CacheConfig struct {
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	clock              clock.Clock
-	log                logging.Logger
-	db                 db.Database
-	wg                 sync.WaitGroup
-	cacheConfig        *CacheConfig
-	cache              Cache
-	dedupCh            chan *dedupRequest
-	dedupReportEnabled bool
-	dedupReportCh      chan *DedupReport
+	clock                clock.Clock
+	log                  logging.Logger
+	db                   db.Database
+	wg                   sync.WaitGroup
+	cacheConfig          *CacheConfig
+	cache                Cache
+	dedupCh              chan *dedupRequest
+	dedupReportEnabled   bool
+	dedupReportCh        chan *DedupReport
+	readEntryRequestChan chan *readRequest
+	entriesReadBatchChan chan batchReadMessage
 }
 
 type CatalogerOption func(*cataloger)
@@ -234,6 +236,9 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		c.dedupReportCh = make(chan *DedupReport, dedupReportChannelSize)
 	}
 	c.processDedupBatches()
+	c.readEntryRequestChan = make(chan *readRequest, MaxReadQueue)
+	c.entriesReadBatchChan = make(chan batchReadMessage, 1)
+	c.initBatchEntryReader()
 	return c
 }
 
@@ -248,6 +253,8 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 func (c *cataloger) Close() error {
 	if c != nil {
 		close(c.dedupCh)
+		close(c.readEntryRequestChan)
+		close(c.entriesReadBatchChan)
 		c.wg.Wait()
 		close(c.dedupReportCh)
 	}
