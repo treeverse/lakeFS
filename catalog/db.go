@@ -20,7 +20,7 @@ const (
 
 var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 
-func getBranchID(tx db.GetSelect, repository, branch string, lockType LockType) (int64, error) {
+func getBranchID(tx db.Tx, repository, branch string, lockType LockType) (int64, error) {
 	const b = `SELECT b.id FROM catalog_branches b join catalog_repositories r 
 					ON r.id = b.repository_id
 					WHERE r.name = $1 AND b.name = $2`
@@ -125,7 +125,7 @@ func paginateSlice(s interface{}, limit int) bool {
 	return false
 }
 
-func getLineage(tx db.GetSelect, branchID int64, commitID CommitID) ([]lineageCommit, error) {
+func getLineage(tx db.Tx, branchID int64, commitID CommitID) ([]lineageCommit, error) {
 	effectiveCommit := commitID
 	if commitID <= 0 {
 		effectiveCommit = MaxCommitID
