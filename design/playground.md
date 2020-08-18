@@ -5,7 +5,7 @@
 2. Support running lakectl (or any other way to run lakeFS commands)
 3. Support inserting, ingesting and querying data through lakeFS (with tools such as Spark, Presto...).
 4. Provide examples following the recommended branch model
-
+5. Collect information about usage preferably with user information. 
 
 ## Non-Requirements
 1. Provide cloud service or storage of any kind
