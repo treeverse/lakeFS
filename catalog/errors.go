@@ -25,5 +25,5 @@ var (
 	ErrByteSliceTypeAssertion   = errors.New("type assertion to []byte failed")
 	ErrInvalidMetadataSrcFormat = errors.New("invalid metadata src format")
 	ErrUnexpected               = errors.New("unexpected error")
-	ErrTimeout                  = errors.New("read entry timeout")
+	ErrReadEntryTimeout         = errors.New("read entry timeout")
 )

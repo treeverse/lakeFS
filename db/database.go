@@ -18,17 +18,13 @@ type Rows = sqlx.Rows
 
 type Database interface {
 	io.Closer
-	GetSelect
+	Get(dest interface{}, query string, args ...interface{}) error
+	Select(dest interface{}, query string, args ...interface{}) error
 	Queryx(query string, args ...interface{}) (*Rows, error)
 	Exec(query string, args ...interface{}) (rowsAffected int64, err error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
-}
-
-type GetSelect interface {
-	Get(dest interface{}, query string, args ...interface{}) error
-	Select(dest interface{}, query string, args ...interface{}) error
 }
 
 type SqlxDatabase struct {

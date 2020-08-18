@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
-	"strings"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -12,12 +11,12 @@ import (
 )
 
 const (
-	MaxReadQueue         = 10
-	entryReadTimeout     = time.Second * 15
-	ScanTimeout          = time.Microsecond * 500
-	waitTimeout          = time.Microsecond * 1000
-	MaxEnteriesInRequest = 64
-	ReadersNum           = 8
+	MaxReadQueue        = 10
+	ReadEntryTimeout    = time.Second * 15
+	ScanTimeout         = time.Microsecond * 500
+	waitTimeout         = time.Microsecond * 1000
+	MaxEntriesInRequest = 64
+	ReadersNum          = 8
 )
 
 type pathRequest struct {
@@ -68,8 +67,8 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 	select {
 	case response := <-replyChan:
 		return response.entry, response.err
-	case <-time.After(entryReadTimeout):
-		return nil, ErrTimeout
+	case <-time.After(ReadEntryTimeout):
+		return nil, ErrReadEntryTimeout
 	}
 }
 
@@ -90,7 +89,7 @@ func (c *cataloger) readOrchestrator() {
 			if !exists {
 				batch = &readBatch{
 					startTime: time.Now(),
-					pathList:  make([]pathRequest, 0, MaxEnteriesInRequest),
+					pathList:  make([]pathRequest, 0, MaxEntriesInRequest),
 				}
 				bufferingMap[request.bufKey] = batch
 			}
@@ -99,7 +98,7 @@ func (c *cataloger) readOrchestrator() {
 		}
 		// send pending batches that are either full, or passed the timeout
 		for k, v := range bufferingMap {
-			if len(v.pathList) == MaxEnteriesInRequest || time.Since(v.startTime) > waitTimeout {
+			if len(v.pathList) == MaxEntriesInRequest || time.Since(v.startTime) > waitTimeout {
 				c.entriesReadBatchChan <- batchReadMessage{k, v.pathList}
 				delete(bufferingMap, k)
 			}
@@ -133,10 +132,11 @@ func (c *cataloger) readEntriesBatch() {
 			for i, s := range pathReqList {
 				p[i] = s.path
 			}
-			pathInExper := "('" + strings.Join(p, "','") + "')"
+			//pathInExper := "('" + strings.Join(p, "','") + "')"
 			inExper := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 				FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
-				Where("path in " + pathInExper + " and not is_deleted")
+				//Where("path in " + pathInExper + " and not is_deleted")
+				Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
 			sql, args, err := inExper.PlaceholderFormat(sq.Dollar).ToSql()
 			if err != nil {
 				return entList, fmt.Errorf("build sql: %w", err)
@@ -162,6 +162,5 @@ func (c *cataloger) readEntriesBatch() {
 			}
 			close(pathReq.replyChan)
 		}
-
 	}
 }
