@@ -372,6 +372,7 @@ paths:
         - setup
       operationId: setupLakeFS
       summary: setup lakeFS and create the first user
+      security: []
       parameters:
         - in: body
           name: user
