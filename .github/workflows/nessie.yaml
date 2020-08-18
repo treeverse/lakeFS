@@ -31,7 +31,7 @@ jobs:
       - name: Run nessie
         run: make nessie
         env:
-          API_ENDPOINT: localhost:8000
+          API_ENDPOINT: http://localhost:8000
       - name: Export DB
         if: ${{ always() }}
         run: |

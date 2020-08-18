@@ -34,7 +34,7 @@ REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
 
 ## System tests config
-API_ENDPOINT?=localhost:8000
+API_ENDPOINT?=http://localhost:8000
 BUCKET?=s3://nessie-system-testing
 
 all: build
