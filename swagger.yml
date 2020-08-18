@@ -1998,3 +1998,14 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
+  /healthcheck:
+    get:
+      operationId: healthCheck
+      security: []
+      tags:
+        - healthCheck
+      description: check that the API server is up and running
+      responses:
+        204:
+          description: NoContent
