@@ -3,6 +3,8 @@ module github.com/treeverse/lakefs
 go 1.14
 
 require (
+	cloud.google.com/go v0.63.0 // indirect
+	cloud.google.com/go/storage v1.10.0
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
 	github.com/aws/aws-sdk-go v1.34.0
@@ -67,10 +69,12 @@ require (
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
-	golang.org/x/net v0.0.0-20200707034311-ab3426394381
-	golang.org/x/sys v0.0.0-20200808120158-1030fc2bf1d9 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
+	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
+	golang.org/x/tools v0.0.0-20200818005847-188abfa75333 // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
+	google.golang.org/api v0.30.0
+	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
 	pgregory.net/rapid v0.4.0 // indirect
 )
