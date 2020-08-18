@@ -4,6 +4,7 @@ GOBINPATH=$(shell $(GOCMD) env GOPATH)/bin
 NPM=$(or $(shell which npm), $(error "Missing dependency - no npm in PATH"))
 
 GOBUILD=$(GOCMD) build
+GORUN=$(GOCMD) run
 GOCLEAN=$(GOCMD) clean
 GOTOOL=$(GOCMD) tool
 GOTEST=$(GOCMD) test
@@ -31,6 +32,10 @@ DIRTY=$(shell git diff-index --quiet HEAD -- || echo '.with.local.changes')
 GIT_REF=$(shell git rev-parse --short HEAD --)
 REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
+
+## System tests config
+API_ENDPOINT?=localhost:8000
+BUCKET?=s3://nessie-system-testing
 
 all: build
 
@@ -71,6 +76,9 @@ $(GOBINPATH)/golangci-lint:
 lint: $(GOBINPATH)/golangci-lint  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
+nessie: gen ## run nessie (system testing)
+	$(GOTEST) --tags=systemtests -v ./nessie/ --endpoint-url=$(API_ENDPOINT) --bucket=$(BUCKET)
+
 test: gen  ## Run tests for the project
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
 
@@ -83,8 +91,8 @@ fast-test:  ## Run tests without race detector (faster)
 test-html: test  ## Run tests with HTML for the project
 	$(GOTOOL) cover -html=cover.out
 
-build-docker: ## Build Docker image file (Docker required)
-	$(DOCKER) build -t $(DOCKER_IMAGE):$(DOCKER_TAG) .
+build-docker: build ## Build Docker image file (Docker required)
+	$(DOCKER) build -t treeverse/$(DOCKER_IMAGE):$(DOCKER_TAG) .
 
 gofmt:  ## gofmt code formating
 	@echo Running go formating with the following command:
