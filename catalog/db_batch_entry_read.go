@@ -121,12 +121,12 @@ func (c *cataloger) readEntriesBatch() {
 			pathReqList := message.batch
 			branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
 			if err != nil {
-				return nil, err
+				return entList, err
 			}
 
 			lineage, err := getLineage(tx, branchID, bufKey.ref.CommitID)
 			if err != nil {
-				return nil, fmt.Errorf("get lineage: %w", err)
+				return entList, fmt.Errorf("get lineage: %w", err)
 			}
 
 			p := make([]string, len(pathReqList))
@@ -137,11 +137,9 @@ func (c *cataloger) readEntriesBatch() {
 			inExper := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 				FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
 				Where("path in " + pathInExper + " and not is_deleted")
-			deb := sq.DebugSqlizer(inExper)
-			_ = deb
 			sql, args, err := inExper.PlaceholderFormat(sq.Dollar).ToSql()
 			if err != nil {
-				return nil, fmt.Errorf("build sql: %w", err)
+				return entList, fmt.Errorf("build sql: %w", err)
 			}
 			err = tx.Select(&entList, sql, args...)
 			return entList, err
