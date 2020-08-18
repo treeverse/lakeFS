@@ -105,7 +105,7 @@ func init() {
 	// will be global for your application.
 	cobra.OnInitialize(initConfig)
 	rootCmd.PersistentFlags().StringVarP(&cfgFile, "config", "c", "", "config file (default is $HOME/.lakectl.yaml)")
-	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "use fancy output colors (ignored when not attached to an interactive terminal)")
+	rootCmd.PersistentFlags().BoolVar(&noColorRequested, "no-color", false, "don't use fancy output colors (default when not attached to an interactive terminal)")
 	rootCmd.PersistentFlags().BoolP("force", "f", false, "without prompting for confirmation")
 }
 
