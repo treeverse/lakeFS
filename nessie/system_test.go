@@ -7,6 +7,7 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net/url"
 	"os"
 	"strings"
 	"testing"
@@ -35,8 +36,6 @@ type testsConfig struct {
 
 	// maxSetup is the maximum time to wait for lakeFS setup
 	maxSetup time.Duration
-
-	https bool
 }
 
 var (
@@ -50,10 +49,9 @@ const (
 )
 
 func init() {
-	flag.StringVar(&config.baseURL, "endpoint-url", "localhost:8000", "URL endpoint of the lakeFS instance")
+	flag.StringVar(&config.baseURL, "endpoint-url", "http://localhost:8000", "URL endpoint of the lakeFS instance")
 	flag.StringVar(&config.rawBucketPath, "bucket", "s3://nessie-system-testing", "Bucket's path")
 	flag.DurationVar(&config.maxSetup, "max-setup", 5*time.Minute, "Maximum time to wait for lakeFS setup")
-	flag.BoolVar(&config.https, "https", false, "Use HTTPS to connect to lakeFS")
 }
 
 func TestMain(m *testing.M) {
@@ -65,14 +63,15 @@ func TestMain(m *testing.M) {
 	logger = logging.Default()
 	logger.WithField("bucketPath", config.rawBucketPath).Info("Starting nessie run")
 
-	schemas := []string{"http"}
-	if config.https {
-		schemas = []string{"https", "http"}
+	url, err := url.Parse(config.baseURL)
+	if err != nil {
+		panic(fmt.Errorf("failed to parse url %s: %w", config.baseURL, err))
 	}
+
 	cl := genclient.NewHTTPClientWithConfig(strfmt.Default, &genclient.TransportConfig{
-		Host:     config.baseURL,
+		Host:     url.Host,
 		BasePath: genclient.DefaultBasePath,
-		Schemes:  schemas,
+		Schemes:  []string{url.Scheme},
 	})
 
 	// first setup of lakeFS
@@ -106,7 +105,7 @@ func TestMain(m *testing.M) {
 		WithField("accessSecretKey", res.Payload.AccessSecretKey).
 		Info("Cluster setup successfully")
 
-	client, err = api.NewClient(fmt.Sprintf("%s://%s/%s", schemas[0], config.baseURL, genclient.DefaultBasePath), res.Payload.AccessKeyID, res.Payload.AccessSecretKey)
+	client, err = api.NewClient(fmt.Sprintf("%s/%s", config.baseURL, genclient.DefaultBasePath), res.Payload.AccessKeyID, res.Payload.AccessSecretKey)
 	if err != nil {
 		panic(fmt.Errorf("failed to setup client: %w", err))
 	}
