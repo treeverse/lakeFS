@@ -1,12 +1,14 @@
 package config
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/url"
 	"strings"
 	"time"
 
+	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -27,6 +29,7 @@ import (
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
+	"google.golang.org/api/option"
 )
 
 const (
@@ -255,15 +258,17 @@ func (c *Config) buildS3Adapter() (block.Adapter, error) {
 }
 
 func (c *Config) buildGSAdapter() (block.Adapter, error) {
-	cfg := c.GetGSAwsConfig()
-	s3Endpoint := viper.GetString("blockstore.gs.s3_endpoint")
-	sess, err := session.NewSession(cfg)
+	var opts []option.ClientOption
+	credfile := viper.GetString("blockstore.gs.credentials_file")
+	if credfile != "" {
+		opts = append(opts, option.WithCredentialsFile(credfile))
+	}
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, opts...)
 	if err != nil {
 		return nil, err
 	}
-	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess, aws.NewConfig().WithEndpoint(s3Endpoint))
-	adapter := gs.NewAdapter(svc,
+	adapter := gs.NewAdapter(client,
 		gs.WithStreamingChunkSize(viper.GetInt("blockstore.gs.streaming_chunk_size")),
 		gs.WithStreamingChunkTimeout(viper.GetDuration("blockstore.gs.streaming_chunk_timeout")))
 	log.WithFields(log.Fields{"type": "gs"}).Info("initialized blockstore adapter")
