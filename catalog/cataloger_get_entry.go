@@ -11,8 +11,6 @@ import (
 
 const isBatched = true
 
-var first_time = true
-
 func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, reference string, path string) (*Entry, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
