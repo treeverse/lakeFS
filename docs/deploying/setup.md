@@ -28,6 +28,6 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
    
 # Next steps
 
-After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](../reference/import.md0) to bring your data without copying it.
+After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](../reference/import.md) to bring your data without copying it.
 
 Also, check out the usage guides under [using lakeFS with...](../using) for other options.
