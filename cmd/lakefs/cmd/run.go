@@ -17,6 +17,7 @@ import (
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
+	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
@@ -26,6 +27,7 @@ import (
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
+	"github.com/treeverse/lakefs/stats"
 )
 
 const (
@@ -48,21 +50,21 @@ var runCmd = &cobra.Command{
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
 		// validate service names and turn on the right flags
-		dbConnString := cfg.GetDatabaseURI()
+		dbParams := cfg.GetDatabaseParams()
 
-		dbPool := cfg.BuildDatabaseConnection()
+		dbPool := db.BuildDatabaseConnection(dbParams)
 		defer func() {
 			_ = dbPool.Close()
 		}()
 		registerPrometheusCollector(dbPool)
 		retention := retention.NewService(dbPool)
-		migrator := db.NewDatabaseMigrator(dbConnString)
+		migrator := db.NewDatabaseMigrator(dbParams)
 
 		// init catalog
 		cataloger := catalog.NewCataloger(dbPool)
 
 		// init block store
-		blockStore, err := cfg.BuildBlockAdapter()
+		blockStore, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
@@ -79,7 +81,8 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			installationID = "" // no installation ID is available
 		}
-		stats := cfg.BuildStats(installationID)
+		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
+		stats := stats.NewBufferedCollector(installationID, processID, bufferedCollectorArgs...)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 		defer func() {
