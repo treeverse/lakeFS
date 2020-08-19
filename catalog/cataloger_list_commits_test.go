@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -406,4 +407,45 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	if diff := deep.Equal(newMasterList, masterList); diff != nil {
 		t.Error("master commits  changed without merge", diff)
 	}
+}
+
+func TestCataloger_ListCommits_Order(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+
+	var wg sync.WaitGroup
+	const concurrency = 5
+	wg.Add(concurrency)
+	for i := 0; i < concurrency; i++ {
+		go func() {
+			defer wg.Done()
+			repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+			testCatalogerCreateEntry(t, ctx, c, repository, "master", "files/first", nil, "")
+			const commit1Msg = "first"
+			_, err := c.Commit(ctx, repository, "master", commit1Msg, "barak.amar", nil)
+			testutil.MustDo(t, commit1Msg, err)
+
+			testCatalogerBranch(t, ctx, c, repository, "branch1", "master")
+
+			commitsLog, _, err := c.ListCommits(ctx, repository, "branch1", "", 300)
+			testutil.MustDo(t, "list branch1 commits", err)
+
+			// get all commits without the first one
+			commits := make([]string, len(commitsLog))
+			for i := range commitsLog {
+				commits[i] = commitsLog[i].Message
+			}
+			expectedCommits := []string{
+				"Branch 'branch1' created, source branch 'master'",
+				commit1Msg,
+				"Repository created",
+			}
+
+			if diff := deep.Equal(commits, expectedCommits); diff != nil {
+				t.Error("branch1 did not had the expected commits", diff)
+			}
+		}()
+	}
+	wg.Wait()
 }
