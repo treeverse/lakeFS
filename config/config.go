@@ -16,7 +16,6 @@ import (
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-
 	authparams "github.com/treeverse/lakefs/auth/params"
 	blockparams "github.com/treeverse/lakefs/block/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
@@ -32,9 +31,9 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultBlockStoreGCSS3Endpoint            = "https://storage.googleapis.com"
-	DefaultBlockStoreGCSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
-	DefaultBlockStoreGCSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	DefaultBlockStoreGSS3Endpoint            = "https://storage.googleapis.com"
+	DefaultBlockStoreGSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
+	DefaultBlockStoreGSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
 	DefaultAuthCacheEnabled = true
 	DefaultAuthCacheSize    = 1024
@@ -97,9 +96,9 @@ func setDefaults() {
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
-	viper.SetDefault("blockstore.gcs.s3_endpoint", DefaultBlockStoreGCSS3Endpoint)
-	viper.SetDefault("blockstore.gcs.streaming_chunk_size", DefaultBlockStoreGCSStreamingChunkSize)
-	viper.SetDefault("blockstore.gcs.streaming_chunk_timeout", DefaultBlockStoreGCSStreamingChunkTimeout)
+	viper.SetDefault("blockstore.gs.s3_endpoint", DefaultBlockStoreGSS3Endpoint)
+	viper.SetDefault("blockstore.gs.streaming_chunk_size", DefaultBlockStoreGSStreamingChunkSize)
+	viper.SetDefault("blockstore.gs.streaming_chunk_timeout", DefaultBlockStoreGSStreamingChunkTimeout)
 
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
@@ -167,27 +166,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 	if s3ForcePathStyle {
 		cfg = cfg.WithS3ForcePathStyle(true)
 	}
-
 	return cfg
-}
-
-func (c *Config) GetGCSAwsConfig() *aws.Config {
-	awsConfig := &aws.Config{
-		Region: aws.String(viper.GetString("blockstore.gcs.s3_region")),
-		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
-	}
-	if viper.IsSet("blockstore.gcs.s3_profile") || viper.IsSet("blockstore.gcs.s3_credentials_file") {
-		awsConfig.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("blockstore.gcs.s3_credentials_file"),
-			viper.GetString("blockstore.gcs.s3_profile"))
-	}
-	if viper.IsSet("blockstore.gcs.s3_credentials.access_key_id") {
-		awsConfig.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("blockstore.gcs.s3_credentials.access_key_id"),
-			viper.GetString("blockstore.gcs.s3_credentials.access_secret_key"),
-			viper.GetString("blockstore.gcs.s3_credentials.session_token"))
-	}
-	return awsConfig
 }
 
 func GetAwsAccessKeyID(awsConfig *aws.Config) (string, error) {

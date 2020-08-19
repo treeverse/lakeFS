@@ -1,4 +1,4 @@
-package gcs
+package gs
 
 import (
 	"strconv"
@@ -10,15 +10,15 @@ import (
 
 var durationHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
-		Name: "gcs_operation_duration_seconds",
-		Help: "durations of outgoing gcs operations",
+		Name: "gs_operation_duration_seconds",
+		Help: "durations of outgoing gs operations",
 	},
 	[]string{"operation", "error"})
 
 var requestSizeHistograms = promauto.NewHistogramVec(
 	prometheus.HistogramOpts{
-		Name:    "gcs_operation_size_bytes",
-		Help:    "handled sizes of outgoing gcs operations",
+		Name:    "gs_operation_size_bytes",
+		Help:    "handled sizes of outgoing gs operations",
 		Buckets: prometheus.ExponentialBuckets(1, 10, 10),
 	}, []string{"operation", "error"})
 
