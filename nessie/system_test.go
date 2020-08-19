@@ -115,21 +115,15 @@ func TestMain(m *testing.M) {
 }
 
 const (
-	objPath       = "1.txt"
 	contentLength = 16
 )
 
 func TestSingleCommit(t *testing.T) {
-	ctx := context.Background()
+	ctx, _, repo := setupTest(t)
+	objPath := "1.txt"
 
-	repo := createRepo(ctx, t)
-	logger.WithField("repo", repo).Info("Created first repository")
-
-	objContent := randstr.Hex(contentLength)
-	_, err := client.UploadObject(ctx, repo, masterBranch, objPath, strings.NewReader(objContent))
-	require.NoError(t, err, "failed to upload file")
-
-	_, err = client.Commit(ctx, repo, masterBranch, "nessie:singleCommit", nil)
+	_, objContent := uploadFile(ctx, t, repo, masterBranch, objPath)
+	_, err := client.Commit(ctx, repo, masterBranch, "nessie:singleCommit", nil)
 	require.NoError(t, err, "failed to commit changes")
 
 	var b bytes.Buffer
@@ -137,6 +131,53 @@ func TestSingleCommit(t *testing.T) {
 	require.NoError(t, err, "failed to get object")
 
 	require.Equal(t, objContent, b.String(), fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, b.String()))
+}
+
+func TestMergeAndList(t *testing.T) {
+	ctx, logger, repo := setupTest(t)
+	branch := "feature-1"
+
+	ref, err := client.CreateBranch(ctx, repo, &models.BranchCreation{
+		Name:   swag.String(branch),
+		Source: swag.String(masterBranch),
+	})
+	require.NoError(t, err, "failed to create branch")
+	logger.WithField("branchRef", ref).Info("Created branch, committing files")
+
+	numberOfFiles := 10
+	checksums := map[string]string{}
+	for i := 0; i < numberOfFiles; i++ {
+		checksum, content := uploadFile(ctx, t, repo, branch, fmt.Sprintf("%d.txt", i))
+		checksums[checksum] = content
+	}
+
+	_, err = client.Commit(ctx, repo, branch, fmt.Sprintf("Adding %d files", numberOfFiles), nil)
+	require.NoError(t, err, "failed to commit changes")
+
+	mergeRes, err := client.Merge(ctx, repo, masterBranch, branch)
+	require.NoError(t, err, "failed to merge branches")
+	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
+
+	objs, pagin, err := client.ListObjects(ctx, repo, masterBranch, "", "", 100)
+	require.NoError(t, err, "failed to list objects")
+	require.False(t, *pagin.HasMore, "pagination shouldn't have more items")
+	require.Equal(t, int64(numberOfFiles), *pagin.Results)
+	require.Equal(t, numberOfFiles, len(objs))
+	logger.WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
+
+	for _, obj := range objs {
+		_, ok := checksums[obj.Checksum]
+		require.True(t, ok, "file exists in master but shouldn't, obj: %s", *obj)
+	}
+}
+
+func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
+	ctx := context.Background()
+	logger := logger.WithField("testName", t.Name())
+	repo := createRepo(ctx, t)
+	logger.WithField("repo", repo).Info("Created repository")
+
+	return ctx, logger, repo
 }
 
 func createRepo(ctx context.Context, t *testing.T) string {
@@ -151,4 +192,11 @@ func createRepo(ctx context.Context, t *testing.T) string {
 	require.NoError(t, err, "failed to create repo")
 
 	return name
+}
+
+func uploadFile(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+	objContent := randstr.Hex(contentLength)
+	stats, err := client.UploadObject(ctx, repo, branch, objPath, strings.NewReader(objContent))
+	require.NoError(t, err, "failed to upload file")
+	return stats.Checksum, objContent
 }
