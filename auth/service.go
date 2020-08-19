@@ -9,6 +9,7 @@ import (
 
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/auth/params"
 	"github.com/treeverse/lakefs/auth/wildcard"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -134,14 +135,7 @@ type DBAuthService struct {
 	cache       Cache
 }
 
-type ServiceCacheConfig struct {
-	Enabled        bool
-	Size           int
-	TTL            time.Duration
-	EvictionJitter time.Duration
-}
-
-func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf ServiceCacheConfig) *DBAuthService {
+func NewDBAuthService(db db.Database, secretStore crypt.SecretStore, cacheConf params.ServiceCache) *DBAuthService {
 	logging.Default().Info("initialized Auth service")
 	var cache Cache
 	if cacheConf.Enabled {
