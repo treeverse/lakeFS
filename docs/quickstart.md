@@ -8,19 +8,30 @@ has_children: false
 # Quick Start
 {: .no_toc }
 
-**Note** This tutorial is for learning purposes, and stores data locally inside a container.
-For a production deployment, see [Deploying on AWS](deploying/index.md).
+**Note** This section is for learning purposes. The installations below will not persist you data.
+For a production suitable deployment, see [Deploying on AWS](deploying/index.md).
 {: .note }
 
-## Table of contents
+## On Kubernetes with Helm
+{: .no_toc }
+
+You can install lakeFS on a Kubernetes cluster with the following commands:
+```bash
+# Add the lakeFS Helm repository
+helm repo add lakefs https://charts.lakefs.io
+# Deploy lakeFS with helm release "my-lakefs"
+helm install my-lakefs lakefs/lakefs
+```
+
+This will start lakeFS with a dedicated PostgreSQL container. Data will be stored inside the container and will not be persisted.
+
+## Other options
 {: .no_toc .text-delta }
 
 1. TOC
 {:toc}
 
-## Running a local server for testing
-
-###  Using Docker Compose
+##  Using Docker Compose
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
@@ -59,7 +70,7 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
 1. Open [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
 
-### Manual Installation 
+## Manual Installation 
 
 Alternatively, you may opt to run the lakefs binary directly on your computer.
 
