@@ -222,6 +222,12 @@ func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 	return blockparams.Local{Path: path}, err
 }
 
+func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
+	return blockparams.GS{
+		CredentialsFile: viper.GetString("blockstore.gs.credentials_file"),
+	}, nil
+}
+
 func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
 	return authparams.ServiceCache{
 		Enabled:        viper.GetBool("auth.cache.enabled"),
