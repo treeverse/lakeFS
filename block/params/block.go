@@ -17,3 +17,7 @@ type S3 struct {
 	StreamingChunkSize    int
 	StreamingChunkTimeout time.Duration
 }
+
+type GS struct {
+	CredentialsFile string
+}
