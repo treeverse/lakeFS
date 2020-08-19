@@ -19,7 +19,7 @@ var versionCmd = &cobra.Command{
 	Use:   "version",
 	Short: "Print current migration version and available version",
 	Run: func(cmd *cobra.Command, args []string) {
-		version, _, err := db.MigrateVersion(cfg.GetDatabaseURI())
+		version, _, err := db.MigrateVersion(cfg.GetDatabaseParams())
 		if err != nil {
 			fmt.Printf("Failed to get info for schema: %s\n", err)
 			return
@@ -37,7 +37,7 @@ var upCmd = &cobra.Command{
 	Use:   "up",
 	Short: " Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := db.MigrateUp(cfg.GetDatabaseURI())
+		err := db.MigrateUp(cfg.GetDatabaseParams())
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
@@ -50,7 +50,7 @@ var downCmd = &cobra.Command{
 	Use:   "down",
 	Short: "Apply all down migrations",
 	Run: func(cmd *cobra.Command, args []string) {
-		err := db.MigrateDown(cfg.GetDatabaseURI())
+		err := db.MigrateDown(cfg.GetDatabaseParams())
 		if err != nil {
 			fmt.Println(err)
 			os.Exit(1)
@@ -67,7 +67,7 @@ var gotoCmd = &cobra.Command{
 			fmt.Printf("Failed to get value for 'version': %s\n", err)
 			os.Exit(1)
 		}
-		uri := cfg.GetDatabaseURI()
+		uri := cfg.GetDatabaseParams()
 		err = db.MigrateTo(uri, version)
 		if err != nil {
 			fmt.Printf("Failed to migrate to version %d.\n%s\n", version, err)
