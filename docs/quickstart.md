@@ -24,14 +24,16 @@ helm install my-lakefs lakefs/lakefs
 ```
 
 This will start lakeFS with a dedicated PostgreSQL container. Data will be stored inside the container and will not be persisted.
+You can now move on to [creating your first repository](#setting-up-a-repository). 
 
-## Other options
+## Table of Contents
 {: .no_toc .text-delta }
 
 1. TOC
 {:toc}
 
-##  Using Docker Compose
+## Other Installation Options
+###  Using Docker Compose
 
 To run a local lakeFS instance, you can use the following example [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
 
@@ -70,7 +72,7 @@ To run a local lakeFS instance, you can use the following example [Docker Compos
 1. Open [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
 
-## Manual Installation 
+### Manual Installation 
 
 Alternatively, you may opt to run the lakefs binary directly on your computer.
 
@@ -112,7 +114,9 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
    $ ./lakefs --config /path/to/config.yaml run
    ```
 
-## Setting up a Repository
+## First Steps in lakeFS
+
+### Setting up a Repository
 
 1. Open [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser to set up an initial admin user, used to login and send API requests.
 
@@ -138,7 +142,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
 
 
-## Copying files into our local installation using the AWS CLI
+### Copying files into lakeFS using AWS CLI
 
 1. If you don't have the AWS CLI installed, follow the [instructions here](https://docs.aws.amazon.com/cli/latest/userguide/cli-chap-install.html){:target="_blank"}.
 1. Configure a new connection profile using the credentials we generated earlier:
@@ -172,7 +176,7 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    ![Object Added](assets/img/object_added.png)
 
-## CLI usage with lakectl
+### CLI usage with lakectl
 
 lakeFS comes with its own native CLI client. You can see the complete command reference [here](reference/commands.md).
 
