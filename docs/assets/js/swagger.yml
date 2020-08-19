@@ -90,7 +90,7 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
-        pattern: '^(s3|mem|local|transient)://.*$'
+        pattern: '^(s3|gs|mem|local|transient)://.*$'
       default_branch:
         example: "master"
         type: string
@@ -1998,3 +1998,14 @@ paths:
           description: generic error response
           schema:
             $ref: "#/definitions/error"
+
+  /healthcheck:
+    get:
+      operationId: healthCheck
+      security: []
+      tags:
+        - healthCheck
+      description: check that the API server is up and running
+      responses:
+        204:
+          description: NoContent
