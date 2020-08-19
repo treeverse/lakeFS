@@ -1,12 +1,16 @@
 package factory
 
 import (
+	"context"
 	"errors"
 	"fmt"
 
+	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
+	log "github.com/sirupsen/logrus"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/gs"
 	"github.com/treeverse/lakefs/block/local"
 	"github.com/treeverse/lakefs/block/mem"
 	"github.com/treeverse/lakefs/block/params"
@@ -14,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/block/transient"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
+	"google.golang.org/api/option"
 )
 
 var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
@@ -25,24 +30,30 @@ func BuildBlockAdapter(c *config.Config) (block.Adapter, error) {
 		Info("initialize blockstore adapter")
 	switch blockstore {
 	case local.BlockstoreType:
-		params, err := c.GetBlockAdapterLocalParams()
+		p, err := c.GetBlockAdapterLocalParams()
 		if err != nil {
 			return nil, err
 		}
-		return buildLocalAdapter(params)
+		return buildLocalAdapter(p)
 	case s3a.BlockstoreType:
-		params, err := c.GetBlockAdapterS3Params()
+		p, err := c.GetBlockAdapterS3Params()
 		if err != nil {
 			return nil, err
 		}
-		return buildS3Adapter(params)
+		return buildS3Adapter(p)
 	case mem.BlockstoreType, "memory":
 		return mem.New(), nil
 	case transient.BlockstoreType:
 		return transient.New(), nil
+	case gs.BlockstoreType:
+		p, err := c.GetBlockAdapterGSParams()
+		if err != nil {
+			return nil, err
+		}
+		return buildGSAdapter(p)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType})
+			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
 	}
 }
 
@@ -69,8 +80,21 @@ func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
 	)
-	logging.Default().WithFields(logging.Fields{
-		"type": "s3",
-	}).Info("initialized blockstore adapter")
+	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
+	return adapter, nil
+}
+
+func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
+	var opts []option.ClientOption
+	if params.CredentialsFile != "" {
+		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
+	}
+	ctx := context.Background()
+	client, err := storage.NewClient(ctx, opts...)
+	if err != nil {
+		return nil, err
+	}
+	adapter := gs.NewAdapter(client)
+	log.WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }

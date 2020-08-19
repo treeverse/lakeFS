@@ -63,7 +63,7 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) block.Adapter {
+func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
 		client:             client,
 		ctx:                context.Background(),
