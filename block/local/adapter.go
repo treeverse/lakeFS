@@ -50,7 +50,7 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(path string, opts ...func(a *Adapter)) (block.Adapter, error) {
+func NewAdapter(path string, opts ...func(a *Adapter)) (*Adapter, error) {
 	stt, err := os.Stat(path)
 	if err != nil {
 		return nil, err
