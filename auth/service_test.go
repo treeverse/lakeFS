@@ -3,6 +3,7 @@ package auth_test
 import (
 	"fmt"
 	"os"
+	"reflect"
 	"sort"
 	"testing"
 	"time"
@@ -12,6 +13,8 @@ import (
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/google/uuid"
+
+	sq "github.com/Masterminds/squirrel"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/auth"
@@ -25,6 +28,7 @@ import (
 var (
 	pool        *dockertest.Pool
 	databaseURI string
+	psql        = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
 )
 
 func TestMain(m *testing.M) {
@@ -72,6 +76,59 @@ func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) st
 	}
 
 	return userName
+}
+
+func TestDBAuthService_ListPaged(t *testing.T) {
+	const chars = "abcdefghijklmnopqrstuvwxyz"
+	db, _ := testutil.GetDB(t, databaseURI)
+	defer db.Close()
+	type row struct{ A string }
+	if _, err := db.Exec(`CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
+		t.Fatalf("CREATE TABLE test_pages: %s", err)
+	}
+	insert := psql.Insert("test_pages")
+	for _, c := range chars {
+		insert = insert.Values(string(c))
+	}
+	insertSql, args, err := insert.ToSql()
+	if err != nil {
+		t.Fatalf("create insert statement %v: %s", insert, err)
+	}
+	if _, err = db.Exec(insertSql, args...); err != nil {
+		t.Fatalf("%s [%v]: %s", insertSql, args, err)
+	}
+
+	for size := 0; size <= len(chars)+1; size++ {
+		t.Run(fmt.Sprintf("PageSize%d", size), func(t *testing.T) {
+			pagination := &model.PaginationParams{Amount: size}
+			if size == 0 { // Overload to mean "don't paginate"
+				pagination.Amount = -1
+			}
+			got := ""
+			for {
+				values, paginator, err := auth.ListPaged(
+					db, reflect.TypeOf(row{}), pagination, "A", psql.Select("a").From("test_pages"))
+				if err != nil {
+					t.Errorf("ListPaged: %s", err)
+					break
+				}
+				if values == nil {
+					t.Errorf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
+				}
+				letters := values.Interface().([]*row)
+				for _, c := range letters {
+					got = got + c.A
+				}
+				if paginator.NextPageToken == "" {
+					break
+				}
+				pagination.After = paginator.NextPageToken
+			}
+			if got != chars {
+				t.Errorf("Expected to read back \"%s\" but got \"%s\"", chars, got)
+			}
+		})
+	}
 }
 
 func TestDBAuthService_Authorize(t *testing.T) {
@@ -384,30 +441,6 @@ func TestDBAuthService_Authorize(t *testing.T) {
 	}
 }
 
-func verifyListUsers(t *testing.T, s auth.Service, pageSize int, expectedUsers []string) {
-	t.Helper()
-	listUsers := make([]string, 0)
-	pagination := model.PaginationParams{After: "", Amount: pageSize}
-	for {
-		list, last, err := s.ListUsers(&pagination)
-		if err != nil {
-			t.Errorf("ListUsers: %s", err)
-		}
-		for _, user := range list {
-			listUsers = append(listUsers, user.DisplayName)
-		}
-		if last.NextPageToken == "" {
-			break
-		}
-		pagination.After = last.NextPageToken
-	}
-	sort.Strings(listUsers)
-	sort.Strings(expectedUsers)
-	if diffs := deep.Equal(expectedUsers, listUsers); diffs != nil {
-		t.Errorf("did not get expected user names: %s", diffs)
-	}
-}
-
 func TestDBAuthService_ListUsers(t *testing.T) {
 	cases := []struct {
 		name      string
@@ -432,8 +465,19 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 					t.Fatalf("CreateUser(%s): %s", userName, err)
 				}
 			}
-			verifyListUsers(t, s, 100, testCase.userNames)
-			verifyListUsers(t, s, 3, testCase.userNames)
+			gotList, _, err := s.ListUsers(&model.PaginationParams{Amount: -1})
+			if err != nil {
+				t.Fatalf("ListUsers: %s", err)
+			}
+			gotUsers := make([]string, 0, len(testCase.userNames))
+			for _, user := range gotList {
+				gotUsers = append(gotUsers, user.DisplayName)
+			}
+			sort.Strings(gotUsers)
+			sort.Strings(testCase.userNames)
+			if diffs := deep.Equal(testCase.userNames, gotUsers); diffs != nil {
+				t.Errorf("did not get expected user display names: %s", diffs)
+			}
 		})
 	}
 }
@@ -449,7 +493,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	if err != nil {
 		t.Errorf("CreateCredentials(%s): %s", userName, err)
 	}
-	credentials, _, err := s.ListUserCredentials(userName, &model.PaginationParams{Amount: 100})
+	credentials, _, err := s.ListUserCredentials(userName, &model.PaginationParams{Amount: -1})
 	if err != nil {
 		t.Errorf("ListUserCredentials(%s): %s", userName, err)
 	}
@@ -469,4 +513,45 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 		t.Errorf("expected to receive issued date close to %s, got %s (diff %s)", credential.IssuedDate, gotCredential.IssuedDate, timeDiff)
 	}
 	// TODO(ariels): add more credentials (and test)
+}
+
+func TestDBAuthService_ListGroups(t *testing.T) {
+	cases := []struct {
+		name       string
+		groupNames []string
+	}{
+		{
+			name:       "no_groups",
+			groupNames: []string{},
+		}, {
+			name:       "single_group",
+			groupNames: []string{"fooers"},
+		}, {
+			name:       "many_groups",
+			groupNames: []string{"fooers", "barriers", "bazaars", "quuxers", "pling-plongers"},
+		},
+	}
+	for _, testCase := range cases {
+		t.Run(testCase.name, func(t *testing.T) {
+			s := setupService(t)
+			for _, groupName := range testCase.groupNames {
+				if err := s.CreateGroup(&model.Group{DisplayName: groupName}); err != nil {
+					t.Fatalf("CreateGroup(%s): %s", groupName, err)
+				}
+			}
+			gotGroupNames := make([]string, 0, len(testCase.groupNames))
+			groups, _, err := s.ListGroups(&model.PaginationParams{Amount: -1})
+			if err != nil {
+				t.Errorf("ListGroups: %s", err)
+			}
+			for _, group := range groups {
+				gotGroupNames = append(gotGroupNames, group.DisplayName)
+			}
+			sort.Strings(testCase.groupNames)
+			sort.Strings(gotGroupNames)
+			if diffs := deep.Equal(testCase.groupNames, gotGroupNames); diffs != nil {
+				t.Errorf("got different groups than expected: %s", diffs)
+			}
+		})
+	}
 }

@@ -19,6 +19,7 @@ type PaginationParams struct {
 	Amount int
 }
 
+// Paginator describes the parameters of a slice of data from a database.
 type Paginator struct {
 	Amount        int
 	NextPageToken string
