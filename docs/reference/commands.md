@@ -54,7 +54,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl branch delete`
@@ -70,7 +70,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl branch list`
@@ -90,7 +90,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl branch revert`
@@ -112,7 +112,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl branch show`
@@ -127,7 +127,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl commit`
@@ -144,7 +144,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl config`
@@ -159,7 +159,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl diff`
@@ -174,7 +174,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl fs cat`
@@ -190,7 +190,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl fs ls`
@@ -206,7 +206,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl fs rm`
@@ -221,7 +221,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl fs stat`
@@ -237,7 +237,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 
@@ -254,7 +254,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 
@@ -272,7 +272,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 
@@ -288,7 +288,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl repo create`
@@ -304,7 +304,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl repo delete`
@@ -319,7 +319,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 
@@ -337,7 +337,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl show`
@@ -353,7 +353,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ````
 
 ##### `lakectl auth users create `
@@ -369,7 +369,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -387,7 +387,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -404,7 +404,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -423,7 +423,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -441,7 +441,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -458,7 +458,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -476,7 +476,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 ```
 
 ##### `lakectl auth users --id <userID> policies list `
@@ -495,7 +495,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -514,7 +514,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -533,7 +533,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -551,7 +551,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -568,7 +568,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 
 ```
@@ -586,7 +586,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -605,7 +605,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 
 ```
@@ -624,7 +624,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 
 ```
@@ -643,7 +643,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -662,7 +662,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -680,7 +680,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -698,7 +698,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -717,7 +717,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -734,7 +734,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -752,7 +752,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -769,7 +769,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ```
 
@@ -795,7 +795,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 
@@ -818,7 +818,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 #### `lakectl metastore create-symlink`
@@ -841,7 +841,7 @@ Flags:
 
 Global Flags:
   -c, --config string   config file (default is $HOME/.lakectl.yaml)
-      --no-color        use fancy output colors (ignored when not attached to an interactive terminal)
+      --no-color        don't use fancy output colors (default when not attached to an interactive terminal)
 
 ````
 

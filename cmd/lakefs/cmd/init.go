@@ -12,6 +12,7 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/stats"
 )
 
 // initCmd represents the init command
@@ -21,14 +22,14 @@ var initCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 
-		migrator := db.NewDatabaseMigrator(cfg.GetDatabaseURI())
+		migrator := db.NewDatabaseMigrator(cfg.GetDatabaseParams())
 		err := migrator.Migrate(ctx)
 		if err != nil {
 			fmt.Printf("Failed to setup DB: %s\n", err)
 			os.Exit(1)
 		}
 
-		dbPool := cfg.BuildDatabaseConnection()
+		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		defer func() { _ = dbPool.Close() }()
 
 		userName, _ := cmd.Flags().GetString("user-name")
@@ -55,7 +56,8 @@ var initCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		stats := cfg.BuildStats(metadata["installation_id"])
+		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
+		stats := stats.NewBufferedCollector(metadata["installation_id"], processID, bufferedCollectorArgs...)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")
