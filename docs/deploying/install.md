@@ -56,6 +56,8 @@ If you can't provide such access, lakeFS can be configured to use an AWS key-pai
 
 | **Parameter**                               | **Description**                                                                                            | **Default** |
 |---------------------------------------------|------------------------------------------------------------------------------------------------------------|-------------|
+|`databaseConnectionString`|PostgreSQL connection string to be used by lakeFS||
+|`authEncryptSecretKey`|A random (cryptographically safe) generated string that is used for encryption and HMAC signing||
 | `lakefsConfig`                              | lakeFS config YAML stringified, as shown above. See [reference](../reference/configuration.md) for available configurations.                                                               |             |
 | `replicaCount`                              | Number of lakeFS pods                                                                                      | `1`         |
 | `resources`                                 | Pod resource requests & limits                                                                             | `{}`        |
