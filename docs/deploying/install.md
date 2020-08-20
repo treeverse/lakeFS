@@ -34,12 +34,9 @@ Here is an example `conf-values.yaml`. See [below](#configurations) for more con
 ```yaml
 service:
     type: LoadBalancer
+databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
+authEncryptSecretKey: <some random string>
 lakefsConfig: |
-  database:
-    connection_string: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
-  auth:
-    encrypt:
-      secret_key: <some random string>
   blockstore:
     type: s3
     s3:
@@ -48,6 +45,9 @@ lakefsConfig: |
     s3:
       domain_name: s3.lakefs.example.com
 ```
+
+The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html), but without sensitive information.
+Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject them into Kubernetes secrets.
 
 You should give your Kubernetes nodes access to all S3 buckets you intend to use lakeFS with.
 If you can't provide such access, lakeFS can be configured to use an AWS key-pair to authenticate (part of the `lakefsConfig` YAML below).
