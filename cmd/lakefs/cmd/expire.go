@@ -12,6 +12,7 @@ import (
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
 )
@@ -23,7 +24,7 @@ var expireCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
 		logger := logging.FromContext(ctx)
-		dbPool := cfg.BuildDatabaseConnection()
+		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		cataloger := catalog.NewCataloger(dbPool)
 
 		awsRetentionConfig := config.NewConfig().GetAwsS3RetentionConfig()

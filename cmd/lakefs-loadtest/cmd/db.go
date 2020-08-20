@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -22,7 +21,7 @@ var dbCmd = &cobra.Command{
 }
 
 func connectToDB(connectionString string) db.Database {
-	database, err := db.ConnectDB(config.DefaultDatabaseDriver, connectionString)
+	database, err := db.ConnectDB(db.DatabaseDriver, connectionString)
 	if err != nil {
 		fmt.Printf("Failed connecting to database: %s\n", err)
 		os.Exit(1)

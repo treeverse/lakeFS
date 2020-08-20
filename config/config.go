@@ -10,27 +10,19 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/sts"
 	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	"github.com/treeverse/lakefs/auth"
-	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/block/gcs"
-	"github.com/treeverse/lakefs/block/local"
-	"github.com/treeverse/lakefs/block/mem"
-	s3a "github.com/treeverse/lakefs/block/s3"
-	"github.com/treeverse/lakefs/block/transient"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/logging"
+	authparams "github.com/treeverse/lakefs/auth/params"
+	blockparams "github.com/treeverse/lakefs/block/params"
+	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/stats"
 )
 
 const (
-	DefaultDatabaseDriver     = "pgx"
 	DefaultDatabaseConnString = "postgres://localhost:5432/postgres?sslmode=disable"
 
 	DefaultBlockStoreType                    = "local"
@@ -39,9 +31,9 @@ const (
 	DefaultBlockStoreS3StreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
 	DefaultBlockStoreS3StreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
-	DefaultBlockStoreGCSS3Endpoint            = "https://storage.googleapis.com"
-	DefaultBlockStoreGCSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
-	DefaultBlockStoreGCSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
+	DefaultBlockStoreGSS3Endpoint            = "https://storage.googleapis.com"
+	DefaultBlockStoreGSStreamingChunkSize    = 2 << 19         // 1MiB by default per chunk
+	DefaultBlockStoreGSStreamingChunkTimeout = time.Second * 1 // or 1 seconds, whatever comes first
 
 	DefaultAuthCacheEnabled = true
 	DefaultAuthCacheSize    = 1024
@@ -62,8 +54,7 @@ const (
 )
 
 var (
-	ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
-	ErrMissingSecretKey      = errors.New("auth.encrypt.secret_key cannot be empty")
+	ErrMissingSecretKey = errors.New("auth.encrypt.secret_key cannot be empty")
 )
 
 type LogrusAWSAdapter struct {
@@ -105,25 +96,17 @@ func setDefaults() {
 	viper.SetDefault("gateways.s3.domain_name", DefaultS3GatewayDomainName)
 	viper.SetDefault("gateways.s3.region", DefaultS3GatewayRegion)
 
-	viper.SetDefault("blockstore.gcs.s3_endpoint", DefaultBlockStoreGCSS3Endpoint)
-	viper.SetDefault("blockstore.gcs.streaming_chunk_size", DefaultBlockStoreGCSStreamingChunkSize)
-	viper.SetDefault("blockstore.gcs.streaming_chunk_timeout", DefaultBlockStoreGCSStreamingChunkTimeout)
+	viper.SetDefault("blockstore.gs.s3_endpoint", DefaultBlockStoreGSS3Endpoint)
+	viper.SetDefault("blockstore.gs.streaming_chunk_size", DefaultBlockStoreGSStreamingChunkSize)
+	viper.SetDefault("blockstore.gs.streaming_chunk_timeout", DefaultBlockStoreGSStreamingChunkTimeout)
 
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
 }
 
-func (c *Config) GetDatabaseURI() string {
-	return viper.GetString("database.connection_string")
-}
-
-func (c *Config) BuildDatabaseConnection() db.Database {
-	database, err := db.ConnectDB(DefaultDatabaseDriver, c.GetDatabaseURI())
-	if err != nil {
-		panic(err)
-	}
-	return database
+func (c *Config) GetDatabaseParams() dbparams.Database {
+	return dbparams.Database{DatabaseURI: viper.GetString("database.connection_string")}
 }
 
 type AwsS3RetentionConfig struct {
@@ -174,24 +157,14 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.credentials.access_secret_key"),
 			viper.GetString("blockstore.s3.credentials.session_token"))
 	}
-	return cfg
-}
 
-func (c *Config) GetGCSAwsConfig() *aws.Config {
-	cfg := &aws.Config{
-		Region: aws.String(viper.GetString("blockstore.gcs.s3_region")),
-		Logger: &LogrusAWSAdapter{log.WithField("sdk", "aws")},
+	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
+	if len(s3Endpoint) > 0 {
+		cfg = cfg.WithEndpoint(s3Endpoint)
 	}
-	if viper.IsSet("blockstore.gcs.s3_profile") || viper.IsSet("blockstore.gcs.s3_credentials_file") {
-		cfg.Credentials = credentials.NewSharedCredentials(
-			viper.GetString("blockstore.gcs.s3_credentials_file"),
-			viper.GetString("blockstore.gcs.s3_profile"))
-	}
-	if viper.IsSet("blockstore.gcs.s3_credentials.access_key_id") {
-		cfg.Credentials = credentials.NewStaticCredentials(
-			viper.GetString("blockstore.gcs.s3_credentials.access_key_id"),
-			viper.GetString("blockstore.gcs.s3_credentials.access_secret_key"),
-			viper.GetString("blockstore.gcs.s3_credentials.session_token"))
+	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
+	if s3ForcePathStyle {
+		cfg = cfg.WithS3ForcePathStyle(true)
 	}
 	return cfg
 }
@@ -225,93 +198,38 @@ func GetAccount(awsConfig *aws.Config) (string, error) {
 	return *account.Account, nil
 }
 
-func (c *Config) buildS3Adapter() (block.Adapter, error) {
+func (c *Config) GetBlockstoreType() string {
+	return viper.GetString("blockstore.type")
+}
+
+func (c *Config) GetBlockAdapterS3Params() (blockparams.S3, error) {
 	cfg := c.GetAwsConfig()
 
-	sess, err := session.NewSession(cfg)
-	if err != nil {
-		return nil, err
-	}
-	sess.ClientConfig(s3.ServiceName)
-
-	awsConfig := aws.NewConfig()
-	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
-	if len(s3Endpoint) > 0 {
-		awsConfig = awsConfig.WithEndpoint(s3Endpoint)
-	}
-	s3ForcePathStyle := viper.GetBool("blockstore.s3.force_path_style")
-	if s3ForcePathStyle {
-		awsConfig = awsConfig.WithS3ForcePathStyle(true)
-	}
-
-	svc := s3.New(sess, awsConfig)
-	adapter := s3a.NewAdapter(svc,
-		s3a.WithStreamingChunkSize(viper.GetInt("blockstore.s3.streaming_chunk_size")),
-		s3a.WithStreamingChunkTimeout(viper.GetDuration("blockstore.s3.streaming_chunk_timeout")))
-	log.WithFields(log.Fields{
-		"type": "s3",
-	}).Info("initialized blockstore adapter")
-	return adapter, nil
+	return blockparams.S3{
+		AwsConfig:             cfg,
+		StreamingChunkSize:    viper.GetInt("blockstore.s3.streaming_chunk_size"),
+		StreamingChunkTimeout: viper.GetDuration("blockstore.s3.streaming_chunk_timeout"),
+	}, nil
 }
 
-func (c *Config) buildGCSAdapter() (block.Adapter, error) {
-	cfg := c.GetGCSAwsConfig()
-	s3Endpoint := viper.GetString("blockstore.gcs.s3_endpoint")
-	sess, err := session.NewSession(cfg)
-	if err != nil {
-		return nil, err
-	}
-	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess, aws.NewConfig().WithEndpoint(s3Endpoint))
-	adapter := gcs.NewAdapter(svc,
-		gcs.WithStreamingChunkSize(viper.GetInt("blockstore.gcs.streaming_chunk_size")),
-		gcs.WithStreamingChunkTimeout(viper.GetDuration("blockstore.gcs.streaming_chunk_timeout")))
-	log.WithFields(log.Fields{"type": "gcs"}).Info("initialized blockstore adapter")
-	return adapter, nil
-}
-
-func (c *Config) buildLocalAdapter() (block.Adapter, error) {
+func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 	localPath := viper.GetString("blockstore.local.path")
-	location, err := homedir.Expand(localPath)
+	path, err := homedir.Expand(localPath)
 	if err != nil {
-		return nil, fmt.Errorf("could not parse blockstore location URI: %w", err)
+		return blockparams.Local{}, fmt.Errorf("could not parse blockstore location URI: %w", err)
 	}
 
-	adapter, err := local.NewAdapter(location)
-	if err != nil {
-		return nil, fmt.Errorf("got error opening a local block adapter with path %s: %w", location, err)
-	}
-	log.WithFields(log.Fields{
-		"type": "local",
-		"path": location,
-	}).Info("initialized blockstore adapter")
-	return adapter, nil
+	return blockparams.Local{Path: path}, err
 }
 
-func (c *Config) BuildBlockAdapter() (block.Adapter, error) {
-	blockstore := viper.GetString("blockstore.type")
-	logging.Default().
-		WithField("type", blockstore).
-		Info("initialize blockstore adapter")
-	switch blockstore {
-	case local.BlockstoreType:
-		return c.buildLocalAdapter()
-	case s3a.BlockstoreType:
-		return c.buildS3Adapter()
-	case mem.BlockstoreType, "memory":
-		return mem.New(), nil
-	case transient.BlockstoreType:
-		return transient.New(), nil
-	case gcs.BlockstoreType:
-		return c.buildGCSAdapter()
-	default:
-		return nil, fmt.Errorf("%w '%s' please choose one of %s",
-			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gcs.BlockstoreType})
-	}
+func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
+	return blockparams.GS{
+		CredentialsFile: viper.GetString("blockstore.gs.credentials_file"),
+	}, nil
 }
 
-func (c *Config) GetAuthCacheConfig() auth.ServiceCacheConfig {
-	return auth.ServiceCacheConfig{
+func (c *Config) GetAuthCacheConfig() authparams.ServiceCache {
+	return authparams.ServiceCache{
 		Enabled:        viper.GetBool("auth.cache.enabled"),
 		Size:           viper.GetInt("auth.cache.size"),
 		TTL:            viper.GetDuration("auth.cache.ttl"),
@@ -351,16 +269,16 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 	return viper.GetDuration("stats.flush_interval")
 }
 
-func (c *Config) BuildStats(installationID string) *stats.BufferedCollector {
+func (c *Config) GetStatsBufferedCollectorArgs() (processID string, opts []stats.BufferedCollectorOpts) {
 	sender := stats.NewDummySender()
 	if c.GetStatsEnabled() && Version != UnreleasedVersion {
 		sender = stats.NewHTTPSender(c.GetStatsAddress(), time.Now)
 	}
-	return stats.NewBufferedCollector(
-		installationID,
-		uuid.Must(uuid.NewUUID()).String(),
-		stats.WithSender(sender),
-		stats.WithFlushInterval(c.GetStatsFlushInterval()))
+	return uuid.Must(uuid.NewUUID()).String(),
+		[]stats.BufferedCollectorOpts{
+			stats.WithSender(sender),
+			stats.WithFlushInterval(c.GetStatsFlushInterval()),
+		}
 }
 
 func GetMetastoreAwsConfig() *aws.Config {
