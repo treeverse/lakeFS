@@ -42,30 +42,9 @@ All reads from that branch are    guaranteed to always return the same results.
 
 1. Ensure you have Docker installed on your computer. The MacOS and Windows installations include Docker Compose by default.
 
-2. Create a `docker-compose.yaml` file, containing the following configuration:
-    ```yaml
-    ---
-    version: '3'
-    services:
-      lakefs:
-        image: "treeverse/lakefs:latest"
-        ports: ["8000:8000"]
-        links: ["postgres"]
-        environment:
-          LAKEFS_AUTH_ENCRYPT_SECRET_KEY: "some random secret string"
-          LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
-          LAKEFS_BLOCKSTORE_TYPE: local
-          LAKEFS_BLOCKSTORE_LOCAL_PATH: /home/lakefs
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
-        entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
-      postgres:
-        image: "postgres:11"
-        environment:
-          POSTGRES_USER: lakefs
-          POSTGRES_PASSWORD: lakefs
-    ```
+2. Clone the lakeFS repository.
 
-3. From the directory that contains our new docker-compose.yaml file, run the following command:
+3. From the root of the cloned repository, run:
 
    ```bash
    $ docker-compose up
