@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
@@ -23,7 +25,7 @@ var diagnoseCmd = &cobra.Command{
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalog.NewCataloger(dbPool)
+		cataloger := catalog.NewCataloger(dbPool, config.GetBatchReadParams())
 
 		numFailures := 0
 		repos, _, err := cataloger.ListRepositories(ctx, -1, "")

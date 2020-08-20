@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/treeverse/lakefs/catalog/params"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -25,6 +26,7 @@ const (
 	defaultCatalogerCacheSize   = 1024
 	defaultCatalogerCacheExpiry = 20 * time.Second
 	defaultCatalogerCacheJitter = 5 * time.Second
+	MaxReadQueue                = 10
 )
 
 type DedupReport struct {
@@ -186,6 +188,7 @@ type cataloger struct {
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
 	entriesReadBatchChan chan batchReadMessage
+	batchParams          *params.BatchReadParams
 }
 
 type CatalogerOption func(*cataloger)
@@ -215,7 +218,7 @@ func WithDedupReportChannel(b bool) CatalogerOption {
 	}
 }
 
-func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
+func NewCataloger(db db.Database, batchParams *params.BatchReadParams, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
 		clock:              clock.New(),
 		log:                logging.Default().WithField("service_name", "cataloger"),
@@ -223,6 +226,7 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		cacheConfig:        defaultCatalogerCacheConfig,
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
 		dedupReportEnabled: true,
+		batchParams:        batchParams,
 	}
 	for _, opt := range options {
 		opt(c)

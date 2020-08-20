@@ -10,15 +10,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-const (
-	MaxReadQueue        = 10
-	ReadEntryTimeout    = time.Second * 15
-	ScanTimeout         = time.Microsecond * 500
-	waitTimeout         = time.Microsecond * 1000
-	MaxEntriesInRequest = 64
-	ReadersNum          = 8
-)
-
 type pathRequest struct {
 	path      string
 	replyChan chan readResponse
@@ -51,7 +42,7 @@ type batchReadMessage struct {
 func (c *cataloger) initBatchEntryReader() {
 	go c.readOrchestrator()
 	c.wg.Add(1)
-	for i := 0; i < ReadersNum; i++ {
+	for i := 0; i < c.batchParams.ReadersNum; i++ {
 		go c.readEntriesBatch()
 		c.wg.Add(1)
 	}
@@ -68,7 +59,7 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 	select {
 	case response := <-replyChan:
 		return response.entry, response.err
-	case <-time.After(ReadEntryTimeout):
+	case <-time.After(time.Second * time.Duration(c.batchParams.ReadEntryMaxWaitSec)):
 		return nil, ErrReadEntryTimeout
 	}
 }
@@ -76,10 +67,10 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 func (c *cataloger) readOrchestrator() {
 	defer c.wg.Done()
 	bufferingMap := make(map[bufferingKey]*readBatch)
-	timer := time.NewTimer(ScanTimeout)
+	timer := time.NewTimer(time.Microsecond * time.Duration(c.batchParams.ScanTimeoutMicroSec))
 	for {
 		if len(bufferingMap) > 0 {
-			timer.Reset(ScanTimeout)
+			timer.Reset(time.Microsecond * time.Duration(c.batchParams.ScanTimeoutMicroSec))
 		}
 		select {
 		case request, moreEntries := <-c.readEntryRequestChan:
@@ -90,18 +81,18 @@ func (c *cataloger) readOrchestrator() {
 			if !exists {
 				batch = &readBatch{
 					startTime: time.Now(),
-					pathList:  make([]pathRequest, 0, MaxEntriesInRequest),
+					pathList:  make([]pathRequest, 0, c.batchParams.EntriesReadAtOnce),
 				}
 				bufferingMap[request.bufKey] = batch
 			}
 			batch.pathList = append(batch.pathList, request.pathReq)
-			if len(batch.pathList) == MaxEntriesInRequest {
+			if len(batch.pathList) == c.batchParams.EntriesReadAtOnce {
 				c.entriesReadBatchChan <- batchReadMessage{request.bufKey, batch.pathList}
 				delete(bufferingMap, request.bufKey)
 			}
 		case <-timer.C:
 			for k, v := range bufferingMap {
-				if time.Since(v.startTime) > waitTimeout {
+				if time.Since(v.startTime) > time.Microsecond*time.Duration(c.batchParams.BatchDelayMicroSec) {
 					c.entriesReadBatchChan <- batchReadMessage{k, v.pathList}
 					delete(bufferingMap, k)
 				}
@@ -148,7 +139,7 @@ func (c *cataloger) readEntriesBatch() {
 		}, c.txOpts(ctx, db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))...)
 		// send  entries to each requestor on the provided one-time channel
 		if err != nil {
-			c.log.WithError(err).Warn("Error reading batch of entries\n ")
+			c.log.WithError(err).Warn("error reading batch of entries")
 		}
 		entList := retInterface.([]*Entry)
 		entMap := make(map[string]*Entry)
