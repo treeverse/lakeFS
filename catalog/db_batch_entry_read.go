@@ -58,7 +58,8 @@ func (c *cataloger) initBatchEntryReader() {
 }
 
 func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, error) {
-	replyChan := make(chan readResponse, 1) // channel closed by readEntriesBatch
+	replyChan := make(chan readResponse, 1) // used for a single return status message.
+	// channel written to and closed by readEntriesBatch
 	request := &readRequest{
 		bufferingKey{repository, ref},
 		pathRequest{path, replyChan},
@@ -75,7 +76,7 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 func (c *cataloger) readOrchestrator() {
 	defer c.wg.Done()
 	bufferingMap := make(map[bufferingKey]*readBatch)
-	timer := time.NewTimer(0)
+	timer := time.NewTimer(ScanTimeout)
 	for {
 		if len(bufferingMap) > 0 {
 			timer.Reset(ScanTimeout)
@@ -94,13 +95,16 @@ func (c *cataloger) readOrchestrator() {
 				bufferingMap[request.bufKey] = batch
 			}
 			batch.pathList = append(batch.pathList, request.pathReq)
+			if len(batch.pathList) == MaxEntriesInRequest {
+				c.entriesReadBatchChan <- batchReadMessage{request.bufKey, batch.pathList}
+				delete(bufferingMap, request.bufKey)
+			}
 		case <-timer.C:
-		}
-		// send pending batches that are either full, or passed the timeout
-		for k, v := range bufferingMap {
-			if len(v.pathList) == MaxEntriesInRequest || time.Since(v.startTime) > waitTimeout {
-				c.entriesReadBatchChan <- batchReadMessage{k, v.pathList}
-				delete(bufferingMap, k)
+			for k, v := range bufferingMap {
+				if time.Since(v.startTime) > waitTimeout {
+					c.entriesReadBatchChan <- batchReadMessage{k, v.pathList}
+					delete(bufferingMap, k)
+				}
 			}
 		}
 	}
@@ -132,12 +136,10 @@ func (c *cataloger) readEntriesBatch() {
 			for i, s := range pathReqList {
 				p[i] = s.path
 			}
-			//pathInExper := "('" + strings.Join(p, "','") + "')"
-			inExper := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+			readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 				FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
-				//Where("path in " + pathInExper + " and not is_deleted")
 				Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
-			sql, args, err := inExper.PlaceholderFormat(sq.Dollar).ToSql()
+			sql, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 			if err != nil {
 				return entList, fmt.Errorf("build sql: %w", err)
 			}

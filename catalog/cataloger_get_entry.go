@@ -71,11 +71,7 @@ func (c *cataloger) GetEntryMaybeExpiredBatched(ctx context.Context, repository,
 	if err != nil {
 		return nil, err
 	}
-	entry, err := c.dbBatchEntryRead(repository, path, *ref)
-	if err != nil {
-		return nil, err
-	}
-	return entry, nil
+	return c.dbBatchEntryRead(repository, path, *ref)
 }
 
 func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error) {
