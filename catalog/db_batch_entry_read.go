@@ -67,6 +67,7 @@ func (c *cataloger) readOrchestrator() {
 	}()
 
 	for i := 0; i < c.batchParams.ReadersNum; i++ {
+		readersSync.Add(1)
 		go c.readEntriesBatch(&readersSync, entriesReadBatchChan)
 	}
 	bufferingMap := make(map[bufferingKey]*readBatch)
@@ -105,7 +106,6 @@ func (c *cataloger) readOrchestrator() {
 }
 
 func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan batchReadMessage) {
-	wg.Add(1)
 	defer wg.Done()
 	for {
 		message, more := <-inputBatchChan
