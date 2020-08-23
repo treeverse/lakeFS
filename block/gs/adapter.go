@@ -18,7 +18,8 @@ import (
 )
 
 const (
-	BlockstoreType = "gs"
+	BlockstoreType    = "gs"
+	MaxPartsInCompose = 32
 )
 
 var ErrNotImplemented = fmt.Errorf("not implemented")
@@ -167,7 +168,6 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
-
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
@@ -270,19 +270,39 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	})
-
+	ctx := context.Background()
 	// compose one file from all parts
 	bucket := s.client.Bucket(qualifiedKey.StorageNamespace)
 	srcs := make([]*storage.ObjectHandle, len(multipartList.Part))
-	for i := range multipartList.Part {
+	// check input validity
+	var previousPartNumber int64 = -1
+	partList, err := s.multipartTracker.ListMultipartUploadParts(ctx, qualifiedKey.StorageNamespace, translatedUploadID)
+	if err != nil {
+		return nil, 0, err
+	}
+	for i, p := range multipartList.Part {
 		var partNumber int64
-		if multipartList.Part[i].PartNumber != nil {
-			partNumber = *multipartList.Part[i].PartNumber
+		if p.PartNumber != nil {
+			partNumber = *p.PartNumber
+		} else {
+			// InvalidPart - BAD REQUEST 400
+			return nil, 0, err
+		}
+		if int(partNumber) != partList[i].Number || *p.ETag != partList[i].ETag {
+			// InvalidPart - BAD REQUEST 400
+			return nil, 0, err
+		}
+		if partNumber <= previousPartNumber {
+			// InvalidPartOrder - BAD EQUEST 400
 		}
 		objName := fmt.Sprintf("%s.%d", qualifiedKey.Key, partNumber)
 		srcs[i] = bucket.Object(objName)
+		previousPartNumber = partNumber
 	}
+
 	// TODO(barak): compare parts to the associated upload-id parts in database
+	err = composeMultiPart(qualifiedKey, srcs)
+	//WIP
 	composer := s.client.
 		Bucket(qualifiedKey.StorageNamespace).
 		Object(qualifiedKey.Key).
@@ -302,6 +322,28 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	lg.Debug("completed multipart upload")
 	s.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	return &attrs.Etag, attrs.Size, nil
+}
+
+func composeMultiPart(qualifiedKey block.QualifiedKey, srcs []*storage.ObjectHandle) error {
+	partsList := srcs
+	var nextPartsList []*storage.ObjectHandle
+	for len(partsList) > 1 {
+		for i := 0; i < len(partsList); i += MaxPartsInCompose {
+			partsBatch := make([]*storage.ObjectHandle, MaxPartsInCompose)
+			numCopied := copy(partsBatch, partsList[i:])
+			partsBatch = partsBatch[:numCopied]
+			if numCopied == 1 { // there is a single last element. should be moved to next iteration
+				nextPartsList = append(nextPartsList, partsBatch[0])
+			} else { // composition may be done in parallel. not first stage
+				//perform composition on partsBatch
+
+				// append result to nextPartsList
+			}
+		}
+		partsList = nextPartsList
+		partsList = partsList[:0]
+	}
+	return nil
 }
 
 func (s *Adapter) ValidateConfiguration(_ string) error {
