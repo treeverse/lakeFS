@@ -1,20 +1,22 @@
 ---
 layout: default
-title: Creating the S3 bucket
+title: Configuring the S3 bucket
 parent: AWS Deployment
 nav_order: 15
 has_children: false
 ---
 
-# Creating the S3 bucket
+# Configuring the S3 bucket
 
-We now create the S3 bucket, which will provide the data storage layer for our installation:
+The S3 bucket will provide the data storage layer for our installation.
+You can choose to create a new S3 bucket (recommended) or use an existing bucket with a path prefix.
+The path under the existing bucket should be empty.
 
-1. From the S3 Administration console, choose `Create Bucket` (you can use an existing bucket with a path prefix, but creating a dedicated bucket is recommended).
+1. From the S3 Administration console, choose `Create Bucket`.
 2. Make sure you:
     1. Block public access
     2. Disable Object Locking
-3. Once created, go to the `Permissions` tab, and create a Bucket Policy. Use the following structure:
+3. Go to the `Permissions` tab, and create a Bucket Policy. Use the following structure:
 
    ```json
     {
@@ -34,7 +36,7 @@ We now create the S3 bucket, which will provide the data storage layer for our i
          ],
          "Effect": "Allow",
          "Resource": [
-           "arn:aws:s3:::<BUCKET_NAME>/*"
+           "arn:aws:s3:::<BUCKET_NAME_WITH_PATH_PREFIX>/*"
          ],
          "Principal": {
            "AWS": [
