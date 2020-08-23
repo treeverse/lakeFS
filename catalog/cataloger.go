@@ -173,6 +173,13 @@ type CacheConfig struct {
 	Jitter  time.Duration
 }
 
+type BatchReaderParams struct {
+	Enabled bool
+	Size    int
+	Expiry  time.Duration
+	Jitter  time.Duration
+}
+
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
 	clock              clock.Clock

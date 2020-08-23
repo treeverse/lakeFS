@@ -107,14 +107,14 @@ func (controller *PutObject) HandleUploadPart(o *PathOperation) {
 		return
 	}
 	byteSize := o.Request.ContentLength
-	ETag, err := o.BlockStore.UploadPart(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
+	etag, err := o.BlockStore.UploadPart(block.ObjectPointer{StorageNamespace: o.Repository.StorageNamespace, Identifier: multiPart.PhysicalAddress},
 		byteSize, o.Request.Body, uploadID, partNumber)
 	if err != nil {
 		o.Log().WithError(err).Error("part " + partNumberStr + " upload failed")
 		o.EncodeError(errors.Codes.ToAPIErr(errors.ErrInternalError))
 		return
 	}
-	o.SetHeader("ETag", ETag)
+	o.SetHeader("ETag", etag)
 	o.ResponseWriter.WriteHeader(http.StatusOK)
 }
 
