@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"sync"
 	"time"
 
 	sq "github.com/Masterminds/squirrel"
@@ -39,15 +40,6 @@ type batchReadMessage struct {
 	batch []pathRequest
 }
 
-func (c *cataloger) initBatchEntryReader() {
-	go c.readOrchestrator()
-	c.wg.Add(1)
-	for i := 0; i < c.batchParams.ReadersNum; i++ {
-		go c.readEntriesBatch()
-		c.wg.Add(1)
-	}
-}
-
 func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, error) {
 	replyChan := make(chan readResponse, 1) // used for a single return status message.
 	// channel written to and closed by readEntriesBatch
@@ -65,7 +57,18 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 }
 
 func (c *cataloger) readOrchestrator() {
-	defer c.wg.Done()
+	var readersSync sync.WaitGroup
+	c.wg.Add(1)
+	entriesReadBatchChan := make(chan batchReadMessage, 1)
+	defer func() {
+		close(entriesReadBatchChan)
+		readersSync.Wait()
+		c.wg.Done()
+	}()
+
+	for i := 0; i < c.batchParams.ReadersNum; i++ {
+		go c.readEntriesBatch(readersSync, entriesReadBatchChan)
+	}
 	bufferingMap := make(map[bufferingKey]*readBatch)
 	timer := time.NewTimer(time.Microsecond * time.Duration(c.batchParams.ScanTimeoutMicroSec))
 	for {
@@ -87,13 +90,13 @@ func (c *cataloger) readOrchestrator() {
 			}
 			batch.pathList = append(batch.pathList, request.pathReq)
 			if len(batch.pathList) == c.batchParams.EntriesReadAtOnce {
-				c.entriesReadBatchChan <- batchReadMessage{request.bufKey, batch.pathList}
+				entriesReadBatchChan <- batchReadMessage{request.bufKey, batch.pathList}
 				delete(bufferingMap, request.bufKey)
 			}
 		case <-timer.C:
 			for k, v := range bufferingMap {
 				if time.Since(v.startTime) > time.Microsecond*time.Duration(c.batchParams.BatchDelayMicroSec) {
-					c.entriesReadBatchChan <- batchReadMessage{k, v.pathList}
+					entriesReadBatchChan <- batchReadMessage{k, v.pathList}
 					delete(bufferingMap, k)
 				}
 			}
@@ -101,10 +104,11 @@ func (c *cataloger) readOrchestrator() {
 	}
 }
 
-func (c *cataloger) readEntriesBatch() {
-	defer c.wg.Done()
+func (c *cataloger) readEntriesBatch(wg sync.WaitGroup, inputBatchChan chan batchReadMessage) {
+	wg.Add(1)
+	defer wg.Done()
 	for {
-		message, more := <-c.entriesReadBatchChan
+		message, more := <-inputBatchChan
 		if !more {
 			return
 		}

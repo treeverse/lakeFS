@@ -187,7 +187,6 @@ type cataloger struct {
 	dedupReportEnabled   bool
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
-	entriesReadBatchChan chan batchReadMessage
 	batchParams          *params.BatchRead
 }
 
@@ -241,8 +240,7 @@ func NewCataloger(db db.Database, batchParams *params.BatchRead, options ...Cata
 	}
 	c.processDedupBatches()
 	c.readEntryRequestChan = make(chan *readRequest, MaxReadQueue)
-	c.entriesReadBatchChan = make(chan batchReadMessage, 1)
-	c.initBatchEntryReader()
+	go c.readOrchestrator()
 	return c
 }
 
@@ -258,7 +256,6 @@ func (c *cataloger) Close() error {
 	if c != nil {
 		close(c.dedupCh)
 		close(c.readEntryRequestChan)
-		close(c.entriesReadBatchChan)
 		c.wg.Wait()
 		close(c.dedupReportCh)
 	}
