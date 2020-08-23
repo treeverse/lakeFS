@@ -123,7 +123,6 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 }
 
 func (c *Config) GetBatchReadParams() *catalogparams.BatchRead {
-
 	if viper.GetInt("cataloger.batch_read_params.entries_read_at_once") > 0 { //NewCataloger was called in this process
 		return &catalogparams.BatchRead{
 			ReadEntryMaxWaitSec: viper.GetInt("cataloger.batch_read_params.read_entry_max_wait_sec"),
@@ -141,7 +140,6 @@ func (c *Config) GetBatchReadParams() *catalogparams.BatchRead {
 			ReadersNum:          ReadersNum,
 		}
 	}
-
 }
 
 type AwsS3RetentionConfig struct {
