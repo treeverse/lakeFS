@@ -47,6 +47,7 @@ require (
 	github.com/mattn/go-sqlite3 v1.14.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect
+	github.com/mozilla/tls-observatory v0.0.0-20200317151703-4fa42e1c2dee
 	github.com/mr-tron/base58 v1.2.0
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/ory/dockertest/v3 v3.6.0

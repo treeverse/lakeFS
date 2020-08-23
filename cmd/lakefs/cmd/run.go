@@ -64,7 +64,7 @@ var runCmd = &cobra.Command{
 		cataloger := catalog.NewCataloger(dbPool)
 
 		// init block store
-		blockStore, err := factory.BuildBlockAdapter(cfg)
+		blockStore, err := factory.BuildBlockAdapter(cfg, dbPool)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}

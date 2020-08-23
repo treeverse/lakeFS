@@ -79,7 +79,7 @@ func TestNewFromFile(t *testing.T) {
 func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("local block adapter", func(t *testing.T) {
 		c := newConfigFromFile("testdata/valid_config.yaml")
-		adapter, err := factory.BuildBlockAdapter(c)
+		adapter, err := factory.BuildBlockAdapter(c, nil)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*local.Adapter); !ok {
 			t.Fatalf("expected a local block adapter, got something else instead")
@@ -89,12 +89,14 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	t.Run("s3 block adapter", func(t *testing.T) {
 		newConfigFromFile("testdata/valid_s3adapter_config.yaml")
 		c := config.NewConfig()
-		adapter, err := factory.BuildBlockAdapter(c)
+		adapter, err := factory.BuildBlockAdapter(c, nil)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
 		}
 	})
+
+	// TODO(barak): add gs block adapter test
 }
 
 func TestConfig_JSONLogger(t *testing.T) {

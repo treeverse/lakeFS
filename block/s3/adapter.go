@@ -376,6 +376,10 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	return err
 }
 
+func (a *Adapter) AbortMultiPartUploads(_ string) error {
+	return nil
+}
+
 func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)

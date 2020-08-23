@@ -574,17 +574,26 @@ func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHand
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("delete_repo")
-		cataloger := deps.Cataloger
-		err = cataloger.DeleteRepository(c.Context(), params.Repository)
+		repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return repositories.NewDeleteRepositoryNotFound().
-				WithPayload(responseError("repository not found"))
+			return objects.NewGetUnderlyingPropertiesNotFound().WithPayload(responseError("repository not found"))
+		}
+
+		err = deps.Cataloger.DeleteRepository(c.Context(), params.Repository)
+		if errors.Is(err, db.ErrNotFound) {
+			return repositories.NewDeleteRepositoryNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
 			return repositories.NewDeleteRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error deleting repository"))
 		}
-
+		// TODO(barak): do we need to communicate the repository delete as clear namespace storage? at least for the pending multipart uploads
+		err = deps.BlockAdapter.AbortMultiPartUploads(repo.StorageNamespace)
+		if err != nil {
+			c.deps.logger.WithError(err).
+				WithField("storage_namesapce", repo.StorageNamespace).
+				Warn("Failed to abort block adapter multipart uploads")
+		}
 		return repositories.NewDeleteRepositoryNoContent()
 	})
 }

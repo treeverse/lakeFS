@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/treeverse/lakefs/db"
+
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -23,7 +25,7 @@ import (
 
 var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
 
-func BuildBlockAdapter(c *config.Config) (block.Adapter, error) {
+func BuildBlockAdapter(c *config.Config, dbPool db.Database) (block.Adapter, error) {
 	blockstore := c.GetBlockstoreType()
 	logging.Default().
 		WithField("type", blockstore).
@@ -50,7 +52,7 @@ func BuildBlockAdapter(c *config.Config) (block.Adapter, error) {
 		if err != nil {
 			return nil, err
 		}
-		return buildGSAdapter(p)
+		return buildGSAdapter(p, dbPool)
 	default:
 		return nil, fmt.Errorf("%w '%s' please choose one of %s",
 			ErrInvalidBlockStoreType, blockstore, []string{local.BlockstoreType, s3a.BlockstoreType, mem.BlockstoreType, transient.BlockstoreType, gs.BlockstoreType})
@@ -84,7 +86,7 @@ func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
 	return adapter, nil
 }
 
-func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
+func buildGSAdapter(params params.GS, dbPool db.Database) (*gs.Adapter, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
 		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
@@ -94,7 +96,7 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	adapter := gs.NewAdapter(client)
+	adapter := gs.NewAdapter(client, dbPool)
 	log.WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }

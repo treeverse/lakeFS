@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 
 	"cloud.google.com/go/storage"
@@ -20,14 +21,13 @@ const (
 	BlockstoreType = "gs"
 )
 
-var (
-	ErrNotImplemented = fmt.Errorf("not implemented")
-)
+var ErrNotImplemented = fmt.Errorf("not implemented")
 
 type Adapter struct {
 	client             *storage.Client
 	ctx                context.Context
 	uploadIDTranslator block.UploadIDTranslator
+	multipartTracker   block.MultipartTracker
 }
 
 func WithContext(ctx context.Context) func(a *Adapter) {
@@ -42,10 +42,11 @@ func WithTranslator(t block.UploadIDTranslator) func(a *Adapter) {
 	}
 }
 
-func NewAdapter(client *storage.Client, opts ...func(a *Adapter)) *Adapter {
+func NewAdapter(client *storage.Client, multipartTracker block.MultipartTracker, opts ...func(a *Adapter)) *Adapter {
 	a := &Adapter{
-		client:             client,
 		ctx:                context.Background(),
+		client:             client,
+		multipartTracker:   multipartTracker,
 		uploadIDTranslator: &block.NoOpTranslator{},
 	}
 	for _, opt := range opts {
@@ -58,6 +59,7 @@ func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
 		ctx:                ctx,
 		client:             s.client,
+		multipartTracker:   s.multipartTracker,
 		uploadIDTranslator: s.uploadIDTranslator,
 	}
 }
@@ -170,11 +172,17 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	if err != nil {
 		return "", err
 	}
-	uploadID := uuid.New().String()
-	uploadID = s.uploadIDTranslator.SetUploadID(uploadID)
+	uploadID := strings.ReplaceAll(uuid.New().String(), "-", "")
+	translatedUploadID := s.uploadIDTranslator.SetUploadID(uploadID)
+	err = s.multipartTracker.CreateMultipartUpload(s.ctx, qualifiedKey.StorageNamespace, translatedUploadID)
+	if err != nil {
+		s.uploadIDTranslator.RemoveUploadID(uploadID)
+		return "", err
+	}
+	// TODO(barak): write new upload-id entry
 	s.log().WithFields(logging.Fields{
 		"upload_id":            uploadID,
-		"translated_upload_id": uploadID,
+		"translated_upload_id": translatedUploadID,
 		"qualified_ns":         qualifiedKey.StorageNamespace,
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
@@ -189,7 +197,8 @@ func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	if err != nil {
 		return "", err
 	}
-	objName := fmt.Sprintf("%s.%d", qualifiedKey.Key, partNumber)
+	uploadID = s.uploadIDTranslator.SetUploadID(uploadID)
+	objName := fmt.Sprintf("%s.%d", uploadID, partNumber)
 	o := s.client.
 		Bucket(qualifiedKey.StorageNamespace).
 		Object(objName)
@@ -206,7 +215,8 @@ func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	if err != nil {
 		return "", fmt.Errorf("object.Attrs: %w", err)
 	}
-	return attrs.Etag, err
+	// TODO(barak): insert record associated with upload-id with part etag and number
+	return attrs.Etag, nil
 }
 
 func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
@@ -223,6 +233,7 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 		Prefix:    qualifiedKey.Key,
 		Delimiter: catalog.DefaultPathDelimiter,
 	})
+	// TODO(barak): query upload id parts - delete and remove records from DB
 	for {
 		attrs, err := it.Next()
 		if errors.Is(err, iterator.Done) {
@@ -236,6 +247,10 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 		}
 	}
 	s.uploadIDTranslator.RemoveUploadID(uploadID)
+	return nil
+}
+
+func (a *Adapter) AbortMultiPartUploads(storageNamespace string) error {
 	return nil
 }
 
@@ -267,6 +282,7 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 		objName := fmt.Sprintf("%s.%d", qualifiedKey.Key, partNumber)
 		srcs[i] = bucket.Object(objName)
 	}
+	// TODO(barak): compare parts to the associated upload-id parts in database
 	composer := s.client.
 		Bucket(qualifiedKey.StorageNamespace).
 		Object(qualifiedKey.Key).
@@ -276,6 +292,7 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, 0, err
 	}
+	// TODO(barak): remove upload id tracking from DB
 	// delete parts
 	for _, src := range srcs {
 		if err := src.Delete(s.ctx); err != nil {

@@ -173,6 +173,10 @@ func (l *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	return nil
 }
 
+func (l *Adapter) AbortMultiPartUploads(_ string) error {
+	return nil
+}
+
 func (l *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	etag := computeETag(multipartList.Part) + "-" + strconv.Itoa(len(multipartList.Part))
 	partFiles, err := l.getPartFiles(uploadID)

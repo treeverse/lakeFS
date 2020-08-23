@@ -59,6 +59,7 @@ type Adapter interface {
 	CreateMultiPartUpload(obj ObjectPointer, r *http.Request, opts CreateMultiPartUploadOpts) (string, error)
 	UploadPart(obj ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error)
 	AbortMultiPartUpload(obj ObjectPointer, uploadID string) error
+	AbortMultiPartUploads(storageNamespace string) error
 	CompleteMultiPartUpload(obj ObjectPointer, uploadID string, multipartList *MultipartUploadCompletion) (*string, int64, error)
 	// ValidateConfiguration validates an appropriate bucket
 	// configuration and returns a validation error or nil.

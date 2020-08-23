@@ -85,6 +85,10 @@ func (a *Adapter) AbortMultiPartUpload(block.ObjectPointer, string) error {
 	return nil
 }
 
+func (a *Adapter) AbortMultiPartUploads(_ string) error {
+	return nil
+}
+
 func (a *Adapter) CompleteMultiPartUpload(block.ObjectPointer, string, *block.MultipartUploadCompletion) (*string, int64, error) {
 	const dataSize = 1024
 	data := make([]byte, dataSize)

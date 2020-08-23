@@ -192,6 +192,10 @@ func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	return nil
 }
 
+func (a *Adapter) AbortMultiPartUploads(_ string) error {
+	return nil
+}
+
 func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, _ *block.MultipartUploadCompletion) (*string, int64, error) {
 	a.mutex.Lock()
 	defer a.mutex.Unlock()
