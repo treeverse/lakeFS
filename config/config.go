@@ -123,13 +123,25 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 }
 
 func (c *Config) GetBatchReadParams() *catalogparams.BatchRead {
-	return &catalogparams.BatchRead{
-		ReadEntryMaxWaitSec: viper.GetInt("cataloger.batch_read_params.read_entry_max_wait_sec"),
-		ScanTimeoutMicroSec: viper.GetInt("cataloger.batch_read_params.scan_timeout_micro_sec"),
-		BatchDelayMicroSec:  viper.GetInt("cataloger.batch_read_params.batch_delay_micro_sec"),
-		EntriesReadAtOnce:   viper.GetInt("cataloger.batch_read_params.entries_read_at_once"),
-		ReadersNum:          viper.GetInt("cataloger.batch_read_params.readers_num"),
+
+	if viper.GetInt("cataloger.batch_read_params.entries_read_at_once") > 0 { //NewCataloger was called in this process
+		return &catalogparams.BatchRead{
+			ReadEntryMaxWaitSec: viper.GetInt("cataloger.batch_read_params.read_entry_max_wait_sec"),
+			ScanTimeoutMicroSec: viper.GetInt("cataloger.batch_read_params.scan_timeout_micro_sec"),
+			BatchDelayMicroSec:  viper.GetInt("cataloger.batch_read_params.batch_delay_micro_sec"),
+			EntriesReadAtOnce:   viper.GetInt("cataloger.batch_read_params.entries_read_at_once"),
+			ReadersNum:          viper.GetInt("cataloger.batch_read_params.readers_num"),
+		}
+	} else {
+		return &catalogparams.BatchRead{
+			ReadEntryMaxWaitSec: ReadEntryMaxWaitSec,
+			ScanTimeoutMicroSec: ScanTimeoutMicroSec,
+			BatchDelayMicroSec:  BatchDelayMicroSec,
+			EntriesReadAtOnce:   EntriesReadAtOnce,
+			ReadersNum:          ReadersNum,
+		}
 	}
+
 }
 
 type AwsS3RetentionConfig struct {
