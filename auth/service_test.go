@@ -1,6 +1,7 @@
 package auth_test
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 	"github.com/go-test/deep"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/permissions"
 
 	"github.com/google/uuid"
@@ -553,5 +555,72 @@ func TestDBAuthService_ListGroups(t *testing.T) {
 				t.Errorf("got different groups than expected: %s", diffs)
 			}
 		})
+	}
+}
+
+func TestDbAuthService_GetUser(t *testing.T) {
+	s := setupService(t)
+	const userName = "foo"
+	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+	// and Postgres time storage.
+	time := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+	if err := s.CreateUser(&model.User{DisplayName: userName, ID: -22, CreatedAt: time}); err != nil {
+		t.Fatalf("CreateUser(%s): %s", userName, err)
+	}
+	user, err := s.GetUser(userName)
+	if err != nil {
+		t.Fatalf("GetUser(%s): %s", userName, err)
+	}
+	if user.DisplayName != userName {
+		t.Errorf("GetUser(%s) returned user %+v with a different name", userName, user)
+	}
+	if user.CreatedAt.Sub(time) != 0 {
+		t.Errorf("expected user CreatedAt %s, got %+v", time, user.CreatedAt)
+	}
+	if user.ID == -22 {
+		t.Errorf("expected CreateUser ID:-22 to be dropped on server, got user %+v", user)
+	}
+}
+
+func TestDbAuthService_GetUserById(t *testing.T) {
+	s := setupService(t)
+	const userName = "foo"
+	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
+	// and Postgres time storage.
+	time := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+	if err := s.CreateUser(&model.User{DisplayName: userName, ID: -22, CreatedAt: time}); err != nil {
+		t.Fatalf("CreateUser(%s): %s", userName, err)
+	}
+	user, err := s.GetUser(userName)
+	if err != nil {
+		t.Fatalf("GetUser(%s): %s", userName, err)
+	}
+	userById, err := s.GetUserByID(user.ID)
+	if err != nil {
+		t.Errorf("GetUserById(%d): %s", user.ID, err)
+	}
+	if diffs := deep.Equal(user, userById); diffs != nil {
+		t.Errorf("got different user by name and by ID: %s", diffs)
+	}
+}
+
+func TestDBAuthService_DeleteUser(t *testing.T) {
+	s := setupService(t)
+	const userName = "foo"
+	if err := s.CreateUser(&model.User{DisplayName: userName}); err != nil {
+		t.Fatalf("CreateUser(%s): %s", userName, err)
+	}
+	_, err := s.GetUser(userName)
+	if err != nil {
+		t.Fatalf("GetUser(%s) before deletion: %s", userName, err)
+	}
+	if err = s.DeleteUser(userName); err != nil {
+		t.Errorf("DeleteUser(%s): %s", userName, err)
+	}
+	_, err = s.GetUser(userName)
+	if err == nil {
+		t.Errorf("GetUser(%s) succeeded after DeleteUser", userName)
+	} else if !errors.Is(err, db.ErrNotFound) {
+		t.Errorf("GetUser(%s) after deletion: %s", userName, err)
 	}
 }
