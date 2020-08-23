@@ -83,7 +83,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
 	conf := config.NewConfig()
-	cataloger := catalog.NewCataloger(conn, conf.GetBatchReadParams())
+	cataloger := catalog.NewCataloger(conn, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})

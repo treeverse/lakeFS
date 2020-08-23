@@ -27,6 +27,12 @@ const (
 	defaultCatalogerCacheExpiry = 20 * time.Second
 	defaultCatalogerCacheJitter = 5 * time.Second
 	MaxReadQueue                = 10
+
+	defaultBatchReadEntryMaxWait  = 15 * time.Second
+	defaultBatchScanTimeout       = 500 * time.Microsecond
+	defaultBatchDelay             = 1000 * time.Microsecond
+	defaultBatchEntriesReadAtOnce = 64
+	defaultBatchReaders           = 8
 )
 
 type DedupReport struct {
@@ -187,7 +193,7 @@ type cataloger struct {
 	dedupReportEnabled   bool
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
-	batchParams          *params.BatchRead
+	batchParams          params.BatchRead
 }
 
 type CatalogerOption func(*cataloger)
@@ -217,7 +223,27 @@ func WithDedupReportChannel(b bool) CatalogerOption {
 	}
 }
 
-func NewCataloger(db db.Database, batchParams *params.BatchRead, options ...CatalogerOption) Cataloger {
+func WithBatchReadParams(p params.BatchRead) CatalogerOption {
+	return func(c *cataloger) {
+		if p.ScanTimeout != 0 {
+			c.batchParams.ScanTimeout = p.ScanTimeout
+		}
+		if p.BatchDelay != 0 {
+			c.batchParams.BatchDelay = p.BatchDelay
+		}
+		if p.EntriesReadAtOnce != 0 {
+			c.batchParams.EntriesReadAtOnce = p.EntriesReadAtOnce
+		}
+		if p.ReadEntryMaxWait != 0 {
+			c.batchParams.ReadEntryMaxWait = p.ReadEntryMaxWait
+		}
+		if p.Readers != 0 {
+			c.batchParams.Readers = p.Readers
+		}
+	}
+}
+
+func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
 		clock:              clock.New(),
 		log:                logging.Default().WithField("service_name", "cataloger"),
@@ -225,7 +251,13 @@ func NewCataloger(db db.Database, batchParams *params.BatchRead, options ...Cata
 		cacheConfig:        defaultCatalogerCacheConfig,
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
 		dedupReportEnabled: true,
-		batchParams:        batchParams,
+		batchParams: params.BatchRead{
+			ReadEntryMaxWait:  defaultBatchReadEntryMaxWait,
+			ScanTimeout:       defaultBatchScanTimeout,
+			BatchDelay:        defaultBatchDelay,
+			EntriesReadAtOnce: defaultBatchEntriesReadAtOnce,
+			Readers:           defaultBatchReaders,
+		},
 	}
 	for _, opt := range options {
 		opt(c)

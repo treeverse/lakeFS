@@ -52,12 +52,6 @@ const (
 	MetaStoreType          = "metastore.type"
 	MetaStoreHiveURI       = "metastore.hive.uri"
 	MetastoreGlueCatalogID = "metastore.glue.catalog-id"
-
-	ReadEntryMaxWaitSec = 15
-	ScanTimeoutMicroSec = 500
-	BatchDelayMicroSec  = 1000
-	EntriesReadAtOnce   = 64
-	ReadersNum          = 8
 )
 
 var (
@@ -110,35 +104,19 @@ func setDefaults() {
 	viper.SetDefault("stats.enabled", DefaultStatsEnabled)
 	viper.SetDefault("stats.address", DefaultStatsAddr)
 	viper.SetDefault("stats.flush_interval", DefaultStatsFlushInterval)
-
-	viper.SetDefault("cataloger.batch_read_params.read_entry_max_wait_sec", ReadEntryMaxWaitSec)
-	viper.SetDefault("cataloger.batch_read_params.scan_timeout_micro_sec", ScanTimeoutMicroSec)
-	viper.SetDefault("cataloger.batch_read_params.batch_delay_micro_sec", BatchDelayMicroSec)
-	viper.SetDefault("cataloger.batch_read_params.entries_read_at_once", EntriesReadAtOnce)
-	viper.SetDefault("cataloger.batch_read_params.readers_num", ReadersNum)
 }
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{DatabaseURI: viper.GetString("database.connection_string")}
 }
 
-func (c *Config) GetBatchReadParams() *catalogparams.BatchRead {
-	if viper.GetInt("cataloger.batch_read_params.entries_read_at_once") > 0 { //NewCataloger was called in this process
-		return &catalogparams.BatchRead{
-			ReadEntryMaxWaitSec: viper.GetInt("cataloger.batch_read_params.read_entry_max_wait_sec"),
-			ScanTimeoutMicroSec: viper.GetInt("cataloger.batch_read_params.scan_timeout_micro_sec"),
-			BatchDelayMicroSec:  viper.GetInt("cataloger.batch_read_params.batch_delay_micro_sec"),
-			EntriesReadAtOnce:   viper.GetInt("cataloger.batch_read_params.entries_read_at_once"),
-			ReadersNum:          viper.GetInt("cataloger.batch_read_params.readers_num"),
-		}
-	} else {
-		return &catalogparams.BatchRead{
-			ReadEntryMaxWaitSec: ReadEntryMaxWaitSec,
-			ScanTimeoutMicroSec: ScanTimeoutMicroSec,
-			BatchDelayMicroSec:  BatchDelayMicroSec,
-			EntriesReadAtOnce:   EntriesReadAtOnce,
-			ReadersNum:          ReadersNum,
-		}
+func (c *Config) GetCatalogerBatchReadParams() catalogparams.BatchRead {
+	return catalogparams.BatchRead{
+		ReadEntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),
+		ScanTimeout:       viper.GetDuration("cataloger.batch_read.scan_timeout"),
+		BatchDelay:        viper.GetDuration("cataloger.batch_read.batch_delay"),
+		EntriesReadAtOnce: viper.GetInt("cataloger.batch_read.entries_read_at_once"),
+		Readers:           viper.GetInt("cataloger.batch_read.readers"),
 	}
 }
 

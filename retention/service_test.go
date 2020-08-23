@@ -39,7 +39,7 @@ func setupService(t *testing.T, opts ...testutil.GetDBOption) *retention.DBReten
 	ctx := context.Background()
 	cdb, _ := testutil.GetDB(t, databaseURI, opts...)
 	conf := config.NewConfig()
-	cataloger := catalog.NewCataloger(cdb, conf.GetBatchReadParams())
+	cataloger := catalog.NewCataloger(cdb, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
 	testutil.MustDo(t, "create repository",
 		cataloger.CreateRepository(ctx, "repo", "s3://repo", "master"))
 	return retention.NewDBRetentionService(cdb)

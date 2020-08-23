@@ -44,14 +44,14 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 	replyChan := make(chan readResponse, 1) // used for a single return status message.
 	// channel written to and closed by readEntriesBatch
 	request := &readRequest{
-		bufferingKey{repository, ref},
-		pathRequest{path, replyChan},
+		bufKey:  bufferingKey{repository: repository, ref: ref},
+		pathReq: pathRequest{path: path, replyChan: replyChan},
 	}
 	c.readEntryRequestChan <- request
 	select {
 	case response := <-replyChan:
 		return response.entry, response.err
-	case <-time.After(time.Second * time.Duration(c.batchParams.ReadEntryMaxWaitSec)):
+	case <-time.After(c.batchParams.ReadEntryMaxWait):
 		return nil, ErrReadEntryTimeout
 	}
 }
@@ -66,15 +66,15 @@ func (c *cataloger) readOrchestrator() {
 		c.wg.Done()
 	}()
 
-	for i := 0; i < c.batchParams.ReadersNum; i++ {
-		readersSync.Add(1)
+	readersSync.Add(c.batchParams.Readers)
+	for i := 0; i < c.batchParams.Readers; i++ {
 		go c.readEntriesBatch(&readersSync, entriesReadBatchChan)
 	}
 	bufferingMap := make(map[bufferingKey]*readBatch)
-	timer := time.NewTimer(time.Microsecond * time.Duration(c.batchParams.ScanTimeoutMicroSec))
+	timer := time.NewTimer(c.batchParams.ScanTimeout)
 	for {
 		if len(bufferingMap) > 0 {
-			timer.Reset(time.Microsecond * time.Duration(c.batchParams.ScanTimeoutMicroSec))
+			timer.Reset(c.batchParams.ScanTimeout)
 		}
 		select {
 		case request, moreEntries := <-c.readEntryRequestChan:
@@ -91,13 +91,13 @@ func (c *cataloger) readOrchestrator() {
 			}
 			batch.pathList = append(batch.pathList, request.pathReq)
 			if len(batch.pathList) == c.batchParams.EntriesReadAtOnce {
-				entriesReadBatchChan <- batchReadMessage{request.bufKey, batch.pathList}
+				entriesReadBatchChan <- batchReadMessage{key: request.bufKey, batch: batch.pathList}
 				delete(bufferingMap, request.bufKey)
 			}
 		case <-timer.C:
 			for k, v := range bufferingMap {
-				if time.Since(v.startTime) > time.Microsecond*time.Duration(c.batchParams.BatchDelayMicroSec) {
-					entriesReadBatchChan <- batchReadMessage{k, v.pathList}
+				if time.Since(v.startTime) > c.batchParams.BatchDelay {
+					entriesReadBatchChan <- batchReadMessage{key: k, batch: v.pathList}
 					delete(bufferingMap, k)
 				}
 			}
@@ -134,14 +134,14 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 				FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
 				Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
-			sql, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
+			query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 			if err != nil {
 				return entList, fmt.Errorf("build sql: %w", err)
 			}
-			err = tx.Select(&entList, sql, args...)
+			err = tx.Select(&entList, query, args...)
 			return entList, err
 		}, c.txOpts(ctx, db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))...)
-		// send  entries to each requestor on the provided one-time channel
+		// send entries to each requestor on the provided one-time channel
 		if err != nil {
 			c.log.WithError(err).Warn("error reading batch of entries")
 		}
@@ -151,12 +151,14 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			entMap[ent.Path] = ent
 		}
 		for _, pathReq := range message.batch {
-			e, exists := entMap[pathReq.path]
-			if exists {
-				pathReq.replyChan <- readResponse{e, nil}
-			} else {
-				pathReq.replyChan <- readResponse{nil, db.ErrNotFound}
+			response := readResponse{
+				entry: entMap[pathReq.path],
+				err:   err,
 			}
+			if response.entry == nil && err == nil {
+				err = ErrEntryNotFound
+			}
+			pathReq.replyChan <- response
 			close(pathReq.replyChan)
 		}
 	}

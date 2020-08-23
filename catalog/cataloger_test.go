@@ -32,7 +32,8 @@ func testCataloger(t testing.TB, options ...CatalogerOption) TestCataloger {
 	config.NewConfig()
 	conn, uri := testutil.GetDB(t, databaseURI)
 	conf := config.NewConfig()
-	return TestCataloger{Cataloger: NewCataloger(conn, conf.GetBatchReadParams(), options...), DbConnURI: uri}
+	options = append(options, WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
+	return TestCataloger{Cataloger: NewCataloger(conn, options...), DbConnURI: uri}
 }
 
 func testCatalogerUniqueID() string {

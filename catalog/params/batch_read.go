@@ -1,9 +1,11 @@
 package params
 
+import "time"
+
 type BatchRead struct {
-	ReadEntryMaxWaitSec int
-	ScanTimeoutMicroSec int
-	BatchDelayMicroSec  int
-	EntriesReadAtOnce   int
-	ReadersNum          int
+	ReadEntryMaxWait  time.Duration
+	ScanTimeout       time.Duration
+	BatchDelay        time.Duration
+	EntriesReadAtOnce int
+	Readers           int
 }
