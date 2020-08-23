@@ -122,7 +122,9 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 
    A [repository](branching/model.md#repositories) is lakeFS's basic namespace, akin S3's Bucket. (Read more about the data model [here](branching/model.md))
    Since we're using the `local` block adapter, the value used for `Storage Namespace` should be a static `local://`.
-   For a real deployment that uses S3 as a block adapter, this would be a bucket name with optional prefix, i.e. `s3://my-bucket/prefix`. 
+   For a deployment that uses S3 as a block adapter, this would be a bucket name with an optional prefix, i.e. `s3://my-bucket/prefix`.
+   Notice that lakeFS will only manage the data written under that prefix. All actions on the managed data must go through lakeFS endpoint.
+   Data written directly to the bucket under different paths will be accessible in the same way it was before.
    {: .note .note-info }
 
 
