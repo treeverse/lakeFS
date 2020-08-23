@@ -116,15 +116,14 @@ func setDefaults() {
 	viper.SetDefault("cataloger.batch_read_params.batch_delay_micro_sec", BatchDelayMicroSec)
 	viper.SetDefault("cataloger.batch_read_params.entries_read_at_once", EntriesReadAtOnce)
 	viper.SetDefault("cataloger.batch_read_params.readers_num", ReadersNum)
-
 }
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{DatabaseURI: viper.GetString("database.connection_string")}
 }
 
-func GetBatchReadParams() *catalogparams.BatchReadParams {
-	return &catalogparams.BatchReadParams{
+func GetBatchReadParams() *catalogparams.BatchRead {
+	return &catalogparams.BatchRead{
 		ReadEntryMaxWaitSec: viper.GetInt("cataloger.batch_read_params.read_entry_max_wait_sec"),
 		ScanTimeoutMicroSec: viper.GetInt("cataloger.batch_read_params.scan_timeout_micro_sec"),
 		BatchDelayMicroSec:  viper.GetInt("cataloger.batch_read_params.batch_delay_micro_sec"),

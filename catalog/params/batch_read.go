@@ -1,6 +1,6 @@
 package params
 
-type BatchReadParams struct {
+type BatchRead struct {
 	ReadEntryMaxWaitSec int
 	ScanTimeoutMicroSec int
 	BatchDelayMicroSec  int

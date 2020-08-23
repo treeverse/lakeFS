@@ -188,7 +188,7 @@ type cataloger struct {
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
 	entriesReadBatchChan chan batchReadMessage
-	batchParams          *params.BatchReadParams
+	batchParams          *params.BatchRead
 }
 
 type CatalogerOption func(*cataloger)
@@ -218,7 +218,7 @@ func WithDedupReportChannel(b bool) CatalogerOption {
 	}
 }
 
-func NewCataloger(db db.Database, batchParams *params.BatchReadParams, options ...CatalogerOption) Cataloger {
+func NewCataloger(db db.Database, batchParams *params.BatchRead, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
 		clock:              clock.New(),
 		log:                logging.Default().WithField("service_name", "cataloger"),
