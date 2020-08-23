@@ -122,7 +122,7 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{DatabaseURI: viper.GetString("database.connection_string")}
 }
 
-func GetBatchReadParams() *catalogparams.BatchRead {
+func (c *Config) GetBatchReadParams() *catalogparams.BatchRead {
 	return &catalogparams.BatchRead{
 		ReadEntryMaxWaitSec: viper.GetInt("cataloger.batch_read_params.read_entry_max_wait_sec"),
 		ScanTimeoutMicroSec: viper.GetInt("cataloger.batch_read_params.scan_timeout_micro_sec"),

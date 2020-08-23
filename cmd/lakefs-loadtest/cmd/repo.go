@@ -45,8 +45,8 @@ var repoCmd = &cobra.Command{
 
 		ctx := context.Background()
 		database := connectToDB(connectionString)
-
-		c := catalog.NewCataloger(database, config.GetBatchReadParams())
+		conf := config.NewConfig()
+		c := catalog.NewCataloger(database, conf.GetBatchReadParams())
 		if repository == "" {
 			repository = "repo-" + strings.ToLower(uuid.New().String())
 		}

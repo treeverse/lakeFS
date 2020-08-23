@@ -23,9 +23,10 @@ var expireCmd = &cobra.Command{
 	Short: "Apply configured retention policies to expire objects",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
+		conf := config.NewConfig()
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalog.NewCataloger(dbPool, config.GetBatchReadParams())
+		cataloger := catalog.NewCataloger(dbPool, conf.GetBatchReadParams())
 
 		awsRetentionConfig := config.NewConfig().GetAwsS3RetentionConfig()
 

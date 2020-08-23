@@ -59,7 +59,8 @@ func TestLocalLoad(t *testing.T) {
 	}
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
-	cataloger := catalog.NewCataloger(conn, config.GetBatchReadParams())
+	conf := config.NewConfig()
+	cataloger := catalog.NewCataloger(conn, conf.GetBatchReadParams())
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)

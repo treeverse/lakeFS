@@ -119,7 +119,8 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	}
 
 	conn, _ := testutil.GetDB(t, databaseURI)
-	cataloger := catalog.NewCataloger(conn, config.GetBatchReadParams())
+	conf := config.NewConfig()
+	cataloger := catalog.NewCataloger(conn, conf.GetBatchReadParams())
 
 	blockAdapter := testutil.NewBlockAdapterByEnv(IdTranslator)
 
