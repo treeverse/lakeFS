@@ -40,29 +40,7 @@ type batchReadMessage struct {
 	batch []pathRequest
 }
 
-func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, error) {
-	replyChan := make(chan readResponse, 1) // used for a single return status message.
-	// channel written to and closed by readEntriesBatch
-	request := &readRequest{
-		bufKey: bufferingKey{
-			repository: repository,
-			ref:        ref,
-		},
-		pathReq: pathRequest{
-			path:      path,
-			replyChan: replyChan,
-		},
-	}
-	c.readEntryRequestChan <- request
-	select {
-	case response := <-replyChan:
-		return response.entry, response.err
-	case <-time.After(c.batchParams.ReadEntryMaxWait):
-		return nil, ErrReadEntryTimeout
-	}
-}
-
-func (c *cataloger) readOrchestrator() {
+func (c *cataloger) readEntriesBatchOrchestrator() {
 	entriesReadBatchChan := make(chan batchReadMessage, 1)
 	var readersWG sync.WaitGroup
 	defer func() {
@@ -117,44 +95,11 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 		if !more {
 			return
 		}
-		retInterface, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-			bufKey := message.key
-			pathReqList := message.batch
-			branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
-			if err != nil {
-				return nil, err
-			}
-
-			lineage, err := getLineage(tx, branchID, bufKey.ref.CommitID)
-			if err != nil {
-				return nil, fmt.Errorf("get lineage: %w", err)
-			}
-
-			p := make([]string, len(pathReqList))
-			for i, s := range pathReqList {
-				p[i] = s.path
-			}
-			readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
-				FromSelect(sqEntriesLineage(branchID, bufKey.ref.CommitID, lineage), "entries").
-				Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
-			query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
-			if err != nil {
-				return nil, fmt.Errorf("build sql: %w", err)
-			}
-			var entList []*Entry
-			err = tx.Select(&entList, query, args...)
-			if err != nil {
-				return nil, fmt.Errorf("select entries: %w", err)
-			}
-			return entList, nil
-		}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))
-		// send entries to each requestor on the provided one-time channel
-		var entList []*Entry
+		entList, err := c.dbSelectBatchEntries(message.key.repository, message.key.ref, message.batch)
 		if err != nil {
 			c.log.WithError(err).Warn("error reading batch of entries")
-		} else {
-			entList = retInterface.([]*Entry)
 		}
+		// send entries to each request on the provided one-time channel
 		entMap := make(map[string]*Entry)
 		for _, ent := range entList {
 			entMap[ent.Path] = ent
@@ -174,4 +119,43 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			close(pathReq.replyChan)
 		}
 	}
+}
+
+func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList []pathRequest) ([]*Entry, error) {
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// get branch
+		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
+		if err != nil {
+			return nil, err
+		}
+		// get lineage
+		lineage, err := getLineage(tx, branchID, ref.CommitID)
+		if err != nil {
+			return nil, fmt.Errorf("get lineage: %w", err)
+		}
+		// prepare list of paths
+		p := make([]string, len(pathReqList))
+		for i, s := range pathReqList {
+			p[i] = s.path
+		}
+		// prepare query
+		readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+			Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
+		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
+		if err != nil {
+			return nil, fmt.Errorf("build sql: %w", err)
+		}
+		// select entries
+		var entries []*Entry
+		err = tx.Select(&entries, query, args...)
+		if err != nil {
+			return nil, fmt.Errorf("select entries: %w", err)
+		}
+		return entries, nil
+	}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))
+	if err != nil {
+		return nil, err
+	}
+	return res.([]*Entry), nil
 }

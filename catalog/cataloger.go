@@ -278,7 +278,7 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 func (c *cataloger) startReadOrchestrator() {
 	c.readEntryRequestChan = make(chan *readRequest, MaxReadQueue)
 	c.wg.Add(1)
-	go c.readOrchestrator()
+	go c.readEntriesBatchOrchestrator()
 }
 
 func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
