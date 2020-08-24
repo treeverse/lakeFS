@@ -1,7 +1,6 @@
 package catalog
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"sync"
@@ -20,6 +19,7 @@ type readRequest struct {
 	bufKey  bufferingKey
 	pathReq pathRequest
 }
+
 type readResponse struct {
 	entry *Entry
 	err   error
@@ -44,8 +44,14 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 	replyChan := make(chan readResponse, 1) // used for a single return status message.
 	// channel written to and closed by readEntriesBatch
 	request := &readRequest{
-		bufKey:  bufferingKey{repository: repository, ref: ref},
-		pathReq: pathRequest{path: path, replyChan: replyChan},
+		bufKey: bufferingKey{
+			repository: repository,
+			ref:        ref,
+		},
+		pathReq: pathRequest{
+			path:      path,
+			replyChan: replyChan,
+		},
 	}
 	c.readEntryRequestChan <- request
 	select {
@@ -57,18 +63,17 @@ func (c *cataloger) dbBatchEntryRead(repository, path string, ref Ref) (*Entry, 
 }
 
 func (c *cataloger) readOrchestrator() {
-	var readersSync sync.WaitGroup
-	c.wg.Add(1)
 	entriesReadBatchChan := make(chan batchReadMessage, 1)
+	var readersWG sync.WaitGroup
 	defer func() {
 		close(entriesReadBatchChan)
-		readersSync.Wait()
+		readersWG.Wait()
 		c.wg.Done()
 	}()
 
-	readersSync.Add(c.batchParams.Readers)
+	readersWG.Add(c.batchParams.Readers)
 	for i := 0; i < c.batchParams.Readers; i++ {
-		go c.readEntriesBatch(&readersSync, entriesReadBatchChan)
+		go c.readEntriesBatch(&readersWG, entriesReadBatchChan)
 	}
 	bufferingMap := make(map[bufferingKey]*readBatch)
 	timer := time.NewTimer(c.batchParams.ScanTimeout)
@@ -112,7 +117,6 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 		if !more {
 			return
 		}
-		ctx := context.Background()
 		retInterface, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 			var entList []*Entry
 			bufKey := message.key
@@ -139,8 +143,8 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 				return entList, fmt.Errorf("build sql: %w", err)
 			}
 			err = tx.Select(&entList, query, args...)
-			return entList, err
-		}, c.txOpts(ctx, db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))...)
+			return entList, fmt.Errorf("select entries: %w", err)
+		}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))
 		// send entries to each requestor on the provided one-time channel
 		if err != nil {
 			c.log.WithError(err).Warn("error reading batch of entries")
@@ -152,7 +156,8 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 		}
 		for _, pathReq := range message.batch {
 			var response readResponse
-			if ent, ok := entMap[pathReq.path]; ok {
+			ent, ok := entMap[pathReq.path]
+			if ok {
 				response.entry = ent
 			} else if err != nil {
 				response.err = err

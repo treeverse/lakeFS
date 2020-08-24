@@ -271,9 +271,14 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		c.dedupReportCh = make(chan *DedupReport, dedupReportChannelSize)
 	}
 	c.processDedupBatches()
-	c.readEntryRequestChan = make(chan *readRequest, MaxReadQueue)
-	go c.readOrchestrator()
+	c.startReadOrchestrator()
 	return c
+}
+
+func (c *cataloger) startReadOrchestrator() {
+	c.readEntryRequestChan = make(chan *readRequest, MaxReadQueue)
+	c.wg.Add(1)
+	go c.readOrchestrator()
 }
 
 func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
