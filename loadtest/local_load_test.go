@@ -8,8 +8,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/config"
-
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 
@@ -59,8 +57,7 @@ func TestLocalLoad(t *testing.T) {
 	}
 	conn, _ := testutil.GetDB(t, databaseURI)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
-	conf := config.NewConfig()
-	cataloger := catalog.NewCataloger(conn, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
+	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)

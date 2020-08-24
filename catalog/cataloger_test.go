@@ -29,10 +29,9 @@ type TestCataloger struct {
 
 func testCataloger(t testing.TB, options ...CatalogerOption) TestCataloger {
 	t.Helper()
+	// TODO(barak): do we need new config here?
 	config.NewConfig()
 	conn, uri := testutil.GetDB(t, databaseURI)
-	conf := config.NewConfig()
-	options = append(options, WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
 	return TestCataloger{Cataloger: NewCataloger(conn, options...), DbConnURI: uri}
 }
 

@@ -9,8 +9,6 @@ import (
 	"testing"
 	"time"
 
-	"github.com/treeverse/lakefs/config"
-
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
 
@@ -82,8 +80,7 @@ func (m *mockCollector) CollectEvent(_, _ string) {}
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
-	conf := config.NewConfig()
-	cataloger := catalog.NewCataloger(conn, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
+	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})
