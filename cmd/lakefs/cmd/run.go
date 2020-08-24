@@ -183,7 +183,6 @@ func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutte
 	for i, server := range servers {
 		if err := server.Shutdown(ctx); err != nil {
 			fmt.Printf("Error while shutting down service (%d): %s\n", i, err)
-			os.Exit(1)
 		}
 	}
 	simulator.ShutdownRecorder()

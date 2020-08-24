@@ -575,7 +575,7 @@ var Codes = errorCodeMap{
 		HTTPStatusCode: http.StatusBadRequest,
 	},
 
-	/// Bucket notification related errors.
+	// Bucket notification related errors.
 	ErrEventNotification: {
 		Code:           "InvalidArgument",
 		Description:    "A specified event is not supported for notifications.",
@@ -722,7 +722,7 @@ var Codes = errorCodeMap{
 		HTTPStatusCode: http.StatusForbidden,
 	},
 
-	/// S3 extensions.
+	// S3 extensions.
 	ErrContentSHA256Mismatch: {
 		Code:           "XAmzContentSHA256Mismatch",
 		Description:    "The provided 'x-amz-content-sha256' header does not match what was computed.",
