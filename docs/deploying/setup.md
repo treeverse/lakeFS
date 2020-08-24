@@ -23,11 +23,12 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
     
    ![Create Repository](../assets/img/repo_create.png)
 
-   Under `Storage Namespace`, be sure to use the name of the bucket you've created in a [previous step](./bucket.md).
+   Under `Storage Namespace`, be sure to set the path to the bucket you've configured in a [previous step](./bucket.md).
    
    
 # Next steps
 
 After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](../reference/import.md) to bring your data without copying it.
+Alternatively, if you wish to copy existing data from an S3 bucket to lakeFS, use [DistCp](../using/distcp.md) or [Rclone](../using/rclone.md).
 
-Also, check out the usage guides under [using lakeFS with...](../using) for other options.
+Check out the usage guides under [using lakeFS with...](../using) for other options.

@@ -20,12 +20,13 @@ has_children: false
 In order to import existing data to lakeFS, you may choose to copy it using [S3 CLI](../using/aws_cli.md#copy-from-a-local-path-to-lakefs) 
 or using tools like [Apache DistCp](../using/distcp.md#from-s3-to-lakefs). This is the most straightforward way, and we recommend it if it’s applicable for you.
 
-## Using lakeFS import API
+## Limitations
 Unfortunately, copying data is not always feasible for the following reasons:
 1. Some data is just too big to copy.
 2. It requires you to stop making changes to the data before starting to copy.
 3. It requires you to switch to using the lakeFS endpoint in all places at once.
 
+## Using lakeFS import API
 To solve this, we offer an import API which will not copy any data and allow for a more gradual onboarding process.
 
 ### About the import API
