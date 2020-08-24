@@ -4,6 +4,8 @@ import (
 	"context"
 	"net/url"
 
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/block/factory"
 	"github.com/treeverse/lakefs/catalog"
@@ -17,13 +19,14 @@ var diagnoseCmd = &cobra.Command{
 	Short: "Diagnose underlying infrastructure configuration",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
+		conf := config.NewConfig()
 		logger := logging.Default().WithContext(ctx)
 		adapter, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
 			logger.WithError(err).Fatal("Failed to create block adapter")
 		}
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalog.NewCataloger(dbPool)
+		cataloger := catalog.NewCataloger(dbPool, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
 
 		numFailures := 0
 		repos, _, err := cataloger.ListRepositories(ctx, -1, "")

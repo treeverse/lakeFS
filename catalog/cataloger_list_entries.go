@@ -266,7 +266,7 @@ func getBranchResultRowsForPath(path string, branch int64, branchRanges map[int6
 
 func getMoreRows(path string, branch int64, branchRanges map[int64][]resultRow, readParams readPramsType) error {
 	// have to re-read the last entry, because otherwise the expression becomes complex and the optimizer gets NUTS
-	//so read size must be the batch size + whatever results were left from the last entry
+	// so read size must be the batch size + whatever results were left from the last entry
 	// If readBuf is not extended - there will be an endless loop if number of results is bigger than batch size.
 	requiredBufferSize := readParams.branchBatchSize + len(branchRanges[branch])
 	readBuf := make([]resultRow, 0, requiredBufferSize)
