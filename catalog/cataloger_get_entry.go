@@ -5,11 +5,10 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
-
 	"github.com/treeverse/lakefs/db"
 )
 
-const isBatched = true
+const useEntryReadBatched = true
 
 func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, reference string, path string) (*Entry, error) {
 	if err := Validate(ValidateFields{
@@ -78,7 +77,7 @@ func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, 
 	var entry *Entry
 	var err error
 
-	if isBatched {
+	if useEntryReadBatched {
 		entry, err = c.GetEntryMaybeExpiredBatched(ctx, repository, reference, path)
 	} else {
 		entry, err = c.GetEntryMaybeExpired(ctx, repository, reference, path)
