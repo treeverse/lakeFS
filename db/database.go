@@ -19,7 +19,6 @@ type Rows = sqlx.Rows
 type Database interface {
 	io.Closer
 	Get(dest interface{}, query string, args ...interface{}) error
-	Select(dest interface{}, query string, args ...interface{}) error
 	Queryx(query string, args ...interface{}) (*Rows, error)
 	Exec(query string, args ...interface{}) (rowsAffected int64, err error)
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
@@ -35,20 +34,12 @@ func NewSqlxDatabase(db *sqlx.DB) *SqlxDatabase {
 	return &SqlxDatabase{db: db}
 }
 
-func (d *SqlxDatabase) GetSqlxDB() *sqlx.DB {
-	return d.db
-}
-
 func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
 func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
 	return d.db.Get(dest, query, args...)
-}
-
-func (d *SqlxDatabase) Select(dest interface{}, query string, args ...interface{}) error {
-	return d.db.Select(dest, query, args...)
 }
 
 func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
