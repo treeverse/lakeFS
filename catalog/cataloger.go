@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/benbjohnson/clock"
+	"github.com/treeverse/lakefs/catalog/params"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -25,6 +26,13 @@ const (
 	defaultCatalogerCacheSize   = 1024
 	defaultCatalogerCacheExpiry = 20 * time.Second
 	defaultCatalogerCacheJitter = 5 * time.Second
+	MaxReadQueue                = 10
+
+	defaultBatchReadEntryMaxWait  = 15 * time.Second
+	defaultBatchScanTimeout       = 500 * time.Microsecond
+	defaultBatchDelay             = 1000 * time.Microsecond
+	defaultBatchEntriesReadAtOnce = 64
+	defaultBatchReaders           = 8
 )
 
 type DedupReport struct {
@@ -175,15 +183,17 @@ type CacheConfig struct {
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
-	clock              clock.Clock
-	log                logging.Logger
-	db                 db.Database
-	wg                 sync.WaitGroup
-	cacheConfig        *CacheConfig
-	cache              Cache
-	dedupCh            chan *dedupRequest
-	dedupReportEnabled bool
-	dedupReportCh      chan *DedupReport
+	clock                clock.Clock
+	log                  logging.Logger
+	db                   db.Database
+	wg                   sync.WaitGroup
+	cacheConfig          *CacheConfig
+	cache                Cache
+	dedupCh              chan *dedupRequest
+	dedupReportEnabled   bool
+	dedupReportCh        chan *DedupReport
+	readEntryRequestChan chan *readRequest
+	batchParams          params.BatchRead
 }
 
 type CatalogerOption func(*cataloger)
@@ -213,6 +223,26 @@ func WithDedupReportChannel(b bool) CatalogerOption {
 	}
 }
 
+func WithBatchReadParams(p params.BatchRead) CatalogerOption {
+	return func(c *cataloger) {
+		if p.ScanTimeout != 0 {
+			c.batchParams.ScanTimeout = p.ScanTimeout
+		}
+		if p.BatchDelay != 0 {
+			c.batchParams.BatchDelay = p.BatchDelay
+		}
+		if p.EntriesReadAtOnce != 0 {
+			c.batchParams.EntriesReadAtOnce = p.EntriesReadAtOnce
+		}
+		if p.ReadEntryMaxWait != 0 {
+			c.batchParams.ReadEntryMaxWait = p.ReadEntryMaxWait
+		}
+		if p.Readers != 0 {
+			c.batchParams.Readers = p.Readers
+		}
+	}
+}
+
 func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
 		clock:              clock.New(),
@@ -221,6 +251,13 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		cacheConfig:        defaultCatalogerCacheConfig,
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
 		dedupReportEnabled: true,
+		batchParams: params.BatchRead{
+			ReadEntryMaxWait:  defaultBatchReadEntryMaxWait,
+			ScanTimeout:       defaultBatchScanTimeout,
+			BatchDelay:        defaultBatchDelay,
+			EntriesReadAtOnce: defaultBatchEntriesReadAtOnce,
+			Readers:           defaultBatchReaders,
+		},
 	}
 	for _, opt := range options {
 		opt(c)
@@ -234,7 +271,14 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		c.dedupReportCh = make(chan *DedupReport, dedupReportChannelSize)
 	}
 	c.processDedupBatches()
+	c.startReadOrchestrator()
 	return c
+}
+
+func (c *cataloger) startReadOrchestrator() {
+	c.readEntryRequestChan = make(chan *readRequest, MaxReadQueue)
+	c.wg.Add(1)
+	go c.readEntriesBatchOrchestrator()
 }
 
 func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
@@ -248,6 +292,7 @@ func (c *cataloger) txOpts(ctx context.Context, opts ...db.TxOpt) []db.TxOpt {
 func (c *cataloger) Close() error {
 	if c != nil {
 		close(c.dedupCh)
+		close(c.readEntryRequestChan)
 		c.wg.Wait()
 		close(c.dedupReportCh)
 	}
