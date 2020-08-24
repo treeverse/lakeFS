@@ -118,7 +118,7 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			return
 		}
 		retInterface, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-			var entList []*Entry
+			entList := []*Entry{}
 			bufKey := message.key
 			pathReqList := message.batch
 			branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
@@ -157,11 +157,12 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 		for _, pathReq := range message.batch {
 			var response readResponse
 			ent, ok := entMap[pathReq.path]
-			if ok {
+			switch {
+			case ok:
 				response.entry = ent
-			} else if err != nil {
+			case err != nil:
 				response.err = err
-			} else {
+			default:
 				response.err = ErrEntryNotFound
 			}
 			pathReq.replyChan <- response
