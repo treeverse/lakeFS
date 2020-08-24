@@ -96,7 +96,7 @@ func buildGSAdapter(params params.GS, dbPool db.Database) (*gs.Adapter, error) {
 	if err != nil {
 		return nil, err
 	}
-	adapter := gs.NewAdapter(client, dbPool)
+	adapter := gs.NewAdapter(client, block.MultipartTracker{DB: dbPool})
 	log.WithField("type", "gs").Info("initialized blockstore adapter")
 	return adapter, nil
 }
