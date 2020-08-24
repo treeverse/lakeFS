@@ -46,6 +46,7 @@ var runCmd = &cobra.Command{
 	Use:   "run",
 	Short: "Run lakeFS",
 	Run: func(cmd *cobra.Command, args []string) {
+		conf := config.NewConfig()
 		logger := logging.Default()
 		logger.WithField("version", config.Version).Infof("lakeFS run")
 
@@ -61,7 +62,7 @@ var runCmd = &cobra.Command{
 		migrator := db.NewDatabaseMigrator(dbParams)
 
 		// init catalog
-		cataloger := catalog.NewCataloger(dbPool)
+		cataloger := catalog.NewCataloger(dbPool, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(cfg)

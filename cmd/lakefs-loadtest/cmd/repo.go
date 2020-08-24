@@ -11,6 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
+	"github.com/treeverse/lakefs/config"
+
 	"github.com/google/uuid"
 	"github.com/jamiealquiza/tachymeter"
 	"github.com/schollz/progressbar/v3"
@@ -43,8 +45,8 @@ var repoCmd = &cobra.Command{
 
 		ctx := context.Background()
 		database := connectToDB(connectionString)
-
-		c := catalog.NewCataloger(database)
+		conf := config.NewConfig()
+		c := catalog.NewCataloger(database, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
 		if repository == "" {
 			repository = "repo-" + strings.ToLower(uuid.New().String())
 		}

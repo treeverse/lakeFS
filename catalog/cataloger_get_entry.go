@@ -3,13 +3,15 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"time"
 
 	sq "github.com/Masterminds/squirrel"
-
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, reference string, path string) (*Entry, error) {
+const useEntryReadBatched = true
+
+func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "reference", IsValid: ValidateReference(reference)},
@@ -23,6 +25,44 @@ func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, refere
 	if err != nil {
 		return nil, err
 	}
+
+	var entry *Entry
+	if useEntryReadBatched {
+		entry, err = c.getEntryBatchMaybeExpired(ctx, repository, *ref, path)
+	} else {
+		entry, err = c.getEntryMaybeExpired(ctx, repository, *ref, path)
+	}
+	if !params.ReturnExpired && entry != nil && entry.Expired {
+		return entry, ErrExpired
+	}
+	return entry, err
+}
+
+func (c *cataloger) getEntryBatchMaybeExpired(ctx context.Context, repository string, ref Ref, path string) (*Entry, error) {
+	replyChan := make(chan readResponse, 1) // used for a single return status message.
+	// channel written to and closed by readEntriesBatch
+	request := &readRequest{
+		bufKey: bufferingKey{
+			repository: repository,
+			ref:        ref,
+		},
+		pathReq: pathRequest{
+			path:      path,
+			replyChan: replyChan,
+		},
+	}
+	c.readEntryRequestChan <- request
+	select {
+	case response := <-replyChan:
+		return response.entry, response.err
+	case <-time.After(c.batchParams.ReadEntryMaxWait):
+		return nil, ErrReadEntryTimeout
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
+func (c *cataloger) getEntryMaybeExpired(ctx context.Context, repository string, ref Ref, path string) (*Entry, error) {
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, ref.Branch)
 		if err != nil {
@@ -53,12 +93,4 @@ func (c *cataloger) GetEntryMaybeExpired(ctx context.Context, repository, refere
 		return nil, err
 	}
 	return res.(*Entry), nil
-}
-
-func (c *cataloger) GetEntry(ctx context.Context, repository, reference string, path string, params GetEntryParams) (*Entry, error) {
-	entry, err := c.GetEntryMaybeExpired(ctx, repository, reference, path)
-	if !params.ReturnExpired && entry != nil && entry.Expired {
-		return entry, ErrExpired
-	}
-	return entry, err
 }
