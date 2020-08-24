@@ -9,8 +9,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/treeverse/lakefs/config"
-
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/testutil"
@@ -29,8 +27,6 @@ type TestCataloger struct {
 
 func testCataloger(t testing.TB, options ...CatalogerOption) TestCataloger {
 	t.Helper()
-	// TODO(barak): do we need new config here?
-	config.NewConfig()
 	conn, uri := testutil.GetDB(t, databaseURI)
 	return TestCataloger{Cataloger: NewCataloger(conn, options...), DbConnURI: uri}
 }
