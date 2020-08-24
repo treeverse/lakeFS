@@ -151,12 +151,13 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			entMap[ent.Path] = ent
 		}
 		for _, pathReq := range message.batch {
-			response := readResponse{
-				entry: entMap[pathReq.path],
-				err:   err,
-			}
-			if response.entry == nil && err == nil {
-				err = ErrEntryNotFound
+			var response readResponse
+			if ent, ok := entMap[pathReq.path]; ok {
+				response.entry = ent
+			} else if err != nil {
+				response.err = err
+			} else {
+				response.err = ErrEntryNotFound
 			}
 			pathReq.replyChan <- response
 			close(pathReq.replyChan)
