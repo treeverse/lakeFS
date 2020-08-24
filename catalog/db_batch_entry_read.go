@@ -118,17 +118,16 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 			return
 		}
 		retInterface, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-			entList := []*Entry{}
 			bufKey := message.key
 			pathReqList := message.batch
 			branchID, err := c.getBranchIDCache(tx, bufKey.repository, bufKey.ref.Branch)
 			if err != nil {
-				return entList, err
+				return nil, err
 			}
 
 			lineage, err := getLineage(tx, branchID, bufKey.ref.CommitID)
 			if err != nil {
-				return entList, fmt.Errorf("get lineage: %w", err)
+				return nil, fmt.Errorf("get lineage: %w", err)
 			}
 
 			p := make([]string, len(pathReqList))
@@ -140,16 +139,22 @@ func (c *cataloger) readEntriesBatch(wg *sync.WaitGroup, inputBatchChan chan bat
 				Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
 			query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 			if err != nil {
-				return entList, fmt.Errorf("build sql: %w", err)
+				return nil, fmt.Errorf("build sql: %w", err)
 			}
+			var entList []*Entry
 			err = tx.Select(&entList, query, args...)
-			return entList, fmt.Errorf("select entries: %w", err)
+			if err != nil {
+				return nil, fmt.Errorf("select entries: %w", err)
+			}
+			return entList, nil
 		}, db.WithLogger(c.log), db.ReadOnly(), db.WithIsolationLevel(sql.LevelReadCommitted))
 		// send entries to each requestor on the provided one-time channel
+		var entList []*Entry
 		if err != nil {
 			c.log.WithError(err).Warn("error reading batch of entries")
+		} else {
+			entList = retInterface.([]*Entry)
 		}
-		entList := retInterface.([]*Entry)
 		entMap := make(map[string]*Entry)
 		for _, ent := range entList {
 			entMap[ent.Path] = ent
