@@ -111,7 +111,7 @@ func sqDiffFromChildV(parentID, childID int64, parentEffectiveCommit, childEffec
 		"s.entry_ctid",
 		"f.source_branch",
 	).
-		//Conflict detection
+		// Conflict detection
 		Column(`-- parent either created or deleted after last merge  - conflict
 			f.path IS NOT NULL AND ( NOT f.is_committed OR -- uncommitted entries always new
 									(f.source_branch = ? AND  -- it is the parent branch - not from lineage
@@ -160,7 +160,7 @@ func sqDiffFromParentV(parentID, childID int64, lastChildMergeWithParent CommitI
 		"f.is_deleted AS DifferenceTypeRemoved",
 		"s.path IS NOT NULL AND NOT s.is_deleted AS DifferenceTypeChanged",
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
-		//both point to same object, and have the same deletion status
+		// both point to same object, and have the same deletion status
 		"s.path IS NOT NULL AND f.physical_address = s.physical_address AND f.is_deleted = s.is_deleted AS same_object").
 		Column(`f.min_commit > l.commit_id  -- parent created after commit
 			OR f.max_commit >= l.commit_id AND f.is_deleted -- parent deleted after commit

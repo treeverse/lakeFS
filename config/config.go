@@ -18,6 +18,7 @@ import (
 	"github.com/spf13/viper"
 	authparams "github.com/treeverse/lakefs/auth/params"
 	blockparams "github.com/treeverse/lakefs/block/params"
+	catalogparams "github.com/treeverse/lakefs/catalog/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/stats"
 )
@@ -107,6 +108,16 @@ func setDefaults() {
 
 func (c *Config) GetDatabaseParams() dbparams.Database {
 	return dbparams.Database{DatabaseURI: viper.GetString("database.connection_string")}
+}
+
+func (c *Config) GetCatalogerBatchReadParams() catalogparams.BatchRead {
+	return catalogparams.BatchRead{
+		ReadEntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),
+		ScanTimeout:       viper.GetDuration("cataloger.batch_read.scan_timeout"),
+		BatchDelay:        viper.GetDuration("cataloger.batch_read.batch_delay"),
+		EntriesReadAtOnce: viper.GetInt("cataloger.batch_read.entries_read_at_once"),
+		Readers:           viper.GetInt("cataloger.batch_read.readers"),
+	}
 }
 
 type AwsS3RetentionConfig struct {
