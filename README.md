@@ -43,9 +43,9 @@ All reads from that branch are    guaranteed to always return the same results.
 1. Ensure you have Docker installed on your computer. The MacOS and Windows installations include Docker Compose by default.
 
 2. Clone the repository:
-```bash
-git clone git@github.com:treeverse/lakeFS.git
-```
+  ```bash
+  git clone git@github.com:treeverse/lakeFS.git
+  ```
 
 3. From the root of the cloned repository, run:
 
