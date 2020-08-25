@@ -29,6 +29,7 @@ var (
 	ErrMismatchPartName    = errors.New("mismatch part name")
 	ErrMaxMultipartObjects = errors.New("maximum multipart object reached")
 	ErrPartListMismatch    = errors.New("multipart part list mismatch")
+	ErrMissingTargetAttrs  = errors.New("missing target attributes")
 )
 
 type Adapter struct {
@@ -84,7 +85,7 @@ func resolveNamespace(obj block.ObjectPointer) (block.QualifiedKey, error) {
 	return qualifiedKey, nil
 }
 
-func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, _ block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -278,9 +279,64 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 		"key":           obj.Identifier,
 	})
 
-	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
-
 	// list bucket parts and validate request match
+	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
+	bucketParts, err := a.listMultipartUploadParts(bucket, uploadID, qualifiedKey)
+	if err != nil {
+		return nil, 0, err
+	}
+	// validate bucketParts match the request multipartList
+	err = a.validateMultipartUploadParts(qualifiedKey, multipartList, bucketParts)
+	if err != nil {
+		return nil, 0, err
+	}
+
+	// prepare names
+	parts := make([]string, len(bucketParts))
+	for i, part := range bucketParts {
+		parts[i] = part.Name
+	}
+
+	// compose target object
+	targetAttrs, err := a.composeMultipartUploadParts(bucket, qualifiedKey, parts)
+	if err != nil {
+		lg.WithError(err).Error("CompleteMultipartUpload failed")
+		return nil, 0, err
+	}
+
+	// delete marker
+	objMarker := bucket.Object(formatMultipartMarkerFilename(uploadID))
+	if err := objMarker.Delete(a.ctx); err != nil {
+		a.log().WithError(err).Warn("Failed to delete multipart upload marker")
+	}
+	lg.Debug("completed multipart upload")
+	a.uploadIDTranslator.RemoveUploadID(uploadID)
+	return &targetAttrs.Etag, targetAttrs.Size, nil
+}
+
+func (a *Adapter) validateMultipartUploadParts(qualifiedKey block.QualifiedKey, multipartList *block.MultipartUploadCompletion, bucketParts []*storage.ObjectAttrs) error {
+	if len(multipartList.Part) != len(bucketParts) {
+		return ErrPartListMismatch
+	}
+	for i, p := range multipartList.Part {
+		if p.PartNumber == nil {
+			return fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartNumber)
+		}
+		if p.ETag == nil {
+			return fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartETag)
+		}
+		objName := formatMultipartFilename(qualifiedKey.Key, *p.PartNumber)
+		if objName != bucketParts[i].Name {
+			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartName)
+		}
+		if *p.ETag != bucketParts[i].Etag {
+			return fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartETag)
+		}
+	}
+	return nil
+}
+
+func (a *Adapter) listMultipartUploadParts(bucket *storage.BucketHandle, uploadID string, qualifiedKey block.QualifiedKey) ([]*storage.ObjectAttrs, error) {
 	var bucketParts []*storage.ObjectAttrs
 	it := bucket.Objects(a.ctx, &storage.Query{
 		Delimiter: catalog.DefaultPathDelimiter,
@@ -292,66 +348,51 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 			break
 		}
 		if err != nil {
-			return nil, 0, fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.StorageNamespace, err)
+			return nil, fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.StorageNamespace, err)
 		}
 		bucketParts = append(bucketParts, attrs)
 		if len(bucketParts) > MaxMultipartObjects {
-			return nil, 0, fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.StorageNamespace, ErrMaxMultipartObjects)
+			return nil, fmt.Errorf("bucket(%s).Objects(): %w", qualifiedKey.StorageNamespace, ErrMaxMultipartObjects)
 		}
 	}
-	// sort bucketParts by name
+	// sort by name - assume natual sort order
 	sort.Slice(bucketParts, func(i, j int) bool {
 		return bucketParts[i].Name < bucketParts[j].Name
 	})
-	// validate bucketParts match the request multipartList
-	if len(multipartList.Part) != len(bucketParts) {
-		return nil, 0, ErrPartListMismatch
-	}
-	// compose one file from all parts by listing
-	objParts := make([]*storage.ObjectHandle, len(multipartList.Part))
-	for i, p := range multipartList.Part {
-		if p.PartNumber == nil {
-			return nil, 0, fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartNumber)
+	return bucketParts, nil
+}
+
+func (a *Adapter) composeMultipartUploadParts(bucket *storage.BucketHandle, qualifiedKey block.QualifiedKey, parts []string) (*storage.ObjectAttrs, error) {
+	// compose target from all parts
+	var targetAttrs *storage.ObjectAttrs
+	err := ComposeAll(qualifiedKey.Key, parts, func(target string, parts []string) error {
+		objs := make([]*storage.ObjectHandle, len(parts))
+		for i := range parts {
+			objs[i] = bucket.Object(parts[i])
 		}
-		if p.ETag == nil {
-			return nil, 0, fmt.Errorf("invalid part at position %d: %w", i, ErrMissingPartETag)
-		}
-		objName := fmt.Sprintf("%s.part_%d", qualifiedKey.Key, *p.PartNumber)
-		if objName != bucketParts[i].Name {
-			return nil, 0, fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartName)
-		}
-		objParts[i] = bucket.Object(objName)
-		objAttrs, err := objParts[i].Attrs(a.ctx)
+		// compose target from parts
+		attrs, err := bucket.Object(target).ComposerFrom(objs...).Run(a.ctx)
 		if err != nil {
-			return nil, 0, err
+			return err
 		}
-		if objAttrs.Etag != *p.ETag {
-			return nil, 0, fmt.Errorf("invalid part at position %d: %w", i, ErrMismatchPartETag)
+		if target == qualifiedKey.Key {
+			targetAttrs = attrs
 		}
+		// delete parts
+		for _, o := range objs {
+			if err := o.Delete(a.ctx); err != nil {
+				a.log().WithError(err).Warn("Failed to delete multipart upload part while compose")
+			}
+		}
+		return nil
+	})
+	if err == nil && targetAttrs == nil {
+		return nil, ErrMissingTargetAttrs
 	}
-
-	attrs, err := a.client.
-		Bucket(qualifiedKey.StorageNamespace).
-		Object(qualifiedKey.Key).
-		ComposerFrom(objParts...).
-		Run(a.ctx)
 	if err != nil {
-		lg.WithError(err).Error("CompleteMultipartUpload failed")
-		return nil, 0, err
+		return nil, err
 	}
-
-	// delete parts and marker file
-	nameMarker := formatMultipartMarkerFilename(uploadID)
-	objMarker := bucket.Object(nameMarker)
-	objParts = append(objParts, objMarker)
-	for _, src := range objParts {
-		if err := src.Delete(a.ctx); err != nil {
-			a.log().WithError(err).Warn("Failed to delete multipart upload while compose")
-		}
-	}
-	lg.Debug("completed multipart upload")
-	a.uploadIDTranslator.RemoveUploadID(uploadID)
-	return &attrs.Etag, attrs.Size, nil
+	return targetAttrs, nil
 }
 
 func (a *Adapter) ValidateConfiguration(_ string) error {
@@ -367,7 +408,8 @@ func (a *Adapter) Close() error {
 }
 
 func formatMultipartFilename(uploadID string, partNumber int64) string {
-	return fmt.Sprintf("%s.part_%d", uploadID, partNumber)
+	// keep natural sort order with zero padding
+	return fmt.Sprintf("%s.part_%05d", uploadID, partNumber)
 }
 
 func formatMultipartMarkerFilename(uploadID string) string {
