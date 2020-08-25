@@ -10,7 +10,7 @@ func TestComposeAll(t *testing.T) {
 	const targetFile = "data.file"
 	numberOfPartsTests := []int{1, 10, 10000}
 	for _, numberOfParts := range numberOfPartsTests {
-		t.Run("compose_" + strconv.Itoa(numberOfParts), func(t *testing.T) {
+		t.Run("compose_"+strconv.Itoa(numberOfParts), func(t *testing.T) {
 			// prepare data
 			parts := make([]string, numberOfParts)
 			for i := 0; i < numberOfParts; i++ {
@@ -34,7 +34,7 @@ func TestComposeAll(t *testing.T) {
 				}
 				usedTargets[target] = struct{}{}
 				return nil
-			}, )
+			})
 			if err != nil {
 				t.Fatal(err)
 			}
