@@ -35,7 +35,6 @@ func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, pa
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
-	//var err error
 	o.Incr("create_mpu")
 	uuidBytes := [16]byte(uuid.New())
 	objName := hex.EncodeToString(uuidBytes[:])
