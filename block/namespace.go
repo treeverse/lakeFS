@@ -21,9 +21,9 @@ var (
 )
 
 type QualifiedKey struct {
-	StorageType      StorageType `json:"-"`
-	StorageNamespace string      `json:"storage_namespace"`
-	Key              string      `json:"key"`
+	StorageType      StorageType
+	StorageNamespace string
+	Key              string
 }
 
 func GetStorageType(namespaceURL *url.URL) (StorageType, error) {
