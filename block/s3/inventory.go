@@ -44,8 +44,8 @@ type CloseFunc func() error
 
 var ErrParquetOnlySupport = errors.New("currently only parquet inventories are supported")
 
-func (s *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string) (block.Inventory, error) {
-	return GenerateInventory(ctx, logger, manifestURL, s.s3, getParquetReader)
+func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string) (block.Inventory, error) {
+	return GenerateInventory(ctx, logger, manifestURL, a.s3, getParquetReader)
 }
 
 func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, getParquetReader parquetReaderGetter) (block.Inventory, error) {
