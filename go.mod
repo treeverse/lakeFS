@@ -27,6 +27,7 @@ require (
 	github.com/gofrs/uuid v3.3.0+incompatible // indirect
 	github.com/golang-migrate/migrate/v4 v4.12.2
 	github.com/golangci/golangci-lint v1.30.0
+	github.com/google/gops v0.3.11 // indirect
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
 	github.com/hnlq715/golang-lru v0.2.0

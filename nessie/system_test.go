@@ -1,5 +1,3 @@
-// +build systemtests
-
 package nessie
 
 import (
@@ -12,6 +10,12 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/aws/aws-sdk-go/aws/credentials"
+
+	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go/service/s3"
 
 	genclient "github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/setup"
@@ -36,12 +40,15 @@ type testsConfig struct {
 
 	// maxSetup is the maximum time to wait for lakeFS setup
 	maxSetup time.Duration
+
+	gatewayDomainName string
 }
 
 var (
 	config testsConfig
 	logger logging.Logger
 	client api.Client
+	svc    *s3.S3
 )
 
 const (
@@ -51,6 +58,7 @@ const (
 func init() {
 	flag.StringVar(&config.baseURL, "endpoint-url", "http://localhost:8000", "URL endpoint of the lakeFS instance")
 	flag.StringVar(&config.rawBucketPath, "bucket", "s3://nessie-system-testing", "Bucket's path")
+	flag.StringVar(&config.gatewayDomainName, "gw-domain-name", "s3.local.lakefs.io:8000", "Gateway domain name")
 	flag.DurationVar(&config.maxSetup, "max-setup", 5*time.Minute, "Maximum time to wait for lakeFS setup")
 }
 
@@ -75,20 +83,7 @@ func TestMain(m *testing.M) {
 	})
 
 	// first setup of lakeFS
-	setupCtx, _ := context.WithTimeout(ctx, config.maxSetup)
-	for {
-		_, err := cl.HealthCheck.HealthCheck(nil)
-		if err == nil {
-			break
-		}
-		logger.WithError(err).Info("Setup failed")
-
-		select {
-		case <-setupCtx.Done():
-			panic("setup failed after all retries")
-		case <-time.After(5 * time.Second):
-		}
-	}
+	setupOrFail(ctx, cl)
 
 	adminUserName := "nessie"
 	res, err := cl.Setup.SetupLakeFS(&setup.SetupLakeFSParams{
@@ -110,8 +105,39 @@ func TestMain(m *testing.M) {
 		panic(fmt.Errorf("failed to setup client: %w", err))
 	}
 
+	awsSession := session.Must(session.NewSession())
+	svc = s3.New(awsSession,
+		aws.NewConfig().
+			WithRegion("us-east-1").
+			WithEndpoint(config.gatewayDomainName).
+			WithDisableSSL(true).
+			WithCredentials(credentials.NewCredentials(
+				&credentials.StaticProvider{
+					Value: credentials.Value{
+						AccessKeyID:     res.Payload.AccessKeyID,
+						SecretAccessKey: res.Payload.AccessSecretKey,
+					}})))
+
 	logger.Info("Setup succeeded, running the tests")
 	os.Exit(m.Run())
+}
+
+func setupOrFail(ctx context.Context, cl *genclient.Lakefs) {
+	setupCtx, cancel := context.WithTimeout(ctx, config.maxSetup)
+	defer cancel()
+	for {
+		_, err := cl.HealthCheck.HealthCheck(nil)
+		if err == nil {
+			break
+		}
+		logger.WithError(err).Info("Setup failed")
+
+		select {
+		case <-setupCtx.Done():
+			panic("setup failed after all retries")
+		case <-time.After(5 * time.Second):
+		}
+	}
 }
 
 const (
