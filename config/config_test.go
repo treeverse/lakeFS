@@ -95,6 +95,8 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
 		}
 	})
+
+	// TODO(barak): add gs block adapter test
 }
 
 func TestConfig_JSONLogger(t *testing.T) {
