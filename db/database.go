@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"io"
 	"strconv"
@@ -24,38 +25,116 @@ type Database interface {
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
+	WithContext(ctx context.Context) Database
+	WithLogger(logger logging.Logger) Database
+}
+
+type QueryOptions struct {
+	logger logging.Logger
+	ctx    context.Context
 }
 
 type SqlxDatabase struct {
-	db *sqlx.DB
+	db           *sqlx.DB
+	queryOptions *QueryOptions
 }
 
 func NewSqlxDatabase(db *sqlx.DB) *SqlxDatabase {
 	return &SqlxDatabase{db: db}
 }
 
+func (d *SqlxDatabase) getLogger() logging.Logger {
+	if d.queryOptions != nil {
+		return d.queryOptions.logger
+	}
+	return logging.Default()
+}
+
+func (d *SqlxDatabase) getContext() context.Context {
+	if d.queryOptions != nil {
+		return d.queryOptions.ctx
+	}
+	return context.Background()
+}
+
+func (d *SqlxDatabase) WithContext(ctx context.Context) Database {
+	return &SqlxDatabase{
+		db: d.db,
+		queryOptions: &QueryOptions{
+			logger: d.getLogger(),
+			ctx:    ctx,
+		},
+	}
+}
+
+func (d *SqlxDatabase) WithLogger(logger logging.Logger) Database {
+	return &SqlxDatabase{
+		db: d.db,
+		queryOptions: &QueryOptions{
+			logger: logger,
+			ctx:    d.getContext(),
+		},
+	}
+}
+
 func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
-func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
-	return d.db.Get(dest, query, args...)
+// reportFinish computes the duration since starts and logs a "done" report if that duration is
+// long enough.
+func (d *SqlxDatabase) reportFinish(err *error, fields logging.Fields, start time.Time) {
+	duration := time.Since(start)
+	if duration > 100*time.Millisecond {
+		d.getLogger().WithFields(fields).WithError(*err).WithField("duration", duration).Info("database done")
+	}
 }
 
-func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
-	return d.db.Queryx(query, args...)
+func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) (err error) {
+	start := time.Now()
+	defer d.reportFinish(&err, logging.Fields{
+		"type":  "get",
+		"query": query,
+		"args":  args,
+	}, start)
+	return d.db.GetContext(d.getContext(), dest, query, args...)
 }
 
-func (d *SqlxDatabase) Exec(query string, args ...interface{}) (int64, error) {
-	res, err := d.db.Exec(query, args...)
+func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (rows *Rows, err error) {
+	start := time.Now()
+	defer d.reportFinish(&err, logging.Fields{
+		"type":  "start query",
+		"query": query,
+		"args":  args,
+	}, start)
+	return d.db.QueryxContext(d.getContext(), query, args...)
+}
+
+func (d *SqlxDatabase) Exec(query string, args ...interface{}) (count int64, err error) {
+	start := time.Now()
+	defer d.reportFinish(&err, logging.Fields{
+		"type":  "exec",
+		"query": query,
+		"args":  args,
+	}, start)
+	res, err := d.db.ExecContext(d.getContext(), query, args...)
 	if err != nil {
 		return 0, err
 	}
 	return res.RowsAffected()
 }
 
-func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
+func (d *SqlxDatabase) getTxOptions() *TxOptions {
 	options := DefaultTxOptions()
+	if d.queryOptions != nil {
+		options.logger = d.queryOptions.logger
+		options.ctx = d.queryOptions.ctx
+	}
+	return options
+}
+
+func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
+	options := d.getTxOptions()
 	for _, opt := range opts {
 		opt(options)
 	}
