@@ -19,30 +19,51 @@ const (
 
 // BuildDatabaseConnection returns a database connection based on a pool for the configuration
 // in c.
-func BuildDatabaseConnection(params params.Database) Database {
-	database, err := ConnectDB(DatabaseDriver, params.DatabaseURI)
+func BuildDatabaseConnection(dbParams params.Database) Database {
+	database, err := ConnectDB(dbParams)
 	if err != nil {
 		panic(err)
 	}
 	return database
 }
 
-func ConnectDB(driver string, uri string) (Database, error) {
+func ConnectDB(p params.Database) (Database, error) {
+	normalizeDBParams(&p)
 	log := logging.Default().WithFields(logging.Fields{
-		"driver": driver,
-		"uri":    uri,
+		"driver":            p.Driver,
+		"uri":               p.URI,
+		"max_open_conns":    p.MaxOpenConnections,
+		"max_idle_conns":    p.MaxIdleConnections,
+		"conn_max_lifetime": p.ConnectionMaxLifetime,
 	})
-
 	log.Info("connecting to the DB")
-	conn, err := sqlx.Connect(driver, uri)
+	conn, err := sqlx.Connect(p.Driver, p.URI)
 	if err != nil {
 		return nil, fmt.Errorf("could not open DB: %w", err)
 	}
 
-	conn.SetMaxOpenConns(DefaultMaxOpenConnections)
-	conn.SetMaxIdleConns(DefaultMaxIdleConnections)
-	conn.SetConnMaxLifetime(DefaultConnectionMaxLifetime)
+	conn.SetMaxOpenConns(p.MaxOpenConnections)
+	conn.SetMaxIdleConns(p.MaxIdleConnections)
+	conn.SetConnMaxLifetime(p.ConnectionMaxLifetime)
 
 	log.Info("initialized DB connection")
 	return NewSqlxDatabase(conn), nil
+}
+
+func normalizeDBParams(p *params.Database) {
+	if p.Driver == "" {
+		p.Driver = DatabaseDriver
+	}
+
+	if p.MaxOpenConnections == 0 {
+		p.MaxOpenConnections = DefaultMaxOpenConnections
+	}
+
+	if p.MaxIdleConnections == 0 {
+		p.MaxIdleConnections = DefaultMaxIdleConnections
+	}
+
+	if p.ConnectionMaxLifetime == 0 {
+		p.ConnectionMaxLifetime = DefaultConnectionMaxLifetime
+	}
 }

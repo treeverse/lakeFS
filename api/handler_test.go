@@ -86,7 +86,7 @@ func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *depe
 	})
 	meta := auth.NewDBMetadataManager("dev", conn)
 	retentionService := retention.NewService(conn)
-	migrator := db.NewDatabaseMigrator(dbparams.Database{DatabaseURI: handlerDatabaseURI})
+	migrator := db.NewDatabaseMigrator(dbparams.Database{URI: handlerDatabaseURI})
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {

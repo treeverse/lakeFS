@@ -1,5 +1,11 @@
 package params
 
+import "time"
+
 type Database struct {
-	DatabaseURI string
+	Driver                string
+	URI                   string
+	MaxOpenConnections    int
+	MaxIdleConnections    int
+	ConnectionMaxLifetime time.Duration
 }
