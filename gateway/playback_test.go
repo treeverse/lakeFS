@@ -48,9 +48,9 @@ func TestGatewayRecording(t *testing.T) {
 		t.Skip("skipping playback test in short mode.")
 	}
 	testData := []string{
-		"s3://lakefs-recordings/presto.zip",
+		//"s3://lakefs-recordings/presto.zip",
 		"s3://lakefs-recordings/aws.zip",
-		"s3://lakefs-recordings/emr-spark.zip",
+		//"s3://lakefs-recordings/emr-spark.zip",
 	}
 
 	downloader := simulator.NewExternalRecordDownloader("us-east-1")

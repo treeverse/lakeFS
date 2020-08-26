@@ -213,6 +213,7 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	if err != nil {
 		return "", err
 	}
+	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
 	objName := formatMultipartFilename(uploadID, partNumber)
 	o := a.client.
 		Bucket(qualifiedKey.StorageNamespace).
@@ -236,11 +237,11 @@ func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
 	var err error
 	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
-
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
 	}
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	bucket := a.client.Bucket(qualifiedKey.StorageNamespace)
 
 	// delete all related files by listing the prefix
@@ -260,6 +261,7 @@ func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 			return fmt.Errorf("bucket(%s).object(%s).Delete(): %w", qualifiedKey.StorageNamespace, attrs.Name, err)
 		}
 	}
+	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	return nil
 }
 
@@ -270,6 +272,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	if err != nil {
 		return nil, 0, err
 	}
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	lg := a.log().WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.StorageNamespace,
@@ -307,6 +310,7 @@ func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 	if err := objMarker.Delete(a.ctx); err != nil {
 		a.log().WithError(err).Warn("Failed to delete multipart upload marker")
 	}
+	a.uploadIDTranslator.RemoveUploadID(uploadID)
 	lg.Debug("completed multipart upload")
 	return &targetAttrs.Etag, targetAttrs.Size, nil
 }

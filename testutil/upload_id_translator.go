@@ -18,6 +18,7 @@ func (d *UploadIDTranslator) SetUploadID(uploadID string) string {
 	d.TransMap[d.ExpectedID] = uploadID
 	return d.ExpectedID
 }
+
 func (d *UploadIDTranslator) TranslateUploadID(simulationID string) string {
 	id, ok := d.TransMap[simulationID]
 	if !ok {
