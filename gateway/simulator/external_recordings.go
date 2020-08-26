@@ -4,11 +4,9 @@ import (
 	"io/ioutil"
 	"os"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
-	"github.com/aws/aws-sdk-go/aws/session"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
+	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/treeverse/lakefs/logging"
@@ -38,7 +36,7 @@ func getEtagFileName(path string) string {
 }
 
 func getLocalEtag(path string) (string, error) {
-	//if etag exists return
+	// if etag exists return
 	etagFileName := getEtagFileName(path)
 	etag, err := ioutil.ReadFile(etagFileName)
 	if err == nil {
@@ -86,7 +84,7 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 	}
 	logging.Default().WithFields(logging.Fields{"file": destination, "bytes": n}).Info("file downloaded")
 
-	//write the etag file
+	// write the etag file
 	etagFileName := getEtagFileName(destination)
 	err = ioutil.WriteFile(etagFileName, []byte(s3Etag), 0644) //nolint:gosec
 	return err

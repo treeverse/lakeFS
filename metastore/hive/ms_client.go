@@ -6,11 +6,9 @@ import (
 	"fmt"
 
 	"github.com/apache/thrift/lib/go/thrift"
-
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
-
 	"github.com/treeverse/lakefs/metastore"
+	"github.com/treeverse/lakefs/metastore/hive/gen-go/hive_metastore"
 )
 
 type ThriftHiveMetastoreClient interface {
@@ -200,7 +198,7 @@ func (c *MSClient) Merge(fromDB, fromTable, toDB, toTable, toBranch, serde strin
 	if err != nil {
 		return err
 	}
-	//drop one by one
+	// drop one by one
 	for _, partition := range removePartitions {
 		_, err = c.client.DropPartition(c.context, toDB, toTable, partition.Values, true)
 		if err != nil {

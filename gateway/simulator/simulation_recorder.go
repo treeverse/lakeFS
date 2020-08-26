@@ -76,8 +76,8 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			}
 
 			uniqueCount := atomic.AddInt32(&uniquenessCounter, 1)
-			if uniqueCount == 1 { //first activation. Now we can store the simulation configuration, since we have
-				// user details
+			if uniqueCount == 1 {
+				// first activation. Now we can store the simulation configuration, since we have user details
 				createConfFile(r, authService, region, bareDomain, recordingDir)
 			}
 			timeStr := time.Now().Format("15-04-05")
@@ -87,7 +87,8 @@ func RegisterRecorder(next http.Handler, authService GatewayAuthService, region,
 			respWriter.ResponseLog = NewLazyOutput(filepath.Join(recordingDir, nameBase+ResponseExtension))
 			respWriter.Headers = make(http.Header)
 			rawQuery := r.URL.RawQuery
-			if (rawQuery == "uploads=") || (rawQuery == "uploads") { // initial post for s3 multipart upload
+			if (rawQuery == "uploads=") || (rawQuery == "uploads") {
+				// initial post for s3 multipart upload
 				respWriter.UploadIDRegexp = uploadIDRegexp
 			}
 			newBody := &recordingBodyReader{recorder: NewLazyOutput(filepath.Join(recordingDir, nameBase+RequestBodyExtension)),

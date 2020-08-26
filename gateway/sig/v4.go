@@ -16,9 +16,8 @@ import (
 	"time"
 	"unicode"
 
-	"github.com/treeverse/lakefs/gateway/errors"
-
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/gateway/errors"
 )
 
 const (
@@ -148,7 +147,7 @@ func V4Verify(auth V4Auth, credentials *model.Credential, r *http.Request) error
 	}
 	r.Body = reader
 
-	//update to decoded content length
+	// update to decoded content length
 	contentLength, err := ctx.contentLength()
 	if err != nil {
 		return err
@@ -349,7 +348,6 @@ func (ctx *verificationCtx) contentLength() (int64, error) {
 			var err error
 			size, err = strconv.ParseInt(sizeStr[0], 10, 64)
 			if err != nil {
-				//writeErrorResponse(ctx, w, toAPIError(ctx, err), r.URL, guessIsBrowserReq(r))
 				return 0, err
 			}
 		}
