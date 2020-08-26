@@ -2,9 +2,11 @@ package auth
 
 import (
 	"fmt"
+	"reflect"
 	"strings"
 	"time"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/jmoiron/sqlx"
 
 	"github.com/treeverse/lakefs/auth/crypt"
@@ -74,6 +76,45 @@ type Service interface {
 
 	// authorize user for an action
 	Authorize(req *AuthorizationRequest) (*AuthorizationResponse, error)
+}
+
+var psql = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+
+func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationParams, tokenColumnName string, queryBuilder sq.SelectBuilder) (*reflect.Value, *model.Paginator, error) {
+	ptrType := reflect.PtrTo(retType)
+	slice := reflect.MakeSlice(reflect.SliceOf(ptrType), 0, 0)
+	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
+	if params != nil {
+		queryBuilder = queryBuilder.Where(sq.Gt{tokenColumnName: params.After})
+	}
+	if params.Amount >= 0 {
+		queryBuilder = queryBuilder.Limit(uint64(params.Amount) + 1)
+	}
+	query, args, err := queryBuilder.ToSql()
+	if err != nil {
+		return nil, nil, fmt.Errorf("convert to SQL: %w", err)
+	}
+	rows, err := db.Queryx(query, args...)
+	if err != nil {
+		return nil, nil, fmt.Errorf("query DB: %w", err)
+	}
+	for rows.Next() {
+		value := reflect.New(retType)
+		if err = rows.StructScan(value.Interface()); err != nil {
+			return nil, nil, fmt.Errorf("scan value from DB: %w", err)
+		}
+		slice = reflect.Append(slice, value)
+	}
+	p := &model.Paginator{}
+	if params.Amount >= 0 && slice.Len() == params.Amount+1 {
+		// we have more pages
+		slice = slice.Slice(0, params.Amount)
+		p.Amount = params.Amount
+		p.NextPageToken = slice.Index(slice.Len() - 1).Elem().FieldByName(tokenColumnName).String()
+		return &slice, p, nil
+	}
+	p.Amount = slice.Len()
+	return &slice, p, nil
 }
 
 func getUser(tx db.Tx, userDisplayName string) (*model.User, error) {
@@ -222,73 +263,24 @@ func (s *DBAuthService) GetUserByID(userID int) (*model.User, error) {
 }
 
 func (s *DBAuthService) ListUsers(params *model.PaginationParams) ([]*model.User, *model.Paginator, error) {
-	type res struct {
-		users     []*model.User
-		paginator *model.Paginator
+	var user model.User
+	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(user), params, "display_name", psql.Select("*").From("auth_users"))
+	if slice == nil {
+		return nil, paginator, err
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		users := make([]*model.User, 0)
-		err := tx.Select(&users, `SELECT * FROM auth_users WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
-			params.After, params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-		if len(users) == params.Amount+1 {
-			// we have more pages
-			users = users[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = users[len(users)-1].DisplayName
-			return &res{users, p}, nil
-		}
-		p.Amount = len(users)
-		return &res{users, p}, nil
-	})
-
-	if err != nil {
-		return nil, nil, err
-	}
-	return result.(*res).users, result.(*res).paginator, nil
+	return slice.Interface().([]*model.User), paginator, err
 }
 
 func (s *DBAuthService) ListUserCredentials(userDisplayName string, params *model.PaginationParams) ([]*model.Credential, *model.Paginator, error) {
-	type res struct {
-		credentials []*model.Credential
-		paginator   *model.Paginator
+	var credential model.Credential
+	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(credential), params, "auth_credentials.access_key_id", psql.Select("auth_credentials.*").
+		From("auth_credentials").
+		Join("auth_users ON (auth_credentials.user_id = auth_users.id)").
+		Where(sq.Eq{"auth_users.display_name": userDisplayName}))
+	if slice == nil {
+		return nil, paginator, err
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, userDisplayName); err != nil {
-			return nil, err
-		}
-		credentials := make([]*model.Credential, 0)
-		err := tx.Select(&credentials, `
-			SELECT auth_credentials.* FROM auth_credentials
-				INNER JOIN auth_users ON (auth_credentials.user_id = auth_users.id)
-			WHERE
-				auth_users.display_name = $1
-				AND auth_credentials.access_key_id > $2
-			ORDER BY auth_credentials.access_key_id
-			LIMIT $3`,
-			userDisplayName, params.After, params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-		if len(credentials) == params.Amount+1 {
-			// we have more pages
-			credentials = credentials[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = credentials[len(credentials)-1].AccessKeyID
-			return &res{credentials, p}, nil
-		}
-		p.Amount = len(credentials)
-		return &res{credentials, p}, nil
-	})
-
-	if err != nil {
-		return nil, nil, err
-	}
-	return result.(*res).credentials, result.(*res).paginator, nil
+	return slice.Interface().([]*model.Credential), paginator, err
 }
 
 func (s *DBAuthService) AttachPolicyToUser(policyDisplayName, userDisplayName string) error {
@@ -333,106 +325,46 @@ func (s *DBAuthService) DetachPolicyFromUser(policyDisplayName, userDisplayName 
 }
 
 func (s *DBAuthService) ListUserPolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	type res struct {
-		policies  []*model.Policy
-		paginator *model.Paginator
+	var policy model.Policy
+	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(policy), params, "auth_policies.display_name", psql.Select("auth_policies.*").
+		From("auth_policies").
+		Join("auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)").
+		Join("auth_users ON (auth_user_policies.user_id = auth_users.id)").
+		Where(sq.Eq{"auth_users.display_name": userDisplayName}))
+	if slice == nil {
+		return nil, paginator, err
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if _, err := getUser(tx, userDisplayName); err != nil {
-			return nil, err
-		}
-		policies := make([]*model.Policy, 0)
-		err := tx.Select(&policies, `
-			SELECT auth_policies.* FROM auth_policies
-				INNER JOIN auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)
-				INNER JOIN auth_users ON (auth_user_policies.user_id = auth_users.id)
-			WHERE
-				auth_users.display_name = $1
-				AND auth_policies.display_name > $2
-			ORDER BY auth_policies.display_name
-			LIMIT $3`,
-			userDisplayName, params.After, params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-
-		if len(policies) == params.Amount+1 {
-			// we have more pages
-			policies = policies[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policies, p}, nil
-		}
-		p.Amount = len(policies)
-		return &res{policies, p}, nil
-	})
-
-	if err != nil {
-		return nil, nil, err
-	}
-	return result.(*res).policies, result.(*res).paginator, nil
+	return slice.Interface().([]*model.Policy), paginator, nil
 }
 
 func (s *DBAuthService) getEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	type res struct {
-		policies  []*model.Policy
-		paginator *model.Paginator
+	// resolve all policies attached to the user and its groups
+	resolvedCte := `
+	    WITH resolved_policies_view AS (
+                SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement, auth_users.display_name AS user_display_name
+                FROM auth_policies INNER JOIN
+                     auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id) INNER JOIN
+		     auth_users ON (auth_users.id = auth_user_policies.user_id)
+                UNION
+		SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement, auth_users.display_name AS user_display_name
+		FROM auth_policies INNER JOIN
+		     auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id) INNER JOIN
+		     auth_groups ON (auth_groups.id = auth_group_policies.group_id) INNER JOIN
+		     auth_user_groups ON (auth_user_groups.group_id = auth_groups.id) INNER JOIN
+		     auth_users ON (auth_users.id = auth_user_groups.user_id)
+	    )`
+	var policy model.Policy
+	slice, paginator, err := ListPaged(
+		s.db, reflect.TypeOf(policy), params, "display_name",
+		psql.Select("id", "created_at", "display_name", "statement").
+			Prefix(resolvedCte).
+			From("resolved_policies_view").
+			Where(sq.Eq{"user_display_name": userDisplayName}))
+
+	if slice == nil {
+		return nil, paginator, err
 	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// resolve all policies attached to the user and its groups
-		var err error
-		var policies []*model.Policy
-
-		// resolve all policies
-		// language=sql
-		const resolvePoliciesStmt = `
-		SELECT p.id, p.created_at, p.display_name, p.statement
-		FROM (
-			SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement
-			FROM auth_policies
-				INNER JOIN auth_user_policies ON (auth_policies.id = auth_user_policies.policy_id)
-				INNER JOIN auth_users ON (auth_users.id = auth_user_policies.user_id)
-			WHERE auth_users.display_name = $1
-			UNION
-			SELECT auth_policies.id, auth_policies.created_at, auth_policies.display_name, auth_policies.statement
-			FROM auth_policies
-				INNER JOIN auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)
-				INNER JOIN auth_groups ON (auth_groups.id = auth_group_policies.group_id)
-				INNER JOIN auth_user_groups ON (auth_user_groups.group_id = auth_groups.id) 
-				INNER JOIN auth_users ON (auth_users.id = auth_user_groups.user_id)
-			WHERE
-				auth_users.display_name = $1
-		) p `
-
-		const resolvePoliciesPaginated = resolvePoliciesStmt + `WHERE p.display_name > $2 ORDER BY p.display_name LIMIT $3`
-		const resolvePoliciesAll = resolvePoliciesStmt + `ORDER BY p.display_name`
-
-		if params.Amount != -1 {
-			err = tx.Select(&policies, resolvePoliciesPaginated, userDisplayName, params.After, params.Amount+1)
-		} else {
-			err = tx.Select(&policies, resolvePoliciesAll, userDisplayName)
-		}
-		if err != nil {
-			return nil, err
-		}
-
-		p := &model.Paginator{}
-
-		if params.Amount != -1 && len(policies) == params.Amount+1 {
-			// we have more pages
-			policies = policies[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policies, p}, nil
-		}
-		p.Amount = len(policies)
-		return &res{policies, p}, nil
-	}, db.ReadOnly())
-	if err != nil {
-		return nil, nil, err
-	}
-	return result.(*res).policies, result.(*res).paginator, nil
+	return slice.Interface().([]*model.Policy), paginator, nil
 }
 
 func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
@@ -452,45 +384,17 @@ func (s *DBAuthService) ListEffectivePolicies(userDisplayName string, params *mo
 }
 
 func (s *DBAuthService) ListGroupPolicies(groupDisplayName string, params *model.PaginationParams) ([]*model.Policy, *model.Paginator, error) {
-	type res struct {
-		policies  []*model.Policy
-		paginator *model.Paginator
-	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		if _, err := getGroup(tx, groupDisplayName); err != nil {
-			return nil, err
-		}
-		policies := make([]*model.Policy, 0)
-		err := tx.Select(&policies, `
-			SELECT auth_policies.* FROM auth_policies
-				INNER JOIN auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)
-				INNER JOIN auth_groups ON (auth_group_policies.group_id = auth_groups.id)
-			WHERE
-				auth_groups.display_name = $1
-				AND auth_policies.display_name > $2
-			ORDER BY auth_policies.display_name
-			LIMIT $3`,
-			groupDisplayName, params.After, params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-
-		if len(policies) == params.Amount+1 {
-			// we have more pages
-			policies = policies[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = policies[len(policies)-1].DisplayName
-			return &res{policies, p}, nil
-		}
-		p.Amount = len(policies)
-		return &res{policies, p}, nil
-	})
-
+	var policy model.Policy
+	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(policy), params, "auth_policies.display_name",
+		psql.Select("auth_policies.*").
+			From("auth_policies").
+			Join("auth_group_policies ON (auth_policies.id = auth_group_policies.policy_id)").
+			Join("auth_groups ON (auth_group_policies.group_id = auth_groups.id)").
+			Where(sq.Eq{"auth_groups.display_name": groupDisplayName}))
 	if err != nil {
-		return nil, nil, err
+		return nil, paginator, err
 	}
-	return result.(*res).policies, result.(*res).paginator, nil
+	return slice.Interface().([]*model.Policy), paginator, nil
 }
 
 func (s *DBAuthService) CreateGroup(group *model.Group) error {
@@ -522,33 +426,13 @@ func (s *DBAuthService) GetGroup(groupDisplayName string) (*model.Group, error) 
 }
 
 func (s *DBAuthService) ListGroups(params *model.PaginationParams) ([]*model.Group, *model.Paginator, error) {
-	type res struct {
-		groups    []*model.Group
-		paginator *model.Paginator
-	}
-	result, err := s.db.Transact(func(tx db.Tx) (interface{}, error) {
-		groups := make([]*model.Group, 0)
-		err := tx.Select(&groups, `SELECT * FROM auth_groups WHERE display_name > $1 ORDER BY display_name LIMIT $2`,
-			params.After, params.Amount+1)
-		if err != nil {
-			return nil, err
-		}
-		p := &model.Paginator{}
-		if len(groups) == params.Amount+1 {
-			// we have more pages
-			groups = groups[0:params.Amount]
-			p.Amount = params.Amount
-			p.NextPageToken = groups[len(groups)-1].DisplayName
-			return &res{groups, p}, nil
-		}
-		p.Amount = len(groups)
-		return &res{groups, p}, nil
-	})
-
+	var group model.Group
+	slice, paginator, err := ListPaged(s.db, reflect.TypeOf(group), params, "display_name",
+		psql.Select("*").From("auth_groups"))
 	if err != nil {
-		return nil, nil, err
+		return nil, paginator, err
 	}
-	return result.(*res).groups, result.(*res).paginator, nil
+	return slice.Interface().([]*model.Group), paginator, nil
 }
 
 func (s *DBAuthService) AddUserToGroup(userDisplayName, groupDisplayName string) error {
