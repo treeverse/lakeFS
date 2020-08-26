@@ -4,6 +4,7 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
+	"github.com/treeverse/lakefs/gateway/path"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -55,7 +56,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
 		Bucket:   o.Repository.Name,
-		Key:      o.Path,
+		Key:      path.WithRef(o.Path, o.Reference),
 		UploadID: uploadID,
 	}, http.StatusOK)
 }
@@ -114,7 +115,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,
-		Key:      o.Path,
+		Key:      path.WithRef(o.Path, o.Reference),
 		ETag:     *etag,
 	}, http.StatusOK)
 }

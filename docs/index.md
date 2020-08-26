@@ -84,4 +84,4 @@ Data engineers can now define rules such as:
 
 Read about the [branching model](branching/model.md) of lakeFS or run it locally and see how it works for yourself!
 
-Check out the [Quick Start Guide](quickstart.md)
+Check out the [Quick Start Guide](quickstart/index.md)

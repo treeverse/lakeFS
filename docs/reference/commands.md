@@ -35,7 +35,7 @@ Server endpoint URL: http://localhost:8000/api/v1
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.
-When setting up a new installation and creating initial credentials (see [Quick start](../quickstart.md)), the UI
+When setting up a new installation and creating initial credentials (see [Quick start](../quickstart/index.md)), the UI
 will provide a link to download a preconfigured configuration file for you.
 
 

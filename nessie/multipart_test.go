@@ -19,7 +19,8 @@ const (
 func TestMultiPart(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 
-	path := masterBranch+"/multipart_file"
+	file := "multipart_file"
+	path := masterBranch+"/" +file
 	input := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
 		Key:    aws.String(path),
@@ -30,24 +31,26 @@ func TestMultiPart(t *testing.T) {
 	logger.Info("Created multipart upload request")
 	var completedParts []*s3.CompletedPart
 	for partNumber := 1; partNumber <= numberOfParts; partNumber++ {
-		completedPart, err := uploadPart(svc, resp, path, randstr.Bytes(partSize), partNumber)
+		completedPart, err := uploadPart(svc, resp, randstr.Bytes(partSize), partNumber)
 		require.NoError(t, err, "failed to upload part %d", partNumber)
 
 		completedParts = append(completedParts, completedPart)
 	}
 
-	completeResponse, err := completeMultipartUpload(svc, resp,path,completedParts)
+	completeResponse, err := completeMultipartUpload(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
+	logger.WithField("completeResponse", *completeResponse).Info("HELPPPPPP")
+
 	var b bytes.Buffer
-	_, err = client.GetObject(ctx, repo, masterBranch, *completeResponse.Key, &b)
+	_, err = client.GetObject(ctx, repo, masterBranch, file, &b)
 	require.NoError(t, err, "failed to get object")
 }
 
-func completeMultipartUpload(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, path string, completedParts []*s3.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
+func completeMultipartUpload(svc *s3.S3, resp *s3.CreateMultipartUploadOutput,  completedParts []*s3.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
 	completeInput := &s3.CompleteMultipartUploadInput{
 		Bucket:   resp.Bucket,
-		Key:      aws.String(path),
+		Key:      resp.Key,
 		UploadId: resp.UploadId,
 		MultipartUpload: &s3.CompletedMultipartUpload{
 			Parts: completedParts,
@@ -56,11 +59,11 @@ func completeMultipartUpload(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, p
 	return svc.CompleteMultipartUpload(completeInput)
 }
 
-func uploadPart(svc *s3.S3, resp *s3.CreateMultipartUploadOutput,path string, fileBytes []byte, partNumber int) (*s3.CompletedPart, error) {
+func uploadPart(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, fileBytes []byte, partNumber int) (*s3.CompletedPart, error) {
 	partInput := &s3.UploadPartInput{
 		Body:          bytes.NewReader(fileBytes),
 		Bucket:        resp.Bucket,
-		Key:           aws.String(path),
+		Key:           resp.Key,
 		PartNumber:    aws.Int64(int64(partNumber)),
 		UploadId:      resp.UploadId,
 		ContentLength: aws.Int64(int64(len(fileBytes))),
