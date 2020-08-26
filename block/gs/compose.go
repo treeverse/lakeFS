@@ -17,7 +17,7 @@ func ComposeAll(target string, parts []string, composeFunc ComposeFunc) error {
 				chunkSize = MaxPartsInCompose
 			}
 			chunk := parts[i : i+chunkSize]
-			if chunkSize == 1 || (chunkSize < MaxPartsInCompose && len(nextParts)+chunkSize < MaxPartsInCompose) {
+			if chunkSize == 1 || (chunkSize < MaxPartsInCompose && len(nextParts)+chunkSize <= MaxPartsInCompose) {
 				nextParts = append(nextParts, chunk...)
 			} else {
 				targetName := fmt.Sprintf("%s_%d", chunk[0], layer)
