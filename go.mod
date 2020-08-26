@@ -4,6 +4,7 @@ go 1.14
 
 require (
 	cloud.google.com/go v0.63.0 // indirect
+	cloud.google.com/go/pubsub v1.3.1
 	cloud.google.com/go/storage v1.10.0
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
@@ -71,6 +72,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
+	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
 	golang.org/x/tools v0.0.0-20200818005847-188abfa75333 // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
