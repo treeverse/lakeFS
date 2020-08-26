@@ -236,6 +236,7 @@ func (c *Config) GetBlockAdapterLocalParams() (blockparams.Local, error) {
 func (c *Config) GetBlockAdapterGSParams() (blockparams.GS, error) {
 	return blockparams.GS{
 		CredentialsFile: viper.GetString("blockstore.gs.credentials_file"),
+		CredentialsJSON: viper.GetString("blockstore.gs.credentials_json"),
 	}, nil
 }
 

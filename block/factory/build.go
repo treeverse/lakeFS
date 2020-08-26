@@ -18,6 +18,7 @@ import (
 	"github.com/treeverse/lakefs/block/transient"
 	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
+	"golang.org/x/oauth2/google"
 	"google.golang.org/api/option"
 )
 
@@ -88,6 +89,13 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 	var opts []option.ClientOption
 	if params.CredentialsFile != "" {
 		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
+	} else if params.CredentialsJSON != "" {
+		ctx := context.Background()
+		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON))
+		if err != nil {
+			return nil, err
+		}
+		opts = append(opts, option.WithCredentials(cred))
 	}
 	ctx := context.Background()
 	client, err := storage.NewClient(ctx, opts...)
