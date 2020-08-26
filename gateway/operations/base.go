@@ -80,7 +80,6 @@ func (o *Operation) EncodeXMLBytes(t []byte, statusCode int) {
 }
 
 func EncodeResponse(w http.ResponseWriter, entity interface{}, statusCode int) error {
-	//payload, err := xml.MarshalIndent(entity, "", "  ")
 	// We don't indent the XML document because of Java.
 	// See: https://github.com/spulec/moto/issues/1870
 	payload, err := xml.Marshal(entity)
