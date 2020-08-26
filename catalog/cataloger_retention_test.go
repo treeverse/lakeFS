@@ -8,6 +8,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/treeverse/lakefs/db/params"
+
 	"github.com/go-test/deep"
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
@@ -653,7 +655,7 @@ func TestCataloger_MarkObjectsForDeletion(t *testing.T) {
 		t.Errorf("expected 1 object marked for deletion, got %v", count)
 	}
 
-	conn, err := db.ConnectDB("pgx", c.DbConnURI)
+	conn, err := db.ConnectDB(params.Database{Driver: db.DatabaseDriver, ConnectionString: c.DbConnURI})
 	if err != nil {
 		t.Fatalf("failed to connect to DB on %s", c.DbConnURI)
 	}
@@ -760,7 +762,7 @@ func TestCataloger_DeleteOrUnmarkObjectsForDeletion(t *testing.T) {
 		}
 	}
 
-	conn, err := db.ConnectDB("pgx", c.DbConnURI)
+	conn, err := db.ConnectDB(params.Database{Driver: db.DatabaseDriver, ConnectionString: c.DbConnURI})
 	if err != nil {
 		t.Fatalf("failed to connect to DB on %s", c.DbConnURI)
 	}
@@ -774,18 +776,18 @@ func TestCataloger_DeleteOrUnmarkObjectsForDeletion(t *testing.T) {
 	if err != nil {
 		t.Fatalf("failed to DeleteOrUnmarkObjectsForDeletion: %s", err)
 	}
-	delete := make([]string, 0, 2)
+	deleteObjs := make([]string, 0, 2)
 	for deleteRows.Next() {
 		deleteRow, err := deleteRows.Read()
 		if err != nil {
 			t.Fatalf("failed to read row from %+v: %s", deleteRows, err)
 		}
-		delete = append(delete, deleteRow)
+		deleteObjs = append(deleteObjs, deleteRow)
 	}
-	sort.Strings(delete)
+	sort.Strings(deleteObjs)
 	expectedDelete := []string{"delete-me"}
-	if diffs := deep.Equal(expectedDelete, delete); diffs != nil {
-		t.Errorf("expected to delete other objects: %s\nexpected %v got %v", diffs, expectedDelete, delete)
+	if diffs := deep.Equal(expectedDelete, deleteObjs); diffs != nil {
+		t.Errorf("expected to delete other objects: %s\nexpected %v got %v", diffs, expectedDelete, deleteObjs)
 	}
 
 	rows, err := conn.Queryx("SELECT physical_address, deleting FROM catalog_object_dedup")

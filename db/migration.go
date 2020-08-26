@@ -87,7 +87,7 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 		_ = src.Close()
 	}()
 
-	m, err := migrate.NewWithSourceInstance("httpfs", src, params.DatabaseURI)
+	m, err := migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
 	if err != nil {
 		return nil, err
 	}
@@ -104,16 +104,16 @@ func closeMigrate(m *migrate.Migrate) {
 	}
 }
 
-func MigrateUp(params params.Database) error {
-	//make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", params.DatabaseURI)
+func MigrateUp(p params.Database) error {
+	// make sure we have schema by calling connect
+	mdb, err := ConnectDB(p)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-	m, err := getMigrate(params)
+	m, err := getMigrate(p)
 	if err != nil {
 		return err
 	}
@@ -138,16 +138,16 @@ func MigrateDown(params params.Database) error {
 	return nil
 }
 
-func MigrateTo(params params.Database, version uint) error {
-	//make sure we have schema by calling connect
-	mdb, err := ConnectDB("pgx", params.DatabaseURI)
+func MigrateTo(p params.Database, version uint) error {
+	// make sure we have schema by calling connect
+	mdb, err := ConnectDB(p)
 	if err != nil {
 		return err
 	}
 	defer func() {
 		_ = mdb.Close()
 	}()
-	m, err := getMigrate(params)
+	m, err := getMigrate(p)
 	if err != nil {
 		return err
 	}
