@@ -70,51 +70,52 @@ func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
-// reportFinish computes the duration since starts and logs a "done" report if that duration is
-// long enough.
-func (d *SqlxDatabase) reportFinish(err *error, fields logging.Fields, start time.Time) {
+// performAndReport performs fn and logs a "done" report if its duration was long enough.
+func (d *SqlxDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
+	start := time.Now()
+	ret, err := fn()
 	duration := time.Since(start)
 	if duration > 100*time.Millisecond {
 		logger := d.getLogger().WithFields(fields).WithField("duration", duration)
-		if *err != nil {
-			logger = logger.WithError(*err)
+		if err != nil {
+			logger = logger.WithError(err)
 		}
 		logger.Info("database done")
 	}
+	return ret, err
 }
 
-func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) (err error) {
-	start := time.Now()
-	defer d.reportFinish(&err, logging.Fields{
+func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
+	_, err := d.performAndReport(logging.Fields{
 		"type":  "get",
 		"query": query,
 		"args":  args,
-	}, start)
-	return d.db.GetContext(d.getContext(), dest, query, args...)
+	}, func() (interface{}, error) { return nil, d.db.GetContext(d.getContext(), dest, query, args...) })
+	return err
 }
 
 func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (rows *Rows, err error) {
-	start := time.Now()
-	defer d.reportFinish(&err, logging.Fields{
+	ret, err := d.performAndReport(logging.Fields{
 		"type":  "start query",
 		"query": query,
 		"args":  args,
-	}, start)
-	return d.db.QueryxContext(d.getContext(), query, args...)
+	}, func() (interface{}, error) { return d.db.QueryxContext(d.getContext(), query, args...) })
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*Rows), err
 }
 
 func (d *SqlxDatabase) Exec(query string, args ...interface{}) (count int64, err error) {
-	start := time.Now()
-	defer d.reportFinish(&err, logging.Fields{
+	ret, err := d.performAndReport(logging.Fields{
 		"type":  "exec",
 		"query": query,
 		"args":  args,
-	}, start)
-	res, err := d.db.ExecContext(d.getContext(), query, args...)
+	}, func() (interface{}, error) { return d.db.ExecContext(d.getContext(), query, args...) })
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	return ret.(sql.Result).RowsAffected()
 }
 
 func (d *SqlxDatabase) getTxOptions() *TxOptions {
