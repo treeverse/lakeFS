@@ -62,3 +62,6 @@ footer_bottom_links:
     - 'https://lakefs.io/privacy-policy/'
     
 image: '/assets/img/shared-image.png'
+
+plugins:
+  - jekyll-redirect-from
