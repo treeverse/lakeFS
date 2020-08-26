@@ -20,4 +20,5 @@ type S3 struct {
 
 type GS struct {
 	CredentialsFile string
+	CredentialsJSON string
 }
