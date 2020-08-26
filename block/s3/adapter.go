@@ -98,22 +98,22 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) *Adapter {
 	return a
 }
 
-func (s *Adapter) WithContext(ctx context.Context) block.Adapter {
+func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 	return &Adapter{
-		s3:                    s.s3,
-		httpClient:            s.httpClient,
+		s3:                    a.s3,
+		httpClient:            a.httpClient,
 		ctx:                   ctx,
-		uploadIDTranslator:    s.uploadIDTranslator,
-		streamingChunkSize:    s.streamingChunkSize,
-		streamingChunkTimeout: s.streamingChunkTimeout,
+		uploadIDTranslator:    a.uploadIDTranslator,
+		streamingChunkSize:    a.streamingChunkSize,
+		streamingChunkTimeout: a.streamingChunkTimeout,
 	}
 }
 
-func (s *Adapter) log() logging.Logger {
-	return logging.FromContext(s.ctx)
+func (a *Adapter) log() logging.Logger {
+	return logging.FromContext(a.ctx)
 }
 
-func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
+func (a *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, opts block.PutOpts) error {
 	var err error
 	defer reportMetrics("Put", time.Now(), &sizeBytes, &err)
 
@@ -126,27 +126,27 @@ func (s *Adapter) Put(obj block.ObjectPointer, sizeBytes int64, reader io.Reader
 		Key:          aws.String(qualifiedKey.Key),
 		StorageClass: opts.StorageClass,
 	}
-	sdkRequest, _ := s.s3.PutObjectRequest(&putObject)
-	_, err = s.streamToS3(sdkRequest, sizeBytes, reader)
+	sdkRequest, _ := a.s3.PutObjectRequest(&putObject)
+	_, err = a.streamToS3(sdkRequest, sizeBytes, reader)
 	return err
 }
 
-func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
+func (a *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io.Reader, uploadID string, partNumber int64) (string, error) {
 	var err error
 	defer reportMetrics("UploadPart", time.Now(), &sizeBytes, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return "", err
 	}
-	uploadID = s.uploadIDTranslator.TranslateUploadID(uploadID)
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	uploadPartObject := s3.UploadPartInput{
 		Bucket:     aws.String(qualifiedKey.StorageNamespace),
 		Key:        aws.String(qualifiedKey.Key),
 		PartNumber: aws.Int64(partNumber),
 		UploadId:   aws.String(uploadID),
 	}
-	sdkRequest, _ := s.s3.UploadPartRequest(&uploadPartObject)
-	etag, err := s.streamToS3(sdkRequest, sizeBytes, reader)
+	sdkRequest, _ := a.s3.UploadPartRequest(&uploadPartObject)
+	etag, err := a.streamToS3(sdkRequest, sizeBytes, reader)
 	if err != nil {
 		return "", err
 	}
@@ -156,9 +156,9 @@ func (s *Adapter) UploadPart(obj block.ObjectPointer, sizeBytes int64, reader io
 	return etag, nil
 }
 
-func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (string, error) {
+func (a *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reader io.Reader) (string, error) {
 	sigTime := time.Now()
-	log := s.log().WithField("operation", "PutObject")
+	log := a.log().WithField("operation", "PutObject")
 
 	if err := sdkRequest.Build(); err != nil {
 		return "", err
@@ -198,10 +198,10 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 			sigSeed,
 			sdkRequest.Config.Credentials,
 		),
-		ChunkSize:    s.streamingChunkSize,
-		ChunkTimeout: s.streamingChunkTimeout,
+		ChunkSize:    a.streamingChunkSize,
+		ChunkTimeout: a.streamingChunkTimeout,
 	})
-	resp, err := s.httpClient.Do(req)
+	resp, err := a.httpClient.Do(req)
 	if err != nil {
 		log.WithError(err).
 			WithField("url", sdkRequest.HTTPRequest.URL.String()).
@@ -234,7 +234,7 @@ func (s *Adapter) streamToS3(sdkRequest *request.Request, sizeBytes int64, reade
 	return etag, nil
 }
 
-func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
+func (a *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64
 	defer reportMetrics("Get", time.Now(), &sizeBytes, &err)
@@ -242,12 +242,12 @@ func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	if err != nil {
 		return nil, err
 	}
-	log := s.log().WithField("operation", "GetObject")
+	log := a.log().WithField("operation", "GetObject")
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	objectOutput, err := s.s3.GetObject(&getObjectInput)
+	objectOutput, err := a.s3.GetObject(&getObjectInput)
 	if err != nil {
 		log.WithError(err).Error("failed to get S3 object")
 		return nil, err
@@ -256,7 +256,7 @@ func (s *Adapter) Get(obj block.ObjectPointer, _ int64) (io.ReadCloser, error) {
 	return objectOutput.Body, nil
 }
 
-func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
+func (a *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosition int64) (io.ReadCloser, error) {
 	var err error
 	var sizeBytes int64
 	defer reportMetrics("GetRange", time.Now(), &sizeBytes, &err)
@@ -264,13 +264,13 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	if err != nil {
 		return nil, err
 	}
-	log := s.log().WithField("operation", "GetObjectRange")
+	log := a.log().WithField("operation", "GetObjectRange")
 	getObjectInput := s3.GetObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 		Range:  aws.String(fmt.Sprintf("bytes=%d-%d", startPosition, endPosition)),
 	}
-	objectOutput, err := s.s3.GetObject(&getObjectInput)
+	objectOutput, err := a.s3.GetObject(&getObjectInput)
 	if err != nil {
 		log.WithError(err).WithFields(logging.Fields{
 			"start_position": startPosition,
@@ -282,7 +282,7 @@ func (s *Adapter) GetRange(obj block.ObjectPointer, startPosition int64, endPosi
 	return objectOutput.Body, nil
 }
 
-func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
+func (a *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, error) {
 	var err error
 	defer reportMetrics("GetProperties", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -293,14 +293,14 @@ func (s *Adapter) GetProperties(obj block.ObjectPointer) (block.Properties, erro
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	s3Props, err := s.s3.HeadObject(headObjectParams)
+	s3Props, err := a.s3.HeadObject(headObjectParams)
 	if err != nil {
 		return block.Properties{}, err
 	}
 	return block.Properties{StorageClass: s3Props.StorageClass}, nil
 }
 
-func (s *Adapter) Remove(obj block.ObjectPointer) error {
+func (a *Adapter) Remove(obj block.ObjectPointer) error {
 	var err error
 	defer reportMetrics("Remove", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -311,19 +311,19 @@ func (s *Adapter) Remove(obj block.ObjectPointer) error {
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	}
-	_, err = s.s3.DeleteObject(deleteObjectParams)
+	_, err = a.s3.DeleteObject(deleteObjectParams)
 	if err != nil {
-		s.log().WithError(err).Error("failed to delete S3 object")
+		a.log().WithError(err).Error("failed to delete S3 object")
 		return err
 	}
-	err = s.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
+	err = a.s3.WaitUntilObjectNotExists(&s3.HeadObjectInput{
 		Bucket: aws.String(qualifiedKey.StorageNamespace),
 		Key:    aws.String(qualifiedKey.Key),
 	})
 	return err
 }
 
-func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
+func (a *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request, opts block.CreateMultiPartUploadOpts) (string, error) {
 	var err error
 	defer reportMetrics("CreateMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -336,13 +336,13 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 		ContentType:  aws.String(""),
 		StorageClass: opts.StorageClass,
 	}
-	resp, err := s.s3.CreateMultipartUpload(input)
+	resp, err := a.s3.CreateMultipartUpload(input)
 	if err != nil {
 		return "", err
 	}
 	uploadID := *resp.UploadId
-	uploadID = s.uploadIDTranslator.SetUploadID(uploadID)
-	s.log().WithFields(logging.Fields{
+	uploadID = a.uploadIDTranslator.SetUploadID(uploadID)
+	a.log().WithFields(logging.Fields{
 		"upload_id":            *resp.UploadId,
 		"translated_upload_id": uploadID,
 		"qualified_ns":         qualifiedKey.StorageNamespace,
@@ -352,22 +352,22 @@ func (s *Adapter) CreateMultiPartUpload(obj block.ObjectPointer, r *http.Request
 	return uploadID, err
 }
 
-func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
+func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string) error {
 	var err error
 	defer reportMetrics("AbortMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
 	if err != nil {
 		return err
 	}
-	uploadID = s.uploadIDTranslator.TranslateUploadID(uploadID)
+	uploadID = a.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.AbortMultipartUploadInput{
 		Bucket:   aws.String(qualifiedKey.StorageNamespace),
 		Key:      aws.String(qualifiedKey.Key),
 		UploadId: aws.String(uploadID),
 	}
-	_, err = s.s3.AbortMultipartUpload(input)
-	s.uploadIDTranslator.RemoveUploadID(uploadID)
-	s.log().WithFields(logging.Fields{
+	_, err = a.s3.AbortMultipartUpload(input)
+	a.uploadIDTranslator.RemoveUploadID(uploadID)
+	a.log().WithFields(logging.Fields{
 		"upload_id":     uploadID,
 		"qualified_ns":  qualifiedKey.StorageNamespace,
 		"qualified_key": qualifiedKey.Key,
@@ -376,7 +376,7 @@ func (s *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	return err
 }
 
-func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
+func (a *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID string, multipartList *block.MultipartUploadCompletion) (*string, int64, error) {
 	var err error
 	defer reportMetrics("CompleteMultiPartUpload", time.Now(), nil, &err)
 	qualifiedKey, err := resolveNamespace(obj)
@@ -384,30 +384,30 @@ func (s *Adapter) CompleteMultiPartUpload(obj block.ObjectPointer, uploadID stri
 		return nil, 0, err
 	}
 	cmpu := &s3.CompletedMultipartUpload{Parts: multipartList.Part}
-	translatedUploadID := s.uploadIDTranslator.TranslateUploadID(uploadID)
+	translatedUploadID := a.uploadIDTranslator.TranslateUploadID(uploadID)
 	input := &s3.CompleteMultipartUploadInput{
 		Bucket:          aws.String(qualifiedKey.StorageNamespace),
 		Key:             aws.String(qualifiedKey.Key),
 		UploadId:        aws.String(translatedUploadID),
 		MultipartUpload: cmpu,
 	}
-	lg := s.log().WithFields(logging.Fields{
+	lg := a.log().WithFields(logging.Fields{
 		"upload_id":            uploadID,
 		"translated_upload_id": translatedUploadID,
 		"qualified_ns":         qualifiedKey.StorageNamespace,
 		"qualified_key":        qualifiedKey.Key,
 		"key":                  obj.Identifier,
 	})
-	resp, err := s.s3.CompleteMultipartUpload(input)
+	resp, err := a.s3.CompleteMultipartUpload(input)
 
 	if err != nil {
 		lg.WithError(err).Error("CompleteMultipartUpload failed")
 		return nil, -1, err
 	}
 	lg.Debug("completed multipart upload")
-	s.uploadIDTranslator.RemoveUploadID(translatedUploadID)
+	a.uploadIDTranslator.RemoveUploadID(translatedUploadID)
 	headInput := &s3.HeadObjectInput{Bucket: &qualifiedKey.StorageNamespace, Key: &qualifiedKey.Key}
-	headResp, err := s.s3.HeadObject(headInput)
+	headResp, err := a.s3.HeadObject(headInput)
 	if err != nil {
 		return nil, -1, err
 	} else {
@@ -443,16 +443,16 @@ func isExpirationRule(rule s3.LifecycleRule) bool {
 // lifecycle policy: the storageNamespace bucket should expire objects
 // marked with ExpireObjectS3Tag (with _some_ duration, even if
 // nonzero).
-func (s *Adapter) ValidateConfiguration(storageNamespace string) error {
+func (a *Adapter) ValidateConfiguration(storageNamespace string) error {
 	getLifecycleConfigInput := &s3.GetBucketLifecycleConfigurationInput{Bucket: &storageNamespace}
-	config, err := s.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
+	config, err := a.s3.GetBucketLifecycleConfiguration(getLifecycleConfigInput)
 	if err != nil {
 		if aerr, ok := err.(awserr.Error); ok && aerr.Code() == "NoSuchLifecycleConfiguration" {
 			return fmt.Errorf("%w: bucket %s has no lifecycle configuration", ErrS3, storageNamespace)
 		}
 		return err
 	}
-	s.log().WithFields(logging.Fields{
+	a.log().WithFields(logging.Fields{
 		"Bucket":          storageNamespace,
 		"LifecyclePolicy": config.GoString(),
 	}).Info("S3 bucket lifecycle policy")

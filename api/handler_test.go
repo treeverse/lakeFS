@@ -80,7 +80,7 @@ func (m *mockCollector) CollectEvent(_, _ string) {}
 func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	blockAdapter := testutil.NewBlockAdapterByEnv(&block.NoOpTranslator{})
-	cataloger := catalog.NewCataloger(conn)
+	cataloger := catalog.NewCataloger(conn, catalog.WithCacheConfig(&catalog.CacheConfig{Enabled: false}))
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
 	})

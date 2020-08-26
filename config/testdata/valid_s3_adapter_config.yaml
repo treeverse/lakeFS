@@ -4,12 +4,6 @@ logging:
   level: NONE
   output: "-"
 
-metadata:
-  db:
-    type: badger
-    badger:
-      path: /tmp
-
 blockstore:
   type: s3
   s3:

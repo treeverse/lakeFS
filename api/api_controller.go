@@ -574,17 +574,14 @@ func (c *Controller) DeleteRepositoryHandler() repositories.DeleteRepositoryHand
 			return repositories.NewDeleteRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("delete_repo")
-		cataloger := deps.Cataloger
-		err = cataloger.DeleteRepository(c.Context(), params.Repository)
+		err = deps.Cataloger.DeleteRepository(c.Context(), params.Repository)
 		if errors.Is(err, db.ErrNotFound) {
-			return repositories.NewDeleteRepositoryNotFound().
-				WithPayload(responseError("repository not found"))
+			return repositories.NewDeleteRepositoryNotFound().WithPayload(responseError("repository not found"))
 		}
 		if err != nil {
 			return repositories.NewDeleteRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error deleting repository"))
 		}
-
 		return repositories.NewDeleteRepositoryNoContent()
 	})
 }
@@ -1016,7 +1013,7 @@ func (c *Controller) MetadataCreateSymlinkHandler() metadataop.CreateSymlinkHand
 					path = entry.Path[0:idx]
 				}
 				if path != currentPath {
-					//push current
+					// push current
 					err := writeSymlinkToS3(params, repo, path, currentAddresses, deps)
 					if err != nil {
 						return metadataop.NewCreateSymlinkDefault(http.StatusInternalServerError).
