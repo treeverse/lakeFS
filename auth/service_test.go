@@ -122,7 +122,13 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 					got = got + c.A
 				}
 				if paginator.NextPageToken == "" {
+					if size > 0 && len(letters) > size {
+						t.Errorf("expected at most %d entries in last page but got %d", size, len(letters))
+					}
 					break
+				}
+				if len(letters) != size {
+					t.Errorf("expected %d entries in page but got %d", size, len(letters))
 				}
 				pagination.After = paginator.NextPageToken
 			}
@@ -595,11 +601,11 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	if err != nil {
 		t.Fatalf("GetUser(%s): %s", userName, err)
 	}
-	userById, err := s.GetUserByID(user.ID)
+	gotUser, err := s.GetUserByID(user.ID)
 	if err != nil {
 		t.Errorf("GetUserById(%d): %s", user.ID, err)
 	}
-	if diffs := deep.Equal(user, userById); diffs != nil {
+	if diffs := deep.Equal(user, gotUser); diffs != nil {
 		t.Errorf("got different user by name and by ID: %s", diffs)
 	}
 }
