@@ -23,7 +23,7 @@ var dbCmd = &cobra.Command{
 }
 
 func connectToDB(connectionString string) db.Database {
-	database, err := db.ConnectDB(params.Database{URI: connectionString})
+	database, err := db.ConnectDB(params.Database{Driver: db.DatabaseDriver, ConnectionString: connectionString})
 	if err != nil {
 		fmt.Printf("Failed connecting to database: %s\n", err)
 		os.Exit(1)

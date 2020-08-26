@@ -87,7 +87,7 @@ func getMigrate(params params.Database) (*migrate.Migrate, error) {
 		_ = src.Close()
 	}()
 
-	m, err := migrate.NewWithSourceInstance("httpfs", src, params.URI)
+	m, err := migrate.NewWithSourceInstance("httpfs", src, params.ConnectionString)
 	if err != nil {
 		return nil, err
 	}

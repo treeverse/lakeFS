@@ -655,7 +655,7 @@ func TestCataloger_MarkObjectsForDeletion(t *testing.T) {
 		t.Errorf("expected 1 object marked for deletion, got %v", count)
 	}
 
-	conn, err := db.ConnectDB(params.Database{URI: c.DbConnURI})
+	conn, err := db.ConnectDB(params.Database{Driver: db.DatabaseDriver, ConnectionString: c.DbConnURI})
 	if err != nil {
 		t.Fatalf("failed to connect to DB on %s", c.DbConnURI)
 	}
@@ -762,7 +762,7 @@ func TestCataloger_DeleteOrUnmarkObjectsForDeletion(t *testing.T) {
 		}
 	}
 
-	conn, err := db.ConnectDB(params.Database{URI: c.DbConnURI})
+	conn, err := db.ConnectDB(params.Database{Driver: db.DatabaseDriver, ConnectionString: c.DbConnURI})
 	if err != nil {
 		t.Fatalf("failed to connect to DB on %s", c.DbConnURI)
 	}

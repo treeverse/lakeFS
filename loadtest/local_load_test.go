@@ -61,7 +61,7 @@ func TestLocalLoad(t *testing.T) {
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	retentionService := retention.NewService(conn)
 	meta := auth.NewDBMetadataManager("dev", conn)
-	migrator := db.NewDatabaseMigrator(dbparams.Database{URI: databaseURI})
+	migrator := db.NewDatabaseMigrator(dbparams.Database{ConnectionString: databaseURI})
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
 		// order is important - close cataloger channel before dedup

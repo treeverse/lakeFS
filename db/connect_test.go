@@ -24,7 +24,7 @@ func TestConnectDB(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := db.ConnectDB(params.Database{Driver: tt.args.driver, URI: tt.args.uri})
+			got, err := db.ConnectDB(params.Database{Driver: tt.args.driver, ConnectionString: tt.args.uri})
 			if (err != nil) && !tt.wantErr {
 				t.Errorf("ConnectDB() error = %v, unexpected error", err)
 				return
