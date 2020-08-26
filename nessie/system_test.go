@@ -1,3 +1,5 @@
+// +build systemtests
+
 package nessie
 
 import (
@@ -11,21 +13,17 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/credentials"
-
 	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
-
-	genclient "github.com/treeverse/lakefs/api/gen/client"
-	"github.com/treeverse/lakefs/api/gen/client/setup"
-
-	"github.com/stretchr/testify/require"
-
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
 	"github.com/treeverse/lakefs/api"
+	genclient "github.com/treeverse/lakefs/api/gen/client"
+	"github.com/treeverse/lakefs/api/gen/client/setup"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -41,6 +39,7 @@ type testsConfig struct {
 	// maxSetup is the maximum time to wait for lakeFS setup
 	maxSetup time.Duration
 
+	// gatewayDomainName is the lakeFS host configuration for accepting gateway requests
 	gatewayDomainName string
 }
 
@@ -83,8 +82,7 @@ func TestMain(m *testing.M) {
 	})
 
 	// first setup of lakeFS
-	setupOrFail(ctx, cl)
-
+	waitUntilLakeFSRunning(ctx, cl)
 	adminUserName := "nessie"
 	res, err := cl.Setup.SetupLakeFS(&setup.SetupLakeFSParams{
 		User: &models.Setup{
@@ -122,7 +120,7 @@ func TestMain(m *testing.M) {
 	os.Exit(m.Run())
 }
 
-func setupOrFail(ctx context.Context, cl *genclient.Lakefs) {
+func waitUntilLakeFSRunning(ctx context.Context, cl *genclient.Lakefs) {
 	setupCtx, cancel := context.WithTimeout(ctx, config.maxSetup)
 	defer cancel()
 	for {
@@ -134,7 +132,7 @@ func setupOrFail(ctx context.Context, cl *genclient.Lakefs) {
 
 		select {
 		case <-setupCtx.Done():
-			panic("setup failed after all retries")
+			panic("health check failed after all retries")
 		case <-time.After(5 * time.Second):
 		}
 	}

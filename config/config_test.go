@@ -9,6 +9,7 @@ import (
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/block/factory"
+	"github.com/treeverse/lakefs/block/gs"
 	"github.com/treeverse/lakefs/block/local"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
@@ -87,12 +88,22 @@ func TestConfig_BuildBlockAdapter(t *testing.T) {
 	})
 
 	t.Run("s3 block adapter", func(t *testing.T) {
-		newConfigFromFile("testdata/valid_s3adapter_config.yaml")
+		newConfigFromFile("testdata/valid_s3_adapter_config.yaml")
 		c := config.NewConfig()
 		adapter, err := factory.BuildBlockAdapter(c)
 		testutil.Must(t, err)
 		if _, ok := adapter.(*s3a.Adapter); !ok {
 			t.Fatalf("expected an s3 block adapter, got something else instead")
+		}
+	})
+
+	t.Run("gs block adapter", func(t *testing.T) {
+		newConfigFromFile("testdata/valid_gs_adapter_config.yaml")
+		c := config.NewConfig()
+		adapter, err := factory.BuildBlockAdapter(c)
+		testutil.Must(t, err)
+		if _, ok := adapter.(*gs.Adapter); !ok {
+			t.Fatalf("expected an gs block adapter, got something else instead")
 		}
 	})
 }

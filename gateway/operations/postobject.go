@@ -4,7 +4,6 @@ import (
 	"encoding/hex"
 	"encoding/xml"
 	"fmt"
-	"github.com/treeverse/lakefs/gateway/path"
 	"io/ioutil"
 	"net/http"
 	"strings"
@@ -13,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -36,7 +36,6 @@ func (controller *PostObject) RequiredPermissions(_ *http.Request, repoID, _, pa
 }
 
 func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
-	//var err error
 	o.Incr("create_mpu")
 	uuidBytes := [16]byte(uuid.New())
 	objName := hex.EncodeToString(uuidBytes[:])

@@ -77,7 +77,7 @@ lint: $(GOBINPATH)/golangci-lint  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
 nessie: gen ## run nessie (system testing)
-	$(GOTEST) -v ./nessie/ --endpoint-url=$(API_ENDPOINT) --bucket=$(BUCKET)
+	$(GOTEST) --tags=systemtests -v ./nessie/ --endpoint-url=$(API_ENDPOINT) --bucket=$(BUCKET)
 
 test: gen  ## Run tests for the project
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)
