@@ -1,6 +1,7 @@
 package testutil
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"strings"
 	"testing"
 
+	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,6 +19,7 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/block/gs"
 	"github.com/treeverse/lakefs/block/mem"
 	lakefsS3 "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/db"
@@ -28,10 +31,10 @@ const (
 
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
-	envKeyUseS3BlockAdapter = "USE_S3_BLOCK_ADAPTER"
-	envKeyAwsKeyID          = "AWS_ACCESS_KEY_ID"
-	envKeyAwsSecretKey      = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
-	envKeyAwsRegion         = "AWS_DEFAULT_REGION"
+	envKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
+	envKeyAwsKeyID        = "AWS_ACCESS_KEY_ID"
+	envKeyAwsSecretKey    = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
+	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
 )
 
 var keepDB = flag.Bool("keep-db", false, "keep test DB instance running")
@@ -167,30 +170,37 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByEnv(translator block.UploadIDTranslator) block.Adapter {
-	_, useS3 := os.LookupEnv(envKeyUseS3BlockAdapter)
-	isLocal := !useS3
-	if isLocal {
+func NewBlockAdapterByEnv(t *testing.T, translator block.UploadIDTranslator) block.Adapter {
+	useAdapter, _ := os.LookupEnv(envKeyUseBlockAdapter)
+	switch useAdapter {
+	case gs.BlockstoreType:
+		ctx := context.Background()
+		client, err := storage.NewClient(ctx)
+		if err != nil {
+			t.Fatal("Google Storage new client", err)
+		}
+		return gs.NewAdapter(client, gs.WithTranslator(translator))
+
+	case lakefsS3.BlockstoreType:
+		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
+		if !regionOk {
+			awsRegion = "us-east-1"
+		}
+		cfg := &aws.Config{
+			Region: aws.String(awsRegion),
+		}
+		awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
+		awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
+		if keyOk && secretOk {
+			cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
+		} else {
+			cfg.Credentials = credentials.NewSharedCredentials("", "default")
+		}
+		sess := session.Must(session.NewSession(cfg))
+		svc := s3.New(sess)
+		return lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
+
+	default:
 		return mem.New(mem.WithTranslator(translator))
 	}
-
-	awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
-	if !regionOk {
-		awsRegion = "us-east-1"
-	}
-	cfg := &aws.Config{
-		Region: aws.String(awsRegion),
-	}
-	awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
-	awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
-	if keyOk && secretOk {
-		cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
-	} else {
-		cfg.Credentials = credentials.NewSharedCredentials("", "default")
-	}
-
-	sess := session.Must(session.NewSession(cfg))
-	svc := s3.New(sess)
-	adapter := lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
-	return adapter
 }

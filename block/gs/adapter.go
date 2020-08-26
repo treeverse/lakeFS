@@ -11,7 +11,6 @@ import (
 
 	"cloud.google.com/go/storage"
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
 	"google.golang.org/api/iterator"
 )
@@ -19,6 +18,10 @@ import (
 const (
 	BlockstoreType      = "gs"
 	MaxMultipartObjects = 10000
+
+	delimiter    = "/"
+	partSuffix   = ".part_"
+	markerSuffix = ".multipart"
 )
 
 var (
@@ -243,7 +246,7 @@ func (a *Adapter) AbortMultiPartUpload(obj block.ObjectPointer, uploadID string)
 	// delete all related files by listing the prefix
 	it := bucket.Objects(a.ctx, &storage.Query{
 		Prefix:    uploadID,
-		Delimiter: catalog.DefaultPathDelimiter,
+		Delimiter: delimiter,
 	})
 	for {
 		attrs, err := it.Next()
@@ -333,8 +336,8 @@ func (a *Adapter) validateMultipartUploadParts(qualifiedKey block.QualifiedKey, 
 func (a *Adapter) listMultipartUploadParts(bucket *storage.BucketHandle, uploadID string, qualifiedKey block.QualifiedKey) ([]*storage.ObjectAttrs, error) {
 	var bucketParts []*storage.ObjectAttrs
 	it := bucket.Objects(a.ctx, &storage.Query{
-		Delimiter: catalog.DefaultPathDelimiter,
-		Prefix:    uploadID + ".part_",
+		Delimiter: delimiter,
+		Prefix:    uploadID + partSuffix,
 	})
 	for {
 		attrs, err := it.Next()
@@ -403,9 +406,9 @@ func (a *Adapter) Close() error {
 
 func formatMultipartFilename(uploadID string, partNumber int64) string {
 	// keep natural sort order with zero padding
-	return fmt.Sprintf("%s.part_%05d", uploadID, partNumber)
+	return fmt.Sprintf("%s"+partSuffix+"%05d", uploadID, partNumber)
 }
 
 func formatMultipartMarkerFilename(uploadID string) string {
-	return uploadID + ".multipart"
+	return uploadID + markerSuffix
 }
