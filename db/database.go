@@ -47,7 +47,7 @@ func (d *SqlxDatabase) getLogger() logging.Logger {
 	if d.queryOptions != nil {
 		return d.queryOptions.logger
 	}
-	return logging.Default()
+	return logging.Default().WithContext(d.getContext())
 }
 
 func (d *SqlxDatabase) getContext() context.Context {
@@ -86,7 +86,11 @@ func (d *SqlxDatabase) Close() error {
 func (d *SqlxDatabase) reportFinish(err *error, fields logging.Fields, start time.Time) {
 	duration := time.Since(start)
 	if duration > 100*time.Millisecond {
-		d.getLogger().WithFields(fields).WithError(*err).WithField("duration", duration).Info("database done")
+		logger := d.getLogger().WithFields(fields).WithField("duration", duration)
+		if *err != nil {
+			logger = logger.WithError(*err)
+		}
+		logger.Info("database done")
 	}
 }
 
