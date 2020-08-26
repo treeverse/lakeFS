@@ -26,7 +26,6 @@ type Database interface {
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
 	WithContext(ctx context.Context) Database
-	WithLogger(logger logging.Logger) Database
 }
 
 type QueryOptions struct {
@@ -47,7 +46,7 @@ func (d *SqlxDatabase) getLogger() logging.Logger {
 	if d.queryOptions != nil {
 		return d.queryOptions.logger
 	}
-	return logging.Default().WithContext(d.getContext())
+	return logging.Default()
 }
 
 func (d *SqlxDatabase) getContext() context.Context {
@@ -61,18 +60,8 @@ func (d *SqlxDatabase) WithContext(ctx context.Context) Database {
 	return &SqlxDatabase{
 		db: d.db,
 		queryOptions: &QueryOptions{
-			logger: d.getLogger(),
+			logger: logging.Default().WithContext(ctx),
 			ctx:    ctx,
-		},
-	}
-}
-
-func (d *SqlxDatabase) WithLogger(logger logging.Logger) Database {
-	return &SqlxDatabase{
-		db: d.db,
-		queryOptions: &QueryOptions{
-			logger: logger,
-			ctx:    d.getContext(),
 		},
 	}
 }
