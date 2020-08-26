@@ -232,7 +232,7 @@ func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName str
 	// An object may have been deduped onto several branches with different names
 	// and will have multiple entries; it can only be remove once it expires from
 	// all of those.
-	rows, err := c.db.Queryx(dedupedQuery, args...)
+	rows, err := c.db.WithContext(ctx).Queryx(dedupedQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("running query: %w", err)
 	}
@@ -303,7 +303,7 @@ func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName s
 	// TODO(ariels): This query is difficult to chunk.  One way: Perform the inner SELECT
 	// once into a temporary table, then in a separate transaction chunk the UPDATE by
 	// dedup_id (this is not yet the real deletion).
-	result, err := c.db.Exec(`
+	result, err := c.db.WithContext(ctx).Exec(`
                     UPDATE catalog_object_dedup SET deleting=true
                     WHERE repository_id IN (SELECT id FROM catalog_repositories WHERE name = $1) AND
                           physical_address IN (
@@ -341,7 +341,7 @@ func (s *StringRows) Read() (string, error) {
 // TODO(ariels): Process in chunks.  Can store the inner physical_address query in a table for
 //     the duration.
 func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (StringRows, error) {
-	rows, err := c.db.Queryx(`
+	rows, err := c.db.WithContext(ctx).Queryx(`
 		WITH ids AS (SELECT id repository_id FROM catalog_repositories WHERE name = $1),
 		    update_result AS (
 			UPDATE catalog_object_dedup SET deleting=all_expired
