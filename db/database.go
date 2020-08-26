@@ -1,6 +1,7 @@
 package db
 
 import (
+	"context"
 	"database/sql"
 	"io"
 	"strconv"
@@ -24,38 +25,110 @@ type Database interface {
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
+	WithContext(ctx context.Context) Database
+}
+
+type QueryOptions struct {
+	logger logging.Logger
+	ctx    context.Context
 }
 
 type SqlxDatabase struct {
-	db *sqlx.DB
+	db           *sqlx.DB
+	queryOptions *QueryOptions
 }
 
 func NewSqlxDatabase(db *sqlx.DB) *SqlxDatabase {
 	return &SqlxDatabase{db: db}
 }
 
+func (d *SqlxDatabase) getLogger() logging.Logger {
+	if d.queryOptions != nil {
+		return d.queryOptions.logger
+	}
+	return logging.Default()
+}
+
+func (d *SqlxDatabase) getContext() context.Context {
+	if d.queryOptions != nil {
+		return d.queryOptions.ctx
+	}
+	return context.Background()
+}
+
+func (d *SqlxDatabase) WithContext(ctx context.Context) Database {
+	return &SqlxDatabase{
+		db: d.db,
+		queryOptions: &QueryOptions{
+			logger: logging.Default().WithContext(ctx),
+			ctx:    ctx,
+		},
+	}
+}
+
 func (d *SqlxDatabase) Close() error {
 	return d.db.Close()
 }
 
+// performAndReport performs fn and logs a "done" report if its duration was long enough.
+func (d *SqlxDatabase) performAndReport(fields logging.Fields, fn func() (interface{}, error)) (interface{}, error) {
+	start := time.Now()
+	ret, err := fn()
+	duration := time.Since(start)
+	if duration > 100*time.Millisecond {
+		logger := d.getLogger().WithFields(fields).WithField("duration", duration)
+		if err != nil {
+			logger = logger.WithError(err)
+		}
+		logger.Info("database done")
+	}
+	return ret, err
+}
+
 func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) error {
-	return d.db.Get(dest, query, args...)
+	_, err := d.performAndReport(logging.Fields{
+		"type":  "get",
+		"query": query,
+		"args":  args,
+	}, func() (interface{}, error) { return nil, d.db.GetContext(d.getContext(), dest, query, args...) })
+	return err
 }
 
-func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (*Rows, error) {
-	return d.db.Queryx(query, args...)
+func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (rows *Rows, err error) {
+	ret, err := d.performAndReport(logging.Fields{
+		"type":  "start query",
+		"query": query,
+		"args":  args,
+	}, func() (interface{}, error) { return d.db.QueryxContext(d.getContext(), query, args...) })
+	if ret == nil {
+		return nil, err
+	}
+	return ret.(*Rows), err
 }
 
-func (d *SqlxDatabase) Exec(query string, args ...interface{}) (int64, error) {
-	res, err := d.db.Exec(query, args...)
+func (d *SqlxDatabase) Exec(query string, args ...interface{}) (count int64, err error) {
+	ret, err := d.performAndReport(logging.Fields{
+		"type":  "exec",
+		"query": query,
+		"args":  args,
+	}, func() (interface{}, error) { return d.db.ExecContext(d.getContext(), query, args...) })
 	if err != nil {
 		return 0, err
 	}
-	return res.RowsAffected()
+	return ret.(sql.Result).RowsAffected()
+}
+
+func (d *SqlxDatabase) getTxOptions() *TxOptions {
+	options := DefaultTxOptions()
+	if d.queryOptions != nil {
+		options.logger = d.queryOptions.logger
+		options.ctx = d.queryOptions.ctx
+	}
+	return options
 }
 
 func (d *SqlxDatabase) Transact(fn TxFunc, opts ...TxOpt) (interface{}, error) {
-	options := DefaultTxOptions()
+	options := d.getTxOptions()
 	for _, opt := range opts {
 		opt(options)
 	}
