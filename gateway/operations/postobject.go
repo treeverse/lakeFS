@@ -12,6 +12,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/gateway/errors"
+	"github.com/treeverse/lakefs/gateway/path"
 	"github.com/treeverse/lakefs/gateway/serde"
 	"github.com/treeverse/lakefs/httputil"
 	"github.com/treeverse/lakefs/logging"
@@ -54,7 +55,7 @@ func (controller *PostObject) HandleCreateMultipartUpload(o *PathOperation) {
 	}
 	o.EncodeResponse(&serde.InitiateMultipartUploadResult{
 		Bucket:   o.Repository.Name,
-		Key:      o.Path,
+		Key:      path.WithRef(o.Path, o.Reference),
 		UploadID: uploadID,
 	}, http.StatusOK)
 }
@@ -113,7 +114,7 @@ func (controller *PostObject) HandleCompleteMultipartUpload(o *PathOperation) {
 	o.EncodeResponse(&serde.CompleteMultipartUploadResult{
 		Location: location,
 		Bucket:   o.Repository.Name,
-		Key:      o.Path,
+		Key:      path.WithRef(o.Path, o.Reference),
 		ETag:     *etag,
 	}, http.StatusOK)
 }
