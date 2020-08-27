@@ -30,8 +30,17 @@ type dependencies struct {
 	cataloger catalog.Cataloger
 }
 
+type mockCollector struct{}
+
 const (
-	RecordingsDir = "testdata/recordings"
+	RecordingsDir        = "testdata/recordings"
+	ReplayRepositoryName = "example"
+)
+
+var (
+	pool         *dockertest.Pool
+	databaseURI  string
+	IdTranslator *testutil.UploadIDTranslator
 )
 
 func TestGatewayRecording(t *testing.T) {
@@ -71,11 +80,6 @@ func TestGatewayRecording(t *testing.T) {
 	}
 }
 
-var (
-	pool        *dockertest.Pool
-	databaseURI string
-)
-
 func TestMain(m *testing.M) {
 	var err error
 	var closer func()
@@ -89,21 +93,11 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-type mockCollector struct{}
+func (m *mockCollector) SetInstallationID(installationID string) {}
 
-func (m *mockCollector) SetInstallationID(installationID string) {
+func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {}
 
-}
-
-func (m *mockCollector) CollectMetadata(accountMetadata map[string]string) {
-
-}
-
-func (m *mockCollector) CollectEvent(class, action string) {
-
-}
-
-var IdTranslator *testutil.UploadIDTranslator
+func (m *mockCollector) CollectEvent(class, action string) {}
 
 func getBasicHandlerPlayback(t *testing.T) (http.Handler, *dependencies) {
 	authService := newGatewayAuthFromFile(t, simulator.PlaybackParams.RecordingDir)
@@ -119,7 +113,7 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	conn, _ := testutil.GetDB(t, databaseURI)
 	cataloger := catalog.NewCataloger(conn)
 
-	blockAdapter := testutil.NewBlockAdapterByEnv(IdTranslator)
+	blockAdapter := testutil.NewBlockAdapterByEnv(t, IdTranslator)
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {
@@ -129,7 +123,11 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	})
 
 	ctx := context.Background()
-	testutil.Must(t, cataloger.CreateRepository(ctx, "example", "example-tzahi", "master"))
+	storageNamespace := os.Getenv("USE_STORAGE_NAMESPACE")
+	if storageNamespace == "" {
+		storageNamespace = "replay"
+	}
+	testutil.Must(t, cataloger.CreateRepository(ctx, ReplayRepositoryName, storageNamespace, "master"))
 	handler := gateway.NewHandler(
 		authService.Region,
 		cataloger,
