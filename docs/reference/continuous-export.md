@@ -10,7 +10,7 @@ has_children: false
 You can configure a lakeFS repository can store the latest of a branch on an external
 object store using its native paths and access methods.  This allows clients and tools
 read-only access to repository objects without any lakeFS-specific configuration.
-Initially onlya AWS S3 is supported.
+Initially, only AWS S3 is supported.
 
 For instance, the contents `lakefs://example@master` might be stored on
 `s3://company-bucket/example/latest`.  Clients entirely unaware of lakeFS could use that
