@@ -3,6 +3,7 @@ package simulator
 import (
 	"io/ioutil"
 	"os"
+	"path/filepath"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -67,6 +68,10 @@ func (d *externalRecordDownloader) DownloadRecording(bucket, key, destination st
 	}
 
 	logging.Default().WithFields(logging.Fields{"bucket": bucket, "key": key, "destination": destination}).Info("download Recording")
+	// make sure target folder exists
+	dir := filepath.Dir(destination)
+	_ = os.MkdirAll(dir, os.ModePerm)
+	// create file
 	f, err := os.Create(destination)
 	if err != nil {
 		return err
