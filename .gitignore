@@ -47,5 +47,8 @@
 /ddl/statik.go
 .DS_Store
 
+# recordings
+gateway/testdata/recordings/
+
 # Docs
 /docs/_site/
