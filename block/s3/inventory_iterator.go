@@ -7,7 +7,7 @@ import (
 
 const DefaultReadBatchSize = 100000
 
-type ParquetInventoryObject struct {
+type InventoryObject struct {
 	Bucket         string  `parquet:"name=bucket, type=UTF8"`
 	Key            string  `parquet:"name=key, type=UTF8"`
 	IsLatest       *bool   `parquet:"name=is_latest, type=BOOLEAN"`
@@ -17,7 +17,7 @@ type ParquetInventoryObject struct {
 	Checksum       *string `parquet:"name=e_tag, type=UTF8"`
 }
 
-func (o *ParquetInventoryObject) GetPhysicalAddress() string {
+func (o *InventoryObject) GetPhysicalAddress() string {
 	return "s3://" + o.Bucket + "/" + o.Key
 }
 
@@ -26,16 +26,20 @@ type InventoryIterator struct {
 	ReadBatchSize          int
 	err                    error
 	val                    block.InventoryObject
-	buffer                 []ParquetInventoryObject
+	buffer                 []InventoryObject
 	currentManifestFileIdx int
 	nextRowInParquet       int
 	valIndexInBuffer       int
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
+	batchSize := DefaultReadBatchSize
+	if inv.Manifest.Format == "ORC" {
+		batchSize = -1
+	}
 	return &InventoryIterator{
 		Inventory:     inv,
-		ReadBatchSize: DefaultReadBatchSize,
+		ReadBatchSize: batchSize,
 	}
 }
 
@@ -56,10 +60,28 @@ func (it *InventoryIterator) Next() bool {
 		it.valIndexInBuffer = -1
 		// if needed, try to move on to the next manifest file:
 		file := it.Manifest.Files[it.currentManifestFileIdx]
-		if it.nextRowInParquet >= file.numRows && !it.moveToNextManifestFile() {
-			// no more files left
+		pr, err := it.inventoryReader.GetReader(it.ctx, *it.Manifest, file.Key)
+		if err != nil {
+			it.err = err
 			return false
 		}
+		if it.nextRowInParquet >= int(pr.GetNumRows()) {
+			// no more files left
+			if it.moveToNextManifestFile() {
+				err = pr.Close()
+				if err != nil {
+					it.logger.Errorf("failed to close manifest file reader: %v", err)
+				}
+			} else {
+				return false
+			}
+		}
+		file = it.Manifest.Files[it.currentManifestFileIdx]
+		if err != nil {
+			it.err = err
+			return false
+		}
+
 		if !it.fillBuffer() { // fill from current manifest file
 			return false
 		}
@@ -70,6 +92,7 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 	if it.currentManifestFileIdx == len(it.Manifest.Files)-1 {
 		return false
 	}
+	it.logger.Info("moving to next manifest file")
 	it.currentManifestFileIdx += 1
 	it.nextRowInParquet = 0
 	it.buffer = nil
@@ -77,28 +100,34 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 }
 
 func (it *InventoryIterator) fillBuffer() bool {
-	key := it.Manifest.Files[it.currentManifestFileIdx].Key
-	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.Manifest.inventoryBucket, key)
+	it.logger.Info("start reading rows from inventory to buffer")
+	file := &it.Manifest.Files[it.currentManifestFileIdx]
+	reader, err := it.inventoryReader.GetReader(it.ctx, *it.Manifest, file.Key)
 	if err != nil {
 		it.err = err
 		return false
 	}
 	defer func() {
-		err = closeReader()
+		err := reader.Close()
 		if err != nil {
-			it.logger.WithFields(logging.Fields{"bucket": it.Manifest.inventoryBucket, "key": key}).
+			it.logger.WithFields(logging.Fields{"bucket": it.Manifest.inventoryBucket, "key": it.Manifest.Files[it.currentManifestFileIdx].Key}).
 				Error("failed to close parquet reader after filling buffer")
 		}
 	}()
 	// skip the rows that have already been read:
-	err = pr.SkipRows(int64(it.nextRowInParquet))
+	err = reader.SkipRows(int64(it.nextRowInParquet))
 	if err != nil {
 		it.err = err
 		return false
 	}
-	it.buffer = make([]ParquetInventoryObject, it.ReadBatchSize)
+	batchSize := it.ReadBatchSize
+	if batchSize == -1 {
+		batchSize = int(reader.GetNumRows())
+	}
+	it.buffer = make([]InventoryObject, batchSize)
+
 	// read a batch of rows according to the batch size:
-	err = pr.Read(&it.buffer)
+	err = reader.Read(&it.buffer)
 	if err != nil {
 		it.err = err
 		return false

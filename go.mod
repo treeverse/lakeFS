@@ -12,6 +12,7 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
+	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
@@ -54,6 +55,7 @@ require (
 	github.com/prometheus/common v0.11.1 // indirect
 	github.com/rakyll/statik v0.1.7
 	github.com/schollz/progressbar/v3 v3.3.4
+	github.com/scritchley/orc v0.0.0-20200625081059-e6fcbf41b2c2
 	github.com/shopspring/decimal v1.2.0 // indirect
 	github.com/sirupsen/logrus v1.6.0
 	github.com/smartystreets/assertions v1.1.1 // indirect

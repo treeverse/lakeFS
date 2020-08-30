@@ -51,6 +51,7 @@ type Adapter struct {
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
+	inventoryReader       IInventoryReader
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -91,6 +92,7 @@ func NewAdapter(s3 s3iface.S3API, opts ...func(a *Adapter)) *Adapter {
 		uploadIDTranslator:    &block.NoOpTranslator{},
 		streamingChunkSize:    DefaultStreamingChunkSize,
 		streamingChunkTimeout: DefaultStreamingChunkTimeout,
+		inventoryReader:       NewInventoryReader(s3, logging.Default()),
 	}
 	for _, opt := range opts {
 		opt(a)
@@ -106,6 +108,7 @@ func (a *Adapter) WithContext(ctx context.Context) block.Adapter {
 		uploadIDTranslator:    a.uploadIDTranslator,
 		streamingChunkSize:    a.streamingChunkSize,
 		streamingChunkTimeout: a.streamingChunkTimeout,
+		inventoryReader:       a.inventoryReader,
 	}
 }
 

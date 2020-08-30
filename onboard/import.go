@@ -44,7 +44,7 @@ func CreateImporter(ctx context.Context, logger logging.Logger, cataloger catalo
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory: %w", err)
 	}
-	res.CatalogActions = NewCatalogActions(cataloger, repository, username)
+	res.CatalogActions = NewCatalogActions(cataloger, repository, username, logger)
 	return res, nil
 }
 

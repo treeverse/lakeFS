@@ -18,14 +18,14 @@ import (
 	"github.com/treeverse/lakefs/block/s3"
 )
 
-func rows(keys ...string) []*s3.ParquetInventoryObject {
+func rows(keys ...string) []*s3.InventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]*s3.ParquetInventoryObject, len(keys))
+	res := make([]*s3.InventoryObject, len(keys))
 	for i, key := range keys {
 		if key != "" {
-			res[i] = new(s3.ParquetInventoryObject)
+			res[i] = new(s3.InventoryObject)
 			res[i].Key = key
 			res[i].IsLatest = swag.Bool(!strings.HasPrefix(key, "expired_"))
 			res[i].IsDeleteMarker = swag.Bool(strings.HasPrefix(key, "del_"))
@@ -115,9 +115,10 @@ func TestIterator(t *testing.T) {
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
 		for _, batchSize := range []int{1, 2, 3, 4, 5, 7, 9, 11, 15, 100, 1000, 10000} {
-			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, &mockS3Client{
+			s3api := &mockS3Client{
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-			}, mockParquetReaderGetter)
+			}
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api, &mockInventoryReader{})
 			if !test.ErrExpected && err != nil {
 				t.Fatalf("error: %v", err)
 			} else if err != nil {
@@ -150,13 +151,19 @@ func TestIterator(t *testing.T) {
 }
 
 type mockParquetReader struct {
-	rows    []*s3.ParquetInventoryObject
+	rows    []*s3.InventoryObject
 	nextIdx int
 }
 
+func (m *mockParquetReader) Close() error {
+	m.nextIdx = -1
+	m.rows = nil
+	return nil
+}
+
 func (m *mockParquetReader) Read(dstInterface interface{}) error {
-	res := make([]s3.ParquetInventoryObject, 0, len(m.rows))
-	dst := dstInterface.(*[]s3.ParquetInventoryObject)
+	res := make([]s3.InventoryObject, 0, len(m.rows))
+	dst := dstInterface.(*[]s3.InventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
 		if m.rows[i] == nil {
 			return fmt.Errorf("got empty key") // for test - simulate file with error
@@ -179,16 +186,13 @@ func (m *mockParquetReader) SkipRows(skip int64) error {
 	return nil
 }
 
-func mockParquetReaderGetter(_ context.Context, _ s3iface.S3API, bucket string, key string) (s3.ParquetReader, s3.CloseFunc, error) {
-	if bucket != "example-bucket" {
-		return nil, nil, fmt.Errorf("wrong bucket name: %s", bucket)
-	}
-	pr := &mockParquetReader{rows: rows(fileContents[key]...)}
-	return pr, func() error {
-		pr.nextIdx = -1
-		pr.rows = nil
-		return nil
-	}, nil
+type mockInventoryReader struct{}
+
+func (m *mockInventoryReader) GetReader(_ context.Context, _ s3.Manifest, key string) (s3.ManifestFileReader, error) {
+	return &mockParquetReader{rows: rows(fileContents[key]...)}, nil
+}
+func (m *mockInventoryReader) Close(_ s3.Manifest) error {
+	return nil
 }
 
 func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {
