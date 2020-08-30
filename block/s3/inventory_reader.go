@@ -23,8 +23,8 @@ import (
 )
 
 type orcFile struct {
-	idx             int
 	key             string
+	manifestUrls    map[string]bool
 	localFilename   string
 	downloadStarted bool
 	err             error
@@ -44,18 +44,24 @@ type IInventoryReader interface {
 }
 
 type InventoryReader struct {
-	svc            s3iface.S3API
-	orcFiles       map[string]map[string]*orcFile
-	readerByFormat map[string]ManifestFileReader
-	logger         logging.Logger
+	svc                  s3iface.S3API
+	orcFiles             map[string]*orcFile
+	indexByManifestByKey map[string]map[string]int
+	readerByFormat       map[string]ManifestFileReader
+	logger               logging.Logger
 }
 
-func (o *InventoryReader) clean(manifestURL string, key string) error {
-	defer func() {
-		o.orcFiles[manifestURL][key].downloadStarted = false
-		o.orcFiles[manifestURL][key].localFilename = ""
-	}()
-	return o.delete(manifestURL, key)
+func (o *InventoryReader) clean(manifestUrl string, key string) error {
+	delete(o.indexByManifestByKey[key], manifestUrl)
+	if len(o.indexByManifestByKey[key]) != 0 {
+		return nil
+	}
+	// file cleaned from all manifests:
+	err := o.delete(key)
+	o.orcFiles[key].downloadStarted = false
+	o.orcFiles[key].localFilename = ""
+	return err
+
 }
 
 func (o *InventoryReader) download(m Manifest, key string) (string, error) {
@@ -79,7 +85,7 @@ func (o *InventoryReader) download(m Manifest, key string) (string, error) {
 
 func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryReader {
 	logger.Info("creating orc download manager")
-	return &InventoryReader{svc: svc, logger: logger, orcFiles: make(map[string]map[string]*orcFile)}
+	return &InventoryReader{svc: svc, logger: logger, orcFiles: make(map[string]*orcFile), indexByManifestByKey: make(map[string]map[string]int)}
 }
 
 func (o *InventoryReader) GetReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
@@ -126,18 +132,23 @@ func (o *InventoryReader) getParquetReader(ctx context.Context, m Manifest, key 
 }
 
 func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
-	manifestOrcFiles, ok := o.orcFiles[m.URL]
+	file, ok := o.orcFiles[key]
 	if !ok {
-		manifestOrcFiles = make(map[string]*orcFile, len(m.Files))
-		o.orcFiles[m.URL] = manifestOrcFiles
-		for i, f := range m.Files {
-			o.orcFiles[m.URL][f.Key] = &orcFile{
-				idx: i,
-				key: f.Key,
+		file = &orcFile{
+			key:          key,
+			manifestUrls: map[string]bool{m.URL: true},
+		}
+		o.orcFiles[key] = file
+		if _, ok := o.indexByManifestByKey[key]; !ok {
+			o.indexByManifestByKey[key] = make(map[string]int)
+		}
+		for idx, f := range m.Files {
+			if f.Key == key {
+				o.indexByManifestByKey[key][m.URL] = idx
+				continue
 			}
 		}
 	}
-	file := manifestOrcFiles[key]
 	if !file.downloadStarted {
 		file.downloadStarted = true
 		localFilename, err := o.download(m, key)
@@ -148,47 +159,52 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 		file.ready = true
 		file.localFilename = localFilename
 	}
-	i := manifestOrcFiles[key].idx
+
 	go func() {
 		// prepare next file
-		if i == len(m.Files)-1 {
+		nextIdx := o.indexByManifestByKey[key][m.URL] + 1
+		if nextIdx == len(m.Files) {
 			return
 		}
-		nextKey := m.Files[i+1].Key
-		if o.orcFiles[m.URL][nextKey].downloadStarted {
+		nextKey := m.Files[nextIdx].Key
+		file, ok := o.orcFiles[nextKey]
+		if !ok || file.downloadStarted {
 			return
 		}
-		orcFile := orcFile{
-			idx: i + 1,
-			key: nextKey,
+		file = &orcFile{
+			key:          nextKey,
+			manifestUrls: map[string]bool{m.URL: true},
 		}
-		o.orcFiles[m.URL][nextKey] = &orcFile
-		orcFile.downloadStarted = true
+		o.indexByManifestByKey[nextKey][m.URL] = nextIdx
+		o.orcFiles[nextKey] = file
+		file.downloadStarted = true
 		localFilename, err := o.download(m, nextKey)
-		orcFile.localFilename = localFilename
+		file.localFilename = localFilename
 		if err != nil {
-			orcFile.err = err
+			file.err = err
 			return
 		}
-		orcFile.ready = true
+		file.ready = true
 	}()
-	if o.orcFiles[m.URL][key].err != nil {
-		return nil, fmt.Errorf("error when trying to download orc file: %v", o.orcFiles[m.URL][key].err)
+	if o.orcFiles[key].err != nil {
+		return nil, fmt.Errorf("error when trying to download orc file: %v", o.orcFiles[key].err)
 	}
-	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
-	defer cancel()
-	o.logger.Info("file not ready on time, wait 30 seconds")
-	for {
-		if o.orcFiles[m.URL][key].ready || ctx.Err() != nil {
-			break
+	if !o.orcFiles[key].ready {
+		ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+		defer cancel()
+		o.logger.Info("file not ready on time, wait 30 seconds")
+		for {
+			if o.orcFiles[key].ready || ctx.Err() != nil {
+				break
+			}
+			time.Sleep(time.Second)
 		}
-		time.Sleep(time.Second)
+		o.logger.Info("finished waiting")
 	}
-	o.logger.Info("finished waiting")
-	if !o.orcFiles[m.URL][key].ready {
+	if !o.orcFiles[key].ready {
 		return nil, errors.New("orc file not ready locally")
 	}
-	orcReader, err := orc.Open(o.orcFiles[m.URL][key].localFilename)
+	orcReader, err := orc.Open(o.orcFiles[key].localFilename)
 	if err != nil {
 		return nil, err
 	}
@@ -197,8 +213,8 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 	return res, nil
 }
 
-func (o *InventoryReader) delete(manifestURL string, key string) error {
-	return os.Remove(o.orcFiles[manifestURL][key].localFilename)
+func (o *InventoryReader) delete(key string) error {
+	return os.Remove(o.orcFiles[key].localFilename)
 }
 
 func fromOrc(rowData []interface{}) InventoryObject {
