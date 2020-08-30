@@ -2,7 +2,6 @@ package s3
 
 import (
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/logging"
 )
 
 const DefaultReadBatchSize = 100000
@@ -107,13 +106,6 @@ func (it *InventoryIterator) fillBuffer() bool {
 		it.err = err
 		return false
 	}
-	defer func() {
-		err := reader.Close()
-		if err != nil {
-			it.logger.WithFields(logging.Fields{"bucket": it.Manifest.inventoryBucket, "key": it.Manifest.Files[it.currentManifestFileIdx].Key}).
-				Error("failed to close parquet reader after filling buffer")
-		}
-	}()
 	// skip the rows that have already been read:
 	err = reader.SkipRows(int64(it.nextRowInParquet))
 	if err != nil {

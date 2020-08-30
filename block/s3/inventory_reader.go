@@ -23,12 +23,12 @@ import (
 )
 
 type orcFile struct {
-	idx           int
-	key           string
-	localFilename string
-	err           error
-	done          bool
-	ready         bool
+	idx             int
+	key             string
+	localFilename   string
+	downloadStarted bool
+	err             error
+	ready           bool
 }
 
 type OrcManifestFileReader struct {
@@ -52,6 +52,7 @@ type InventoryReader struct {
 
 func (o *InventoryReader) clean(manifestURL string, key string) error {
 	defer func() {
+		o.orcFiles[manifestURL][key].downloadStarted = false
 		o.orcFiles[manifestURL][key].localFilename = ""
 	}()
 	return o.delete(manifestURL, key)
@@ -137,7 +138,8 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 		}
 	}
 	file := manifestOrcFiles[key]
-	if file.localFilename == "" {
+	if !file.downloadStarted {
+		file.downloadStarted = true
 		localFilename, err := o.download(m, key)
 		if err != nil {
 			file.err = err
@@ -153,7 +155,7 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 			return
 		}
 		nextKey := m.Files[i+1].Key
-		if _, ok := o.orcFiles[m.URL][nextKey]; ok {
+		if o.orcFiles[m.URL][nextKey].downloadStarted {
 			return
 		}
 		orcFile := orcFile{
@@ -161,9 +163,7 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 			key: nextKey,
 		}
 		o.orcFiles[m.URL][nextKey] = &orcFile
-		defer func() {
-			orcFile.done = true
-		}()
+		orcFile.downloadStarted = true
 		localFilename, err := o.download(m, nextKey)
 		orcFile.localFilename = localFilename
 		if err != nil {
