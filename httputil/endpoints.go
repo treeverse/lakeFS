@@ -13,9 +13,9 @@ func ServeHealth() http.Handler {
 	})
 }
 
-func ServePPROF(endpoint string) http.Handler {
+func ServePPROF(pprofPrefix string) http.Handler {
 	return http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		endpoint = strings.TrimPrefix(request.URL.Path, endpoint)
+		endpoint := strings.TrimPrefix(request.URL.Path, pprofPrefix)
 		switch endpoint {
 		case "":
 			http.HandlerFunc(pprof.Index).ServeHTTP(writer, request)
