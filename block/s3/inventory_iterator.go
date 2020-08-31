@@ -80,7 +80,6 @@ func (it *InventoryIterator) Next() bool {
 			it.err = err
 			return false
 		}
-
 		if !it.fillBuffer() { // fill from current manifest file
 			return false
 		}

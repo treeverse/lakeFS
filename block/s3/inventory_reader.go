@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -17,6 +18,7 @@ import (
 	"github.com/cznic/mathutil"
 	"github.com/go-openapi/swag"
 	"github.com/scritchley/orc"
+	"github.com/tevino/abool"
 	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
@@ -24,11 +26,10 @@ import (
 
 type orcFile struct {
 	key             string
-	manifestUrls    map[string]bool
 	localFilename   string
-	downloadStarted bool
-	err             error
+	downloadStarted abool.AtomicBool
 	ready           bool
+	err             error
 }
 
 type OrcManifestFileReader struct {
@@ -49,19 +50,22 @@ type InventoryReader struct {
 	indexByManifestByKey map[string]map[string]int
 	readerByFormat       map[string]ManifestFileReader
 	logger               logging.Logger
+	mux                  sync.Mutex
 }
 
-func (o *InventoryReader) clean(manifestUrl string, key string) error {
+func (o *InventoryReader) clean(manifestUrl string, key string) {
+	o.mux.Lock()
+	defer o.mux.Unlock()
 	delete(o.indexByManifestByKey[key], manifestUrl)
 	if len(o.indexByManifestByKey[key]) != 0 {
-		return nil
+		// file still exists in some active manifests
+		return
 	}
 	// file cleaned from all manifests:
-	err := o.delete(key)
-	o.orcFiles[key].downloadStarted = false
-	o.orcFiles[key].localFilename = ""
-	return err
-
+	delete(o.orcFiles, key)
+	defer func() {
+		_ = os.Remove(o.orcFiles[key].localFilename)
+	}()
 }
 
 func (o *InventoryReader) download(m Manifest, key string) (string, error) {
@@ -132,25 +136,26 @@ func (o *InventoryReader) getParquetReader(ctx context.Context, m Manifest, key 
 }
 
 func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
+	o.mux.Lock()
+	// this critical section checks if the file is already registered
+	// if it isn't, register it including specifying that it exists in the given manifest
 	file, ok := o.orcFiles[key]
 	if !ok {
-		file = &orcFile{
-			key:          key,
-			manifestUrls: map[string]bool{m.URL: true},
-		}
+		file = &orcFile{key: key}
 		o.orcFiles[key] = file
-		if _, ok := o.indexByManifestByKey[key]; !ok {
-			o.indexByManifestByKey[key] = make(map[string]int)
-		}
-		for idx, f := range m.Files {
-			if f.Key == key {
-				o.indexByManifestByKey[key][m.URL] = idx
-				continue
-			}
+	}
+	if _, ok := o.indexByManifestByKey[key]; !ok {
+		o.indexByManifestByKey[key] = make(map[string]int)
+	}
+	for idx, f := range m.Files {
+		if f.Key == key {
+			o.indexByManifestByKey[key][m.URL] = idx
+			continue
 		}
 	}
-	if !file.downloadStarted {
-		file.downloadStarted = true
+	indexInManifest := o.indexByManifestByKey[key][m.URL]
+	o.mux.Unlock()
+	if file.downloadStarted.SetToIf(false, true) {
 		localFilename, err := o.download(m, key)
 		if err != nil {
 			file.err = err
@@ -159,25 +164,29 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 		file.ready = true
 		file.localFilename = localFilename
 	}
-
 	go func() {
 		// prepare next file
-		nextIdx := o.indexByManifestByKey[key][m.URL] + 1
+		nextIdx := indexInManifest + 1
 		if nextIdx == len(m.Files) {
 			return
 		}
 		nextKey := m.Files[nextIdx].Key
+		o.mux.Lock()
+		// this critical section checks if the file is already registered
+		// if it isn't, register it including specifying that it exists in the given manifest
 		file, ok := o.orcFiles[nextKey]
-		if !ok || file.downloadStarted {
-			return
+		if !ok {
+			file = &orcFile{key: nextKey}
+			o.orcFiles[nextKey] = file
 		}
-		file = &orcFile{
-			key:          nextKey,
-			manifestUrls: map[string]bool{m.URL: true},
+		if _, ok := o.indexByManifestByKey[nextKey]; !ok {
+			o.indexByManifestByKey[nextKey] = make(map[string]int)
 		}
 		o.indexByManifestByKey[nextKey][m.URL] = nextIdx
-		o.orcFiles[nextKey] = file
-		file.downloadStarted = true
+		o.mux.Unlock()
+		if !file.downloadStarted.SetToIf(false, true) {
+			return
+		}
 		localFilename, err := o.download(m, nextKey)
 		file.localFilename = localFilename
 		if err != nil {
@@ -211,10 +220,6 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 	res := &OrcManifestFileReader{reader: *orcReader, mgr: o, manifestURL: m.URL, key: key}
 	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date")
 	return res, nil
-}
-
-func (o *InventoryReader) delete(key string) error {
-	return os.Remove(o.orcFiles[key].localFilename)
 }
 
 func fromOrc(rowData []interface{}) InventoryObject {
@@ -273,6 +278,6 @@ func (r *OrcManifestFileReader) Close() error {
 	// TODO handle errors
 	_ = r.c.Close()
 	_ = r.reader.Close()
-	_ = r.mgr.clean(r.manifestURL, r.key)
+	r.mgr.clean(r.manifestURL, r.key)
 	return nil
 }
