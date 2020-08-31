@@ -81,5 +81,6 @@ require (
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
+	modernc.org/mathutil v1.0.0
 	pgregory.net/rapid v0.4.0 // indirect
 )

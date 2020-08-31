@@ -21,6 +21,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
+	"modernc.org/mathutil"
 )
 
 type orcFile struct {
@@ -243,7 +244,7 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 }
 
 func (r *OrcManifestFileReader) GetNumRows() int64 {
-	return int64(r.reader.NumRows())
+	return int64(mathutil.Min(r.reader.NumRows(), 100000))
 }
 
 func (r *OrcManifestFileReader) SkipRows(i int64) error {

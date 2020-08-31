@@ -12,7 +12,10 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const DefaultWriteBatchSize = 25000
+const (
+	DefaultWriteBatchSize = 25000
+	DefaultWorkerCount    = 16
+)
 
 type RepoActions interface {
 	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error)
@@ -54,7 +57,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 	tasks := make([]*task, 0)
 	tasksChan := make(chan *task)
 	currentBatch := make([]catalog.Entry, 0, batchSize)
-	for w := 0; w < 8; w++ {
+	for w := 0; w < DefaultWorkerCount; w++ {
 		go worker(&wg, tasksChan)
 	}
 	for it.Next() {
