@@ -24,7 +24,7 @@ type InventoryIterator struct {
 	*Inventory
 	ReadBatchSize          int
 	err                    error
-	val                    block.InventoryObject
+	val                    *block.InventoryObject
 	buffer                 []InventoryObject
 	currentManifestFileIdx int
 	nextRowInParquet       int
@@ -52,7 +52,7 @@ func (it *InventoryIterator) Next() bool {
 		if val != nil {
 			// found the next object in buffer
 			it.valIndexInBuffer = valIndex
-			it.val = *val
+			it.val = val
 			return true
 		}
 		// value not found in buffer, need to reload the buffer
@@ -128,14 +128,13 @@ func (it *InventoryIterator) fillBuffer() bool {
 }
 
 func (it *InventoryIterator) nextFromBuffer() (*block.InventoryObject, int) {
-	var res block.InventoryObject
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
 		parquetObj := it.buffer[i]
 		if (parquetObj.IsLatest != nil && !*parquetObj.IsLatest) ||
 			(parquetObj.IsDeleteMarker != nil && *parquetObj.IsDeleteMarker) {
 			continue
 		}
-		res = block.InventoryObject{
+		res := block.InventoryObject{
 			Bucket:          parquetObj.Bucket,
 			Key:             parquetObj.Key,
 			PhysicalAddress: parquetObj.GetPhysicalAddress(),
@@ -159,5 +158,5 @@ func (it *InventoryIterator) Err() error {
 }
 
 func (it *InventoryIterator) Get() *block.InventoryObject {
-	return &it.val
+	return it.val
 }

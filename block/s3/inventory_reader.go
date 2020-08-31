@@ -21,7 +21,6 @@ import (
 	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
-	"modernc.org/mathutil"
 )
 
 type orcFile struct {
@@ -33,7 +32,7 @@ type orcFile struct {
 }
 
 type OrcManifestFileReader struct {
-	reader      orc.Reader
+	reader      *orc.Reader
 	c           *orc.Cursor
 	mgr         *InventoryReader
 	manifestURL string
@@ -207,7 +206,7 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 	if err != nil {
 		return nil, err
 	}
-	res := &OrcManifestFileReader{reader: *orcReader, mgr: o, manifestURL: m.URL, key: key}
+	res := &OrcManifestFileReader{reader: orcReader, mgr: o, manifestURL: m.URL, key: key}
 	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date")
 	return res, nil
 }
@@ -244,7 +243,7 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 }
 
 func (r *OrcManifestFileReader) GetNumRows() int64 {
-	return int64(mathutil.Min(r.reader.NumRows(), 100000))
+	return int64(r.reader.NumRows())
 }
 
 func (r *OrcManifestFileReader) SkipRows(i int64) error {

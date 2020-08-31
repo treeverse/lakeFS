@@ -37,12 +37,12 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer
 
 type task struct {
 	f   func() error
-	err error
+	err *error
 }
 
 func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	for task := range tasks {
-		task.err = task.f()
+		*task.err = task.f()
 		wg.Done()
 	}
 }
@@ -54,7 +54,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 	if c.WriteBatchSize > 0 {
 		batchSize = c.WriteBatchSize
 	}
-	tasks := make([]*task, 0)
+	errs := make([]*error, 0)
 	tasksChan := make(chan *task)
 	currentBatch := make([]catalog.Entry, 0, batchSize)
 	for w := 0; w < DefaultWorkerCount; w++ {
@@ -94,8 +94,9 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 					defer c.logger.Info("finished batch of create entries")
 					return c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
 				},
+				err: new(error),
 			}
-			tasks = append(tasks, tsk)
+			errs = append(errs, tsk.err)
 			wg.Add(1)
 			tasksChan <- tsk
 		}
@@ -105,9 +106,9 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 	if it.Err() != nil {
 		return nil, it.Err()
 	}
-	for _, t := range tasks {
-		if t.err != nil {
-			return nil, t.err
+	for _, err := range errs {
+		if *err != nil {
+			return nil, *err
 		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
