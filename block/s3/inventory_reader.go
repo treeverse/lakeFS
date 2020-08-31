@@ -15,7 +15,6 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	"github.com/cznic/mathutil"
 	"github.com/go-openapi/swag"
 	"github.com/scritchley/orc"
 	"github.com/tevino/abool"
@@ -48,7 +47,6 @@ type InventoryReader struct {
 	svc                  s3iface.S3API
 	orcFiles             map[string]*orcFile
 	indexByManifestByKey map[string]map[string]int
-	readerByFormat       map[string]ManifestFileReader
 	logger               logging.Logger
 	mux                  sync.Mutex
 }
@@ -62,9 +60,10 @@ func (o *InventoryReader) clean(manifestUrl string, key string) {
 		return
 	}
 	// file cleaned from all manifests:
+	localFilename := o.orcFiles[key].localFilename
 	delete(o.orcFiles, key)
 	defer func() {
-		_ = os.Remove(o.orcFiles[key].localFilename)
+		_ = os.Remove(localFilename)
 	}()
 }
 
@@ -93,24 +92,14 @@ func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryRead
 }
 
 func (o *InventoryReader) GetReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
-	if manifestFileReader, ok := o.readerByFormat[m.Format]; ok {
-		return manifestFileReader, nil
-	}
-	var err error
-	var manifestFileReader ManifestFileReader
 	switch m.Format {
 	case "ORC":
-		manifestFileReader, err = o.getOrcReader(ctx, m, key)
+		return o.getOrcReader(ctx, m, key)
 	case "Parquet":
-		manifestFileReader, err = o.getParquetReader(ctx, m, key)
+		return o.getParquetReader(ctx, m, key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
 	}
-	if err != nil {
-		o.readerByFormat[m.Format] = manifestFileReader
-		return nil, err
-	}
-	return manifestFileReader, nil
 }
 
 type ParquetManifestFileReader struct {
@@ -150,7 +139,7 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 	for idx, f := range m.Files {
 		if f.Key == key {
 			o.indexByManifestByKey[key][m.URL] = idx
-			continue
+			break
 		}
 	}
 	indexInManifest := o.indexByManifestByKey[key][m.URL]
@@ -254,7 +243,7 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 }
 
 func (r *OrcManifestFileReader) GetNumRows() int64 {
-	return int64(mathutil.Min(r.reader.NumRows(), 1000))
+	return int64(r.reader.NumRows())
 }
 
 func (r *OrcManifestFileReader) SkipRows(i int64) error {
