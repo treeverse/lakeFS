@@ -232,7 +232,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		// skip migrate in case we have an active installation
-		if _, err := c.deps.Meta.InstallationID(); err == nil {
+		if ts, _ := c.deps.Meta.SetupTimestamp(); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
 					Message: "lakeFS already initialized",
@@ -264,12 +264,17 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			CreatedAt:   time.Now(),
 			DisplayName: *setupReq.User.DisplayName,
 		}
+
 		cred, err := auth.SetupAdminUser(c.deps.Auth, adminUser)
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{
 					Message: err.Error(),
 				})
+		}
+
+		if err := c.deps.Meta.UpdateSetupTimestamp(time.Now()); err != nil {
+			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
 		}
 
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
