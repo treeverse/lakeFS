@@ -33,6 +33,8 @@ const (
 	defaultBatchDelay             = 1000 * time.Microsecond
 	defaultBatchEntriesReadAtOnce = 64
 	defaultBatchReaders           = 8
+
+	defaultBatchBatchEntriesInsertSize = 10
 )
 
 type DedupReport struct {
@@ -183,27 +185,19 @@ type CacheConfig struct {
 
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
+	params.Catalog
 	clock                clock.Clock
 	log                  logging.Logger
 	db                   db.Database
 	wg                   sync.WaitGroup
-	cacheConfig          *CacheConfig
 	cache                Cache
 	dedupCh              chan *dedupRequest
 	dedupReportEnabled   bool
 	dedupReportCh        chan *DedupReport
 	readEntryRequestChan chan *readRequest
-	batchParams          params.BatchRead
 }
 
 type CatalogerOption func(*cataloger)
-
-var defaultCatalogerCacheConfig = &CacheConfig{
-	Enabled: true,
-	Size:    defaultCatalogerCacheSize,
-	Expiry:  defaultCatalogerCacheExpiry,
-	Jitter:  defaultCatalogerCacheJitter,
-}
 
 func WithClock(newClock clock.Clock) CatalogerOption {
 	return func(c *cataloger) {
@@ -211,9 +205,9 @@ func WithClock(newClock clock.Clock) CatalogerOption {
 	}
 }
 
-func WithCacheConfig(config *CacheConfig) CatalogerOption {
+func WithCacheEnabled(b bool) CatalogerOption {
 	return func(c *cataloger) {
-		c.cacheConfig = config
+		c.CacheEnabled = b
 	}
 }
 
@@ -223,23 +217,36 @@ func WithDedupReportChannel(b bool) CatalogerOption {
 	}
 }
 
-func WithBatchReadParams(p params.BatchRead) CatalogerOption {
+func WithParams(p params.Catalog) CatalogerOption {
 	return func(c *cataloger) {
-		if p.ScanTimeout != 0 {
-			c.batchParams.ScanTimeout = p.ScanTimeout
+		if p.ReadScanTimeout != 0 {
+			c.ReadScanTimeout = p.ReadScanTimeout
 		}
-		if p.BatchDelay != 0 {
-			c.batchParams.BatchDelay = p.BatchDelay
+		if p.ReadDelay != 0 {
+			c.ReadDelay = p.ReadDelay
 		}
-		if p.EntriesReadAtOnce != 0 {
-			c.batchParams.EntriesReadAtOnce = p.EntriesReadAtOnce
+		if p.ReadEntriesAtOnce != 0 {
+			c.ReadEntriesAtOnce = p.ReadEntriesAtOnce
 		}
 		if p.ReadEntryMaxWait != 0 {
-			c.batchParams.ReadEntryMaxWait = p.ReadEntryMaxWait
+			c.ReadEntryMaxWait = p.ReadEntryMaxWait
 		}
-		if p.Readers != 0 {
-			c.batchParams.Readers = p.Readers
+		if p.ReadReaders != 0 {
+			c.ReadReaders = p.ReadReaders
 		}
+		if p.CreateEntriesInsertSize != 0 {
+			c.CreateEntriesInsertSize = p.CreateEntriesInsertSize
+		}
+		if p.CacheSize != 0 {
+			c.CacheSize = p.CacheSize
+		}
+		if p.CacheExpiry != 0 {
+			c.CacheExpiry = p.CacheExpiry
+		}
+		if p.CacheJitter != 0 {
+			c.CacheJitter = p.CacheJitter
+		}
+		c.CacheEnabled = p.CacheEnabled
 	}
 }
 
@@ -248,22 +255,26 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		clock:              clock.New(),
 		log:                logging.Default().WithField("service_name", "cataloger"),
 		db:                 db,
-		cacheConfig:        defaultCatalogerCacheConfig,
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
 		dedupReportEnabled: true,
-		batchParams: params.BatchRead{
-			ReadEntryMaxWait:  defaultBatchReadEntryMaxWait,
-			ScanTimeout:       defaultBatchScanTimeout,
-			BatchDelay:        defaultBatchDelay,
-			EntriesReadAtOnce: defaultBatchEntriesReadAtOnce,
-			Readers:           defaultBatchReaders,
+		Catalog: params.Catalog{
+			ReadEntryMaxWait:        defaultBatchReadEntryMaxWait,
+			ReadScanTimeout:         defaultBatchScanTimeout,
+			ReadDelay:               defaultBatchDelay,
+			ReadEntriesAtOnce:       defaultBatchEntriesReadAtOnce,
+			ReadReaders:             defaultBatchReaders,
+			CreateEntriesInsertSize: defaultBatchBatchEntriesInsertSize,
+			CacheEnabled:            true,
+			CacheSize:               defaultCatalogerCacheSize,
+			CacheExpiry:             defaultCatalogerCacheExpiry,
+			CacheJitter:             defaultCatalogerCacheJitter,
 		},
 	}
 	for _, opt := range options {
 		opt(c)
 	}
-	if c.cacheConfig.Enabled {
-		c.cache = NewLRUCache(c.cacheConfig.Size, c.cacheConfig.Expiry, c.cacheConfig.Jitter)
+	if c.CacheEnabled {
+		c.cache = NewLRUCache(c.CacheSize, c.CacheExpiry, c.CacheJitter)
 	} else {
 		c.cache = &DummyCache{}
 	}

@@ -26,7 +26,7 @@ var expireCmd = &cobra.Command{
 		conf := config.NewConfig()
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
+		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 
 		awsRetentionConfig := config.NewConfig().GetAwsS3RetentionConfig()
 

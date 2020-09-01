@@ -55,7 +55,7 @@ func (c *cataloger) getEntryBatchMaybeExpired(ctx context.Context, repository st
 	select {
 	case response := <-replyChan:
 		return response.entry, response.err
-	case <-time.After(c.batchParams.ReadEntryMaxWait):
+	case <-time.After(c.ReadEntryMaxWait):
 		return nil, ErrReadEntryTimeout
 	case <-ctx.Done():
 		return nil, ctx.Err()
