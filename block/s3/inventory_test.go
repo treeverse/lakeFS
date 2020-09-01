@@ -188,7 +188,7 @@ func (m *mockParquetReader) SkipRows(skip int64) error {
 
 type mockInventoryReader struct{}
 
-func (m *mockInventoryReader) GetReader(_ context.Context, _ s3.Manifest, key string) (s3.ManifestFileReader, error) {
+func (m *mockInventoryReader) GetManifestFileReader(_ context.Context, _ s3.Manifest, key string) (s3.ManifestFileReader, error) {
 	return &mockParquetReader{rows: rows(fileContents[key]...)}, nil
 }
 func (m *mockInventoryReader) Close(_ s3.Manifest) error {

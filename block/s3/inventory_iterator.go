@@ -59,7 +59,7 @@ func (it *InventoryIterator) Next() bool {
 		it.valIndexInBuffer = -1
 		// if needed, try to move on to the next manifest file:
 		file := it.Manifest.Files[it.currentManifestFileIdx]
-		pr, err := it.inventoryReader.GetReader(it.ctx, *it.Manifest, file.Key)
+		pr, err := it.inventoryReader.GetManifestFileReader(it.ctx, *it.Manifest, file.Key)
 		if err != nil {
 			it.err = err
 			return false
@@ -100,7 +100,7 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 func (it *InventoryIterator) fillBuffer() bool {
 	it.logger.Info("start reading rows from inventory to buffer")
 	file := &it.Manifest.Files[it.currentManifestFileIdx]
-	reader, err := it.inventoryReader.GetReader(it.ctx, *it.Manifest, file.Key)
+	reader, err := it.inventoryReader.GetManifestFileReader(it.ctx, *it.Manifest, file.Key)
 	if err != nil {
 		it.err = err
 		return false

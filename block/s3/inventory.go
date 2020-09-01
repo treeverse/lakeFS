@@ -27,7 +27,6 @@ type Manifest struct {
 type manifestFile struct {
 	Key      string `json:"key"`
 	firstKey string
-	numRows  int
 }
 
 type ManifestFileReader interface {
@@ -45,21 +44,18 @@ func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, 
 	return GenerateInventory(ctx, logger, manifestURL, a.s3, a.inventoryReader)
 }
 func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader IInventoryReader) (block.Inventory, error) {
+	if logger == nil {
+		logger = logging.Default()
+	}
 	m, err := loadManifest(manifestURL, s3)
 	if err != nil {
 		return nil, err
 	}
-	//err = m.readFileMetadata(ctx, logger, inventoryReader)
-	//if err != nil {
-	//	return nil, err
-	//}
-	if logger == nil {
-		logger = logging.Default()
-	}
 	if m.shouldSortManifestFiles() {
-		sort.Slice(m.Files, func(i, j int) bool {
-			return m.Files[i].firstKey < m.Files[j].firstKey
-		})
+		err = m.sortManifestFiles(ctx, logger, inventoryReader)
+	}
+	if err != nil {
+		return nil, err
 	}
 	return &Inventory{Manifest: m, S3: s3, inventoryReader: inventoryReader, ctx: ctx, logger: logger}, nil
 }
@@ -84,18 +80,14 @@ func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
 }
 
-func (m *Manifest) readFileMetadata(ctx context.Context, logger logging.Logger, inventoryReader InventoryReader) error {
+func (m *Manifest) sortManifestFiles(ctx context.Context, logger logging.Logger, inventoryReader IInventoryReader) error {
 	for i := range m.Files {
 		filename := m.Files[i].Key
-		pr, err := inventoryReader.GetReader(ctx, *m, filename)
+		pr, err := inventoryReader.GetManifestFileReader(ctx, *m, filename)
 		if err != nil {
 			return err
 		}
-		m.Files[i].numRows = int(pr.GetNumRows())
 		// read first row from file to store the first key:
-		if !m.shouldSortManifestFiles() {
-			continue
-		}
 		rows := make([]InventoryObject, 1)
 		err = pr.Read(&rows)
 		if err != nil {
@@ -110,6 +102,9 @@ func (m *Manifest) readFileMetadata(ctx context.Context, logger logging.Logger, 
 			m.Files[i].firstKey = rows[0].Key
 		}
 	}
+	sort.Slice(m.Files, func(i, j int) bool {
+		return m.Files[i].firstKey < m.Files[j].firstKey
+	})
 	return nil
 }
 
