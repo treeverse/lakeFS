@@ -231,7 +231,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
-		// skip migrate in case we have an active installation
+		// check if previous setup completed
 		if ts, _ := c.deps.Meta.SetupTimestamp(); !ts.IsZero() {
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
@@ -239,6 +239,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
+		// migrate the database if needed
 		ctx := setupReq.HTTPRequest.Context()
 		err := c.deps.Migrator.Migrate(ctx)
 		if err != nil {
@@ -248,6 +249,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
+		// write metadata
 		metadata, err := c.deps.Meta.Write()
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
@@ -260,6 +262,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		c.deps.Collector.CollectMetadata(metadata)
 		c.deps.Collector.CollectEvent("global", "init")
 
+		// setup admin user
 		adminUser := &model.User{
 			CreatedAt:   time.Now(),
 			DisplayName: *setupReq.User.DisplayName,
@@ -273,6 +276,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
+		// update setup completed timestamp
 		if err := c.deps.Meta.UpdateSetupTimestamp(time.Now()); err != nil {
 			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
 		}
