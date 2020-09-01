@@ -35,7 +35,7 @@ var versionCmd = &cobra.Command{
 
 var upCmd = &cobra.Command{
 	Use:   "up",
-	Short: " Apply all up migrations",
+	Short: "Apply all up migrations",
 	Run: func(cmd *cobra.Command, args []string) {
 		err := db.MigrateUp(cfg.GetDatabaseParams())
 		if err != nil {

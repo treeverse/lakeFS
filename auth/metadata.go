@@ -13,6 +13,8 @@ import (
 
 type MetadataManager interface {
 	InstallationID() (string, error)
+	SetupTimestamp() (time.Time, error)
+	UpdateSetupTimestamp(time.Time) error
 	Write() (map[string]string, error)
 }
 
@@ -20,6 +22,11 @@ type DBMetadataManager struct {
 	version string
 	db      db.Database
 }
+
+const (
+	InstallationIDKeyName = "installation_id"
+	SetupTimestampKeyName = "setup_timestamp"
+)
 
 func NewDBMetadataManager(version string, database db.Database) *DBMetadataManager {
 	return &DBMetadataManager{
@@ -29,11 +36,20 @@ func NewDBMetadataManager(version string, database db.Database) *DBMetadataManag
 }
 
 func getInstallationID(tx db.Tx) (string, error) {
-	const InstallationIDKeyName = "installation_id"
 	var installationID string
 	err := tx.Get(&installationID, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
 		InstallationIDKeyName)
 	return installationID, err
+}
+
+func getSetupTimestamp(tx db.Tx) (time.Time, error) {
+	var value string
+	err := tx.Get(&value, `SELECT key_value FROM auth_installation_metadata WHERE key_name = $1`,
+		SetupTimestampKeyName)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Parse(time.RFC3339, value)
 }
 
 func writeMetadata(tx sqlx.Execer, items map[string]string) error {
@@ -58,6 +74,25 @@ func (d *DBMetadataManager) InstallationID() (string, error) {
 		return "", err
 	}
 	return installationID.(string), nil
+}
+
+func (d *DBMetadataManager) UpdateSetupTimestamp(ts time.Time) error {
+	_, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return nil, writeMetadata(tx, map[string]string{
+			SetupTimestampKeyName: ts.UTC().Format(time.RFC3339),
+		})
+	}, db.WithLogger(logging.Dummy()))
+	return err
+}
+
+func (d *DBMetadataManager) SetupTimestamp() (time.Time, error) {
+	setupTimestamp, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return getSetupTimestamp(tx)
+	}, db.WithLogger(logging.Dummy()), db.ReadOnly())
+	if err != nil {
+		return time.Time{}, err
+	}
+	return setupTimestamp.(time.Time), nil
 }
 
 func (d *DBMetadataManager) Write() (map[string]string, error) {
