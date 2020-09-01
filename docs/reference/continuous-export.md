@@ -60,11 +60,14 @@ line:
   - `"status"`: one of `"success"`, `"failure"`, `"creating"`, or `"in-progress"`.
   - `"message"`: a human-readable message, the error message for status `"failure"`.
   - `"commit"`: the commit-ID of the export.
+  - (maybe?) `"commit-message"`: the message associated with that commit.
 * When status is not `"creating"`, a record for each exported file with fields
   - `"path"`: the path of the object within the bucket.  The exported object will be on
     that path under the export path specified.
   - `"etag"`: the etag of the exported object.  You can use this to ensure the correct
     version of the object is visible.
+  - (maybe?) `"version-id"`: the version ID of the object, if versioned.  (Without a
+    version ID it can be very hard to retrieve a non-latest version of the object!)
 
 Note that S3 does not offer atomic operations.  Objects read are only valid while the
 status file shows `"success"` and the `"commit"` is unchanged!
