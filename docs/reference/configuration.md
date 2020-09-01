@@ -24,6 +24,10 @@ This reference uses `.` to denote the nesting of values.
 * `logging.level` `(one of ["DEBUG", "INFO", "WARN", "ERROR", "NONE"] : "DEBUG")` - Logging level to output
 * `logging.output` `(string : "-")` - Path name to write logs to. `"-"` means Standard Output
 * `database.connection_string` `(string : "postgres://localhost:5432/postgres?sslmode=disable")` - PostgreSQL connection string to use
+* `database.max_open_connections` `(int : 25)` - Maximum number of open connections to the database
+* `database.max_idle_connections` `(int : 25)` - Sets the maximum number of connections in the idle connection pool
+* `database.connection_max_lifetime` `(duration : 5m)` - Sets the maximum amount of time a connection may be reused
+* `database.disable_auto_migrate` `(bool : false)` - Disable the database migrate to latest on connect
 * `listen_address` `(string : "0.0.0.0:8000")` - A `<host>:<port>` structured string representing the address to listen on
 * `auth.cache.enabled` `(bool : true)` - Whether to cache access credentials and user policies in-memory. Can greatly improve throughput when enabled.
 * `auth.cache.size` `(int : 1024)` - How many items to store in the auth cache. Systems with a very high user count should use a larger value at the expense of ~1kb of memory per cached user.

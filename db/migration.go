@@ -105,14 +105,6 @@ func closeMigrate(m *migrate.Migrate) {
 }
 
 func MigrateUp(p params.Database) error {
-	// make sure we have schema by calling connect
-	mdb, err := ConnectDB(p)
-	if err != nil {
-		return err
-	}
-	defer func() {
-		_ = mdb.Close()
-	}()
 	m, err := getMigrate(p)
 	if err != nil {
 		return err
