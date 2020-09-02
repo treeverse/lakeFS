@@ -34,7 +34,7 @@ const (
 	defaultBatchEntriesReadAtOnce = 64
 	defaultBatchReaders           = 8
 
-	defaultBatchBatchEntriesInsertSize = 10
+	defaultBatchWriteEntriesInsertSize = 10
 )
 
 type DedupReport struct {
@@ -266,7 +266,7 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 				Readers:       defaultBatchReaders,
 			},
 			BatchWrite: params.BatchWrite{
-				EntriesInsertSize: defaultBatchBatchEntriesInsertSize,
+				EntriesInsertSize: defaultBatchWriteEntriesInsertSize,
 			},
 			Cache: params.Cache{
 				Enabled: false,
