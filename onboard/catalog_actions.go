@@ -90,8 +90,6 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			}
 			tsk := &task{
 				f: func() error {
-					c.logger.Info("starting batch of create entries")
-					defer c.logger.Info("finished batch of create entries")
 					return c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
 				},
 				err: new(error),
@@ -112,12 +110,10 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
-		c.logger.Info("starting last batch of create entries")
 		err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
-		c.logger.Info("finished last batch of create entries")
 	}
 	return &stats, nil
 }
