@@ -116,13 +116,24 @@ func (c *Config) GetDatabaseParams() dbparams.Database {
 	}
 }
 
-func (c *Config) GetCatalogerBatchReadParams() catalogparams.BatchRead {
-	return catalogparams.BatchRead{
-		ReadEntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),
-		ScanTimeout:       viper.GetDuration("cataloger.batch_read.scan_timeout"),
-		BatchDelay:        viper.GetDuration("cataloger.batch_read.batch_delay"),
-		EntriesReadAtOnce: viper.GetInt("cataloger.batch_read.entries_read_at_once"),
-		Readers:           viper.GetInt("cataloger.batch_read.readers"),
+func (c *Config) GetCatalogerCatalogParams() catalogparams.Catalog {
+	return catalogparams.Catalog{
+		BatchRead: catalogparams.BatchRead{
+			EntryMaxWait:  viper.GetDuration("cataloger.batch_read.read_entry_max_wait"),
+			ScanTimeout:   viper.GetDuration("cataloger.batch_read.scan_timeout"),
+			Delay:         viper.GetDuration("cataloger.batch_read.batch_delay"),
+			EntriesAtOnce: viper.GetInt("cataloger.batch_read.entries_read_at_once"),
+			Readers:       viper.GetInt("cataloger.batch_read.readers"),
+		},
+		BatchWrite: catalogparams.BatchWrite{
+			EntriesInsertSize: viper.GetInt("cataloger.batch_write.insert_size"),
+		},
+		Cache: catalogparams.Cache{
+			Enabled: viper.GetBool("cataloger.cache.enabled"),
+			Size:    viper.GetInt("cataloger.cache.size"),
+			Expiry:  viper.GetDuration("cataloger.cache.expiry"),
+			Jitter:  viper.GetDuration("cataloger.cache.jitter"),
+		},
 	}
 }
 

@@ -62,7 +62,7 @@ var runCmd = &cobra.Command{
 		migrator := db.NewDatabaseMigrator(dbParams)
 
 		// init catalog
-		cataloger := catalog.NewCataloger(dbPool, catalog.WithBatchReadParams(conf.GetCatalogerBatchReadParams()))
+		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 
 		// init block store
 		blockStore, err := factory.BuildBlockAdapter(cfg)

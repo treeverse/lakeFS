@@ -49,15 +49,15 @@ func (c *cataloger) readEntriesBatchOrchestrator() {
 		c.wg.Done()
 	}()
 
-	readersWG.Add(c.batchParams.Readers)
-	for i := 0; i < c.batchParams.Readers; i++ {
+	readersWG.Add(c.BatchRead.Readers)
+	for i := 0; i < c.BatchRead.Readers; i++ {
 		go c.readEntriesBatch(&readersWG, entriesReadBatchChan)
 	}
 	bufferingMap := make(map[bufferingKey]*readBatch)
-	timer := time.NewTimer(c.batchParams.ScanTimeout)
+	timer := time.NewTimer(c.BatchRead.ScanTimeout)
 	for {
 		if len(bufferingMap) > 0 {
-			timer.Reset(c.batchParams.ScanTimeout)
+			timer.Reset(c.BatchRead.ScanTimeout)
 		}
 		select {
 		case request, moreEntries := <-c.readEntryRequestChan:
@@ -68,18 +68,18 @@ func (c *cataloger) readEntriesBatchOrchestrator() {
 			if !exists {
 				batch = &readBatch{
 					startTime: time.Now(),
-					pathList:  make([]pathRequest, 0, c.batchParams.EntriesReadAtOnce),
+					pathList:  make([]pathRequest, 0, c.BatchRead.EntriesAtOnce),
 				}
 				bufferingMap[request.bufKey] = batch
 			}
 			batch.pathList = append(batch.pathList, request.pathReq)
-			if len(batch.pathList) == c.batchParams.EntriesReadAtOnce {
+			if len(batch.pathList) == c.BatchRead.EntriesAtOnce {
 				entriesReadBatchChan <- batchReadMessage{key: request.bufKey, batch: batch.pathList}
 				delete(bufferingMap, request.bufKey)
 			}
 		case <-timer.C:
 			for k, v := range bufferingMap {
-				if time.Since(v.startTime) > c.batchParams.BatchDelay {
+				if time.Since(v.startTime) > c.BatchRead.Delay {
 					entriesReadBatchChan <- batchReadMessage{key: k, batch: v.pathList}
 					delete(bufferingMap, k)
 				}
