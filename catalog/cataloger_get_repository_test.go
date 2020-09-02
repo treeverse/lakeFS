@@ -8,7 +8,7 @@ import (
 
 func TestCataloger_GetRepository(t *testing.T) {
 	ctx := context.Background()
-	c := testCataloger(t, WithCacheConfig(&CacheConfig{Enabled: false}))
+	c := testCataloger(t, WithCacheEnabled(false))
 
 	// create test data
 	for i := 1; i < 3; i++ {

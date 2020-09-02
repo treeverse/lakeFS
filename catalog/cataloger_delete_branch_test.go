@@ -11,7 +11,7 @@ import (
 
 func TestCataloger_DeleteBranch(t *testing.T) {
 	ctx := context.Background()
-	c := testCataloger(t, WithCacheConfig(&CacheConfig{Enabled: false}))
+	c := testCataloger(t, WithCacheEnabled(false))
 
 	if err := c.CreateRepository(ctx, "repo1", "s3://bucket1", "master"); err != nil {
 		t.Fatal("create repository for testing", err)
