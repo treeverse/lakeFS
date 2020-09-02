@@ -5,8 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
-	"github.com/Masterminds/squirrel"
-
+	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
 
@@ -66,7 +65,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 					dbTime.Valid = true
 				}
 				sqInsert = sqInsert.Values(branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata,
-					squirrel.Expr("COALESCE(?,NOW())", dbTime), entry.Expired)
+					sq.Expr("COALESCE(?,NOW())", dbTime), entry.Expired)
 			}
 			query, args, err := sqInsert.Suffix(`ON CONFLICT (branch_id,path,min_commit)
 DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=catalog_max_commit_id()`).
