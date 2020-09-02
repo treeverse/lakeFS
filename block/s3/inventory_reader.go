@@ -8,7 +8,6 @@ import (
 	"os"
 	"path"
 	"reflect"
-	"sync"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -20,8 +19,30 @@ import (
 	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
-	"modernc.org/mathutil"
 )
+
+type IInventoryReader interface {
+	GetManifestFileReader(key string) (ManifestFileReader, error)
+}
+
+type InventoryReader struct {
+	manifest      Manifest
+	ctx           context.Context
+	svc           s3iface.S3API
+	orcFilesByKey map[string]*orcFile
+	logger        logging.Logger
+}
+
+type OrcManifestFileReader struct {
+	reader *orc.Reader
+	c      *orc.Cursor
+	mgr    *InventoryReader
+	key    string
+}
+
+type ParquetManifestFileReader struct {
+	reader.ParquetReader
+}
 
 type orcFile struct {
 	key           string
@@ -30,43 +51,28 @@ type orcFile struct {
 	ready         bool
 }
 
-type OrcManifestFileReader struct {
-	reader      *orc.Reader
-	c           *orc.Cursor
-	mgr         *InventoryReader
-	manifestURL string
-	key         string
+func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryReader {
+	logger.Info("creating orc download manager")
+	return &InventoryReader{svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
 }
 
-type IInventoryReader interface {
-	GetManifestFileReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error)
-}
-
-type InventoryReader struct {
-	svc                     s3iface.S3API
-	orcFilesByKeyByManifest map[string]map[string]*orcFile
-	//indexByManifestByKey    map[string]map[string]int
-	logger logging.Logger
-	mux    sync.Mutex
-}
-
-func (o *InventoryReader) clean(manifestUrl string, key string) {
-	localFilename := o.orcFilesByKeyByManifest[manifestUrl][key].localFilename
-	delete(o.orcFilesByKeyByManifest[manifestUrl], key)
+func (o *InventoryReader) clean(key string) {
+	localFilename := o.orcFilesByKey[key].localFilename
+	delete(o.orcFilesByKey, key)
 	defer func() {
 		_ = os.Remove(localFilename)
 	}()
 }
 
-func (o *InventoryReader) download(m Manifest, key string) (string, error) {
+func (o *InventoryReader) download(key string) (string, error) {
 	f, err := ioutil.TempFile("", path.Base(key))
 	if err != nil {
 		return "", err
 	}
 	o.logger.Infof("start downloading %s to local file %s", key, f.Name())
 	downloader := s3manager.NewDownloaderWithClient(o.svc)
-	_, err = downloader.Download(f, &s3.GetObjectInput{
-		Bucket: aws.String(m.inventoryBucket),
+	_, err = downloader.DownloadWithContext(o.ctx, f, &s3.GetObjectInput{
+		Bucket: aws.String(o.manifest.inventoryBucket),
 		Key:    aws.String(key),
 	})
 	if err != nil {
@@ -77,33 +83,19 @@ func (o *InventoryReader) download(m Manifest, key string) (string, error) {
 	return f.Name(), nil
 }
 
-func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryReader {
-	logger.Info("creating orc download manager")
-	return &InventoryReader{svc: svc, logger: logger, orcFilesByKeyByManifest: make(map[string]map[string]*orcFile)}
-}
-
-func (o *InventoryReader) GetManifestFileReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
-	switch m.Format {
+func (o *InventoryReader) GetManifestFileReader(key string) (ManifestFileReader, error) {
+	switch o.manifest.Format {
 	case "ORC":
-		return o.getOrcReader(ctx, m, key)
+		return o.getOrcReader(key)
 	case "Parquet":
-		return o.getParquetReader(ctx, m, key)
+		return o.getParquetReader(key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
 	}
 }
 
-type ParquetManifestFileReader struct {
-	reader.ParquetReader
-}
-
-func (p *ParquetManifestFileReader) Close() error {
-	p.ReadStop()
-	return p.Close()
-}
-
-func (o *InventoryReader) getParquetReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(ctx, o.svc, m.inventoryBucket, key)
+func (o *InventoryReader) getParquetReader(key string) (ManifestFileReader, error) {
+	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, o.manifest.inventoryBucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
@@ -115,25 +107,20 @@ func (o *InventoryReader) getParquetReader(ctx context.Context, m Manifest, key 
 	return &ParquetManifestFileReader{ParquetReader: *pr}, nil
 }
 
-func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key string) (ManifestFileReader, error) {
-	manifestFilesByKey, ok := o.orcFilesByKeyByManifest[m.URL]
-	if !ok {
-		manifestFilesByKey = make(map[string]*orcFile)
-		o.orcFilesByKeyByManifest[m.URL] = manifestFilesByKey
-	}
-	file, ok := manifestFilesByKey[key]
+func (o *InventoryReader) getOrcReader(key string) (ManifestFileReader, error) {
+	file, ok := o.orcFilesByKey[key]
 	if !ok {
 		file = &orcFile{key: key}
-		manifestFilesByKey[key] = file
+		o.orcFilesByKey[key] = file
 	}
-	for idx, f := range m.Files {
+	for idx, f := range o.manifest.Files {
 		if f.Key == key {
 			file.idx = idx
 			break
 		}
 	}
 	if !file.ready {
-		localFilename, err := o.download(m, key)
+		localFilename, err := o.download(key)
 		if err != nil {
 			return nil, err
 		}
@@ -144,12 +131,17 @@ func (o *InventoryReader) getOrcReader(ctx context.Context, m Manifest, key stri
 	if err != nil {
 		return nil, err
 	}
-	res := &OrcManifestFileReader{reader: orcReader, mgr: o, manifestURL: m.URL, key: key}
+	res := &OrcManifestFileReader{reader: orcReader, mgr: o, key: key}
 	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date")
 	return res, nil
 }
 
-func fromOrc(rowData []interface{}) InventoryObject {
+func (p *ParquetManifestFileReader) Close() error {
+	p.ReadStop()
+	return p.Close()
+}
+
+func inventoryObjectFromOrc(rowData []interface{}) InventoryObject {
 	return InventoryObject{
 		Bucket:       rowData[0].(string),
 		Key:          rowData[1].(string),
@@ -161,7 +153,6 @@ func fromOrc(rowData []interface{}) InventoryObject {
 func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 	num := reflect.ValueOf(dstInterface).Elem().Len()
 	res := make([]InventoryObject, 0, num)
-
 	for {
 		if !r.c.Next() {
 			r.mgr.logger.Infof("start new stripe in file %s", r.key)
@@ -171,7 +162,7 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 				return nil
 			}
 		}
-		res = append(res, fromOrc(r.c.Row()))
+		res = append(res, inventoryObjectFromOrc(r.c.Row()))
 		if len(res) == num {
 			break
 		}
@@ -205,6 +196,6 @@ func (r *OrcManifestFileReader) Close() error {
 	// TODO handle errors
 	_ = r.c.Close()
 	_ = r.reader.Close()
-	r.mgr.clean(r.manifestURL, r.key)
+	r.mgr.clean(r.key)
 	return nil
 }

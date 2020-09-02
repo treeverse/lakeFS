@@ -118,13 +118,14 @@ func TestIterator(t *testing.T) {
 			s3api := &mockS3Client{
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}
-			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api, &mockInventoryReader{})
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api)
 			if !test.ErrExpected && err != nil {
 				t.Fatalf("error: %v", err)
 			} else if err != nil {
 				continue
 			}
 			it := inv.Iterator()
+			it.(*s3.InventoryIterator).Reader = &mockInventoryReader{}
 			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
 			objects := make([]string, 0, len(test.ExpectedObjects))
 			for it.Next() {

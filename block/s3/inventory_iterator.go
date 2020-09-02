@@ -22,12 +22,13 @@ func (o *InventoryObject) GetPhysicalAddress() string {
 
 type InventoryIterator struct {
 	*Inventory
+	Reader                 IInventoryReader
 	ReadBatchSize          int
 	err                    error
 	val                    *block.InventoryObject
 	buffer                 []InventoryObject
 	currentManifestFileIdx int
-	nextRowInParquet       int
+	nextRowInFile          int
 	valIndexInBuffer       int
 }
 
@@ -39,6 +40,7 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	return &InventoryIterator{
 		Inventory:     inv,
 		ReadBatchSize: batchSize,
+		Reader:        NewInventoryReader(inv.S3, inv.logger),
 	}
 }
 
@@ -59,12 +61,12 @@ func (it *InventoryIterator) Next() bool {
 		it.valIndexInBuffer = -1
 		// if needed, try to move on to the next manifest file:
 		file := it.Manifest.Files[it.currentManifestFileIdx]
-		pr, err := it.inventoryReader.GetManifestFileReader(it.ctx, *it.Manifest, file.Key)
+		pr, err := it.Reader.GetManifestFileReader(file.Key)
 		if err != nil {
 			it.err = err
 			return false
 		}
-		if it.nextRowInParquet >= int(pr.GetNumRows()) {
+		if it.nextRowInFile >= int(pr.GetNumRows()) {
 			// no more files left
 			if it.moveToNextManifestFile() {
 				err = pr.Close()
@@ -92,7 +94,7 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 	}
 	it.logger.Info("moving to next manifest file")
 	it.currentManifestFileIdx += 1
-	it.nextRowInParquet = 0
+	it.nextRowInFile = 0
 	it.buffer = nil
 	return true
 }
@@ -100,13 +102,13 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 func (it *InventoryIterator) fillBuffer() bool {
 	it.logger.Info("start reading rows from inventory to buffer")
 	file := &it.Manifest.Files[it.currentManifestFileIdx]
-	reader, err := it.inventoryReader.GetManifestFileReader(it.ctx, *it.Manifest, file.Key)
+	reader, err := it.Reader.GetManifestFileReader(file.Key)
 	if err != nil {
 		it.err = err
 		return false
 	}
 	// skip the rows that have already been read:
-	err = reader.SkipRows(int64(it.nextRowInParquet))
+	err = reader.SkipRows(int64(it.nextRowInFile))
 	if err != nil {
 		it.err = err
 		return false
@@ -123,30 +125,30 @@ func (it *InventoryIterator) fillBuffer() bool {
 		it.err = err
 		return false
 	}
-	it.nextRowInParquet += len(it.buffer)
+	it.nextRowInFile += len(it.buffer)
 	return true
 }
 
 func (it *InventoryIterator) nextFromBuffer() (*block.InventoryObject, int) {
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
-		parquetObj := it.buffer[i]
-		if (parquetObj.IsLatest != nil && !*parquetObj.IsLatest) ||
-			(parquetObj.IsDeleteMarker != nil && *parquetObj.IsDeleteMarker) {
+		obj := it.buffer[i]
+		if (obj.IsLatest != nil && !*obj.IsLatest) ||
+			(obj.IsDeleteMarker != nil && *obj.IsDeleteMarker) {
 			continue
 		}
 		res := block.InventoryObject{
-			Bucket:          parquetObj.Bucket,
-			Key:             parquetObj.Key,
-			PhysicalAddress: parquetObj.GetPhysicalAddress(),
+			Bucket:          obj.Bucket,
+			Key:             obj.Key,
+			PhysicalAddress: obj.GetPhysicalAddress(),
 		}
-		if parquetObj.Size != nil {
-			res.Size = *parquetObj.Size
+		if obj.Size != nil {
+			res.Size = *obj.Size
 		}
-		if parquetObj.LastModified != nil {
-			res.LastModified = *parquetObj.LastModified
+		if obj.LastModified != nil {
+			res.LastModified = *obj.LastModified
 		}
-		if parquetObj.Checksum != nil {
-			res.Checksum = *parquetObj.Checksum
+		if obj.Checksum != nil {
+			res.Checksum = *obj.Checksum
 		}
 		return &res, i
 	}
