@@ -1,10 +1,14 @@
 package s3
 
 import (
+	"errors"
+
 	"github.com/treeverse/lakefs/block"
 )
 
 const DefaultReadBatchSize = 100000
+
+var ErrInventoryNotSorted = errors.New("inventory assumed to be sorted but isn't")
 
 type InventoryObject struct {
 	Bucket         string  `parquet:"name=bucket, type=UTF8"`
@@ -24,6 +28,7 @@ type InventoryIterator struct {
 	*Inventory
 	Reader                 IInventoryReader
 	ReadBatchSize          int
+	validateSort           bool
 	err                    error
 	val                    *block.InventoryObject
 	buffer                 []InventoryObject
@@ -41,6 +46,7 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 		Inventory:     inv,
 		ReadBatchSize: batchSize,
 		Reader:        NewInventoryReader(inv.S3, inv.logger),
+		validateSort:  true,
 	}
 }
 
@@ -54,6 +60,10 @@ func (it *InventoryIterator) Next() bool {
 		if val != nil {
 			// found the next object in buffer
 			it.valIndexInBuffer = valIndex
+			if it.validateSort && it.val != nil && val.Key < it.val.Key {
+				it.err = ErrInventoryNotSorted
+				return false
+			}
 			it.val = val
 			return true
 		}

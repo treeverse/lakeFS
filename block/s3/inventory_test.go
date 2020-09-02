@@ -3,6 +3,7 @@ package s3_test
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"reflect"
@@ -17,6 +18,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block/s3"
 )
+
+var ErrReadFile = errors.New("error reading file")
 
 func rows(keys ...string) []*s3.InventoryObject {
 	if keys == nil {
@@ -35,32 +38,33 @@ func rows(keys ...string) []*s3.InventoryObject {
 }
 
 var fileContents = map[string][]string{
-	"f1":          {"del_1", "f1row1", "f1row2", "del_2"},
-	"f2":          {"f2row1", "f2row2"},
-	"f3":          {"f3row1", "f3row2"},
-	"f4":          {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
-	"f5":          {"a1", "a2", "a3"},
-	"f6":          {"a4", "a5", "a6", "a7"},
-	"f7":          {"f7row1", "del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "expired_1", "expired_2", "expired_3", "f7row2"},
-	"err_file1":   {"a4", "", "a6", "a7"},
-	"err_file2":   {""},
-	"all_deleted": {"del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "del_7", "del_8"},
-	"empty_file":  {},
+	"f1":            {"del_1", "f1row1", "f1row2", "del_2"},
+	"f2":            {"f2row1", "f2row2"},
+	"f3":            {"f3row1", "f3row2"},
+	"f4":            {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
+	"f5":            {"f5row1", "f5row2", "f5row3"},
+	"f6":            {"f6row1", "f6row2", "f6row3", "f6row4"},
+	"f7":            {"f7row1", "del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "expired_1", "expired_2", "expired_3", "f7row2"},
+	"err_file1":     {"f8row1", "", "f8row2", "f8row3"},
+	"err_file2":     {""},
+	"unsorted_file": {"f9row1", "f9row2", "f9row3", "f9row5", "f9row4"},
+	"all_deleted":   {"del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "del_7", "del_8"},
+	"empty_file":    {},
 }
 
 func TestIterator(t *testing.T) {
 	testdata := []struct {
 		InventoryFiles  []string
 		ExpectedObjects []string
-		ErrExpected     bool
+		ErrExpected     error
 	}{
 		{
 			InventoryFiles:  []string{"f1", "f2", "f3"},
 			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
-			InventoryFiles:  []string{"f3", "f2", "f1"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+			InventoryFiles: []string{"f3", "f2", "f1"},
+			ErrExpected:    s3.ErrInventoryNotSorted,
 		},
 		{
 			InventoryFiles:  []string{},
@@ -76,19 +80,23 @@ func TestIterator(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{"f5", "f6"},
-			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			ExpectedObjects: []string{"f5row1", "f5row2", "f5row3", "f6row1", "f6row2", "f6row3", "f6row4"},
 		},
 		{
-			InventoryFiles:  []string{"f6", "f5"},
-			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			InventoryFiles: []string{"f6", "f5"},
+			ErrExpected:    s3.ErrInventoryNotSorted,
+		},
+		{
+			InventoryFiles: []string{"unsorted_file"},
+			ErrExpected:    s3.ErrInventoryNotSorted,
 		},
 		{
 			InventoryFiles: []string{"f5", "err_file1"},
-			ErrExpected:    true,
+			ErrExpected:    ErrReadFile,
 		},
 		{
-			InventoryFiles: []string{"f1,", "f2", "f3", "f4", "f5", "f6", "err_file2"},
-			ErrExpected:    true,
+			InventoryFiles: []string{"f1", "f2", "f3", "f4", "f5", "f6", "err_file2"},
+			ErrExpected:    ErrReadFile,
 		},
 		{
 			InventoryFiles:  []string{"f7"},
@@ -103,8 +111,8 @@ func TestIterator(t *testing.T) {
 			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+			InventoryFiles: []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
+			ErrExpected:    s3.ErrInventoryNotSorted,
 		},
 		{
 			InventoryFiles:  []string{"empty_file"},
@@ -119,10 +127,8 @@ func TestIterator(t *testing.T) {
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}
 			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api)
-			if !test.ErrExpected && err != nil {
+			if err != nil {
 				t.Fatalf("error: %v", err)
-			} else if err != nil {
-				continue
 			}
 			it := inv.Iterator()
 			it.(*s3.InventoryIterator).Reader = &mockInventoryReader{}
@@ -131,13 +137,16 @@ func TestIterator(t *testing.T) {
 			for it.Next() {
 				objects = append(objects, it.Get().Key)
 			}
-			if !test.ErrExpected && it.Err() != nil {
-				t.Fatalf("got unexpected error: %v", it.Err())
+			if test.ErrExpected == nil && it.Err() != nil {
+				t.Fatalf("got unexpected error: %v. expected no error", it.Err())
 			}
-			if test.ErrExpected {
+			if test.ErrExpected != nil {
 				if it.Err() == nil {
 					print(len(test.ExpectedObjects))
 					t.Fatalf("expected error but didn't get one")
+				}
+				if !errors.Is(it.Err(), test.ErrExpected) {
+					t.Fatalf("got unexpected error. expected=%v. got=%v", test.ErrExpected, it.Err())
 				}
 				continue
 			}
@@ -167,7 +176,7 @@ func (m *mockParquetReader) Read(dstInterface interface{}) error {
 	dst := dstInterface.(*[]s3.InventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
 		if m.rows[i] == nil {
-			return fmt.Errorf("got empty key") // for test - simulate file with error
+			return ErrReadFile // for test - simulate file with error
 		}
 		res = append(res, *m.rows[i])
 	}
@@ -189,7 +198,7 @@ func (m *mockParquetReader) SkipRows(skip int64) error {
 
 type mockInventoryReader struct{}
 
-func (m *mockInventoryReader) GetManifestFileReader(_ context.Context, _ s3.Manifest, key string) (s3.ManifestFileReader, error) {
+func (m *mockInventoryReader) GetManifestFileReader(key string) (s3.ManifestFileReader, error) {
 	return &mockParquetReader{rows: rows(fileContents[key]...)}, nil
 }
 func (m *mockInventoryReader) Close(_ s3.Manifest) error {
