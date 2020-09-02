@@ -12,7 +12,6 @@ require (
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
-	github.com/cznic/mathutil v0.0.0-20180504122225-ca4c9f2c1369
 	github.com/davecgh/go-spew v1.1.1
 	github.com/dgryski/go-gk v0.0.0-20200319235926-a69029f61654 // indirect
 	github.com/dlmiddlecote/sqlstats v1.0.1
@@ -64,7 +63,6 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
-	github.com/tevino/abool v1.2.0
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.3
@@ -81,6 +79,5 @@ require (
 	google.golang.org/api v0.30.0
 	google.golang.org/genproto v0.0.0-20200815001618-f69a88009b70 // indirect
 	gopkg.in/dgrijalva/jwt-go.v3 v3.2.0
-	modernc.org/mathutil v1.0.0
 	pgregory.net/rapid v0.4.0 // indirect
 )
