@@ -52,7 +52,6 @@ type orcFile struct {
 }
 
 func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryReader {
-	logger.Info("creating orc download manager")
 	return &InventoryReader{svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
 }
 
@@ -69,7 +68,7 @@ func (o *InventoryReader) download(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	o.logger.Infof("start downloading %s to local file %s", key, f.Name())
+	o.logger.Debugf("start downloading %s to local file %s", key, f.Name())
 	downloader := s3manager.NewDownloaderWithClient(o.svc)
 	_, err = downloader.DownloadWithContext(o.ctx, f, &s3.GetObjectInput{
 		Bucket: aws.String(o.manifest.inventoryBucket),
@@ -78,7 +77,7 @@ func (o *InventoryReader) download(key string) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	o.logger.Infof("finished downloading %s to local file %s", key, f.Name())
+	o.logger.Debugf("finished downloading %s to local file %s", key, f.Name())
 
 	return f.Name(), nil
 }
@@ -155,7 +154,7 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 	res := make([]InventoryObject, 0, num)
 	for {
 		if !r.c.Next() {
-			r.mgr.logger.Infof("start new stripe in file %s", r.key)
+			r.mgr.logger.Debugf("start new stripe in file %s", r.key)
 			if !r.c.Stripes() {
 				return nil
 			} else if !r.c.Next() {
@@ -193,7 +192,6 @@ func (r *OrcManifestFileReader) SkipRows(i int64) error {
 }
 
 func (r *OrcManifestFileReader) Close() error {
-	// TODO handle errors
 	_ = r.c.Close()
 	_ = r.reader.Close()
 	r.mgr.clean(r.key)

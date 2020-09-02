@@ -102,8 +102,8 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 	if it.currentManifestFileIdx == len(it.Manifest.Files)-1 {
 		return false
 	}
-	it.logger.Info("moving to next manifest file")
 	it.currentManifestFileIdx += 1
+	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.currentManifestFileIdx].Key)
 	it.nextRowInFile = 0
 	it.buffer = nil
 	return true
