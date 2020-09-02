@@ -11,7 +11,7 @@ lakeFS is an open source platform that delivers resilience and manageability to 
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
-lakeFS is [API compatible with AWS S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
+lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
 ![lakeFS](assets/img/wrapper.png) 
 
@@ -20,7 +20,7 @@ lakeFS is [API compatible with AWS S3](reference/s3.md) and works seamlessly wit
 
 ## Why you need lakeFS and what it can do
 
-lakeFS provides a [Git-like branching and committing model](branching/model.md) that scales to Petabytes of data by utilizing S3 for storage.
+lakeFS provides a [Git-like branching and committing model](branching/model.md) that scales to Petabytes of data by utilizing S3 or GCS for storage.
 
 This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
 
