@@ -207,7 +207,7 @@ func WithClock(newClock clock.Clock) CatalogerOption {
 
 func WithCacheEnabled(b bool) CatalogerOption {
 	return func(c *cataloger) {
-		c.CacheEnabled = b
+		c.Cache.Enabled = b
 	}
 }
 
@@ -219,34 +219,34 @@ func WithDedupReportChannel(b bool) CatalogerOption {
 
 func WithParams(p params.Catalog) CatalogerOption {
 	return func(c *cataloger) {
-		if p.ReadScanTimeout != 0 {
-			c.ReadScanTimeout = p.ReadScanTimeout
+		if p.BatchRead.ScanTimeout != 0 {
+			c.BatchRead.ScanTimeout = p.BatchRead.ScanTimeout
 		}
-		if p.ReadDelay != 0 {
-			c.ReadDelay = p.ReadDelay
+		if p.BatchRead.Delay != 0 {
+			c.BatchRead.Delay = p.BatchRead.Delay
 		}
-		if p.ReadEntriesAtOnce != 0 {
-			c.ReadEntriesAtOnce = p.ReadEntriesAtOnce
+		if p.BatchRead.EntriesAtOnce != 0 {
+			c.BatchRead.EntriesAtOnce = p.BatchRead.EntriesAtOnce
 		}
-		if p.ReadEntryMaxWait != 0 {
-			c.ReadEntryMaxWait = p.ReadEntryMaxWait
+		if p.BatchRead.EntryMaxWait != 0 {
+			c.BatchRead.EntryMaxWait = p.BatchRead.EntryMaxWait
 		}
-		if p.ReadReaders != 0 {
-			c.ReadReaders = p.ReadReaders
+		if p.BatchRead.Readers != 0 {
+			c.BatchRead.Readers = p.BatchRead.Readers
 		}
-		if p.CreateEntriesInsertSize != 0 {
-			c.CreateEntriesInsertSize = p.CreateEntriesInsertSize
+		if p.BatchWrite.EntriesInsertSize != 0 {
+			c.BatchWrite.EntriesInsertSize = p.BatchWrite.EntriesInsertSize
 		}
-		if p.CacheSize != 0 {
-			c.CacheSize = p.CacheSize
+		if p.Cache.Size != 0 {
+			c.Cache.Size = p.Cache.Size
 		}
-		if p.CacheExpiry != 0 {
-			c.CacheExpiry = p.CacheExpiry
+		if p.Cache.Expiry != 0 {
+			c.Cache.Expiry = p.Cache.Expiry
 		}
-		if p.CacheJitter != 0 {
-			c.CacheJitter = p.CacheJitter
+		if p.Cache.Jitter != 0 {
+			c.Cache.Jitter = p.Cache.Jitter
 		}
-		c.CacheEnabled = p.CacheEnabled
+		c.Cache.Enabled = p.Cache.Enabled
 	}
 }
 
@@ -258,23 +258,29 @@ func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),
 		dedupReportEnabled: true,
 		Catalog: params.Catalog{
-			ReadEntryMaxWait:        defaultBatchReadEntryMaxWait,
-			ReadScanTimeout:         defaultBatchScanTimeout,
-			ReadDelay:               defaultBatchDelay,
-			ReadEntriesAtOnce:       defaultBatchEntriesReadAtOnce,
-			ReadReaders:             defaultBatchReaders,
-			CreateEntriesInsertSize: defaultBatchBatchEntriesInsertSize,
-			CacheEnabled:            true,
-			CacheSize:               defaultCatalogerCacheSize,
-			CacheExpiry:             defaultCatalogerCacheExpiry,
-			CacheJitter:             defaultCatalogerCacheJitter,
+			BatchRead: params.BatchRead{
+				EntryMaxWait:  defaultBatchReadEntryMaxWait,
+				ScanTimeout:   defaultBatchScanTimeout,
+				Delay:         defaultBatchDelay,
+				EntriesAtOnce: defaultBatchEntriesReadAtOnce,
+				Readers:       defaultBatchReaders,
+			},
+			BatchWrite: params.BatchWrite{
+				EntriesInsertSize: defaultBatchBatchEntriesInsertSize,
+			},
+			Cache: params.Cache{
+				Enabled: false,
+				Size:    defaultCatalogerCacheSize,
+				Expiry:  defaultCatalogerCacheExpiry,
+				Jitter:  defaultCatalogerCacheJitter,
+			},
 		},
 	}
 	for _, opt := range options {
 		opt(c)
 	}
-	if c.CacheEnabled {
-		c.cache = NewLRUCache(c.CacheSize, c.CacheExpiry, c.CacheJitter)
+	if c.Cache.Enabled {
+		c.cache = NewLRUCache(c.Cache.Size, c.Cache.Expiry, c.Cache.Jitter)
 	} else {
 		c.cache = &DummyCache{}
 	}

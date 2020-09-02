@@ -2,8 +2,10 @@ package catalog
 
 import (
 	"context"
+	"database/sql"
 	"fmt"
-	"time"
+
+	"github.com/Masterminds/squirrel"
 
 	"github.com/treeverse/lakefs/db"
 )
@@ -23,10 +25,22 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 		return nil
 	}
 
-	// validate that we have path on each entry
-	for i := range entries {
-		if !IsNonEmptyString(entries[i].Path) {
+	// validate that we have path on each entry and remember last entry based on path (for dup remove)
+	entriesMap := make(map[string]*Entry, len(entries))
+	for i := len(entries) - 1; i >= 0; i-- {
+		p := entries[i].Path
+		if !IsNonEmptyString(p) {
 			return fmt.Errorf("entry at pos %d, path: %w", i, ErrInvalidValue)
+		}
+		entriesMap[p] = &entries[i]
+	}
+
+	// prepare a list of entries to insert without duplicates
+	entriesToInsert := make([]*Entry, 0, len(entriesMap))
+	for i := range entries {
+		ent := entriesMap[entries[i].Path]
+		if &entries[i] == ent {
+			entriesToInsert = append(entriesToInsert, ent)
 		}
 	}
 
@@ -37,19 +51,22 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 			return nil, err
 		}
 		// single insert per batch
-		for i := 0; i < len(entries); i += c.CreateEntriesInsertSize {
+		entriesInsertSize := c.BatchWrite.EntriesInsertSize
+		for i := 0; i < len(entriesToInsert); i += entriesInsertSize {
 			sqInsert := psql.Insert("catalog_entries").
 				Columns("branch_id", "path", "physical_address", "checksum", "size", "metadata", "creation_date", "is_expired")
-			j := i + c.CreateEntriesInsertSize
-			if j > len(entries) {
-				j = len(entries)
+			j := i + entriesInsertSize
+			if j > len(entriesToInsert) {
+				j = len(entriesToInsert)
 			}
-			for _, entry := range entries[i:j] {
-				creationDate := entry.CreationDate
-				if entry.CreationDate.IsZero() {
-					creationDate = time.Now()
+			for _, entry := range entriesToInsert[i:j] {
+				var dbTime sql.NullTime
+				if !entry.CreationDate.IsZero() {
+					dbTime.Time = entry.CreationDate
+					dbTime.Valid = true
 				}
-				sqInsert = sqInsert.Values(branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, creationDate, entry.Expired)
+				sqInsert = sqInsert.Values(branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata,
+					squirrel.Expr("COALESCE(?,NOW())", dbTime), entry.Expired)
 			}
 			query, args, err := sqInsert.Suffix(`ON CONFLICT (branch_id,path,min_commit)
 DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=catalog_max_commit_id()`).
