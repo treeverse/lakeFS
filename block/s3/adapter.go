@@ -51,7 +51,6 @@ type Adapter struct {
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
-	inventoryReader       IInventoryReader
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
