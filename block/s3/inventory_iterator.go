@@ -39,7 +39,7 @@ type InventoryIterator struct {
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	batchSize := DefaultReadBatchSize
-	if inv.Manifest.Format == "ORC" {
+	if inv.Manifest.Format == OrcFormatName {
 		batchSize = -1
 	}
 	return &InventoryIterator{

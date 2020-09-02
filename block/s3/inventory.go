@@ -14,6 +14,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+const (
+	OrcFormatName     = "ORC"
+	ParquetFormatName = "Parquet"
+)
+
 type Manifest struct {
 	URL                string         `json:"-"`
 	InventoryBucketArn string         `json:"destinationBucket"`
@@ -24,8 +29,7 @@ type Manifest struct {
 }
 
 type manifestFile struct {
-	Key      string `json:"key"`
-	firstKey string
+	Key string `json:"key"`
 }
 
 type ManifestFileReader interface {
@@ -87,7 +91,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	if m.Format != "ORC" && m.Format != "Parquet" {
+	if m.Format != OrcFormatName && m.Format != ParquetFormatName {
 		return nil, fmt.Errorf("%w. got format: %s", ErrUnsupportedInventoryFormat, m.Format)
 	}
 	m.URL = manifestURL

@@ -21,6 +21,8 @@ import (
 	"github.com/xitongsys/parquet-go/reader"
 )
 
+var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
+
 type IInventoryReader interface {
 	GetManifestFileReader(key string) (ManifestFileReader, error)
 }
@@ -84,9 +86,9 @@ func (o *InventoryReader) download(key string) (string, error) {
 
 func (o *InventoryReader) GetManifestFileReader(key string) (ManifestFileReader, error) {
 	switch o.manifest.Format {
-	case "ORC":
+	case OrcFormatName:
 		return o.getOrcReader(key)
-	case "Parquet":
+	case ParquetFormatName:
 		return o.getParquetReader(key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
@@ -137,7 +139,7 @@ func (o *InventoryReader) getOrcReader(key string) (ManifestFileReader, error) {
 
 func (p *ParquetManifestFileReader) Close() error {
 	p.ReadStop()
-	return p.Close()
+	return p.PFile.Close()
 }
 
 func inventoryObjectFromOrc(rowData []interface{}) InventoryObject {
@@ -188,7 +190,7 @@ func (r *OrcManifestFileReader) SkipRows(i int64) error {
 			}
 		}
 	}
-	return errors.New("no more rows to skip")
+	return ErrNoMoreRowsToSkip
 }
 
 func (r *OrcManifestFileReader) Close() error {
