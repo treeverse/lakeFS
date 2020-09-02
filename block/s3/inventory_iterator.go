@@ -55,47 +55,51 @@ func (it *InventoryIterator) Next() bool {
 		// empty manifest
 		return false
 	}
-	for {
-		val, valIndex := it.nextFromBuffer()
-		if val != nil {
-			// found the next object in buffer
-			it.valIndexInBuffer = valIndex
-			if it.validateSort && it.val != nil && val.Key < it.val.Key {
-				it.err = ErrInventoryNotSorted
-				return false
-			}
-			it.val = val
-			return true
-		}
-		// value not found in buffer, need to reload the buffer
-		it.valIndexInBuffer = -1
-		// if needed, try to move on to the next manifest file:
-		file := it.Manifest.Files[it.currentManifestFileIdx]
-		pr, err := it.Reader.GetManifestFileReader(file.Key)
-		if err != nil {
-			it.err = err
+	val, valIndex := it.nextFromBuffer()
+	if val != nil {
+		// found the next object in buffer
+		it.valIndexInBuffer = valIndex
+		if it.validateSort && it.val != nil && val.Key < it.val.Key {
+			it.err = ErrInventoryNotSorted
 			return false
 		}
-		if it.nextRowInFile >= int(pr.GetNumRows()) {
-			// no more files left
-			if it.moveToNextManifestFile() {
-				err = pr.Close()
-				if err != nil {
-					it.logger.Errorf("failed to close manifest file reader: %v", err)
-				}
-			} else {
-				return false
-			}
-		}
-		file = it.Manifest.Files[it.currentManifestFileIdx]
+		it.val = val
+		return true
+	}
+	// value not found in buffer, need to reload the buffer
+	it.valIndexInBuffer = -1
+	// if needed, try to move on to the next manifest file:
+	file := it.Manifest.Files[it.currentManifestFileIdx]
+	pr, err := it.Reader.GetManifestFileReader(file.Key)
+	defer func() {
+		err = pr.Close()
 		if err != nil {
-			it.err = err
+			it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
+		}
+	}()
+	if err != nil {
+		it.err = err
+		return false
+	}
+	if it.nextRowInFile >= int(pr.GetNumRows()) {
+		// no more files left
+		if !it.moveToNextManifestFile() {
 			return false
 		}
-		if !it.fillBuffer() { // fill from current manifest file
+		err = pr.Close()
+		if err != nil {
+			it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
+		}
+		pr, err = it.Reader.GetManifestFileReader(it.Manifest.Files[it.currentManifestFileIdx].Key)
+		if err != nil {
+			it.err = err
 			return false
 		}
 	}
+	if !it.fillBuffer(pr) { // fill from current manifest file
+		return false
+	}
+	return it.Next()
 }
 
 func (it *InventoryIterator) moveToNextManifestFile() bool {
@@ -109,16 +113,10 @@ func (it *InventoryIterator) moveToNextManifestFile() bool {
 	return true
 }
 
-func (it *InventoryIterator) fillBuffer() bool {
-	it.logger.Info("start reading rows from inventory to buffer")
-	file := &it.Manifest.Files[it.currentManifestFileIdx]
-	reader, err := it.Reader.GetManifestFileReader(file.Key)
-	if err != nil {
-		it.err = err
-		return false
-	}
+func (it *InventoryIterator) fillBuffer(reader ManifestFileReader) bool {
+	it.logger.Debug("start reading rows from inventory to buffer")
 	// skip the rows that have already been read:
-	err = reader.SkipRows(int64(it.nextRowInFile))
+	err := reader.SkipRows(int64(it.nextRowInFile))
 	if err != nil {
 		it.err = err
 		return false

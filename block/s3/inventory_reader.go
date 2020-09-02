@@ -57,7 +57,7 @@ func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryRead
 	return &InventoryReader{svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
 }
 
-func (o *InventoryReader) clean(key string) {
+func (o *InventoryReader) cleanOrcFile(key string) {
 	localFilename := o.orcFilesByKey[key].localFilename
 	delete(o.orcFilesByKey, key)
 	defer func() {
@@ -65,7 +65,7 @@ func (o *InventoryReader) clean(key string) {
 	}()
 }
 
-func (o *InventoryReader) download(key string) (string, error) {
+func (o *InventoryReader) downloadOrcFile(key string) (string, error) {
 	f, err := ioutil.TempFile("", path.Base(key))
 	if err != nil {
 		return "", err
@@ -80,7 +80,6 @@ func (o *InventoryReader) download(key string) (string, error) {
 		return "", err
 	}
 	o.logger.Debugf("finished downloading %s to local file %s", key, f.Name())
-
 	return f.Name(), nil
 }
 
@@ -121,7 +120,7 @@ func (o *InventoryReader) getOrcReader(key string) (ManifestFileReader, error) {
 		}
 	}
 	if !file.ready {
-		localFilename, err := o.download(key)
+		localFilename, err := o.downloadOrcFile(key)
 		if err != nil {
 			return nil, err
 		}
@@ -196,6 +195,6 @@ func (r *OrcManifestFileReader) SkipRows(i int64) error {
 func (r *OrcManifestFileReader) Close() error {
 	_ = r.c.Close()
 	_ = r.reader.Close()
-	r.mgr.clean(r.key)
+	r.mgr.cleanOrcFile(r.key)
 	return nil
 }

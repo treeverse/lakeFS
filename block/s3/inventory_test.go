@@ -131,11 +131,15 @@ func TestIterator(t *testing.T) {
 				t.Fatalf("error: %v", err)
 			}
 			it := inv.Iterator()
-			it.(*s3.InventoryIterator).Reader = &mockInventoryReader{}
+			reader := &mockInventoryReader{openFiles: make(map[string]bool)}
+			it.(*s3.InventoryIterator).Reader = reader
 			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
 			objects := make([]string, 0, len(test.ExpectedObjects))
 			for it.Next() {
 				objects = append(objects, it.Get().Key)
+			}
+			if len(reader.openFiles) != 0 {
+				t.Fatalf("some files stayed open: %v", reader.openFiles)
 			}
 			if test.ErrExpected == nil && it.Err() != nil {
 				t.Fatalf("got unexpected error: %v. expected no error", it.Err())
@@ -160,18 +164,25 @@ func TestIterator(t *testing.T) {
 	}
 }
 
-type mockParquetReader struct {
-	rows    []*s3.InventoryObject
-	nextIdx int
+type mockInventoryReader struct {
+	openFiles map[string]bool
 }
 
-func (m *mockParquetReader) Close() error {
+type mockManifestFileReader struct {
+	rows    []*s3.InventoryObject
+	nextIdx int
+	mgr     *mockInventoryReader
+	key     string
+}
+
+func (m *mockManifestFileReader) Close() error {
 	m.nextIdx = -1
 	m.rows = nil
+	delete(m.mgr.openFiles, m.key)
 	return nil
 }
 
-func (m *mockParquetReader) Read(dstInterface interface{}) error {
+func (m *mockManifestFileReader) Read(dstInterface interface{}) error {
 	res := make([]s3.InventoryObject, 0, len(m.rows))
 	dst := dstInterface.(*[]s3.InventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
@@ -185,10 +196,10 @@ func (m *mockParquetReader) Read(dstInterface interface{}) error {
 	return nil
 }
 
-func (m *mockParquetReader) GetNumRows() int64 {
+func (m *mockManifestFileReader) GetNumRows() int64 {
 	return int64(len(m.rows))
 }
-func (m *mockParquetReader) SkipRows(skip int64) error {
+func (m *mockManifestFileReader) SkipRows(skip int64) error {
 	m.nextIdx += int(skip)
 	if m.nextIdx > len(m.rows) {
 		return fmt.Errorf("index out of bounds after skip. got index=%d, length=%d", m.nextIdx, len(m.rows))
@@ -196,13 +207,9 @@ func (m *mockParquetReader) SkipRows(skip int64) error {
 	return nil
 }
 
-type mockInventoryReader struct{}
-
 func (m *mockInventoryReader) GetManifestFileReader(key string) (s3.ManifestFileReader, error) {
-	return &mockParquetReader{rows: rows(fileContents[key]...)}, nil
-}
-func (m *mockInventoryReader) Close(_ s3.Manifest) error {
-	return nil
+	m.openFiles[key] = true
+	return &mockManifestFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
 }
 
 func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {

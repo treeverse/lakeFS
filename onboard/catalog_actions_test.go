@@ -2,9 +2,12 @@ package onboard_test
 
 import (
 	"context"
+	"sync/atomic"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 )
 
@@ -15,22 +18,23 @@ type mockCataloger struct {
 var catalogCallData = struct {
 	addedEntries   []catalog.Entry
 	deletedEntries []string
-	callLog        map[string]int
+	callLog        map[string]*int32
 }{}
 
 func (m mockCataloger) CreateEntries(_ context.Context, _, _ string, entries []catalog.Entry) error {
 	catalogCallData.addedEntries = append(catalogCallData.addedEntries, entries...)
-	catalogCallData.callLog["CreateEntries"]++
+	atomic.AddInt32(catalogCallData.callLog["CreateEntries"], 1)
+
 	return nil
 }
 func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) error {
 	catalogCallData.deletedEntries = append(catalogCallData.deletedEntries, path)
-	catalogCallData.callLog["DeleteEntry"]++
+	atomic.AddInt32(catalogCallData.callLog["DeleteEntry"], 1)
 	return nil
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer")
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", logging.Default())
 	c.(*onboard.CatalogRepoActions).WriteBatchSize = 5
 	catalogActions, ok := c.(*onboard.CatalogRepoActions)
 	if !ok {
@@ -39,8 +43,8 @@ func TestCreateAndDeleteRows(t *testing.T) {
 	testdata := []struct {
 		AddedRows           []string
 		DeletedRows         []string
-		ExpectedAddCalls    int
-		ExpectedDeleteCalls int
+		ExpectedAddCalls    int32
+		ExpectedDeleteCalls int32
 	}{
 		{
 			AddedRows:           []string{"a1", "b2", "c3"},
@@ -89,7 +93,9 @@ func TestCreateAndDeleteRows(t *testing.T) {
 		for _, test := range testdata {
 			catalogCallData.addedEntries = []catalog.Entry{}
 			catalogCallData.deletedEntries = []string{}
-			catalogCallData.callLog = make(map[string]int)
+			catalogCallData.callLog = make(map[string]*int32)
+			catalogCallData.callLog["DeleteEntry"] = swag.Int32(0)
+			catalogCallData.callLog["CreateEntries"] = swag.Int32(0)
 			stats, err := catalogActions.ApplyImport(context.Background(), onboard.NewDiffIterator(
 				&mockInventoryIterator{rows: rows(test.DeletedRows...)},
 				&mockInventoryIterator{rows: rows(test.AddedRows...)}), dryRun)
@@ -102,10 +108,10 @@ func TestCreateAndDeleteRows(t *testing.T) {
 				expectedAddCalls = 0
 				expectedDeleteCalls = 0
 			}
-			if catalogCallData.callLog["CreateEntries"] != expectedAddCalls {
+			if *catalogCallData.callLog["CreateEntries"] != expectedAddCalls {
 				t.Fatalf("unexpected number of CreateEntries calls. expected=%d, got=%d", expectedAddCalls, catalogCallData.callLog["CreateEntries"])
 			}
-			if catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
+			if *catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
 				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, catalogCallData.callLog["DeleteEntry"])
 			}
 			if stats.AddedOrChanged != len(test.AddedRows) {
