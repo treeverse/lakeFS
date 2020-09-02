@@ -13,7 +13,7 @@ With lakeFS you can build repeatable, atomic and versioned data lake operations 
 
 lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service. It is [API compatible with S3](reference/s3.md) and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
-![lakeFS](assets/img/wrapper.png) 
+<img src="assets/img/wrapper.png" alt="lakeFS" width="650px"/>
 
 
 {: .pb-5 }
