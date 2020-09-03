@@ -16,15 +16,18 @@ jobs:
         with:
           go-version: 1.14
         id: go
-      - name: Generate code
-        run: make gen
-      - name: Build lakeFS
-        run: docker-compose -f docker-compose.nessie.yaml build
+      - name: Build docker image
+        env:
+          TAG: dev
+        run: make build-docker
       - name: Run lakeFS
         env:
+          TAG: dev
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: docker-compose -f docker-compose.nessie.yaml up --quiet-pull --build -d
+        run: docker-compose up --quiet-pull --build -d
       - name: Run Nessie
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}

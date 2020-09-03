@@ -2,8 +2,10 @@ version: '3'
 services:
   lakefs:
     image: "treeverse/lakefs:${TAG}"
-    ports: ["8000:8000"]
-    links: ["postgres"]
+    ports: 
+      - "8000:8000"
+    depends_on:
+      - "postgres"
     environment:
       LAKEFS_AUTH_ENCRYPT_SECRET_KEY: some random secret string
       LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
