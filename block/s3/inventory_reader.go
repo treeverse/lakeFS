@@ -8,6 +8,7 @@ import (
 	"os"
 	"path"
 	"reflect"
+	"strconv"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -174,7 +175,13 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 }
 
 func (r *OrcInventoryFileReader) GetNumRows() int64 {
-	return mathutil.MinInt64(1000, int64(r.reader.NumRows()))
+	if os.Getenv("LAKEFS_IMPORT_LIMIT_PER_FILE") != "" {
+		limit, err := strconv.ParseInt(os.Getenv("LAKEFS_IMPORT_LIMIT_PER_FILE"), 10, 64)
+		if err == nil {
+			return mathutil.MinInt64(limit, int64(r.reader.NumRows()))
+		}
+	}
+	return int64(r.reader.NumRows())
 }
 
 func (r *OrcInventoryFileReader) SkipRows(i int64) error {
