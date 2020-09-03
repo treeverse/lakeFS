@@ -45,7 +45,7 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	return &InventoryIterator{
 		Inventory:     inv,
 		ReadBatchSize: batchSize,
-		Reader:        NewInventoryReader(inv.S3, inv.logger),
+		Reader:        NewInventoryReader(inv.ctx, inv.S3, inv.Manifest, inv.logger),
 		validateSort:  true,
 	}
 }

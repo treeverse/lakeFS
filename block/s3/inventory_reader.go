@@ -24,11 +24,11 @@ import (
 var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
 
 type IInventoryReader interface {
-	GetManifestFileReader(key string) (ManifestFileReader, error)
+	GetManifestFileReader(fileInManifest string) (ManifestFileReader, error)
 }
 
 type InventoryReader struct {
-	manifest      Manifest
+	manifest      *Manifest
 	ctx           context.Context
 	svc           s3iface.S3API
 	orcFilesByKey map[string]*orcFile
@@ -53,8 +53,8 @@ type orcFile struct {
 	ready         bool
 }
 
-func NewInventoryReader(svc s3iface.S3API, logger logging.Logger) IInventoryReader {
-	return &InventoryReader{svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
+func NewInventoryReader(ctx context.Context, svc s3iface.S3API, manifest *Manifest, logger logging.Logger) IInventoryReader {
+	return &InventoryReader{ctx: ctx, svc: svc, manifest: manifest, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
 }
 
 func (o *InventoryReader) cleanOrcFile(key string) {
@@ -158,9 +158,9 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 		if !r.c.Next() {
 			r.mgr.logger.Debugf("start new stripe in file %s", r.key)
 			if !r.c.Stripes() {
-				return nil
+				break
 			} else if !r.c.Next() {
-				return nil
+				break
 			}
 		}
 		res = append(res, inventoryObjectFromOrc(r.c.Row()))
