@@ -102,7 +102,11 @@ func createRepo(ctx context.Context, t *testing.T) string {
 	name := strings.ToLower(t.Name())
 	storageNamespace := viper.GetString("storage_namespace")
 	repoStorage := storageNamespace + "/" + name
-
+	logger.WithFields(logging.Fields{
+		"repository":        name,
+		"storage_namespace": repoStorage,
+		"name":              name,
+	}).Debug("Create repository for test")
 	_, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
 		WithRepository(&models.RepositoryCreation{
 			DefaultBranch:    masterBranch,
