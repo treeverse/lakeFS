@@ -19,6 +19,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 	s3parquet "github.com/xitongsys/parquet-go-source/s3"
 	"github.com/xitongsys/parquet-go/reader"
+	"modernc.org/mathutil"
 )
 
 var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
@@ -158,9 +159,9 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 		if !r.c.Next() {
 			r.mgr.logger.Debugf("start new stripe in file %s", r.key)
 			if !r.c.Stripes() {
-				break
+				return nil
 			} else if !r.c.Next() {
-				break
+				return nil
 			}
 		}
 		res = append(res, inventoryObjectFromOrc(r.c.Row()))
