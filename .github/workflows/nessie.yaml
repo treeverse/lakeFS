@@ -17,16 +17,20 @@ jobs:
           go-version: 1.14
         id: go
       - name: Spin-up lakeFS for testing
-        run: docker-compose -f docker-compose.nessie.yaml up --quiet-pull --build -d
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        run: docker-compose -f docker-compose.nessie.yaml up --quiet-pull --build -d
       - name: Generate API code
         run: make gen-api
       - name: Run Nessie
-        run: go build -v ./nessie --system-tests
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
+        run: go build -v ./nessie --system-tests
       - name: Export DB
         if: ${{ always() }}
-        run: docker-compose exec postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        run: |
+            docker-compose ps -q postgres && docker-compose exec postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
