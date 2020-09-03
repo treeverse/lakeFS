@@ -52,7 +52,7 @@ func TestMain(m *testing.M) {
 
 	err := viper.ReadInConfig()
 	if err != nil && !errors.As(err, &viper.ConfigFileNotFoundError{}) {
-		logger.Fatal("Failed to read configuration", err)
+		logger.WithError(err).Fatal("Failed to read configuration")
 	}
 
 	ctx := context.Background()
@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 	endpointURL := viper.GetString("endpoint_url")
 	u, err := url.Parse(endpointURL)
 	if err != nil {
-		logger.Fatal("Failed to parse endpoint URL", endpointURL, err)
+		logger.WithError(err).Fatal("Failed to parse endpoint URL", endpointURL)
 	}
 
 	apiBasePath := genclient.DefaultBasePath
@@ -74,7 +74,7 @@ func TestMain(m *testing.M) {
 	r := httptransport.New(u.Host, apiBasePath, []string{u.Scheme})
 	client = genclient.New(r, strfmt.Default)
 	if err := waitUntilLakeFSRunning(ctx, client); err != nil {
-		logger.Fatal("Waiting for lakeFS", err)
+		logger.WithError(err).Fatal("Waiting for lakeFS")
 	}
 
 	setupLakeFS := viper.GetBool("setup_lakefs")
@@ -88,13 +88,9 @@ func TestMain(m *testing.M) {
 			Context: ctx,
 		})
 		if err != nil {
-			logger.Fatal("Failed to setup lakeFS", err)
+			logger.WithError(err).Fatal("Failed to setup lakeFS")
 		}
-
-		logger.WithFields(logging.Fields{
-			"access_key_id":     res.Payload.AccessKeyID,
-			"access_secret_key": res.Payload.AccessSecretKey,
-		}).Info("Cluster setup successfully")
+		logger.Info("Cluster setup successfully")
 		viper.Set("access_key_id", res.Payload.AccessKeyID)
 		viper.Set("secret_access_key", res.Payload.AccessSecretKey)
 	}
