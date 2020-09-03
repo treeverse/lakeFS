@@ -132,7 +132,7 @@ func (o *InventoryReader) getOrcReader(key string) (ManifestFileReader, error) {
 		return nil, err
 	}
 	res := &OrcManifestFileReader{reader: orcReader, mgr: o, key: key}
-	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date")
+	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date", "e_tag")
 	return res, nil
 }
 
@@ -147,6 +147,7 @@ func inventoryObjectFromOrc(rowData []interface{}) InventoryObject {
 		Key:          rowData[1].(string),
 		Size:         swag.Int64(rowData[2].(int64)),
 		LastModified: swag.Int64(rowData[3].(time.Time).Unix()),
+		Checksum:     swag.String(rowData[4].(string)),
 	}
 }
 
