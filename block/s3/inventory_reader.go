@@ -174,7 +174,7 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 }
 
 func (r *OrcInventoryFileReader) GetNumRows() int64 {
-	return int64(r.reader.NumRows())
+	return mathutil.MinInt64(1000, int64(r.reader.NumRows()))
 }
 
 func (r *OrcInventoryFileReader) SkipRows(i int64) error {
