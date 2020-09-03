@@ -5,14 +5,12 @@ import (
 	"sync"
 	"testing"
 
-	"github.com/treeverse/lakefs/api/gen/client/objects"
-
-	"github.com/stretchr/testify/assert"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
+	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/logging"
 )
 
