@@ -28,7 +28,7 @@ jobs:
       - name: Run Nessie
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
-        run: go build -v ./nessie --system-tests
+        run: go test -v ./nessie --system-tests
       - name: Export DB
         if: ${{ always() }}
         env:
