@@ -16,13 +16,15 @@ jobs:
         with:
           go-version: 1.14
         id: go
-      - name: Spin-up lakeFS for testing
+      - name: Generate code
+        run: make gen
+      - name: Build lakeFS
+        run: docker-compose -f docker-compose.nessie.yaml build
+      - name: Run lakeFS
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: docker-compose -f docker-compose.nessie.yaml up --quiet-pull --build -d
-      - name: Generate API code
-        run: make gen-api
       - name: Run Nessie
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
