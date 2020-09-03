@@ -7,7 +7,7 @@ services:
     depends_on:
       - "postgres"
     environment:
-      LAKEFS_STATS_ENABLED: false
+      LAKEFS_STATS_ENABLED: "false"
       LAKEFS_AUTH_ENCRYPT_SECRET_KEY: Loch Ness is just not big enough to hide a thirty foot amphibian or reptile for hundreds of years
       LAKEFS_DATABASE_CONNECTION_STRING: postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
       LAKEFS_BLOCKSTORE_TYPE: s3
