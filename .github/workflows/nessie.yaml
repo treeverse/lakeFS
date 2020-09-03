@@ -20,20 +20,19 @@ jobs:
         with:
           go-version: 1.14
         id: go
-      - name: Build docker image
-        run: make build-docker
       - name: Spin-up lakeFS for testing
-        run: docker-compose up -d
+        run: docker-compose up --quiet-pull --build -d
         env:
           TAG: dev
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_STATS_ENABLED: false
-      - name: Run nessie
-        run: make nessie
+      - name: Generate API code
+        run: make gen-api
+      - name: Run Nessie
+        run: go build -v ./nessie --args --system-tests
         env:
           API_ENDPOINT: http://localhost:8000
       - name: Export DB
         if: ${{ always() }}
         run: |
-          docker exec lakefs_postgres_1 pg_dumpall --username=lakefs | gzip > /tmp/dump.gz
-          aws s3 cp /tmp/dump.gz $BUCKET/dump.gz
+          docker-compose exec postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - $BUCKET/dump.gz
