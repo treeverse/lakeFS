@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-openapi/swag"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/stretchr/testify/assert"
@@ -64,10 +66,10 @@ func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMu
 
 	// verify upload completed successfully
 	for i, err := range errs {
-		partNumber := i + 1
+		partNumber := int64(i + 1)
 		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
 		// verify part number
-		assert.Equal(t, partNumber, completedParts[i].PartNumber, "inconsistent part number")
+		assert.Equal(t, partNumber, swag.Int64Value(completedParts[i].PartNumber), "inconsistent part number")
 	}
 	return completedParts
 }
