@@ -16,6 +16,7 @@ import (
 	httptransport "github.com/go-openapi/runtime/client"
 	"github.com/go-openapi/strfmt"
 	"github.com/go-openapi/swag"
+	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	genclient "github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/api/gen/client/setup"
@@ -43,7 +44,7 @@ func TestMain(m *testing.M) {
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
 	viper.SetDefault("access_key_id", "")
 	viper.SetDefault("secret_access_key", "")
-	viper.SetDefault("storage_namespace", "s3://nessie-system-testing")
+	viper.SetDefault("storage_namespace", "s3://nessie-system-testing/"+xid.New().String())
 
 	viper.AddConfigPath(".")
 	viper.SetEnvPrefix("NESSIE")
