@@ -70,7 +70,7 @@ func getS3Fake(t *testing.T) (s3iface.S3API, *httptest.Server) {
 	return s3.New(newSession), ts
 }
 
-func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, manifestFileName string, destBucket string, keys ...string) {
+func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventoryFilename string, destBucket string, keys ...string) {
 	objs := make([]InventoryObject, len(keys))
 	for i, k := range keys {
 		objs[i] = InventoryObject{
@@ -92,7 +92,7 @@ func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, manifest
 	uploader := s3manager.NewUploaderWithClient(s3)
 	_, err = uploader.Upload(&s3manager.UploadInput{
 		Bucket: aws.String(inventoryBucket),
-		Key:    aws.String(manifestFileName),
+		Key:    aws.String(inventoryFilename),
 		Body:   f,
 	})
 
@@ -105,23 +105,23 @@ func TestInventoryReader(t *testing.T) {
 	svc, testServer := getS3Fake(t)
 	defer testServer.Close()
 	const inventoryBucketName = "inventory-bucket"
-	manifestFileName := "manifestFile.orc"
+	inventoryFilename := "inventoryFile.orc"
 	_, err := svc.CreateBucket(&s3.CreateBucketInput{
 		Bucket: aws.String(inventoryBucketName),
 	})
 	if err != nil {
 		t.Fatal(err)
 	}
-	uploadFile(t, svc, inventoryBucketName, manifestFileName, "data-bucket", "boo")
+	uploadFile(t, svc, inventoryBucketName, inventoryFilename, "data-bucket", "boo")
 	m := &Manifest{
 		URL:             "s3://my-bucket/manifest.json",
 		SourceBucket:    "data-bucket",
-		Files:           []manifestFile{{Key: manifestFileName}},
+		Files:           []inventoryFile{{Key: inventoryFilename}},
 		Format:          "ORC",
 		inventoryBucket: inventoryBucketName,
 	}
 	reader := NewInventoryReader(context.Background(), svc, m, logging.Default())
-	fileReader, err := reader.GetManifestFileReader(manifestFileName)
+	fileReader, err := reader.GetInventoryFileReader(inventoryFilename)
 	if err != nil {
 		t.Fatal(err)
 	}

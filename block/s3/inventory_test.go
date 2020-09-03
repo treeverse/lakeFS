@@ -168,21 +168,21 @@ type mockInventoryReader struct {
 	openFiles map[string]bool
 }
 
-type mockManifestFileReader struct {
+type mockInventoryFileReader struct {
 	rows    []*s3.InventoryObject
 	nextIdx int
 	mgr     *mockInventoryReader
 	key     string
 }
 
-func (m *mockManifestFileReader) Close() error {
+func (m *mockInventoryFileReader) Close() error {
 	m.nextIdx = -1
 	m.rows = nil
 	delete(m.mgr.openFiles, m.key)
 	return nil
 }
 
-func (m *mockManifestFileReader) Read(dstInterface interface{}) error {
+func (m *mockInventoryFileReader) Read(dstInterface interface{}) error {
 	res := make([]s3.InventoryObject, 0, len(m.rows))
 	dst := dstInterface.(*[]s3.InventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
@@ -196,10 +196,10 @@ func (m *mockManifestFileReader) Read(dstInterface interface{}) error {
 	return nil
 }
 
-func (m *mockManifestFileReader) GetNumRows() int64 {
+func (m *mockInventoryFileReader) GetNumRows() int64 {
 	return int64(len(m.rows))
 }
-func (m *mockManifestFileReader) SkipRows(skip int64) error {
+func (m *mockInventoryFileReader) SkipRows(skip int64) error {
 	m.nextIdx += int(skip)
 	if m.nextIdx > len(m.rows) {
 		return fmt.Errorf("index out of bounds after skip. got index=%d, length=%d", m.nextIdx, len(m.rows))
@@ -207,9 +207,9 @@ func (m *mockManifestFileReader) SkipRows(skip int64) error {
 	return nil
 }
 
-func (m *mockInventoryReader) GetManifestFileReader(key string) (s3.ManifestFileReader, error) {
+func (m *mockInventoryReader) GetInventoryFileReader(key string) (s3.InventoryFileReader, error) {
 	m.openFiles[key] = true
-	return &mockManifestFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
+	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
 }
 
 func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {
@@ -218,19 +218,19 @@ func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutpu
 	if !manifestExists(manifestURL) {
 		return &output, nil
 	}
-	manifestFileNames := m.FilesByManifestURL[manifestURL]
-	if manifestFileNames == nil {
-		manifestFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
+	inventoryFileNames := m.FilesByManifestURL[manifestURL]
+	if inventoryFileNames == nil {
+		inventoryFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
 	}
-	manifestFiles := make([]interface{}, 0, len(manifestFileNames))
-	for _, filename := range manifestFileNames {
-		manifestFiles = append(manifestFiles, struct {
+	inventoryFiles := make([]interface{}, 0, len(inventoryFileNames))
+	for _, filename := range inventoryFileNames {
+		inventoryFiles = append(inventoryFiles, struct {
 			Key string `json:"key"`
 		}{
 			Key: filename,
 		})
 	}
-	filesJSON, err := json.Marshal(manifestFiles)
+	filesJSON, err := json.Marshal(inventoryFiles)
 	if err != nil {
 		return nil, err
 	}

@@ -26,15 +26,15 @@ func (o *InventoryObject) GetPhysicalAddress() string {
 
 type InventoryIterator struct {
 	*Inventory
-	Reader                 IInventoryReader
-	ReadBatchSize          int
-	validateSort           bool
-	err                    error
-	val                    *block.InventoryObject
-	buffer                 []InventoryObject
-	currentManifestFileIdx int
-	nextRowInFile          int
-	valIndexInBuffer       int
+	Reader                  IInventoryReader
+	ReadBatchSize           int
+	validateSort            bool
+	err                     error
+	val                     *block.InventoryObject
+	buffer                  []InventoryObject
+	currentInventoryFileIdx int
+	nextRowInFile           int
+	valIndexInBuffer        int
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
@@ -69,28 +69,28 @@ func (it *InventoryIterator) Next() bool {
 	// value not found in buffer, need to reload the buffer
 	it.valIndexInBuffer = -1
 	// if needed, try to move on to the next manifest file:
-	file := it.Manifest.Files[it.currentManifestFileIdx]
-	pr, err := it.Reader.GetManifestFileReader(file.Key)
+	file := it.Manifest.Files[it.currentInventoryFileIdx]
+	pr, err := it.Reader.GetInventoryFileReader(file.Key)
+	if err != nil {
+		it.err = err
+		return false
+	}
 	defer func() {
 		err = pr.Close()
 		if err != nil {
 			it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
 		}
 	}()
-	if err != nil {
-		it.err = err
-		return false
-	}
 	if it.nextRowInFile >= int(pr.GetNumRows()) {
 		// no more files left
-		if !it.moveToNextManifestFile() {
+		if !it.moveToNextInvetoryFile() {
 			return false
 		}
 		err = pr.Close()
 		if err != nil {
 			it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
 		}
-		pr, err = it.Reader.GetManifestFileReader(it.Manifest.Files[it.currentManifestFileIdx].Key)
+		pr, err = it.Reader.GetInventoryFileReader(it.Manifest.Files[it.currentInventoryFileIdx].Key)
 		if err != nil {
 			it.err = err
 			return false
@@ -102,18 +102,18 @@ func (it *InventoryIterator) Next() bool {
 	return it.Next()
 }
 
-func (it *InventoryIterator) moveToNextManifestFile() bool {
-	if it.currentManifestFileIdx == len(it.Manifest.Files)-1 {
+func (it *InventoryIterator) moveToNextInvetoryFile() bool {
+	if it.currentInventoryFileIdx == len(it.Manifest.Files)-1 {
 		return false
 	}
-	it.currentManifestFileIdx += 1
-	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.currentManifestFileIdx].Key)
+	it.currentInventoryFileIdx += 1
+	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.currentInventoryFileIdx].Key)
 	it.nextRowInFile = 0
 	it.buffer = nil
 	return true
 }
 
-func (it *InventoryIterator) fillBuffer(reader ManifestFileReader) bool {
+func (it *InventoryIterator) fillBuffer(reader InventoryFileReader) bool {
 	it.logger.Debug("start reading rows from inventory to buffer")
 	// skip the rows that have already been read:
 	err := reader.SkipRows(int64(it.nextRowInFile))

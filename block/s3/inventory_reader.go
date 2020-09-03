@@ -24,7 +24,7 @@ import (
 var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
 
 type IInventoryReader interface {
-	GetManifestFileReader(fileInManifest string) (ManifestFileReader, error)
+	GetInventoryFileReader(fileInManifest string) (InventoryFileReader, error)
 }
 
 type InventoryReader struct {
@@ -35,14 +35,14 @@ type InventoryReader struct {
 	logger        logging.Logger
 }
 
-type OrcManifestFileReader struct {
+type OrcInventoryFileReader struct {
 	reader *orc.Reader
 	c      *orc.Cursor
 	mgr    *InventoryReader
 	key    string
 }
 
-type ParquetManifestFileReader struct {
+type ParquetInventoryFileReader struct {
 	reader.ParquetReader
 }
 
@@ -83,7 +83,7 @@ func (o *InventoryReader) downloadOrcFile(key string) (string, error) {
 	return f.Name(), nil
 }
 
-func (o *InventoryReader) GetManifestFileReader(key string) (ManifestFileReader, error) {
+func (o *InventoryReader) GetInventoryFileReader(key string) (InventoryFileReader, error) {
 	switch o.manifest.Format {
 	case OrcFormatName:
 		return o.getOrcReader(key)
@@ -94,7 +94,7 @@ func (o *InventoryReader) GetManifestFileReader(key string) (ManifestFileReader,
 	}
 }
 
-func (o *InventoryReader) getParquetReader(key string) (ManifestFileReader, error) {
+func (o *InventoryReader) getParquetReader(key string) (InventoryFileReader, error) {
 	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, o.manifest.inventoryBucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
@@ -104,10 +104,10 @@ func (o *InventoryReader) getParquetReader(key string) (ManifestFileReader, erro
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet reader: %w", err)
 	}
-	return &ParquetManifestFileReader{ParquetReader: *pr}, nil
+	return &ParquetInventoryFileReader{ParquetReader: *pr}, nil
 }
 
-func (o *InventoryReader) getOrcReader(key string) (ManifestFileReader, error) {
+func (o *InventoryReader) getOrcReader(key string) (InventoryFileReader, error) {
 	file, ok := o.orcFilesByKey[key]
 	if !ok {
 		file = &orcFile{key: key}
@@ -131,12 +131,12 @@ func (o *InventoryReader) getOrcReader(key string) (ManifestFileReader, error) {
 	if err != nil {
 		return nil, err
 	}
-	res := &OrcManifestFileReader{reader: orcReader, mgr: o, key: key}
+	res := &OrcInventoryFileReader{reader: orcReader, mgr: o, key: key}
 	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date", "e_tag")
 	return res, nil
 }
 
-func (p *ParquetManifestFileReader) Close() error {
+func (p *ParquetInventoryFileReader) Close() error {
 	p.ReadStop()
 	return p.PFile.Close()
 }
@@ -151,7 +151,7 @@ func inventoryObjectFromOrc(rowData []interface{}) InventoryObject {
 	}
 }
 
-func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
+func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 	num := reflect.ValueOf(dstInterface).Elem().Len()
 	res := make([]InventoryObject, 0, num)
 	for {
@@ -172,11 +172,11 @@ func (r *OrcManifestFileReader) Read(dstInterface interface{}) error {
 	return nil
 }
 
-func (r *OrcManifestFileReader) GetNumRows() int64 {
+func (r *OrcInventoryFileReader) GetNumRows() int64 {
 	return int64(r.reader.NumRows())
 }
 
-func (r *OrcManifestFileReader) SkipRows(i int64) error {
+func (r *OrcInventoryFileReader) SkipRows(i int64) error {
 	if i == 0 {
 		return nil
 	}
@@ -193,7 +193,7 @@ func (r *OrcManifestFileReader) SkipRows(i int64) error {
 	return ErrNoMoreRowsToSkip
 }
 
-func (r *OrcManifestFileReader) Close() error {
+func (r *OrcInventoryFileReader) Close() error {
 	_ = r.c.Close()
 	_ = r.reader.Close()
 	r.mgr.cleanOrcFile(r.key)

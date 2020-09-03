@@ -20,19 +20,19 @@ const (
 )
 
 type Manifest struct {
-	URL                string         `json:"-"`
-	InventoryBucketArn string         `json:"destinationBucket"`
-	SourceBucket       string         `json:"sourceBucket"`
-	Files              []manifestFile `json:"files"`
-	Format             string         `json:"fileFormat"`
+	URL                string          `json:"-"`
+	InventoryBucketArn string          `json:"destinationBucket"`
+	SourceBucket       string          `json:"sourceBucket"`
+	Files              []inventoryFile `json:"files"`
+	Format             string          `json:"fileFormat"`
 	inventoryBucket    string
 }
 
-type manifestFile struct {
+type inventoryFile struct {
 	Key string `json:"key"`
 }
 
-type ManifestFileReader interface {
+type InventoryFileReader interface {
 	Read(dstInterface interface{}) error
 	GetNumRows() int64
 	SkipRows(int64) error
