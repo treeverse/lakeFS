@@ -17,8 +17,6 @@ jobs:
           go-version: 1.14
         id: go
       - name: Build docker image
-        env:
-          TAG: dev
         run: make build-docker
       - name: Run lakeFS
         env:
