@@ -53,7 +53,7 @@ jobs:
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
           AWS_ACCESS_KEY_ID: ""
           AWS_SECRET_ACCESS_KEY: ""
-          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.GS_CREDENTIALS_JSON }}
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
         run: |
             docker-compose down
             docker-compose up --quiet-pull --build -d
