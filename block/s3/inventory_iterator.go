@@ -66,28 +66,11 @@ func (it *InventoryIterator) Next() bool {
 	}
 	// value not found in buffer, need to reload the buffer
 	it.valIndexInBuffer = -1
-	// if needed, try to move on to the next manifest file:
-	//file := it.Manifest.Files[it.currentInventoryFileIdx]
-	//pr, err := it.Reader.GetInventoryFileReader(file.Key)
-	//if err != nil {
-	//	it.err = err
-	//	return false
-	//}
-	//defer func() {
-	//	err = pr.Close()
-	//	if err != nil {
-	//		it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
-	//	}
-	//}()
 	if it.nextRowInFile >= it.currentRowNumber {
 		// no more files left
 		if !it.moveToNextInventoryFile() {
 			return false
 		}
-		//err = pr.Close()
-		//if err != nil {
-		//	it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
-		//}
 	}
 	pr, err := it.reader.GetInventoryFileReader(it.Manifest, it.Manifest.Files[it.currentInventoryFileIdx].Key)
 	if err != nil {
