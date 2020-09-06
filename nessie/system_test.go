@@ -18,7 +18,7 @@ import (
 )
 
 const (
-	MasterBranch = "master"
+	masterBranch = "master"
 )
 
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
@@ -53,7 +53,7 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 	}).Debug("Create repository for test")
 	_, err := client.Repositories.CreateRepository(repositories.NewCreateRepositoryParamsWithContext(ctx).
 		WithRepository(&models.RepositoryCreation{
-			DefaultBranch:    MasterBranch,
+			DefaultBranch:    masterBranch,
 			ID:               swag.String(name),
 			StorageNamespace: swag.String(repoStorage),
 		}), nil)
@@ -98,10 +98,19 @@ func listRepositoryObjects(ctx context.Context, t *testing.T, repository string,
 	return entries
 }
 
-func listRepositories(t *testing.T, ctx context.Context) []string {
-	var listedRepos []string
+func listRepositoriesIDs(t *testing.T, ctx context.Context) []string {
+	repos := listRepositories(t, ctx)
+	ids := make([]string, len(repos))
+	for i, repo := range repos {
+		ids[i] = repo.ID
+	}
+	return ids
+}
+
+func listRepositories(t *testing.T, ctx context.Context) []*models.Repository {
 	var after string
 	repoPerPage := swag.Int64(2)
+	var listedRepos []*models.Repository
 	for {
 		listResp, err := client.Repositories.
 			ListRepositories(repositories.NewListRepositoriesParamsWithContext(ctx).
@@ -109,9 +118,7 @@ func listRepositories(t *testing.T, ctx context.Context) []string {
 				WithAfter(swag.String(after)), nil)
 		require.NoError(t, err, "list repositories")
 		payload := listResp.Payload
-		for _, repo := range payload.Results {
-			listedRepos = append(listedRepos, repo.ID)
-		}
+		listedRepos = append(listedRepos, payload.Results...)
 		if !swag.BoolValue(payload.Pagination.HasMore) {
 			break
 		}

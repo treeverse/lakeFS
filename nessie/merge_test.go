@@ -22,7 +22,7 @@ func TestMergeAndList(t *testing.T) {
 			WithRepository(repo).
 			WithBranch(&models.BranchCreation{
 				Name:   swag.String(branch),
-				Source: swag.String(MasterBranch),
+				Source: swag.String(masterBranch),
 			}), nil)
 	require.NoError(t, err, "failed to create branch")
 	logger.WithField("branchRef", ref).Info("Created branch, committing files")
@@ -41,11 +41,11 @@ func TestMergeAndList(t *testing.T) {
 	require.NoError(t, err, "failed to commit changes")
 
 	mergeRes, err := client.Refs.MergeIntoBranch(
-		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationRef(MasterBranch).WithSourceRef(branch), nil)
+		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationRef(masterBranch).WithSourceRef(branch), nil)
 	require.NoError(t, err, "failed to merge branches")
 	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
 
-	resp, err := client.Objects.ListObjects(objects.NewListObjectsParamsWithContext(ctx).WithRepository(repo).WithRef(MasterBranch).WithAmount(swag.Int64(100)), nil)
+	resp, err := client.Objects.ListObjects(objects.NewListObjectsParamsWithContext(ctx).WithRepository(repo).WithRef(masterBranch).WithAmount(swag.Int64(100)), nil)
 	require.NoError(t, err, "failed to list objects")
 	payload := resp.GetPayload()
 	objs := payload.Results

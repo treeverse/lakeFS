@@ -19,7 +19,7 @@ func TestRepositoryBasicOps(t *testing.T) {
 	}
 
 	// list repositories - make sure we have the ones we created
-	listedRepos := listRepositories(t, ctx)
+	listedRepos := listRepositoriesIDs(t, ctx)
 	for _, repo := range repos {
 		require.Contains(t, listedRepos, repo, "repository missing in listing")
 	}

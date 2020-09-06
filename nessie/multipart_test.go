@@ -23,7 +23,7 @@ const (
 func TestMultipartUpload(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	file := "multipart_file"
-	path := MasterBranch + "/" + file
+	path := masterBranch + "/" + file
 	input := &s3.CreateMultipartUploadInput{
 		Bucket: aws.String(repo),
 		Key:    aws.String(path),
@@ -44,7 +44,7 @@ func TestMultipartUpload(t *testing.T) {
 	_, err = client.Objects.GetObject(
 		objects.NewGetObjectParamsWithContext(ctx).
 			WithRepository(repo).
-			WithRef(MasterBranch).
+			WithRef(masterBranch).
 			WithPath(file), nil, &b)
 	require.NoError(t, err, "failed to get object")
 }
