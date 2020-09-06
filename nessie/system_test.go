@@ -1,21 +1,17 @@
 package nessie
 
 import (
-	"bytes"
 	"context"
-	"fmt"
 	"strings"
 	"testing"
 
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
+	"github.com/rs/xid"
 	"github.com/spf13/viper"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
-	"github.com/treeverse/lakefs/api/gen/client/branches"
-	"github.com/treeverse/lakefs/api/gen/client/commits"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
-	"github.com/treeverse/lakefs/api/gen/client/refs"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/logging"
@@ -25,83 +21,31 @@ const (
 	masterBranch = "master"
 )
 
-func TestSingleCommit(t *testing.T) {
-	ctx, _, repo := setupTest(t)
-	objPath := "1.txt"
-
-	_, objContent := uploadFile(ctx, t, repo, masterBranch, objPath)
-	_, err := client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).WithRepository(repo).WithBranch(masterBranch).WithCommit(&models.CommitCreation{
-		Message: swag.String("nessie:singleCommit"),
-	}), nil)
-	require.NoError(t, err, "failed to commit changes")
-
-	var b bytes.Buffer
-	_, err = client.Objects.GetObject(objects.NewGetObjectParamsWithContext(ctx).WithRepository(repo).WithRef(masterBranch).WithPath(objPath), nil, &b)
-	require.NoError(t, err, "failed to get object")
-
-	require.Equal(t, objContent, b.String(), fmt.Sprintf("path: %s, expected: %s, actual:%s", objPath, objContent, b.String()))
-}
-
-func TestMergeAndList(t *testing.T) {
-	ctx, logger, repo := setupTest(t)
-	branch := "feature-1"
-
-	ref, err := client.Branches.CreateBranch(
-		branches.NewCreateBranchParamsWithContext(ctx).
-			WithRepository(repo).
-			WithBranch(&models.BranchCreation{
-				Name:   swag.String(branch),
-				Source: swag.String(masterBranch),
-			}), nil)
-	require.NoError(t, err, "failed to create branch")
-	logger.WithField("branchRef", ref).Info("Created branch, committing files")
-
-	numberOfFiles := 10
-	checksums := map[string]string{}
-	for i := 0; i < numberOfFiles; i++ {
-		checksum, content := uploadFile(ctx, t, repo, branch, fmt.Sprintf("%d.txt", i))
-		checksums[checksum] = content
-	}
-
-	_, err = client.Commits.Commit(commits.NewCommitParamsWithContext(ctx).
-		WithRepository(repo).WithBranch(branch).WithCommit(&models.CommitCreation{
-		Message: swag.String(fmt.Sprintf("Adding %d files", numberOfFiles)),
-	}), nil)
-	require.NoError(t, err, "failed to commit changes")
-
-	mergeRes, err := client.Refs.MergeIntoBranch(
-		refs.NewMergeIntoBranchParamsWithContext(ctx).WithRepository(repo).WithDestinationRef(masterBranch).WithSourceRef(branch), nil)
-	require.NoError(t, err, "failed to merge branches")
-	logger.WithField("mergeResult", mergeRes).Info("Merged successfully")
-
-	resp, err := client.Objects.ListObjects(objects.NewListObjectsParamsWithContext(ctx).WithRepository(repo).WithRef(masterBranch).WithAmount(swag.Int64(100)), nil)
-	require.NoError(t, err, "failed to list objects")
-	payload := resp.GetPayload()
-	objs := payload.Results
-	pagin := payload.Pagination
-	require.False(t, *pagin.HasMore, "pagination shouldn't have more items")
-	require.Equal(t, int64(numberOfFiles), *pagin.Results)
-	require.Equal(t, numberOfFiles, len(objs))
-	logger.WithField("objs", objs).WithField("pagin", pagin).Info("Listed successfully")
-
-	for _, obj := range objs {
-		_, ok := checksums[obj.Checksum]
-		require.True(t, ok, "file exists in master but shouldn't, obj: %s", *obj)
-	}
-}
-
 func setupTest(t *testing.T) (context.Context, logging.Logger, string) {
 	ctx := context.Background()
 	logger := logger.WithField("testName", t.Name())
-	repo := createRepo(ctx, t)
+	repo := createRepositoryForTest(ctx, t)
 	logger.WithField("repo", repo).Info("Created repository")
 	return ctx, logger, repo
 }
 
-func createRepo(ctx context.Context, t *testing.T) string {
+func createRepositoryForTest(ctx context.Context, t *testing.T) string {
 	name := strings.ToLower(t.Name())
 	storageNamespace := viper.GetString("storage_namespace")
 	repoStorage := storageNamespace + "/" + name
+	createRepository(ctx, t, name, repoStorage)
+	return name
+}
+
+func createRepositoryUnique(ctx context.Context, t *testing.T) string {
+	id := xid.New().String()
+	name := "repo-" + id
+	storage := viper.GetString("storage_namespace") + "/" + id
+	createRepository(ctx, t, name, storage)
+	return name
+}
+
+func createRepository(ctx context.Context, t *testing.T, name string, repoStorage string) {
 	logger.WithFields(logging.Fields{
 		"repository":        name,
 		"storage_namespace": repoStorage,
@@ -113,11 +57,10 @@ func createRepo(ctx context.Context, t *testing.T) string {
 			ID:               swag.String(name),
 			StorageNamespace: swag.String(repoStorage),
 		}), nil)
-	require.NoError(t, err, "failed to create repo")
-	return name
+	require.NoErrorf(t, err, "failed to create repository %s, storage %s", name, repoStorage)
 }
 
-func uploadFile(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
+func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
 	const contentLength = 16
 	objContent := randstr.Hex(contentLength)
 	contentReader := runtime.NamedReader("content", strings.NewReader(objContent))
@@ -129,6 +72,57 @@ func uploadFile(ctx context.Context, t *testing.T, repo, branch, objPath string)
 			WithContent(contentReader), nil)
 
 	require.NoError(t, err, "failed to upload file")
-	payload := stats.GetPayload()
-	return payload.Checksum, objContent
+	return stats.Payload.Checksum, objContent
+}
+
+func listRepositoryObjects(ctx context.Context, t *testing.T, repository string, ref string) []*models.ObjectStats {
+	const amount = 5
+	var entries []*models.ObjectStats
+	var after string
+	for {
+		resp, err := client.Objects.ListObjects(
+			objects.NewListObjectsParamsWithContext(ctx).
+				WithRepository(repository).
+				WithRef(ref).
+				WithAfter(swag.String(after)).
+				WithAmount(swag.Int64(amount)),
+			nil)
+		require.NoError(t, err, "listing objects")
+
+		entries = append(entries, resp.Payload.Results...)
+		after = resp.Payload.Pagination.NextOffset
+		if !swag.BoolValue(resp.Payload.Pagination.HasMore) {
+			break
+		}
+	}
+	return entries
+}
+
+func listRepositoriesIDs(t *testing.T, ctx context.Context) []string {
+	repos := listRepositories(t, ctx)
+	ids := make([]string, len(repos))
+	for i, repo := range repos {
+		ids[i] = repo.ID
+	}
+	return ids
+}
+
+func listRepositories(t *testing.T, ctx context.Context) []*models.Repository {
+	var after string
+	repoPerPage := swag.Int64(2)
+	var listedRepos []*models.Repository
+	for {
+		listResp, err := client.Repositories.
+			ListRepositories(repositories.NewListRepositoriesParamsWithContext(ctx).
+				WithAmount(repoPerPage).
+				WithAfter(swag.String(after)), nil)
+		require.NoError(t, err, "list repositories")
+		payload := listResp.Payload
+		listedRepos = append(listedRepos, payload.Results...)
+		if !swag.BoolValue(payload.Pagination.HasMore) {
+			break
+		}
+		after = payload.Pagination.NextOffset
+	}
+	return listedRepos
 }
