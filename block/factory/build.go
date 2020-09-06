@@ -91,7 +91,7 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
 	} else if params.CredentialsJSON != "" {
 		ctx := context.Background()
-		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON))
+		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), "https://www.googleapis.com/auth/cloud-platform")
 		if err != nil {
 			return nil, err
 		}

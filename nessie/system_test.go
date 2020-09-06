@@ -57,7 +57,7 @@ func createRepository(ctx context.Context, t *testing.T, name string, repoStorag
 			ID:               swag.String(name),
 			StorageNamespace: swag.String(repoStorage),
 		}), nil)
-	require.NoErrorf(t, err, "failed to create repository %s, storage %s", name, repoStorage)
+	require.NoErrorf(t, err, "failed to create repository '%s', storage '%s'", name, repoStorage)
 }
 
 func uploadFileRandomData(ctx context.Context, t *testing.T, repo, branch, objPath string) (checksum, content string) {
