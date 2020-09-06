@@ -21,12 +21,11 @@ import (
 var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
 
 type IInventoryReader interface {
-	GetInventoryFileReader(fileInManifest string) (InventoryFileReader, error)
-	GetInventoryMetadataReader(fileInManifest string) (InventoryMetadataReader, error)
+	GetInventoryFileReader(manifest *Manifest, fileInManifest string) (InventoryFileReader, error)
+	GetInventoryMetadataReader(manifest *Manifest, fileInManifest string) (InventoryMetadataReader, error)
 }
 
 type InventoryReader struct {
-	manifest      *Manifest
 	ctx           context.Context
 	svc           s3iface.S3API
 	orcFilesByKey map[string]*orcFile
@@ -53,8 +52,8 @@ type orcFile struct {
 	ready         bool
 }
 
-func NewInventoryReader(ctx context.Context, svc s3iface.S3API, manifest *Manifest, logger logging.Logger) IInventoryReader {
-	return &InventoryReader{ctx: ctx, svc: svc, manifest: manifest, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
+func NewInventoryReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IInventoryReader {
+	return &InventoryReader{ctx: ctx, svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
 }
 
 func (o *InventoryReader) cleanOrcFile(key string) {
@@ -65,30 +64,30 @@ func (o *InventoryReader) cleanOrcFile(key string) {
 	}()
 }
 
-func (o *InventoryReader) GetInventoryFileReader(key string) (InventoryFileReader, error) {
-	switch o.manifest.Format {
+func (o *InventoryReader) GetInventoryFileReader(manifest *Manifest, key string) (InventoryFileReader, error) {
+	switch manifest.Format {
 	case OrcFormatName:
-		return o.getOrcReader(key, false)
+		return o.getOrcReader(manifest, key, false)
 	case ParquetFormatName:
-		return o.getParquetReader(key)
+		return o.getParquetReader(manifest, key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
 	}
 }
 
-func (o *InventoryReader) GetInventoryMetadataReader(key string) (InventoryMetadataReader, error) {
-	switch o.manifest.Format {
+func (o *InventoryReader) GetInventoryMetadataReader(manifest *Manifest, key string) (InventoryMetadataReader, error) {
+	switch manifest.Format {
 	case OrcFormatName:
-		return o.getOrcReader(key, true)
+		return o.getOrcReader(manifest, key, true)
 	case ParquetFormatName:
-		return o.getParquetReader(key)
+		return o.getParquetReader(manifest, key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
 	}
 }
 
-func (o *InventoryReader) getParquetReader(key string) (InventoryFileReader, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, o.manifest.inventoryBucket, key)
+func (o *InventoryReader) getParquetReader(manifest *Manifest, key string) (InventoryFileReader, error) {
+	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, manifest.inventoryBucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
@@ -100,20 +99,20 @@ func (o *InventoryReader) getParquetReader(key string) (InventoryFileReader, err
 	return &ParquetInventoryFileReader{ParquetReader: *pr}, nil
 }
 
-func (o *InventoryReader) getOrcReader(key string, footerOnly bool) (InventoryFileReader, error) {
+func (o *InventoryReader) getOrcReader(manifest *Manifest, key string, footerOnly bool) (InventoryFileReader, error) {
 	file, ok := o.orcFilesByKey[key]
 	if !ok {
 		file = &orcFile{key: key}
 		o.orcFilesByKey[key] = file
 	}
-	for idx, f := range o.manifest.Files {
+	for idx, f := range manifest.Files {
 		if f.Key == key {
 			file.idx = idx
 			break
 		}
 	}
 	if !file.ready {
-		localFilename, err := DownloadOrcFile(o.ctx, o.svc, o.logger, o.manifest.inventoryBucket, key, footerOnly)
+		localFilename, err := DownloadOrcFile(o.ctx, o.svc, o.logger, manifest.inventoryBucket, key, footerOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -197,15 +196,16 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) I
 }
 
 func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
+	// TODO use context here
 	num := reflect.ValueOf(dstInterface).Elem().Len()
 	res := make([]InventoryObject, 0, num)
 	for {
 		if !r.c.Next() {
 			r.mgr.logger.Debugf("start new stripe in file %s", r.key)
 			if !r.c.Stripes() {
-				return nil
+				break
 			} else if !r.c.Next() {
-				return nil
+				break
 			}
 		}
 		res = append(res, r.inventoryObjectFromRow(r.c.Row()))

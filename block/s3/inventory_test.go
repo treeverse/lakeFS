@@ -57,14 +57,16 @@ func TestIterator(t *testing.T) {
 		InventoryFiles  []string
 		ExpectedObjects []string
 		ErrExpected     error
+		ShouldSort      bool
 	}{
 		{
 			InventoryFiles:  []string{"f1", "f2", "f3"},
 			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
-			InventoryFiles: []string{"f3", "f2", "f1"},
-			ErrExpected:    s3.ErrInventoryNotSorted,
+			InventoryFiles:  []string{"f3", "f2", "f1"},
+			ShouldSort:      true,
+			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
 			InventoryFiles:  []string{},
@@ -83,12 +85,9 @@ func TestIterator(t *testing.T) {
 			ExpectedObjects: []string{"f5row1", "f5row2", "f5row3", "f6row1", "f6row2", "f6row3", "f6row4"},
 		},
 		{
-			InventoryFiles: []string{"f6", "f5"},
+			InventoryFiles: []string{"f1", "unsorted_file"},
 			ErrExpected:    s3.ErrInventoryNotSorted,
-		},
-		{
-			InventoryFiles: []string{"unsorted_file"},
-			ErrExpected:    s3.ErrInventoryNotSorted,
+			ShouldSort:     true,
 		},
 		{
 			InventoryFiles: []string{"f5", "err_file1"},
@@ -111,8 +110,9 @@ func TestIterator(t *testing.T) {
 			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
 		},
 		{
-			InventoryFiles: []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
-			ErrExpected:    s3.ErrInventoryNotSorted,
+			InventoryFiles:  []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
+			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+			ShouldSort:      true,
 		},
 		{
 			InventoryFiles:  []string{"empty_file"},
@@ -126,13 +126,12 @@ func TestIterator(t *testing.T) {
 			s3api := &mockS3Client{
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}
-			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api, false)
+			reader := &mockInventoryReader{openFiles: make(map[string]bool)}
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
 			if err != nil {
 				t.Fatalf("error: %v", err)
 			}
 			it := inv.Iterator()
-			reader := &mockInventoryReader{openFiles: make(map[string]bool)}
-			it.(*s3.InventoryIterator).Reader = reader
 			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
 			objects := make([]string, 0, len(test.ExpectedObjects))
 			for it.Next() {
@@ -146,7 +145,6 @@ func TestIterator(t *testing.T) {
 			}
 			if test.ErrExpected != nil {
 				if it.Err() == nil {
-					print(len(test.ExpectedObjects))
 					t.Fatalf("expected error but didn't get one")
 				}
 				if !errors.Is(it.Err(), test.ErrExpected) {
@@ -173,6 +171,32 @@ type mockInventoryFileReader struct {
 	nextIdx int
 	mgr     *mockInventoryReader
 	key     string
+}
+
+func (m *mockInventoryFileReader) MinValue() string {
+	if len(m.rows) == 0 {
+		return ""
+	}
+	min := m.rows[0].Key
+	for _, r := range m.rows {
+		if r.Key < min {
+			min = r.Key
+		}
+	}
+	return min
+}
+
+func (m *mockInventoryFileReader) MaxValue() string {
+	if len(m.rows) == 0 {
+		return ""
+	}
+	max := m.rows[0].Key
+	for _, r := range m.rows {
+		if r.Key > max {
+			max = r.Key
+		}
+	}
+	return max
 }
 
 func (m *mockInventoryFileReader) Close() error {
@@ -207,11 +231,15 @@ func (m *mockInventoryFileReader) SkipRows(skip int64) error {
 	return nil
 }
 
-func (m *mockInventoryReader) GetInventoryFileReader(key string) (s3.InventoryFileReader, error) {
+func (m *mockInventoryReader) GetInventoryFileReader(_ *s3.Manifest, key string) (s3.InventoryFileReader, error) {
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
 }
 
+func (m *mockInventoryReader) GetInventoryMetadataReader(_ *s3.Manifest, key string) (s3.InventoryMetadataReader, error) {
+	m.openFiles[key] = true
+	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
+}
 func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {
 	output := s32.GetObjectOutput{}
 	manifestURL := fmt.Sprintf("s3://%s%s", *input.Bucket, *input.Key)

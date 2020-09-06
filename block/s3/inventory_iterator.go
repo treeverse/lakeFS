@@ -26,7 +26,6 @@ func (o *InventoryObject) GetPhysicalAddress() string {
 
 type InventoryIterator struct {
 	*Inventory
-	Reader                  IInventoryReader
 	ReadBatchSize           int
 	err                     error
 	val                     *block.InventoryObject
@@ -43,9 +42,9 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 		batchSize = -1
 	}
 	return &InventoryIterator{
-		Inventory:     inv,
-		ReadBatchSize: batchSize,
-		Reader:        NewInventoryReader(inv.ctx, inv.S3, inv.Manifest, inv.logger),
+		Inventory:               inv,
+		ReadBatchSize:           batchSize,
+		currentInventoryFileIdx: -1,
 	}
 }
 
@@ -90,7 +89,7 @@ func (it *InventoryIterator) Next() bool {
 		//	it.logger.Errorf("failed to close manifest file reader. file=%s", file.Key)
 		//}
 	}
-	pr, err := it.Reader.GetInventoryFileReader(it.Manifest.Files[it.currentInventoryFileIdx].Key)
+	pr, err := it.reader.GetInventoryFileReader(it.Manifest, it.Manifest.Files[it.currentInventoryFileIdx].Key)
 	if err != nil {
 		it.err = err
 		return false
