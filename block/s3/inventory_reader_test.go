@@ -23,7 +23,9 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func generateOrc(t *testing.T, objs []InventoryObject) string {
+const inventoryBucketName = "inventory-bucket"
+
+func generateOrc(t *testing.T, objs <-chan *InventoryObject) string {
 	f, err := ioutil.TempFile("", "orctest")
 	if err != nil {
 		t.Fatal(err)
@@ -39,7 +41,7 @@ func generateOrc(t *testing.T, objs []InventoryObject) string {
 	if err != nil {
 		t.Fatal(err)
 	}
-	for _, o := range objs {
+	for o := range objs {
 		err = w.Write(o.Bucket, o.Key, *o.Size, time.Unix(*o.LastModified, 0), *o.Checksum)
 		if err != nil {
 			t.Fatal(err)
@@ -71,17 +73,24 @@ func getS3Fake(t *testing.T) (s3iface.S3API, *httptest.Server) {
 	return s3.New(newSession), ts
 }
 
-func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventoryFilename string, destBucket string, keys ...string) {
-	objs := make([]InventoryObject, len(keys))
-	for i, k := range keys {
-		objs[i] = InventoryObject{
-			Bucket:       destBucket,
-			Key:          k,
-			Size:         swag.Int64(500),
-			LastModified: swag.Int64(time.Now().Unix()),
-			Checksum:     swag.String("abcdefg"),
+func objs(num int) <-chan *InventoryObject {
+	out := make(chan *InventoryObject)
+	go func() {
+		defer close(out)
+		for i := 0; i < num; i++ {
+			out <- &InventoryObject{
+				Bucket:       inventoryBucketName,
+				Key:          fmt.Sprintf("f%05d", i),
+				Size:         swag.Int64(500),
+				LastModified: swag.Int64(time.Now().Unix()),
+				Checksum:     swag.String("abcdefg"),
+			}
 		}
-	}
+	}()
+	return out
+}
+
+func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventoryFilename string, objs <-chan *InventoryObject) {
 	localOrcFile := generateOrc(t, objs)
 	f, err := os.Open(localOrcFile)
 	if err != nil {
@@ -115,18 +124,9 @@ func manifest(inventoryBucketName string, inventoryFilenames ...string) *Manifes
 	}
 }
 
-var (
-	inventoryFileKeys = map[string][]string{"inventoryFile.orc": {"boo", "loo"}}
-)
-
 func TestInventoryReader(t *testing.T) {
-	inventoryFileKeys["biggerFile.orc"] = make([]string, 0, 12500)
-	for i := 0; i < 12500; i++ {
-		inventoryFileKeys["biggerFile.orc"] = append(inventoryFileKeys["biggerFile.orc"], fmt.Sprintf("f%d", i))
-	}
 	svc, testServer := getS3Fake(t)
 	defer testServer.Close()
-	const inventoryBucketName = "inventory-bucket"
 	_, err := svc.CreateBucket(&s3.CreateBucketInput{
 		Bucket: aws.String(inventoryBucketName),
 	})
@@ -134,44 +134,98 @@ func TestInventoryReader(t *testing.T) {
 		t.Fatal(err)
 	}
 	testdata := []struct {
-		InventoryFilenames []string
+		ObjectNum           int
+		ExpectedReadObjects int
+		ExpectedMaxValue    string
+		ExpectedMinValue    string
+		RowsToSkip          int64
 	}{
-		{InventoryFilenames: []string{"inventoryFile.orc"}},
-		{InventoryFilenames: []string{"biggerFile.orc"}},
+		{
+			ObjectNum:           2,
+			ExpectedReadObjects: 2,
+			ExpectedMinValue:    "f00000",
+			ExpectedMaxValue:    "f00001",
+		},
+		{
+			ObjectNum:           12500,
+			ExpectedReadObjects: 12500,
+			ExpectedMinValue:    "f00000",
+			ExpectedMaxValue:    "f12499",
+		},
+		{
+			RowsToSkip:          100,
+			ObjectNum:           12500,
+			ExpectedReadObjects: 12400,
+			ExpectedMinValue:    "f00000",
+			ExpectedMaxValue:    "f12499",
+		},
+		{
+			RowsToSkip:          100,
+			ObjectNum:           100,
+			ExpectedReadObjects: 0,
+			ExpectedMinValue:    "f00000",
+			ExpectedMaxValue:    "f00099",
+		},
+		{
+			RowsToSkip:          200,
+			ObjectNum:           100,
+			ExpectedReadObjects: 0,
+			ExpectedMinValue:    "f00000",
+			ExpectedMaxValue:    "f00099",
+		},
 	}
 
 	for _, test := range testdata {
-		for _, inventoryFilename := range test.InventoryFilenames {
-			uploadFile(t, svc, inventoryBucketName, inventoryFilename, "data-bucket", inventoryFileKeys[inventoryFilename]...)
-		}
-		m := manifest(inventoryBucketName, test.InventoryFilenames...)
+
+		uploadFile(t, svc, inventoryBucketName, "myFile.orc", objs(test.ObjectNum))
 		reader := NewInventoryReader(context.Background(), svc, logging.Default())
-		for _, inventoryFilename := range test.InventoryFilenames {
-			fileReader, err := reader.GetInventoryFileReader(m, inventoryFilename)
+		m := manifest(inventoryBucketName, "myFile.orc")
+
+		fileReader, err := reader.GetInventoryFileReader(m, "myFile.orc")
+		if err != nil {
+			t.Fatal(err)
+		}
+		numRowsResult := int(fileReader.GetNumRows())
+		if test.ObjectNum != numRowsResult {
+			t.Fatalf("unexpected result from GetNumRows. expected=%d, got=%d", test.ObjectNum, numRowsResult)
+		}
+		minValueResult := fileReader.MinValue()
+		if test.ExpectedMinValue != minValueResult {
+			t.Fatalf("unexpected result from MinValue. expected=%s, got=%s", test.ExpectedMinValue, minValueResult)
+		}
+		maxValueResult := fileReader.MaxValue()
+		if test.ExpectedMaxValue != maxValueResult {
+			t.Fatalf("unexpected result from MaxValue. expected=%s, got=%s", test.ExpectedMaxValue, maxValueResult)
+		}
+		readBatchSize := 1000
+		res := make([]InventoryObject, readBatchSize)
+		offset := 0
+		readCount := 0
+		if test.RowsToSkip > 0 {
+			_ = fileReader.SkipRows(test.RowsToSkip)
+			offset = int(test.RowsToSkip)
+		}
+		for {
+			err = fileReader.Read(&res)
+			for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {
+				if res[i-offset].Key != fmt.Sprintf("f%05d", i) {
+					t.Fatalf("result in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", i, fmt.Sprintf("f%05d", i), res[i-offset].Key, offset/readBatchSize, i-offset)
+				}
+			}
+			offset += len(res)
+			readCount += len(res)
 			if err != nil {
 				t.Fatal(err)
 			}
-			res := make([]InventoryObject, 1000)
-			offset := 0
-			for {
-				err = fileReader.Read(&res)
-				for i := offset; i < len(res) && i < mathutil.Min(offset+1000, len(inventoryFileKeys[inventoryFilename])); i++ {
-					if res[i-offset].Key != inventoryFileKeys[inventoryFilename][i] {
-						t.Fatalf("result in index %d (index in batch: %d) different than expected. expected=%s, got=%s", i, i-offset, inventoryFileKeys[inventoryFilename][i], res[i-offset].Key)
-					}
-				}
-				offset += len(res)
-				if err != nil {
-					t.Fatal(err)
-				}
-				if len(res) != 1000 {
-					break
-				}
+			if len(res) != readBatchSize {
+				break
 			}
-			if len(inventoryFileKeys[inventoryFilename]) != offset {
-				t.Fatalf("read unexpected number of keys from inventory file %s. expected=%d, got=%d", inventoryFilename, len(inventoryFileKeys[inventoryFilename]), offset)
-			}
-			fileReader.Close()
+		}
+		if test.ExpectedReadObjects != readCount {
+			t.Fatalf("read unexpected number of keys from inventory. expected=%d, got=%d", test.ExpectedReadObjects, readCount)
+		}
+		if fileReader.Close() != nil {
+			t.Fatalf("failed to close file reader")
 		}
 	}
 }

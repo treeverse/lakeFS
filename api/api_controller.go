@@ -2212,7 +2212,14 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		if err == nil {
 			username = userModel.DisplayName
 		}
-		importer, err := onboard.CreateImporter(deps.ctx, deps.logger, deps.Cataloger, deps.BlockAdapter, username, params.ManifestURL, params.Repository)
+		importConfig := &onboard.ImporterConfig{
+			CommitUsername:     username,
+			InventoryURL:       params.ManifestURL,
+			Repository:         params.Repository,
+			InventoryGenerator: deps.BlockAdapter,
+			Cataloger:          deps.Cataloger,
+		}
+		importer, err := onboard.CreateImporter(deps.ctx, deps.logger, importConfig)
 		if err != nil {
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))

@@ -35,6 +35,7 @@ type InventoryReader struct {
 type OrcInventoryFileReader struct {
 	reader                   *orc.Reader
 	c                        *orc.Cursor
+	ctx                      context.Context
 	selectIndexByField       map[string]int
 	actualColumnIndexByField map[string]int
 	mgr                      *InventoryReader
@@ -123,7 +124,7 @@ func (o *InventoryReader) getOrcReader(manifest *Manifest, key string, footerOnl
 	if err != nil {
 		return nil, err
 	}
-	res := &OrcInventoryFileReader{reader: orcReader, mgr: o, key: key}
+	res := &OrcInventoryFileReader{ctx: o.ctx, reader: orcReader, mgr: o, key: key}
 	selectFields, selectIndexByField, actualColumnIndexByField := getSelectFields(res.reader.Schema())
 	res.selectIndexByField = selectIndexByField
 	res.actualColumnIndexByField = actualColumnIndexByField
@@ -196,10 +197,14 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) I
 }
 
 func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
-	// TODO use context here
 	num := reflect.ValueOf(dstInterface).Elem().Len()
 	res := make([]InventoryObject, 0, num)
 	for {
+		select {
+		case <-r.ctx.Done():
+			return fmt.Errorf("request context cancelled while reading orc")
+		default:
+		}
 		if !r.c.Next() {
 			r.mgr.logger.Debugf("start new stripe in file %s", r.key)
 			if !r.c.Stripes() {
@@ -213,6 +218,7 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 			break
 		}
 	}
+
 	reflect.ValueOf(dstInterface).Elem().Set(reflect.ValueOf(res))
 	return nil
 }

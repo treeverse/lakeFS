@@ -25,6 +25,14 @@ type Importer struct {
 	previousCommit     *catalog.CommitLog
 }
 
+type ImporterConfig struct {
+	CommitUsername     string
+	InventoryURL       string
+	Repository         string
+	InventoryGenerator block.InventoryGenerator
+	Cataloger          catalog.Cataloger
+	CatalogActions     RepoActions
+}
 type InventoryImportStats struct {
 	AddedOrChanged       int
 	Deleted              int
@@ -35,19 +43,22 @@ type InventoryImportStats struct {
 
 var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")
 
-func CreateImporter(ctx context.Context, logger logging.Logger, cataloger catalog.Cataloger, inventoryGenerator block.InventoryGenerator, username string, inventoryURL string, repository string) (importer *Importer, err error) {
+func CreateImporter(ctx context.Context, logger logging.Logger, config *ImporterConfig) (importer *Importer, err error) {
 	res := &Importer{
-		repository:         repository,
-		inventoryGenerator: inventoryGenerator,
+		repository:         config.Repository,
+		inventoryGenerator: config.InventoryGenerator,
 		logger:             logger,
+		CatalogActions:     config.CatalogActions,
 	}
-	res.CatalogActions = NewCatalogActions(cataloger, repository, username, logger)
+	if res.CatalogActions == nil {
+		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
+	}
 	previousCommit, err := res.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
 	}
 	res.previousCommit = previousCommit
-	res.inventory, err = inventoryGenerator.GenerateInventory(ctx, logger, inventoryURL, previousCommit != nil)
+	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, res.previousCommit != nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to read inventory: %w", err)
 	}
