@@ -31,6 +31,13 @@ jobs:
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
         run: go test -v ./nessie --system-tests
+      - name: Check files in bucket
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+        run: |
+            FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
+            [ $FILES_COUNT -gt 5 ]
       - name: Export DB
         if: ${{ always() }}
         env:
