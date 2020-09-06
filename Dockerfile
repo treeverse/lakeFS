@@ -37,7 +37,6 @@ ENV PATH /app:$PATH
 COPY --from=build /build/lakefs /build/lakectl ./
 
 EXPOSE 8000/tcp
-EXPOSE 8001/tcp
 
 # Setup user
 RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
