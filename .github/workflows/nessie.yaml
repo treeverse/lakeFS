@@ -18,7 +18,7 @@ jobs:
         id: go
       - name: Build docker image
         run: make build-docker
-      - name: Run lakeFS
+      - name: Run lakeFS S3
         env:
           TAG: dev
           LAKEFS_STATS_ENABLED: "false"
@@ -27,11 +27,11 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: docker-compose up --quiet-pull --build -d
-      - name: Run Nessie
+      - name: Run Nessie S3
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
         run: go test -v ./nessie --system-tests
-      - name: Check files in bucket
+      - name: Check files in S3 bucket
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
@@ -45,3 +45,19 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
             docker-compose ps -q postgres && docker-compose exec postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
+      - name: Run lakeFS GS
+        env:
+          TAG: dev
+          LAKEFS_STATS_ENABLED: "false"
+          LAKEFS_BLOCKSTORE_TYPE: gs
+          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          AWS_ACCESS_KEY_ID: ""
+          AWS_SECRET_ACCESS_KEY: ""
+          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.GS_CREDENTIALS_JSON }}
+        run: |
+            docker-compose down
+            docker-compose up --quiet-pull --build -d
+      - name: Run Nessie GS
+        env:
+          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
+        run: go test -v ./nessie --system-tests
