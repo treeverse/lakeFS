@@ -202,7 +202,7 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 	for {
 		select {
 		case <-r.ctx.Done():
-			return fmt.Errorf("request context cancelled while reading orc")
+			return r.ctx.Err()
 		default:
 		}
 		if !r.c.Next() {

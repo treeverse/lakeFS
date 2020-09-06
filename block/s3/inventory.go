@@ -63,7 +63,7 @@ func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL s
 		return nil, err
 	}
 	if shouldSort {
-		err = sortManifest(ctx, m, logger, inventoryReader)
+		err = sortManifest(m, logger, inventoryReader)
 	}
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	return &m, nil
 }
 
-func sortManifest(ctx context.Context, m *Manifest, logger logging.Logger, reader IInventoryReader) error {
+func sortManifest(m *Manifest, logger logging.Logger, reader IInventoryReader) error {
 	firstKeyByInventoryFile := make(map[string]string)
 	lastKeyByInventoryFile := make(map[string]string)
 	for _, f := range m.Files {

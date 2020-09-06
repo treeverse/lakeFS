@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
-	gproto "github.com/golang/protobuf/proto"
+	gproto "github.com/golang/protobuf/proto" //nolint:staticcheck // orc lib uses old proto
 	"github.com/scritchley/orc/proto"
 	"github.com/treeverse/lakefs/logging"
 	"modernc.org/mathutil"
@@ -36,7 +36,7 @@ func GetTailLength(filename string, size int64) (int, error) {
 		psPlusByte = size
 	}
 	// Read the last 256 bytes into buffer to get postscript
-	postScriptBytes := make([]byte, psPlusByte, psPlusByte)
+	postScriptBytes := make([]byte, psPlusByte)
 	sr := io.NewSectionReader(f, size-psPlusByte, psPlusByte)
 	_, err = io.ReadFull(sr, postScriptBytes)
 	if err != nil {
