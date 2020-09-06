@@ -26,6 +26,7 @@ type Database interface {
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
 	WithContext(ctx context.Context) Database
+	GetLockSession() (*sql.Conn, error)
 }
 
 type QueryOptions struct {
@@ -54,6 +55,10 @@ func (d *SqlxDatabase) getContext() context.Context {
 		return d.queryOptions.ctx
 	}
 	return context.Background()
+}
+
+func (d *SqlxDatabase) GetLockSession() (*sql.Conn, error) {
+	return d.db.Conn(d.getContext())
 }
 
 func (d *SqlxDatabase) WithContext(ctx context.Context) Database {

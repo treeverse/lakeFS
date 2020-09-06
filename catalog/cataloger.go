@@ -105,7 +105,7 @@ type EntryCataloger interface {
 	ListEntries(ctx context.Context, repository, reference string, prefix, after string, delimiter string, limit int) ([]*Entry, bool, error)
 	ResetEntry(ctx context.Context, repository, branch string, path string) error
 	ResetEntries(ctx context.Context, repository, branch string, prefix string) error
-
+	CreateMergeJob(ctx context.Context, branchID int64, currentCommitID, previousCommitID CommitID) error
 	// QueryEntriesToExpire returns ExpiryRows iterating over all objects to expire on
 	// repositoryName according to policy.
 	QueryEntriesToExpire(ctx context.Context, repositoryName string, policy *Policy) (ExpiryRows, error)
