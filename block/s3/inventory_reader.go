@@ -4,17 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"os"
-	"path"
 	"reflect"
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/aws/aws-sdk-go/service/s3/s3manager"
 	"github.com/go-openapi/swag"
 	"github.com/scritchley/orc"
 	"github.com/treeverse/lakefs/logging"
@@ -27,6 +22,7 @@ var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
 
 type IInventoryReader interface {
 	GetInventoryFileReader(fileInManifest string) (InventoryFileReader, error)
+	GetInventoryMetadataReader(fileInManifest string) (InventoryMetadataReader, error)
 }
 
 type InventoryReader struct {
@@ -38,10 +34,12 @@ type InventoryReader struct {
 }
 
 type OrcInventoryFileReader struct {
-	reader *orc.Reader
-	c      *orc.Cursor
-	mgr    *InventoryReader
-	key    string
+	reader                   *orc.Reader
+	c                        *orc.Cursor
+	selectIndexByField       map[string]int
+	actualColumnIndexByField map[string]int
+	mgr                      *InventoryReader
+	key                      string
 }
 
 type ParquetInventoryFileReader struct {
@@ -67,28 +65,21 @@ func (o *InventoryReader) cleanOrcFile(key string) {
 	}()
 }
 
-func (o *InventoryReader) downloadOrcFile(key string) (string, error) {
-	f, err := ioutil.TempFile("", path.Base(key))
-	if err != nil {
-		return "", err
-	}
-	o.logger.Debugf("start downloading %s to local file %s", key, f.Name())
-	downloader := s3manager.NewDownloaderWithClient(o.svc)
-	_, err = downloader.DownloadWithContext(o.ctx, f, &s3.GetObjectInput{
-		Bucket: aws.String(o.manifest.inventoryBucket),
-		Key:    aws.String(key),
-	})
-	if err != nil {
-		return "", err
-	}
-	o.logger.Debugf("finished downloading %s to local file %s", key, f.Name())
-	return f.Name(), nil
-}
-
 func (o *InventoryReader) GetInventoryFileReader(key string) (InventoryFileReader, error) {
 	switch o.manifest.Format {
 	case OrcFormatName:
-		return o.getOrcReader(key)
+		return o.getOrcReader(key, false)
+	case ParquetFormatName:
+		return o.getParquetReader(key)
+	default:
+		return nil, ErrUnsupportedInventoryFormat
+	}
+}
+
+func (o *InventoryReader) GetInventoryMetadataReader(key string) (InventoryMetadataReader, error) {
+	switch o.manifest.Format {
+	case OrcFormatName:
+		return o.getOrcReader(key, true)
 	case ParquetFormatName:
 		return o.getParquetReader(key)
 	default:
@@ -109,7 +100,7 @@ func (o *InventoryReader) getParquetReader(key string) (InventoryFileReader, err
 	return &ParquetInventoryFileReader{ParquetReader: *pr}, nil
 }
 
-func (o *InventoryReader) getOrcReader(key string) (InventoryFileReader, error) {
+func (o *InventoryReader) getOrcReader(key string, footerOnly bool) (InventoryFileReader, error) {
 	file, ok := o.orcFilesByKey[key]
 	if !ok {
 		file = &orcFile{key: key}
@@ -122,7 +113,7 @@ func (o *InventoryReader) getOrcReader(key string) (InventoryFileReader, error) 
 		}
 	}
 	if !file.ready {
-		localFilename, err := o.downloadOrcFile(key)
+		localFilename, err := DownloadOrcFile(o.ctx, o.svc, o.logger, o.manifest.inventoryBucket, key, footerOnly)
 		if err != nil {
 			return nil, err
 		}
@@ -134,7 +125,10 @@ func (o *InventoryReader) getOrcReader(key string) (InventoryFileReader, error) 
 		return nil, err
 	}
 	res := &OrcInventoryFileReader{reader: orcReader, mgr: o, key: key}
-	res.c = res.reader.Select("bucket", "key", "size", "last_modified_date", "e_tag")
+	selectFields, selectIndexByField, actualColumnIndexByField := getSelectFields(res.reader.Schema())
+	res.selectIndexByField = selectIndexByField
+	res.actualColumnIndexByField = actualColumnIndexByField
+	res.c = res.reader.Select(selectFields...)
 	return res, nil
 }
 
@@ -143,13 +137,62 @@ func (p *ParquetInventoryFileReader) Close() error {
 	return p.PFile.Close()
 }
 
-func inventoryObjectFromOrc(rowData []interface{}) InventoryObject {
+func (p *ParquetInventoryFileReader) MinValue() string {
+	return string(p.Footer.RowGroups[0].Columns[0].GetMetaData().GetStatistics().GetMinValue())
+}
+
+func (p *ParquetInventoryFileReader) MaxValue() string {
+	return string(p.Footer.RowGroups[0].Columns[0].GetMetaData().GetStatistics().GetMaxValue())
+}
+
+func getSelectFields(typeDescription *orc.TypeDescription) ([]string, map[string]int, map[string]int) {
+	relevantFields := []string{"bucket", "key", "size", "last_modified_date", "e_tag", "is_delete_marker", "is_latest"}
+	actualColumnIndexByField := make(map[string]int)
+	selectFields := make([]string, 0, len(typeDescription.Columns()))
+	selectIndexByField := make(map[string]int)
+	for i, field := range typeDescription.Columns() {
+		actualColumnIndexByField[field] = i
+	}
+	j := 0
+	for _, field := range relevantFields {
+		if _, ok := actualColumnIndexByField[field]; ok {
+			selectFields = append(selectFields, field)
+			selectIndexByField[field] = j
+			j++
+		}
+	}
+	return selectFields, selectIndexByField, actualColumnIndexByField
+}
+
+func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) InventoryObject {
+	var size *int64
+	if sizeIdx, ok := r.selectIndexByField["size"]; ok && rowData[sizeIdx] != nil {
+		size = swag.Int64(rowData[sizeIdx].(int64))
+	}
+	var lastModified *int64
+	if lastModifiedIdx, ok := r.selectIndexByField["last_modified_date"]; ok && rowData[lastModifiedIdx] != nil {
+		lastModified = swag.Int64(rowData[lastModifiedIdx].(time.Time).Unix())
+	}
+	var eTag *string
+	if eTagIdx, ok := r.selectIndexByField["e_tag"]; ok && rowData[eTagIdx] != nil {
+		eTag = swag.String(rowData[eTagIdx].(string))
+	}
+	var isLatest *bool
+	if isLatestIdx, ok := r.selectIndexByField["is_latest"]; ok && rowData[isLatestIdx] != nil {
+		isLatest = swag.Bool(rowData[isLatestIdx].(bool))
+	}
+	var isDeleteMarker *bool
+	if isDeleteMarkerIdx, ok := r.selectIndexByField["is_delete_marker"]; ok && rowData[isDeleteMarkerIdx] != nil {
+		isDeleteMarker = swag.Bool(rowData[isDeleteMarkerIdx].(bool))
+	}
 	return InventoryObject{
-		Bucket:       rowData[0].(string),
-		Key:          rowData[1].(string),
-		Size:         swag.Int64(rowData[2].(int64)),
-		LastModified: swag.Int64(rowData[3].(time.Time).Unix()),
-		Checksum:     swag.String(rowData[4].(string)),
+		Bucket:         rowData[r.selectIndexByField["bucket"]].(string),
+		Key:            rowData[r.selectIndexByField["key"]].(string),
+		Size:           size,
+		LastModified:   lastModified,
+		Checksum:       eTag,
+		IsLatest:       isLatest,
+		IsDeleteMarker: isDeleteMarker,
 	}
 }
 
@@ -165,7 +208,7 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 				return nil
 			}
 		}
-		res = append(res, inventoryObjectFromOrc(r.c.Row()))
+		res = append(res, r.inventoryObjectFromRow(r.c.Row()))
 		if len(res) == num {
 			break
 		}
@@ -206,4 +249,12 @@ func (r *OrcInventoryFileReader) Close() error {
 	_ = r.reader.Close()
 	r.mgr.cleanOrcFile(r.key)
 	return nil
+}
+
+func (r *OrcInventoryFileReader) MinValue() string {
+	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.actualColumnIndexByField["key"]+1].StringStatistics.Minimum
+}
+
+func (r *OrcInventoryFileReader) MaxValue() string {
+	return *r.reader.Metadata().StripeStats[0].GetColStats()[r.actualColumnIndexByField["key"]+1].StringStatistics.Maximum
 }

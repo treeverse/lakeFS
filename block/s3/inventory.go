@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"net/url"
+	"sort"
 
 	"github.com/aws/aws-sdk-go/aws/arn"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -32,26 +33,32 @@ type inventoryFile struct {
 	Key string `json:"key"`
 }
 
-type InventoryFileReader interface {
-	Read(dstInterface interface{}) error
+type InventoryMetadataReader interface {
 	GetNumRows() int64
 	SkipRows(int64) error
 	Close() error
+	MinValue() string
+	MaxValue() string
+}
+
+type InventoryFileReader interface {
+	InventoryMetadataReader
+	Read(dstInterface interface{}) error
 }
 
 type CloseFunc func() error
 
 var ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
 
-func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string) (block.Inventory, error) {
-	return GenerateInventory(ctx, logger, manifestURL, a.s3)
+func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool) (block.Inventory, error) {
+	return GenerateInventory(ctx, logger, manifestURL, a.s3, shouldSort)
 }
 
-func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API) (block.Inventory, error) {
+func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, shouldSort bool) (block.Inventory, error) {
 	if logger == nil {
 		logger = logging.Default()
 	}
-	m, err := loadManifest(manifestURL, s3)
+	m, err := loadManifest(ctx, manifestURL, s3, logger, shouldSort)
 	if err != nil {
 		return nil, err
 	}
@@ -59,10 +66,11 @@ func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL s
 }
 
 type Inventory struct {
-	S3       s3iface.S3API
-	Manifest *Manifest
-	ctx      context.Context //nolint:structcheck // known issue: https://github.com/golangci/golangci-lint/issues/826)
-	logger   logging.Logger
+	S3         s3iface.S3API
+	Manifest   *Manifest
+	ctx        context.Context //nolint:structcheck // known issue: https://github.com/golangci/golangci-lint/issues/826)
+	logger     logging.Logger
+	shouldSort bool
 }
 
 func (inv *Inventory) Iterator() block.InventoryIterator {
@@ -77,7 +85,7 @@ func (inv *Inventory) InventoryURL() string {
 	return inv.Manifest.URL
 }
 
-func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
+func loadManifest(ctx context.Context, manifestURL string, s3svc s3iface.S3API, logger logging.Logger, shouldSort bool) (*Manifest, error) {
 	u, err := url.Parse(manifestURL)
 	if err != nil {
 		return nil, err
@@ -100,5 +108,28 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
 	m.inventoryBucket = inventoryBucketArn.Resource
+	if !shouldSort {
+		return &m, nil
+	}
+	reader := NewInventoryReader(ctx, s3svc, &m, logger)
+	firstKeyByInventoryFile := make(map[string]string)
+	lastKeyByInventoryFile := make(map[string]string)
+	for _, f := range m.Files {
+		mr, err := reader.GetInventoryMetadataReader(f.Key)
+		if err != nil {
+			return nil, fmt.Errorf("failed to sort inventory files in manifest: %w", err)
+		}
+		err = mr.Close()
+		if err != nil {
+			logger.Errorf("failed to close inventory file. file=%s, err=%w", f, err)
+		}
+		firstKeyByInventoryFile[f.Key] = mr.MinValue()
+		lastKeyByInventoryFile[f.Key] = mr.MaxValue()
+	}
+	sort.Slice(m.Files, func(i, j int) bool {
+		return firstKeyByInventoryFile[m.Files[i].Key] < firstKeyByInventoryFile[m.Files[j].Key] ||
+			(firstKeyByInventoryFile[m.Files[i].Key] == firstKeyByInventoryFile[m.Files[j].Key] &&
+				lastKeyByInventoryFile[m.Files[i].Key] < lastKeyByInventoryFile[m.Files[j].Key])
+	})
 	return &m, nil
 }

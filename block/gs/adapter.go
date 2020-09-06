@@ -405,7 +405,7 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 	return nil
 }
 
-func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string) (block.Inventory, error) {
+func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool) (block.Inventory, error) {
 	return nil, fmt.Errorf("inventory %w", ErrNotImplemented)
 }
 

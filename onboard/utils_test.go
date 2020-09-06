@@ -40,7 +40,7 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, _ bool) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
 		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
 	}

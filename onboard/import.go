@@ -22,6 +22,7 @@ type Importer struct {
 	inventory          block.Inventory
 	CatalogActions     RepoActions
 	logger             logging.Logger
+	previousCommit     *catalog.CommitLog
 }
 
 type InventoryImportStats struct {
@@ -40,11 +41,16 @@ func CreateImporter(ctx context.Context, logger logging.Logger, cataloger catalo
 		inventoryGenerator: inventoryGenerator,
 		logger:             logger,
 	}
-	res.inventory, err = inventoryGenerator.GenerateInventory(ctx, logger, inventoryURL)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create inventory: %w", err)
-	}
 	res.CatalogActions = NewCatalogActions(cataloger, repository, username, logger)
+	previousCommit, err := res.CatalogActions.GetPreviousCommit(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get previous commit: %w", err)
+	}
+	res.previousCommit = previousCommit
+	res.inventory, err = inventoryGenerator.GenerateInventory(ctx, logger, inventoryURL, previousCommit != nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read inventory: %w", err)
+	}
 	return res, nil
 }
 
@@ -53,7 +59,7 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	if previousInventoryURL == "" {
 		return nil, fmt.Errorf("%w. commit_ref=%s", ErrNoInventoryURL, commit.Reference)
 	}
-	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL)
+	previousInv, err := s.inventoryGenerator.GenerateInventory(ctx, s.logger, previousInventoryURL, true)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create inventory for previous state: %w", err)
 	}
@@ -63,17 +69,14 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 }
 
 func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportStats, error) {
-	previousCommit, err := s.CatalogActions.GetPreviousCommit(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get previous commit: %w", err)
-	}
 	var dataToImport Iterator
-	if previousCommit == nil {
+	var err error
+	if s.previousCommit == nil {
 		// no previous commit, add whole inventory
 		it := s.inventory.Iterator()
 		dataToImport = NewInventoryIterator(it)
 	} else {
-		dataToImport, err = s.diffIterator(ctx, *previousCommit)
+		dataToImport, err = s.diffIterator(ctx, *s.previousCommit)
 		if err != nil {
 			return nil, err
 		}
@@ -83,9 +86,9 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportSta
 		return nil, err
 	}
 	stats.DryRun = dryRun
-	if previousCommit != nil {
-		stats.PreviousImportDate = previousCommit.CreationDate
-		stats.PreviousInventoryURL = previousCommit.Metadata["inventory_url"]
+	if s.previousCommit != nil {
+		stats.PreviousImportDate = s.previousCommit.CreationDate
+		stats.PreviousInventoryURL = s.previousCommit.Metadata["inventory_url"]
 	}
 	if !dryRun {
 		commitMetadata := CreateCommitMetadata(s.inventory, *stats)

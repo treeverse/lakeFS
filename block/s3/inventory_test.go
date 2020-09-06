@@ -126,7 +126,7 @@ func TestIterator(t *testing.T) {
 			s3api := &mockS3Client{
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}
-			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api)
+			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api, false)
 			if err != nil {
 				t.Fatalf("error: %v", err)
 			}
