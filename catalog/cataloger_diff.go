@@ -15,7 +15,11 @@ type DiffTypeCount struct {
 	Count    int `db:"count"`
 }
 
-const diffResultsTableName = "catalog_diff_results"
+const (
+	DiffMaxLimit = 1000
+
+	diffResultsTableName = "catalog_diff_results"
+)
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
@@ -24,6 +28,10 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
 	}); err != nil {
 		return nil, false, err
+	}
+
+	if limit < 0 || limit > DiffMaxLimit {
+		limit = DiffMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)

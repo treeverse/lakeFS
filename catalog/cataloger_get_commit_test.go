@@ -131,11 +131,11 @@ func TestCataloger_GetMergeCommit(t *testing.T) {
 	testutil.MustDo(t, "commit to b1", err)
 
 	// merge b1 to master
-	res, err := c.Merge(ctx, repo, "b1", "master", "tester", "merge b1 to master", nil)
+	reference, err := c.Merge(ctx, repo, "b1", "master", "tester", "merge b1 to master", nil)
 	testutil.MustDo(t, "merge b1 to master", err)
 
 	// test commit on master got two parents
-	commitLog, err := c.GetCommit(ctx, repo, res.Reference)
+	commitLog, err := c.GetCommit(ctx, repo, reference)
 	testutil.MustDo(t, "get commit of merge reference", err)
 
 	if len(commitLog.Parents) != 2 {

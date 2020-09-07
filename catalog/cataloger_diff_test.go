@@ -5,7 +5,6 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -49,26 +48,34 @@ func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "branch2", "branch1", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch2 to branch1", err)
 	// merge the changes from branch1 to master
-	res, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
+	reference, err := c.Merge(ctx, repository, "branch1", "master", "tester", "", nil)
 	testutil.MustDo(t, "Merge changes from branch1 to master", err)
 
-	if !IsValidReference(res.Reference) {
-		t.Errorf("Merge reference = %s, expected a valid reference", res.Reference)
+	if !IsValidReference(reference) {
+		t.Errorf("Merge reference = %s, expected a valid reference", reference)
 	}
-	expectedDifferences := Differences{
-		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file3"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file4"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file555"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file6"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file7"},
-		Difference{Type: DifferenceTypeAdded, Path: "/file8"},
-		Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
+	commitLog, err := c.GetCommit(ctx, repository, reference)
+	testutil.MustDo(t, "get merge commit reference", err)
+	if len(commitLog.Parents) != 2 {
+		t.Fatal("merge commit log should have two parents")
 	}
-	if !res.Differences.Equal(expectedDifferences) {
-		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(res.Differences), spew.Sdump(expectedDifferences))
-	}
+	// TODO(barak): enable test after diff between commits is supported
+	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//testutil.MustDo(t, "diff merge changes", err)
+	//expectedDifferences := Differences{
+	//	Difference{Type: DifferenceTypeChanged, Path: "/file2"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file3"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file4"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file5"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file555"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file6"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file7"},
+	//	Difference{Type: DifferenceTypeAdded, Path: "/file8"},
+	//	Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
+	//}
+	//if !differences.Equal(expectedDifferences) {
+	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
+	//}
 
 	testVerifyEntries(t, ctx, c, repository, "master:HEAD", []testEntryInfo{
 		{Path: "/file1", Deleted: true},

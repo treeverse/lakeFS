@@ -22,7 +22,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destina
 	}
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := getBranchID(tx, repository, destinationBranch, LockTypeUpdate)
+		leftID, err := getBranchID(tx, repository, sourceBranch, LockTypeUpdate)
 		if err != nil {
 			return nil, fmt.Errorf("left branch: %w", err)
 		}
