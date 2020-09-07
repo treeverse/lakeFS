@@ -57,6 +57,7 @@ require (
 	github.com/prometheus/client_golang v1.7.1
 	github.com/prometheus/common v0.11.1 // indirect
 	github.com/rakyll/statik v0.1.7
+	github.com/rs/xid v1.2.1
 	github.com/schollz/progressbar/v3 v3.3.4
 	github.com/scritchley/orc v0.0.0-20200625081059-e6fcbf41b2c2
 	github.com/shopspring/decimal v1.2.0 // indirect

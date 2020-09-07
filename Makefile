@@ -33,10 +33,7 @@ GIT_REF=$(shell git rev-parse --short HEAD --)
 REVISION=$(GIT_REF)$(DIRTY)
 export REVISION
 
-## System tests config
-API_ENDPOINT?=http://localhost:8000
-BUCKET?=s3://nessie-system-testing
-
+.PHONY: all clean nessie lint test gen help
 all: build
 
 clean:
@@ -76,8 +73,8 @@ $(GOBINPATH)/golangci-lint:
 lint: $(GOBINPATH)/golangci-lint  ## Lint code
 	$(GOBINPATH)/golangci-lint run $(GOLANGCI_LINT_FLAGS)
 
-nessie: gen ## run nessie (system testing)
-	$(GOTEST) --tags=systemtests -v ./nessie/ --endpoint-url=$(API_ENDPOINT) --bucket=$(BUCKET)
+nessie: ## run nessie (system testing)
+	$(GOTEST) -v ./nessie --args --system-tests
 
 test: gen  ## Run tests for the project
 	$(GOTEST) -count=1 -coverprofile=cover.out -race -cover -failfast $(GO_TEST_MODULES)

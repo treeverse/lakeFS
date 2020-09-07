@@ -1,28 +1,26 @@
-// +build systemtests
-
 package nessie
 
 import (
 	"bytes"
-	"fmt"
 	"sync"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/service/s3"
+	"github.com/go-openapi/swag"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/thanhpk/randstr"
+	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/logging"
 )
 
 const (
-	numberOfParts = 5
-	partSize      = 6 * 1024 * 1024
+	multipartNumberOfParts = 5
+	multipartPartSize      = 6 * 1024 * 1024
 )
 
-func TestMultiPart(t *testing.T) {
+func TestMultipartUpload(t *testing.T) {
 	ctx, logger, repo := setupTest(t)
 	file := "multipart_file"
 	path := masterBranch + "/" + file
@@ -35,60 +33,47 @@ func TestMultiPart(t *testing.T) {
 	require.NoError(t, err, "failed to create multipart upload")
 	logger.Info("Created multipart upload request")
 
-	completedParts := uploadRandomParts(t, logger, resp)
+	completedParts := uploadMultipartParts(t, logger, resp)
 
-	completeResponse, err := completeMultipartUpload(svc, resp, completedParts)
+	completeResponse, err := uploadMultipartComplete(svc, resp, completedParts)
 	require.NoError(t, err, "failed to complete multipart upload")
 
 	logger.WithField("key", completeResponse.Key).Info("Completed multipart request successfully")
 
 	var b bytes.Buffer
-	_, err = client.GetObject(ctx, repo, masterBranch, file, &b)
+	_, err = client.Objects.GetObject(
+		objects.NewGetObjectParamsWithContext(ctx).
+			WithRepository(repo).
+			WithRef(masterBranch).
+			WithPath(file), nil, &b)
 	require.NoError(t, err, "failed to get object")
 }
 
-func uploadRandomParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput) []*s3.CompletedPart {
-	t.Helper()
-	ch := make(chan *s3.CompletedPart, numberOfParts)
-	errs := make(chan error, numberOfParts)
+func uploadMultipartParts(t *testing.T, logger logging.Logger, resp *s3.CreateMultipartUploadOutput) []*s3.CompletedPart {
+	completedParts := make([]*s3.CompletedPart, multipartNumberOfParts)
+	errs := make([]error, multipartNumberOfParts)
 	var wg sync.WaitGroup
-
-	wg.Add(numberOfParts)
-	for partNumber := 1; partNumber <= numberOfParts; partNumber++ {
-		go func(partNumber int) {
-			completedPart, err := uploadPart(logger, svc, resp, randstr.Bytes(partSize), partNumber)
-
-			if err != nil {
-				// keep just the first error
-				errs <- fmt.Errorf("failed to upload part %d: %w", partNumber, err)
-			} else if int(*completedPart.PartNumber) != partNumber {
-				errs <- fmt.Errorf("inconsistent part number. Expected %d, got %d", partNumber, *completedPart.PartNumber)
-			}
-			ch <- completedPart
-			wg.Done()
-		}(partNumber)
+	wg.Add(multipartNumberOfParts)
+	for i := 0; i < multipartNumberOfParts; i++ {
+		go func(i int) {
+			defer wg.Done()
+			partNumber := i + 1
+			completedParts[i], errs[i] = uploadMultipartPart(logger, svc, resp, randstr.Bytes(multipartPartSize), partNumber)
+		}(i)
 	}
-
 	wg.Wait()
-	close(ch)
-	close(errs)
 
-	errNum := 0
-	for err := range errs {
-		errNum++
-		assert.NoError(t, err)
-	}
-	require.Equal(t, 0, errNum, "errors in parts upload")
-
-	// completedParts must be ordered by the part number
-	completedParts := make([]*s3.CompletedPart, numberOfParts)
-	for completedPart := range ch {
-		completedParts[*completedPart.PartNumber-1] = completedPart
+	// verify upload completed successfully
+	for i, err := range errs {
+		partNumber := int64(i + 1)
+		assert.NoErrorf(t, err, "error while upload part number %d", partNumber)
+		// verify part number
+		assert.Equal(t, partNumber, swag.Int64Value(completedParts[i].PartNumber), "inconsistent part number")
 	}
 	return completedParts
 }
 
-func completeMultipartUpload(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, completedParts []*s3.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
+func uploadMultipartComplete(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, completedParts []*s3.CompletedPart) (*s3.CompleteMultipartUploadOutput, error) {
 	completeInput := &s3.CompleteMultipartUploadInput{
 		Bucket:   resp.Bucket,
 		Key:      resp.Key,
@@ -100,7 +85,7 @@ func completeMultipartUpload(svc *s3.S3, resp *s3.CreateMultipartUploadOutput, c
 	return svc.CompleteMultipartUpload(completeInput)
 }
 
-func uploadPart(logger logging.Logger, svc *s3.S3, resp *s3.CreateMultipartUploadOutput, fileBytes []byte, partNumber int) (*s3.CompletedPart, error) {
+func uploadMultipartPart(logger logging.Logger, svc *s3.S3, resp *s3.CreateMultipartUploadOutput, fileBytes []byte, partNumber int) (*s3.CompletedPart, error) {
 	partInput := &s3.UploadPartInput{
 		Body:          bytes.NewReader(fileBytes),
 		Bucket:        resp.Bucket,

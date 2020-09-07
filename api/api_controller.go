@@ -544,6 +544,10 @@ func (c *Controller) CreateRepositoryHandler() repositories.CreateRepositoryHand
 
 		err = ensureStorageNamespaceRW(deps.BlockAdapter, swag.StringValue(params.Repository.StorageNamespace))
 		if err != nil {
+			c.deps.logger.
+				WithError(err).
+				WithField("storage_namespace", swag.StringValue(params.Repository.StorageNamespace)).
+				Warn("Could not access storage namespace")
 			return repositories.NewCreateRepositoryBadRequest().
 				WithPayload(responseError("error creating repository: could not access storage namespace"))
 		}
