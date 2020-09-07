@@ -14,13 +14,13 @@ import {doSetupLakeFS} from "../actions/setup";
 import {API_ENDPOINT} from "../actions/api";
 
 const SetupPage = ({ doSetupLakeFS, setupState }) => {
-    const displayNameRef = useRef(null);
+    const usernameRef = useRef(null);
 
     const disabled = setupState.loading;
 
     const onSubmit = (event) => {
         if (disabled) return;
-        doSetupLakeFS(displayNameRef.current.value);
+        doSetupLakeFS(usernameRef.current.value);
         event.preventDefault();
     };
 
@@ -77,12 +77,13 @@ server:
                     <Card.Header>Initial Setup</Card.Header>
                     <Card.Body>
                         <Card.Text>
-                            This process will initialize the database schema and first admin user to access the system.<br/>
-                            Enter the user information<br/>
+                            This process will initialize the database schema and a first admin user to access the system.<br/>
+
+                            Enter an admin username.
                         </Card.Text>
                         <Form onSubmit={onSubmit}>
-                            <Form.Group controlId="display-name">
-                                <Form.Control type="text" placeholder="Display Name (e.g. 'jane.doe')" ref={displayNameRef} autoFocus/>
+                            <Form.Group controlId="user-name">
+                                <Form.Control type="text" placeholder="Username" ref={usernameRef} autoFocus/>
                             </Form.Group>
 
                             {setupState.error && <Alert variant={"danger"}>{setupState.error}</Alert>}
