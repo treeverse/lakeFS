@@ -23,7 +23,7 @@ const (
 	orcInitialReadSize = 500
 )
 
-func GetTailLength(filename string, size int64) (int, error) {
+func getTailLength(filename string, size int64) (int, error) {
 	f, err := os.Open(filename)
 	if err != nil {
 		return 0, err
@@ -80,7 +80,7 @@ func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger
 	return f.Name(), nil
 }
 
-func DownloadOrcFile(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, footerOnly bool) (string, error) {
+func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, footerOnly bool) (string, error) {
 	var size int64
 	if footerOnly {
 		headObject, err := svc.HeadObject(&s3.HeadObjectInput{
@@ -97,7 +97,7 @@ func DownloadOrcFile(ctx context.Context, svc s3iface.S3API, logger logging.Logg
 		return "", err
 	}
 	if footerOnly {
-		tailLength, err := GetTailLength(filename, mathutil.MinInt64(orcInitialReadSize, size))
+		tailLength, err := getTailLength(filename, mathutil.MinInt64(orcInitialReadSize, size))
 		if err != nil {
 			return "", err
 		}

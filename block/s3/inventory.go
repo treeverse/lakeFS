@@ -3,7 +3,6 @@ package s3
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
 	"net/url"
 	"sort"
@@ -12,12 +11,8 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
+	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 	"github.com/treeverse/lakefs/logging"
-)
-
-const (
-	OrcFormatName     = "ORC"
-	ParquetFormatName = "Parquet"
 )
 
 type Manifest struct {
@@ -33,28 +28,11 @@ type inventoryFile struct {
 	Key string `json:"key"`
 }
 
-type InventoryMetadataReader interface {
-	GetNumRows() int64
-	SkipRows(int64) error
-	Close() error
-	MinValue() string
-	MaxValue() string
-}
-
-type InventoryFileReader interface {
-	InventoryMetadataReader
-	Read(dstInterface interface{}) error
-}
-
-type CloseFunc func() error
-
-var ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
-
 func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool) (block.Inventory, error) {
-	return GenerateInventory(ctx, logger, manifestURL, a.s3, NewInventoryReader(ctx, a.s3, logger), shouldSort)
+	return GenerateInventory(ctx, logger, manifestURL, a.s3, inventorys3.NewReader(ctx, a.s3, logger), shouldSort)
 }
 
-func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader IInventoryReader, shouldSort bool) (block.Inventory, error) {
+func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader inventorys3.IReader, shouldSort bool) (block.Inventory, error) {
 	if logger == nil {
 		logger = logging.Default()
 	}
@@ -77,7 +55,7 @@ type Inventory struct {
 	ctx        context.Context //nolint:structcheck // known issue: https://github.com/golangci/golangci-lint/issues/826)
 	logger     logging.Logger
 	shouldSort bool
-	reader     IInventoryReader
+	reader     inventorys3.IReader
 }
 
 func (inv *Inventory) Iterator() block.InventoryIterator {
@@ -106,8 +84,8 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	if err != nil {
 		return nil, err
 	}
-	if m.Format != OrcFormatName && m.Format != ParquetFormatName {
-		return nil, fmt.Errorf("%w. got format: %s", ErrUnsupportedInventoryFormat, m.Format)
+	if m.Format != inventorys3.OrcFormatName && m.Format != inventorys3.ParquetFormatName {
+		return nil, fmt.Errorf("%w. got format: %s", inventorys3.ErrUnsupportedInventoryFormat, m.Format)
 	}
 	m.URL = manifestURL
 	inventoryBucketArn, err := arn.Parse(m.InventoryBucketArn)
@@ -118,11 +96,11 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	return &m, nil
 }
 
-func sortManifest(m *Manifest, logger logging.Logger, reader IInventoryReader) error {
+func sortManifest(m *Manifest, logger logging.Logger, reader inventorys3.IReader) error {
 	firstKeyByInventoryFile := make(map[string]string)
 	lastKeyByInventoryFile := make(map[string]string)
 	for _, f := range m.Files {
-		mr, err := reader.GetInventoryMetadataReader(m, f.Key)
+		mr, err := reader.GetInventoryMetadataReader(m.Format, m.inventoryBucket, f.Key)
 		if err != nil {
 			return fmt.Errorf("failed to sort inventory files in manifest: %w", err)
 		}

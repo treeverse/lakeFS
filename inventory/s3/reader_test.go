@@ -110,20 +110,6 @@ func uploadFile(t *testing.T, s3 s3iface.S3API, inventoryBucket string, inventor
 	}
 }
 
-func manifest(inventoryBucketName string, inventoryFilenames ...string) *Manifest {
-	inventoryFiles := make([]inventoryFile, len(inventoryFilenames))
-	for i, f := range inventoryFilenames {
-		inventoryFiles[i] = inventoryFile{Key: f}
-	}
-	return &Manifest{
-		URL:             "s3://my-bucket/manifest.json",
-		SourceBucket:    "data-bucket",
-		Files:           inventoryFiles,
-		Format:          "ORC",
-		inventoryBucket: inventoryBucketName,
-	}
-}
-
 func TestInventoryReader(t *testing.T) {
 	svc, testServer := getS3Fake(t)
 	defer testServer.Close()
@@ -178,10 +164,8 @@ func TestInventoryReader(t *testing.T) {
 	for _, test := range testdata {
 
 		uploadFile(t, svc, inventoryBucketName, "myFile.orc", objs(test.ObjectNum))
-		reader := NewInventoryReader(context.Background(), svc, logging.Default())
-		m := manifest(inventoryBucketName, "myFile.orc")
-
-		fileReader, err := reader.GetInventoryFileReader(m, "myFile.orc")
+		reader := NewReader(context.Background(), svc, logging.Default())
+		fileReader, err := reader.GetInventoryFileReader("ORC", inventoryBucketName, "myFile.orc")
 		if err != nil {
 			t.Fatal(err)
 		}

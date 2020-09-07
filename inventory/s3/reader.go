@@ -18,11 +18,33 @@ import (
 	"modernc.org/mathutil"
 )
 
-var ErrNoMoreRowsToSkip = errors.New("no more rows to skip")
+const (
+	OrcFormatName     = "ORC"
+	ParquetFormatName = "Parquet"
+)
 
-type IInventoryReader interface {
-	GetInventoryFileReader(manifest *Manifest, fileInManifest string) (InventoryFileReader, error)
-	GetInventoryMetadataReader(manifest *Manifest, fileInManifest string) (InventoryMetadataReader, error)
+var (
+	ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
+	ErrNoMoreRowsToSkip           = errors.New("no more rows to skip")
+)
+
+type IReader interface {
+	GetInventoryFileReader(format string, bucket string, key string) (InventoryFileReader, error)
+	GetInventoryMetadataReader(format string, bucket string, key string) (InventoryMetadataReader, error)
+}
+
+type InventoryObject struct {
+	Bucket         string  `parquet:"name=bucket, type=UTF8"`
+	Key            string  `parquet:"name=key, type=UTF8"`
+	IsLatest       *bool   `parquet:"name=is_latest, type=BOOLEAN"`
+	IsDeleteMarker *bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
+	Size           *int64  `parquet:"name=size, type=INT_64"`
+	LastModified   *int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
+	Checksum       *string `parquet:"name=e_tag, type=UTF8"`
+}
+
+func (o *InventoryObject) GetPhysicalAddress() string {
+	return "s3://" + o.Bucket + "/" + o.Key
 }
 
 type InventoryReader struct {
@@ -30,6 +52,19 @@ type InventoryReader struct {
 	svc           s3iface.S3API
 	orcFilesByKey map[string]*orcFile
 	logger        logging.Logger
+}
+
+type InventoryMetadataReader interface {
+	GetNumRows() int64
+	SkipRows(int64) error
+	Close() error
+	MinValue() string
+	MaxValue() string
+}
+
+type InventoryFileReader interface {
+	InventoryMetadataReader
+	Read(dstInterface interface{}) error
 }
 
 type OrcInventoryFileReader struct {
@@ -48,12 +83,11 @@ type ParquetInventoryFileReader struct {
 
 type orcFile struct {
 	key           string
-	idx           int
 	localFilename string
 	ready         bool
 }
 
-func NewInventoryReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IInventoryReader {
+func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
 	return &InventoryReader{ctx: ctx, svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
 }
 
@@ -65,30 +99,30 @@ func (o *InventoryReader) cleanOrcFile(key string) {
 	}()
 }
 
-func (o *InventoryReader) GetInventoryFileReader(manifest *Manifest, key string) (InventoryFileReader, error) {
-	switch manifest.Format {
+func (o *InventoryReader) GetInventoryFileReader(format string, bucket string, key string) (InventoryFileReader, error) {
+	switch format {
 	case OrcFormatName:
-		return o.getOrcReader(manifest, key, false)
+		return o.getOrcReader(bucket, key, false)
 	case ParquetFormatName:
-		return o.getParquetReader(manifest, key)
+		return o.getParquetReader(bucket, key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
 	}
 }
 
-func (o *InventoryReader) GetInventoryMetadataReader(manifest *Manifest, key string) (InventoryMetadataReader, error) {
-	switch manifest.Format {
+func (o *InventoryReader) GetInventoryMetadataReader(format string, bucket string, key string) (InventoryMetadataReader, error) {
+	switch format {
 	case OrcFormatName:
-		return o.getOrcReader(manifest, key, true)
+		return o.getOrcReader(bucket, key, true)
 	case ParquetFormatName:
-		return o.getParquetReader(manifest, key)
+		return o.getParquetReader(bucket, key)
 	default:
 		return nil, ErrUnsupportedInventoryFormat
 	}
 }
 
-func (o *InventoryReader) getParquetReader(manifest *Manifest, key string) (InventoryFileReader, error) {
-	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, manifest.inventoryBucket, key)
+func (o *InventoryReader) getParquetReader(bucket string, key string) (InventoryFileReader, error) {
+	pf, err := s3parquet.NewS3FileReaderWithClient(o.ctx, o.svc, bucket, key)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create parquet file reader: %w", err)
 	}
@@ -100,20 +134,14 @@ func (o *InventoryReader) getParquetReader(manifest *Manifest, key string) (Inve
 	return &ParquetInventoryFileReader{ParquetReader: *pr}, nil
 }
 
-func (o *InventoryReader) getOrcReader(manifest *Manifest, key string, footerOnly bool) (InventoryFileReader, error) {
+func (o *InventoryReader) getOrcReader(bucket string, key string, footerOnly bool) (InventoryFileReader, error) {
 	file, ok := o.orcFilesByKey[key]
 	if !ok {
 		file = &orcFile{key: key}
 		o.orcFilesByKey[key] = file
 	}
-	for idx, f := range manifest.Files {
-		if f.Key == key {
-			file.idx = idx
-			break
-		}
-	}
 	if !file.ready {
-		localFilename, err := DownloadOrcFile(o.ctx, o.svc, o.logger, manifest.inventoryBucket, key, footerOnly)
+		localFilename, err := DownloadOrc(o.ctx, o.svc, o.logger, bucket, key, footerOnly)
 		if err != nil {
 			return nil, err
 		}

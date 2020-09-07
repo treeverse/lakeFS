@@ -4,41 +4,28 @@ import (
 	"errors"
 
 	"github.com/treeverse/lakefs/block"
+	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 )
 
 const DefaultReadBatchSize = 100000
 
 var ErrInventoryNotSorted = errors.New("inventory assumed to be sorted but isn't")
 
-type InventoryObject struct {
-	Bucket         string  `parquet:"name=bucket, type=UTF8"`
-	Key            string  `parquet:"name=key, type=UTF8"`
-	IsLatest       *bool   `parquet:"name=is_latest, type=BOOLEAN"`
-	IsDeleteMarker *bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
-	Size           *int64  `parquet:"name=size, type=INT_64"`
-	LastModified   *int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
-	Checksum       *string `parquet:"name=e_tag, type=UTF8"`
-}
-
-func (o *InventoryObject) GetPhysicalAddress() string {
-	return "s3://" + o.Bucket + "/" + o.Key
-}
-
 type InventoryIterator struct {
 	*Inventory
 	ReadBatchSize           int
 	err                     error
 	val                     *block.InventoryObject
-	buffer                  []InventoryObject
+	buffer                  []inventorys3.InventoryObject
 	currentInventoryFileIdx int
-	currentRowNumber        int
+	currentNumOfRows        int
 	nextRowInFile           int
 	valIndexInBuffer        int
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	batchSize := DefaultReadBatchSize
-	if inv.Manifest.Format == OrcFormatName {
+	if inv.Manifest.Format == inventorys3.OrcFormatName {
 		batchSize = -1
 	}
 	return &InventoryIterator{
@@ -66,13 +53,13 @@ func (it *InventoryIterator) Next() bool {
 	}
 	// value not found in buffer, need to reload the buffer
 	it.valIndexInBuffer = -1
-	if it.nextRowInFile >= it.currentRowNumber {
+	if it.nextRowInFile >= it.currentNumOfRows {
 		// no more files left
 		if !it.moveToNextInventoryFile() {
 			return false
 		}
 	}
-	pr, err := it.reader.GetInventoryFileReader(it.Manifest, it.Manifest.Files[it.currentInventoryFileIdx].Key)
+	pr, err := it.reader.GetInventoryFileReader(it.Manifest.Format, it.Manifest.inventoryBucket, it.Manifest.Files[it.currentInventoryFileIdx].Key)
 	if err != nil {
 		it.err = err
 		return false
@@ -83,8 +70,8 @@ func (it *InventoryIterator) Next() bool {
 			it.logger.Errorf("failed to close manifest file reader. file=%s", it.Manifest.Files[it.currentInventoryFileIdx].Key)
 		}
 	}()
-	if it.currentRowNumber == -1 {
-		it.currentRowNumber = int(pr.GetNumRows())
+	if it.currentNumOfRows == -1 {
+		it.currentNumOfRows = int(pr.GetNumRows())
 	}
 
 	if !it.fillBuffer(pr) { // fill from current manifest file
@@ -98,14 +85,14 @@ func (it *InventoryIterator) moveToNextInventoryFile() bool {
 		return false
 	}
 	it.currentInventoryFileIdx += 1
-	it.currentRowNumber = -1
+	it.currentNumOfRows = -1
 	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.currentInventoryFileIdx].Key)
 	it.nextRowInFile = 0
 	it.buffer = nil
 	return true
 }
 
-func (it *InventoryIterator) fillBuffer(reader InventoryFileReader) bool {
+func (it *InventoryIterator) fillBuffer(reader inventorys3.InventoryFileReader) bool {
 	it.logger.Debug("start reading rows from inventory to buffer")
 	// skip the rows that have already been read:
 	err := reader.SkipRows(int64(it.nextRowInFile))
@@ -117,7 +104,7 @@ func (it *InventoryIterator) fillBuffer(reader InventoryFileReader) bool {
 	if batchSize == -1 {
 		batchSize = int(reader.GetNumRows())
 	}
-	it.buffer = make([]InventoryObject, batchSize)
+	it.buffer = make([]inventorys3.InventoryObject, batchSize)
 	// read a batch of rows according to the batch size:
 	err = reader.Read(&it.buffer)
 	if err != nil {
