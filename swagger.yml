@@ -226,6 +226,7 @@ definitions:
     type: object
     properties:
       username:
+        description: an identifier for the user (e.g. jane.doe)
         type: string
     required:
       - username
