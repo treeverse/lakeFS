@@ -78,7 +78,6 @@ server:
                     <Card.Body>
                         <Card.Text>
                             This process will initialize the database schema and a first admin user to access the system.<br/>
-
                             Enter an admin username.
                         </Card.Text>
                         <Form onSubmit={onSubmit}>
