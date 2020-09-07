@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math/rand"
 	"os"
 	"sort"
 	"strconv"
@@ -99,7 +100,6 @@ func TestMain(m *testing.M) {
 	}
 	var dbCleanup func()
 	databaseURI, dbCleanup = runDBInstance(pool)
-	fmt.Println("[DEBUG] connectionURI", databaseURI)
 	defer dbCleanup() // In case we don't reach the cleanup action.
 	db = sqlx.MustConnect("pgx", databaseURI)
 	code := m.Run()
@@ -112,7 +112,7 @@ func TestMain(m *testing.M) {
 // wrapper derives a prefix from t.Name and uses it to provide namespaced access to  DB db as
 // well as a simple error-reporting inserter.
 type wrapper struct {
-	t  *testing.T
+	t  testing.TB
 	db *sqlx.DB
 }
 
@@ -491,4 +491,96 @@ func TestNotification(t *testing.T) {
 			}
 		})
 	}
+}
+
+func BenchmarkFanIn(b *testing.B) {
+	const (
+		parallelism = 5
+		bulk        = 1000
+	)
+
+	numTasks := b.N * 50000
+
+	w := wrapper{b, db}
+
+	id := func(n int) ddl.TaskId {
+		return ddl.TaskId(fmt.Sprintf("in:%08d", n))
+	}
+
+	tasks := make([]ddl.TaskData, 0, numTasks+1)
+	for i := 0; i < numTasks; i++ {
+		tasks = append(tasks, ddl.TaskData{Id: id(i), Action: "part"})
+	}
+	tasks = append(tasks, ddl.TaskData{Id: "done", Action: "done"})
+	w.insertTasks(tasks)
+
+	deps := make([]ddl.TaskDependencyData, 0, numTasks)
+	for i := 0; i < numTasks; i++ {
+		deps = append(deps, ddl.TaskDependencyData{After: id(i), Run: "done"})
+	}
+	w.insertTaskDeps(deps)
+
+	_, err := db.Exec("ANALYZE task_dependencies")
+	if err != nil {
+		b.Fatalf("ANALYZE task_dependencies: %s", err)
+	}
+
+	type result struct {
+		count        int
+		receivedDone bool
+		err          error
+	}
+	resultCh := make([]chan result, parallelism)
+	for i := 0; i < parallelism; i++ {
+		resultCh[i] = make(chan result)
+	}
+
+	b.ResetTimer()
+	for i := 0; i < parallelism; i++ {
+		go func(i int) {
+			count := 0
+			receivedDone := false
+			for {
+				size := int(bulk + rand.Int31n(bulk/10) - bulk/10)
+				tasks, err := w.ownTasks(ddl.ActorId(fmt.Sprintf("worker-%d", i)), size, []string{"part", "done"}, nil)
+				if err != nil {
+					resultCh[i] <- result{err: err}
+					return
+				}
+				if len(tasks) == 0 {
+					break
+				}
+				for _, task := range tasks {
+					if task.Id != "done" {
+						count++
+					} else {
+						receivedDone = true
+					}
+					w.returnTask(task.Id, task.Token, "ok", ddl.TASK_COMPLETED)
+				}
+			}
+			resultCh[i] <- result{count: count, receivedDone: receivedDone}
+		}(i)
+	}
+
+	var total, numDone int
+	for i := 0; i < parallelism; i++ {
+		r := <-resultCh[i]
+		if r.err != nil {
+			b.Errorf("goroutine %d failed: %s", i, r.err)
+		}
+		total += r.count
+		if r.receivedDone {
+			numDone++
+		}
+	}
+	b.StopTimer()
+	if total != numTasks {
+		b.Errorf("expected %d tasks but processed %d", numTasks, total)
+	}
+	if numDone != 1 {
+		b.Errorf("expected single goroutine to process \"done\" but got %d", numDone)
+	}
+	b.ReportMetric(float64(numTasks), "num_tasks")
+	b.ReportMetric(float64(parallelism), "num_goroutines")
 }

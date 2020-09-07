@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS task_dependencies (
 
 CREATE INDEX IF NOT EXISTS task_dependencies_after ON task_dependencies(after);
 CREATE INDEX IF NOT EXISTS task_dependencies_run ON task_dependencies(run);
+ALTER TABLE task_dependencies ALTER run SET STATISTICS 1000;
 
 -- Returns true if task with this id, code and deadline can
 -- be allocated.
@@ -70,7 +71,7 @@ LANGUAGE sql VOLATILE AS $$
 	    (max_tries IS NULL OR num_tries < max_tries)
 	-- maybe: AND not_before <= NOW()
 	-- maybe: ORDER BY priority (eventually)
-	FOR UPDATE SKIP LOCKED
+	FOR NO KEY UPDATE SKIP LOCKED
 	LIMIT max_tasks)
     RETURNING id, performance_token, body
 $$;
