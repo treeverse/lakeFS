@@ -54,7 +54,7 @@ $$;
 CREATE OR REPLACE FUNCTION own_tasks(
     max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR(64), token UUID)
+RETURNS TABLE(task_id VARCHAR(64), token UUID, body jsonb)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
@@ -72,7 +72,7 @@ LANGUAGE sql VOLATILE AS $$
 	-- maybe: ORDER BY priority (eventually)
 	FOR UPDATE SKIP LOCKED
 	LIMIT max_tasks)
-    RETURNING id, performance_token
+    RETURNING id, performance_token, body
 $$;
 
 -- Returns an owned task id that was locked with token.  It is an error

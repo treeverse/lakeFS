@@ -1,6 +1,7 @@
 package ddl
 
 import (
+	"context"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"time"
 
 	"github.com/jackc/pgtype"
+	"github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -63,6 +65,8 @@ const (
 	TASK_ABORTED TaskStatusCodeValue = "aborted"
 	// TASK_COMPLETED indicates an actor has completed this task with message, will not reissued
 	TASK_COMPLETED TaskStatusCodeValue = "completed"
+	// TASK_INVALID is used by the API to report errors
+	TASK_INVALID TaskStatusCodeValue = "[invalid]"
 )
 
 // TaskData is a row in table "tasks".  It describes a task to perform.
@@ -92,6 +96,7 @@ type TaskDependencyData struct {
 type OwnedTaskData struct {
 	Id    TaskId           `db:"task_id"`
 	Token PerformanceToken `db:"token"`
+	Body  *string
 }
 
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions.
@@ -137,4 +142,36 @@ func ReturnTask(conn *sqlx.DB, taskId TaskId, token PerformanceToken, resultStat
 	}
 
 	return nil
+}
+
+// WaitForTask blocks until taskId ends, and returns its result status and status code.  It
+// needs a pgx.Conn -- *not* a sqlx.Conn -- because it depends on PostgreSQL specific features.
+func WaitForTask(ctx context.Context, conn *pgx.Conn, taskId TaskId) (resultStatus string, resultStatusCode TaskStatusCodeValue, err error) {
+	row := conn.QueryRow(ctx, `SELECT finish_channel, status_code FROM tasks WHERE id=$1`, taskId)
+	var (
+		finishChannel string
+		statusCode    TaskStatusCodeValue
+		status        string
+	)
+	if err = row.Scan(&finishChannel, &statusCode); err != nil {
+		return "", TASK_INVALID, fmt.Errorf("check task %s to listen: %w", taskId, err)
+	}
+	if statusCode != TASK_IN_PROGRESS && statusCode != TASK_PENDING {
+		return "", statusCode, fmt.Errorf("task %s already in status %s", taskId, statusCode)
+	}
+
+	if _, err = conn.Exec(ctx, "LISTEN "+pgx.Identifier{finishChannel}.Sanitize()); err != nil {
+		return "", TASK_INVALID, fmt.Errorf("listen for %s: %w", finishChannel, err)
+	}
+
+	_, err = conn.WaitForNotification(ctx)
+	if err != nil {
+		return "", TASK_INVALID, fmt.Errorf("wait for notification %s: %w", finishChannel, err)
+	}
+
+	row = conn.QueryRow(ctx, `SELECT status, status_code FROM tasks WHERE id=$1`, taskId)
+	status = ""
+	statusCode = TASK_INVALID
+	err = row.Scan(&status, &statusCode)
+	return status, statusCode, err
 }
