@@ -225,10 +225,10 @@ definitions:
   setup:
     type: object
     properties:
-      display_name:
+      username:
         type: string
     required:
-      - display_name
+      - username
 
   credentials:
     type: object

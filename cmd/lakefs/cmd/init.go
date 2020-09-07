@@ -47,8 +47,8 @@ var initCmd = &cobra.Command{
 		}
 
 		credentials, err := auth.SetupAdminUser(authService, &model.User{
-			CreatedAt:   time.Now(),
-			DisplayName: userName,
+			CreatedAt: time.Now(),
+			Username:  userName,
 		})
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)

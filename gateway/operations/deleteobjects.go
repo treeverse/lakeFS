@@ -41,7 +41,7 @@ func (controller *DeleteObjects) Handle(o *RepoOperation) {
 		}
 		// authorize this object deletion
 		authResp, err := o.Auth.Authorize(&auth.AuthorizationRequest{
-			UserDisplayName: o.Principal,
+			Username: o.Principal,
 			RequiredPermissions: []permissions.Permission{
 				{
 					Action:   permissions.DeleteObjectAction,
