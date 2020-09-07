@@ -144,17 +144,12 @@ type Committer interface {
 }
 
 type Differ interface {
-	Diff(ctx context.Context, repository, leftBranch string, rightBranch string) (Differences, error)
+	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error)
 	DiffUncommitted(ctx context.Context, repository, branch string) (Differences, error)
 }
 
-type MergeResult struct {
-	Differences Differences
-	Reference   string
-}
-
 type Merger interface {
-	Merge(ctx context.Context, repository, sourceBranch, destinationBranch string, committer string, message string, metadata Metadata) (*MergeResult, error)
+	Merge(ctx context.Context, repository, sourceBranch, destinationBranch, committer, message string, metadata Metadata) (string, error)
 }
 
 type Cataloger interface {
