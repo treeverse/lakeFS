@@ -59,7 +59,7 @@ func (it *InventoryIterator) Next() bool {
 			return false
 		}
 	}
-	pr, err := it.reader.GetInventoryFileReader(it.Manifest.Format, it.Manifest.inventoryBucket, it.Manifest.Files[it.currentInventoryFileIdx].Key)
+	pr, err := it.reader.GetFileReader(it.Manifest.Format, it.Manifest.inventoryBucket, it.Manifest.Files[it.currentInventoryFileIdx].Key)
 	if err != nil {
 		it.err = err
 		return false
@@ -67,7 +67,7 @@ func (it *InventoryIterator) Next() bool {
 	defer func() {
 		err = pr.Close()
 		if err != nil {
-			it.logger.Errorf("failed to close manifest file reader. file=%s", it.Manifest.Files[it.currentInventoryFileIdx].Key)
+			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.currentInventoryFileIdx].Key, err)
 		}
 	}()
 	if it.currentNumOfRows == -1 {
@@ -92,7 +92,7 @@ func (it *InventoryIterator) moveToNextInventoryFile() bool {
 	return true
 }
 
-func (it *InventoryIterator) fillBuffer(reader inventorys3.InventoryFileReader) bool {
+func (it *InventoryIterator) fillBuffer(reader inventorys3.FileReader) bool {
 	it.logger.Debug("start reading rows from inventory to buffer")
 	// skip the rows that have already been read:
 	err := reader.SkipRows(int64(it.nextRowInFile))

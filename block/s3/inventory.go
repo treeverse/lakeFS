@@ -29,10 +29,10 @@ type inventoryFile struct {
 }
 
 func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool) (block.Inventory, error) {
-	return GenerateInventory(ctx, logger, manifestURL, a.s3, inventorys3.NewReader(ctx, a.s3, logger), shouldSort)
+	return GenerateInventory(logger, manifestURL, a.s3, inventorys3.NewReader(ctx, a.s3, logger), shouldSort)
 }
 
-func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader inventorys3.IReader, shouldSort bool) (block.Inventory, error) {
+func GenerateInventory(logger logging.Logger, manifestURL string, s3 s3iface.S3API, inventoryReader inventorys3.IReader, shouldSort bool) (block.Inventory, error) {
 	if logger == nil {
 		logger = logging.Default()
 	}
@@ -46,13 +46,11 @@ func GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL s
 	if err != nil {
 		return nil, err
 	}
-	return &Inventory{Manifest: m, S3: s3, ctx: ctx, logger: logger, shouldSort: shouldSort, reader: inventoryReader}, nil
+	return &Inventory{Manifest: m, logger: logger, shouldSort: shouldSort, reader: inventoryReader}, nil
 }
 
 type Inventory struct {
-	S3         s3iface.S3API
 	Manifest   *Manifest
-	ctx        context.Context //nolint:structcheck // known issue: https://github.com/golangci/golangci-lint/issues/826)
 	logger     logging.Logger
 	shouldSort bool
 	reader     inventorys3.IReader
@@ -100,7 +98,7 @@ func sortManifest(m *Manifest, logger logging.Logger, reader inventorys3.IReader
 	firstKeyByInventoryFile := make(map[string]string)
 	lastKeyByInventoryFile := make(map[string]string)
 	for _, f := range m.Files {
-		mr, err := reader.GetInventoryMetadataReader(m.Format, m.inventoryBucket, f.Key)
+		mr, err := reader.GetMetadataReader(m.Format, m.inventoryBucket, f.Key)
 		if err != nil {
 			return fmt.Errorf("failed to sort inventory files in manifest: %w", err)
 		}

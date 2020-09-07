@@ -165,7 +165,7 @@ func TestInventoryReader(t *testing.T) {
 
 		uploadFile(t, svc, inventoryBucketName, "myFile.orc", objs(test.ObjectNum))
 		reader := NewReader(context.Background(), svc, logging.Default())
-		fileReader, err := reader.GetInventoryFileReader("ORC", inventoryBucketName, "myFile.orc")
+		fileReader, err := reader.GetFileReader("ORC", inventoryBucketName, "myFile.orc")
 		if err != nil {
 			t.Fatal(err)
 		}

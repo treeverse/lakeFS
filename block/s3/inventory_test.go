@@ -1,7 +1,6 @@
 package s3_test
 
 import (
-	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -128,7 +127,7 @@ func TestIterator(t *testing.T) {
 				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 			}
 			reader := &mockInventoryReader{openFiles: make(map[string]bool)}
-			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
+			inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
 			if err != nil {
 				t.Fatalf("error: %v", err)
 			}
@@ -232,12 +231,12 @@ func (m *mockInventoryFileReader) SkipRows(skip int64) error {
 	return nil
 }
 
-func (m *mockInventoryReader) GetInventoryFileReader(format string, bucket string, key string) (inventorys3.InventoryFileReader, error) {
+func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (inventorys3.FileReader, error) {
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
 }
 
-func (m *mockInventoryReader) GetInventoryMetadataReader(format string, bucket string, key string) (inventorys3.InventoryMetadataReader, error) {
+func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (inventorys3.MetadataReader, error) {
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
 }
