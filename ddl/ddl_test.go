@@ -232,6 +232,36 @@ func TestOwn(t *testing.T) {
 	}
 }
 
+func TestOwnBody(t *testing.T) {
+	w := wrapper{t, db}
+
+	val := "\"the quick brown fox jumps over the lazy dog\""
+
+	w.insertTasks([]ddl.TaskData{
+		{Id: "body", Action: "yes", Body: &val},
+		{Id: "nobody", Action: "no"},
+	})
+
+	tasks, err := w.ownTasks(ddl.ActorId("somebody"), 2, []string{"yes", "no"}, nil)
+	if err != nil {
+		t.Fatalf("own tasks: %s", err)
+	}
+	if len(tasks) != 2 {
+		t.Fatalf("expected to own 2 tasks but got %+v", tasks)
+	}
+	body, nobody := tasks[0], tasks[1]
+	if body.Id != "body" {
+		body, nobody = nobody, body
+	}
+
+	if nobody.Body != nil {
+		t.Errorf("unexpected body in task %+v", nobody)
+	}
+	if body.Body == nil || *body.Body != val {
+		t.Errorf("expected body \"%s\" in task %+v", val, body)
+	}
+}
+
 func TestOwnAfterDeadlineElapsed(t *testing.T) {
 	second := 1 * time.Second
 	w := wrapper{t, db}
