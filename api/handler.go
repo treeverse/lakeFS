@@ -108,7 +108,7 @@ func (s *Handler) JwtTokenAuth() func(string) (*models.User, error) {
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			ID: userData.DisplayName,
+			ID: userData.Username,
 		}, nil
 	}
 }
@@ -133,7 +133,7 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 			return nil, ErrAuthenticationFailed
 		}
 		return &models.User{
-			ID: userData.DisplayName,
+			ID: userData.Username,
 		}, nil
 	}
 }

@@ -1320,7 +1320,7 @@ func Test_setupLakeFSHandler(t *testing.T) {
 
 	name := "admin"
 	user := models.Setup{
-		DisplayName: &name,
+		Username: &name,
 	}
 	req, err := json.Marshal(user)
 	if err != nil {

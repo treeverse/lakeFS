@@ -84,7 +84,7 @@ func TestMain(m *testing.M) {
 		const adminUserName = "nessie"
 		res, err := client.Setup.SetupLakeFS(&setup.SetupLakeFSParams{
 			User: &models.Setup{
-				DisplayName: swag.String(adminUserName),
+				Username: swag.String(adminUserName),
 			},
 			Context: ctx,
 		})
