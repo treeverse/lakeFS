@@ -22,6 +22,9 @@ import (
 	"google.golang.org/api/option"
 )
 
+// googleAuthCloudPlatform - Cloud Storage authentication https://cloud.google.com/storage/docs/authentication
+const googleAuthCloudPlatform = "https://www.googleapis.com/auth/cloud-platform"
+
 var ErrInvalidBlockStoreType = errors.New("invalid blockstore type")
 
 func BuildBlockAdapter(c *config.Config) (block.Adapter, error) {
@@ -91,7 +94,7 @@ func buildGSAdapter(params params.GS) (*gs.Adapter, error) {
 		opts = append(opts, option.WithCredentialsFile(params.CredentialsFile))
 	} else if params.CredentialsJSON != "" {
 		ctx := context.Background()
-		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), "https://www.googleapis.com/auth/cloud-platform")
+		cred, err := google.CredentialsFromJSON(ctx, []byte(params.CredentialsJSON), googleAuthCloudPlatform)
 		if err != nil {
 			return nil, err
 		}
