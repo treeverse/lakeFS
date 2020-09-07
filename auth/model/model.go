@@ -26,9 +26,9 @@ type Paginator struct {
 }
 
 type User struct {
-	ID          int       `db:"id"`
-	CreatedAt   time.Time `db:"created_at"`
-	DisplayName string    `db:"display_name" json:"display_name"`
+	ID        int       `db:"id"`
+	CreatedAt time.Time `db:"created_at"`
+	Username  string    `db:"display_name" json:"display_name"`
 }
 
 type Group struct {

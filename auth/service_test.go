@@ -57,7 +57,7 @@ func setupService(t *testing.T, opts ...testutil.GetDBOption) auth.Service {
 func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) string {
 	userName := uuid.New().String()
 	err := s.CreateUser(&model.User{
-		DisplayName: userName,
+		Username: userName,
 	})
 	if err != nil {
 		t.Fatal(err)
@@ -165,7 +165,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "fs:WriteObject",
@@ -192,7 +192,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "fs:WriteObject",
@@ -219,7 +219,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "fs:WriteObject",
@@ -246,7 +246,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:CreateUser",
@@ -273,7 +273,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:CreateUser",
@@ -300,7 +300,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:CreateUser",
@@ -327,7 +327,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:CreateUser",
@@ -354,7 +354,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:CreateUser",
@@ -381,7 +381,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:DeleteUser",
@@ -417,7 +417,7 @@ func TestDBAuthService_Authorize(t *testing.T) {
 			},
 			request: func(userName string) *auth.AuthorizationRequest {
 				return &auth.AuthorizationRequest{
-					UserDisplayName: userName,
+					Username: userName,
 					RequiredPermissions: []permissions.Permission{
 						{
 							Action:   "auth:DeleteUser",
@@ -469,7 +469,7 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 		t.Run(testCase.name, func(t *testing.T) {
 			s := setupService(t)
 			for _, userName := range testCase.userNames {
-				if err := s.CreateUser(&model.User{DisplayName: userName}); err != nil {
+				if err := s.CreateUser(&model.User{Username: userName}); err != nil {
 					t.Fatalf("CreateUser(%s): %s", userName, err)
 				}
 			}
@@ -479,7 +479,7 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 			}
 			gotUsers := make([]string, 0, len(testCase.userNames))
 			for _, user := range gotList {
-				gotUsers = append(gotUsers, user.DisplayName)
+				gotUsers = append(gotUsers, user.Username)
 			}
 			sort.Strings(gotUsers)
 			sort.Strings(testCase.userNames)
@@ -494,7 +494,7 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	const numCredentials = 5
 	const userName = "accredited"
 	s := setupService(t)
-	if err := s.CreateUser(&model.User{DisplayName: userName}); err != nil {
+	if err := s.CreateUser(&model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	credential, err := s.CreateCredentials(userName)
@@ -570,14 +570,14 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	time := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(&model.User{DisplayName: userName, ID: -22, CreatedAt: time}); err != nil {
+	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: time}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(userName)
 	if err != nil {
 		t.Fatalf("GetUser(%s): %s", userName, err)
 	}
-	if user.DisplayName != userName {
+	if user.Username != userName {
 		t.Errorf("GetUser(%s) returned user %+v with a different name", userName, user)
 	}
 	if user.CreatedAt.Sub(time) != 0 {
@@ -594,7 +594,7 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
 	time := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(&model.User{DisplayName: userName, ID: -22, CreatedAt: time}); err != nil {
+	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: time}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(userName)
@@ -613,7 +613,7 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 func TestDBAuthService_DeleteUser(t *testing.T) {
 	s := setupService(t)
 	const userName = "foo"
-	if err := s.CreateUser(&model.User{DisplayName: userName}); err != nil {
+	if err := s.CreateUser(&model.User{Username: userName}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	_, err := s.GetUser(userName)
