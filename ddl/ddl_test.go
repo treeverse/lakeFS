@@ -1,16 +1,19 @@
 package ddl_test
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"log"
 	"os"
 	"sort"
+	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/go-test/deep"
+	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/treeverse/parade/ddl"
 
@@ -94,7 +97,9 @@ func TestMain(m *testing.M) {
 	if err != nil {
 		log.Fatalf("could not connect to Docker: %s", err)
 	}
-	databaseURI, dbCleanup := runDBInstance(pool)
+	var dbCleanup func()
+	databaseURI, dbCleanup = runDBInstance(pool)
+	fmt.Println("[DEBUG] connectionURI", databaseURI)
 	defer dbCleanup() // In case we don't reach the cleanup action.
 	db = sqlx.MustConnect("pgx", databaseURI)
 	code := m.Run()
@@ -152,7 +157,21 @@ func (w wrapper) insertTasks(tasks []ddl.TaskData) {
 		}
 		_, err := w.db.NamedExec(insertSql, copy)
 		if err != nil {
-			w.t.Fatalf("insert %+v into tasks: %s", tasks, err)
+			w.t.Fatalf("insert %+v into tasks: %s", copy, err)
+		}
+	}
+}
+
+func (w wrapper) insertTaskDeps(deps []ddl.TaskDependencyData) {
+	w.t.Helper()
+	const insertSql = `INSERT INTO task_dependencies (after, run) VALUES(:after, :run)`
+	for _, dep := range deps {
+		copy := dep
+		copy.After = w.prefixTask(copy.After)
+		copy.Run = w.prefixTask(copy.Run)
+		_, err := w.db.NamedExec(insertSql, copy)
+		if err != nil {
+			w.t.Fatalf("insert %+v into task_dependencies: %s", copy, err)
 		}
 	}
 }
@@ -316,5 +335,130 @@ func TestReturnTask_RetryMulti(t *testing.T) {
 	}
 	if len(tasks) != 0 {
 		t.Errorf("expected not to receive any tasks (maxRetries)  but got tasks %+v", tasks)
+	}
+}
+
+func TestDependencies(t *testing.T) {
+	w := wrapper{t, db}
+
+	id := func(n int) ddl.TaskId {
+		return ddl.TaskId(fmt.Sprintf("number-%d", n))
+	}
+	makeBody := func(n int) *string {
+		ret := fmt.Sprintf("%d", n)
+		return &ret
+	}
+	parseBody := func(s string) int {
+		ret, err := strconv.ParseInt(s, 10, 0)
+		if err != nil {
+			t.Fatalf("parse body %s: %s", s, err)
+		}
+		return int(ret)
+	}
+
+	// Tasks: take a limit number.  Create a task for each number from 1 to this limit
+	// number.  Now add dependencies: each task can only be executed after all its divisors'
+	// tasks have been executed.  This provides an interesting graph of dependencies that is
+	// also easy to check.
+	const num = 63
+	taskData := make([]ddl.TaskData, 0, num)
+	for i := 1; i <= num; i++ {
+		taskData = append(taskData, ddl.TaskData{Id: id(i), Action: "div", Body: makeBody(i)})
+	}
+	w.insertTasks(taskData)
+	deps := make([]ddl.TaskDependencyData, 0, num*20)
+	for i := 1; i <= num; i++ {
+		for j := 2 * i; j <= num; j++ {
+			deps = append(deps, ddl.TaskDependencyData{After: taskData[i-1].Id, Run: taskData[j-1].Id})
+		}
+	}
+	w.insertTaskDeps(deps)
+
+	doneSet := make(map[int]struct{}, num)
+
+	for {
+		tasks, err := w.ownTasks(ddl.ActorId("foo"), 17, []string{"div"}, nil)
+		if err != nil {
+			t.Fatalf("acquire tasks with done %+v: %s", doneSet, err)
+		}
+		if len(tasks) == 0 {
+			break
+		}
+		for _, task := range tasks {
+			n := parseBody(*task.Body)
+			doneSet[n] = struct{}{}
+			for d := 1; d <= n/2; d++ {
+				if n%d == 0 {
+					if _, ok := doneSet[d]; !ok {
+						t.Errorf("retrieved task %+v before task for its divisor %d", task, d)
+					}
+				}
+			}
+			if err = w.returnTask(task.Id, task.Token, "divided", ddl.TASK_COMPLETED); err != nil {
+				t.Errorf("failed to complete task %+v: %s", task, err)
+			}
+		}
+	}
+	if len(doneSet) < num {
+		t.Errorf("finished before processing all numbers up to %d: got just %+v", num, doneSet)
+	}
+}
+
+func TestNotification(t *testing.T) {
+	ctx := context.Background()
+	w := wrapper{t, db}
+
+	type testCase struct {
+		title      string
+		id         ddl.TaskId
+		status     string
+		statusCode ddl.TaskStatusCodeValue
+	}
+
+	cases := []testCase{
+		{"task aborted", ddl.TaskId("111"), "b0rked!", ddl.TASK_ABORTED},
+		{"task succeeded", ddl.TaskId("222"), "yay!", ddl.TASK_COMPLETED},
+	}
+
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			w.insertTasks([]ddl.TaskData{
+				{Id: c.id, Action: "frob"},
+			})
+
+			tasks, err := w.ownTasks(ddl.ActorId("foo"), 1, []string{"frob"}, nil)
+			if err != nil {
+				t.Fatalf("acquire task: %s", err)
+			}
+			if len(tasks) != 1 {
+				t.Fatalf("expected to own single task but got %+v", tasks)
+			}
+
+			conn, err := pgx.Connect(ctx, databaseURI)
+			if err != nil {
+				t.Fatalf("pgx.Connect: %s", err)
+			}
+
+			type result struct {
+				status     string
+				statusCode ddl.TaskStatusCodeValue
+				err        error
+			}
+			ch := make(chan result)
+			go func() {
+				status, statusCode, err := ddl.WaitForTask(ctx, conn, ddl.TaskId("111"))
+				ch <- result{status, statusCode, err}
+			}()
+
+			if err = w.returnTask(tasks[0].Id, tasks[0].Token, c.status, c.statusCode); err != nil {
+				t.Fatalf("return task %+v: %s", tasks[0], err)
+			}
+
+			got := <-ch
+			expected := result{c.status, c.statusCode, nil}
+			if diffs := deep.Equal(expected, got); diffs != nil {
+				t.Errorf("WaitForTask returned unexpected values: %s", diffs)
+			}
+		})
 	}
 }
