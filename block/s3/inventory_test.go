@@ -10,13 +10,12 @@ import (
 	"strings"
 	"testing"
 
+	s3sdk "github.com/aws/aws-sdk-go/service/s3"
+	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/block/s3"
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 	"github.com/treeverse/lakefs/logging"
-
-	s32 "github.com/aws/aws-sdk-go/service/s3"
-	"github.com/aws/aws-sdk-go/service/s3/s3iface"
-	"github.com/treeverse/lakefs/block/s3"
 )
 
 var ErrReadFile = errors.New("error reading file")
@@ -240,8 +239,8 @@ func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) 
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
 }
-func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {
-	output := s32.GetObjectOutput{}
+func (m *mockS3Client) GetObject(input *s3sdk.GetObjectInput) (*s3sdk.GetObjectOutput, error) {
+	output := s3sdk.GetObjectOutput{}
 	manifestURL := fmt.Sprintf("s3://%s%s", *input.Bucket, *input.Key)
 	if !manifestExists(manifestURL) {
 		return &output, nil
