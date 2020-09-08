@@ -1,7 +1,7 @@
 version: '3'
 services:
   lakefs:
-    image: "treeverse/lakefs:${TAG}"
+    image: "${DOCKER_REG}/lakefs:${TAG}"
     ports: 
       - "8000:8000"
     depends_on:
@@ -14,7 +14,8 @@ services:
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs.io:8000
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
-      - LAKEFS_LOGGING_LEVEL
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
     image: "postgres:11"

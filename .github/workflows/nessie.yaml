@@ -5,8 +5,57 @@ on:
       - master
   pull_request:
 jobs:
+  deploy-image:
+    name: Build and push Docker image
+    runs-on: ubuntu-latest
+    steps:
+
+      - name: Checkout
+        uses: actions/checkout@v2
+
+      - name: Setup UI (node 10)
+        uses: actions/setup-node@v1
+        with:
+          node-version: '10.x'
+
+      - name: Set up Go 1.14
+        uses: actions/setup-go@v1
+        with:
+          go-version: 1.14
+        id: go
+
+      - name: Generate code
+        run: |
+          make gen
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and push to Amazon ECR
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          ECR_REPOSITORY_LAKEFS: lakefs
+          ECR_REPOSITORY_LAKECTL: lakectl
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+
   run-system:
     name: Run latest lakeFS app
+    needs: deploy-image
     runs-on: ubuntu-latest
     steps:
       - name: Check-out code
@@ -16,17 +65,32 @@ jobs:
         with:
           go-version: 1.14
         id: go
-      - name: Build docker image
-        run: make build-docker
+      - name: Extract version
+        shell: bash
+        run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
+        id: version
+      - name: Generate code
+        run: |
+          make gen
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
       - name: Run lakeFS S3
         env:
-          TAG: dev
+          TAG: ${{ steps.version.outputs.tag }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: docker-compose up --quiet-pull --build -d
+        run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie S3
         env:
           NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
@@ -47,16 +111,17 @@ jobs:
             docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
       - name: Run lakeFS GS
         env:
-          TAG: dev
+          TAG: ${{ steps.version.outputs.tag }}
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
+          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
           AWS_ACCESS_KEY_ID: ""
           AWS_SECRET_ACCESS_KEY: ""
           LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
         run: |
-            docker-compose down
-            docker-compose up --quiet-pull --build -d
+            docker-compose -f nessie/ops/docker-compose.yaml down -v
+            docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
       - name: Run Nessie GS
         env:
           NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}
