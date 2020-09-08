@@ -43,8 +43,8 @@ type task struct {
 func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	for task := range tasks {
 		*task.err = task.f()
-		wg.Done()
 	}
+	wg.Done()
 }
 
 func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error) {
@@ -60,6 +60,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 	for w := 0; w < DefaultWorkerCount; w++ {
 		go worker(&wg, tasksChan)
 	}
+	wg.Add(DefaultWorkerCount)
 	for it.Next() {
 		diffObj := it.Get()
 		obj := diffObj.Obj
@@ -95,7 +96,6 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 				err: new(error),
 			}
 			errs = append(errs, tsk.err)
-			wg.Add(1)
 			tasksChan <- tsk
 		}
 	}
