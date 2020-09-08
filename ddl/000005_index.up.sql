@@ -1,4 +1,3 @@
-
 BEGIN;
 ALTER TABLE catalog_entries DROP CONSTRAINT IF EXISTS catalog_entries_pk;
 DROP INDEX IF EXISTS catalog_fki_entries_branches_fk;
