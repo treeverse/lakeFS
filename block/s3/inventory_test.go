@@ -167,18 +167,12 @@ func TestIterator(t *testing.T) {
 				objects = append(objects, it.Get().Key)
 			}
 			if len(reader.openFiles) != 0 {
-				t.Fatalf("some files stayed open: %v", reader.openFiles)
+				t.Errorf("some files stayed open: %v", reader.openFiles)
 			}
-			if test.ErrExpected == nil && it.Err() != nil {
-				t.Fatalf("got unexpected error: %v. expected no error", it.Err())
+			if !errors.Is(it.Err(), test.ErrExpected) {
+				t.Fatalf("got unexpected error. expected=%v, got=%v.", test.ErrExpected, it.Err())
 			}
 			if test.ErrExpected != nil {
-				if it.Err() == nil {
-					t.Fatalf("expected error but didn't get one")
-				}
-				if !errors.Is(it.Err(), test.ErrExpected) {
-					t.Fatalf("got unexpected error. expected=%v. got=%v", test.ErrExpected, it.Err())
-				}
 				continue
 			}
 			if len(objects) != len(test.ExpectedObjects) {
