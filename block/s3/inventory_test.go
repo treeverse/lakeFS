@@ -29,26 +29,38 @@ func rows(keys ...string) []*inventorys3.InventoryObject {
 		if key != "" {
 			res[i] = new(inventorys3.InventoryObject)
 			res[i].Key = key
-			res[i].IsLatest = swag.Bool(!strings.HasPrefix(key, "expired_"))
-			res[i].IsDeleteMarker = swag.Bool(strings.HasPrefix(key, "del_"))
+			res[i].IsLatest = swag.Bool(!strings.Contains(key, "_expired"))
+			res[i].IsDeleteMarker = swag.Bool(strings.Contains(key, "_del"))
 		}
 	}
 	return res
 }
 
 var fileContents = map[string][]string{
-	"f1":            {"del_1", "f1row1", "f1row2", "del_2"},
+	"f1":            {"f1row1_del", "f1row2", "f1row3", "f1row4_del"},
 	"f2":            {"f2row1", "f2row2"},
 	"f3":            {"f3row1", "f3row2"},
 	"f4":            {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
 	"f5":            {"f5row1", "f5row2", "f5row3"},
 	"f6":            {"f6row1", "f6row2", "f6row3", "f6row4"},
-	"f7":            {"f7row1", "del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "expired_1", "expired_2", "expired_3", "f7row2"},
+	"f7":            {"f7row1", "f7row2_del", "f7row3_del", "f7row4_del", "f7row5_del", "f7row6_del", "f7row7_del", "f7row8_expired", "f7row9_expired", "f7row10_expired", "f7row11"},
 	"err_file1":     {"f8row1", "", "f8row2", "f8row3"},
 	"err_file2":     {""},
 	"unsorted_file": {"f9row1", "f9row2", "f9row3", "f9row5", "f9row4"},
-	"all_deleted":   {"del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "del_7", "del_8"},
+	"all_deleted1":  {"fd1_del1", "fd1_del2", "fd1_del3", "fd1_del4", "fd1_del5", "fd1_del6", "fd1_del7", "fd1_del8"},
+	"all_deleted2":  {"fd2_del1", "fd2_del2", "fd2_del3", "fd2_del4", "fd2_del5", "fd2_del6", "fd2_del7", "fd2_del8"},
+	"all_deleted3":  {"fd3_del1", "fd3_del2", "fd3_del3", "fd3_del4", "fd3_del5", "fd3_del6", "fd3_del7", "fd3_del8"},
+	"all_deleted4":  {"fd4_del1", "fd4_del2", "fd4_del3", "fd4_del4", "fd4_del5", "fd4_del6", "fd4_del7", "fd4_del8"},
+	"all_deleted5":  {"fd5_del1", "fd5_del2", "fd5_del3", "fd5_del4", "fd5_del5", "fd5_del6", "fd5_del7", "fd5_del8"},
+	"all_deleted6":  {"fd6_del1", "fd6_del2", "fd6_del3", "fd6_del4", "fd6_del5", "fd6_del6", "fd6_del7", "fd6_del8"},
+	"all_deleted7":  {"fd7_del1", "fd7_del2", "fd7_del3", "fd7_del4", "fd7_del5", "fd7_del6", "fd7_del7", "fd7_del8"},
+	"all_deleted8":  {"fd8_del1", "fd8_del2", "fd8_del3", "fd8_del4", "fd8_del5", "fd8_del6", "fd8_del7", "fd8_del8"},
+	"all_deleted9":  {"fd9_del1", "fd9_del2", "fd9_del3", "fd9_del4", "fd9_del5", "fd9_del6", "fd9_del7", "fd9_del8"},
 	"empty_file":    {},
+	"f_overlap1":    {"fo_row1", "fo_row3", "fo_row5"},
+	"f_overlap2":    {"fo_row2", "fo_row4"},
+	"f_overlap3":    {"fo_row2", "fo_row6"},
+	"f_overlap4":    {"fo_row1", "fo_row4"},
 }
 
 func TestIterator(t *testing.T) {
@@ -60,12 +72,12 @@ func TestIterator(t *testing.T) {
 	}{
 		{
 			InventoryFiles:  []string{"f1", "f2", "f3"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
 			InventoryFiles:  []string{"f3", "f2", "f1"},
 			ShouldSort:      true,
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
 			InventoryFiles:  []string{},
@@ -77,7 +89,7 @@ func TestIterator(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{"f1", "f4"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
 		},
 		{
 			InventoryFiles:  []string{"f5", "f6"},
@@ -98,24 +110,39 @@ func TestIterator(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{"f7"},
-			ExpectedObjects: []string{"f7row1", "f7row2"},
+			ExpectedObjects: []string{"f7row1", "f7row11"},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "all_deleted"},
+			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "all_deleted3"},
 			ExpectedObjects: []string{},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "f1", "all_deleted3", "all_deleted4", "all_deleted5", "all_deleted6", "all_deleted7", "f2", "all_deleted8", "all_deleted9"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2"},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "f2", "all_deleted3", "all_deleted4", "all_deleted5", "all_deleted6", "all_deleted7", "f1", "all_deleted8", "all_deleted9"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2"},
 			ShouldSort:      true,
 		},
 		{
 			InventoryFiles:  []string{"empty_file"},
 			ExpectedObjects: []string{},
+		},
+		{
+			InventoryFiles: []string{"f_overlap1", "f_overlap2"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
+		{
+			InventoryFiles: []string{"f_overlap1", "f_overlap3"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
+		{
+			InventoryFiles: []string{"f_overlap1", "f_overlap4"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
 	}
 
@@ -128,6 +155,9 @@ func TestIterator(t *testing.T) {
 			reader := &mockInventoryReader{openFiles: make(map[string]bool)}
 			inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
 			if err != nil {
+				if errors.Is(err, test.ErrExpected) {
+					continue
+				}
 				t.Fatalf("error: %v", err)
 			}
 			it := inv.Iterator()

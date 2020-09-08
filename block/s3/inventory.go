@@ -3,6 +3,7 @@ package s3
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/url"
 	"sort"
@@ -14,6 +15,8 @@ import (
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 	"github.com/treeverse/lakefs/logging"
 )
+
+var ErrInventoryFilesRangesOverlap = errors.New("inventory files cover overlapping ranges")
 
 type Manifest struct {
 	URL                string          `json:"-"`
@@ -114,5 +117,12 @@ func sortManifest(m *Manifest, logger logging.Logger, reader inventorys3.IReader
 			(firstKeyByInventoryFile[m.Files[i].Key] == firstKeyByInventoryFile[m.Files[j].Key] &&
 				lastKeyByInventoryFile[m.Files[i].Key] < lastKeyByInventoryFile[m.Files[j].Key])
 	})
+	// verify that each file ends before the next one begins
+	// otherwise, the files cover overlapping ranges, which we don't know how to handle.
+	if !sort.SliceIsSorted(m.Files, func(i, j int) bool {
+		return firstKeyByInventoryFile[m.Files[i].Key] < lastKeyByInventoryFile[m.Files[j].Key]
+	}) {
+		return ErrInventoryFilesRangesOverlap
+	}
 	return nil
 }
