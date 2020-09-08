@@ -121,22 +121,6 @@ func (r *OrcInventoryFileReader) GetNumRows() int64 {
 	return int64(r.reader.NumRows())
 }
 
-func (r *OrcInventoryFileReader) SkipRows(i int64) error {
-	if i == 0 {
-		return nil
-	}
-	skipped := int64(0)
-	for r.c.Stripes() {
-		for r.c.Next() {
-			skipped++
-			if skipped == i {
-				return nil
-			}
-		}
-	}
-	return ErrNoMoreRowsToSkip
-}
-
 func (r *OrcInventoryFileReader) Close() error {
 	var combinedErr error
 	if err := r.c.Close(); err != nil {

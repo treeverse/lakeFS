@@ -148,39 +148,36 @@ func TestIterator(t *testing.T) {
 
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
-		for _, batchSize := range []int{1, 2, 3, 4, 5, 7, 9, 11, 15, 100, 1000, 10000} {
-			s3api := &mockS3Client{
-				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-			}
-			reader := &mockInventoryReader{openFiles: make(map[string]bool)}
-			inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
-			if err != nil {
-				if errors.Is(err, test.ErrExpected) {
-					continue
-				}
-				t.Fatalf("error: %v", err)
-			}
-			it := inv.Iterator()
-			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
-			objects := make([]string, 0, len(test.ExpectedObjects))
-			for it.Next() {
-				objects = append(objects, it.Get().Key)
-			}
-			if len(reader.openFiles) != 0 {
-				t.Errorf("some files stayed open: %v", reader.openFiles)
-			}
-			if !errors.Is(it.Err(), test.ErrExpected) {
-				t.Fatalf("got unexpected error. expected=%v, got=%v.", test.ErrExpected, it.Err())
-			}
-			if test.ErrExpected != nil {
+		s3api := &mockS3Client{
+			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
+		}
+		reader := &mockInventoryReader{openFiles: make(map[string]bool)}
+		inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
+		if err != nil {
+			if errors.Is(err, test.ErrExpected) {
 				continue
 			}
-			if len(objects) != len(test.ExpectedObjects) {
-				t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
-			}
-			if !reflect.DeepEqual(objects, test.ExpectedObjects) {
-				t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, objects)
-			}
+			t.Fatalf("error: %v", err)
+		}
+		it := inv.Iterator()
+		objects := make([]string, 0, len(test.ExpectedObjects))
+		for it.Next() {
+			objects = append(objects, it.Get().Key)
+		}
+		if len(reader.openFiles) != 0 {
+			t.Errorf("some files stayed open: %v", reader.openFiles)
+		}
+		if !errors.Is(it.Err(), test.ErrExpected) {
+			t.Fatalf("got unexpected error. expected=%v, got=%v.", test.ErrExpected, it.Err())
+		}
+		if test.ErrExpected != nil {
+			continue
+		}
+		if len(objects) != len(test.ExpectedObjects) {
+			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
+		}
+		if !reflect.DeepEqual(objects, test.ExpectedObjects) {
+			t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, objects)
 		}
 	}
 }
@@ -242,13 +239,6 @@ func (m *mockInventoryFileReader) Read(dstInterface interface{}) error {
 
 func (m *mockInventoryFileReader) GetNumRows() int64 {
 	return int64(len(m.rows))
-}
-func (m *mockInventoryFileReader) SkipRows(skip int64) error {
-	m.nextIdx += int(skip)
-	if m.nextIdx > len(m.rows) {
-		return fmt.Errorf("index out of bounds after skip. got index=%d, length=%d", m.nextIdx, len(m.rows))
-	}
-	return nil
 }
 
 func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (inventorys3.FileReader, error) {

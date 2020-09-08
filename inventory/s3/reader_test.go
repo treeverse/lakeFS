@@ -124,7 +124,6 @@ func TestInventoryReader(t *testing.T) {
 		ExpectedReadObjects int
 		ExpectedMaxValue    string
 		ExpectedMinValue    string
-		RowsToSkip          int64
 	}{
 		{
 			ObjectNum:           2,
@@ -139,23 +138,8 @@ func TestInventoryReader(t *testing.T) {
 			ExpectedMaxValue:    "f12499",
 		},
 		{
-			RowsToSkip:          100,
-			ObjectNum:           12500,
-			ExpectedReadObjects: 12400,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f12499",
-		},
-		{
-			RowsToSkip:          100,
 			ObjectNum:           100,
-			ExpectedReadObjects: 0,
-			ExpectedMinValue:    "f00000",
-			ExpectedMaxValue:    "f00099",
-		},
-		{
-			RowsToSkip:          200,
-			ObjectNum:           100,
-			ExpectedReadObjects: 0,
+			ExpectedReadObjects: 100,
 			ExpectedMinValue:    "f00000",
 			ExpectedMaxValue:    "f00099",
 		},
@@ -185,10 +169,6 @@ func TestInventoryReader(t *testing.T) {
 		res := make([]InventoryObject, readBatchSize)
 		offset := 0
 		readCount := 0
-		if test.RowsToSkip > 0 {
-			_ = fileReader.SkipRows(test.RowsToSkip)
-			offset = int(test.RowsToSkip)
-		}
 		for {
 			err = fileReader.Read(&res)
 			for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {

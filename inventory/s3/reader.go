@@ -20,7 +20,6 @@ const (
 
 var (
 	ErrUnsupportedInventoryFormat = errors.New("unsupported inventory type. supported types: parquet, orc")
-	ErrNoMoreRowsToSkip           = errors.New("no more rows to skip")
 )
 
 type IReader interface {
@@ -51,7 +50,6 @@ type Reader struct {
 
 type MetadataReader interface {
 	GetNumRows() int64
-	SkipRows(int64) error
 	Close() error
 	FirstObjectKey() string
 	LastObjectKey() string
