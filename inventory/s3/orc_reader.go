@@ -11,18 +11,11 @@ import (
 )
 
 type OrcInventoryFileReader struct {
-	reader          *orc.Reader
-	c               *orc.Cursor
-	ctx             context.Context
-	orcSelect       *OrcSelect
-	inventoryReader *Reader
-	key             string
-}
-
-type orcFile struct {
-	key           string
-	localFilename string
-	ready         bool
+	reader    *orc.Reader
+	cursor    *orc.Cursor
+	ctx       context.Context
+	orcSelect *OrcSelect
+	orcFile   *OrcFile
 }
 
 type OrcField struct {
@@ -98,16 +91,15 @@ func (r *OrcInventoryFileReader) Read(dstInterface interface{}) error {
 			return r.ctx.Err()
 		default:
 		}
-		if !r.c.Next() {
-			r.inventoryReader.logger.Debugf("start new stripe in file %s", r.key)
-			if !r.c.Stripes() {
+		if !r.cursor.Next() {
+			if !r.cursor.Stripes() {
 				break
 			}
-			if !r.c.Next() {
+			if !r.cursor.Next() {
 				break
 			}
 		}
-		res = append(res, r.inventoryObjectFromRow(r.c.Row()))
+		res = append(res, r.inventoryObjectFromRow(r.cursor.Row()))
 		if len(res) == num {
 			break
 		}
@@ -123,13 +115,15 @@ func (r *OrcInventoryFileReader) GetNumRows() int64 {
 
 func (r *OrcInventoryFileReader) Close() error {
 	var combinedErr error
-	if err := r.c.Close(); err != nil {
+	if err := r.cursor.Close(); err != nil {
 		combinedErr = multierror.Append(combinedErr, err)
 	}
 	if err := r.reader.Close(); err != nil {
 		combinedErr = multierror.Append(combinedErr, err)
 	}
-	r.inventoryReader.cleanOrcFile(r.key)
+	if err := r.orcFile.Close(); err != nil {
+		combinedErr = multierror.Append(combinedErr, err)
+	}
 	return combinedErr
 }
 

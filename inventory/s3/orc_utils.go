@@ -12,6 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/aws/aws-sdk-go/service/s3/s3manager"
+	"github.com/go-openapi/swag"
 	gproto "github.com/golang/protobuf/proto" //nolint:staticcheck // orc lib uses old proto
 	"github.com/scritchley/orc/proto"
 	"github.com/treeverse/lakefs/logging"
@@ -24,21 +25,12 @@ const (
 
 // getTailLength reads the ORC postscript from the given file, returning the full tail length.
 // The tail length equals (footer + metadata + postscript + 1) bytes.
-func getTailLength(orcFilename string, logger logging.Logger) (int, error) {
-	f, err := os.Open(orcFilename)
-	if err != nil {
-		return 0, err
-	}
+func getTailLength(f *os.File) (int, error) {
 	stat, err := f.Stat()
 	if err != nil {
 		return 0, err
 	}
 	fileSize := stat.Size()
-	defer func() {
-		if err := f.Close(); err != nil {
-			logger.Errorf("failed to close orc file after reading tail. file=%s, err=%w", f.Name(), err)
-		}
-	}()
 	psPlusByte := int64(maxPostScriptSize + 1)
 	if psPlusByte > fileSize {
 		psPlusByte = fileSize
@@ -62,38 +54,38 @@ func getTailLength(orcFilename string, logger logging.Logger) (int, error) {
 	return footerLength + metadataLength + psLen + 1, nil
 }
 
-func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, fromByte int64) (string, error) {
+func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, fromByte int64) (*os.File, error) {
 	f, err := ioutil.TempFile("", path.Base(key))
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	defer func() {
-		if err := f.Close(); err != nil {
-			logger.Errorf("failed to close orc file after download. file=%s, err=%w", f.Name(), err)
+		if err := os.Remove(f.Name()); err != nil {
+			logger.Errorf("failed to remove orc file after download. file=%s, err=%w", f.Name(), err)
 		}
 	}()
-	logger.Debugf("start downloading %s to local file %s", key, f.Name())
 	downloader := s3manager.NewDownloaderWithClient(svc)
 	var rng *string
 	if fromByte > 0 {
 		rng = aws.String(fmt.Sprintf("bytes=%d-", fromByte))
 	}
+	logger.Debugf("start downloading %s[%s] to local file %s", key, swag.StringValue(rng), f.Name())
 	_, err = downloader.DownloadWithContext(ctx, f, &s3.GetObjectInput{
 		Bucket: aws.String(bucket),
 		Key:    aws.String(key),
 		Range:  rng,
 	})
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	logger.Debugf("finished downloading %s to local file %s", key, f.Name())
-	return f.Name(), nil
+	return f, nil
 }
 
-// DownloadOrc downloads from s3 to a temporary file, returning the new file location.
+// DownloadOrc downloads a file from s3 and returns a ReaderSeeker to it.
 // If tailOnly is set to true, download only the tail (metadata+footer) by trying the last `orcInitialReadSize` bytes of the file.
 // Then, check the last byte to see if the whole tail was downloaded. If not, download again with the actual tail length.
-func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, tailOnly bool) (string, error) {
+func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, tailOnly bool) (*OrcFile, error) {
 	var size int64
 	if tailOnly {
 		headObject, err := svc.HeadObject(&s3.HeadObjectInput{
@@ -101,29 +93,45 @@ func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, 
 			Key:    aws.String(key),
 		})
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		size = *headObject.ContentLength
 	}
-	filename, err := downloadRange(ctx, svc, logger, bucket, key, size-orcInitialReadSize)
+	f, err := downloadRange(ctx, svc, logger, bucket, key, size-orcInitialReadSize)
 	if err != nil {
-		return "", err
+		return nil, err
 	}
 	if tailOnly {
-		tailLength, err := getTailLength(filename, logger)
+		tailLength, err := getTailLength(f)
 		if err != nil {
-			return "", err
+			return nil, err
 		}
 		if tailLength > orcInitialReadSize {
 			// tail didn't fit in initially downloaded file
-			if err := os.Remove(filename); err != nil {
-				logger.Errorf("failed to delete orc file %s: %w", filename, err)
+			if err = f.Close(); err != nil {
+				logger.Errorf("failed to close orc file. file=%s, err=%w", f.Name(), err)
 			}
-			filename, err = downloadRange(ctx, svc, logger, bucket, key, size-int64(tailLength))
+			f, err = downloadRange(ctx, svc, logger, bucket, key, size-int64(tailLength))
 			if err != nil {
-				return "", err
+				return nil, err
 			}
 		}
 	}
-	return filename, nil
+	return &OrcFile{f}, nil
+}
+
+type OrcFile struct {
+	*os.File
+}
+
+func (or *OrcFile) Size() int64 {
+	stats, err := or.Stat()
+	if err != nil {
+		return 0
+	}
+	return stats.Size()
+}
+
+func (or *OrcFile) Close() error {
+	return or.File.Close()
 }

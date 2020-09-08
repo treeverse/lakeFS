@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"os"
 
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/scritchley/orc"
@@ -42,10 +41,9 @@ func (o *InventoryObject) GetPhysicalAddress() string {
 }
 
 type Reader struct {
-	ctx           context.Context
-	svc           s3iface.S3API
-	orcFilesByKey map[string]*orcFile
-	logger        logging.Logger
+	ctx    context.Context
+	svc    s3iface.S3API
+	logger logging.Logger
 }
 
 type MetadataReader interface {
@@ -61,16 +59,7 @@ type FileReader interface {
 }
 
 func NewReader(ctx context.Context, svc s3iface.S3API, logger logging.Logger) IReader {
-	return &Reader{ctx: ctx, svc: svc, logger: logger, orcFilesByKey: make(map[string]*orcFile)}
-}
-
-func (o *Reader) cleanOrcFile(key string) {
-	localFilename := o.orcFilesByKey[key].localFilename
-	delete(o.orcFilesByKey, key)
-	defer func() {
-		err := os.Remove(localFilename)
-		o.logger.Errorf("failed to remove orc file %s: %w", localFilename, err)
-	}()
+	return &Reader{ctx: ctx, svc: svc, logger: logger}
 }
 
 func (o *Reader) GetFileReader(format string, bucket string, key string) (FileReader, error) {
@@ -88,10 +77,8 @@ func (o *Reader) GetMetadataReader(format string, bucket string, key string) (Me
 	switch format {
 	case OrcFormatName:
 		return o.getOrcReader(bucket, key, true)
-	case ParquetFormatName:
-		return o.getParquetReader(bucket, key)
 	default:
-		return nil, ErrUnsupportedInventoryFormat
+		return o.GetFileReader(format, bucket, key)
 	}
 }
 
@@ -109,25 +96,20 @@ func (o *Reader) getParquetReader(bucket string, key string) (FileReader, error)
 }
 
 func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileReader, error) {
-	file, ok := o.orcFilesByKey[key]
-	if !ok {
-		file = &orcFile{key: key}
-		o.orcFilesByKey[key] = file
-	}
-	if !file.ready {
-		localFilename, err := DownloadOrc(o.ctx, o.svc, o.logger, bucket, key, tailOnly)
-		if err != nil {
-			return nil, err
-		}
-		file.ready = true
-		file.localFilename = localFilename
-	}
-	orcReader, err := orc.Open(file.localFilename)
+	orcFile, err := DownloadOrc(o.ctx, o.svc, o.logger, bucket, key, tailOnly)
 	if err != nil {
 		return nil, err
 	}
-	res := &OrcInventoryFileReader{ctx: o.ctx, reader: orcReader, inventoryReader: o, key: key}
-	res.orcSelect = getOrcSelect(res.reader.Schema())
-	res.c = res.reader.Select(res.orcSelect.SelectFields...)
-	return res, nil
+	orcReader, err := orc.NewReader(orcFile)
+	if err != nil {
+		return nil, err
+	}
+	orcSelect := getOrcSelect(orcReader.Schema())
+	return &OrcInventoryFileReader{
+		ctx:       o.ctx,
+		reader:    orcReader,
+		orcFile:   orcFile,
+		orcSelect: orcSelect,
+		cursor:    orcReader.Select(orcSelect.SelectFields...),
+	}, nil
 }
