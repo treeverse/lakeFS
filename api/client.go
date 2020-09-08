@@ -76,7 +76,7 @@ type RepositoryClient interface {
 	DeleteObject(ctx context.Context, repository, branchID, path string) error
 
 	DiffRefs(ctx context.Context, repository, leftRef, rightRef string) ([]*models.Diff, error)
-	Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error)
+	Merge(ctx context.Context, repository, leftRef, rightRef string) (*models.MergeResult, error)
 
 	DiffBranch(ctx context.Context, repository, branch string) ([]*models.Diff, error)
 
@@ -539,7 +539,7 @@ func (c *client) DiffRefs(ctx context.Context, repository, leftRef, rightRef str
 	return diff.GetPayload().Results, nil
 }
 
-func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error) {
+func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string) (*models.MergeResult, error) {
 	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
 		DestinationRef: leftRef,
 		SourceRef:      rightRef,
@@ -548,14 +548,13 @@ func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string
 	}, c.auth)
 
 	if err == nil {
-		return statusOK.Payload.Results, nil
+		return statusOK.Payload, nil
 	}
 	conflict, ok := err.(*refs.MergeIntoBranchConflict)
-	if ok {
-		return conflict.Payload.Results, catalog.ErrConflictFound
-	} else {
-		return nil, err
+	if !ok {
+		return conflict.Payload, catalog.ErrConflictFound
 	}
+	return nil, err
 }
 
 func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*models.Diff, error) {

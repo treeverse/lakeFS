@@ -743,27 +743,46 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message = params.Merge.Message
 			metadata = params.Merge.Metadata
 		}
-		_, err = deps.Cataloger.Merge(c.Context(),
+		res, err := deps.Cataloger.Merge(c.Context(),
 			params.Repository, params.SourceRef, params.DestinationRef,
 			userModel.DisplayName,
 			message,
 			metadata)
-		// TODO(barak): return merge summary
+
 		switch err {
 		case nil:
-			return refs.NewMergeIntoBranchOK()
+			payload := newMergeResultFromCatalog(res)
+			return refs.NewMergeIntoBranchOK().WithPayload(payload)
 		case catalog.ErrUnsupportedRelation:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
 		case catalog.ErrBranchNotFound:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case catalog.ErrConflictFound:
-			return refs.NewMergeIntoBranchConflict()
+			payload := newMergeResultFromCatalog(res)
+			return refs.NewMergeIntoBranchConflict().WithPayload(payload)
 		case catalog.ErrNoDifferenceWasFound:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("no difference was found"))
 		default:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 		}
 	})
+}
+
+func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
+	if res == nil {
+		return nil
+	}
+	var summary []*models.MergeResultSummaryItem
+	for k, v := range res.Summary {
+		summary = append(summary, &models.MergeResultSummaryItem{
+			Type:  transformDifferenceTypeToString(k),
+			Count: int64(v),
+		})
+	}
+	return &models.MergeResult{
+		Reference: res.Reference,
+		Summary:   summary,
+	}
 }
 
 func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
