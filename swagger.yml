@@ -1570,6 +1570,12 @@ paths:
         name: branch
         required: true
         type: string
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
     get:
       tags:
         - branches
@@ -1581,6 +1587,8 @@ paths:
           schema:
             type: object
             properties:
+              pagination:
+                $ref: "#/definitions/pagination"
               results:
                 type: array
                 items:

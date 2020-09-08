@@ -798,7 +798,9 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		}
 		deps.LogAction("diff_workspace")
 		cataloger := deps.Cataloger
-		diff, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch)
+		limit := int(swag.Int64Value(params.Amount))
+		after := swag.StringValue(params.After)
+		diff, hasMore, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch, limit, after)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -809,7 +811,14 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 			results[i] = transformDifferenceToDiff(d)
 		}
 
-		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{Results: results})
+		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{
+			Results: results,
+			Pagination: &models.Pagination{
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(diff))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
+		})
 	})
 }
 
