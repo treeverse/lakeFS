@@ -121,7 +121,8 @@ func TestSanityAPI(t *testing.T) {
 	diffResp, err = client.Refs.DiffRefs(refs.NewDiffRefsParamsWithContext(ctx).
 		WithRepository(repo).
 		WithLeftRef("branch1").
-		WithRightRef(masterBranch), nil)
+		WithRightRef(masterBranch).
+		WithAmount(swag.Int64(-1)), nil)
 	require.NoError(t, err, "diff between branch1 and master")
 	require.ElementsMatch(t, diffResp.Payload.Results, []*models.Diff{
 		{Path: "file0", PathType: "object", Type: "changed"},
@@ -135,11 +136,10 @@ func TestSanityAPI(t *testing.T) {
 		WithSourceRef("branch1").
 		WithDestinationRef(masterBranch), nil)
 	require.NoError(t, err, "merge branch1 to master")
-	require.ElementsMatch(t, mergeResp.Payload.Results, []*models.MergeResult{
-		{Path: "file0", PathType: "object", Type: "changed"},
-		{Path: "file1", PathType: "object", Type: "removed"},
-		{Path: "fileX", PathType: "object", Type: "added"},
-	})
+	require.NotEmpty(t, mergeResp.Payload.Reference, "merge should return a commit reference")
+	require.Contains(t, mergeResp.Payload.Summary, &models.MergeResultSummaryItem{Type: models.DiffTypeAdded, Count: 1}, "file added")
+	require.Contains(t, mergeResp.Payload.Summary, &models.MergeResultSummaryItem{Type: models.DiffTypeRemoved, Count: 1}, "file removed")
+	require.Contains(t, mergeResp.Payload.Summary, &models.MergeResultSummaryItem{Type: models.DiffTypeChanged, Count: 1}, "file changed")
 
 	log.Debug("branch1 - diff after merge")
 	diffResp, err = client.Refs.DiffRefs(refs.NewDiffRefsParamsWithContext(ctx).
