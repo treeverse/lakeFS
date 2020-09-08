@@ -9,14 +9,18 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch string) (Differences, error) {
+func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "branch", IsValid: ValidateBranchName(branch)},
 	}); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+
+	if limit <= 0 || limit > DiffMaxLimit {
+		limit = DiffMaxLimit
+	}
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		branchID, err := c.getBranchIDCache(tx, repository, branch)
 		if err != nil {
 			return nil, err
@@ -32,7 +36,12 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch stri
 			JoinClause(
 				sqEntriesLineageV(branchID, CommittedID, lineage).
 					Prefix("LEFT JOIN (").Suffix(") AS v ON v.path=e.path")).
-			Where(sq.Eq{"e.branch_id": branchID, "e.is_committed": false})
+			Where(sq.And{
+				sq.Eq{"e.branch_id": branchID, "e.is_committed": false},
+				sq.Gt{"e.path": after},
+			}).
+			Limit(uint64(limit + 1)).
+			OrderBy("path")
 		sql, args, err := q.ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
@@ -45,7 +54,9 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch stri
 		return result, nil
 	}, c.txOpts(ctx, db.ReadOnly())...)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return differences.(Differences), nil
+	differences := res.(Differences)
+	hasMore := paginateSlice(&differences, limit)
+	return differences, hasMore, nil
 }

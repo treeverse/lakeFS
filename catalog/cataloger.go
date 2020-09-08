@@ -145,7 +145,7 @@ type Committer interface {
 
 type Differ interface {
 	Diff(ctx context.Context, repository, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error)
-	DiffUncommitted(ctx context.Context, repository, branch string) (Differences, error)
+	DiffUncommitted(ctx context.Context, repository, branch string, limit int, after string) (Differences, bool, error)
 }
 
 type Merger interface {
