@@ -65,7 +65,6 @@ func (it *InventoryIterator) moveToNextInventoryFile() bool {
 }
 
 func (it *InventoryIterator) fillBuffer() bool {
-
 	it.logger.Debug("start reading rows from inventory to buffer")
 	rdr, err := it.reader.GetFileReader(it.Manifest.Format, it.Manifest.inventoryBucket, it.Manifest.Files[it.inventoryFileIndex].Key)
 	if err != nil {
