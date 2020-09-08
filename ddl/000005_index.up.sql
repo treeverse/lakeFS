@@ -6,7 +6,7 @@ CREATE UNIQUE INDEX catalog_entries_uidx
     ON catalog_entries USING btree
         (branch_id ASC NULLS LAST, path COLLATE pg_catalog."C" ASC NULLS LAST, min_commit DESC NULLS FIRST)
     INCLUDE(max_commit);
-CREATE INDEX commits_lineage_idx
+CREATE INDEX catalog_commits_lineage_idx
     ON catalog_commits USING btree
         (merge_type ASC NULLS LAST, branch_id ASC NULLS LAST, commit_id DESC NULLS LAST)
     INCLUDE(lineage_commits, merge_source_branch, merge_source_commit)
