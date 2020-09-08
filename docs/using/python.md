@@ -39,7 +39,7 @@ For local development, we can use `http://localhost:8000/swagger.json`.
 
 ## Generating a Python client with Bravado
 
-Once we have Bravado installed, and a URL of an OpenAPI defition we can generate a client:
+Once we have Bravado installed, and a URL of an OpenAPI definition we can generate a client:
 
 
 ```python
@@ -57,7 +57,7 @@ client = SwaggerClient.from_url(
 
 ## Using the generated client
 
-So now that we have a client object, we can use it to interact with the API.
+Now that we have a client object, we can use it to interact with the API.
 
 ### Listing and creating repositories
 
@@ -87,7 +87,7 @@ Create a new branch:
 '~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQi4'
 ```
 
-Let's list again, to see our newly created branch
+Let's list again, to see our newly created branch:
 
 ```python
 >>> client.branches.listBranches(repository='test-repo').result()
@@ -128,7 +128,7 @@ As expected, our change appears here. Let's commit it, and attach some arbitrary
 ...             'using': 'python_api'
 ...         }
 ...     }).result()
-commit(committer='oz.katz', creation_date=1599563809, id='~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnW',
+commit(committer='jane.doe', creation_date=1599563809, id='~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnW',
     message='Added a CSV file!', metadata={'using': 
 'python_api'}, parents=['~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnU'])
 ```
