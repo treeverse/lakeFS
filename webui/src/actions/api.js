@@ -555,14 +555,14 @@ class Refs {
 }
 
 class Setup {
-    async lakeFS(displayName) {
+    async lakeFS(username) {
         const response = await apiRequest('/setup_lakefs', {
             method: 'POST',
             headers: {
                 'Accept': 'application/json',
                 'Content-Type': 'application/json'
             },
-            body: JSON.stringify({display_name: displayName}),
+            body: JSON.stringify({username: username}),
         });
         switch (response.status) {
             case 200:

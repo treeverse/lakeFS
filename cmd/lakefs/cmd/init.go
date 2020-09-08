@@ -47,8 +47,8 @@ var initCmd = &cobra.Command{
 		}
 
 		credentials, err := auth.SetupAdminUser(authService, &model.User{
-			CreatedAt:   time.Now(),
-			DisplayName: userName,
+			CreatedAt: time.Now(),
+			Username:  userName,
 		})
 		if err != nil {
 			fmt.Printf("Failed to setup admin user: %s\n", err)
@@ -73,6 +73,6 @@ var initCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().String("user-name", "", "display name for the user (e.g. \"jane.doe\")")
+	initCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	_ = initCmd.MarkFlagRequired("user-name")
 }

@@ -151,8 +151,8 @@ func (m *PlayBackMockConf) GetCredentials(accessKey string) (*model.Credential, 
 
 func (m *PlayBackMockConf) GetUserByID(userID int) (*model.User, error) {
 	return &model.User{
-		CreatedAt:   time.Now(),
-		DisplayName: "user",
+		CreatedAt: time.Now(),
+		Username:  "user",
 	}, nil
 }
 

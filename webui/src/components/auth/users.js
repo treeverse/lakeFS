@@ -61,13 +61,13 @@ export const UsersPage = connect(
                             modalTitle={'Create User'}
                             createFn={createFn}
                             resetFn={resetCreateUser}
-                            idPlaceholderText={'User ID (e.g. "jane.doe")'}
+                            idPlaceholderText={'Username (e.g. "jane.doe")'}
                             onDone={() => {
                                 history.push(`/auth/users/${createUserStatus.payload.id}`);
                             }}
                             status={createUserStatus}>
                             <Form.Group>
-                                <Form.Control type="text" name="id" placeholder="User ID (e.g. 'jane.doe')"/>
+                                <Form.Control type="text" name="id" placeholder="Username (e.g. 'jane.doe')"/>
                             </Form.Group>
                         </EntityCreateButton>
                         <Button variant="danger" disabled={checkedUsers.length < 1} onClick={() => {

@@ -224,7 +224,7 @@ func (c *Controller) GetHealthCheckHandler() hcop.HealthCheckHandler {
 
 func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 	return setupop.SetupLakeFSHandlerFunc(func(setupReq setupop.SetupLakeFSParams) middleware.Responder {
-		if len(*setupReq.User.DisplayName) == 0 {
+		if len(*setupReq.User.Username) == 0 {
 			return setupop.NewSetupLakeFSBadRequest().
 				WithPayload(&models.Error{
 					Message: "empty display name",
@@ -264,8 +264,8 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 
 		// setup admin user
 		adminUser := &model.User{
-			CreatedAt:   time.Now(),
-			DisplayName: *setupReq.User.DisplayName,
+			CreatedAt: time.Now(),
+			Username:  *setupReq.User.Username,
 		}
 
 		cred, err := auth.SetupAdminUser(c.deps.Auth, adminUser)
@@ -439,7 +439,7 @@ func (c *Controller) CommitHandler() commits.CommitHandler {
 		if err != nil {
 			return commits.NewCommitUnauthorized().WithPayload(responseErrorFrom(err))
 		}
-		committer := userModel.DisplayName
+		committer := userModel.Username
 		commitMessage := swag.StringValue(params.Commit.Message)
 		commit, err := deps.Cataloger.Commit(c.Context(), params.Repository,
 			params.Branch, commitMessage, committer, params.Commit.Metadata)
@@ -745,7 +745,7 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 		}
 		res, err := deps.Cataloger.Merge(c.Context(),
 			params.Repository, params.SourceRef, params.DestinationRef,
-			userModel.DisplayName,
+			userModel.Username,
 			message,
 			metadata)
 
@@ -1288,8 +1288,8 @@ func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 				WithPayload(responseErrorFrom(err))
 		}
 		u := &model.User{
-			CreatedAt:   time.Now(),
-			DisplayName: swag.StringValue(params.User.ID),
+			CreatedAt: time.Now(),
+			Username:  swag.StringValue(params.User.ID),
 		}
 		err = deps.Auth.CreateUser(u)
 		deps.LogAction("create_user")
@@ -1301,7 +1301,7 @@ func (c *Controller) CreateUserHandler() authop.CreateUserHandler {
 		return authop.NewCreateUserCreated().
 			WithPayload(&models.User{
 				CreationDate: u.CreatedAt.Unix(),
-				ID:           u.DisplayName,
+				ID:           u.Username,
 			})
 	})
 }
@@ -1333,7 +1333,7 @@ func (c *Controller) ListUsersHandler() authop.ListUsersHandler {
 		for i, u := range users {
 			response[i] = &models.User{
 				CreationDate: u.CreatedAt.Unix(),
-				ID:           u.DisplayName,
+				ID:           u.Username,
 			}
 		}
 
@@ -1371,7 +1371,7 @@ func (c *Controller) GetUserHandler() authop.GetUserHandler {
 		return authop.NewGetUserOK().
 			WithPayload(&models.User{
 				CreationDate: u.CreatedAt.Unix(),
-				ID:           u.DisplayName,
+				ID:           u.Username,
 			})
 	})
 }
@@ -1748,7 +1748,7 @@ func (c *Controller) ListGroupMembersHandler() authop.ListGroupMembersHandler {
 		for i, u := range users {
 			response[i] = &models.User{
 				CreationDate: u.CreatedAt.Unix(),
-				ID:           u.DisplayName,
+				ID:           u.Username,
 			}
 		}
 
@@ -2214,7 +2214,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		userModel, err := c.deps.Auth.GetUser(user.ID)
 		username := "lakeFS"
 		if err == nil {
-			username = userModel.DisplayName
+			username = userModel.Username
 		}
 		importConfig := &onboard.ImporterConfig{
 			CommitUsername:     username,
