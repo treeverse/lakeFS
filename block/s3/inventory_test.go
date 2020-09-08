@@ -166,13 +166,13 @@ type mockInventoryReader struct {
 }
 
 type mockInventoryFileReader struct {
-	rows    []*inventorys3.InventoryObject
-	nextIdx int
-	mgr     *mockInventoryReader
-	key     string
+	rows            []*inventorys3.InventoryObject
+	nextIdx         int
+	inventoryReader *mockInventoryReader
+	key             string
 }
 
-func (m *mockInventoryFileReader) MinValue() string {
+func (m *mockInventoryFileReader) FirstObjectKey() string {
 	if len(m.rows) == 0 {
 		return ""
 	}
@@ -185,11 +185,8 @@ func (m *mockInventoryFileReader) MinValue() string {
 	return min
 }
 
-func (m *mockInventoryFileReader) MaxValue() string {
-	if len(m.rows) == 0 {
-		return ""
-	}
-	max := m.rows[0].Key
+func (m *mockInventoryFileReader) LastObjectKey() string {
+	max := ""
 	for _, r := range m.rows {
 		if r.Key > max {
 			max = r.Key
@@ -201,7 +198,7 @@ func (m *mockInventoryFileReader) MaxValue() string {
 func (m *mockInventoryFileReader) Close() error {
 	m.nextIdx = -1
 	m.rows = nil
-	delete(m.mgr.openFiles, m.key)
+	delete(m.inventoryReader.openFiles, m.key)
 	return nil
 }
 
@@ -232,12 +229,12 @@ func (m *mockInventoryFileReader) SkipRows(skip int64) error {
 
 func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (inventorys3.FileReader, error) {
 	m.openFiles[key] = true
-	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
+	return &mockInventoryFileReader{rows: rows(fileContents[key]...), inventoryReader: m, key: key}, nil
 }
 
 func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (inventorys3.MetadataReader, error) {
 	m.openFiles[key] = true
-	return &mockInventoryFileReader{rows: rows(fileContents[key]...), mgr: m, key: key}, nil
+	return &mockInventoryFileReader{rows: rows(fileContents[key]...), inventoryReader: m, key: key}, nil
 }
 func (m *mockS3Client) GetObject(input *s3sdk.GetObjectInput) (*s3sdk.GetObjectOutput, error) {
 	output := s3sdk.GetObjectOutput{}

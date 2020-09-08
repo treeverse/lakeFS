@@ -173,13 +173,13 @@ func TestInventoryReader(t *testing.T) {
 		if test.ObjectNum != numRowsResult {
 			t.Fatalf("unexpected result from GetNumRows. expected=%d, got=%d", test.ObjectNum, numRowsResult)
 		}
-		minValueResult := fileReader.MinValue()
+		minValueResult := fileReader.FirstObjectKey()
 		if test.ExpectedMinValue != minValueResult {
-			t.Fatalf("unexpected result from MinValue. expected=%s, got=%s", test.ExpectedMinValue, minValueResult)
+			t.Fatalf("unexpected result from FirstObjectKey. expected=%s, got=%s", test.ExpectedMinValue, minValueResult)
 		}
-		maxValueResult := fileReader.MaxValue()
+		maxValueResult := fileReader.LastObjectKey()
 		if test.ExpectedMaxValue != maxValueResult {
-			t.Fatalf("unexpected result from MaxValue. expected=%s, got=%s", test.ExpectedMaxValue, maxValueResult)
+			t.Fatalf("unexpected result from LastObjectKey. expected=%s, got=%s", test.ExpectedMaxValue, maxValueResult)
 		}
 		readBatchSize := 1000
 		res := make([]InventoryObject, readBatchSize)

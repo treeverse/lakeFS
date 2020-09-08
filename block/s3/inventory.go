@@ -19,13 +19,13 @@ type Manifest struct {
 	URL                string          `json:"-"`
 	InventoryBucketArn string          `json:"destinationBucket"`
 	SourceBucket       string          `json:"sourceBucket"`
-	Files              []inventoryFile `json:"files"`
+	Files              []inventoryFile `json:"files"` // inventory list files, each contains a list of objects
 	Format             string          `json:"fileFormat"`
 	inventoryBucket    string
 }
 
 type inventoryFile struct {
-	Key string `json:"key"`
+	Key string `json:"key"` // an s3 key for an inventory list file
 }
 
 func (a *Adapter) GenerateInventory(ctx context.Context, logger logging.Logger, manifestURL string, shouldSort bool) (block.Inventory, error) {
@@ -102,8 +102,8 @@ func sortManifest(m *Manifest, logger logging.Logger, reader inventorys3.IReader
 		if err != nil {
 			return fmt.Errorf("failed to sort inventory files in manifest: %w", err)
 		}
-		firstKeyByInventoryFile[f.Key] = mr.MinValue()
-		lastKeyByInventoryFile[f.Key] = mr.MaxValue()
+		firstKeyByInventoryFile[f.Key] = mr.FirstObjectKey()
+		lastKeyByInventoryFile[f.Key] = mr.LastObjectKey()
 		err = mr.Close()
 		if err != nil {
 			logger.Errorf("failed to close inventory file. file=%s, err=%w", f, err)

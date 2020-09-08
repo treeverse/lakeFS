@@ -53,8 +53,8 @@ type MetadataReader interface {
 	GetNumRows() int64
 	SkipRows(int64) error
 	Close() error
-	MinValue() string
-	MaxValue() string
+	FirstObjectKey() string
+	LastObjectKey() string
 }
 
 type FileReader interface {
@@ -128,10 +128,8 @@ func (o *Reader) getOrcReader(bucket string, key string, tailOnly bool) (FileRea
 	if err != nil {
 		return nil, err
 	}
-	res := &OrcInventoryFileReader{ctx: o.ctx, reader: orcReader, mgr: o, key: key}
-	selectFields, selectIndexByField, actualColumnIndexByField := getSelectFields(res.reader.Schema())
-	res.selectIndexByField = selectIndexByField
-	res.actualColumnIndexByField = actualColumnIndexByField
-	res.c = res.reader.Select(selectFields...)
+	res := &OrcInventoryFileReader{ctx: o.ctx, reader: orcReader, inventoryReader: o, key: key}
+	res.orcSelect = getOrcSelect(res.reader.Schema())
+	res.c = res.reader.Select(res.orcSelect.SelectFields...)
 	return res, nil
 }

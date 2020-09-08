@@ -11,10 +11,10 @@ func (p *ParquetInventoryFileReader) Close() error {
 	return p.PFile.Close()
 }
 
-func (p *ParquetInventoryFileReader) MinValue() string {
+func (p *ParquetInventoryFileReader) FirstObjectKey() string {
 	return string(p.Footer.RowGroups[0].Columns[0].GetMetaData().GetStatistics().GetMinValue())
 }
 
-func (p *ParquetInventoryFileReader) MaxValue() string {
+func (p *ParquetInventoryFileReader) LastObjectKey() string {
 	return string(p.Footer.RowGroups[0].Columns[0].GetMetaData().GetStatistics().GetMaxValue())
 }

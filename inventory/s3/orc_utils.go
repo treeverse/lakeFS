@@ -15,33 +15,37 @@ import (
 	gproto "github.com/golang/protobuf/proto" //nolint:staticcheck // orc lib uses old proto
 	"github.com/scritchley/orc/proto"
 	"github.com/treeverse/lakefs/logging"
-	"modernc.org/mathutil"
 )
 
 const (
-	maxPostScriptSize  = 256
-	orcInitialReadSize = 500
+	maxPostScriptSize  = 256 // from the ORC specification: https://orc.apache.org/specification/ORCv1/
+	orcInitialReadSize = 16000
 )
 
 // getTailLength reads the ORC postscript from the given file, returning the full tail length.
 // The tail length equals (footer + metadata + postscript + 1) bytes.
-func getTailLength(filename string, size int64, logger logging.Logger) (int, error) {
-	f, err := os.Open(filename)
+func getTailLength(orcFilename string, logger logging.Logger) (int, error) {
+	f, err := os.Open(orcFilename)
 	if err != nil {
 		return 0, err
 	}
+	stat, err := f.Stat()
+	if err != nil {
+		return 0, err
+	}
+	fileSize := stat.Size()
 	defer func() {
 		if err := f.Close(); err != nil {
 			logger.Errorf("failed to close orc file after reading tail. file=%s, err=%w", f.Name(), err)
 		}
 	}()
 	psPlusByte := int64(maxPostScriptSize + 1)
-	if psPlusByte > size {
-		psPlusByte = size
+	if psPlusByte > fileSize {
+		psPlusByte = fileSize
 	}
 	// Read the last 256 bytes into buffer to get postscript
 	postScriptBytes := make([]byte, psPlusByte)
-	sr := io.NewSectionReader(f, size-psPlusByte, psPlusByte)
+	sr := io.NewSectionReader(f, fileSize-psPlusByte, psPlusByte)
 	_, err = io.ReadFull(sr, postScriptBytes)
 	if err != nil {
 		return 0, err
@@ -87,7 +91,7 @@ func downloadRange(ctx context.Context, svc s3iface.S3API, logger logging.Logger
 }
 
 // DownloadOrc downloads from s3 to a temporary file, returning the new file location.
-// If tailOnly is set to true, download only the tail (metadata+footer) by try the last `orcInitialReadSize` bytes of the file.
+// If tailOnly is set to true, download only the tail (metadata+footer) by trying the last `orcInitialReadSize` bytes of the file.
 // Then, check the last byte to see if the whole tail was downloaded. If not, download again with the actual tail length.
 func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, bucket string, key string, tailOnly bool) (string, error) {
 	var size int64
@@ -106,7 +110,7 @@ func DownloadOrc(ctx context.Context, svc s3iface.S3API, logger logging.Logger, 
 		return "", err
 	}
 	if tailOnly {
-		tailLength, err := getTailLength(filename, mathutil.MinInt64(orcInitialReadSize, size), logger)
+		tailLength, err := getTailLength(filename, logger)
 		if err != nil {
 			return "", err
 		}
