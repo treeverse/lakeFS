@@ -357,7 +357,7 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	}
 	merge2, err := c.Merge(ctx, repository, "br_2_1", "master", "tester", "merge br_2_1 to master", nil)
 	testutil.MustDo(t, "merge br_2_1  into master", err)
-	commitLog, err := c.GetCommit(ctx, repository, merge2)
+	commitLog, err := c.GetCommit(ctx, repository, merge2.Reference)
 	testutil.MustDo(t, "get merge commit reference", err)
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")

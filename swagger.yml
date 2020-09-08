@@ -1618,6 +1618,12 @@ paths:
         required: true
         type: string
         description: a reference (could be either a branch or a commit ID) to compare against
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
     get:
       tags:
         - refs
@@ -1629,6 +1635,8 @@ paths:
           schema:
             type: object
             properties:
+              pagination:
+                $ref: "#/definitions/pagination"
               results:
                 type: array
                 items:

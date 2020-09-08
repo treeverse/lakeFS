@@ -11,17 +11,18 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destinationBranch, committer, message string, metadata Metadata) (string, error) {
+func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destinationBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "sourceBranch", IsValid: ValidateBranchName(sourceBranch)},
 		{Name: "destinationBranch", IsValid: ValidateBranchName(destinationBranch)},
 		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
-		return "", err
+		return nil, err
 	}
 
-	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+	mergeResult := &MergeResult{}
+	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, sourceBranch, LockTypeUpdate)
 		if err != nil {
 			return nil, fmt.Errorf("left branch: %w", err)
@@ -35,21 +36,21 @@ func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destina
 			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
-		err = c.doDiffByRelation(tx, relation, leftID, rightID, 0, "")
+		err = c.doDiffByRelation(tx, relation, leftID, rightID)
 		if err != nil {
 			return nil, err
 		}
-		info, err := c.getDiffInformation(tx)
+		mergeResult.Summary, err = c.getDiffSummary(tx)
 		if err != nil {
 			return nil, err
 		}
 		// check for conflicts
-		if info[DifferenceTypeConflict] > 0 {
+		if mergeResult.Summary[DifferenceTypeConflict] > 0 {
 			return nil, ErrConflictFound
 		}
 		// check for changes
 		var total int
-		for _, c := range info {
+		for _, c := range mergeResult.Summary {
 			total += c
 		}
 		if total == 0 {
@@ -65,14 +66,14 @@ func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destina
 		if message == "" {
 			message = formatMergeMessage(sourceBranch, destinationBranch)
 		}
-		return c.doMergeByRelation(tx, relation, leftID, rightID, committer, message, metadata)
+		commitID, err := c.doMergeByRelation(tx, relation, leftID, rightID, committer, message, metadata)
+		if err != nil {
+			return nil, err
+		}
+		mergeResult.Reference = MakeReference(destinationBranch, commitID)
+		return nil, nil
 	}, c.txOpts(ctx)...)
-	if err != nil {
-		return "", err
-	}
-	mergeCommitID := res.(CommitID)
-	reference := MakeReference(destinationBranch, mergeCommitID)
-	return reference, nil
+	return mergeResult, err
 }
 
 // checkZeroDiffCommit - Checks if the current commit id of source branch advanced since last merge.
