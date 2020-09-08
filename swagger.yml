@@ -34,7 +34,6 @@ responses:
       $ref: "#/definitions/error"
 
 definitions:
-
   pagination:
     type: object
     required:
@@ -366,7 +365,6 @@ definitions:
     minProperties: 1
 
 paths:
-
   /setup_lakefs:
     post:
       tags:
@@ -384,7 +382,6 @@ paths:
           description: user created successfully
           schema:
             $ref: "#/definitions/credentials_with_secret"
-            description: first user credentials
         400:
           description: bad request
           schema:
