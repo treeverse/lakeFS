@@ -142,37 +142,31 @@ func (w wrapper) stripActor(actor ddl.TaskId) ddl.ActorId {
 
 func (w wrapper) insertTasks(tasks []ddl.TaskData) {
 	w.t.Helper()
-	const insertSql = `INSERT INTO tasks
-		(id, action, body, status, status_code, num_tries, max_tries, actor_id,
-		 action_deadline, performance_token, finish_channel)
-		VALUES(:task_id, :action, :body, :status, :status_code, :num_tries, :max_tries, :actor_id,
-		       :action_deadline, :performance_token, :finish_channel)`
-	for _, task := range tasks {
-		copy := task
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, databaseURI)
+	if err != nil {
+		w.t.Fatalf("pgx.Connect: %s", err)
+	}
+
+	prefixedTasks := make([]ddl.TaskData, len(tasks))
+	for i := 0; i < len(tasks); i++ {
+		copy := tasks[i]
 		copy.Id = w.prefixTask(copy.Id)
 		copy.Action = w.prefix(copy.Action)
 		copy.ActorId = w.prefixActor(copy.ActorId)
 		if copy.StatusCode == "" {
 			copy.StatusCode = "pending"
 		}
-		_, err := w.db.NamedExec(insertSql, copy)
-		if err != nil {
-			w.t.Fatalf("insert %+v into tasks: %s", copy, err)
+		toSignal := make([]ddl.TaskId, len(copy.ToSignal))
+		for j := 0; j < len(toSignal); j++ {
+			toSignal[j] = w.prefixTask(copy.ToSignal[j])
 		}
+		copy.ToSignal = toSignal
+		prefixedTasks[i] = copy
 	}
-}
-
-func (w wrapper) insertTaskDeps(deps []ddl.TaskDependencyData) {
-	w.t.Helper()
-	const insertSql = `INSERT INTO task_dependencies (after, run) VALUES(:after, :run)`
-	for _, dep := range deps {
-		copy := dep
-		copy.After = w.prefixTask(copy.After)
-		copy.Run = w.prefixTask(copy.Run)
-		_, err := w.db.NamedExec(insertSql, copy)
-		if err != nil {
-			w.t.Fatalf("insert %+v into task_dependencies: %s", copy, err)
-		}
+	err = ddl.InsertTasks(ctx, conn, &ddl.TaskDataIterator{Data: prefixedTasks})
+	if err != nil {
+		w.t.Fatalf("InsertTasks: %s", err)
 	}
 }
 
@@ -193,6 +187,93 @@ func (w wrapper) ownTasks(actorId ddl.ActorId, maxTasks int, actions []string, m
 		}
 	}
 	return tasks, err
+}
+
+func stringAddr(s string) *string {
+	return &s
+}
+
+func performanceTokenAddr(p ddl.PerformanceToken) *ddl.PerformanceToken {
+	return &p
+}
+
+func intAddr(i int) *int {
+	return &i
+}
+
+func TestTaskDataIterator_Empty(t *testing.T) {
+	it := ddl.TaskDataIterator{Data: []ddl.TaskData{}}
+	if it.Err() != nil {
+		t.Errorf("expected empty new iterator to have no errors, got %s", it.Err())
+	}
+	if it.Next() {
+		t.Errorf("expected empty new iterator %+v not to advance", it)
+	}
+	if it.Err() != nil {
+		t.Errorf("advanced empty new iterator to have no errors, got %s", it.Err())
+	}
+	if it.Next() {
+		t.Errorf("expected advanced empty new iterator %+v not to advance", it)
+	}
+	if !errors.Is(it.Err(), ddl.NoMoreDataError) {
+		t.Errorf("expected twice-advanced iterator to raise NoMoreDataError, got %s", it.Err())
+	}
+}
+
+func TestTaskDataIterator_Values(t *testing.T) {
+	now := time.Now()
+	tasks := []ddl.TaskData{
+		{Id: "000", Action: "zero", StatusCode: "enum values enforced on DB"},
+		{Id: "111", Action: "frob", Body: stringAddr("1"), Status: stringAddr("state"),
+			StatusCode: "pending",
+			NumTries:   11, MaxTries: intAddr(17),
+			TotalDependencies: intAddr(9),
+			ToSignal:          []ddl.TaskId{ddl.TaskId("foo"), ddl.TaskId("bar")},
+			ActorId:           ddl.ActorId("actor"), ActionDeadline: &now,
+			PerformanceToken:  performanceTokenAddr(ddl.PerformanceToken{}),
+			FinishChannelName: stringAddr("done"),
+		},
+	}
+	it := ddl.TaskDataIterator{Data: tasks}
+
+	for index, task := range tasks {
+		if it.Err() != nil {
+			t.Errorf("expected iterator to be OK at index %d, got error %s", index, it.Err())
+		}
+		if !it.Next() {
+			t.Errorf("expected to advance iterator %+v at index %d", it, index)
+		}
+		values, err := it.Values()
+		if err != nil {
+			t.Errorf("expected to values at index %d, got error %s", index, err)
+		}
+		toSignal := make([]string, len(task.ToSignal))
+		for i := 0; i < len(task.ToSignal); i++ {
+			toSignal[i] = string(task.ToSignal[i])
+		}
+		if diffs := deep.Equal(
+			[]interface{}{
+				task.Id, task.Action, task.Body, task.Status, task.StatusCode,
+				task.NumTries, task.MaxTries,
+				task.TotalDependencies, toSignal,
+				task.ActorId, task.ActionDeadline,
+				task.PerformanceToken, task.FinishChannelName,
+			}, values); diffs != nil {
+			t.Errorf("got other values at index %d than expected: %s", index, diffs)
+		}
+	}
+	if it.Next() {
+		t.Errorf("expected iterator %+v to end after tasks done", it)
+	}
+	if _, err := it.Values(); !errors.Is(err, ddl.NoMoreDataError) {
+		t.Errorf("expected NoMoreData after iterator done, got %s", err)
+	}
+	if !errors.Is(it.Err(), ddl.NoMoreDataError) {
+		t.Errorf("expected iterator Err() to repeat NoMoreDataError, got %s", it.Err())
+	}
+	if it.Next() {
+		t.Errorf("expected iterator %+v to end-and-error after advanced past tasks done", it)
+	}
 }
 
 func TestOwn(t *testing.T) {
@@ -393,16 +474,26 @@ func TestDependencies(t *testing.T) {
 	const num = 63
 	taskData := make([]ddl.TaskData, 0, num)
 	for i := 1; i <= num; i++ {
-		taskData = append(taskData, ddl.TaskData{Id: id(i), Action: "div", Body: makeBody(i)})
+		toSignal := make([]ddl.TaskId, 0, i/20)
+		for j := 2 * i; j <= num; j += i {
+			toSignal = append(toSignal, id(j))
+		}
+		numDivisors := 0
+		for k := 1; k <= i/2; k++ {
+			if i%k == 0 {
+				numDivisors++
+			}
+		}
+
+		taskData = append(taskData, ddl.TaskData{
+			Id:                id(i),
+			Action:            "div",
+			Body:              makeBody(i),
+			ToSignal:          toSignal,
+			TotalDependencies: &numDivisors,
+		})
 	}
 	w.insertTasks(taskData)
-	deps := make([]ddl.TaskDependencyData, 0, num*20)
-	for i := 1; i <= num; i++ {
-		for j := 2 * i; j <= num; j++ {
-			deps = append(deps, ddl.TaskDependencyData{After: taskData[i-1].Id, Run: taskData[j-1].Id})
-		}
-	}
-	w.insertTaskDeps(deps)
 
 	doneSet := make(map[int]struct{}, num)
 
@@ -508,22 +599,12 @@ func BenchmarkFanIn(b *testing.B) {
 	}
 
 	tasks := make([]ddl.TaskData, 0, numTasks+1)
+	toSignal := []ddl.TaskId{"done"}
 	for i := 0; i < numTasks; i++ {
-		tasks = append(tasks, ddl.TaskData{Id: id(i), Action: "part"})
+		tasks = append(tasks, ddl.TaskData{Id: id(i), Action: "part", ToSignal: toSignal})
 	}
 	tasks = append(tasks, ddl.TaskData{Id: "done", Action: "done"})
 	w.insertTasks(tasks)
-
-	deps := make([]ddl.TaskDependencyData, 0, numTasks)
-	for i := 0; i < numTasks; i++ {
-		deps = append(deps, ddl.TaskDependencyData{After: id(i), Run: "done"})
-	}
-	w.insertTaskDeps(deps)
-
-	_, err := db.Exec("ANALYZE task_dependencies")
-	if err != nil {
-		b.Fatalf("ANALYZE task_dependencies: %s", err)
-	}
 
 	type result struct {
 		count        int

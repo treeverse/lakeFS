@@ -79,17 +79,79 @@ type TaskData struct {
 	StatusCode        string            `db:"status_code"`
 	NumTries          int               `db:"num_tries"`
 	MaxTries          *int              `db:"max_tries"`
+	TotalDependencies *int              `db:"total_dependencies"`
+	ToSignal          []TaskId          `db:"to_signal"`
 	ActorId           ActorId           `db:"actor_id"`
 	ActionDeadline    *time.Time        `db:"action_deadline"`
 	PerformanceToken  *PerformanceToken `db:"performance_token"`
 	FinishChannelName *string           `db:"finish_channel"`
 }
 
-// TaskDependencyData is a row in table "task_dependencies".  It describes that task Run must
-// occur after task After succeeds.
-type TaskDependencyData struct {
-	After TaskId
-	Run   TaskId
+// TaskDataIterator implements the pgx.CopyFromSource interface and allows using CopyFrom to insert
+// multiple TaskData rapidly.
+type TaskDataIterator struct {
+	Data []TaskData
+	next int
+	err  error
+}
+
+func (td *TaskDataIterator) Next() bool {
+	if td.next > len(td.Data) {
+		td.err = NoMoreDataError
+		return false
+	}
+	ret := td.next < len(td.Data)
+	td.next++
+	return ret
+}
+
+var NoMoreDataError = errors.New("no more data")
+
+func (td *TaskDataIterator) Err() error {
+	return td.err
+}
+
+func (td *TaskDataIterator) Values() ([]interface{}, error) {
+	if td.next > len(td.Data) {
+		td.err = NoMoreDataError
+		return nil, td.err
+	}
+	value := td.Data[td.next-1]
+	// Convert ToSignal to a text array so pgx can convert it to text.  Needed because Go
+	// types
+	toSignal := make([]string, len(value.ToSignal))
+	for i := 0; i < len(value.ToSignal); i++ {
+		toSignal[i] = string(value.ToSignal[i])
+	}
+	return []interface{}{
+		value.Id,
+		value.Action,
+		value.Body,
+		value.Status,
+		value.StatusCode,
+		value.NumTries,
+		value.MaxTries,
+		value.TotalDependencies,
+		toSignal,
+		value.ActorId,
+		value.ActionDeadline,
+		value.PerformanceToken,
+		value.FinishChannelName,
+	}, nil
+}
+
+var TaskDataColumnNames = []string{
+	"id", "action", "body", "status", "status_code", "num_tries", "max_tries",
+	"total_dependencies", "to_signal", "actor_id", "action_deadline", "performance_token",
+	"finish_channel",
+}
+
+var tasksTable = pgx.Identifier{"tasks"}
+
+// InsertTasks adds multiple tasks efficiently.
+func InsertTasks(ctx context.Context, pgConn *pgx.Conn, source *TaskDataIterator) error {
+	_, err := pgConn.CopyFrom(ctx, tasksTable, TaskDataColumnNames, source)
+	return err
 }
 
 // OwnedTaskData is a row returned from "SELECT * FROM own_tasks(...)".
