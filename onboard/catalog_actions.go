@@ -55,7 +55,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		batchSize = c.WriteBatchSize
 	}
 	errs := make([]*error, 0)
-	tasksChan := make(chan *task)
+	tasksChan := make(chan *task, 2*DefaultWorkerCount)
 	currentBatch := make([]catalog.Entry, 0, batchSize)
 	for w := 0; w < DefaultWorkerCount; w++ {
 		go worker(&wg, tasksChan)
