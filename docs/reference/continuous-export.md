@@ -71,3 +71,24 @@ For more granular status tracking, set an export-status-path.  Export writes two
 
 Note that S3 does not offer atomic operations.  Objects read are only valid while the
 `_STATUS` file shows `"success"` and the `"commit"` is unchanged!
+
+## FAQs
+
+#### What happens if a continuously exported branch changes while a previous export is still in progress?
+
+lakeFS exports objects safely and will not export the same branch twice concurrently.
+However when multiple concurrent exports occur intermediate exports cannot be observed and
+may be dropped.  A dropped intermediate export does not create the `_SUCCESS` or
+`_STATUS_<timestamp>.json` and `_MANIFEST_<timestamp>.json` files; conversely, once these
+appear the export will run to completion.
+
+#### How consistent is export once the `_SUCCESS` file appears?
+
+Once the `_SUCCESS` is present, or once the `_STATUS_<timestamp>.json` file holds status
+`success`, the export has finished:
+
+* Any file can be accessed.
+* Files names appear in the `_MANIFEST_<timestamp>.json` file.
+* S3 file listings will eventually show all accessible files.
+
+lakeFS exports to S3 and is bound by its consistency guarantees.
