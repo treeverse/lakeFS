@@ -719,32 +719,25 @@ footer {
 }
 .copy-code-container {
 	position: absolute;
-	right: 1em;
+	right: 0.3em;
+}
+.copy-code-button:hover {
+	color: $teal-green;
 }
 
+.copy-code-button:active {
+	color: $white;
+}
 .copy-code-button {
 	align-items: center;
 	justify-content: center;
 	border: none;
 	cursor: pointer;
 	font-size: 1rem;
-	color: #e7e7e7;
+	color: $black;
 	padding: 0.4em 0.5em;
-	border-radius: 5px;
-	&::after {
-		margin-left: 4px;
-		content: "📋";
-		width: 1em;
-	}
+}
 
-	// This class will be toggled via JavaScript
-	&.copied {
-		&::before {
-			content: "Copied!";
-		}
-
-		&::after {
-			content: "✔️";
-		}
-	}
+.highlighter-rouge {
+	position: relative;
 }
