@@ -149,7 +149,7 @@ type Differ interface {
 }
 
 type Merger interface {
-	Merge(ctx context.Context, repository, sourceBranch, destinationBranch, committer, message string, metadata Metadata) (*MergeResult, error)
+	Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error)
 }
 
 type Cataloger interface {

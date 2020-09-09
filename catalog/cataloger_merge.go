@@ -11,11 +11,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destinationBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
+func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
-		{Name: "sourceBranch", IsValid: ValidateBranchName(sourceBranch)},
-		{Name: "destinationBranch", IsValid: ValidateBranchName(destinationBranch)},
+		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
+		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
 		{Name: "committer", IsValid: ValidateCommitter(committer)},
 	}); err != nil {
 		return nil, err
@@ -23,11 +23,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destina
 
 	mergeResult := &MergeResult{}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
-		leftID, err := getBranchID(tx, repository, sourceBranch, LockTypeUpdate)
+		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
 			return nil, fmt.Errorf("left branch: %w", err)
 		}
-		rightID, err := getBranchID(tx, repository, destinationBranch, LockTypeUpdate)
+		rightID, err := getBranchID(tx, repository, rightBranch, LockTypeUpdate)
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
@@ -64,13 +64,13 @@ func (c *cataloger) Merge(ctx context.Context, repository, sourceBranch, destina
 		}
 
 		if message == "" {
-			message = formatMergeMessage(sourceBranch, destinationBranch)
+			message = formatMergeMessage(leftBranch, rightBranch)
 		}
 		commitID, err := c.doMergeByRelation(tx, relation, leftID, rightID, committer, message, metadata)
 		if err != nil {
 			return nil, err
 		}
-		mergeResult.Reference = MakeReference(destinationBranch, commitID)
+		mergeResult.Reference = MakeReference(rightBranch, commitID)
 		return nil, nil
 	}, c.txOpts(ctx)...)
 	return mergeResult, err
