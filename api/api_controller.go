@@ -810,10 +810,14 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		for i, d := range diff {
 			results[i] = transformDifferenceToDiff(d)
 		}
-
+		var nextOffset string
+		if hasMore && len(diff) > 0 {
+			nextOffset = diff[len(diff)-1].Path
+		}
 		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{
 			Results: results,
 			Pagination: &models.Pagination{
+				NextOffset: nextOffset,
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(diff))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
@@ -850,9 +854,14 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		for i, d := range diff {
 			results[i] = transformDifferenceToDiff(d)
 		}
+		var nextOffset string
+		if hasMore && len(diff) > 0 {
+			nextOffset = diff[len(diff)-1].Path
+		}
 		return refs.NewDiffRefsOK().WithPayload(&refs.DiffRefsOKBody{
 			Results: results,
 			Pagination: &models.Pagination{
+				NextOffset: nextOffset,
 				HasMore:    swag.Bool(hasMore),
 				Results:    swag.Int64(int64(len(diff))),
 				MaxPerPage: swag.Int64(MaxResultsPerPage),
