@@ -25,7 +25,6 @@ jobs:
       - name: Generate code
         run: |
           make gen
-
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
@@ -52,7 +51,6 @@ jobs:
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKECTL:${{ steps.version.outputs.tag }}
           docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
           docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
-
       - name: Build and push lakectl to Docker hub
         uses: docker/build-push-action@v1
         with:
