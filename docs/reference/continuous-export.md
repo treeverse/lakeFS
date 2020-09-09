@@ -23,45 +23,45 @@ other versions and uncommitted versions.
 To configure continuous export for branch `master`, run
 
 ```shell
-lakefs repo export --branch master --start --export-path s3://company-bucket/path/to/export/ [--export-status-path s3://company-bucket/path/to/status]
+lakefs branch export --branch master --start --export-path s3://company-bucket/path/to/export/ [--export-status-path s3://company-bucket/path/to/status]
 ```
 
 To stop continuous export, run
 
 ```shell
-lakefs repo export --branch master --stop
+lakefs branch export --branch master --stop
 ```
 
-### Alternatives
+This works any number of your branches, not only `master`.
 
-#### Multiple branches
-
-If we go with per-branch export this is almost the exact same command!
+If you omit the `--start` flag, the branch tip will be exported just once, at that time.
 
 ```shell
-lakefs branch export --branch master --start --export-path s3://company-bucket/path/to/export/
+lakefs branch export --branch experiment1 --export-path s3://company-bucket/path/to/experiment/ [--export-status-path s3://company-bucket/path/to/experiment_status]
 ```
-
-#### One-time export
-
-Either get rid of the `--start` or just support one-time export as a command!
 
 ## Operation
 
 When continuous export is enabled for a branch its current state is exported to S3.  From
-then on, every commit or merge operation to that branch will be exported _*optional:* just
-as though a non-continuous export were run_.  The commit or merge operation on the branch
-returns as soon as export starts.
+then on, every commit or merge operation to that branch will be exported.  The commit or
+merge operation on the branch returns as soon as export starts.  Multiple commits to the
+same exported branch may cause some otherwise-overlapping exports to be skipped.
+Eventually the last export will appear.  This is in line with "eventual consistency" of
+S3.
 
-The export process runs for a while.  To help track its status it creates a file
-`_STATUS_<timestamp>.json`.  This file contains multiple JSON records, each on a single
-line:
-* An initial record with fields
-  - `"status"`: one of `"success"`, `"failure"`, `"creating"`, or `"in-progress"`.
+The export process runs for a while.  When it completes successfully it writes an empty
+file `_STATUS` under the configured export-path.
+
+For more granular status tracking, set an export-status-path.  Export writes two files to that path:
+
+1. A file `_STATUS_<timestamp>.json`, updated on every status change to hold a single JSON
+   record with fields
+  - `"status"`: one of `"success"`, `"failure"`, `"pending"`, or `"in-progress"`.
   - `"message"`: a human-readable message, the error message for status `"failure"`.
   - `"commit"`: the commit-ID of the export.
   - (maybe?) `"commit-message"`: the message associated with that commit.
-* When status is not `"creating"`, a record for each exported file with fields
+2. A file `_MANIFEST_<timestamp>.json` written when entering state `in-progress`.  It
+   contains newline-separated records for each exported file with fields
   - `"path"`: the path of the object within the bucket.  The exported object will be on
     that path under the export path specified.
   - `"etag"`: the etag of the exported object.  You can use this to ensure the correct
@@ -70,4 +70,4 @@ line:
     version ID it can be very hard to retrieve a non-latest version of the object!)
 
 Note that S3 does not offer atomic operations.  Objects read are only valid while the
-status file shows `"success"` and the `"commit"` is unchanged!
+`_STATUS` file shows `"success"` and the `"commit"` is unchanged!
