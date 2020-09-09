@@ -7,7 +7,7 @@ has_children: false
 ---
 # Continuous Export
 
-You can configure a lakeFS repository can store the latest of a branch on an external
+You can configure a lakeFS repository to store the latest of a branch on an external
 object store using its native paths and access methods.  This allows clients and tools
 read-only access to repository objects without any lakeFS-specific configuration.
 Initially, only AWS S3 is supported.
