@@ -24,7 +24,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 ## Capabilities
 
-**Developer Environment for Data**
+**Development Environment for Data**
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
 * **Reproducibility** - go back to any point of time to a consistent version of your data lake.
 
