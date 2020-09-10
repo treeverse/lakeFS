@@ -3,21 +3,19 @@ import {useHistory, useLocation} from "react-router-dom";
 import {connect} from "react-redux";
 import {Alert, ButtonToolbar, Button, OverlayTrigger, Tooltip} from "react-bootstrap";
 import {SyncIcon, GitMergeIcon} from "@primer/octicons-react";
-import {PAGINATION_AMOUNT, listTree, listTreePaginate} from "../actions/objects";
-import {diff, resetDiff, merge, resetMerge} from "../actions/refs";
+import {diff, diffPaginate, merge, resetMerge} from "../actions/refs";
 import RefDropdown from "./RefDropdown";
-import Tree from "./Tree";
+import Changes from "./Changes";
 import ConfirmationModal from "./ConfirmationModal";
-
-const readUncommitted = false;
+import {PAGINATION_AMOUNT} from "../actions/refs";
 
 const MergeButton = connect(
     ({ refs }) => ({
         mergeState: refs.merge,
         diffResults: refs.diff,
     }),
-    ({ merge, resetMerge, resetDiff })
-)(({ repo, refId, compare, merge, mergeState, resetMerge, resetDiff, diffResults }) => {
+    ({ merge, resetMerge })
+)(({ repo, refId, compare, merge, mergeState, resetMerge, diffResults }) => {
     if (!refId || refId.type !== 'branch' || !compare || compare.type !== 'branch') {
         return null;
     }
@@ -53,10 +51,10 @@ const MergeButton = connect(
         if (mergeState.error) {
             window.alert(mergeState.error);
             resetMerge();
-        } else if (mergeState.payload && mergeState.payload.results.length > 0) {
-            resetDiff();
+        // } else if (mergeState.payload && mergeState.payload.results.length > 0) {
+        //     resetDiff();
         }
-    }, [resetMerge, mergeState, resetDiff]);
+    }, [resetMerge, mergeState]);
 
     const onSubmit = () => {
         if (disabled) return;
@@ -142,27 +140,23 @@ const CompareToolbar = ({repo, refId, compare, refresh}) => {
     );
 };
 
-const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePaginate, diff, resetDiff, diffResults, resetMerge, mergeResults }) => {
-    const history = useHistory();
-    const location = useLocation();
-
+const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, resetMerge, mergeResults }) => {
     const refreshData = useCallback(() => {
-        listTree(repo.id, refId.id, path, PAGINATION_AMOUNT, readUncommitted);
         if (compareRef) {
             diff(repo.id, refId.id, compareRef.id);
         } else {
-            resetDiff();
+            diff(repo.id, refId.id, refId.id);
         }
-    }, [repo.id, refId.id, path, listTree, diff, resetDiff, compareRef]);
+    }, [repo.id, refId.id, diff, compareRef]);
 
     useEffect(() => {
         refreshData();
-    }, [refreshData, repo.id, refId.id, path, listTree, diff, resetDiff, compareRef]);
+    }, [refreshData, repo.id, refId.id, diff, diffPaginate, compareRef]);
 
-    const paginator =(!list.loading && !!list.payload && list.payload.pagination && list.payload.pagination.has_more);
+    const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
     const compareWithSelf = (compareRef && refId.type === compareRef.type && refId.id === compareRef.id);
-    const alertText = list.error || diffResults.error || '';
+    const alertText = diffResults.error || '';
     return (
         <div className="mt-3">
             <div className="action-bar">
@@ -184,23 +178,17 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
 
             {!(compareWithSelf || alertText) &&
                 <>
-                <Tree
+                <Changes
                     repo={repo}
                     refId={refId}
                     showActions={false}
-                    onNavigate={(path) => {
-                        const params = new URLSearchParams(location.search);
-                        params.set('path', path);
-                        history.push({...location, search: params.toString()});
-                    }}
-                    diffResults={diffResults}
-                    list={list}
-                    path={path}/>
+                    list={diffResults}
+                    />
 
                 {paginator &&
                 <p className="tree-paginator">
                     <Button variant="outline-primary" onClick={() => {
-                        listTreePaginate(repo.id, refId.id, path, list.payload.pagination.next_offset, PAGINATION_AMOUNT, readUncommitted);
+                        diffPaginate(repo.id, refId.id, refId.id, diffResults.payload.pagination.next_offset, PAGINATION_AMOUNT);
                     }}>
                         Load More
                     </Button>
@@ -213,10 +201,9 @@ const ComparePage = ({repo, refId, compareRef, path, list, listTree, listTreePag
 };
 
 export default connect(
-    ({ objects, refs }) => ({
-        list: objects.list,
+    ({ refs }) => ({
         diffResults: refs.diff,
         mergeResults: refs.merge,
     }),
-    ({ listTree, listTreePaginate, diff, resetDiff, resetMerge })
+    ({ diff, diffPaginate, resetMerge })
 )(ComparePage);

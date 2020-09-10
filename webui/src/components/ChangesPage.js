@@ -1,58 +1,184 @@
-import React, {useEffect} from "react";
-import {useLocation, useHistory, Link} from "react-router-dom";
-
+import React, {useCallback, useEffect, useRef, useState} from "react";
+import {useLocation, useHistory} from "react-router-dom";
+import {GitCommitIcon, PlusIcon, SyncIcon, XIcon} from "@primer/octicons-react";
 import RefDropdown from "./RefDropdown";
-import ButtonToolbar from "react-bootstrap/ButtonToolbar";
+import Changes from "./Changes";
+import {connect} from "react-redux";
+import {diff, diffPaginate} from "../actions/refs";
+import {Button, ButtonToolbar, Col, Form, Modal, OverlayTrigger, Row, Tooltip} from "react-bootstrap";
+import {PAGINATION_AMOUNT} from "../actions/refs";
+import {resetRevertBranch, revertBranch} from "../actions/branches";
+import ConfirmationModal from "./ConfirmationModal";
+import {doCommit, resetCommit} from "../actions/commits";
 import Alert from "react-bootstrap/Alert";
 
-import {connect} from "react-redux";
-import {logCommits, logCommitsPaginate} from '../actions/commits';
-import * as moment from "moment";
-import ListGroup from "react-bootstrap/ListGroup";
-import ListGroupItem from "react-bootstrap/ListGroupItem";
-import ButtonGroup from "react-bootstrap/ButtonGroup";
-import Button from "react-bootstrap/Button";
-import {LinkIcon, LinkExternalIcon, DiffIcon} from "@primer/octicons-react";
-import ClipboardButton from "./ClipboardButton";
-import OverlayTrigger from "react-bootstrap/OverlayTrigger";
-import Tooltip from "react-bootstrap/Tooltip";
-import Table from "react-bootstrap/Table";
+const CommitButton = connect(
+    ({ commits }) => ({ commitState: commits.commit }),
+    ({ doCommit, resetCommit })
+)(({ repo, refId, commitState, doCommit, resetCommit }) => {
 
+    const textRef = useRef(null);
 
-const ChangesPage = ({repo, refId, logCommits,logCommitsPaginate, log }) => {
+    const [show, setShow] = useState(false);
+    const [metadataFields, setMetadataFields] = useState([]);
 
-    const history = useHistory();
-    const location = useLocation();
+    const disabled = commitState.inProgress;
+
+    const onHide = () => {
+        if (disabled) return;
+        setShow(false);
+        setMetadataFields([]);
+    };
 
     useEffect(() => {
-        logCommits(repo.id, refId.id);
-    },[logCommits, repo.id, refId.id]);
+        if (commitState.done) {
+            setShow(false);
+            setMetadataFields([]);
+            resetCommit();
+        }
+    }, [resetCommit, commitState.done]);
 
-    let body;
-    if (log.loading) {
-        body = (<Alert variant="info">Loading</Alert>);
-    } else if (!!log.error) {
-        body = (<Alert variant="danger">{log.error}</Alert> );
-    } else {
-        body = (
-            <>
-            <ListGroup className="commit-list pagination-group">
-                {log.payload.results.map((commit, i) => (
-                    <CommitWidget key={commit.id} commit={commit} repo={repo} previous={(i < log.payload.results.length-1) ? log.payload[i+1] : null}/>
-                ))}
-            </ListGroup>
-                {(log.payload.pagination.has_more) ? (
-                    <p className="tree-paginator">
-                        <Button variant="outline-primary" onClick={() => {
-                            logCommitsPaginate(repo.id, refId.id,log.payload.pagination.next_offset)
-                        }}>Load More</Button>
-                    </p>
-                ) : (<span/>)}
-            </>
-        );
+    const onSubmit = () => {
+        if (disabled) return;
+        const message = textRef.current.value;
+        const metadata = {};
+        metadataFields.forEach(pair => {
+            if (pair.key.length > 0)
+                metadata[pair.key] = pair.value;
+        });
+        doCommit(repo.id, refId.id, message, metadata);
+    };
+
+    if (!refId || refId.type !== 'branch') {
+        return <span/>;
     }
 
     return (
+        <>
+            <Modal show={show} onHide={onHide}>
+                <Modal.Header closeButton>
+                    <Modal.Title>Commit Changes</Modal.Title>
+                </Modal.Header>
+                <Modal.Body>
+                    <Form className="mb-2" onSubmit={(e) => {
+                        onSubmit();
+                        e.preventDefault();
+                    }}>
+                        <Form.Group controlId="message">
+                            <Form.Control type="text" placeholder="Commit Message" ref={textRef}/>
+                        </Form.Group>
+
+                        {metadataFields.map((f, i) => {
+                            return (
+                                <Form.Group controlId="message" key={`commit-metadata-field-${f.key}-${f.value}-${i}`}>
+                                    <Row>
+                                        <Col md={{span: 5}}>
+                                            <Form.Control type="text" placeholder="Key"  defaultValue={f.key} onChange={(e) => {
+                                                metadataFields[i].key = e.currentTarget.value;
+                                                setMetadataFields(metadataFields);
+                                            }}/>
+                                        </Col>
+                                        <Col md={{ span: 5}}>
+                                            <Form.Control type="text" placeholder="Value"  defaultValue={f.value}  onChange={(e) => {
+                                                metadataFields[i].value = e.currentTarget.value;
+                                                setMetadataFields(metadataFields);
+                                            }}/>
+                                        </Col>
+                                        <Col md={{ span: 1}}>
+                                            <Form.Text>
+                                                <Button size="sm" variant="secondary" onClick={() => {
+                                                    setMetadataFields([...metadataFields.slice(0,i), ...metadataFields.slice(i+1)]);
+                                                }}>
+                                                    <XIcon/>
+                                                </Button>
+                                            </Form.Text>
+                                        </Col>
+                                    </Row>
+                                </Form.Group>
+                            )
+                        })}
+
+                        <Button onClick={() => {
+                            setMetadataFields([...metadataFields, {key: "", value: ""}]);
+                        }} size="sm" variant="secondary">
+                            <PlusIcon/>{' '}
+                            Add Metadata field
+                        </Button>
+                    </Form>
+                    {(!!commitState.error) ? (<Alert variant="danger">{commitState.error}</Alert>) : (<span/>)}
+                </Modal.Body>
+                <Modal.Footer>
+                    <Button variant="secondary" disabled={disabled} onClick={onHide}>
+                        Cancel
+                    </Button>
+                    <Button variant="success" disabled={disabled} onClick={onSubmit}>
+                        Commit Changes
+                    </Button>
+                </Modal.Footer>
+            </Modal>
+            <Button variant="success" onClick={() => { setShow(true); }}>
+                <GitCommitIcon/> Commit Changes{' '}
+            </Button>
+        </>
+    );
+});
+
+const RevertButton = connect(
+    ({ branches }) => ({ status: branches.revert }),
+    ({ revertBranch, resetRevertBranch })
+)(({ repo, refId, status, revertBranch, resetRevertBranch }) => {
+    if (!refId || refId.type !== 'branch') {
+        return null;
+    }
+    const [show, setShow] = useState(false);
+    const disabled = status.inProgress;
+
+    const onHide = () => {
+        if (disabled) return;
+        setShow(false);
+    };
+
+    useEffect(() => {
+        if (status.error) {
+            window.alert(status.error);
+            resetRevertBranch();
+        } else if (status.done) {
+            setShow(false);
+            resetRevertBranch();
+        }
+    }, [status, resetRevertBranch]);
+
+    const onSubmit = () => {
+        if (disabled) return;
+        revertBranch(repo.id, refId.id, {type: "reset"});
+        setShow(false);
+    };
+
+    return (
+        <>
+            <ConfirmationModal show={show} onHide={onHide} msg="Are you sure you want to revert all uncommitted changes?" onConfirm={onSubmit} />
+            <Button variant="light" disabled={disabled} onClick={() => { setShow(true) }}>
+                <GitCommitIcon/> Revert
+            </Button>
+        </>
+    );
+});
+
+const ChangesPage = ({repo, refId, path, diff, diffPaginate, diffResults, commitState, revertState}) => {
+    const history = useHistory();
+    const location = useLocation();
+
+    const refreshData   = useCallback(() => {
+        diff(repo.id, refId.id, refId.id);
+    }, [repo.id, refId.id, diff]);
+
+    useEffect(() => {
+        refreshData();
+    },[repo.id, refId.id, refreshData,  commitState.done, revertState.done]);
+
+    const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
+    return(
+        <>
         <div className="mt-3 mb-5">
             <div className="action-bar">
                 <ButtonToolbar className="float-left mb-2">
@@ -68,13 +194,49 @@ const ChangesPage = ({repo, refId, logCommits,logCommitsPaginate, log }) => {
                         history.push({...location, search: params.toString()})
                     }}/>
                 </ButtonToolbar>
+
+                <ButtonToolbar className="float-right mb-2">
+                    <OverlayTrigger placement="bottom" overlay={<Tooltip id="refreshTooltipId">Refresh</Tooltip>}>
+                        <Button variant="light" onClick={refreshData}><SyncIcon/></Button>
+                    </OverlayTrigger>
+
+                    <RevertButton refId={refId} repo={repo}/>
+                    <CommitButton refId={refId} repo={repo}/>
+                </ButtonToolbar>
+
             </div>
-            {body}
+
+            <>
+                <Changes
+                    repo={repo}
+                    refId={refId}
+                    showActions={false}
+                    list={diffResults}
+                    path={path}
+                />
+
+                {paginator &&
+                <p className="tree-paginator">
+                    <Button variant="outline-primary" onClick={() => {
+                        diffPaginate(repo.id, refId.id, refId.id, diffResults.payload.pagination.next_offset, PAGINATION_AMOUNT);
+                    }}>
+                        Load More
+                    </Button>
+                </p>
+                }
+            </>
         </div>
+
+        </>
     );
 };
 
+
 export default connect(
-    ({ commits }) => ({ log: commits.log }),
-    ({ logCommits, logCommitsPaginate })
+    ({refs, commits, branches}) => ({
+        diffResults: refs.diff,
+        commitState: commits.commit,
+        revertState: branches.revert,
+    }),
+    ({diff, diffPaginate})
 )(ChangesPage);
