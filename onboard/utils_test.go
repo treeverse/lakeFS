@@ -3,6 +3,7 @@ package onboard_test
 import (
 	"context"
 	"errors"
+	"sort"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -19,6 +20,7 @@ type mockInventory struct {
 	rows         []string
 	inventoryURL string
 	sourceBucket string
+	shouldSort   bool
 }
 
 type objectActions struct {
@@ -40,12 +42,12 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
-		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
+		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
 	}
 	if inventoryURL == m.previousInventoryURL {
-		return &mockInventory{rows: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
+		return &mockInventory{rows: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
 	}
 	return nil, errors.New("failed to create inventory")
 }
@@ -118,6 +120,9 @@ func (m *mockInventoryIterator) Get() *block.InventoryObject {
 }
 
 func (m *mockInventory) Iterator() block.InventoryIterator {
+	if m.shouldSort {
+		sort.Strings(m.rows)
+	}
 	return &mockInventoryIterator{
 		rows: rows(m.rows...),
 	}
