@@ -132,7 +132,8 @@ client.commits.commit(
             'using': 'python_api'
         }
     }).result()
-# output:commit(committer='jane.doe', creation_date=1599563809, id='~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnW',
+# output:
+# commit(committer='jane.doe', creation_date=1599563809, id='~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnW',
 #     message='Added a CSV file!', metadata={'using': 
 # 'python_api'}, parents=['~EiRd5nyjm8kWLDHesLTsywmd1MNW5hB3ApQnU'])
 ```
