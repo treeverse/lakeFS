@@ -1,7 +1,7 @@
 version: '3'
 services:
   lakefs:
-    image: "${DOCKER_REG}/lakefs:${TAG}"
+    image: "${REPO}/lakefs:${TAG}"
     ports: 
       - "8000:8000"
     depends_on:
