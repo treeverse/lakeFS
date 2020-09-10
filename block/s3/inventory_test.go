@@ -61,6 +61,7 @@ var fileContents = map[string][]string{
 	"f_overlap2":    {"fo_row2", "fo_row4"},
 	"f_overlap3":    {"fo_row2", "fo_row6"},
 	"f_overlap4":    {"fo_row1", "fo_row4"},
+	"f_overlap5":    {"fo_row2", "fo_row4"},
 }
 
 func TestIterator(t *testing.T) {
@@ -141,6 +142,11 @@ func TestIterator(t *testing.T) {
 		},
 		{
 			InventoryFiles: []string{"f_overlap1", "f_overlap4"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
+		{
+			InventoryFiles: []string{"f_overlap4", "f_overlap5"},
 			ShouldSort:     true,
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},

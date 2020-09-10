@@ -7,7 +7,7 @@ import (
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 )
 
-var ErrInventoryNotSorted = errors.New("inventory assumed to be sorted but isn't")
+var ErrInventoryNotSorted = errors.New("got unsorted s3 inventory")
 
 type InventoryIterator struct {
 	*Inventory
@@ -26,32 +26,31 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 }
 
 func (it *InventoryIterator) Next() bool {
-	if len(it.Manifest.Files) == 0 {
-		// empty manifest
-		return false
-	}
-	val, valIndex := it.nextFromBuffer()
-	if val != nil {
-		// found the next object in buffer
-		it.valIndexInBuffer = valIndex
-		// validate element order
-		if it.shouldSort && it.val != nil && val.Key < it.val.Key {
-			it.err = ErrInventoryNotSorted
+	for {
+		if len(it.Manifest.Files) == 0 {
+			// empty manifest
 			return false
 		}
-		it.val = val
-		return true
+		val := it.nextFromBuffer()
+		if val != nil {
+			// validate element order
+			if it.shouldSort && it.val != nil && val.Key < it.val.Key {
+				it.err = ErrInventoryNotSorted
+				return false
+			}
+			it.val = val
+			return true
+		}
+		// value not found in buffer, need to reload the buffer
+		it.valIndexInBuffer = -1
+		if !it.moveToNextInventoryFile() {
+			// no more files left
+			return false
+		}
+		if !it.fillBuffer() {
+			return false
+		}
 	}
-	// value not found in buffer, need to reload the buffer
-	it.valIndexInBuffer = -1
-	if !it.moveToNextInventoryFile() {
-		// no more files left
-		return false
-	}
-	if !it.fillBuffer() {
-		return false
-	}
-	return it.Next()
 }
 
 func (it *InventoryIterator) moveToNextInventoryFile() bool {
@@ -86,7 +85,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 	return true
 }
 
-func (it *InventoryIterator) nextFromBuffer() (*block.InventoryObject, int) {
+func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
 		obj := it.buffer[i]
 		if (obj.IsLatest != nil && !*obj.IsLatest) ||
@@ -107,9 +106,10 @@ func (it *InventoryIterator) nextFromBuffer() (*block.InventoryObject, int) {
 		if obj.Checksum != nil {
 			res.Checksum = *obj.Checksum
 		}
-		return &res, i
+		it.valIndexInBuffer = i
+		return &res
 	}
-	return nil, -1
+	return nil
 }
 
 func (it *InventoryIterator) Err() error {
