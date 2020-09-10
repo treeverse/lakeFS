@@ -31,7 +31,7 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 ## Here's why you need it:
 
 ### Developer Environment for Data
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. By creating a branch of the lake you get an isolated snapshot of the lake you can experiment with while others are not exposed. You can compare branches with different experiments or compare your branch to the master lake.  
+* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. By creating a branch of the lake you get an isolated snapshot of the lake you can experiment with while others are not exposed. You can compare branches with different experiments or compare your branch to the main branch of the lake.  
 * **Reproducibility** - go back to any point in time to a consistent version of your data lake. By making commit history available for a configurable duration - you can read from the lake at any given point in time, compare changes made, and safely roll back if necessary.
 
 ### Continuous Data Integration
