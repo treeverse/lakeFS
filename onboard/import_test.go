@@ -52,10 +52,10 @@ func TestImport(t *testing.T) {
 			// do nothing, expect no errors
 		},
 		{
-			NewInventory:      []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
-			PreviousInventory: []string{"a1", "a2", "a4", "a8", "a9", "a10"},
-			ExpectedDeleted:   []string{"a8", "a9", "a10"},
-			ExpectedAdded:     []string{"a3", "a5", "a6", "a7"},
+			NewInventory:      []string{"a01", "a02", "a03", "a04", "a05", "a06", "a07"},
+			PreviousInventory: []string{"a01", "a02", "a04", "a08", "a09", "a10"},
+			ExpectedDeleted:   []string{"a08", "a09", "a10"},
+			ExpectedAdded:     []string{"a03", "a05", "a06", "a07"},
 		},
 		{
 			NewInventory:  []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
@@ -78,17 +78,24 @@ func TestImport(t *testing.T) {
 					previousCommitInventory: previousInventoryURL,
 				}
 			}
-			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), nil, &mockInventoryGenerator{
+			inventoryGenerator := &mockInventoryGenerator{
 				newInventoryURL:      newInventoryURL,
 				previousInventoryURL: previousInventoryURL,
 				newInventory:         test.NewInventory,
 				previousInventory:    test.PreviousInventory,
 				sourceBucket:         "example-repo",
-			}, "committer", newInventoryURL, "example-repo")
+			}
+			config := &onboard.ImporterConfig{
+				CommitUsername:     "committer",
+				InventoryURL:       newInventoryURL,
+				Repository:         "example-repo",
+				InventoryGenerator: inventoryGenerator,
+				CatalogActions:     &catalogActionsMock,
+			}
+			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), config)
 			if err != nil {
 				t.Fatalf("failed to create importer: %v", err)
 			}
-			importer.CatalogActions = &catalogActionsMock
 			stats, err := importer.Import(context.Background(), dryRun)
 			if err != nil {
 				if !test.ExpectedErr {
