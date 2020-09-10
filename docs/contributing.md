@@ -41,7 +41,7 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 1. Install statik:
    
    ```shell
-   $ go get github.com/rakyll/statik 
+   go get github.com/rakyll/statik 
    ```
    
    Make sure `(go env GOPATH)/bin` is in your `$PATH` (or at least, that the `statik` binary is). 
@@ -50,13 +50,13 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 1. Build the project:
    
    ```shell
-   $ make build
+   make build
    ```
    
 1. Make sure tests are passing:
    
    ```shell
-   $ make test 
+   make test 
    ```
 
 ## Before creating a pull request
@@ -72,13 +72,13 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 Once you've made the necessary changes to the code, make sure tests pass:
 
    ```shell
-   $ make test 
+   make test 
    ```
 
 Check linting rules are passing:
 
    ```shell
-   $ make checks-validator
+   make checks-validator
    ```
 
 lakeFS uses [go fmt](https://golang.org/cmd/gofmt/) as a style guide for Go code.

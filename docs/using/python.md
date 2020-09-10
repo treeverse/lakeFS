@@ -26,7 +26,7 @@ A complete installation guide is available in the [bravado GitHub repository](ht
 For our example, we'll simply install it with pip:
 
 ```shell
-$ pip install bravado==10.6.2
+pip install bravado==10.6.2
 ```
 
 At the time of writing this guide, the current stable bravado release is `10.6.2`.
