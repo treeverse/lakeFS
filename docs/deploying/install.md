@@ -87,11 +87,11 @@ gateways:
 Depending on your runtime environment, running lakeFS using docker would look like this:
 
 ```sh
-$ docker run \
-    --name lakefs \
-    -p 8000:8000 \
-    -v <PATH_TO_CONFIG_FILE>:/home/lakefs/.lakefs.yaml \
-    treeverse/lakefs:latest run
+docker run \
+  --name lakefs \
+  -p 8000:8000 \
+  -v <PATH_TO_CONFIG_FILE>:/home/lakefs/.lakefs.yaml \
+  treeverse/lakefs:latest run
 ```
 
 ## Fargate and other container-based environments
@@ -101,14 +101,14 @@ Some environments make it harder to use a configuration file, and are best confi
 Here is an example of running lakeFS using environment variables. See the [reference](../reference/configuration.md#using-environment-variables) for the full list of configurations.
 
 ```sh
-$ docker run \
-    --name lakefs \
-    -p 8000:8000 \
-    -e LAKEFS_DATABASE_CONNECTION_STRING="postgres://user:pass@<RDS ENDPOINT>..." \
-    -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="<RANDOM_GENERATED_STRING>" \
-    -e LAKEFS_BLOCKSTORE_TYPE="s3" \
-    -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="s3.lakefs.example.com" \
-    treeverse/lakefs:latest run
+docker run \
+  --name lakefs \
+  -p 8000:8000 \
+  -e LAKEFS_DATABASE_CONNECTION_STRING="postgres://user:pass@<RDS ENDPOINT>..." \
+  -e LAKEFS_AUTH_ENCRYPT_SECRET_KEY="<RANDOM_GENERATED_STRING>" \
+  -e LAKEFS_BLOCKSTORE_TYPE="s3" \
+  -e LAKEFS_GATEWAYS_S3_DOMAIN_NAME="s3.lakefs.example.com" \
+  treeverse/lakefs:latest run
 ```
 
 ## AWS EC2
@@ -119,5 +119,5 @@ Alternatively, you can run lakeFS directly on an EC2 instance:
 2. `lakefs` is a single binary, you can run it directly, but preferably run it as a service using systemd or your operating system's facilities.
 
    ```bash
-   $ lakefs --config <PATH_TO_CONFIG_FILE> run
+   lakefs --config <PATH_TO_CONFIG_FILE> run
    ``` 
