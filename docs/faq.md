@@ -35,7 +35,7 @@ The data we gather is limited to the following:
 1. periodic aggregated action counters (i.e. how many "get_object" operations occurred).
 
 ### 7. What is the difference between lakeFS / Delta Lake /  Hudi / Iceberg?
-We support different use-cases. Delta Lake, Hudi and Iceberg are Structured Data Formats that allow Insert, Delete, and Upsert. lakeFS is format agnostic and enables cross collection consistency by allowing versions of a repository of data using git like operations.  Read our [blog](https://lakefs.io/2020/08/10/data-versioning/) for a more detailed comparison. 
+We support different use-cases. Delta Lake, Hudi and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using git-like operations.  Read our [blog](https://lakefs.io/2020/08/10/data-versioning/) for a more detailed comparison. 
 
 ### 8. What inspired your logo?
 The [Axolotl](https://en.wikipedia.org/wiki/Axolotl){: target="_blank" } – a species of salamander, also known as the Mexican Lake Monster or the Peter Pan of the animal kingdom. It's a magical creature, living in a lake, just like us :-).
