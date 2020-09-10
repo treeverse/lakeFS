@@ -26,7 +26,7 @@ This branching model makes your data lake ACID compliant by allowing changes to 
 
 Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
 
-![lakeFS s3 addressing](assets/img/s3_branch.png)
+<img src="assets/img/s3_branch.png" alt="lakeFS s3 addressing" width="60%" height="60%" />
 
 ## Here's why you need it:
 
