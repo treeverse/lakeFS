@@ -51,6 +51,7 @@ const MergeButton = connect(
         if (mergeState.error) {
             window.alert(mergeState.error);
             resetMerge();
+            // TODO(barak): test if we need to reset and refresh diff after merge?!
         // } else if (mergeState.payload && mergeState.payload.results.length > 0) {
         //     resetDiff();
         }
@@ -144,8 +145,6 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
     const refreshData = useCallback(() => {
         if (compareRef) {
             diff(repo.id, refId.id, compareRef.id);
-        } else {
-            diff(repo.id, refId.id, refId.id);
         }
     }, [repo.id, refId.id, diff, compareRef]);
 
@@ -155,7 +154,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
 
     const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
     const showMergeCompleted = !!(mergeResults && mergeResults.payload);
-    const compareWithSelf = (compareRef && refId.type === compareRef.type && refId.id === compareRef.id);
+    const compareWith = !compareRef || (compareRef && refId.type === compareRef.type && refId.id === compareRef.id);
     const alertText = diffResults.error || '';
     return (
         <div className="mt-3">
@@ -163,7 +162,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
                 <CompareToolbar refId={refId} repo={repo} compare={compareRef} refresh={refreshData}/>
             </div>
 
-            <Alert variant="warning" show={compareWithSelf}>
+            <Alert variant="warning" show={compareWith}>
                 <Alert.Heading>There isn’t anything to compare.</Alert.Heading>
                 You’ll need to use two different sources to get a valid comparison.
             </Alert>
@@ -176,7 +175,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
                 <Alert.Heading>{alertText}</Alert.Heading>
             </Alert>
 
-            {!(compareWithSelf || alertText) &&
+            {!(compareWith || alertText) &&
                 <>
                 <Changes
                     repo={repo}

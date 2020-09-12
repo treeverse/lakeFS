@@ -15,17 +15,17 @@ import Alert from "react-bootstrap/Alert";
 const CommitButton = connect(
     ({ commits }) => ({ commitState: commits.commit }),
     ({ doCommit, resetCommit })
-)(({ repo, refId, commitState, doCommit, resetCommit }) => {
+)(({ repo, refId, commitState, doCommit, resetCommit, disabled }) => {
 
     const textRef = useRef(null);
 
     const [show, setShow] = useState(false);
     const [metadataFields, setMetadataFields] = useState([]);
 
-    const disabled = commitState.inProgress;
+    const commitDisabled = commitState.inProgress;
 
     const onHide = () => {
-        if (disabled) return;
+        if (commitDisabled) return;
         setShow(false);
         setMetadataFields([]);
     };
@@ -39,7 +39,7 @@ const CommitButton = connect(
     }, [resetCommit, commitState.done]);
 
     const onSubmit = () => {
-        if (disabled) return;
+        if (commitDisabled) return;
         const message = textRef.current.value;
         const metadata = {};
         metadataFields.forEach(pair => {
@@ -108,15 +108,15 @@ const CommitButton = connect(
                     {(!!commitState.error) ? (<Alert variant="danger">{commitState.error}</Alert>) : (<span/>)}
                 </Modal.Body>
                 <Modal.Footer>
-                    <Button variant="secondary" disabled={disabled} onClick={onHide}>
+                    <Button variant="secondary" disabled={commitDisabled} onClick={onHide}>
                         Cancel
                     </Button>
-                    <Button variant="success" disabled={disabled} onClick={onSubmit}>
+                    <Button variant="success" disabled={commitDisabled} onClick={onSubmit}>
                         Commit Changes
                     </Button>
                 </Modal.Footer>
             </Modal>
-            <Button variant="success" onClick={() => { setShow(true); }}>
+            <Button variant="success" disabled={disabled} onClick={() => { setShow(true); }}>
                 <GitCommitIcon/> Commit Changes{' '}
             </Button>
         </>
@@ -126,15 +126,15 @@ const CommitButton = connect(
 const RevertButton = connect(
     ({ branches }) => ({ status: branches.revert }),
     ({ revertBranch, resetRevertBranch })
-)(({ repo, refId, status, revertBranch, resetRevertBranch }) => {
+)(({ repo, refId, status, revertBranch, resetRevertBranch, disabled }) => {
     if (!refId || refId.type !== 'branch') {
         return null;
     }
     const [show, setShow] = useState(false);
-    const disabled = status.inProgress;
+    const submitDisabled = status.inProgress;
 
     const onHide = () => {
-        if (disabled) return;
+        if (submitDisabled) return;
         setShow(false);
     };
 
@@ -149,7 +149,7 @@ const RevertButton = connect(
     }, [status, resetRevertBranch]);
 
     const onSubmit = () => {
-        if (disabled) return;
+        if (submitDisabled) return;
         revertBranch(repo.id, refId.id, {type: "reset"});
         setShow(false);
     };
@@ -177,6 +177,7 @@ const ChangesPage = ({repo, refId, path, diff, diffPaginate, diffResults, commit
     },[repo.id, refId.id, refreshData,  commitState.done, revertState.done]);
 
     const paginator =(!diffResults.loading && !!diffResults.payload && diffResults.payload.pagination && diffResults.payload.pagination.has_more);
+    const hasNoChanges = !diffResults.payload || !diffResults.payload.results || diffResults.payload.results.length === 0;
     return(
         <>
         <div className="mt-3 mb-5">
@@ -200,8 +201,8 @@ const ChangesPage = ({repo, refId, path, diff, diffPaginate, diffResults, commit
                         <Button variant="light" onClick={refreshData}><SyncIcon/></Button>
                     </OverlayTrigger>
 
-                    <RevertButton refId={refId} repo={repo}/>
-                    <CommitButton refId={refId} repo={repo}/>
+                    <RevertButton refId={refId} repo={repo} disabled={hasNoChanges} />
+                    <CommitButton refId={refId} repo={repo} disabled={hasNoChanges}/>
                 </ButtonToolbar>
 
             </div>
