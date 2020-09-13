@@ -13,6 +13,10 @@ configuration][s3-lifecycle], however not all properties exist.  Most
 notably current support is only for object expiration and not storage
 class transition.
 
+
+   **Note:** Currently only S3 block adapter supports retention
+   {: .note }
+
 # Retention
 
 ## System configuration
