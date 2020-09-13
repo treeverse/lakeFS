@@ -38,8 +38,10 @@ This reference uses `.` to denote the nesting of values.
    **Note:** It is best to keep this somewhere safe such as KMS or Hashicorp Vault, and provide it to the system at run time
    {: .note }
 
-* `blockstore.type` `(one of ["local", "s3", "mem"]: "mem")` - Block adapter to use. This controls where the underlying data will be stored
+* `blockstore.type` `(one of ["local", "s3", "gs", "mem"]: "mem")` - Block adapter to use. This controls where the underlying data will be stored
 * `blockstore.local.path` `(string: "~/lakefs/data")` - When using the local Block Adapter, which directory to store files in
+* `blockstore.gs.credentials_file` `(string : )` - If specified will be used as a file path of the JSON file that contains your Google service account key
+* `blockstore.gs.credentials_json` `(string : )` - If specified will be used as JSON string that contains your Google service account key (when credentials_file is not set)
 * `blockstore.s3.region` `(string : "us-east-1")` - When using the S3 block adapter, AWS region to use
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
@@ -140,3 +142,31 @@ gateways:
 ```
 
 [aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
+
+
+## Example: Google Storage Deployment
+
+```yaml
+---
+logging:
+  format: json
+  level: WARN
+  output: "-"
+
+database:
+  connection_string: "postgres://user:pass@lakefs.rds.amazonaws.com:5432/postgres"
+
+auth:
+  encrypt:
+    secret_key: "10a718b3f285d89c36e9864494cdd1507f3bc85b342df24736ea81f9a1134bcc"
+
+blockstore:
+  type: gs
+  gs:
+    credentials_file: /secrets/lakefs-service-account.json
+
+gateways:
+  s3:
+    domain_name: s3.my-company.com
+    region: us-east-1
+```
