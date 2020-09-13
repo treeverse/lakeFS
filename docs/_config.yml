@@ -65,3 +65,4 @@ image: '/assets/img/shared-image.png'
 
 plugins:
   - jekyll-redirect-from
+  - jekyll-seo-tag
