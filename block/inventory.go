@@ -18,12 +18,12 @@ type Inventory interface {
 }
 
 type InventoryObject struct {
-	Bucket          string
-	Key             string
-	Size            int64
-	LastModified    int64
-	Checksum        string
-	PhysicalAddress string
+	Bucket             string
+	Key                string
+	Size               int64
+	LastModifiedMillis int64
+	Checksum           string
+	PhysicalAddress    string
 }
 
 type InventoryIterator interface {

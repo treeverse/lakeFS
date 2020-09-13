@@ -100,8 +100,8 @@ func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 		if obj.Size != nil {
 			res.Size = *obj.Size
 		}
-		if obj.LastModified != nil {
-			res.LastModified = *obj.LastModified
+		if obj.LastModifiedMillis != nil {
+			res.LastModifiedMillis = *obj.LastModifiedMillis
 		}
 		if obj.Checksum != nil {
 			res.Checksum = *obj.Checksum

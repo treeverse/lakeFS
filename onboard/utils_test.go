@@ -4,7 +4,9 @@ import (
 	"context"
 	"errors"
 	"sort"
+	"time"
 
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
@@ -21,6 +23,7 @@ type mockInventory struct {
 	inventoryURL string
 	sourceBucket string
 	shouldSort   bool
+	lastModified *time.Time
 }
 
 type objectActions struct {
@@ -52,13 +55,13 @@ func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.L
 	return nil, errors.New("failed to create inventory")
 }
 
-func rows(keys ...string) []block.InventoryObject {
+func rows(keys []string, lastModified ...time.Time) []block.InventoryObject {
 	if keys == nil {
 		return nil
 	}
 	res := make([]block.InventoryObject, 0, len(keys))
-	for _, key := range keys {
-		res = append(res, block.InventoryObject{Key: key})
+	for i, key := range keys {
+		res = append(res, block.InventoryObject{Key: key, LastModifiedMillis: lastModified[i%len(lastModified)].Unix() * 1000})
 	}
 	return res
 }
@@ -123,8 +126,12 @@ func (m *mockInventory) Iterator() block.InventoryIterator {
 	if m.shouldSort {
 		sort.Strings(m.rows)
 	}
+	lastModified := m.lastModified
+	if m.lastModified == nil {
+		lastModified = swag.Time(time.Now())
+	}
 	return &mockInventoryIterator{
-		rows: rows(m.rows...),
+		rows: rows(m.rows, *lastModified),
 	}
 }
 

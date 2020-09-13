@@ -78,7 +78,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		entry := catalog.Entry{
 			Path:            obj.Key,
 			PhysicalAddress: obj.PhysicalAddress,
-			CreationDate:    time.Unix(0, obj.LastModified*int64(time.Millisecond)),
+			CreationDate:    time.Unix(obj.LastModifiedMillis*int64(time.Millisecond)/int64(time.Second), 0),
 			Size:            obj.Size,
 			Checksum:        obj.Checksum,
 		}

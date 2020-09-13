@@ -5,6 +5,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"time"
 
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/catalog"
@@ -17,7 +18,7 @@ type mockCataloger struct {
 }
 
 var catalogCallData = struct {
-	addedEntries   map[string]bool
+	addedEntries   map[string]catalog.Entry
 	deletedEntries map[string]bool
 	callLog        map[string]*int32
 	mux            sync.Mutex
@@ -27,7 +28,7 @@ func (m mockCataloger) CreateEntries(_ context.Context, _, _ string, entries []c
 	catalogCallData.mux.Lock()
 	defer catalogCallData.mux.Unlock()
 	for _, e := range entries {
-		catalogCallData.addedEntries[e.Path] = true
+		catalogCallData.addedEntries[e.Path] = e
 	}
 	atomic.AddInt32(catalogCallData.callLog["CreateEntries"], 1)
 	return nil
@@ -98,14 +99,16 @@ func TestCreateAndDeleteRows(t *testing.T) {
 	}
 	for _, dryRun := range []bool{true, false} {
 		for _, test := range testdata {
-			catalogCallData.addedEntries = make(map[string]bool)
+			catalogCallData.addedEntries = make(map[string]catalog.Entry)
 			catalogCallData.deletedEntries = make(map[string]bool)
 			catalogCallData.callLog = make(map[string]*int32)
 			catalogCallData.callLog["DeleteEntry"] = swag.Int32(0)
 			catalogCallData.callLog["CreateEntries"] = swag.Int32(0)
+			now := time.Now()
+			lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour)}
 			stats, err := catalogActions.ApplyImport(context.Background(), onboard.NewDiffIterator(
-				&mockInventoryIterator{rows: rows(test.DeletedRows...)},
-				&mockInventoryIterator{rows: rows(test.AddedRows...)}), dryRun)
+				&mockInventoryIterator{rows: rows(test.DeletedRows, lastModified...)},
+				&mockInventoryIterator{rows: rows(test.AddedRows, lastModified...)}), dryRun)
 			if err != nil {
 				t.Fatalf("failed to create/delete objects: %v", err)
 			}
@@ -133,8 +136,13 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			if len(catalogCallData.addedEntries) != len(test.AddedRows) {
 				t.Fatalf("unexpected number of added entries. expected=%d, got=%d", len(test.AddedRows), len(catalogCallData.addedEntries))
 			}
-			for _, path := range test.AddedRows {
-				if _, ok := catalogCallData.addedEntries[path]; !ok {
+			for i, path := range test.AddedRows {
+				expectedLastModified := lastModified[i%len(lastModified)].Truncate(time.Second)
+				if e, ok := catalogCallData.addedEntries[path]; ok {
+					if e.CreationDate.Truncate(time.Second) != expectedLastModified {
+						t.Fatalf("entry added with unexpected creation-date. expected=%v, got=%v", expectedLastModified, e.CreationDate.Truncate(time.Second))
+					}
+				} else {
 					t.Fatalf("expected entry not added: %s", path)
 				}
 			}
