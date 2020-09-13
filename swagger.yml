@@ -66,22 +66,20 @@ definitions:
         type: string
         description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
 
-  merge_result_summary_item:
-    type: object
-    properties:
-      type:
-        type: string
-        enum: [added, removed, changed, conflict]
-      count:
-        type: integer
-
   merge_result:
     type: object
     properties:
       summary:
-        type: array
-        items:
-          $ref: "#/definitions/merge_result_summary_item"
+        type: object
+        properties:
+          added:
+            type: integer
+          removed:
+            type: integer
+          changed:
+            type: integer
+          conflict:
+            type: integer
       reference:
         type: string
 

@@ -772,16 +772,23 @@ func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
 	if res == nil {
 		return nil
 	}
-	var summary []*models.MergeResultSummaryItem
+	var summary models.MergeResultSummary
 	for k, v := range res.Summary {
-		summary = append(summary, &models.MergeResultSummaryItem{
-			Type:  transformDifferenceTypeToString(k),
-			Count: int64(v),
-		})
+		val := int64(v)
+		switch k {
+		case catalog.DifferenceTypeAdded:
+			summary.Added = val
+		case catalog.DifferenceTypeChanged:
+			summary.Changed = val
+		case catalog.DifferenceTypeRemoved:
+			summary.Removed = val
+		case catalog.DifferenceTypeConflict:
+			summary.Conflict = val
+		}
 	}
 	return &models.MergeResult{
 		Reference: res.Reference,
-		Summary:   summary,
+		Summary:   &summary,
 	}
 }
 

@@ -8,7 +8,6 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 
 	"github.com/spf13/cobra"
-	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -41,31 +40,13 @@ var mergeCmd = &cobra.Command{
 
 		result, err := client.Merge(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		if errors.Is(err, catalog.ErrConflictFound) {
-			var count int64
-			for _, item := range result.Summary {
-				if item.Type == models.DiffTypeConflict {
-					count = item.Count
-					break
-				}
-			}
-			_, _ = fmt.Printf("Conflicts: %d\n", count)
+			_, _ = fmt.Printf("Conflicts: %d\n", result.Summary.Conflict)
 			return
 		}
 		if err != nil {
 			DieErr(err)
 		}
-		var added, changed, removed int64
-		for _, item := range result.Summary {
-			switch item.Type {
-			case models.DiffTypeAdded:
-				added = item.Count
-			case models.DiffTypeChanged:
-				changed = item.Count
-			case models.DiffTypeRemoved:
-				removed = item.Count
-			}
-		}
-		_, _ = fmt.Printf("new: %d modified: %d removed: %d\n", added, changed, removed)
+		_, _ = fmt.Printf("new: %d modified: %d removed: %d\n", result.Summary.Added, result.Summary.Changed, result.Summary.Removed)
 	},
 }
 
