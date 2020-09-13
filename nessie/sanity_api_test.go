@@ -137,7 +137,7 @@ func TestSanityAPI(t *testing.T) {
 		WithDestinationRef(masterBranch), nil)
 	require.NoError(t, err, "merge branch1 to master")
 	require.NotEmpty(t, mergeResp.Payload.Reference, "merge should return a commit reference")
-	require.Contains(t, mergeResp.Payload.Summary, &models.MergeResultSummary{Added: 1, Changed: 1, Conflict: 0, Removed: 1}, "merge summary")
+	require.Equal(t, mergeResp.Payload.Summary, &models.MergeResultSummary{Added: 1, Changed: 1, Conflict: 0, Removed: 1}, "merge summary")
 
 	log.Debug("branch1 - diff after merge")
 	diffResp, err = client.Refs.DiffRefs(refs.NewDiffRefsParamsWithContext(ctx).
