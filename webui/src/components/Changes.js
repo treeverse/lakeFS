@@ -1,11 +1,8 @@
-import React, {useState} from "react";
-import {linkToPath} from "../actions/api";
+import React, {useEffect, useState} from "react";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
 import {
-    ChevronDownIcon,
-    ChevronUpIcon,
-    DownloadIcon,
+    HistoryIcon,
     PencilIcon,
     PlusIcon,
     CircleSlashIcon,
@@ -14,50 +11,33 @@ import {
 import Button from "react-bootstrap/Button";
 import OverlayTrigger from "react-bootstrap/OverlayTrigger";
 import Tooltip from "react-bootstrap/Tooltip";
-import Dropdown from "react-bootstrap/Dropdown";
 import {connect} from "react-redux";
 import {listBranches} from "../actions/branches";
 import Card from "react-bootstrap/Card";
+import {resetRevertBranch, revertBranch} from "../actions/branches";
 
-const PathLink = ({repoId, refId, path, children, as = null}) => {
-    const link = linkToPath(repoId, refId.id, path);
-    if (as === null) {
-        return (<a href={link} download={true}>{children}</a>);
-    }
-    return React.createElement(as, {children: children, href: link, download: true});
-};
-
-const ChangeRowActions = ({repo, refId, entry, onDelete}) => {
-    const [isDropdownOpen, setDropdownOpen] = useState(false);
+const ChangeRowActions = connect(
+    ({ branches }) => ({ revert: branches.revert }),
+    ({ revertBranch, resetRevertBranch })
+)(({repo, refId, entry, revertBranch, revert}) => {
     return (
-        <Dropdown alignRight onToggle={setDropdownOpen}>
-            <Dropdown.Toggle as={React.forwardRef(({onClick, children}, ref) => {
-                return (
-                    <Button variant="link" onClick={e => {
-                        e.preventDefault();
-                        onClick(e);
-                    }} ref={ref}>
-                        {children}
-                    </Button>
-                );
-            })}>
-                {isDropdownOpen ? <ChevronUpIcon/> : <ChevronDownIcon/>}
-            </Dropdown.Toggle>
-
-            <Dropdown.Menu>
-                <PathLink path={entry.path} refId={refId} repoId={repo.id}
-                          as={Dropdown.Item}><DownloadIcon/> {' '} Download</PathLink>
-                <Dropdown.Item onClick={(e) => {
+        <OverlayTrigger key={"bottom"} overlay={(<Tooltip id={"revert-entry"}>revert change</Tooltip>)}>
+            <Button variant="link" disabled={revert.inProgress} onClick={(e) => {
                     e.preventDefault();
-                    if (window.confirm(`are you sure you wish to delete object "${entry.path}"?`)) onDelete(entry);
-                }}><TrashcanIcon/> {' '} Delete
-                </Dropdown.Item>
-            </Dropdown.Menu>
-        </Dropdown>
+                    if (revert.inProgress) {
+                        return;
+                    }
+                    if (window.confirm(`are you sure you wish to revert "${entry.path}" (${entry.type})?`)) {
+                        revertBranch(repo.id, refId.id, {type: "object", path: entry.path});
+                    }
+                }} >
+                    <HistoryIcon/>
+                </Button>
+            </OverlayTrigger>
     );
-};
+});
 
-const ChangeEntryRow = ({repo, refId, entry, onDelete, showActions}) => {
+const ChangeEntryRow = ({repo, refId, entry, showActions}) => {
     let rowClass = 'tree-row ';
     switch (entry.type) {
         case 'changed':
@@ -122,7 +102,7 @@ const ChangeEntryRow = ({repo, refId, entry, onDelete, showActions}) => {
 
     let entryActions;
     if (showActions && entry.path_type === 'object') {
-        entryActions = <ChangeRowActions repo={repo} refId={refId} entry={entry} onDelete={onDelete}></ChangeRowActions>;
+        entryActions = <ChangeRowActions repo={repo} refId={refId} entry={entry}></ChangeRowActions>;
     }
 
     return (
@@ -142,7 +122,7 @@ const ChangeEntryRow = ({repo, refId, entry, onDelete, showActions}) => {
     );
 };
 
-const Changes = ({list, repo, refId, onDelete, showActions}) => {
+const Changes = ({list, repo, refId, showActions}) => {
     const results = list.payload ? list.payload.results : [];
     let body;
     if (list.loading) {
@@ -161,7 +141,6 @@ const Changes = ({list, repo, refId, onDelete, showActions}) => {
                         entry={entry}
                         repo={repo}
                         refId={refId}
-                        onDelete={onDelete}
                         showActions={showActions}/>
                 ))}
                 </tbody>

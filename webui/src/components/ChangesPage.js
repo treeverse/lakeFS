@@ -1,12 +1,11 @@
 import React, {useCallback, useEffect, useRef, useState} from "react";
 import {useLocation, useHistory} from "react-router-dom";
-import {GitCommitIcon, PlusIcon, SyncIcon, XIcon} from "@primer/octicons-react";
+import {HistoryIcon, GitCommitIcon, PlusIcon, SyncIcon, XIcon} from "@primer/octicons-react";
 import RefDropdown from "./RefDropdown";
 import Changes from "./Changes";
 import {connect} from "react-redux";
-import {diff, diffPaginate} from "../actions/refs";
+import {diff, diffPaginate, PAGINATION_AMOUNT} from "../actions/refs";
 import {Button, ButtonToolbar, Col, Form, Modal, OverlayTrigger, Row, Tooltip} from "react-bootstrap";
-import {PAGINATION_AMOUNT} from "../actions/refs";
 import {resetRevertBranch, revertBranch} from "../actions/branches";
 import ConfirmationModal from "./ConfirmationModal";
 import {doCommit, resetCommit} from "../actions/commits";
@@ -158,7 +157,7 @@ const RevertButton = connect(
         <>
             <ConfirmationModal show={show} onHide={onHide} msg="Are you sure you want to revert all uncommitted changes?" onConfirm={onSubmit} />
             <Button variant="light" disabled={disabled} onClick={() => { setShow(true) }}>
-                <GitCommitIcon/> Revert
+                <HistoryIcon/> Revert
             </Button>
         </>
     );
@@ -211,7 +210,7 @@ const ChangesPage = ({repo, refId, path, diff, diffPaginate, diffResults, commit
                 <Changes
                     repo={repo}
                     refId={refId}
-                    showActions={false}
+                    showActions={true}
                     list={diffResults}
                     path={path}
                 />
