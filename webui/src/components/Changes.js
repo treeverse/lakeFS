@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React from "react";
 import Alert from "react-bootstrap/Alert";
 import Table from "react-bootstrap/Table";
 import {
@@ -62,7 +62,7 @@ const ChangeEntryRow = ({repo, refId, entry, showActions}) => {
     switch (entry.type) {
         case 'removed':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip>removed</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-removed"}>removed</Tooltip>)}>
                     <span>
                         <TrashcanIcon/>
                     </span>
@@ -71,7 +71,7 @@ const ChangeEntryRow = ({repo, refId, entry, showActions}) => {
             break;
         case 'added':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip>added</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-added"}>added</Tooltip>)}>
                     <span>
                         <PlusIcon/>
                     </span>
@@ -80,7 +80,7 @@ const ChangeEntryRow = ({repo, refId, entry, showActions}) => {
             break;
         case 'changed':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip>changed</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-changed"}>changed</Tooltip>)}>
                     <span>
                         <PencilIcon/>
                     </span>
@@ -89,7 +89,7 @@ const ChangeEntryRow = ({repo, refId, entry, showActions}) => {
             break;
         case 'conflict':
             diffIndicator = (
-                <OverlayTrigger placement="bottom" overlay={(<Tooltip>conflict</Tooltip>)}>
+                <OverlayTrigger placement="bottom" overlay={(<Tooltip id={"tooltip-conflict"}>conflict</Tooltip>)}>
                     <span>
                         <CircleSlashIcon/>
                     </span>
@@ -102,7 +102,7 @@ const ChangeEntryRow = ({repo, refId, entry, showActions}) => {
 
     let entryActions;
     if (showActions && entry.path_type === 'object') {
-        entryActions = <ChangeRowActions repo={repo} refId={refId} entry={entry}></ChangeRowActions>;
+        entryActions = <ChangeRowActions repo={repo} refId={refId} entry={entry}/>;
     }
 
     return (
