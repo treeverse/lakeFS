@@ -84,6 +84,8 @@ jobs:
       - name: Run lakeFS S3
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          # Setting Account_ID as a secret as a way to avoid specifying it here
+          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: s3
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
@@ -112,6 +114,8 @@ jobs:
       - name: Run lakeFS GS
         env:
           TAG: ${{ steps.version.outputs.tag }}
+          # Setting Account_ID as a secret as a way to avoid specifying it here
+          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
           LAKEFS_STATS_ENABLED: "false"
           LAKEFS_BLOCKSTORE_TYPE: gs
           LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
