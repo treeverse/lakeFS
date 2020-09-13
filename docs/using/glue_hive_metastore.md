@@ -107,17 +107,17 @@ we would like to create a copy of the table `example_by_dt` in schema `example_b
 
 Recommended:
 ``` bash
-$ lakectl metastore copy  --from-schema default --from-table exmpale_by_dt --to-branch example_branch 
+lakectl metastore copy  --from-schema default --from-table exmpale_by_dt --to-branch example_branch 
 ```
 
 Glue:
 ``` bash
-$ lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table exmpale_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example_branch 
+lakectl metastore copy --type glue --address 123456789012 --from-schema default --from-table exmpale_by_dt --to-schema default --to-table branch_example_by_dt --to-branch example_branch 
 ```
 
 Hive:
 ``` bash
-$ lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch exmample-branch
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table example_by_dt --to-schema default --to-table branch_example_by_dt --to-branch exmample-branch
 ```
 
 ### Copy partition
@@ -134,23 +134,23 @@ We would like to merge back the partition:
 
 Recommended:
 ``` bash
-$ lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
+lakectl metastore copy --from-schema example_branch --from-table example_by_dt --to-schema default  --to-branch master -p 2020-08-01 
 ```
 
 Glue:
 ``` bash
-$ lakectl metastore copy --type glue --address 123456789012 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
+lakectl metastore copy --type glue --address 123456789012 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
 ```
 
 Hive:
 ``` bash
-$ lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
+lakectl metastore copy --type hive --address thrift://hive-metastore:9083 --from-schema example_branch --from-table example_by_dt --to-schema default --to-table example_by_dt --to-branch master -p 2020-08-01
 ```
 
 In case our table is partitioned by more than one value, for example partitioned by year/month/day for year ```2020``` month ```08``` day ```01``` 
 
 ``` bash
-$ lakectl metastore copy --from-schema example_branch --from-table branch_example_by_dt --to-schema default --to-branch master -p 2020 -p 08 -p 01
+lakectl metastore copy --from-schema example_branch --from-table branch_example_by_dt --to-schema default --to-branch master -p 2020 -p 08 -p 01
 ```
 
 
@@ -165,17 +165,17 @@ Suppose that we made some changes on the copied table `exmample_by_dt` on schema
 
 Recommended:
 ``` bash
-$ lakectl metastore diff --from-schema default --from-table branch_example_by_dt --to-schema example_branch 
+lakectl metastore diff --from-schema default --from-table branch_example_by_dt --to-schema example_branch 
 ```
 
 Glue:
 ``` bash
-$ lakectl metastore diff --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
+lakectl metastore diff --type glue --address 123456789012 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
 Hive:
 ``` bash
-$ lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
+lakectl metastore diff --type hive --address thrift://hive-metastore:9083 --from-schema default --from-table branch_example_by_dt --to-schema default --to-table example_by_dt
 ```
 
 The output will be something like:
@@ -208,7 +208,7 @@ We want to query the table using Amazon Athena.
 
 To do this, we run the command:
 ``` bash
-$ lakectl metastore create-symlink --address 123456789012 --branch master --from-schema default --from-table branch_example_by_dt --to-schema default --to-table sym_example_by_dt --repo example-repository --path path/to/table/in/lakeFS
+lakectl metastore create-symlink --address 123456789012 --branch master --from-schema default --from-table branch_example_by_dt --to-schema default --to-table sym_example_by_dt --repo example-repository --path path/to/table/in/lakeFS
 ```
 
 Now we can use  Amazon Athena and query the created table `sym_example_by_dt`

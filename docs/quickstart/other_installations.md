@@ -64,5 +64,5 @@ Alternatively, you may opt to run the lakefs binary directly on your computer.
 1. Run the server:
     
    ```bash
-   $ ./lakefs --config /path/to/config.yaml run
+   ./lakefs --config /path/to/config.yaml run
    ```

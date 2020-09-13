@@ -27,11 +27,12 @@ The `lakectl` is distributed as a single binary, with no external dependencies -
 Once you've installed the lakectl command, run:
 
 ```bash
-$ lakectl config
-Config file /home/janedoe/.lakectl.yaml will be used
-Access key ID: AKIAIOSFODNN7EXAMPLE
-Secret access key: ****************************************
-Server endpoint URL: http://localhost:8000/api/v1
+lakectl config
+# output:
+# Config file /home/janedoe/.lakectl.yaml will be used
+# Access key ID: AKIAIOSFODNN7EXAMPLE
+# Secret access key: ****************************************
+# Server endpoint URL: http://localhost:8000/api/v1
 ```
 
 This will setup a `$HOME/.lakectl.yaml` file with the credentials and API endpoint you've supplied.

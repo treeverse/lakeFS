@@ -717,3 +717,29 @@ footer {
 		}
 	}
 }
+.copy-code-container {
+	position: absolute;
+	right: 0.3em;
+}
+.copy-code-button:hover {
+	color: $teal-green;
+}
+
+.copy-code-button:active {
+	color: $white;
+}
+.copy-code-button {
+	align-items: center;
+	justify-content: center;
+	border: none;
+	cursor: pointer;
+	font-size: 1rem;
+	color: $black;
+	padding: 0.4em 0.5em;
+	background-color: transparent;
+	outline:none;
+}
+
+.highlighter-rouge {
+	position: relative;
+}

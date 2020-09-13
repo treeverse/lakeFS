@@ -2,9 +2,13 @@ package onboard_test
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"testing"
 
+	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 )
 
@@ -13,24 +17,31 @@ type mockCataloger struct {
 }
 
 var catalogCallData = struct {
-	addedEntries   []catalog.Entry
-	deletedEntries []string
-	callLog        map[string]int
+	addedEntries   map[string]bool
+	deletedEntries map[string]bool
+	callLog        map[string]*int32
+	mux            sync.Mutex
 }{}
 
 func (m mockCataloger) CreateEntries(_ context.Context, _, _ string, entries []catalog.Entry) error {
-	catalogCallData.addedEntries = append(catalogCallData.addedEntries, entries...)
-	catalogCallData.callLog["CreateEntries"]++
+	catalogCallData.mux.Lock()
+	defer catalogCallData.mux.Unlock()
+	for _, e := range entries {
+		catalogCallData.addedEntries[e.Path] = true
+	}
+	atomic.AddInt32(catalogCallData.callLog["CreateEntries"], 1)
 	return nil
 }
 func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) error {
-	catalogCallData.deletedEntries = append(catalogCallData.deletedEntries, path)
-	catalogCallData.callLog["DeleteEntry"]++
+	catalogCallData.mux.Lock()
+	defer catalogCallData.mux.Unlock()
+	catalogCallData.deletedEntries[path] = true
+	atomic.AddInt32(catalogCallData.callLog["DeleteEntry"], 1)
 	return nil
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer")
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", logging.Default())
 	c.(*onboard.CatalogRepoActions).WriteBatchSize = 5
 	catalogActions, ok := c.(*onboard.CatalogRepoActions)
 	if !ok {
@@ -39,8 +50,8 @@ func TestCreateAndDeleteRows(t *testing.T) {
 	testdata := []struct {
 		AddedRows           []string
 		DeletedRows         []string
-		ExpectedAddCalls    int
-		ExpectedDeleteCalls int
+		ExpectedAddCalls    int32
+		ExpectedDeleteCalls int32
 	}{
 		{
 			AddedRows:           []string{"a1", "b2", "c3"},
@@ -87,9 +98,11 @@ func TestCreateAndDeleteRows(t *testing.T) {
 	}
 	for _, dryRun := range []bool{true, false} {
 		for _, test := range testdata {
-			catalogCallData.addedEntries = []catalog.Entry{}
-			catalogCallData.deletedEntries = []string{}
-			catalogCallData.callLog = make(map[string]int)
+			catalogCallData.addedEntries = make(map[string]bool)
+			catalogCallData.deletedEntries = make(map[string]bool)
+			catalogCallData.callLog = make(map[string]*int32)
+			catalogCallData.callLog["DeleteEntry"] = swag.Int32(0)
+			catalogCallData.callLog["CreateEntries"] = swag.Int32(0)
 			stats, err := catalogActions.ApplyImport(context.Background(), onboard.NewDiffIterator(
 				&mockInventoryIterator{rows: rows(test.DeletedRows...)},
 				&mockInventoryIterator{rows: rows(test.AddedRows...)}), dryRun)
@@ -102,11 +115,11 @@ func TestCreateAndDeleteRows(t *testing.T) {
 				expectedAddCalls = 0
 				expectedDeleteCalls = 0
 			}
-			if catalogCallData.callLog["CreateEntries"] != expectedAddCalls {
-				t.Fatalf("unexpected number of CreateEntries calls. expected=%d, got=%d", expectedAddCalls, catalogCallData.callLog["CreateEntries"])
+			if *catalogCallData.callLog["CreateEntries"] != expectedAddCalls {
+				t.Fatalf("unexpected number of CreateEntries calls. expected=%d, got=%d", expectedAddCalls, *catalogCallData.callLog["CreateEntries"])
 			}
-			if catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
-				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, catalogCallData.callLog["DeleteEntry"])
+			if *catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
+				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, *catalogCallData.callLog["DeleteEntry"])
 			}
 			if stats.AddedOrChanged != len(test.AddedRows) {
 				t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), stats.AddedOrChanged)
@@ -120,17 +133,17 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			if len(catalogCallData.addedEntries) != len(test.AddedRows) {
 				t.Fatalf("unexpected number of added entries. expected=%d, got=%d", len(test.AddedRows), len(catalogCallData.addedEntries))
 			}
-			for i, entry := range catalogCallData.addedEntries {
-				if entry.Path != test.AddedRows[i] {
-					t.Fatalf("unexpected added entry at index %d: expected=%s, got=%s", i, test.AddedRows[i], entry.Path)
+			for _, path := range test.AddedRows {
+				if _, ok := catalogCallData.addedEntries[path]; !ok {
+					t.Fatalf("expected entry not added: %s", path)
 				}
 			}
 			if len(catalogCallData.deletedEntries) != len(test.DeletedRows) {
 				t.Fatalf("unexpected number of deleted entries. expected=%d, got=%d", len(test.DeletedRows), len(catalogCallData.deletedEntries))
 			}
-			for i, path := range catalogCallData.deletedEntries {
-				if path != test.DeletedRows[i] {
-					t.Fatalf("unexpected deleted entry at index %d: expected=%s, got=%s", i, test.AddedRows[i], path)
+			for _, path := range test.DeletedRows {
+				if _, ok := catalogCallData.deletedEntries[path]; !ok {
+					t.Fatalf("expected entry not deleted: %s", path)
 				}
 			}
 		}
