@@ -144,7 +144,7 @@ gateways:
 [aws-s3-batch-permissions]: https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html
 
 
-## Example: Google Storage Deployment
+## Example: Google Storage
 
 ```yaml
 ---
