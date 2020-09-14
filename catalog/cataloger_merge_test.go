@@ -129,19 +129,15 @@ func TestCataloger_Merge_FromParentConflicts(t *testing.T) {
 	if res.Reference != "" {
 		t.Errorf("Merge reference = %s, expected to be empty", res.Reference)
 	}
-	// TODO(barak): enable test after diff between commits is supported
-	//commitLog, err := c.GetCommit(ctx, repository, reference)
-	//testutil.MustDo(t, "get merge commit reference", err)
-	//if len(commitLog.Parents) != 2 {
-	//	t.Fatal("merge commit log should have two parents")
-	//}
-	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
-	differences, _, err := c.Diff(ctx, repository, "master", "branch1", -1, "")
-	testutil.MustDo(t, "diff merge changes", err)
 	expectedDifferences := Differences{
 		Difference{Type: DifferenceTypeConflict, Path: "/file2"},
 		Difference{Type: DifferenceTypeConflict, Path: "/file5"},
 	}
+	if res.Summary[DifferenceTypeConflict] != len(expectedDifferences) {
+		t.Fatalf("Merge summary conflicts=%d, expected %d", res.Summary[DifferenceTypeConflict], len(expectedDifferences))
+	}
+	differences, _, err := c.Diff(ctx, repository, "master", "branch1", -1, "")
+	testutil.MustDo(t, "diff merge changes", err)
 	if !differences.Equal(expectedDifferences) {
 		t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
 	}

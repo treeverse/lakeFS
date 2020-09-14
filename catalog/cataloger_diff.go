@@ -10,11 +10,6 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-type DiffTypeCount struct {
-	DiffType int `db:"diff_type"`
-	Count    int `db:"count"`
-}
-
 const (
 	DiffMaxLimit = 1000
 
@@ -83,7 +78,10 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 }
 
 func (c *cataloger) getDiffSummary(tx db.Tx) (map[DifferenceType]int, error) {
-	var results []DiffTypeCount
+	var results []struct {
+		DiffType int `db:"diff_type"`
+		Count    int `db:"count"`
+	}
 	err := tx.Select(&results, "SELECT diff_type, count(diff_type) as count FROM "+diffResultsTableName+" GROUP BY diff_type")
 	if err != nil {
 		return nil, fmt.Errorf("count diff resutls by type: %w", err)

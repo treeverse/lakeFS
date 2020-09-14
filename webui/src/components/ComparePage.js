@@ -187,7 +187,7 @@ const ComparePage = ({repo, refId, compareRef, diff, diffPaginate, diffResults, 
                 {paginator &&
                 <p className="tree-paginator">
                     <Button variant="outline-primary" onClick={() => {
-                        diffPaginate(repo.id, refId.id, refId.id, diffResults.payload.pagination.next_offset, PAGINATION_AMOUNT);
+                        diffPaginate(repo.id, refId.id, compareRef.id, diffResults.payload.pagination.next_offset, PAGINATION_AMOUNT);
                     }}>
                         Load More
                     </Button>
