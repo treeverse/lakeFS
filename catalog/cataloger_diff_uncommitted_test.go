@@ -5,10 +5,55 @@ import (
 	"strconv"
 	"testing"
 
-	"github.com/davecgh/go-spew/spew"
-
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
+
+func TestCataloger_DiffUncommitted_Pagination(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	repository := testCatalogerRepo(t, ctx, c, "repo", "master")
+
+	const numOfFiles = 10
+	var expectedDifferences Differences
+	for i := 0; i < numOfFiles; i++ {
+		p := "/file" + strconv.Itoa(i)
+		testCatalogerCreateEntry(t, ctx, c, repository, "master", p, nil, "")
+		expectedDifferences = append(expectedDifferences, Difference{Type: DifferenceTypeAdded, Path: p})
+	}
+	const changesPerPage = 3
+	var differences Differences
+	var after string
+	for {
+		res, hasMore, err := c.DiffUncommitted(ctx, repository, "master", changesPerPage, after)
+		testutil.MustDo(t, "diff uncommitted changes", err)
+		if err != nil {
+			t.Fatalf("DiffUncommitted err=%s, expected none", err)
+		}
+		if len(res) > changesPerPage {
+			t.Fatalf("DiffUncommitted() result length %d, expected equal or less than %d", len(res), changesPerPage)
+		}
+		differences = append(differences, res...)
+		if !hasMore {
+			break
+		}
+		after = res[len(res)-1].Path
+	}
+	if diff := deep.Equal(differences, expectedDifferences); diff != nil {
+		t.Fatal("DiffUncommitted", diff)
+	}
+
+	// check the case where we ask for 0 amount
+	res, hasMore, err := c.DiffUncommitted(ctx, repository, "master", 0, "")
+	testutil.MustDo(t, "diff uncommitted with 0 limit", err)
+	if !hasMore {
+		t.Error("DiffUncommitted() has more should be true")
+	}
+	if len(res) != 0 {
+		t.Errorf("DiffUncommitted() has %d items in result when expected none", len(res))
+	}
+
+}
 
 func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
 	ctx := context.Background()
@@ -32,7 +77,7 @@ func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", overFilename, nil, "seed1")
 
 	// verify that diff uncommitted show the above change
-	differences, err := c.DiffUncommitted(ctx, repository, "master")
+	differences, _, err := c.DiffUncommitted(ctx, repository, "master", -1, "")
 	if err != nil {
 		t.Fatalf("DiffUncommitted err = %s, expected none", err)
 	}
@@ -42,8 +87,8 @@ func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
 		Difference{Type: DifferenceTypeChanged, Path: "/file2"},
 		Difference{Type: DifferenceTypeAdded, Path: "/file5"},
 	}
-	if !changes.Equal(differences) {
-		t.Fatalf("DiffUncommitted differences = %s, expected = %s", spew.Sdump(differences), spew.Sdump(changes))
+	if diff := deep.Equal(differences, changes); diff != nil {
+		t.Fatal("DiffUncommitted", diff)
 	}
 }
 
@@ -60,13 +105,15 @@ func TestCataloger_DiffUncommitted_NoChance(t *testing.T) {
 	testutil.MustDo(t, "commit to master", err)
 
 	// verify that diff uncommitted show the above change
-	differences, err := c.DiffUncommitted(ctx, repository, "master")
+	differences, hasMore, err := c.DiffUncommitted(ctx, repository, "master", -1, "")
 	if err != nil {
 		t.Fatalf("DiffUncommitted err = %s, expected none", err)
 	}
 
-	changes := Differences{}
-	if !changes.Equal(differences) {
-		t.Fatalf("DiffUncommitted differences = %s, expected = %s", spew.Sdump(differences), spew.Sdump(changes))
+	if len(differences) != 0 {
+		t.Fatalf("DiffUncommitted differences len=%d, expected 0", len(differences))
+	}
+	if hasMore {
+		t.Fatal("DiffUncommitted hadMore is true, expected false")
 	}
 }

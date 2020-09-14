@@ -11,9 +11,10 @@ import {
 } from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import {GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon} from "@primer/octicons-react";
+import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
+import ChangesPage from './ChangesPage';
 import CommitsPage from './CommitsPage';
 import {connect} from "react-redux";
 import {getRepository} from "../actions/repositories";
@@ -62,6 +63,9 @@ const RepositoryTabs = () => {
         <Nav variant="tabs" defaultActiveKey="/home">
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/tree" passInQuery={['branch', 'commit']}><DatabaseIcon/>  Objects</RoutedTab>
+            </Nav.Item>
+            <Nav.Item>
+                <RoutedTab url="/repositories/:repoId/changes" passInQuery={['branch']}><FileDiffIcon/>  Changes</RoutedTab>
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/commits" passInQuery={['branch']}><GitCommitIcon/>  Commits</RoutedTab>
@@ -184,6 +188,9 @@ const RepositoryExplorerPage = ({ repo, getRepository }) => {
                 <Redirect exact from="/repositories/:repoId" to="/repositories/:repoId/tree"/>
                 <Route path="/repositories/:repoId/tree">
                     <TreePage repo={repo.payload} refId={refId} path={query.get('path') || ""} setShowImportModal={setShowImportModal}/>
+                </Route>
+                <Route exact path="/repositories/:repoId/changes">
+                    <ChangesPage repo={repo.payload} refId={refId} path={query.get('path') || ""}/>
                 </Route>
                 <Route exact path="/repositories/:repoId/commits">
                     <CommitsPage repo={repo.payload} refId={refId}/>

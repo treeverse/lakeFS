@@ -184,9 +184,8 @@
     color: #808080;
 }
 
-
 .diff-changed {
-    background-color: #ffeeba;
+    background-color: #d1ecf1;
 }
 
 .diff-added {
@@ -195,6 +194,10 @@
 
 .diff-removed {
     background-color: #ffdce0;
+}
+
+.diff-conflict {
+    background-color: #fff3cd;
 }
 
 .tree-row-actions {

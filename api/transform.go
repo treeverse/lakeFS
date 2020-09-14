@@ -7,44 +7,26 @@ import (
 	"github.com/treeverse/lakefs/catalog"
 )
 
-func transformDifferenceToMergeResult(difference catalog.Difference) *models.MergeResult {
-	mr := &models.MergeResult{
-		Path: difference.Path,
-	}
-	switch difference.Type {
+func transformDifferenceTypeToString(d catalog.DifferenceType) string {
+	switch d {
 	case catalog.DifferenceTypeAdded:
-		mr.Type = models.MergeResultTypeAdded
+		return models.DiffTypeAdded
 	case catalog.DifferenceTypeRemoved:
-		mr.Type = models.MergeResultTypeRemoved
+		return models.DiffTypeRemoved
 	case catalog.DifferenceTypeChanged:
-		mr.Type = models.MergeResultTypeChanged
+		return models.DiffTypeChanged
 	case catalog.DifferenceTypeConflict:
-		mr.Type = models.MergeResultTypeConflict
+		return models.DiffTypeConflict
+	default:
+		return ""
 	}
-
-	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
-		mr.PathType = models.MergeResultPathTypeCommonPrefix
-	} else {
-		mr.PathType = models.MergeResultPathTypeObject
-	}
-	return mr
 }
 
 func transformDifferenceToDiff(difference catalog.Difference) *models.Diff {
 	d := &models.Diff{
 		Path: difference.Path,
 	}
-	switch difference.Type {
-	case catalog.DifferenceTypeAdded:
-		d.Type = models.DiffTypeAdded
-	case catalog.DifferenceTypeRemoved:
-		d.Type = models.DiffTypeRemoved
-	case catalog.DifferenceTypeChanged:
-		d.Type = models.DiffTypeChanged
-	case catalog.DifferenceTypeConflict:
-		d.Type = models.DiffTypeConflict
-	}
-
+	d.Type = transformDifferenceTypeToString(difference.Type)
 	if strings.HasSuffix(difference.Path, catalog.DefaultPathDelimiter) {
 		d.PathType = models.DiffPathTypeCommonPrefix
 	} else {
