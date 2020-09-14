@@ -106,9 +106,16 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			catalogCallData.callLog["CreateEntries"] = swag.Int32(0)
 			now := time.Now()
 			lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour)}
-			stats, err := catalogActions.ApplyImport(context.Background(), onboard.NewDiffIterator(
-				&mockInventoryIterator{rows: rows(test.DeletedRows, lastModified...)},
-				&mockInventoryIterator{rows: rows(test.AddedRows, lastModified...)}), dryRun)
+			leftInv := &mockInventory{
+				keys:         test.DeletedRows,
+				lastModified: lastModified,
+			}
+			rightInv := &mockInventory{
+				keys:         test.AddedRows,
+				lastModified: lastModified,
+			}
+			stats, err := catalogActions.ApplyImport(context.Background(),
+				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), dryRun)
 			if err != nil {
 				t.Fatalf("failed to create/delete objects: %v", err)
 			}

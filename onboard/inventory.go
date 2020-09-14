@@ -19,6 +19,7 @@ type InventoryDiff struct {
 type ImportObject struct {
 	Obj       block.InventoryObject
 	IsDeleted bool
+	IsChanged bool
 }
 
 type Iterator interface {
@@ -82,7 +83,10 @@ func (d *DiffIterator) Next() bool {
 			return true
 		case d.leftInv.Get().Key == d.rightInv.Get().Key:
 			if d.leftInv.Get().Checksum != d.rightInv.Get().Checksum {
-				d.value = ImportObject{Obj: *d.rightInv.Get()}
+				d.value = ImportObject{Obj: *d.rightInv.Get(), IsChanged: true}
+				d.leftNext = d.leftInv.Next()
+				d.rightNext = d.rightInv.Next()
+				return true
 			}
 			d.leftNext = d.leftInv.Next()
 			d.rightNext = d.rightInv.Next()

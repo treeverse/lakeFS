@@ -102,7 +102,7 @@ func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 			res.Size = *obj.Size
 		}
 		if obj.LastModifiedMillis != nil {
-			res.LastModified = time.Unix(*obj.LastModifiedMillis*int64(time.Millisecond/time.Second), 0)
+			res.LastModified = time.Unix(*obj.LastModifiedMillis/int64(time.Second/time.Millisecond), 0)
 		}
 		if obj.Checksum != nil {
 			res.Checksum = *obj.Checksum
