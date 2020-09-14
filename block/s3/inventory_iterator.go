@@ -2,6 +2,7 @@ package s3
 
 import (
 	"errors"
+	"time"
 
 	"github.com/treeverse/lakefs/block"
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
@@ -100,8 +101,8 @@ func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 		if obj.Size != nil {
 			res.Size = *obj.Size
 		}
-		if obj.LastModified != nil {
-			res.LastModified = *obj.LastModified
+		if obj.LastModifiedMillis != nil {
+			res.LastModified = time.Unix(*obj.LastModifiedMillis/int64(time.Second/time.Millisecond), 0)
 		}
 		if obj.Checksum != nil {
 			res.Checksum = *obj.Checksum
