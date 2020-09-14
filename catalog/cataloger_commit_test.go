@@ -12,16 +12,13 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_Commit(t *testing.T) {
 	ctx := context.Background()
-	now := time.Now().Round(time.Minute)
-	fakeClock := clock.NewMock()
-	fakeClock.Set(now)
-	c := testCataloger(t, WithClock(fakeClock))
+	now := time.Now().Truncate(time.Minute)
+	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 	meta := Metadata{"key1": "val1", "key2": "val2"}
@@ -34,6 +31,7 @@ func TestCataloger_Commit(t *testing.T) {
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
 			Metadata:        meta,
+			CreationDate:    now,
 		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for testing", fileName, err)
 		}
@@ -96,6 +94,9 @@ func TestCataloger_Commit(t *testing.T) {
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if got != nil {
+				got.CreationDate = got.CreationDate.Truncate(time.Minute)
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Commit() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))

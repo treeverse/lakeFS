@@ -168,8 +168,8 @@ func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID 
 
 	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
                      lineage_commits)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_parent',$8,$9,string_to_array($10,',')::bigint[])`,
-		childID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, parentID, parentLastCommitID, childNewLineage)
+		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,'from_parent',$7,$8,string_to_array($9,',')::bigint[])`,
+		childID, nextCommitID, previousMaxCommitID, committer, msg, metadata, parentID, parentLastCommitID, childNewLineage)
 	if err != nil {
 		return err
 	}
@@ -209,8 +209,8 @@ func (c *cataloger) mergeFromChild(tx db.Tx, previousMaxCommitID, nextCommitID C
 		return err
 	}
 	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,creation_date,metadata,merge_type,merge_source_branch,merge_source_commit)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_child',$8,$9)`,
-		parentID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, childID, childLastCommitID)
+		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,'from_child',$7,$8)`,
+		parentID, nextCommitID, previousMaxCommitID, committer, msg, metadata, childID, childLastCommitID)
 	return err
 }
 

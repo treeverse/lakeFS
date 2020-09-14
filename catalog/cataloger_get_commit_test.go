@@ -8,18 +8,14 @@ import (
 	"testing"
 	"time"
 
-	"github.com/benbjohnson/clock"
-
 	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_GetCommit(t *testing.T) {
 	ctx := context.Background()
-	now := time.Now().Round(time.Minute)
-	mockClock := clock.NewMock()
-	mockClock.Set(now)
-	c := testCataloger(t, WithClock(mockClock))
+	now := time.Now().Truncate(time.Minute)
+	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 
 	// test data
@@ -97,6 +93,9 @@ func TestCataloger_GetCommit(t *testing.T) {
 				t.Errorf("GetCommit() error = %s, wantErr %t", err, tt.wantErr)
 				return
 			}
+			if got != nil {
+				got.CreationDate = got.CreationDate.Truncate(time.Minute)
+			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetCommit() got = %s, want %s", spew.Sdump(got), spew.Sdump(tt.want))
 			}
@@ -106,10 +105,7 @@ func TestCataloger_GetCommit(t *testing.T) {
 
 func TestCataloger_GetMergeCommit(t *testing.T) {
 	ctx := context.Background()
-	now := time.Now().Round(time.Minute)
-	mockClock := clock.NewMock()
-	mockClock.Set(now)
-	c := testCataloger(t, WithClock(mockClock))
+	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 
 	repo := testCatalogerRepo(t, ctx, c, "repo", "master")
