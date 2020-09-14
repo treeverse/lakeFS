@@ -357,9 +357,23 @@ func TestCataloger_ListCommits_LineageFromChild(t *testing.T) {
 	}
 	merge2, err := c.Merge(ctx, repository, "br_2_1", "master", "tester", "merge br_2_1 to master", nil)
 	testutil.MustDo(t, "merge br_2_1  into master", err)
-	if merge2.Differences[0].Type != DifferenceTypeChanged || merge2.Differences[0].Path != "master-file" {
-		t.Error("merge br_2_1 into master with unexpected results", merge2.Differences[0])
+	commitLog, err := c.GetCommit(ctx, repository, merge2.Reference)
+	testutil.MustDo(t, "get merge commit reference", err)
+	if len(commitLog.Parents) != 2 {
+		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(merge2.Summary, map[DifferenceType]int{
+		DifferenceTypeChanged: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
+	// TODO(barak): enable test after diff between commits is supported
+	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
+	//testutil.MustDo(t, "diff merge changes", err)
+	//
+	//if differences[0].Type != DifferenceTypeChanged || differences[0].Path != "master-file" {
+	//	t.Error("merge br_2_1 into master with unexpected results", differences[0])
+	//}
 
 	masterList, _, err = c.ListCommits(ctx, repository, "master", "", 100)
 	testutil.MustDo(t, "list master commits", err)

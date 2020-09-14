@@ -35,6 +35,11 @@ type CommitLog struct {
 	Parents      []string
 }
 
+type MergeResult struct {
+	Summary   map[DifferenceType]int
+	Reference string
+}
+
 type commitLogRaw struct {
 	BranchName            string    `db:"branch_name"`
 	CommitID              CommitID  `db:"commit_id"`

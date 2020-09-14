@@ -749,34 +749,47 @@ func (c *Controller) MergeMergeIntoBranchHandler() refs.MergeIntoBranchHandler {
 			message,
 			metadata)
 
-		// convert merge differences into merge results
-		var mergeResults []*models.MergeResult
-		if res != nil {
-			mergeResults = make([]*models.MergeResult, len(res.Differences))
-			for i, d := range res.Differences {
-				mergeResults[i] = transformDifferenceToMergeResult(d)
-			}
-		}
-
 		switch err {
 		case nil:
-			pl := new(refs.MergeIntoBranchOKBody)
-			pl.Results = mergeResults
-			return refs.NewMergeIntoBranchOK().WithPayload(pl)
+			payload := newMergeResultFromCatalog(res)
+			return refs.NewMergeIntoBranchOK().WithPayload(payload)
 		case catalog.ErrUnsupportedRelation:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("branches have no common base"))
 		case catalog.ErrBranchNotFound:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("a branch does not exist "))
 		case catalog.ErrConflictFound:
-			pl := new(refs.MergeIntoBranchConflictBody)
-			pl.Results = mergeResults
-			return refs.NewMergeIntoBranchConflict().WithPayload(pl)
+			payload := newMergeResultFromCatalog(res)
+			return refs.NewMergeIntoBranchConflict().WithPayload(payload)
 		case catalog.ErrNoDifferenceWasFound:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("no difference was found"))
 		default:
 			return refs.NewMergeIntoBranchDefault(http.StatusInternalServerError).WithPayload(responseError("internal error"))
 		}
 	})
+}
+
+func newMergeResultFromCatalog(res *catalog.MergeResult) *models.MergeResult {
+	if res == nil {
+		return nil
+	}
+	var summary models.MergeResultSummary
+	for k, v := range res.Summary {
+		val := int64(v)
+		switch k {
+		case catalog.DifferenceTypeAdded:
+			summary.Added = val
+		case catalog.DifferenceTypeChanged:
+			summary.Changed = val
+		case catalog.DifferenceTypeRemoved:
+			summary.Removed = val
+		case catalog.DifferenceTypeConflict:
+			summary.Conflict = val
+		}
+	}
+	return &models.MergeResult{
+		Reference: res.Reference,
+		Summary:   &summary,
+	}
 }
 
 func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
@@ -792,7 +805,9 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		}
 		deps.LogAction("diff_workspace")
 		cataloger := deps.Cataloger
-		diff, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch)
+		limit := int(swag.Int64Value(params.Amount))
+		after := swag.StringValue(params.After)
+		diff, hasMore, err := cataloger.DiffUncommitted(c.Context(), params.Repository, params.Branch, limit, after)
 		if err != nil {
 			return branches.NewDiffBranchDefault(http.StatusInternalServerError).
 				WithPayload(responseError("could not diff branch: %s", err))
@@ -802,8 +817,19 @@ func (c *Controller) BranchesDiffBranchHandler() branches.DiffBranchHandler {
 		for i, d := range diff {
 			results[i] = transformDifferenceToDiff(d)
 		}
-
-		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{Results: results})
+		var nextOffset string
+		if hasMore && len(diff) > 0 {
+			nextOffset = diff[len(diff)-1].Path
+		}
+		return branches.NewDiffBranchOK().WithPayload(&branches.DiffBranchOKBody{
+			Results: results,
+			Pagination: &models.Pagination{
+				NextOffset: nextOffset,
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(diff))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
+		})
 	})
 }
 
@@ -820,7 +846,9 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		}
 		deps.LogAction("diff_refs")
 		cataloger := deps.Cataloger
-		diff, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef)
+		limit := int(swag.Int64Value(params.Amount))
+		after := swag.StringValue(params.After)
+		diff, hasMore, err := cataloger.Diff(c.Context(), params.Repository, params.LeftRef, params.RightRef, limit, after)
 		if errors.Is(err, catalog.ErrFeatureNotSupported) {
 			return refs.NewDiffRefsDefault(http.StatusNotImplemented).WithPayload(responseError(err.Error()))
 		}
@@ -833,7 +861,19 @@ func (c *Controller) RefsDiffRefsHandler() refs.DiffRefsHandler {
 		for i, d := range diff {
 			results[i] = transformDifferenceToDiff(d)
 		}
-		return refs.NewDiffRefsOK().WithPayload(&refs.DiffRefsOKBody{Results: results})
+		var nextOffset string
+		if hasMore && len(diff) > 0 {
+			nextOffset = diff[len(diff)-1].Path
+		}
+		return refs.NewDiffRefsOK().WithPayload(&refs.DiffRefsOKBody{
+			Results: results,
+			Pagination: &models.Pagination{
+				NextOffset: nextOffset,
+				HasMore:    swag.Bool(hasMore),
+				Results:    swag.Int64(int64(len(diff))),
+				MaxPerPage: swag.Int64(MaxResultsPerPage),
+			},
+		})
 	})
 }
 
