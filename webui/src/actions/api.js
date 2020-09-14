@@ -414,7 +414,7 @@ class Branches {
         }
     }
 
-    async list(repoId, after, amount) {
+    async list(repoId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches?${query}`);
         if (response.status !== 200) {
@@ -424,7 +424,7 @@ class Branches {
     }
 
 
-    async filter(repoId, from, amount) {
+    async filter(repoId, from, amount = DEFAULT_LISTING_AMOUNT) {
         if (!from) {
             return this.list(repoId, from, amount);
         }
@@ -456,7 +456,7 @@ class Branches {
 
 class Objects {
 
-    async list(repoId, ref, tree, after = "", amount = 300, readUncommitted = true) {
+    async list(repoId, ref, tree, after = "", amount = DEFAULT_LISTING_AMOUNT, readUncommitted = true) {
         const query = qs({prefix:tree, amount, after, readUncommitted});
         const response = await apiRequest(`/repositories/${repoId}/refs/${ref}/objects/ls?${query}`);
         if (response.status !== 200) {
@@ -502,7 +502,7 @@ class Objects {
 }
 
 class Commits {
-    async log(repoId, branchId, after, amount) {
+    async log(repoId, branchId, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
         const response = await apiRequest(`/repositories/${repoId}/branches/${branchId}/commits?${query}`);
         if (response.status !== 200) {
@@ -524,7 +524,7 @@ class Commits {
 }
 
 class Refs {
-    async diff(repoId, leftRef, rightRef, after, amount) {
+    async diff(repoId, leftRef, rightRef, after, amount = DEFAULT_LISTING_AMOUNT) {
         const query = qs({after, amount});
         let response;
         if (leftRef === rightRef) {
