@@ -1,11 +1,10 @@
 import * as api from "./api";
 import {AsyncActionType} from "./request";
 
-export const
-    PAGINATION_AMOUNT = 25,
-    DIFF_REFS = new AsyncActionType('DIFF_REFS'),
-    DIFF_REFS_PAGINATE = new AsyncActionType('DIFF_REFS_PAGINATE'),
-    MERGE_REFS = new AsyncActionType('MERGE_REFS');
+export const PAGINATION_AMOUNT = 300;
+export const DIFF_REFS = new AsyncActionType('DIFF_REFS');
+export const DIFF_REFS_PAGINATE = new AsyncActionType('DIFF_REFS_PAGINATE');
+export const MERGE_REFS = new AsyncActionType('MERGE_REFS');
 
 export const diff = (repoId, leftRef, rightRef, amount=PAGINATION_AMOUNT) => {
     return DIFF_REFS.execute(async () => {
