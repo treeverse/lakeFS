@@ -6,6 +6,8 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/go-test/deep"
+
 	"github.com/davecgh/go-spew/spew"
 	"github.com/treeverse/lakefs/testutil"
 )
@@ -67,6 +69,13 @@ func TestCataloger_Merge_FromParentNoChangesInChild(t *testing.T) {
 	testutil.MustDo(t, "get merge commit reference", err)
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
@@ -221,6 +230,14 @@ func TestCataloger_Merge_FromParentChangesInBoth(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
+
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
@@ -295,6 +312,14 @@ func TestCataloger_Merge_FromParentThreeBranches(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
+
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
@@ -393,6 +418,13 @@ func TestCataloger_Merge_FromChildChangesOnChild(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
@@ -454,6 +486,13 @@ func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   4,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
 	//testutil.MustDo(t, "diff merge changes", err)
@@ -485,6 +524,13 @@ func TestCataloger_Merge_FromChildThreeBranches(t *testing.T) {
 	// verify valid commit id
 	if !IsValidReference(res.Reference) {
 		t.Errorf("Merge reference = %s, expected valid reference", res.Reference)
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   7,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, "master", "tester", -1, "")
@@ -541,6 +587,11 @@ func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeAdded: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences := Differences{
 	//	Difference{Type: DifferenceTypeAdded, Path: "/file0"},
@@ -570,6 +621,11 @@ func TestCataloger_Merge_FromChildNewDelSameEntry(t *testing.T) {
 	testutil.MustDo(t, "get merge commit reference", err)
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{
@@ -611,6 +667,11 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeAdded: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences := Differences{
 	//	Difference{Type: DifferenceTypeAdded, Path: "/file0"},
@@ -638,6 +699,9 @@ func TestCataloger_Merge_FromChildNewEntrySameEntry(t *testing.T) {
 	testutil.MustDo(t, "get merge commit reference", err)
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{}
@@ -688,6 +752,12 @@ func TestCataloger_Merge_FromChildDelModifyGrandparentFiles(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences := Differences{
 	//	Difference{Type: DifferenceTypeRemoved, Path: "/file0"},
@@ -730,6 +800,11 @@ func TestCataloger_Merge_FromChildConflicts(t *testing.T) {
 		t.Fatal("Merge result is nil, expected to have value in case of conflict")
 	} else if res.Reference != "" {
 		t.Fatalf("Merge reference = %s, expected none", res.Reference)
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeConflict: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences := Differences{
@@ -799,6 +874,13 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences := Differences{
 	//	Difference{Type: DifferenceTypeRemoved, Path: "/file1"},
@@ -856,6 +938,11 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeAdded: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{
 	//	Difference{Type: DifferenceTypeAdded, Path: "/file0"},
@@ -874,6 +961,9 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	testutil.MustDo(t, "get merge commit reference", err)
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err = c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")
@@ -951,6 +1041,11 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
 	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
+	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{
 	//	Difference{Type: DifferenceTypeRemoved, Path: "/file111"},
@@ -969,6 +1064,11 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 		t.Fatal("Expected merge result, got none")
 	} else if res.Reference != "" {
 		t.Fatalf("Expected empty reference, got %s", res.Reference)
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeConflict: 1,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//expectedDifferences = Differences{

@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"testing"
 
+	"github.com/go-test/deep"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -140,6 +141,13 @@ func TestCataloger_Diff_FromChildThreeBranches(t *testing.T) {
 	testutil.MustDo(t, "get merge commit reference", err)
 	if len(commitLog.Parents) != 2 {
 		t.Fatal("merge commit log should have two parents")
+	}
+	if diff := deep.Equal(res.Summary, map[DifferenceType]int{
+		DifferenceTypeRemoved: 1,
+		DifferenceTypeChanged: 1,
+		DifferenceTypeAdded:   7,
+	}); diff != nil {
+		t.Fatal("Merge Summary", diff)
 	}
 	// TODO(barak): enable test after diff between commits is supported
 	//differences, _, err := c.Diff(ctx, repository, commitLog.Parents[0], commitLog.Parents[1], -1, "")

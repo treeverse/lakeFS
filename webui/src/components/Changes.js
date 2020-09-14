@@ -31,9 +31,9 @@ const ChangeRowActions = connect(
                         revertBranch(repo.id, refId.id, {type: "object", path: entry.path});
                     }
                 }} >
-                    <HistoryIcon/>
-                </Button>
-            </OverlayTrigger>
+                <HistoryIcon/>
+            </Button>
+        </OverlayTrigger>
     );
 });
 

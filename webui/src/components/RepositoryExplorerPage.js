@@ -11,7 +11,7 @@ import {
 } from "react-router-dom";
 
 import Breadcrumb from "react-bootstrap/Breadcrumb";
-import {GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon} from "@primer/octicons-react";
+import {FileDiffIcon, GitCommitIcon, DatabaseIcon, GitBranchIcon, GitCompareIcon, SettingsIcon} from "@primer/octicons-react";
 
 import TreePage from './TreePage';
 import ChangesPage from './ChangesPage';
@@ -65,7 +65,7 @@ const RepositoryTabs = () => {
                 <RoutedTab url="/repositories/:repoId/tree" passInQuery={['branch', 'commit']}><DatabaseIcon/>  Objects</RoutedTab>
             </Nav.Item>
             <Nav.Item>
-                <RoutedTab url="/repositories/:repoId/changes" passInQuery={['branch']}><GitCompareIcon/>  Changes</RoutedTab>
+                <RoutedTab url="/repositories/:repoId/changes" passInQuery={['branch']}><FileDiffIcon/>  Changes</RoutedTab>
             </Nav.Item>
             <Nav.Item>
                 <RoutedTab url="/repositories/:repoId/commits" passInQuery={['branch']}><GitCommitIcon/>  Commits</RoutedTab>
