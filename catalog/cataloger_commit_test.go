@@ -15,9 +15,16 @@ import (
 	"github.com/treeverse/lakefs/testutil"
 )
 
+func timeDifference(a, b time.Time) time.Duration {
+	diff := a.Sub(b)
+	if diff < time.Duration(0) {
+		return -diff
+	}
+	return diff
+}
+
 func TestCataloger_Commit(t *testing.T) {
 	ctx := context.Background()
-	now := time.Now().Truncate(time.Minute)
 	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
@@ -31,7 +38,7 @@ func TestCataloger_Commit(t *testing.T) {
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
 			Metadata:        meta,
-			CreationDate:    now,
+			CreationDate:    time.Now(),
 		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for testing", fileName, err)
 		}
@@ -57,7 +64,7 @@ func TestCataloger_Commit(t *testing.T) {
 				Reference:    "~KJ8Wd1Rs96Z",
 				Committer:    "tester",
 				Message:      "Simple commit",
-				CreationDate: now,
+				CreationDate: time.Now(),
 				Metadata:     meta,
 				Parents:      []string{"~KJ8Wd1Rs96Y"},
 			},
@@ -90,13 +97,19 @@ func TestCataloger_Commit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			now := time.Now()
 			got, err := c.Commit(ctx, tt.args.repository, tt.args.branch, tt.args.message, tt.args.committer, tt.args.metadata)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
 				return
 			}
 			if got != nil {
-				got.CreationDate = got.CreationDate.Truncate(time.Minute)
+				if timeDifference(got.CreationDate, now) > 10*time.Second {
+					t.Errorf("expected creation time %s, got very different %s", got.CreationDate, now)
+				}
+				if tt.want != nil {
+					got.CreationDate = tt.want.CreationDate
+				}
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Commit() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))

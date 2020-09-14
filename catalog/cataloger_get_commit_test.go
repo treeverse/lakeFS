@@ -14,7 +14,6 @@ import (
 
 func TestCataloger_GetCommit(t *testing.T) {
 	ctx := context.Background()
-	now := time.Now().Truncate(time.Minute)
 	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 
@@ -48,7 +47,7 @@ func TestCataloger_GetCommit(t *testing.T) {
 				Reference:    "~KJ8Wd1Rs96Z",
 				Committer:    "tester0",
 				Message:      "Commit0",
-				CreationDate: now,
+				CreationDate: time.Now(),
 				Metadata:     Metadata{"k0": "v0"},
 				Parents:      []string{"~KJ8Wd1Rs96Y"},
 			},
@@ -61,7 +60,7 @@ func TestCataloger_GetCommit(t *testing.T) {
 				Reference:    "~KJ8Wd1Rs96a",
 				Committer:    "tester1",
 				Message:      "Commit1",
-				CreationDate: now,
+				CreationDate: time.Now(),
 				Metadata:     Metadata{"k1": "v1"},
 				Parents:      []string{"~KJ8Wd1Rs96Z"},
 			},
@@ -88,13 +87,19 @@ func TestCataloger_GetCommit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			now := time.Now()
 			got, err := c.GetCommit(ctx, repository, tt.reference)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("GetCommit() error = %s, wantErr %t", err, tt.wantErr)
 				return
 			}
 			if got != nil {
-				got.CreationDate = got.CreationDate.Truncate(time.Minute)
+				if timeDifference(got.CreationDate, now) > 10*time.Second {
+					t.Errorf("expected creation time %s, got very different %s", got.CreationDate, now)
+				}
+				if tt.want != nil {
+					got.CreationDate = tt.want.CreationDate
+				}
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("GetCommit() got = %s, want %s", spew.Sdump(got), spew.Sdump(tt.want))
