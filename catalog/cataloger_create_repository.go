@@ -37,9 +37,8 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 		}
 
 		// create repository with ref to branch
-		creationDate := c.clock.Now()
 		if _, err := tx.Exec(`INSERT INTO catalog_repositories (id,name,storage_namespace,creation_date,default_branch)
-			VALUES ($1,$2,$3,$4,$5)`, repoID, repository, storageNamespace, creationDate, branchID); err != nil {
+			VALUES ($1,$2,$3,transaction_timestamp(),$4)`, repoID, repository, storageNamespace, branchID); err != nil {
 			return nil, fmt.Errorf("insert repository: %w", err)
 		}
 
@@ -51,8 +50,8 @@ func (c *cataloger) CreateRepository(ctx context.Context, repository string, sto
 
 		// create initial commit
 		_, err := tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,previous_commit_id)
-			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,$4,0)`,
-			branchID, CatalogerCommitter, createRepositoryCommitMessage, creationDate)
+			VALUES ($1,nextval('catalog_commit_id_seq'),$2,$3,transaction_timestamp(),0)`,
+			branchID, CatalogerCommitter, createRepositoryCommitMessage)
 		if err != nil {
 			return nil, fmt.Errorf("insert commit: %w", err)
 		}
