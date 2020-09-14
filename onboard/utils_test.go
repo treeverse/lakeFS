@@ -61,7 +61,7 @@ func rows(keys []string, lastModified ...time.Time) []block.InventoryObject {
 	}
 	res := make([]block.InventoryObject, 0, len(keys))
 	for i, key := range keys {
-		res = append(res, block.InventoryObject{Key: key, LastModifiedMillis: lastModified[i%len(lastModified)].Unix() * 1000})
+		res = append(res, block.InventoryObject{Key: key, LastModified: lastModified[i%len(lastModified)]})
 	}
 	return res
 }
