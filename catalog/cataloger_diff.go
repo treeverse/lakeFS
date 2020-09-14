@@ -30,7 +30,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		return nil, false, err
 	}
 
-	if limit <= 0 || limit > DiffMaxLimit {
+	if limit < 0 || limit > DiffMaxLimit {
 		limit = DiffMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {

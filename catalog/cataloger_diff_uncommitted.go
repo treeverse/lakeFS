@@ -17,7 +17,7 @@ func (c *cataloger) DiffUncommitted(ctx context.Context, repository, branch stri
 		return nil, false, err
 	}
 
-	if limit <= 0 || limit > DiffMaxLimit {
+	if limit < 0 || limit > DiffMaxLimit {
 		limit = DiffMaxLimit
 	}
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {

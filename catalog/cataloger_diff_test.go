@@ -38,6 +38,9 @@ func TestCataloger_Diff(t *testing.T) {
 	for {
 		res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", limit, after)
 		testutil.MustDo(t, "list diff changes", err)
+		if len(res) > limit {
+			t.Fatalf("Diff() result length=%d, expected no more than %d", len(res), limit)
+		}
 		differences = append(differences, res...)
 		if !hasMore {
 			break
@@ -74,6 +77,16 @@ func TestCataloger_Diff(t *testing.T) {
 		if d.Type != expectedType {
 			t.Fatalf("Path '%s' diff type=%d, expected=%d", d.Path, d.Type, expectedType)
 		}
+	}
+
+	// check the case of 0 amount
+	res, hasMore, err := c.Diff(ctx, repository, "branch1", "master", 0, "")
+	testutil.MustDo(t, "list diff changes with 0 limit", err)
+	if !hasMore {
+		t.Error("Diff() limit 0 hasMore should be true")
+	}
+	if len(res) != 0 {
+		t.Errorf("Diff() limit 0 len results is %d, expected none", len(res))
 	}
 }
 

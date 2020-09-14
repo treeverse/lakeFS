@@ -107,7 +107,7 @@ func getBranchesRelationType(tx db.Tx, sourceBranchID, destinationBranchID int64
 
 // paginateSlice take slice address, resize and return 'has more' when needed
 func paginateSlice(s interface{}, limit int) bool {
-	if limit <= 0 {
+	if limit < 0 {
 		return false
 	}
 	v := reflect.ValueOf(s)

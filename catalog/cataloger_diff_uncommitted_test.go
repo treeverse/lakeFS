@@ -30,6 +30,9 @@ func TestCataloger_DiffUncommitted_Pagination(t *testing.T) {
 		if err != nil {
 			t.Fatalf("DiffUncommitted err=%s, expected none", err)
 		}
+		if len(res) > changesPerPage {
+			t.Fatalf("DiffUncommitted() result length %d, expected equal or less than %d", len(res), changesPerPage)
+		}
 		differences = append(differences, res...)
 		if !hasMore {
 			break
@@ -39,6 +42,17 @@ func TestCataloger_DiffUncommitted_Pagination(t *testing.T) {
 	if diff := deep.Equal(differences, expectedDifferences); diff != nil {
 		t.Fatal("DiffUncommitted", diff)
 	}
+
+	// check the case where we ask for 0 amount
+	res, hasMore, err := c.DiffUncommitted(ctx, repository, "master", 0, "")
+	testutil.MustDo(t, "diff uncommitted with 0 limit", err)
+	if !hasMore {
+		t.Error("DiffUncommitted() has more should be true")
+	}
+	if len(res) != 0 {
+		t.Errorf("DiffUncommitted() has %d items in result when expected none", len(res))
+	}
+
 }
 
 func TestCataloger_DiffUncommitted_Changes(t *testing.T) {
