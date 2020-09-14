@@ -14,6 +14,7 @@ services:
       - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs.io:8000
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
       - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKEFS_STATS_ENABLED
       - LAKEFS_LOGGING_LEVEL
     entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
   postgres:
