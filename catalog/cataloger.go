@@ -7,7 +7,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/catalog/params"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -181,7 +180,6 @@ type CacheConfig struct {
 // cataloger main catalog implementation based on mvcc
 type cataloger struct {
 	params.Catalog
-	clock                clock.Clock
 	log                  logging.Logger
 	db                   db.Database
 	wg                   sync.WaitGroup
@@ -193,12 +191,6 @@ type cataloger struct {
 }
 
 type CatalogerOption func(*cataloger)
-
-func WithClock(newClock clock.Clock) CatalogerOption {
-	return func(c *cataloger) {
-		c.clock = newClock
-	}
-}
 
 func WithCacheEnabled(b bool) CatalogerOption {
 	return func(c *cataloger) {
@@ -247,7 +239,6 @@ func WithParams(p params.Catalog) CatalogerOption {
 
 func NewCataloger(db db.Database, options ...CatalogerOption) Cataloger {
 	c := &cataloger{
-		clock:              clock.New(),
 		log:                logging.Default().WithField("service_name", "cataloger"),
 		db:                 db,
 		dedupCh:            make(chan *dedupRequest, dedupChannelSize),

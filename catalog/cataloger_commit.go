@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
@@ -57,11 +58,13 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 		}
 
 		// insert commit record
-		creationDate := c.clock.Now()
-		_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,metadata,merge_type,previous_commit_id)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone, lastCommitID)
-		if err != nil {
+		var creationDate time.Time
+		if err = tx.Get(&creationDate,
+			`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,metadata,merge_type,previous_commit_id)
+			VALUES ($1,$2,$3,$4,transaction_timestamp(),$5,$6,$7)
+			RETURNING creation_date`,
+			branchID, commitID, committer, message, metadata, RelationTypeNone, lastCommitID,
+		); err != nil {
 			return nil, err
 		}
 		reference := MakeReference(branch, commitID)
