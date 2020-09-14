@@ -743,3 +743,13 @@ footer {
 .highlighter-rouge {
 	position: relative;
 }
+
+.language-shell.highlighter-rouge pre.highlight::before,
+.language-sh.highlighter-rouge pre.highlight::before,
+.language-bash.highlighter-rouge pre.highlight::before{
+	content: "$ ";
+	color: $teal-green;
+	font-weight: 400;
+	font-family: monospace;
+	font-size: 0.75em;
+}
