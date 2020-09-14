@@ -198,11 +198,11 @@ func SetupAdminUser(authService Service, user *model.User) (*model.Credential, e
 	if err != nil {
 		return nil, err
 	}
-	err = authService.AddUserToGroup(user.DisplayName, "Admins")
+	err = authService.AddUserToGroup(user.Username, "Admins")
 	if err != nil {
 		return nil, err
 	}
 
 	// Generate and return a key pair
-	return authService.CreateCredentials(user.DisplayName)
+	return authService.CreateCredentials(user.Username)
 }

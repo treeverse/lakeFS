@@ -31,4 +31,4 @@ Once we have lakeFS configured and running, open `https://<OPENAPI_SERVER_ENDPOI
 After creating a repo, you can import your existing data into it. lakeFS offers an [Import API](../reference/import.md) to bring your data without copying it.
 Alternatively, if you wish to copy existing data from an S3 bucket to lakeFS, use [DistCp](../using/distcp.md) or [Rclone](../using/rclone.md).
 
-Check out the usage guides under [using lakeFS with...](../using) for other options.
+Check out the usage guides under [using lakeFS with...](https://docs.lakefs.io/using/) for other options.

@@ -14,7 +14,7 @@ var ErrAuthorization = errors.New("authorization error")
 
 func authorize(a auth.Service, user *models.User, permissions []permissions.Permission) error {
 	authResp, err := a.Authorize(&auth.AuthorizationRequest{
-		UserDisplayName:     user.ID,
+		Username:            user.ID,
 		RequiredPermissions: permissions,
 	})
 	if err != nil {

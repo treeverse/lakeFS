@@ -1,137 +1,116 @@
 package s3
 
 import (
+	"errors"
+	"time"
+
 	"github.com/treeverse/lakefs/block"
-	"github.com/treeverse/lakefs/logging"
+	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 )
 
-const DefaultReadBatchSize = 100000
-
-type ParquetInventoryObject struct {
-	Bucket         string  `parquet:"name=bucket, type=UTF8"`
-	Key            string  `parquet:"name=key, type=UTF8"`
-	IsLatest       *bool   `parquet:"name=is_latest, type=BOOLEAN"`
-	IsDeleteMarker *bool   `parquet:"name=is_delete_marker, type=BOOLEAN"`
-	Size           *int64  `parquet:"name=size, type=INT_64"`
-	LastModified   *int64  `parquet:"name=last_modified_date, type=TIMESTAMP_MILLIS"`
-	Checksum       *string `parquet:"name=e_tag, type=UTF8"`
-}
-
-func (o *ParquetInventoryObject) GetPhysicalAddress() string {
-	return "s3://" + o.Bucket + "/" + o.Key
-}
+var ErrInventoryNotSorted = errors.New("got unsorted s3 inventory")
 
 type InventoryIterator struct {
 	*Inventory
-	ReadBatchSize          int
-	err                    error
-	val                    block.InventoryObject
-	buffer                 []ParquetInventoryObject
-	currentManifestFileIdx int
-	nextRowInParquet       int
-	valIndexInBuffer       int
+	err                error
+	val                *block.InventoryObject
+	buffer             []inventorys3.InventoryObject
+	inventoryFileIndex int
+	valIndexInBuffer   int
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	return &InventoryIterator{
-		Inventory:     inv,
-		ReadBatchSize: DefaultReadBatchSize,
+		Inventory:          inv,
+		inventoryFileIndex: -1,
 	}
 }
 
 func (it *InventoryIterator) Next() bool {
-	if len(it.Manifest.Files) == 0 {
-		// empty manifest
-		return false
-	}
 	for {
-		val, valIndex := it.nextFromBuffer()
+		if len(it.Manifest.Files) == 0 {
+			// empty manifest
+			return false
+		}
+		val := it.nextFromBuffer()
 		if val != nil {
-			// found the next object in buffer
-			it.valIndexInBuffer = valIndex
-			it.val = *val
+			// validate element order
+			if it.shouldSort && it.val != nil && val.Key < it.val.Key {
+				it.err = ErrInventoryNotSorted
+				return false
+			}
+			it.val = val
 			return true
 		}
 		// value not found in buffer, need to reload the buffer
 		it.valIndexInBuffer = -1
-		// if needed, try to move on to the next manifest file:
-		file := it.Manifest.Files[it.currentManifestFileIdx]
-		if it.nextRowInParquet >= file.numRows && !it.moveToNextManifestFile() {
+		if !it.moveToNextInventoryFile() {
 			// no more files left
 			return false
 		}
-		if !it.fillBuffer() { // fill from current manifest file
+		if !it.fillBuffer() {
 			return false
 		}
 	}
 }
 
-func (it *InventoryIterator) moveToNextManifestFile() bool {
-	if it.currentManifestFileIdx == len(it.Manifest.Files)-1 {
+func (it *InventoryIterator) moveToNextInventoryFile() bool {
+	if it.inventoryFileIndex == len(it.Manifest.Files)-1 {
 		return false
 	}
-	it.currentManifestFileIdx += 1
-	it.nextRowInParquet = 0
+	it.inventoryFileIndex += 1
+	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.inventoryFileIndex].Key)
 	it.buffer = nil
 	return true
 }
 
 func (it *InventoryIterator) fillBuffer() bool {
-	key := it.Manifest.Files[it.currentManifestFileIdx].Key
-	pr, closeReader, err := it.getParquetReader(it.ctx, it.S3, it.Manifest.inventoryBucket, key)
+	it.logger.Debug("start reading rows from inventory to buffer")
+	rdr, err := it.reader.GetFileReader(it.Manifest.Format, it.Manifest.inventoryBucket, it.Manifest.Files[it.inventoryFileIndex].Key)
 	if err != nil {
 		it.err = err
 		return false
 	}
 	defer func() {
-		err = closeReader()
+		err = rdr.Close()
 		if err != nil {
-			it.logger.WithFields(logging.Fields{"bucket": it.Manifest.inventoryBucket, "key": key}).
-				Error("failed to close parquet reader after filling buffer")
+			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
 		}
 	}()
-	// skip the rows that have already been read:
-	err = pr.SkipRows(int64(it.nextRowInParquet))
+	it.buffer = make([]inventorys3.InventoryObject, rdr.GetNumRows())
+	err = rdr.Read(&it.buffer)
 	if err != nil {
 		it.err = err
 		return false
 	}
-	it.buffer = make([]ParquetInventoryObject, it.ReadBatchSize)
-	// read a batch of rows according to the batch size:
-	err = pr.Read(&it.buffer)
-	if err != nil {
-		it.err = err
-		return false
-	}
-	it.nextRowInParquet += len(it.buffer)
 	return true
 }
 
-func (it *InventoryIterator) nextFromBuffer() (*block.InventoryObject, int) {
-	var res block.InventoryObject
+func (it *InventoryIterator) nextFromBuffer() *block.InventoryObject {
 	for i := it.valIndexInBuffer + 1; i < len(it.buffer); i++ {
-		parquetObj := it.buffer[i]
-		if (parquetObj.IsLatest != nil && !*parquetObj.IsLatest) ||
-			(parquetObj.IsDeleteMarker != nil && *parquetObj.IsDeleteMarker) {
+		obj := it.buffer[i]
+		if (obj.IsLatest != nil && !*obj.IsLatest) ||
+			(obj.IsDeleteMarker != nil && *obj.IsDeleteMarker) {
 			continue
 		}
-		res = block.InventoryObject{
-			Bucket:          parquetObj.Bucket,
-			Key:             parquetObj.Key,
-			PhysicalAddress: parquetObj.GetPhysicalAddress(),
+		res := block.InventoryObject{
+			Bucket:          obj.Bucket,
+			Key:             obj.Key,
+			PhysicalAddress: obj.GetPhysicalAddress(),
 		}
-		if parquetObj.Size != nil {
-			res.Size = *parquetObj.Size
+		if obj.Size != nil {
+			res.Size = *obj.Size
 		}
-		if parquetObj.LastModified != nil {
-			res.LastModified = *parquetObj.LastModified
+		if obj.LastModifiedMillis != nil {
+			res.LastModified = time.Unix(*obj.LastModifiedMillis/int64(time.Second/time.Millisecond), 0)
 		}
-		if parquetObj.Checksum != nil {
-			res.Checksum = *parquetObj.Checksum
+		if obj.Checksum != nil {
+			res.Checksum = *obj.Checksum
 		}
-		return &res, i
+		it.valIndexInBuffer = i
+		return &res
 	}
-	return nil, -1
+	return nil
 }
 
 func (it *InventoryIterator) Err() error {
@@ -139,5 +118,5 @@ func (it *InventoryIterator) Err() error {
 }
 
 func (it *InventoryIterator) Get() *block.InventoryObject {
-	return &it.val
+	return it.val
 }

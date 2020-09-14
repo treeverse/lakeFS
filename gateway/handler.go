@@ -173,10 +173,10 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	// we are verified!
 	op := &operations.AuthenticatedOperation{
 		Operation: o,
-		Principal: user.DisplayName,
+		Principal: user.Username,
 	}
 
-	op.AddLogFields(logging.Fields{"user": user.DisplayName})
+	op.AddLogFields(logging.Fields{"user": user.Username})
 
 	if perms == nil {
 		// no special permissions required, no need to authorize (used for delete-objects, where permissions are checked separately)
@@ -184,7 +184,7 @@ func authenticateOperation(s *ServerContext, writer http.ResponseWriter, request
 	}
 	// authorize
 	authResp, err := s.authService.Authorize(&auth.AuthorizationRequest{
-		UserDisplayName:     op.Principal,
+		Username:            op.Principal,
 		RequiredPermissions: perms,
 	})
 	if err != nil {

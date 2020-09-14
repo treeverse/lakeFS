@@ -25,7 +25,7 @@ To run a local lakeFS instance, you can clone the repository and run [Docker Com
 1. Clone the lakeFS repository:
 
    ```bash
-   $ git clone https://github.com/treeverse/lakeFS
+   git clone https://github.com/treeverse/lakeFS
    ```
 
 1. Navigate to the directory: `cd lakeFS`.
@@ -33,7 +33,7 @@ To run a local lakeFS instance, you can clone the repository and run [Docker Com
 1. Run the following command:
 
    ```bash
-   $ docker-compose up
+   docker-compose up
    ```
 
 1. Check your installation by opening [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser.

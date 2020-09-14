@@ -34,10 +34,11 @@ Batch jobs in production require the following guarantees:
 1. We'll start by creating a branch for this pipeline:
    
    ```shell
-   $ lakectl branch create \
-        lakefs://example-repo@job-raw-data-grouping \
-        --source lakefs://example-repo@main
-   created branch 'job-raw-data-grouping', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   lakectl branch create \
+      lakefs://example-repo@job-raw-data-grouping \
+      --source lakefs://example-repo@main
+   # output:
+   # created branch 'job-raw-data-grouping', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
 1. Now, let's change our code to use this branch. Assuming this code reads and writes from S3, this is simple:
    
@@ -48,29 +49,31 @@ Batch jobs in production require the following guarantees:
 1. In case of a failure, let's remove whatever intermediate state Spark might have left behind. We do this by simply reverting all uncommitted data:
    
    ```shell
-   $ lakectl branch revert lakefs://example-repo@job-raw-data-grouping
-   are you sure you want to revert all uncommitted changes?: y█
+   lakectl branch revert lakefs://example-repo@job-raw-data-grouping
+   # are you sure you want to revert all uncommitted changes?: y█
    ```
 1. Otherwise, if our job ended successfully, let's make our new data available to readers by committing and merging to main:
 For our commit, let's also add the Git commit hash for the job's source code and other metadata for reference:
    
    ```shell
-   $ lakectl commit lakefs://example-repo@job-raw-data-grouping \
-        -m 'raw data grouping for 01/01/2020' \
-        --meta job_commit_hash=501e31a67 \
-        --meta airflow_run_url=http://... \
-        --meta spark_version=2.4.6
-   Commit for branch "job-raw-data-grouping" done.
-   
-   ID: ~79RU9aUsQ9GLnU
-   Timestamp: 2020-01-01 12:00:00 +0000 UTC
-   Parents: ~43aP3nUrR17LcX
+   lakectl commit lakefs://example-repo@job-raw-data-grouping \
+      -m 'raw data grouping for 01/01/2020' \
+      --meta job_commit_hash=501e31a67 \
+      --meta airflow_run_url=http://... \
+      --meta spark_version=2.4.6
+   # output: 
+   # Commit for branch "job-raw-data-grouping" done.
+   #
+   # ID: ~79RU9aUsQ9GLnU
+   # Timestamp: 2020-01-01 12:00:00 +0000 UTC
+   # Parents: ~43aP3nUrR17LcX
    ```
 1. Once committed, we can now atomically merge this commit to main:
    
    ```shell
-   $ lakectl merge lakefs://example-repo@job-raw-data-grouping lakefs://example-repo@main   
-   new: 65 modified: 0 removed: 0 
+   lakectl merge lakefs://example-repo@job-raw-data-grouping lakefs://example-repo@main   
+   # output:
+   # new: 65 modified: 0 removed: 0 
    ```
 
 1. That's it. All output created by our job is now merged into our main branch and available to readers
@@ -97,24 +100,27 @@ In production data pipelines, we require the following guarantees:
 1. Let's take the previous example and expand it a little. Instead of `job` branches that are derived from `main`, let's add an intermediate `pipeline` branch.
    
    ```shell
-   $ lakectl branch create \
-        lakefs://example-repo@pipeline-raw-data-grouping \
-        --source lakefs://example-repo@main
-   created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
+   lakectl branch create \
+      lakefs://example-repo@pipeline-raw-data-grouping \
+      --source lakefs://example-repo@main
+   # output:
+   # created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
    ```
 1. Now, for each job that takes part in the pipeline, we'll create a `job` branch that is **derived from the `pipline` branch**:
    
    ```shell
-   $ lakectl branch create \
-        lakefs://example-repo@job-raw-data-grouping-by-user \
-        --source lakefs://example-repo@pipeline-raw-data-grouping
-   created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
+   lakectl branch create \
+      lakefs://example-repo@job-raw-data-grouping-by-user \
+      --source lakefs://example-repo@pipeline-raw-data-grouping
+   # output:
+   # created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
    ```
 1. Once we have a job branch, we can run our jobs, validate and commit our output as we did in the previous section.
 1. Only when all jobs have completed - and all their output has been merged to the `pipeline` branch, we can merge it into `main`:
    ```shell
-   $ lakectl merge lakefs://example-repo@pipeline-raw-data-grouping lakefs://example-repo@main   
-   new: 542 modified: 0 removed: 0 
+   lakectl merge lakefs://example-repo@pipeline-raw-data-grouping lakefs://example-repo@main   
+   # output:
+   # new: 542 modified: 0 removed: 0 
    ```
 
 ## Use case #3 - Safe data stream ingestion
@@ -142,10 +148,11 @@ When streaming data into a data lake, we require the following guarantees:
 1. Let's create a branch for our consumer:
    
    ```shell
-   $ lakectl branch create \
-        lakefs://example-repo@consumer-raw-data \
-        --source lakefs://example-repo@main
-   created branch 'consumer-raw-data', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   lakectl branch create \
+      lakefs://example-repo@consumer-raw-data \
+      --source lakefs://example-repo@main
+   # output:
+   # created branch 'consumer-raw-data', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
 1. Let's change our consumer to write to the new branch:
    
@@ -156,15 +163,16 @@ When streaming data into a data lake, we require the following guarantees:
 1. Now that parquet files are written to our new branch, we want to commit periodically. This will allow us to rewind safely:
    
    ```shell
-   $ lakectl commit lakefs://example-repo@consumer-raw-data \
-        -m 'raw data consumer checkpoint' \
-        --meta kafka_committed_offset=<KAFKA_TOPIC_OFFSET> \
-        --meta confluent_platform_version=5.5
-   Commit for branch "consumer-raw-data" done.
-   
-   ID: ~79RU9aUsQ9GLnU
-   Timestamp: 2020-01-01 12:00:00 +0000 UTC
-   Parents: ~43aP3nUrR17LcX
+   lakectl commit lakefs://example-repo@consumer-raw-data \
+      -m 'raw data consumer checkpoint' \
+      --meta kafka_committed_offset=<KAFKA_TOPIC_OFFSET> \
+      --meta confluent_platform_version=5.5
+   # output:
+   # Commit for branch "consumer-raw-data" done.
+   # 
+   # ID: ~79RU9aUsQ9GLnU
+   # Timestamp: 2020-01-01 12:00:00 +0000 UTC
+   # Parents: ~43aP3nUrR17LcX
    ```
    
    Take note that `<KAFKA_TOPIC_OFFSET>` represents the latest committed offset, which also represents the latest offset that exists in our branch.
@@ -175,25 +183,26 @@ When streaming data into a data lake, we require the following guarantees:
    1. Look at the commit history and pick the latest known commit that was valid
    
       ```shell
-      $ lakectl log lakefs://example-repo@
-      commit ~43aP3nUrR17LcX
-      Author: rawDataConsumer
-      Date: 2020-07-20 12:00:00 +0000 UTC
-
-          raw data consumer checkpoint
-      
-          kafka_committed_offset = ...
-          confluent_platform_version = 5.5
-      	
-      commit ~79RU9aUsQ9GLnU
-      Author: rawDataConsumer
-      Date: 2020-07-20 11:00:00 +0000 UTC
+      lakectl log lakefs://example-repo@
+      # output:
+      # commit ~43aP3nUrR17LcX
+      # Author: rawDataConsumer
+      # Date: 2020-07-20 12:00:00 +0000 UTC
+      # 
+      #     raw data consumer checkpoint
+      # 
+      #     kafka_committed_offset = ...
+      #     confluent_platform_version = 5.5
+      # 	
+      # commit ~79RU9aUsQ9GLnU
+      # Author: rawDataConsumer
+      # Date: 2020-07-20 11:00:00 +0000 UTC
       ...
       ```
    1. Reset our branch to that commit:
    
       ```shell
-      $ lakectl branch revert lakefs://example-repo@consumer-raw-data --commit ~79RU9aUsQ9GLnU
+      lakectl branch revert lakefs://example-repo@consumer-raw-data --commit ~79RU9aUsQ9GLnU
       ```
    1. Take the `kafka_committed_offset` metadata from the commit, and reset our Kafka Consumer Group offset to that value
 1. In case we're happy with the changes, we can decide how we want to expose new data to readers:
@@ -243,25 +252,27 @@ Data science requires experimentation - We want to adjust a model or refine hype
 1. Create `experiment` branches derived from the main branch:
 
    ```shell
-   $ lakectl branch create \
-        lakefs://example-repo@exp-cnn-tests \
-        --source lakefs://example-repo@main
-   created branch 'exp-cnn-tests', pointing to commit ID: '~43aP3nUrR17LcX'
+   lakectl branch create \
+      lakefs://example-repo@exp-cnn-tests \
+      --source lakefs://example-repo@main
+   # output:
+   # created branch 'exp-cnn-tests', pointing to commit ID: '~43aP3nUrR17LcX'
    ```
 1. Run the desired algorithm, committing the results along with the parameters used:
 
    ```shell
-   $ lakectl commit lakefs://example-repo@exp-cnn-tests \
-        -m 'trying tensorflow cnn' \
-        --meta tf_cnn_param_a=1 \
-        --meta tf_cnn_param_b=2 \
-        --meta tf_version=2.3.0 \
-        --meta algo_git_hash=4d55f2e372
-   Commit for branch "exp-cnn-tests" done.
-   
-   ID: ~79RU9aUsQ9GLnU
-   Timestamp: 2020-01-01 12:00:00 +0000 UTC
-   Parents: ~43aP3nUrR17LcX
+   lakectl commit lakefs://example-repo@exp-cnn-tests \
+      -m 'trying tensorflow cnn' \
+      --meta tf_cnn_param_a=1 \
+      --meta tf_cnn_param_b=2 \
+      --meta tf_version=2.3.0 \
+      --meta algo_git_hash=4d55f2e372
+   # output:
+   # Commit for branch "exp-cnn-tests" done.
+   # 
+   # ID: ~79RU9aUsQ9GLnU
+   # Timestamp: 2020-01-01 12:00:00 +0000 UTC
+   # Parents: ~43aP3nUrR17LcX
    ```
 1. By being able to address different commits directly, we can compare results and experiment with the generated models easily. To read from a specific commit we can pass its ID instead of the branch name when calling S3:
    
@@ -278,8 +289,9 @@ While snapshot isolation is a desired attribute, and ensures data doesn't change
 In lakeFS this is done by merging in the opposite direction - from the main branch into our experiment branch:
 
 ```shell
-$ lakectl merge lakefs://example-repo@main lakefs://example-repo@exp-cnn-tests   
-new: 2592 modified: 12 removed: 1439 
+lakectl merge lakefs://example-repo@main lakefs://example-repo@exp-cnn-tests   
+# output:
+# new: 2592 modified: 12 removed: 1439 
 ```
 
 ## Use case #5 - Ad-hoc exploration and experimentation
@@ -299,23 +311,25 @@ For this, the following guarantees are required:
 1. Start by creating a branch for the given user
    
    ```shell
-   $ lakectl branch create \
-        lakefs://example-repo@user-janedoe \
-        --source lakefs://example-repo@main
-   created branch 'user-janedoe', pointing to commit ID: '~79RU9aUsQ9GLnU'
+   lakectl branch create \
+      lakefs://example-repo@user-janedoe \
+      --source lakefs://example-repo@main
+   # output:
+   # created branch 'user-janedoe', pointing to commit ID: '~79RU9aUsQ9GLnU'
    ```
 1. Run whatever we want in our isolated branch by reading and writing from `s3://example-repo/user-janedoe/collections/...`
 1. When we're done, we can throw away this branch
 
    ```shell
-   $ lakectl branch revert lakefs://example-repo@user-janedoe
-   Are you sure you want to revert all uncommitted changes?: y
-   $ lakectl branch delete lakefs://example-repo@user-janedoe
-   Are you sure you want to delete branch?: y
+   lakectl branch revert lakefs://example-repo@user-janedoe
+   # Are you sure you want to revert all uncommitted changes?: y
+   lakectl branch delete lakefs://example-repo@user-janedoe
+   # Are you sure you want to delete branch?: y
    ```
 1. Alternatively, if we do want to keep our branch around, but want to see up to date data, we can merge main into our user branch
 
    ```shell
-   $ lakectl merge lakefs://example-repo@main lakefs://example-repo@user-janedoe   
-   new: 1927 modified: 3 removed: 782 
+   lakectl merge lakefs://example-repo@main lakefs://example-repo@user-janedoe   
+   # output:
+   # new: 1927 modified: 3 removed: 782 
    ```

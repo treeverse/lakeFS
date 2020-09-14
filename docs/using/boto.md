@@ -2,7 +2,7 @@
 layout: default
 title: Boto (Python)
 parent: Using lakeFS with...
-nav_order: 7
+nav_order: 8
 has_children: false
 ---
 
@@ -58,20 +58,21 @@ for obj in list_resp['Contents']:
 ### Head Object
 Get object metadata using branch and path:
 ```python
->>> s3.head_object(Bucket='example-repo', Key='master/example-file.parquet')
-{'ResponseMetadata': {'RequestId': '72A9EBD1210E90FA',
-  'HostId': '',
-  'HTTPStatusCode': 200,
-  'HTTPHeaders': {'accept-ranges': 'bytes',
-   'content-length': '1024',
-   'etag': '"2398bc5880e535c61f7624ad6f138d62"',
-   'last-modified': 'Sun, 24 May 2020 10:42:24 GMT',
-   'x-amz-request-id': '72A9EBD1210E90FA',
-   'date': 'Sun, 24 May 2020 10:45:42 GMT'},
-  'RetryAttempts': 0},
- 'AcceptRanges': 'bytes',
- 'LastModified': datetime.datetime(2020, 5, 24, 10, 42, 24, tzinfo=tzutc()),
- 'ContentLength': 1024,
- 'ETag': '"2398bc5880e535c61f7624ad6f138d62"',
- 'Metadata': {}}
+s3.head_object(Bucket='example-repo', Key='master/example-file.parquet')
+# output:
+# {'ResponseMetadata': {'RequestId': '72A9EBD1210E90FA',
+#  'HostId': '',
+#  'HTTPStatusCode': 200,
+#  'HTTPHeaders': {'accept-ranges': 'bytes',
+#   'content-length': '1024',
+#   'etag': '"2398bc5880e535c61f7624ad6f138d62"',
+#   'last-modified': 'Sun, 24 May 2020 10:42:24 GMT',
+#   'x-amz-request-id': '72A9EBD1210E90FA',
+#   'date': 'Sun, 24 May 2020 10:45:42 GMT'},
+#  'RetryAttempts': 0},
+# 'AcceptRanges': 'bytes',
+# 'LastModified': datetime.datetime(2020, 5, 24, 10, 42, 24, tzinfo=tzutc()),
+# 'ContentLength': 1024,
+# 'ETag': '"2398bc5880e535c61f7624ad6f138d62"',
+# 'Metadata': {}}
 ``` 

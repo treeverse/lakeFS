@@ -1,0 +1,24 @@
+version: '3'
+services:
+  lakefs:
+    image: "${REPO}/lakefs:${TAG}"
+    ports: 
+      - "8000:8000"
+    depends_on:
+      - "postgres"
+    environment:
+      - LAKEFS_AUTH_ENCRYPT_SECRET_KEY=some random secret string
+      - LAKEFS_DATABASE_CONNECTION_STRING=postgres://lakefs:lakefs@postgres/postgres?sslmode=disable
+      - LAKEFS_BLOCKSTORE_TYPE=${LAKEFS_BLOCKSTORE_TYPE}
+      - LAKEFS_BLOCKSTORE_LOCAL_PATH=/home/lakefs
+      - LAKEFS_GATEWAYS_S3_DOMAIN_NAME=s3.local.lakefs.io:8000
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - LAKEFS_BLOCKSTORE_S3_CREDENTIALS_ACCESS_SECRET_KEY=${AWS_SECRET_ACCESS_KEY}
+      - LAKEFS_LOGGING_LEVEL=DEBUG
+      - LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON
+    entrypoint: ["/app/wait-for", "postgres:5432", "--", "/app/lakefs", "run"]
+  postgres:
+    image: "postgres:11"
+    environment:
+      POSTGRES_USER: lakefs
+      POSTGRES_PASSWORD: lakefs

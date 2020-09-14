@@ -13,6 +13,10 @@ configuration][s3-lifecycle], however not all properties exist.  Most
 notably current support is only for object expiration and not storage
 class transition.
 
+
+   **Note:** Currently only S3 block adapter supports retention
+   {: .note }
+
 # Retention
 
 ## System configuration
@@ -165,4 +169,4 @@ types are supported:
 [s3-lifecycle-specific-date]: https://docs.aws.amazon.com/AmazonS3/latest/dev/intro-lifecycle-rules.html#intro-lifecycle-rules-date
 [json-ref]: https://www.json.org/json-en.html
 [http-gone]: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/410
-[configuration]: reference/configuration.html
+[configuration]: configuration.html

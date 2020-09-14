@@ -74,7 +74,7 @@ func UIHandler(authService auth.Service) http.Handler {
 		claims := &jwt.StandardClaims{
 			IssuedAt:  loginTime.Unix(),
 			ExpiresAt: expires.Unix(),
-			Subject:   user.DisplayName,
+			Subject:   user.Username,
 		}
 
 		token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

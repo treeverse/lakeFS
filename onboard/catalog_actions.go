@@ -4,13 +4,18 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
+	"sync"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 )
 
-const DefaultWriteBatchSize = 100000
+const (
+	DefaultWriteBatchSize = 25000
+	DefaultWorkerCount    = 16
+	TaskChannelCapacity   = 2 * DefaultWorkerCount
+)
 
 type RepoActions interface {
 	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error)
@@ -23,19 +28,39 @@ type CatalogRepoActions struct {
 	cataloger      catalog.Cataloger
 	repository     string
 	committer      string
+	logger         logging.Logger
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string) RepoActions {
-	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer}
+func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) RepoActions {
+	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer, logger: logger}
+}
+
+type task struct {
+	f   func() error
+	err *error
+}
+
+func worker(wg *sync.WaitGroup, tasks <-chan *task) {
+	for task := range tasks {
+		*task.err = task.f()
+	}
+	wg.Done()
 }
 
 func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error) {
 	var stats InventoryImportStats
+	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
 		batchSize = c.WriteBatchSize
 	}
+	errs := make([]*error, 0)
+	tasksChan := make(chan *task, TaskChannelCapacity)
 	currentBatch := make([]catalog.Entry, 0, batchSize)
+	for w := 0; w < DefaultWorkerCount; w++ {
+		go worker(&wg, tasksChan)
+	}
+	wg.Add(DefaultWorkerCount)
 	for it.Next() {
 		diffObj := it.Get()
 		obj := diffObj.Obj
@@ -52,7 +77,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		entry := catalog.Entry{
 			Path:            obj.Key,
 			PhysicalAddress: obj.PhysicalAddress,
-			CreationDate:    time.Unix(0, obj.LastModified*int64(time.Millisecond)),
+			CreationDate:    obj.LastModified,
 			Size:            obj.Size,
 			Checksum:        obj.Checksum,
 		}
@@ -64,14 +89,25 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			if dryRun {
 				continue
 			}
-			err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
-			if err != nil {
-				return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
+			tsk := &task{
+				f: func() error {
+					return c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+				},
+				err: new(error),
 			}
+			errs = append(errs, tsk.err)
+			tasksChan <- tsk
 		}
 	}
+	close(tasksChan)
+	wg.Wait()
 	if it.Err() != nil {
 		return nil, it.Err()
+	}
+	for _, err := range errs {
+		if *err != nil {
+			return nil, *err
+		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
 		err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)

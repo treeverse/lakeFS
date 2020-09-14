@@ -230,10 +230,11 @@ definitions:
   setup:
     type: object
     properties:
-      display_name:
+      username:
+        description: an identifier for the user (e.g. jane.doe)
         type: string
     required:
-      - display_name
+      - username
 
   credentials:
     type: object

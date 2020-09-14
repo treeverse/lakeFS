@@ -85,8 +85,8 @@ func TestLocalLoad(t *testing.T) {
 	defer ts.Close()
 
 	user := &authmodel.User{
-		CreatedAt:   time.Now(),
-		DisplayName: "admin",
+		CreatedAt: time.Now(),
+		Username:  "admin",
 	}
 	credentials, err := auth.SetupAdminUser(authService, user)
 	testutil.Must(t, err)
