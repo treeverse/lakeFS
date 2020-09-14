@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"time"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -78,7 +77,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		entry := catalog.Entry{
 			Path:            obj.Key,
 			PhysicalAddress: obj.PhysicalAddress,
-			CreationDate:    time.Unix(0, obj.LastModified*int64(time.Millisecond)),
+			CreationDate:    obj.LastModified,
 			Size:            obj.Size,
 			Checksum:        obj.Checksum,
 		}

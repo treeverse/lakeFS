@@ -42,7 +42,7 @@ func generateOrc(t *testing.T, objs <-chan *InventoryObject) string {
 		t.Fatal(err)
 	}
 	for o := range objs {
-		err = w.Write(o.Bucket, o.Key, *o.Size, time.Unix(*o.LastModified, 0), *o.Checksum)
+		err = w.Write(o.Bucket, o.Key, *o.Size, time.Unix(*o.LastModifiedMillis/1000, 0), *o.Checksum)
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -73,17 +73,17 @@ func getS3Fake(t *testing.T) (s3iface.S3API, *httptest.Server) {
 	return s3.New(newSession), ts
 }
 
-func objs(num int) <-chan *InventoryObject {
+func objs(num int, lastModified []time.Time) <-chan *InventoryObject {
 	out := make(chan *InventoryObject)
 	go func() {
 		defer close(out)
 		for i := 0; i < num; i++ {
 			out <- &InventoryObject{
-				Bucket:       inventoryBucketName,
-				Key:          fmt.Sprintf("f%05d", i),
-				Size:         swag.Int64(500),
-				LastModified: swag.Int64(time.Now().Unix()),
-				Checksum:     swag.String("abcdefg"),
+				Bucket:             inventoryBucketName,
+				Key:                fmt.Sprintf("f%05d", i),
+				Size:               swag.Int64(500),
+				LastModifiedMillis: swag.Int64(lastModified[i%len(lastModified)].Unix() * 1000),
+				Checksum:           swag.String("abcdefg"),
 			}
 		}
 	}()
@@ -146,8 +146,9 @@ func TestInventoryReader(t *testing.T) {
 	}
 
 	for _, test := range testdata {
-
-		uploadFile(t, svc, inventoryBucketName, "myFile.orc", objs(test.ObjectNum))
+		now := time.Now()
+		lastModified := []time.Time{now, now.Add(-1 * time.Hour), now.Add(-2 * time.Hour), now.Add(-3 * time.Hour)}
+		uploadFile(t, svc, inventoryBucketName, "myFile.orc", objs(test.ObjectNum, lastModified))
 		reader := NewReader(context.Background(), svc, logging.Default())
 		fileReader, err := reader.GetFileReader("ORC", inventoryBucketName, "myFile.orc")
 		if err != nil {
@@ -174,6 +175,10 @@ func TestInventoryReader(t *testing.T) {
 			for i := offset; i < mathutil.Min(offset+readBatchSize, test.ObjectNum); i++ {
 				if res[i-offset].Key != fmt.Sprintf("f%05d", i) {
 					t.Fatalf("result in index %d different than expected. expected=%s, got=%s (batch #%d, index %d)", i, fmt.Sprintf("f%05d", i), res[i-offset].Key, offset/readBatchSize, i-offset)
+				}
+				expectedLastModified := lastModified[i%len(lastModified)].Unix() * 1000
+				if *res[i-offset].LastModifiedMillis != expectedLastModified {
+					t.Fatalf("unexpected timestamp for result in index %d. expected=%d, got=%d (batch #%d, index %d)", i, expectedLastModified, *res[i-offset].LastModifiedMillis, offset/readBatchSize, i-offset)
 				}
 			}
 			offset += len(res)

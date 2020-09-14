@@ -5,14 +5,15 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
 	s3sdk "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/s3"
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 	"github.com/treeverse/lakefs/logging"
@@ -20,7 +21,7 @@ import (
 
 var ErrReadFile = errors.New("error reading file")
 
-func rows(keys ...string) []*inventorys3.InventoryObject {
+func rows(keys []string, lastModified map[string]time.Time) []*inventorys3.InventoryObject {
 	if keys == nil {
 		return nil
 	}
@@ -31,6 +32,9 @@ func rows(keys ...string) []*inventorys3.InventoryObject {
 			res[i].Key = key
 			res[i].IsLatest = swag.Bool(!strings.Contains(key, "_expired"))
 			res[i].IsDeleteMarker = swag.Bool(strings.Contains(key, "_del"))
+			if lastModified != nil {
+				res[i].LastModifiedMillis = swag.Int64(lastModified[key].Unix() * 1000)
+			}
 		}
 	}
 	return res
@@ -65,6 +69,13 @@ var fileContents = map[string][]string{
 }
 
 func TestIterator(t *testing.T) {
+	now := time.Now()
+	lastModified := make(map[string]time.Time)
+	for _, rows := range fileContents {
+		for i, r := range rows {
+			lastModified[r] = now.Add(time.Hour * time.Duration(-i))
+		}
+	}
 	testdata := []struct {
 		InventoryFiles  []string
 		ExpectedObjects []string
@@ -151,13 +162,12 @@ func TestIterator(t *testing.T) {
 			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
 		},
 	}
-
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
 		s3api := &mockS3Client{
 			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
 		}
-		reader := &mockInventoryReader{openFiles: make(map[string]bool)}
+		reader := &mockInventoryReader{openFiles: make(map[string]bool), lastModified: lastModified}
 		inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
 		if err != nil {
 			if errors.Is(err, test.ErrExpected) {
@@ -166,9 +176,9 @@ func TestIterator(t *testing.T) {
 			t.Fatalf("error: %v", err)
 		}
 		it := inv.Iterator()
-		objects := make([]string, 0, len(test.ExpectedObjects))
+		objects := make([]*block.InventoryObject, 0, len(test.ExpectedObjects))
 		for it.Next() {
-			objects = append(objects, it.Get().Key)
+			objects = append(objects, it.Get())
 		}
 		if len(reader.openFiles) != 0 {
 			t.Errorf("some files stayed open: %v", reader.openFiles)
@@ -182,14 +192,21 @@ func TestIterator(t *testing.T) {
 		if len(objects) != len(test.ExpectedObjects) {
 			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
 		}
-		if !reflect.DeepEqual(objects, test.ExpectedObjects) {
-			t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, objects)
+		for i, obj := range objects {
+			if obj.Key != test.ExpectedObjects[i] {
+				t.Fatalf("at index %d: expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
+			}
+			expectedLastModified := lastModified[obj.Key].Truncate(time.Second)
+			if obj.LastModified != expectedLastModified {
+				t.Fatalf("last modified for object in index %d different than expected. expected=%v, got=%v", i, expectedLastModified, obj.LastModified)
+			}
 		}
 	}
 }
 
 type mockInventoryReader struct {
-	openFiles map[string]bool
+	openFiles    map[string]bool
+	lastModified map[string]time.Time
 }
 
 type mockInventoryFileReader struct {
@@ -249,12 +266,12 @@ func (m *mockInventoryFileReader) GetNumRows() int64 {
 
 func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (inventorys3.FileReader, error) {
 	m.openFiles[key] = true
-	return &mockInventoryFileReader{rows: rows(fileContents[key]...), inventoryReader: m, key: key}, nil
+	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
 
 func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (inventorys3.MetadataReader, error) {
 	m.openFiles[key] = true
-	return &mockInventoryFileReader{rows: rows(fileContents[key]...), inventoryReader: m, key: key}, nil
+	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
 func (m *mockS3Client) GetObject(input *s3sdk.GetObjectInput) (*s3sdk.GetObjectOutput, error) {
 	output := s3sdk.GetObjectOutput{}

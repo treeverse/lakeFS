@@ -2,6 +2,7 @@ package block
 
 import (
 	"context"
+	"time"
 
 	"github.com/treeverse/lakefs/logging"
 )
@@ -21,7 +22,7 @@ type InventoryObject struct {
 	Bucket          string
 	Key             string
 	Size            int64
-	LastModified    int64
+	LastModified    time.Time
 	Checksum        string
 	PhysicalAddress string
 }

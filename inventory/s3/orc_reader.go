@@ -55,9 +55,9 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) I
 	if sizeIdx, ok := r.orcSelect.IndexInSelect["size"]; ok && rowData[sizeIdx] != nil {
 		size = swag.Int64(rowData[sizeIdx].(int64))
 	}
-	var lastModified *int64
+	var lastModifiedMillis *int64
 	if lastModifiedIdx, ok := r.orcSelect.IndexInSelect["last_modified_date"]; ok && rowData[lastModifiedIdx] != nil {
-		lastModified = swag.Int64(rowData[lastModifiedIdx].(time.Time).Unix())
+		lastModifiedMillis = swag.Int64(rowData[lastModifiedIdx].(time.Time).UnixNano() / int64(time.Millisecond))
 	}
 	var eTag *string
 	if eTagIdx, ok := r.orcSelect.IndexInSelect["e_tag"]; ok && rowData[eTagIdx] != nil {
@@ -72,13 +72,13 @@ func (r *OrcInventoryFileReader) inventoryObjectFromRow(rowData []interface{}) I
 		isDeleteMarker = swag.Bool(rowData[isDeleteMarkerIdx].(bool))
 	}
 	return InventoryObject{
-		Bucket:         rowData[r.orcSelect.IndexInSelect["bucket"]].(string),
-		Key:            rowData[r.orcSelect.IndexInSelect["key"]].(string),
-		Size:           size,
-		LastModified:   lastModified,
-		Checksum:       eTag,
-		IsLatest:       isLatest,
-		IsDeleteMarker: isDeleteMarker,
+		Bucket:             rowData[r.orcSelect.IndexInSelect["bucket"]].(string),
+		Key:                rowData[r.orcSelect.IndexInSelect["key"]].(string),
+		Size:               size,
+		LastModifiedMillis: lastModifiedMillis,
+		Checksum:           eTag,
+		IsLatest:           isLatest,
+		IsDeleteMarker:     isDeleteMarker,
 	}
 }
 
