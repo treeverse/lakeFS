@@ -194,7 +194,7 @@ func TestIterator(t *testing.T) {
 		}
 		for i, obj := range objects {
 			if obj.Key != test.ExpectedObjects[i] {
-				t.Fatalf("retuned object in index %d different than expected. expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
+				t.Fatalf("at index %d: expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
 			}
 			expectedLastModified := lastModified[obj.Key].Truncate(time.Second)
 			if obj.LastModified != expectedLastModified {
