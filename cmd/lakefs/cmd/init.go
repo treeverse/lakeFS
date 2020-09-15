@@ -57,7 +57,7 @@ var initCmd = &cobra.Command{
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
-		stats := stats.NewBufferedCollector(metadata["installation_id"], processID, bufferedCollectorArgs...)
+		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")

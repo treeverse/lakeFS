@@ -249,17 +249,6 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 				})
 		}
 
-		// write metadata
-		metadata, err := c.deps.Meta.Write()
-		if err != nil {
-			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
-				WithPayload(&models.Error{
-					Message: err.Error(),
-				})
-		}
-
-		c.deps.Collector.SetInstallationID(metadata["installation_id"])
-		c.deps.Collector.CollectMetadata(metadata)
 		c.deps.Collector.CollectEvent("global", "init")
 
 		// setup admin user

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"math/rand"
 	"net/http"
 	"os"
 	"os/signal"
@@ -78,12 +77,17 @@ var runCmd = &cobra.Command{
 
 		meta := auth.NewDBMetadataManager(config.Version, dbPool)
 
-		installationID, err := meta.InstallationID()
-		if err != nil {
-			installationID = "" // no installation ID is available
-		}
 		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
-		stats := stats.NewBufferedCollector(installationID, processID, bufferedCollectorArgs...)
+
+		// collect and write metadata
+		metadata, err := meta.Write()
+		if err != nil {
+			logger.WithError(err).Debug("failed to collect account metadata")
+		}
+
+		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
+		// send metadata
+		stats.CollectMetadata(metadata)
 
 		dedupCleaner := dedup.NewCleaner(blockStore, cataloger.DedupReportChannel())
 		defer func() {
@@ -122,22 +126,8 @@ var runCmd = &cobra.Command{
 
 		ctx, cancelFn := context.WithCancel(context.Background())
 		go stats.Run(ctx)
+
 		stats.CollectEvent("global", "run")
-
-		// stagger a bit and update metadata
-		go func() {
-			// avoid a thundering herd in case we have many lakeFS instances starting together
-			const maxSplay = 10 * time.Second
-			randSource := rand.New(rand.NewSource(time.Now().UnixNano())) //nolint:gosec
-			time.Sleep(time.Duration(randSource.Intn(int(maxSplay))))
-
-			metadata, err := meta.Write()
-			if err != nil {
-				logger.WithError(err).Trace("failed to collect account metadata")
-				return
-			}
-			stats.CollectMetadata(metadata)
-		}()
 
 		logging.Default().WithField("listen_address", cfg.GetListenAddress()).Info("starting HTTP server")
 		server := &http.Server{

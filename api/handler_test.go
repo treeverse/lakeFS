@@ -71,8 +71,6 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) SetInstallationID(_ string) {}
-
 func (m *mockCollector) CollectMetadata(_ map[string]string) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
