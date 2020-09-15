@@ -23,10 +23,11 @@ To install lakeFS with Helm:
 1. Create a `conf-values.yaml` file, replacing values as described in the comments:
  
      ```yaml
-     # replace this with the connection string of the database you created in a previous step:
-     databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
-     # replace this with a randomly-generated string
-     authEncryptSecretKey: <some random string>
+     secrets:
+         # replace this with the connection string of the database you created in a previous step:
+         databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
+         # replace this with a randomly-generated string
+         authEncryptSecretKey: <some random string>
      lakefsConfig: |
        blockstore:
          type: s3
@@ -60,8 +61,8 @@ If you can't provide such access, lakeFS can be configured to use an AWS key-pai
 
 | **Parameter**                               | **Description**                                                                                            | **Default** |
 |---------------------------------------------|------------------------------------------------------------------------------------------------------------|-------------|
-|`databaseConnectionString`|PostgreSQL connection string to be used by lakeFS||
-|`authEncryptSecretKey`|A random (cryptographically safe) generated string that is used for encryption and HMAC signing||
+|`secrets.databaseConnectionString`|PostgreSQL connection string to be used by lakeFS||
+|`secrets.authEncryptSecretKey`|A random (cryptographically safe) generated string that is used for encryption and HMAC signing||
 | `lakefsConfig`                              | lakeFS config YAML stringified, as shown above. See [reference](../reference/configuration.md) for available configurations.                                                               |             |
 | `replicaCount`                              | Number of lakeFS pods                                                                                      | `1`         |
 | `resources`                                 | Pod resource requests & limits                                                                             | `{}`        |
