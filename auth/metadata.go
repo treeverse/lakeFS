@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"runtime"
 	"time"
 
@@ -12,7 +11,6 @@ import (
 )
 
 type MetadataManager interface {
-	InstallationID() (string, error)
 	SetupTimestamp() (time.Time, error)
 	UpdateSetupTimestamp(time.Time) error
 	Write() (map[string]string, error)
@@ -33,6 +31,23 @@ func NewDBMetadataManager(version string, database db.Database) *DBMetadataManag
 		version: version,
 		db:      database,
 	}
+}
+
+func insertOrGetInstallationID(tx db.Tx) (string, error) {
+	newInstallationID := uuid.New().String()
+	res, err := tx.Exec(`INSERT INTO auth_installation_metadata (key_name, key_value)
+			VALUES ($1,$2)
+			ON CONFLICT DO NOTHING`,
+		InstallationIDKeyName, newInstallationID)
+	if err != nil {
+		return "", err
+	}
+	if affected, err := res.RowsAffected(); err != nil {
+		return "", err
+	} else if affected == 1 {
+		return newInstallationID, nil
+	}
+	return getInstallationID(tx)
 }
 
 func getInstallationID(tx db.Tx) (string, error) {
@@ -66,16 +81,6 @@ func writeMetadata(tx sqlx.Execer, items map[string]string) error {
 	return nil
 }
 
-func (d *DBMetadataManager) InstallationID() (string, error) {
-	installationID, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return getInstallationID(tx)
-	}, db.WithLogger(logging.Dummy()), db.ReadOnly())
-	if err != nil {
-		return "", err
-	}
-	return installationID.(string), nil
-}
-
 func (d *DBMetadataManager) UpdateSetupTimestamp(ts time.Time) error {
 	_, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
 		return nil, writeMetadata(tx, map[string]string{
@@ -95,6 +100,16 @@ func (d *DBMetadataManager) SetupTimestamp() (time.Time, error) {
 	return setupTimestamp.(time.Time), nil
 }
 
+func (d *DBMetadataManager) InstallationID() (string, error) {
+	res, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
+		return insertOrGetInstallationID(tx)
+	}, db.WithLogger(logging.Dummy()))
+	if err != nil {
+		return "", err
+	}
+	installationID := res.(string)
+	return installationID, nil
+}
 func (d *DBMetadataManager) Write() (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = d.version
@@ -107,25 +122,15 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 			metadata[k] = v
 		}
 	}
-
-	// see if we have existing metadata or we need to generate one
 	_, err = d.db.Transact(func(tx db.Tx) (interface{}, error) {
-		// get installation ID - if we don't have one we'll generate one
-		_, err := getInstallationID(tx)
-		if err != nil && !errors.Is(err, db.ErrNotFound) {
+		installationID, err := insertOrGetInstallationID(tx)
+		if err != nil {
 			return nil, err
 		}
-
-		if err != nil { // i.e. err is db.ErrNotFound
-			// we don't have an installation ID - let's write one.
-			installationID := uuid.Must(uuid.NewUUID()).String()
-			metadata["installation_id"] = installationID
-			metadata["setup_time"] = time.Now().UTC().Format(time.RFC3339)
-		}
-
 		err = writeMetadata(tx, metadata)
+		// make sure we return the installation id, we set it after write meta so it will not be written twice
+		metadata[InstallationIDKeyName] = installationID
 		return nil, err
 	}, db.WithLogger(logging.Dummy()))
-
 	return metadata, err
 }

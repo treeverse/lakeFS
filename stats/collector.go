@@ -3,7 +3,6 @@ package stats
 import (
 	"context"
 	"fmt"
-	"sync"
 	"time"
 
 	"github.com/treeverse/lakefs/logging"
@@ -16,7 +15,6 @@ const (
 )
 
 type Collector interface {
-	SetInstallationID(installationID string)
 	CollectEvent(class, action string)
 	CollectMetadata(accountMetadata map[string]string)
 }
@@ -79,7 +77,6 @@ type BufferedCollector struct {
 	sendTimeout    time.Duration
 	flushTicker    FlushTicker
 	done           chan bool
-	mutex          *sync.RWMutex
 	installationID string
 	processID      string
 }
@@ -125,7 +122,6 @@ func NewBufferedCollector(installationID, processID string, opts ...BufferedColl
 		sendTimeout:    DefaultSendTimeout,
 		flushTicker:    &TimeTicker{ticker: time.NewTicker(DefaultFlushInterval)},
 		installationID: installationID,
-		mutex:          &sync.RWMutex{},
 		processID:      processID,
 	}
 
@@ -136,8 +132,6 @@ func NewBufferedCollector(installationID, processID string, opts ...BufferedColl
 	return s
 }
 func (s *BufferedCollector) getInstallationID() string {
-	s.mutex.RLock()
-	defer s.mutex.RUnlock()
 	return s.installationID
 }
 
@@ -205,12 +199,6 @@ func makeMetrics(counters keyIndex) []Metric {
 		i++
 	}
 	return metrics
-}
-
-func (s *BufferedCollector) SetInstallationID(installationID string) {
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-	s.installationID = installationID
 }
 
 func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
