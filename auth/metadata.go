@@ -100,16 +100,6 @@ func (d *DBMetadataManager) SetupTimestamp() (time.Time, error) {
 	return setupTimestamp.(time.Time), nil
 }
 
-func (d *DBMetadataManager) InstallationID() (string, error) {
-	res, err := d.db.Transact(func(tx db.Tx) (interface{}, error) {
-		return insertOrGetInstallationID(tx)
-	}, db.WithLogger(logging.Dummy()))
-	if err != nil {
-		return "", err
-	}
-	installationID := res.(string)
-	return installationID, nil
-}
 func (d *DBMetadataManager) Write() (map[string]string, error) {
 	metadata := make(map[string]string)
 	metadata["lakefs_version"] = d.version
