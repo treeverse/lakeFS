@@ -123,14 +123,25 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 		}
 	}
 	_, err = d.db.Transact(func(tx db.Tx) (interface{}, error) {
+		// write metadata
+		err = writeMetadata(tx, metadata)
+		if err != nil {
+			return nil, err
+		}
+		// write installation id
 		installationID, err := insertOrGetInstallationID(tx)
 		if err != nil {
 			return nil, err
 		}
-		err = writeMetadata(tx, metadata)
-		// make sure we return the installation id, we set it after write meta so it will not be written twice
 		metadata[InstallationIDKeyName] = installationID
-		return nil, err
+
+		// get setup timestamp
+		setupTS, err := getSetupTimestamp(tx)
+		if err != nil {
+			return nil, err
+		}
+		metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
+		return nil, nil
 	}, db.WithLogger(logging.Dummy()))
 	return metadata, err
 }
