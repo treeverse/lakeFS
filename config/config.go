@@ -299,9 +299,11 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 }
 
 func (c *Config) GetStatsBufferedCollectorArgs() (processID string, opts []stats.BufferedCollectorOpts) {
-	sender := stats.NewDummySender()
+	var sender stats.Sender
 	if c.GetStatsEnabled() && Version != UnreleasedVersion {
 		sender = stats.NewHTTPSender(c.GetStatsAddress(), time.Now)
+	} else {
+		sender = stats.NewDummySender()
 	}
 	return uuid.Must(uuid.NewUUID()).String(),
 		[]stats.BufferedCollectorOpts{
