@@ -120,17 +120,15 @@ func (d *DBMetadataManager) Write() (map[string]string, error) {
 		}
 		// write installation id
 		installationID, err := insertOrGetInstallationID(tx)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			metadata[InstallationIDKeyName] = installationID
 		}
-		metadata[InstallationIDKeyName] = installationID
 
 		// get setup timestamp
 		setupTS, err := getSetupTimestamp(tx)
-		if err != nil {
-			return nil, err
+		if err == nil {
+			metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
 		}
-		metadata[SetupTimestampKeyName] = setupTS.UTC().Format(time.RFC3339)
 		return nil, nil
 	}, db.WithLogger(logging.Dummy()))
 	return metadata, err
