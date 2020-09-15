@@ -4,8 +4,10 @@ import (
 	"context"
 	"os"
 
+	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/uri"
 )
@@ -13,6 +15,7 @@ import (
 const (
 	diffCmdMinArgs = 1
 	diffCmdMaxArgs = 2
+	diffPageSize   = 100
 )
 
 var diffCmd = &cobra.Command{
@@ -26,8 +29,6 @@ var diffCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 
-		var diff []*models.Diff
-		var err error
 		const diffWithOtherArgsCount = 2
 		if len(args) == diffWithOtherArgsCount {
 			if err := IsRefURI(1)(args); err != nil {
@@ -35,29 +36,50 @@ var diffCmd = &cobra.Command{
 			}
 			leftRefURI := uri.Must(uri.Parse(args[0]))
 			rightRefURI := uri.Must(uri.Parse(args[1]))
-
 			if leftRefURI.Repository != rightRefURI.Repository {
 				Die("both references must belong to the same repository", 1)
 			}
-
-			diff, err = client.DiffRefs(context.Background(), leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
-			if err != nil {
-				DieErr(err)
-			}
-			for _, line := range diff {
-				FmtDiff(line, true)
-			}
+			printDiffRefs(client, leftRefURI.Repository, leftRefURI.Ref, rightRefURI.Ref)
 		} else {
 			branchURI := uri.Must(uri.Parse(args[0]))
-			diff, err = client.DiffBranch(context.Background(), branchURI.Repository, branchURI.Ref)
-			if err != nil {
-				DieErr(err)
-			}
-			for _, line := range diff {
-				FmtDiff(line, false)
-			}
+			printDiffBranch(client, branchURI.Repository, branchURI.Ref)
 		}
 	},
+}
+
+func printDiffBranch(client api.Client, repository string, branch string) {
+	var after string
+	for {
+		diff, pagination, err := client.DiffBranch(context.Background(), repository, branch, after, diffPageSize)
+		if err != nil {
+			DieErr(err)
+		}
+		for _, line := range diff {
+			FmtDiff(line, false)
+		}
+		if !swag.BoolValue(pagination.HasMore) {
+			break
+		}
+		after = pagination.NextOffset
+	}
+}
+
+func printDiffRefs(client api.Client, repository string, leftRef string, rightRef string) {
+	var after string
+	for {
+		diff, pagination, err := client.DiffRefs(context.Background(), repository, leftRef, rightRef,
+			after, diffPageSize)
+		if err != nil {
+			DieErr(err)
+		}
+		for _, line := range diff {
+			FmtDiff(line, true)
+		}
+		if !swag.BoolValue(pagination.HasMore) {
+			break
+		}
+		after = pagination.NextOffset
+	}
 }
 
 func FmtDiff(diff *models.Diff, withDirection bool) {
