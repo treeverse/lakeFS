@@ -114,8 +114,12 @@ func TestCreateAndDeleteRows(t *testing.T) {
 				keys:         test.AddedRows,
 				lastModified: lastModified,
 			}
-			stats, err := catalogActions.ApplyImport(context.Background(),
-				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), dryRun)
+			stats := &onboard.InventoryImportStats{
+				Deleted:        new(int64),
+				AddedOrChanged: new(int64),
+			}
+			err := catalogActions.ApplyImport(context.Background(),
+				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), dryRun, stats)
 			if err != nil {
 				t.Fatalf("failed to create/delete objects: %v", err)
 			}
@@ -131,11 +135,11 @@ func TestCreateAndDeleteRows(t *testing.T) {
 			if *catalogCallData.callLog["DeleteEntry"] != expectedDeleteCalls {
 				t.Fatalf("unexpected number of DeleteEntries calls. expected=%d, got=%d", expectedDeleteCalls, *catalogCallData.callLog["DeleteEntry"])
 			}
-			if stats.AddedOrChanged != len(test.AddedRows) {
-				t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), stats.AddedOrChanged)
+			if *stats.AddedOrChanged != int64(len(test.AddedRows)) {
+				t.Fatalf("unexpected number of added entries in returned stats. expected=%d, got=%d", len(test.AddedRows), *stats.AddedOrChanged)
 			}
-			if stats.Deleted != len(test.DeletedRows) {
-				t.Fatalf("unexpected number of deleted entries in returned stats. expected=%d, got=%d", len(test.DeletedRows), stats.Deleted)
+			if *stats.Deleted != int64(len(test.DeletedRows)) {
+				t.Fatalf("unexpected number of deleted entries in returned stats. expected=%d, got=%d", len(test.DeletedRows), *stats.Deleted)
 			}
 			if dryRun {
 				continue

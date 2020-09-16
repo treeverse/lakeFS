@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"sync"
+	"sync/atomic"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -12,15 +13,15 @@ import (
 )
 
 const (
-	DefaultWriteBatchSize = 25000
+	DefaultWriteBatchSize = 2000
 	DefaultWorkerCount    = 16
 	TaskChannelCapacity   = 2 * DefaultWorkerCount
 )
 
 type RepoActions interface {
-	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error)
+	ApplyImport(ctx context.Context, it Iterator, dryRun bool, stats *InventoryImportStats) error
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
-	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
+	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
 }
 
 type CatalogRepoActions struct {
@@ -47,8 +48,7 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	wg.Done()
 }
 
-func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error) {
-	var stats InventoryImportStats
+func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool, stats *InventoryImportStats) error {
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
@@ -65,13 +65,13 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		diffObj := it.Get()
 		obj := diffObj.Obj
 		if diffObj.IsDeleted {
-			stats.Deleted += 1
 			if !dryRun {
 				err := c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, obj.Key)
 				if err != nil {
-					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
+					return fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
 			}
+			atomic.AddInt64(stats.Deleted, 1)
 			continue
 		}
 		entry := catalog.Entry{
@@ -82,16 +82,20 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			Checksum:        obj.Checksum,
 		}
 		currentBatch = append(currentBatch, entry)
-		stats.AddedOrChanged += 1
 		if len(currentBatch) >= batchSize {
 			previousBatch := currentBatch
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
+				atomic.AddInt64(stats.AddedOrChanged, int64(len(previousBatch)))
 				continue
 			}
 			tsk := &task{
 				f: func() error {
-					return c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+					if err == nil {
+						atomic.AddInt64(stats.AddedOrChanged, int64(len(previousBatch)))
+					}
+					return err
 				},
 				err: new(error),
 			}
@@ -102,20 +106,21 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 	close(tasksChan)
 	wg.Wait()
 	if it.Err() != nil {
-		return nil, it.Err()
+		return it.Err()
 	}
 	for _, err := range errs {
 		if *err != nil {
-			return nil, *err
+			return *err
 		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
 		err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 		if err != nil {
-			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
+			return fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
-	return &stats, nil
+	atomic.AddInt64(stats.AddedOrChanged, int64(len(currentBatch)))
+	return nil
 }
 
 func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {
@@ -136,10 +141,9 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 	return commit, nil
 }
 
-func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
-	_, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
+func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
+	return c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
 		c.committer,
 		metadata)
-	return err
 }

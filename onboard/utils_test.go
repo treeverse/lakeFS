@@ -70,26 +70,22 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.InventoryImportStats, error) {
-	stats := onboard.InventoryImportStats{
-		AddedOrChanged: len(m.objectActions.Added),
-		Deleted:        len(m.objectActions.Deleted),
-	}
+func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool, stats *onboard.InventoryImportStats) error {
 	for it.Next() {
 		diffObj := it.Get()
 		if diffObj.IsDeleted {
 			if !dryRun {
 				m.objectActions.Deleted = append(m.objectActions.Deleted, diffObj.Obj.Key)
 			}
-			stats.Deleted += 1
+			*stats.Deleted += 1
 		} else {
 			if !dryRun {
 				m.objectActions.Added = append(m.objectActions.Added, diffObj.Obj.Key)
 			}
-			stats.AddedOrChanged += 1
+			*stats.AddedOrChanged += 1
 		}
 	}
-	return &stats, nil
+	return nil
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
@@ -99,9 +95,9 @@ func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catal
 	return nil, nil
 }
 
-func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) error {
+func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
 	m.lastCommitMetadata = metadata
-	return nil
+	return &catalog.CommitLog{}, nil
 }
 
 type mockInventoryIterator struct {

@@ -25,6 +25,13 @@ type Importer struct {
 	previousCommit     *catalog.CommitLog
 }
 
+type ImportProgressCallback func(*InventoryImportStats)
+
+type ImportProgress struct {
+	Stats                  *InventoryImportStats
+	MetadataReadPercentage int
+}
+
 type ImporterConfig struct {
 	CommitUsername     string
 	InventoryURL       string
@@ -34,10 +41,11 @@ type ImporterConfig struct {
 	CatalogActions     RepoActions
 }
 type InventoryImportStats struct {
-	AddedOrChanged       int
-	Deleted              int
+	AddedOrChanged       *int64
+	Deleted              *int64
 	DryRun               bool
 	PreviousInventoryURL string
+	CommitRef            string
 	PreviousImportDate   time.Time
 }
 
@@ -60,7 +68,7 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Importer
 	res.previousCommit = previousCommit
 	res.inventory, err = config.InventoryGenerator.GenerateInventory(ctx, logger, config.InventoryURL, res.previousCommit != nil)
 	if err != nil {
-		return nil, fmt.Errorf("failed to read inventory: %w", err)
+		return nil, err
 	}
 	return res, nil
 }
@@ -79,7 +87,7 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	return NewDiffIterator(previousObjs, currentObjs), nil
 }
 
-func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportStats, error) {
+func (s *Importer) Import(ctx context.Context, dryRun bool, stats *InventoryImportStats) error {
 	var dataToImport Iterator
 	var err error
 	if s.previousCommit == nil {
@@ -89,12 +97,12 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportSta
 	} else {
 		dataToImport, err = s.diffIterator(ctx, *s.previousCommit)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
-	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
+	err = s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun, stats)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	stats.DryRun = dryRun
 	if s.previousCommit != nil {
@@ -103,10 +111,11 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*InventoryImportSta
 	}
 	if !dryRun {
 		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
-		err = s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
+		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
-			return nil, err
+			return err
 		}
+		stats.CommitRef = commitLog.Reference
 	}
-	return stats, nil
+	return nil
 }

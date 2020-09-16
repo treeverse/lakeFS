@@ -1,0 +1,136 @@
+package cmd
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"os"
+	"regexp"
+	"time"
+
+	"github.com/jedib0t/go-pretty/text"
+	"github.com/spf13/cobra"
+	lakectl "github.com/treeverse/lakefs/cmd/lakectl/cmd"
+	"github.com/treeverse/lakefs/uri"
+
+	"github.com/treeverse/lakefs/block/factory"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/config"
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/onboard"
+)
+
+const DryRunFlagName = "dry-run"
+
+var importCmd = &cobra.Command{
+	Use:   "import <repository uri> <inventory manifest url> ",
+	Short: "Import data from S3 to a lakeFS repository",
+	Long:  "Import data from an S3 inventory to a lakeFS repository without copying the data",
+	Args: lakectl.ValidationChain(
+		lakectl.HasNArgs(2),
+		lakectl.IsRepoURI(0),
+		func(args []string) error {
+			match, err := regexp.MatchString("s3://.*/manifest.json", args[1])
+			if err != nil {
+				return err
+			}
+			if !match {
+				return fmt.Errorf("invalid manifest URL: [%s]. manfiest URL format: s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json", args[1])
+			}
+			return nil
+		},
+	),
+	Run: func(cmd *cobra.Command, args []string) {
+		ctx := context.Background()
+		conf := config.NewConfig()
+		logger := logging.FromContext(ctx)
+		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		blockStore, err := factory.BuildBlockAdapter(cfg)
+		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
+		u := uri.Must(uri.Parse(args[0]))
+		if err != nil {
+			fmt.Printf("failed to create block adapter: %v\n", err)
+			os.Exit(1)
+		}
+		var repo *catalog.Repository
+		if !dryRun {
+			repo, err = cataloger.GetRepository(ctx, u.Repository)
+			if err != nil {
+				fmt.Printf("failed to read repository %s: %v\n", u.Repository, err)
+				os.Exit(1)
+			}
+			_, err = cataloger.GetBranchReference(ctx, u.Repository, onboard.DefaultBranchName)
+			if errors.Is(err, db.ErrNotFound) {
+				fmt.Printf("Branch %s does not exist, creating.\n", onboard.DefaultBranchName)
+				_, err = cataloger.CreateBranch(ctx, u.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
+				if err != nil {
+					fmt.Printf("failed to create branch %s in repo %s: %v\n", onboard.DefaultBranchName, u.Repository, err)
+					os.Exit(1)
+				}
+			} else if err != nil {
+				fmt.Printf("error when fetching branches for repo %s: %v\n", u.Repository, err)
+				os.Exit(1)
+			}
+		}
+		importConfig := &onboard.ImporterConfig{
+			CommitUsername:     "lakefs",
+			InventoryURL:       args[1],
+			Repository:         u.Repository,
+			InventoryGenerator: blockStore,
+			Cataloger:          cataloger,
+		}
+		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
+		if err != nil {
+			fmt.Printf("import failed: %v\n", err)
+			os.Exit(1)
+		}
+		stats := &onboard.InventoryImportStats{
+			AddedOrChanged: new(int64),
+			Deleted:        new(int64),
+		}
+		ticker := time.NewTicker(500 * time.Millisecond)
+		done := make(chan bool)
+
+		go func() {
+			for {
+				select {
+				case <-done:
+					return
+				case _ = <-ticker.C:
+					if stats == nil {
+						continue
+					}
+					fmt.Printf("\rProgress: added_or_changed=%d deleted=%d", *stats.AddedOrChanged, *stats.Deleted)
+				}
+			}
+		}()
+		err = importer.Import(ctx, dryRun, stats)
+		close(done)
+
+		if err != nil {
+			fmt.Printf("import failed: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", *stats.AddedOrChanged))
+		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", *stats.Deleted))
+		fmt.Print(text.FgYellow.Sprint("Previously imported inventory: "), fmt.Sprintf("%s\n", stats.PreviousInventoryURL))
+		fmt.Print(text.FgYellow.Sprint("Previous import date: "), fmt.Sprintf("%v\n\n", stats.PreviousImportDate))
+
+		if !dryRun {
+			fmt.Print(text.FgYellow.Sprint("Commit ref: "), fmt.Sprintf("%s\n\n", stats.CommitRef))
+			fmt.Printf("Import finished successfully to branch %s\n", onboard.DefaultBranchName)
+			fmt.Printf("To list imported objects, run:\n\tlakectl fs ls lakefs://%s@%s/\n", u.Repository, stats.CommitRef)
+			fmt.Printf("To merge the changes to your main branch, run:\n\tlakectl merge lakefs://%s@%s/ lakefs://%s@%s/\n", u.Repository, onboard.DefaultBranchName, u.Repository, repo.DefaultBranch)
+		} else {
+			fmt.Println("Dry run successful. No changes were made.")
+		}
+	},
+}
+
+//nolint:gochecknoinits
+func init() {
+	rootCmd.AddCommand(importCmd)
+	importCmd.Flags().Bool(DryRunFlagName, false, "read inventory and print import stats without adding objects")
+}

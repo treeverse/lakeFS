@@ -96,7 +96,11 @@ func TestImport(t *testing.T) {
 			if err != nil {
 				t.Fatalf("failed to create importer: %v", err)
 			}
-			stats, err := importer.Import(context.Background(), dryRun)
+			stats := &onboard.InventoryImportStats{
+				AddedOrChanged: new(int64),
+				Deleted:        new(int64),
+			}
+			err = importer.Import(context.Background(), dryRun, stats)
 			if err != nil {
 				if !test.ExpectedErr {
 					t.Fatalf("unexpected error: %v", err)
@@ -108,11 +112,11 @@ func TestImport(t *testing.T) {
 				t.Fatalf("error was expected but none was returned")
 			}
 
-			if !reflect.DeepEqual(stats.AddedOrChanged, len(test.ExpectedAdded)) {
-				t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), stats.AddedOrChanged)
+			if *stats.AddedOrChanged != int64(len(test.ExpectedAdded)) {
+				t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), *stats.AddedOrChanged)
 			}
-			if !reflect.DeepEqual(stats.Deleted, len(test.ExpectedDeleted)) {
-				t.Fatalf("number of deleted objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedDeleted), stats.Deleted)
+			if *stats.Deleted != int64(len(test.ExpectedDeleted)) {
+				t.Fatalf("number of deleted objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedDeleted), *stats.Deleted)
 			}
 			var expectedAddedToCatalog, expectedDeletedFromCatalog []string
 			if !dryRun {
