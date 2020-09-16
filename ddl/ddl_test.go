@@ -3,6 +3,7 @@ package ddl_test
 import (
 	"context"
 	"errors"
+	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -31,6 +32,11 @@ var (
 	pool        *dockertest.Pool
 	databaseURI string
 	db          *sqlx.DB
+
+	postgresUrl = flag.String("postgres-url", "", "Postgres connection string.  If unset, run a Postgres in a Docker container.  If set, should have ddl.sql already loaded.")
+	parallelism = flag.Int("parallelism", 16, "Number of concurrent client worker goroutines.")
+	bulk        = flag.Int("bulk", 2_000, "Number of tasks to acquire at once in each client goroutine.")
+	taskFactor  = flag.Int("task-factor", 20_000, "Scale benchmark N by this many tasks")
 )
 
 // taskIdSlice attaches the methods of sort.Interface to []TaskId.
@@ -43,6 +49,10 @@ func (p taskIdSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 // runDBInstance starts a test Postgres server inside container pool, and returns a connection
 // URI and a closer function.
 func runDBInstance(pool *dockertest.Pool) (string, func()) {
+	if *postgresUrl != "" {
+		return *postgresUrl, nil
+	}
+
 	resource, err := pool.Run("postgres", "11", []string{
 		"POSTGRES_USER=parade",
 		"POSTGRES_PASSWORD=parade",
@@ -585,12 +595,7 @@ func TestNotification(t *testing.T) {
 }
 
 func BenchmarkFanIn(b *testing.B) {
-	const (
-		parallelism = 5
-		bulk        = 1000
-	)
-
-	numTasks := b.N * 50000
+	numTasks := b.N * *taskFactor
 
 	w := wrapper{b, db}
 
@@ -611,18 +616,19 @@ func BenchmarkFanIn(b *testing.B) {
 		receivedDone bool
 		err          error
 	}
-	resultCh := make([]chan result, parallelism)
-	for i := 0; i < parallelism; i++ {
+	resultCh := make([]chan result, *parallelism)
+	for i := 0; i < *parallelism; i++ {
 		resultCh[i] = make(chan result)
 	}
 
+	startTime := time.Now() // Cannot access Go benchmark timer, get it manually
 	b.ResetTimer()
-	for i := 0; i < parallelism; i++ {
+	for i := 0; i < *parallelism; i++ {
 		go func(i int) {
 			count := 0
 			receivedDone := false
 			for {
-				size := int(bulk + rand.Int31n(bulk/10) - bulk/10)
+				size := *bulk + int(rand.Int31n(int32(*bulk/10))) - *bulk/10
 				tasks, err := w.ownTasks(ddl.ActorId(fmt.Sprintf("worker-%d", i)), size, []string{"part", "done"}, nil)
 				if err != nil {
 					resultCh[i] <- result{err: err}
@@ -645,7 +651,7 @@ func BenchmarkFanIn(b *testing.B) {
 	}
 
 	var total, numDone int
-	for i := 0; i < parallelism; i++ {
+	for i := 0; i < *parallelism; i++ {
 		r := <-resultCh[i]
 		if r.err != nil {
 			b.Errorf("goroutine %d failed: %s", i, r.err)
@@ -656,6 +662,7 @@ func BenchmarkFanIn(b *testing.B) {
 		}
 	}
 	b.StopTimer()
+	duration := time.Since(startTime)
 	if total != numTasks {
 		b.Errorf("expected %d tasks but processed %d", numTasks, total)
 	}
@@ -663,5 +670,6 @@ func BenchmarkFanIn(b *testing.B) {
 		b.Errorf("expected single goroutine to process \"done\" but got %d", numDone)
 	}
 	b.ReportMetric(float64(numTasks), "num_tasks")
-	b.ReportMetric(float64(parallelism), "num_goroutines")
+	b.ReportMetric(float64(*parallelism), "num_goroutines")
+	b.ReportMetric(float64(float64(numTasks)/float64(duration)*1e9), "tasks/sec")
 }
