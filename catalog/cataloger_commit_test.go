@@ -254,5 +254,37 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Errorf("Delete should left no entries, got %d", len(entries))
 		}
 	})
+}
 
+func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	defer func() { _ = c.Close() }()
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+
+	// create file
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file42", nil, "")
+	_, err := c.Commit(ctx, repository, "master", "commit new file", "tester", nil)
+	testutil.MustDo(t, "commit new file", err)
+
+	// create branch
+	branchCommit, err := c.CreateBranch(ctx, repository, "branch1", "master")
+	testutil.MustDo(t, "create branch", err)
+
+	// delete file on branch (with commit) - should create tombstone
+	err = c.DeleteEntry(ctx, repository, "branch1", "file42")
+	testutil.MustDo(t, "delete entry", err)
+
+	// commit the delete - should create tombstone
+	_, err = c.Commit(ctx, repository, "branch1", "commit delete file", "tester", nil)
+	testutil.MustDo(t, "commit delete file", err)
+
+	// verify that the file is deleted
+	ent, err := c.GetEntry(ctx, repository, branchCommit.Reference, "file42", GetEntryParams{})
+	testutil.MustDo(t, "get entry from create branch commit - branch1", err)
+
+	checksumFile42 := testCreateEntryCalcChecksum("file42", "")
+	if ent.Checksum != checksumFile42 {
+		t.Fatalf("get entry from branch commit checksum=%s, expected, %s", ent.Checksum, checksumFile42)
+	}
 }
