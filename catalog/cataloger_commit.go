@@ -39,16 +39,17 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			return nil, fmt.Errorf("delete uncommitted tombstones: %w", err)
 		}
 
-		affectedTombstone, err := commitTombstones(tx, branchID, lastCommitID)
-		if err != nil {
-			return nil, fmt.Errorf("commit tombstones: %w", err)
-		}
-
 		// uncommitted to committed entries
 		commitID, err := getNextCommitID(tx)
 		if err != nil {
 			return nil, fmt.Errorf("next commit id: %w", err)
 		}
+
+		affectedTombstone, err := commitTombstones(tx, branchID, commitID)
+		if err != nil {
+			return nil, fmt.Errorf("commit tombstones: %w", err)
+		}
+
 		affectedNew, err := commitEntries(tx, branchID, commitID)
 		if err != nil {
 			return nil, fmt.Errorf("commit entries: %w", err)
@@ -108,7 +109,7 @@ func commitDeleteUncommittedTombstones(tx sqlx.Execer, branchID int64, commitID 
 }
 
 func commitTombstones(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2, max_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND is_deleted`,
+	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND is_tombstone`,
 		branchID, commitID)
 	if err != nil {
 		return 0, err
