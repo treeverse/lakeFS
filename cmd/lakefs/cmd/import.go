@@ -39,49 +39,52 @@ var importCmd = &cobra.Command{
 		lakectl.IsRepoURI(0),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
+		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
+		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
 		ctx := context.Background()
 		conf := config.NewConfig()
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 		blockStore, err := factory.BuildBlockAdapter(cfg)
-		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
-
 		u := uri.Must(uri.Parse(args[0]))
 		if err != nil {
 			fmt.Printf("failed to create block adapter: %v\n", err)
 			os.Exit(1)
 		}
-		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
+		repoName := u.Repository
 		match, err := regexp.MatchString("s3://.*/manifest.json", manifestURL)
-
 		if err != nil || !match {
 			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestURLFormat)
 		}
 		var repo *catalog.Repository
 		if !dryRun {
-			repo, err = cataloger.GetRepository(ctx, u.Repository)
+			repo, err = cataloger.GetRepository(ctx, repoName)
 			if err != nil {
-				fmt.Printf("failed to read repository %s: %v\n", u.Repository, err)
+				fmt.Printf("failed to read repository %s: %v\n", repoName, err)
 				os.Exit(1)
 			}
-			_, err = cataloger.GetBranchReference(ctx, u.Repository, onboard.DefaultBranchName)
+			_, err = cataloger.GetBranchReference(ctx, repoName, onboard.DefaultBranchName)
 			if errors.Is(err, db.ErrNotFound) {
 				fmt.Printf("Branch %s does not exist, creating.\n", onboard.DefaultBranchName)
-				_, err = cataloger.CreateBranch(ctx, u.Repository, onboard.DefaultBranchName, repo.DefaultBranch)
+				_, err = cataloger.CreateBranch(ctx, repoName, onboard.DefaultBranchName, repo.DefaultBranch)
 				if err != nil {
-					fmt.Printf("failed to create branch %s in repo %s: %v\n", onboard.DefaultBranchName, u.Repository, err)
+					fmt.Printf("failed to create branch %s in repo %s: %v\n", onboard.DefaultBranchName, repoName, err)
 					os.Exit(1)
 				}
 			} else if err != nil {
-				fmt.Printf("error when fetching branches for repo %s: %v\n", u.Repository, err)
+				fmt.Printf("error when fetching branches for repo %s: %v\n", repoName, err)
 				os.Exit(1)
+			} else {
+				fmt.Printf("Branch %s already exists, no need to create it.\n", onboard.DefaultBranchName)
 			}
+		} else {
+			fmt.Println("Starting import dry run. Will not perform any changes.")
 		}
 		importConfig := &onboard.Config{
 			CommitUsername:     "lakefs",
 			InventoryURL:       manifestURL,
-			Repository:         u.Repository,
+			Repository:         repoName,
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 		}
@@ -102,14 +105,15 @@ var importCmd = &cobra.Command{
 		}
 		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", *stats.AddedOrChanged))
 		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", *stats.Deleted))
-		fmt.Print(text.FgYellow.Sprint("Previously imported inventory: "), fmt.Sprintf("%s\n", stats.PreviousInventoryURL))
-		fmt.Print(text.FgYellow.Sprint("Previous import date: "), fmt.Sprintf("%v\n\n", stats.PreviousImportDate))
-
+		if stats.PreviousInventoryURL != "" {
+			fmt.Print(text.FgYellow.Sprint("Previously imported inventory: "), fmt.Sprintf("%s\n", stats.PreviousInventoryURL))
+			fmt.Print(text.FgYellow.Sprint("Previous import date: "), fmt.Sprintf("%v\n\n", stats.PreviousImportDate))
+		}
 		if !dryRun {
 			fmt.Print(text.FgYellow.Sprint("Commit ref: "), fmt.Sprintf("%s\n\n", stats.CommitRef))
-			fmt.Printf("Import finished successfully to branch %s\n", onboard.DefaultBranchName)
-			fmt.Printf("To list imported objects, run:\n\tlakectl fs ls lakefs://%s@%s/\n", u.Repository, stats.CommitRef)
-			fmt.Printf("To merge the changes to your main branch, run:\n\tlakectl merge lakefs://%s@%s/ lakefs://%s@%s/\n", u.Repository, onboard.DefaultBranchName, u.Repository, repo.DefaultBranch)
+			fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
+			fmt.Printf("To list imported objects, run:\n\tlakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
+			fmt.Printf("To merge the changes to your main branch, run:\n\tlakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
 		} else {
 			fmt.Println("Dry run successful. No changes were made.")
 		}
@@ -121,4 +125,5 @@ func init() {
 	rootCmd.AddCommand(importCmd)
 	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory and print stats, without making any changes")
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
+	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
 }
