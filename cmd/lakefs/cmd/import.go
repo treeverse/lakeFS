@@ -24,8 +24,8 @@ import (
 
 const (
 	DryRunFlagName         = "dry-run"
-	ManifestUrlFlagName    = "manifest"
-	ManifestUrlFormat      = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
+	ManifestURLFlagName    = "manifest"
+	ManifestURLFormat      = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs       = 1
 	ImportSpinnerFrequency = 100 * time.Millisecond
 )
@@ -52,11 +52,11 @@ var importCmd = &cobra.Command{
 			fmt.Printf("failed to create block adapter: %v\n", err)
 			os.Exit(1)
 		}
-		manifestUrl, _ := cmd.Flags().GetString(ManifestUrlFlagName)
-		match, err := regexp.MatchString("s3://.*/manifest.json", manifestUrl)
+		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
+		match, err := regexp.MatchString("s3://.*/manifest.json", manifestURL)
 
 		if err != nil || !match {
-			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestUrlFormat)
+			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestURLFormat)
 		}
 		var repo *catalog.Repository
 		if !dryRun {
@@ -80,7 +80,7 @@ var importCmd = &cobra.Command{
 		}
 		importConfig := &onboard.Config{
 			CommitUsername:     "lakefs",
-			InventoryURL:       manifestUrl,
+			InventoryURL:       manifestURL,
 			Repository:         u.Repository,
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
@@ -120,5 +120,5 @@ var importCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(importCmd)
 	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory and print stats, without making any changes")
-	importCmd.Flags().StringP(ManifestUrlFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestUrlFormat))
+	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 }
