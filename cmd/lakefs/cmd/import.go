@@ -8,6 +8,7 @@ import (
 	"regexp"
 	"time"
 
+	"github.com/briandowns/spinner"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
 	lakectl "github.com/treeverse/lakefs/cmd/lakectl/cmd"
@@ -21,25 +22,21 @@ import (
 	"github.com/treeverse/lakefs/onboard"
 )
 
-const DryRunFlagName = "dry-run"
+const (
+	DryRunFlagName         = "dry-run"
+	ManifestUrlFlagName    = "manifest"
+	ManifestUrlFormat      = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
+	ImportCmdNumArgs       = 1
+	ImportSpinnerFrequency = 100 * time.Millisecond
+)
 
 var importCmd = &cobra.Command{
-	Use:   "import <repository uri> <inventory manifest url> ",
+	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
-	Long:  "Import data from an S3 inventory to a lakeFS repository without copying the data",
+	Long:  "Import from an S3 inventory to lakeFS without copying the data.",
 	Args: lakectl.ValidationChain(
-		lakectl.HasNArgs(2),
+		lakectl.HasNArgs(ImportCmdNumArgs),
 		lakectl.IsRepoURI(0),
-		func(args []string) error {
-			match, err := regexp.MatchString("s3://.*/manifest.json", args[1])
-			if err != nil {
-				return err
-			}
-			if !match {
-				return fmt.Errorf("invalid manifest URL: [%s]. manfiest URL format: s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json", args[1])
-			}
-			return nil
-		},
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
@@ -49,10 +46,17 @@ var importCmd = &cobra.Command{
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 		blockStore, err := factory.BuildBlockAdapter(cfg)
 		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
+
 		u := uri.Must(uri.Parse(args[0]))
 		if err != nil {
 			fmt.Printf("failed to create block adapter: %v\n", err)
 			os.Exit(1)
+		}
+		manifestUrl, _ := cmd.Flags().GetString(ManifestUrlFlagName)
+		match, err := regexp.MatchString("s3://.*/manifest.json", manifestUrl)
+
+		if err != nil || !match {
+			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestUrlFormat)
 		}
 		var repo *catalog.Repository
 		if !dryRun {
@@ -74,41 +78,24 @@ var importCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		}
-		importConfig := &onboard.ImporterConfig{
+		importConfig := &onboard.Config{
 			CommitUsername:     "lakefs",
-			InventoryURL:       args[1],
+			InventoryURL:       manifestUrl,
 			Repository:         u.Repository,
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 		}
-		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
+		s := spinner.New(spinner.CharSets[34], ImportSpinnerFrequency)
+		importer, err := onboard.CreateImporter(ctx, logger, func(event *onboard.ProgressEvent) {
+			s.Suffix = fmt.Sprintf(" Objects Created/Changed: %d\tObjects Deleted: %d", *event.AddedOrChanged, *event.Deleted)
+		}, importConfig)
 		if err != nil {
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
-		stats := &onboard.InventoryImportStats{
-			AddedOrChanged: new(int64),
-			Deleted:        new(int64),
-		}
-		ticker := time.NewTicker(500 * time.Millisecond)
-		done := make(chan bool)
-
-		go func() {
-			for {
-				select {
-				case <-done:
-					return
-				case _ = <-ticker.C:
-					if stats == nil {
-						continue
-					}
-					fmt.Printf("\rProgress: added_or_changed=%d deleted=%d", *stats.AddedOrChanged, *stats.Deleted)
-				}
-			}
-		}()
-		err = importer.Import(ctx, dryRun, stats)
-		close(done)
-
+		s.Start()
+		stats, err := importer.Import(ctx, dryRun)
+		s.Stop()
 		if err != nil {
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
@@ -132,5 +119,6 @@ var importCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(importCmd)
-	importCmd.Flags().Bool(DryRunFlagName, false, "read inventory and print import stats without adding objects")
+	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory and print stats, without making any changes")
+	importCmd.Flags().StringP(ManifestUrlFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestUrlFormat))
 }

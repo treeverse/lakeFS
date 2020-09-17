@@ -109,7 +109,7 @@ func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool 
 	return row1.Key < row2.Key
 }
 
-func CreateCommitMetadata(inv block.Inventory, stats InventoryImportStats) catalog.Metadata {
+func CreateCommitMetadata(inv block.Inventory, stats Stats) catalog.Metadata {
 	return catalog.Metadata{
 		"inventory_url":            inv.InventoryURL(),
 		"source":                   inv.SourceName(),

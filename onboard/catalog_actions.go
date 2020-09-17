@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -13,13 +12,13 @@ import (
 )
 
 const (
-	DefaultWriteBatchSize = 2000
+	DefaultWriteBatchSize = 25000
 	DefaultWorkerCount    = 16
 	TaskChannelCapacity   = 2 * DefaultWorkerCount
 )
 
 type RepoActions interface {
-	ApplyImport(ctx context.Context, it Iterator, dryRun bool, stats *InventoryImportStats) error
+	ApplyImport(ctx context.Context, it Iterator, stats *Stats, dryRun bool) error
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
 }
@@ -48,7 +47,7 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	wg.Done()
 }
 
-func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool, stats *InventoryImportStats) error {
+func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, stats *Stats, dryRun bool) error {
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
@@ -71,7 +70,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 					return fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
 			}
-			atomic.AddInt64(stats.Deleted, 1)
+			stats.AddDeleted(1)
 			continue
 		}
 		entry := catalog.Entry{
@@ -86,14 +85,14 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			previousBatch := currentBatch
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
-				atomic.AddInt64(stats.AddedOrChanged, int64(len(previousBatch)))
+				stats.AddCreated(int64(len(previousBatch)))
 				continue
 			}
 			tsk := &task{
 				f: func() error {
 					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
 					if err == nil {
-						atomic.AddInt64(stats.AddedOrChanged, int64(len(previousBatch)))
+						stats.AddCreated(int64(len(previousBatch)))
 					}
 					return err
 				},
@@ -119,7 +118,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			return fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
-	atomic.AddInt64(stats.AddedOrChanged, int64(len(currentBatch)))
+	stats.AddCreated(int64(len(currentBatch)))
 	return nil
 }
 

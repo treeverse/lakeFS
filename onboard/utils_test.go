@@ -70,19 +70,19 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool, stats *onboard.InventoryImportStats) error {
+func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, stats *onboard.Stats, dryRun bool) error {
 	for it.Next() {
 		diffObj := it.Get()
 		if diffObj.IsDeleted {
 			if !dryRun {
 				m.objectActions.Deleted = append(m.objectActions.Deleted, diffObj.Obj.Key)
 			}
-			*stats.Deleted += 1
+			stats.AddDeleted(1)
 		} else {
 			if !dryRun {
 				m.objectActions.Added = append(m.objectActions.Added, diffObj.Obj.Key)
 			}
-			*stats.AddedOrChanged += 1
+			stats.AddCreated(1)
 		}
 	}
 	return nil

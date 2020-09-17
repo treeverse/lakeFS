@@ -42,7 +42,7 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", logging.Default())
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", nil, logging.Default())
 	c.(*onboard.CatalogRepoActions).WriteBatchSize = 5
 	catalogActions, ok := c.(*onboard.CatalogRepoActions)
 	if !ok {
@@ -114,12 +114,12 @@ func TestCreateAndDeleteRows(t *testing.T) {
 				keys:         test.AddedRows,
 				lastModified: lastModified,
 			}
-			stats := &onboard.InventoryImportStats{
+			stats := &onboard.Stats{
 				Deleted:        new(int64),
 				AddedOrChanged: new(int64),
 			}
 			err := catalogActions.ApplyImport(context.Background(),
-				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), dryRun, stats)
+				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), stats, dryRun)
 			if err != nil {
 				t.Fatalf("failed to create/delete objects: %v", err)
 			}

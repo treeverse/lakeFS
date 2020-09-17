@@ -2245,24 +2245,24 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		if err == nil {
 			username = userModel.Username
 		}
-		importConfig := &onboard.ImporterConfig{
+		importConfig := &onboard.Config{
 			CommitUsername:     username,
 			InventoryURL:       params.ManifestURL,
 			Repository:         params.Repository,
 			InventoryGenerator: deps.BlockAdapter,
 			Cataloger:          deps.Cataloger,
 		}
-		importer, err := onboard.CreateImporter(deps.ctx, deps.logger, importConfig)
+		importer, err := onboard.CreateImporter(deps.ctx, deps.logger, nil, importConfig)
 		if err != nil {
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		importStats := &onboard.InventoryImportStats{
+		importStats := &onboard.Stats{
 			AddedOrChanged: new(int64),
 			Deleted:        new(int64),
 		}
 		if *params.DryRun {
-			err = importer.Import(deps.ctx, true, importStats)
+			importStats, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
@@ -2284,7 +2284,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))
 			}
-			err = importer.Import(params.HTTPRequest.Context(), false, importStats)
+			importStats, err = importer.Import(params.HTTPRequest.Context(), false)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 					WithPayload(responseErrorFrom(err))

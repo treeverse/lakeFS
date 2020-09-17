@@ -78,7 +78,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 	}
 	output, err := s3svc.GetObject(&s3.GetObjectInput{Bucket: &u.Host, Key: &u.Path})
 	if err != nil {
-		return nil, fmt.Errorf("failed to read manifest.json from %s. error=%v", manifestURL, err)
+		return nil, fmt.Errorf("failed to read manifest.json from %s. error=%w", manifestURL, err)
 	}
 	var m Manifest
 	err = json.NewDecoder(output.Body).Decode(&m)

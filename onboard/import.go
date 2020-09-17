@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -23,16 +22,10 @@ type Importer struct {
 	CatalogActions     RepoActions
 	logger             logging.Logger
 	previousCommit     *catalog.CommitLog
+	cb                 ProgressCallback
 }
 
-type ImportProgressCallback func(*InventoryImportStats)
-
-type ImportProgress struct {
-	Stats                  *InventoryImportStats
-	MetadataReadPercentage int
-}
-
-type ImporterConfig struct {
+type Config struct {
 	CommitUsername     string
 	InventoryURL       string
 	Repository         string
@@ -40,23 +33,16 @@ type ImporterConfig struct {
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
 }
-type InventoryImportStats struct {
-	AddedOrChanged       *int64
-	Deleted              *int64
-	DryRun               bool
-	PreviousInventoryURL string
-	CommitRef            string
-	PreviousImportDate   time.Time
-}
 
 var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")
 
-func CreateImporter(ctx context.Context, logger logging.Logger, config *ImporterConfig) (importer *Importer, err error) {
+func CreateImporter(ctx context.Context, logger logging.Logger, cb ProgressCallback, config *Config) (importer *Importer, err error) {
 	res := &Importer{
 		repository:         config.Repository,
 		inventoryGenerator: config.InventoryGenerator,
 		logger:             logger,
 		CatalogActions:     config.CatalogActions,
+		cb:                 cb,
 	}
 	if res.CatalogActions == nil {
 		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
@@ -87,7 +73,7 @@ func (s *Importer) diffIterator(ctx context.Context, commit catalog.CommitLog) (
 	return NewDiffIterator(previousObjs, currentObjs), nil
 }
 
-func (s *Importer) Import(ctx context.Context, dryRun bool, stats *InventoryImportStats) error {
+func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	var dataToImport Iterator
 	var err error
 	if s.previousCommit == nil {
@@ -97,12 +83,14 @@ func (s *Importer) Import(ctx context.Context, dryRun bool, stats *InventoryImpo
 	} else {
 		dataToImport, err = s.diffIterator(ctx, *s.previousCommit)
 		if err != nil {
-			return err
+			return nil, err
 		}
 	}
-	err = s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun, stats)
+
+	stats := NewStats(s.cb)
+	err = s.CatalogActions.ApplyImport(ctx, dataToImport, stats, dryRun)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	stats.DryRun = dryRun
 	if s.previousCommit != nil {
@@ -113,9 +101,9 @@ func (s *Importer) Import(ctx context.Context, dryRun bool, stats *InventoryImpo
 		commitMetadata := CreateCommitMetadata(s.inventory, *stats)
 		commitLog, err := s.CatalogActions.Commit(ctx, fmt.Sprintf(CommitMsgTemplate, s.inventory.SourceName()), commitMetadata)
 		if err != nil {
-			return err
+			return nil, err
 		}
 		stats.CommitRef = commitLog.Reference
 	}
-	return nil
+	return stats, nil
 }

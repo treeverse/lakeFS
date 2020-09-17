@@ -85,22 +85,18 @@ func TestImport(t *testing.T) {
 				previousInventory:    test.PreviousInventory,
 				sourceBucket:         "example-repo",
 			}
-			config := &onboard.ImporterConfig{
+			config := &onboard.Config{
 				CommitUsername:     "committer",
 				InventoryURL:       newInventoryURL,
 				Repository:         "example-repo",
 				InventoryGenerator: inventoryGenerator,
 				CatalogActions:     &catalogActionsMock,
 			}
-			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), config)
+			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), nil, config)
 			if err != nil {
 				t.Fatalf("failed to create importer: %v", err)
 			}
-			stats := &onboard.InventoryImportStats{
-				AddedOrChanged: new(int64),
-				Deleted:        new(int64),
-			}
-			err = importer.Import(context.Background(), dryRun, stats)
+			stats, err := importer.Import(context.Background(), dryRun)
 			if err != nil {
 				if !test.ExpectedErr {
 					t.Fatalf("unexpected error: %v", err)
