@@ -104,6 +104,7 @@ func runDBInstance(pool *dockertest.Pool) (string, func()) {
 
 func TestMain(m *testing.M) {
 	var err error
+	flag.Parse()
 	pool, err = dockertest.NewPool("")
 	if err != nil {
 		log.Fatalf("could not connect to Docker: %s", err)
@@ -112,8 +113,9 @@ func TestMain(m *testing.M) {
 	databaseURI, dbCleanup = runDBInstance(pool)
 	defer dbCleanup() // In case we don't reach the cleanup action.
 	db = sqlx.MustConnect("pgx", databaseURI)
+	defer db.Close()
 	code := m.Run()
-	if _, ok := os.LookupEnv("GOTEST_KEEP_DB"); !ok {
+	if _, ok := os.LookupEnv("GOTEST_KEEP_DB"); !ok && dbCleanup != nil {
 		dbCleanup() // os.Exit() below won't call the defered cleanup, do it now.
 	}
 	os.Exit(code)
@@ -157,6 +159,7 @@ func (w wrapper) insertTasks(tasks []ddl.TaskData) {
 	if err != nil {
 		w.t.Fatalf("pgx.Connect: %s", err)
 	}
+	defer conn.Close(ctx)
 
 	prefixedTasks := make([]ddl.TaskData, len(tasks))
 	for i := 0; i < len(tasks); i++ {
