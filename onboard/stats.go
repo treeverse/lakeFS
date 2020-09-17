@@ -39,11 +39,11 @@ func (s *Stats) reportProgress() {
 }
 
 func (s *Stats) AddCreated(n int64) {
-	s.reportProgress()
 	atomic.AddInt64(s.AddedOrChanged, n)
+	s.reportProgress()
 }
 
 func (s *Stats) AddDeleted(n int64) {
-	s.reportProgress()
 	atomic.AddInt64(s.Deleted, n)
+	s.reportProgress()
 }

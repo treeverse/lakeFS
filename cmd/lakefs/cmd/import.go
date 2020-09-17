@@ -4,8 +4,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
 	"os"
-	"regexp"
+	"strings"
 	"time"
 
 	"github.com/briandowns/spinner"
@@ -46,37 +47,28 @@ var importCmd = &cobra.Command{
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
-		blockStore, err := factory.BuildBlockAdapter(cfg)
 		u := uri.Must(uri.Parse(args[0]))
+		blockStore, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
 			fmt.Printf("failed to create block adapter: %v\n", err)
 			os.Exit(1)
 		}
 		repoName := u.Repository
-		match, err := regexp.MatchString("s3://.*/manifest.json", manifestURL)
-		if err != nil || !match {
+		parsedURL, err := url.Parse(manifestURL)
+		if err != nil || parsedURL.Scheme != "s3" || strings.HasSuffix(parsedURL.Path, "/manifest.json") {
 			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestURLFormat)
+			os.Exit(1)
 		}
-		var repo *catalog.Repository
+		repo, err := cataloger.GetRepository(ctx, repoName)
+		if err != nil {
+			fmt.Printf("failed to read repository %s: %v\n", repoName, err)
+			os.Exit(1)
+		}
 		if !dryRun {
-			repo, err = cataloger.GetRepository(ctx, repoName)
+			err = prepareBranch(ctx, cataloger, repo, onboard.DefaultBranchName)
 			if err != nil {
-				fmt.Printf("failed to read repository %s: %v\n", repoName, err)
+				fmt.Println(err)
 				os.Exit(1)
-			}
-			_, err = cataloger.GetBranchReference(ctx, repoName, onboard.DefaultBranchName)
-			if errors.Is(err, db.ErrNotFound) {
-				fmt.Printf("Branch %s does not exist, creating.\n", onboard.DefaultBranchName)
-				_, err = cataloger.CreateBranch(ctx, repoName, onboard.DefaultBranchName, repo.DefaultBranch)
-				if err != nil {
-					fmt.Printf("failed to create branch %s in repo %s: %v\n", onboard.DefaultBranchName, repoName, err)
-					os.Exit(1)
-				}
-			} else if err != nil {
-				fmt.Printf("error when fetching branches for repo %s: %v\n", repoName, err)
-				os.Exit(1)
-			} else {
-				fmt.Printf("Branch %s already exists, no need to create it.\n", onboard.DefaultBranchName)
 			}
 		} else {
 			fmt.Println("Starting import dry run. Will not perform any changes.")
@@ -112,12 +104,29 @@ var importCmd = &cobra.Command{
 		if !dryRun {
 			fmt.Print(text.FgYellow.Sprint("Commit ref: "), fmt.Sprintf("%s\n\n", stats.CommitRef))
 			fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
-			fmt.Printf("To list imported objects, run:\n\tlakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
-			fmt.Printf("To merge the changes to your main branch, run:\n\tlakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
+			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
+			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
 		} else {
 			fmt.Println("Dry run successful. No changes were made.")
 		}
 	},
+}
+
+func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catalog.Repository, branch string) error {
+	repoName := repo.Name
+	_, err := cataloger.GetBranchReference(ctx, repoName, branch)
+	if errors.Is(err, db.ErrNotFound) {
+		fmt.Printf("Branch %s does not exist, creating.\n", branch)
+		_, err = cataloger.CreateBranch(ctx, repoName, branch, repo.DefaultBranch)
+		if err != nil {
+			return fmt.Errorf("failed to create branch %s in repo %s: %v", branch, repoName, err)
+		}
+	} else if err != nil {
+		return fmt.Errorf("error when fetching branches for repo %s: %v", repoName, err)
+	} else {
+		fmt.Printf("Branch %s already exists, no need to create it.\n", branch)
+	}
+	return nil
 }
 
 //nolint:gochecknoinits

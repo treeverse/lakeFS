@@ -2258,7 +2258,8 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 				WithPayload(responseErrorFrom(err))
 		}
 		var importStats *onboard.Stats
-		if *params.DryRun {
+		dryRun := swag.BoolValue(params.DryRun)
+		if dryRun {
 			importStats, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
@@ -2288,11 +2289,11 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			}
 		}
 		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
-			IsDryRun:           *params.DryRun,
+			IsDryRun:           dryRun,
 			PreviousImportDate: importStats.PreviousImportDate.Unix(),
 			PreviousManifest:   importStats.PreviousInventoryURL,
-			AddedOrChanged:     *importStats.AddedOrChanged,
-			Deleted:            *importStats.Deleted,
+			AddedOrChanged:     swag.Int64Value(importStats.AddedOrChanged),
+			Deleted:            swag.Int64Value(importStats.Deleted),
 		})
 	})
 }
