@@ -8,7 +8,6 @@ require (
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
 	github.com/aws/aws-sdk-go v1.34.0
-	github.com/benbjohnson/clock v1.0.3
 	github.com/briandowns/spinner v1.11.1
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
@@ -75,7 +74,6 @@ require (
 	github.com/xitongsys/parquet-go v1.5.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect
-	go.uber.org/atomic v1.6.0
 	golang.org/x/crypto v0.0.0-20200728195943-123391ffb6de
 	golang.org/x/exp v0.0.0-20200513190911-00229845015e // indirect
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
