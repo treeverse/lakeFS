@@ -133,15 +133,15 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 }
 
 func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, parentID, childID int64, committer string, msg string, metadata Metadata) error {
-	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
+	res, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id() AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		childID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
-
+	_ = res
 	// DifferenceTypeChanged - create entries into this commit based on parent branch
-	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
+	res, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
 				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
