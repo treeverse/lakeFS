@@ -6,7 +6,7 @@ CREATE SCHEMA IF NOT EXISTS parade;
 
 CREATE TYPE task_status_code_value AS ENUM (
     'pending',		-- waiting for an actor to perform it (new or being retried)
-    'in-progress',		-- task is being performed by an actor
+    'in-progress',	-- task is being performed by an actor
     'aborted',		-- an actor has aborted this task with message, will not be reissued
     'completed'		-- an actor has completed this task with message, will not reissued
 );
@@ -105,5 +105,55 @@ BEGIN
     WHERE id = ANY(tasks_to_signal);
 
     RETURN num_updated;
+END;
+$$;
+
+-- (Utility for delete_task function: remove all dependencies from task ID, returning ids of any
+-- tasks with no remaining dependencies.)
+CREATE OR REPLACE FUNCTION remove_task_dependencies(task_id VARCHAR(64))
+RETURNS SETOF VARCHAR(64)
+LANGUAGE sql AS $$
+WITH signalled_ids AS (
+    UPDATE tasks
+    SET total_dependencies = tasks.total_dependencies-1
+    WHERE tasks.id IN (SELECT UNNEST(to_signal) FROM tasks WHERE id=task_id)
+    RETURNING (CASE WHEN tasks.total_dependencies = 0 THEN tasks.id ELSE NULL END) id
+)
+SELECT id FROM signalled_ids WHERE id IS NOT NULL;
+$$;
+
+CREATE TYPE tasks_recurse_value AS ENUM ('new', 'in-progress', 'done');
+
+-- Deletes taskIds from column id of task_id_name (with columns id (an ID) and mark (a
+-- recurse_value), presumably a temporary table) and empties it, decrements each of its
+-- dependent tasks, and deletes that task (effectively recursively) if it has no further
+-- dependencies.  Uses table tasks for storage of to-be-deleted tasks during the operation.
+-- Returns the total number of tasks deleted.  No abort marking is performed -- make sure to
+-- abort the task first!
+CREATE OR REPLACE FUNCTION delete_tasks(task_id_name TEXT) RETURNS VOID LANGUAGE plpgsql AS $$
+DECLARE
+    total_num_updated INTEGER;
+    num_updated INTEGER;
+    row_count INTEGER;
+BEGIN
+    LOOP
+	EXECUTE format($Q$
+            UPDATE %1$I SET mark='in-progress' WHERE mark='new'
+        $Q$, task_id_name);
+        EXECUTE format($Q$
+	    WITH new_to_delete AS (
+	        SELECT remove_task_dependencies(id) id FROM %1$I WHERE mark='in-progress'
+	    )
+	    INSERT INTO %1$I (SELECT id, 'new' mark FROM new_to_delete)
+	$Q$, task_id_name);
+	GET DIAGNOSTICS row_count = ROW_COUNT;
+	EXIT WHEN row_count=0;
+	EXECUTE format($Q$
+            UPDATE %1$I SET mark='done' WHERE mark='in-progress'
+        $Q$, task_id_name);
+    END LOOP;
+    EXECUTE format($Q$
+	DELETE FROM tasks WHERE id IN (SELECT id FROM %1$I)
+    $Q$, task_id_name);
 END;
 $$;

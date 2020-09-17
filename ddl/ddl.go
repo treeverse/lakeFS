@@ -11,6 +11,7 @@ import (
 	"github.com/jackc/pgtype"
 	"github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
+	nanoid "github.com/matoous/go-nanoid"
 )
 
 type TaskId string
@@ -236,4 +237,29 @@ func WaitForTask(ctx context.Context, conn *pgx.Conn, taskId TaskId) (resultStat
 	statusCode = TASK_INVALID
 	err = row.Scan(&status, &statusCode)
 	return status, statusCode, err
+}
+
+// DeleteTasks deletes taskIds, removing dependencies and deleting (effectively recursively) any
+// tasks that are left with no dependencies.  The effect is easiest to analyze when all deleted
+// tasks have been either completed or been aborted.
+func DeleteTasks(tx *sqlx.Tx, taskIds []TaskId) error {
+	uniqueId, err := nanoid.Nanoid()
+	if err != nil {
+		return fmt.Errorf("generate random component for table name: %w", err)
+	}
+	tableName := fmt.Sprintf("delete_tasks_%s", uniqueId)
+	if _, err = tx.Exec(fmt.Sprintf(`CREATE      TABLE "%s" (id VARCHAR(64), mark tasks_recurse_value NOT NULL)`, tableName)); err != nil {
+		return fmt.Errorf("create temp work table %s: %w", tableName, err)
+	}
+	insertStmt, err := tx.Prepare(fmt.Sprintf(`INSERT INTO "%s" VALUES($1, 'new')`, tableName))
+	if err != nil {
+		return fmt.Errorf("prepare INSERT statement: %w", err)
+	}
+	for _, id := range taskIds {
+		if _, err = insertStmt.Exec(id); err != nil {
+			return fmt.Errorf("insert ID %s: %w", id, err)
+		}
+	}
+	_, err = tx.Exec(`SELECT delete_tasks($1)`, tableName)
+	return err
 }
