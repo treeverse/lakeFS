@@ -2257,10 +2257,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		importStats := &onboard.Stats{
-			AddedOrChanged: new(int64),
-			Deleted:        new(int64),
-		}
+		var importStats *onboard.Stats
 		if *params.DryRun {
 			importStats, err = importer.Import(deps.ctx, true)
 			if err != nil {

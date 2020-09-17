@@ -42,7 +42,7 @@ func (m mockCataloger) DeleteEntry(_ context.Context, _, _ string, path string) 
 }
 
 func TestCreateAndDeleteRows(t *testing.T) {
-	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", nil, logging.Default())
+	c := onboard.NewCatalogActions(mockCataloger{}, "example-repo", "committer", logging.Default())
 	c.(*onboard.CatalogRepoActions).WriteBatchSize = 5
 	catalogActions, ok := c.(*onboard.CatalogRepoActions)
 	if !ok {
