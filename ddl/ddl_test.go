@@ -183,6 +183,32 @@ func (w wrapper) insertTasks(tasks []ddl.TaskData) {
 	}
 }
 
+func (w wrapper) deleteTasks(ids []ddl.TaskId) error {
+	prefixedIds := make([]ddl.TaskId, len(ids))
+	for i := 0; i < len(ids); i++ {
+		prefixedIds[i] = w.prefixTask(ids[i])
+	}
+	tx, err := w.db.BeginTxx(context.Background(), nil)
+	if err != nil {
+		return fmt.Errorf("BEGIN: %w", err)
+	}
+	defer func() {
+		if tx != nil {
+			tx.Rollback()
+		}
+	}()
+
+	if err = ddl.DeleteTasks(tx, prefixedIds); err != nil {
+		return err
+	}
+
+	if err = tx.Commit(); err != nil {
+		return fmt.Errorf("COMMIT: %w", err)
+	}
+	tx = nil
+	return nil
+}
+
 func (w wrapper) returnTask(taskId ddl.TaskId, token ddl.PerformanceToken, resultStatus string, resultStatusCode ddl.TaskStatusCodeValue) error {
 	return ddl.ReturnTask(w.db, w.prefixTask(taskId), token, resultStatus, resultStatusCode)
 }
@@ -538,6 +564,82 @@ func TestDependencies(t *testing.T) {
 	}
 }
 
+func TestDeleteTasks(t *testing.T) {
+	// Delete tasks requires whitebox testing, to ensure tasks really are deleted.
+	w := wrapper{t, db}
+
+	w.insertTasks([]ddl.TaskData{
+		{Id: ddl.TaskId("a0"), Action: "root", ToSignal: []ddl.TaskId{"a1", "a3"}},
+		{Id: ddl.TaskId("a1"), Action: "dep", ToSignal: []ddl.TaskId{"a2"}, TotalDependencies: intAddr(1)},
+		{Id: ddl.TaskId("a2"), Action: "dep", ToSignal: []ddl.TaskId{"a3"}, TotalDependencies: intAddr(1)},
+		{Id: ddl.TaskId("a3"), Action: "leaf", TotalDependencies: intAddr(2)},
+
+		{Id: ddl.TaskId("b0"), Action: "root", ToSignal: []ddl.TaskId{"b1"}},
+		{Id: ddl.TaskId("b1"), Action: "root-keep", ToSignal: []ddl.TaskId{"b2"}},
+		{Id: ddl.TaskId("b2"), Action: "leaf", TotalDependencies: intAddr(2)},
+
+		{Id: ddl.TaskId("c0"), Action: "root", ToSignal: []ddl.TaskId{"c1", "c2"}},
+		{Id: ddl.TaskId("c1"), Action: "dep", ToSignal: []ddl.TaskId{"c3", "c4"}, TotalDependencies: intAddr(1)},
+		{Id: ddl.TaskId("c2"), Action: "dep", ToSignal: []ddl.TaskId{"c4", "c5"}, TotalDependencies: intAddr(1)},
+		{Id: ddl.TaskId("c3"), Action: "dep", ToSignal: []ddl.TaskId{"c5", "c6"}, TotalDependencies: intAddr(1)},
+		{Id: ddl.TaskId("c4"), Action: "leaf", TotalDependencies: intAddr(2)},
+		{Id: ddl.TaskId("c5"), Action: "leaf", TotalDependencies: intAddr(2)},
+		{Id: ddl.TaskId("c6"), Action: "leaf", TotalDependencies: intAddr(1)},
+	})
+
+	type testCase struct {
+		title             string
+		casePrefix        string
+		toDelete          []ddl.TaskId
+		expectedRemaining []ddl.TaskId
+	}
+	cases := []testCase{
+		{title: "chain with extra link", casePrefix: "a", toDelete: []ddl.TaskId{"a0"}},
+		{title: "delete only one dep", casePrefix: "b", toDelete: []ddl.TaskId{"b0"}, expectedRemaining: []ddl.TaskId{"b1", "b2"}},
+		{title: "treelike", casePrefix: "c", toDelete: []ddl.TaskId{"c0"}},
+	}
+	prefix := t.Name()
+	for _, c := range cases {
+		t.Run(c.title, func(t *testing.T) {
+			casePrefix := fmt.Sprint(prefix, ".", c.casePrefix)
+			if err := w.deleteTasks(c.toDelete); err != nil {
+				t.Errorf("DeleteTasks failed: %s", err)
+			}
+
+			rows, err := w.db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
+			if err != nil {
+				t.Errorf("[I] select remaining IDs for prefix %s: %s", casePrefix, err)
+			}
+
+			defer func() {
+				if err := rows.Close(); err != nil {
+					t.Fatalf("[I] remaining ids iterator close: %s", err)
+				}
+			}()
+			gotRemaining := make([]ddl.TaskId, 0, len(c.expectedRemaining))
+			for rows.Next() {
+				var id ddl.TaskId
+				if err = rows.Scan(&id); err != nil {
+					t.Errorf("[I] scan ID value: %s", err)
+				}
+				gotRemaining = append(gotRemaining, id)
+			}
+			sort.Sort(taskIdSlice(gotRemaining))
+			expectedRemaining := c.expectedRemaining
+			if expectedRemaining == nil {
+				expectedRemaining = []ddl.TaskId{}
+			}
+			for i, e := range expectedRemaining {
+				expectedRemaining[i] = w.prefixTask(e)
+			}
+			sort.Sort(taskIdSlice(expectedRemaining))
+			if diffs := deep.Equal(expectedRemaining, gotRemaining); diffs != nil {
+				t.Errorf("left with other IDs than expected: %s", diffs)
+			}
+		})
+	}
+}
+
 func TestNotification(t *testing.T) {
 	ctx := context.Background()
 	w := wrapper{t, db}
@@ -572,6 +674,7 @@ func TestNotification(t *testing.T) {
 			if err != nil {
 				t.Fatalf("pgx.Connect: %s", err)
 			}
+			defer conn.Close(ctx)
 
 			type result struct {
 				status     string
