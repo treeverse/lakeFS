@@ -1080,3 +1080,37 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 	//	t.Errorf("Merge differences = %s, expected %s", spew.Sdump(differences), spew.Sdump(expectedDifferences))
 	//}
 }
+
+func TestCataloger_MergeDeleteEntries(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master")
+	_, err := c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit file first time on master", err)
+	_, err = c.CreateBranch(ctx, repository, "b1", "master")
+	testutil.MustDo(t, "create branch b1", err)
+
+	// delete file on 'b1', commit and check that we don't get the file on 'b1' branch
+	err = c.DeleteEntry(ctx, repository, "b1", "fileX")
+	testutil.MustDo(t, "delete file on branch b1", err)
+	_, err = c.Commit(ctx, repository, "b1", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit file delete on b1", err)
+	_, err = c.GetEntry(ctx, repository, "b1", "fileX", GetEntryParams{})
+	if !errors.Is(err, ErrEntryNotFound) {
+		t.Fatal("expected entry not found, got", err)
+	}
+
+	// create and commit the same file, different content, on 'master', merge to 'b1' and check that we get the file on 'b1'
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master2")
+	_, err = c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge changes from master to b1", nil)
+	testutil.MustDo(t, "merge master to b1", err)
+	ent, err := c.GetEntry(ctx, repository, "b1", "fileX", GetEntryParams{})
+	testutil.MustDo(t, "get entry again from b1", err)
+	expectedChecksum := testCreateEntryCalcChecksum("fileX", "master2")
+	if ent.Checksum != expectedChecksum {
+		t.Fatalf("Get file checksum after merge=%s, expected %s", ent.Checksum, expectedChecksum)
+	}
+}
