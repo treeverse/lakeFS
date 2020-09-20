@@ -5,9 +5,6 @@ import (
 	"github.com/treeverse/lakefs/db"
 )
 
-type entryPKreader interface {
-	getNextPK() *entryPK
-}
 type entryPK struct {
 	BranchID  int64    `db:"branch_id"`
 	Path      *string  `db:"path"`
