@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	ObjNumber = 5
+	ObjNumber = 100
 )
 
 var ObjSkip = []int{1, 2, 3, 5, 7, 11}
@@ -199,7 +199,7 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 		lineageReader_b2_C := newLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
-		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b2 C ", 1, 25, MaxCommitID)
+		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b2 C ", 3, 25, MaxCommitID)
 		return nil, nil
 	})
 }

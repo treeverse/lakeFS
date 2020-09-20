@@ -158,7 +158,6 @@ func sqDiffFromParentV(parentID, childID int64, lastChildMergeWithParent CommitI
 	internalV := sq.Select("f.path",
 		"f.entry_ctid",
 		"f.is_deleted AS DifferenceTypeRemoved",
-		//"s.path IS NOT NULL AND NOT s.is_deleted AS DifferenceTypeChanged",
 		"s.path IS NOT NULL  AS DifferenceTypeChanged",
 		"COALESCE(s.is_deleted, true) AND f.is_deleted AS both_deleted",
 		// both point to same object, and have the same deletion status
