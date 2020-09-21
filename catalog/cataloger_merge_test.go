@@ -1101,9 +1101,6 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	if !errors.Is(err, ErrEntryNotFound) {
 		t.Fatal("expected entry not found, got", err)
 	}
-	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file_dummy", nil, "master")
-	_, err = c.Commit(ctx, repository, "master", "file_dummy", "tester", nil)
-	testutil.MustDo(t, "commit file_dummy on master", err)
 	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge changes from master to b1 part 2", nil)
 	testutil.MustDo(t, "merge master to b1 part 2", err)
 
@@ -1117,5 +1114,36 @@ func TestCataloger_MergeOverDeletedEntries(t *testing.T) {
 	expectedChecksum := testCreateEntryCalcChecksum("fileX", "master2")
 	if ent.Checksum != expectedChecksum {
 		t.Fatalf("Get file checksum after merge=%s, expected %s", ent.Checksum, expectedChecksum)
+	}
+}
+
+func TestCataloger_MergeWitoutDiff(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master")
+	_, err := c.Commit(ctx, repository, "master", "fileX", "tester", nil)
+	testutil.MustDo(t, "commit file first time on master", err)
+	_, err = c.CreateBranch(ctx, repository, "b1", "master")
+	testutil.MustDo(t, "create branch b1", err)
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
+	if err.Error() != "no difference was found" {
+		t.Fatal("did not get 'nothing to commit' error")
+	}
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file_dummy", nil, "master1")
+	_, err = c.Commit(ctx, repository, "master", "file_dummy", "tester", nil)
+	testutil.MustDo(t, "commit dummy file  master", err)
+	err = c.DeleteEntry(ctx, repository, "master", "file_dummy")
+	testutil.MustDo(t, "delete dummy_file on master", err)
+	_, err = c.Commit(ctx, repository, "master", "file_dummy delete", "tester", nil)
+	testutil.MustDo(t, "commit dummy file  deletion", err)
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
+	if err != nil {
+		t.Fatalf("error on merge with no changes:%+v", err)
+	}
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge nothing from master to b1", nil)
+	if err.Error() != "no difference was found" {
+		t.Fatal("did not get 'nothing to commit' error")
 	}
 }
