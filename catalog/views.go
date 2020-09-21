@@ -189,7 +189,7 @@ func sqDiffFromParentV(parentID, childID int64, lastChildMergeWithParent CommitI
 			Else("0"), "diff_type")).
 		Column("path").
 		Column(sq.Alias(sq.Case().
-			When("DifferenceTypeChanged AND entry_in_child", "entry_ctid").
+			When("(DifferenceTypeChanged OR NOT DifferenceTypeRemoved) AND entry_in_child", "entry_ctid").
 			Else("NULL"), "entry_ctid")).
 		FromSelect(RemoveNonRelevantQ, "t1")
 }
