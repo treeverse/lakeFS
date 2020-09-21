@@ -2,7 +2,7 @@
   <img src="logo_large.png"/>
 </p>
 
-[![Hacktoberfest](https://badgen.net/badge/hacktoberfest/friendly/pink)](CODE_OF_CONDUCT.md)
+[![Hacktoberfest](https://badgen.net/badge/hacktoberfest/friendly/pink)](docs/contributing.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE)
 [![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++)
 [![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++)
