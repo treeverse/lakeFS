@@ -30,6 +30,14 @@ A task is the basic atom of task management.  It represents a single unit of wor
 perform, and can succeed or fail.  Tasks may be retried on failure, so _executing a task
 must be idempotent_.
 
+Tasks connect to application code via an action and a body.  The _action_ identifies the
+operation to complete these task.  Examples of actions can include "copy a file", "delete a
+path", "report success".  It is essentially the _name_ of a procedure to perform at some future
+time.  The _body_ of a task gives information necessary to configure the specific task.
+Examples of bodies can include "source file path X, destination path Z" (for a copy task), "path
+Z" (for a delete task), or "date started, number of objects and a message" (for a report task).
+It essentially holds the _parameters_ the action uses to perform the task.
+
 Tasks include these attributes:
 - `Id`: a unique identifier for the task.  Use a known-unique substring in the identifier
   (e.g. a UUID or [nanoid][nanoid]) to avoid collisions, or a well-known identifier to ensure
@@ -98,9 +106,14 @@ task may only be claimed by a call to `OwnTasks` if:
   - the task is in state `in-progress`, but its `ActionDeadline` has elapsed (see "ownership
     expiry", below).
 
-`OwnTasks` returns task IDs and a "performance token" for this performance of the task.
-Both ID and token must be provided to _return_ the task from ownership.  (The
-performance token is used to resolve conflicts during "ownership expiry", below.)
+`OwnTasks` returns task IDs and for each returned task a "performance token" for this
+performance of it.  Both ID and token must be provided to _return_ the task from ownership.
+(The performance token is used to resolve conflicts during "ownership expiry", below.)
+
+A typical use is that a worker loop repeatedly calls `OwnTasks` on one or more actions, and
+dispatches each to a separate function.  The application controls concurrency by setting the
+number of concurrent worker loops.  For instance, it might set 20 worker loops to perform "copy"
+and "delete" tasks and a single worker loop to perform "report to DataDog".
 
 Once a worker owns a task, it performs it.  It can decide to return the task to the task
 queue and _complete_, _abort_ or _retry_ it by calling `ReturnTask`.  Once completed, all
@@ -146,7 +159,7 @@ type TaskData struct {
 	ActorId           ActorId           // ID of current actor performing this task (if in-progress)
 	ActionDeadline    *time.Time        // Deadline for current actor to finish performing this task (if in-progress)
 	PerformanceToken  *PerformanceToken // Token to allow ReturnTask
-	PostResult        bool              // If set allow waiting for this task
+	PostResult        bool              // If set allow waiting for this task using WaitForTask
 }
 ```
 
@@ -164,7 +177,8 @@ A variant allows inserting a task _by force_
 ```go
 // ReplaceTasks atomically adds all tasks to the queue.   If a task not yet in-process with the same
 // ID already exists then _replace it_ as though it were atomically aborted before this insert.  If
-// PostResult was set on any tasks then they can be waited upon after InsertTasks returns. 
+// PostResult was set on any tasks then they can be waited upon after InsertTasks returns.  Tasks that
+// are in process cannot be replaced.
 func ReplaceTasks(ctx context.Context, source *taskDataIterator) error
 ```
 
@@ -182,6 +196,20 @@ type OwnedTaskData struct {
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions, setting
 // the lifetime of each returned owned task to maxDuration.
 func OwnTasks(ctx context.Context, actor ActorId, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error)
+```
+
+`maxDuration` should be a time during which no other worker can access the task.  It does not
+have to be the time to _complete_ the task: workers can periodically call `ExtendTasksOwnership`
+to extend the lifetime.
+
+##### ExtendTasksOwnership
+
+```go
+// ExtendTasksOwnership extends the current action lifetime for each of task by another maxDuration,
+// if that task is still owned by this actor with that performance token.  It returns true for each
+// task if it is still owned, or false if ownership extension failed because the task is no longer
+// owned.
+func ExtendTasksOwnership(ctx context.Context, actor ActorId, toExtend []OwnedTaskData, maxDuration time.Duration) ([]bool, error)
 ```
 
 ##### ReturnTask
@@ -294,12 +322,25 @@ networks][parallel-series] networks.  Drawings appear below.
 
 ### Branch export
 
-1. Under the merge/commit lock for the branch:
-  1. Insert a task with ID `start-export-{branch}` to start generating export tasks and a task
-     `done-export-{branch}` that depends on it.
-  1. If insertion failed, _replace_ the task with ID `next-export-{branch}` with a task to
-     export _this_ comit ID.  And add a dependency on `done-export-{branch}` (which may fail if
-     that task has completed).
+Each branch uses separate tasks arranged in a cycle.  These names are task IDs with a matching
+action name: e.g. the action name for `next-export-{branch}` is `next-export`.  (The branch name
+also appears in the body.)
+
+* `next-export-{branch}` is to start the next export if an export is already underway, by
+  creating a task `start-export-{branch}`.
+* `start-export-{branch}` handles the actual logic of generating the copy tasks in a network,
+  leading eventually to the task `done-export-{branch}` (which is also generates) becoming
+  available.
+* `done-export-{branch}` is there so that `next-export-{branch}` can depend on it -- and not
+  start before the current export operation terminates.  (If it does not exist,
+  `next-export-{branch}` has no dependency blocking it and can run immediately.)
+
+The actual steps:
+1. Under the merge/commit lock for the branch: _replace_ the task with ID `next-export-{branch}`
+     with a task to export _this_ commit ID.  And add a dependency on `done-export-{branch}`
+     (which may fail if that task has completed; that is safe).
+1. To handle `next-export-{branch}`: create `start-export-{branch}` (the previous one must have
+   ended), and return the task.
 1. To handle `start-export-{branch}`:
    1. Generate a task to copy or delete each file object (this is an opportunity to batch
       multiple file objects if performance doesn't match.  `done-export-{branch}` depends on
@@ -307,13 +348,11 @@ networks][parallel-series] networks.  Drawings appear below.
       yet been returned).  For every prefix for which such an object is configured, add a task
       to generate its `.../_SUCCESS` object on S3, dependent on all the objects under that
       prefix (or, to handle objects in sub-prefixes, on just the `_SUCCESS` of that sub-prefix).
-   2. Add a task to generate manifests, dependent on `done-export-{branch}`.
-   2. Return `start-export-{branch}` as completed.
+   1. Add a task to generate manifests, dependent on `done-export-{branch}`.
+   1. Return `start-export-{branch}` as completed.
 1. To handle a copy or delete operation, perform it.
 1. To handle `done-export-{branch}`: just return it, it can be spontaneous (if the task queue
    supports that).
-1. To handle `next-export-{branch}`: create `start-export-{branch}` (the previous one must have
-   ended), and return the task.
 
 `next-export-{branch}` is used to serialize branch exports, achieving the requirement for single
 concurrent export per branch.  Per-prefix `_SUCCESS` objects are generated on time due to their
