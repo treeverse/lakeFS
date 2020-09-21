@@ -23,6 +23,12 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
+## Get ready for Hacktoberfest!
+
+Contribute to open-source projects throughout October 2020 by stepping up to Digital Ocean's annual tradition of hosting [Hacktoberfest](https://hacktoberfest.digitalocean.com/).  We _always_ welcome pull requests to lakeFS - but throughout October your pull requests to open source projects can get you some cool schwag.  Check out our [contributing guide](https://docs.lakefs.io/contributing), which tells you everything you need to know including how to contact us.  Or read the instructions for how to get all your October PRs to count in the [Hacktoberfest resources guide](https://hacktoberfest.digitalocean.com/details/).
+
+Not sure what to do?  We marked some issues that could get you started quickly on our [Hacktoberfest list](https://github.com/treeverse/lakeFS/issues?q=is%3Aissue+is%3Aopen+label%3Ahacktoberfest).
+
 ## Capabilities
 
 **Development Environment for Data**
