@@ -300,7 +300,7 @@ func (c *Config) GetStatsFlushInterval() time.Duration {
 
 func (c *Config) GetStatsBufferedCollectorArgs() (processID string, opts []stats.BufferedCollectorOpts) {
 	var sender stats.Sender
-	if c.GetStatsEnabled() && Version != UnreleasedVersion {
+	if c.GetStatsEnabled() && !strings.HasPrefix(Version, UnreleasedVersion) {
 		sender = stats.NewHTTPSender(c.GetStatsAddress(), time.Now)
 	} else {
 		sender = stats.NewDummySender()
