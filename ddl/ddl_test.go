@@ -152,7 +152,7 @@ func (w wrapper) stripActor(actor ddl.TaskId) ddl.ActorId {
 	return ddl.ActorId(w.strip(string(actor)))
 }
 
-func (w wrapper) insertTasks(tasks []ddl.TaskData) {
+func (w wrapper) insertTasks(tasks []ddl.TaskData) func() {
 	w.t.Helper()
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, databaseURI)
@@ -181,6 +181,13 @@ func (w wrapper) insertTasks(tasks []ddl.TaskData) {
 	if err != nil {
 		w.t.Fatalf("InsertTasks: %s", err)
 	}
+
+	// Create cleanup callback.  Compute the ids now, tasks may change later.
+	ids := make([]ddl.TaskId, 0, len(tasks))
+	for _, task := range tasks {
+		ids = append(ids, task.Id)
+	}
+	return func() { w.deleteTasks(ids) }
 }
 
 func (w wrapper) deleteTasks(ids []ddl.TaskId) error {
@@ -318,12 +325,13 @@ func TestTaskDataIterator_Values(t *testing.T) {
 func TestOwn(t *testing.T) {
 	w := wrapper{t, db}
 
-	w.insertTasks([]ddl.TaskData{
+	cleanup := w.insertTasks([]ddl.TaskData{
 		{Id: "000", Action: "never"},
 		{Id: "111", Action: "frob"},
 		{Id: "123", Action: "broz"},
 		{Id: "222", Action: "broz"},
 	})
+	defer cleanup()
 	tasks, err := w.ownTasks(ddl.ActorId("tester"), 2, []string{"frob", "broz"}, nil)
 	if err != nil {
 		t.Errorf("first own_tasks query: %s", err)
@@ -357,10 +365,11 @@ func TestOwnBody(t *testing.T) {
 
 	val := "\"the quick brown fox jumps over the lazy dog\""
 
-	w.insertTasks([]ddl.TaskData{
+	cleanup := w.insertTasks([]ddl.TaskData{
 		{Id: "body", Action: "yes", Body: &val},
 		{Id: "nobody", Action: "no"},
 	})
+	defer cleanup()
 
 	tasks, err := w.ownTasks(ddl.ActorId("somebody"), 2, []string{"yes", "no"}, nil)
 	if err != nil {
@@ -386,9 +395,11 @@ func TestOwnAfterDeadlineElapsed(t *testing.T) {
 	second := 1 * time.Second
 	w := wrapper{t, db}
 
-	w.insertTasks([]ddl.TaskData{
+	cleanup := w.insertTasks([]ddl.TaskData{
 		{Id: "111", Action: "frob"},
 	})
+	defer cleanup()
+
 	_, err := w.ownTasks(ddl.ActorId("tortoise"), 1, []string{"frob"}, &second)
 	if err != nil {
 		t.Fatalf("failed to setup tortoise task ownership: %s", err)
@@ -415,11 +426,12 @@ func TestOwnAfterDeadlineElapsed(t *testing.T) {
 func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 	w := wrapper{t, db}
 
-	w.insertTasks([]ddl.TaskData{
+	cleanup := w.insertTasks([]ddl.TaskData{
 		{Id: "111", Action: "frob"},
 		{Id: "123", Action: "broz"},
 		{Id: "222", Action: "broz"},
 	})
+	defer cleanup()
 
 	tasks, err := w.ownTasks(ddl.ActorId("foo"), 4, []string{"frob", "broz"}, nil)
 	if err != nil {
@@ -458,9 +470,10 @@ func TestReturnTask_RetryMulti(t *testing.T) {
 	maxTries := 7
 	lifetime := 250 * time.Millisecond
 
-	w.insertTasks([]ddl.TaskData{
+	cleanup := w.insertTasks([]ddl.TaskData{
 		{Id: "111", Action: "frob", MaxTries: &maxTries},
 	})
+	defer cleanup()
 
 	for i := 0; i < maxTries; i++ {
 		tasks, err := w.ownTasks(ddl.ActorId("foo"), 1, []string{"frob"}, &lifetime)
@@ -532,7 +545,8 @@ func TestDependencies(t *testing.T) {
 			TotalDependencies: &numDivisors,
 		})
 	}
-	w.insertTasks(taskData)
+	cleanup := w.insertTasks(taskData)
+	defer cleanup()
 
 	doneSet := make(map[int]struct{}, num)
 
@@ -568,7 +582,7 @@ func TestDeleteTasks(t *testing.T) {
 	// Delete tasks requires whitebox testing, to ensure tasks really are deleted.
 	w := wrapper{t, db}
 
-	w.insertTasks([]ddl.TaskData{
+	cleanup := w.insertTasks([]ddl.TaskData{
 		{Id: ddl.TaskId("a0"), Action: "root", ToSignal: []ddl.TaskId{"a1", "a3"}},
 		{Id: ddl.TaskId("a1"), Action: "dep", ToSignal: []ddl.TaskId{"a2"}, TotalDependencies: intAddr(1)},
 		{Id: ddl.TaskId("a2"), Action: "dep", ToSignal: []ddl.TaskId{"a3"}, TotalDependencies: intAddr(1)},
@@ -586,6 +600,7 @@ func TestDeleteTasks(t *testing.T) {
 		{Id: ddl.TaskId("c5"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{Id: ddl.TaskId("c6"), Action: "leaf", TotalDependencies: intAddr(1)},
 	})
+	defer cleanup()
 
 	type testCase struct {
 		title             string
@@ -658,9 +673,10 @@ func TestNotification(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
-			w.insertTasks([]ddl.TaskData{
+			cleanup := w.insertTasks([]ddl.TaskData{
 				{Id: c.id, Action: "frob"},
 			})
+			defer cleanup()
 
 			tasks, err := w.ownTasks(ddl.ActorId("foo"), 1, []string{"frob"}, nil)
 			if err != nil {
@@ -715,7 +731,9 @@ func BenchmarkFanIn(b *testing.B) {
 		tasks = append(tasks, ddl.TaskData{Id: id(i), Action: "part", ToSignal: toSignal})
 	}
 	tasks = append(tasks, ddl.TaskData{Id: "done", Action: "done"})
-	w.insertTasks(tasks)
+	cleanup := w.insertTasks(tasks)
+
+	defer cleanup()
 
 	type result struct {
 		count        int
