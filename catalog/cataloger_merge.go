@@ -137,7 +137,8 @@ func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID 
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
 				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type=$3 
-				OR d.diff_type=$4 and d.path in (SELECT e1.path FROM catalog_entries e1 WHERE e1.branch_id=$1 and e1.max_commit != catalog_max_commit_id()))`, //the or condittion - diff will see an entry as new if it is deleted in child. but merge still need to copy it
+ 				-- the or condition - diff will see an entry as new if it is deleted in child. but merge still need to copy it
+				OR d.diff_type=$4 and d.path in (SELECT e1.path FROM catalog_entries e1 WHERE e1.branch_id=$1 and e1.max_commit != catalog_max_commit_id()))`,
 		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded)
 	if err != nil {
 		return err
