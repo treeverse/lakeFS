@@ -86,7 +86,7 @@ func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
 	var mergeMaxCommitID CommitID
 	err = tx.Get(&mergeMaxCommitID, `SELECT DISTINCT on (branch_id) merge_source_commit 
 		FROM catalog_commits
-		WHERE branch_id = $1 AND merge_source_branch = $2
+		WHERE branch_id = $1 AND merge_source_branch = $2 and merge_type = 'from_parent'
 		ORDER BY branch_id, commit_id DESC`,
 		rightID, leftID)
 	if err != nil && !errors.Is(err, db.ErrNotFound) {
