@@ -1084,7 +1084,7 @@ func TestCataloger_Merge_FromParentThreeBranchesExtended1(t *testing.T) {
 func TestCataloger_MergeDeleteEntries(t *testing.T) {
 	ctx := context.Background()
 	c := testCataloger(t)
-	// setup a report with 'master' with a single file, and branch 'b1' that started after the file was committed
+	// setup a repository with 'master' with a single file, and branch 'b1' that started after the file was committed
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master")
 	_, err := c.Commit(ctx, repository, "master", "fileX", "tester", nil)
@@ -1101,6 +1101,8 @@ func TestCataloger_MergeDeleteEntries(t *testing.T) {
 	if !errors.Is(err, ErrEntryNotFound) {
 		t.Fatal("expected entry not found, got", err)
 	}
+	_, err = c.Merge(ctx, repository, "master", "b1", "tester", "merge changes from master to b1 part 2", nil)
+	testutil.MustDo(t, "merge master to b1 part 2", err)
 
 	// create and commit the same file, different content, on 'master', merge to 'b1' and check that we get the file on 'b1'
 	testCatalogerCreateEntry(t, ctx, c, repository, "master", "fileX", nil, "master2")
