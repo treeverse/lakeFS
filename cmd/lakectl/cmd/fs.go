@@ -22,7 +22,7 @@ var fsStatCmd = &cobra.Command{
 	Short: "view object metadata",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsPathURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
@@ -47,8 +47,8 @@ var fsListCmd = &cobra.Command{
 	Args: ValidationChain(
 		HasNArgs(1),
 		Or(
-			IsPathURI(0),
-			IsRefURI(0),
+			PositionValidator(0, uri.ValidatePathURI),
+			PositionValidator(1, uri.ValidateRefURI),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -67,7 +67,7 @@ var fsCatCmd = &cobra.Command{
 	Short: "dump content of object to stdout",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsPathURI(0),
+		PositionValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -84,7 +84,7 @@ var fsUploadCmd = &cobra.Command{
 	Short: "upload a local file to the specified URI",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsPathURI(0),
+		PositionValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -119,7 +119,7 @@ var fsRmCmd = &cobra.Command{
 	Short: "delete object",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsPathURI(0),
+		PositionValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))

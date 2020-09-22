@@ -18,7 +18,8 @@ const (
 )
 
 type RepoActions interface {
-	ApplyImport(ctx context.Context, it Iterator, stats *Stats, dryRun bool) error
+	ProgressReporter
+	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
 }
@@ -29,10 +30,16 @@ type CatalogRepoActions struct {
 	repository     string
 	committer      string
 	logger         logging.Logger
+	progress       map[string]*Progress
+}
+
+func (c *CatalogRepoActions) Progress() map[string]*Progress {
+	panic("implement me")
 }
 
 func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) RepoActions {
-	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer, logger: logger}
+	progress := make(map[string]*Progress)
+	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer, logger: logger, progress: progress}
 }
 
 type task struct {
@@ -47,7 +54,21 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	wg.Done()
 }
 
-func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, stats *Stats, dryRun bool) error {
+func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
+	stats := NewStats()
+	//b1 := uiprogress.AddBar(2)
+	//b2 := uiprogress.AddBar(2)
+	//b1.PrependElapsed()
+	//b1.AppendFunc(func(b *uiprogress.Bar) string {
+	//	return fmt.Sprintf("%d objects added/changed", *stats.AddedOrChanged)
+	//})
+	//b2.AppendFunc(func(b *uiprogress.Bar) string {
+	//	return fmt.Sprintf("%d objects deleted", *stats.Deleted)
+	//})
+	//b1.Incr()
+	//b2.Incr()
+	//p, err := bars.StartPool()
+	//p.Add()
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
@@ -67,7 +88,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, stats
 			if !dryRun {
 				err := c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, obj.Key)
 				if err != nil {
-					return fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
+					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
 			}
 			stats.AddDeleted(1)
@@ -105,21 +126,21 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, stats
 	close(tasksChan)
 	wg.Wait()
 	if it.Err() != nil {
-		return it.Err()
+		return nil, it.Err()
 	}
 	for _, err := range errs {
 		if *err != nil {
-			return *err
+			return nil, *err
 		}
 	}
 	if len(currentBatch) > 0 && !dryRun {
 		err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, currentBatch)
 		if err != nil {
-			return fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
+			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
 	stats.AddCreated(int64(len(currentBatch)))
-	return nil
+	return stats, nil
 }
 
 func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {

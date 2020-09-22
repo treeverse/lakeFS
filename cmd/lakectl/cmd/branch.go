@@ -27,7 +27,7 @@ var branchListCmd = &cobra.Command{
 	Example: "lakectl branch list lakefs://<repository>",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRepoURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -71,7 +71,7 @@ var branchCreateCmd = &cobra.Command{
 	Short: "create a new branch in a repository",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRefURI(0),
+		PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -102,7 +102,7 @@ var branchDeleteCmd = &cobra.Command{
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRefURI(0),
+		PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete branch")
@@ -129,7 +129,7 @@ var branchRevertCmd = &cobra.Command{
   4. revert uncommitted changes for specific object - revert lakefs://myrepo@master --object path`,
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRefURI(0),
+		PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -193,7 +193,7 @@ var branchShowCmd = &cobra.Command{
 	Short: "show branch latest commit reference",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRefURI(0),
+		PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

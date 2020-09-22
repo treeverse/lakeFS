@@ -27,7 +27,7 @@ var commitCmd = &cobra.Command{
 	Short: "commit changes on a given branch",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRefURI(0),
+		PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message

@@ -92,7 +92,7 @@ func TestImport(t *testing.T) {
 				InventoryGenerator: inventoryGenerator,
 				CatalogActions:     &catalogActionsMock,
 			}
-			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), nil, config)
+			importer, err := onboard.CreateImporter(context.TODO(), logging.Default(), config)
 			if err != nil {
 				t.Fatalf("failed to create importer: %v", err)
 			}

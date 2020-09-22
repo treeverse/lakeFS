@@ -23,14 +23,11 @@ var mergeCmd = &cobra.Command{
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: ValidationChain(
 		HasRangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
-		IsRefURI(0),
-		IsRefURI(1),
+		PositionValidator(0, uri.ValidateRefURI),
+		PositionValidator(1, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		if err := IsRefURI(1)(args); err != nil {
-			DieErr(err)
-		}
 		rightRefURI := uri.Must(uri.Parse(args[0]))
 		leftRefURI := uri.Must(uri.Parse(args[1]))
 

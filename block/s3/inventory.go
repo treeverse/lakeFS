@@ -24,6 +24,7 @@ type Manifest struct {
 	SourceBucket       string          `json:"sourceBucket"`
 	Files              []inventoryFile `json:"files"` // inventory list files, each contains a list of objects
 	Format             string          `json:"fileFormat"`
+	CreationTimestamp  string          `json:"creationTimestamp"`
 	inventoryBucket    string
 }
 

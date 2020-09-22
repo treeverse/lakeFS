@@ -7,12 +7,13 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/briandowns/spinner"
+	"github.com/gosuri/uiprogress"
+
+	"github.com/spf13/viper"
+
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
-	lakectl "github.com/treeverse/lakefs/cmd/lakectl/cmd"
 	"github.com/treeverse/lakefs/uri"
 
 	"github.com/treeverse/lakefs/block/factory"
@@ -23,27 +24,40 @@ import (
 	"github.com/treeverse/lakefs/onboard"
 )
 
+var ErrInvalid = errors.New("validation")
+
 const (
-	DryRunFlagName         = "dry-run"
-	ManifestURLFlagName    = "manifest"
-	ManifestURLFormat      = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
-	ImportCmdNumArgs       = 1
-	ImportSpinnerFrequency = 100 * time.Millisecond
+	DryRunFlagName      = "dry-run"
+	ManifestURLFlagName = "manifest"
+	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
+	ImportCmdNumArgs    = 1
 )
 
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
 	Long:  "Import from an S3 inventory to lakeFS without copying the data.",
-	Args: lakectl.ValidationChain(
-		lakectl.HasNArgs(ImportCmdNumArgs),
-		lakectl.IsRepoURI(0),
-	),
+	Args: func(cmd *cobra.Command, args []string) error {
+		if len(args) != ImportCmdNumArgs {
+			return fmt.Errorf("%w - expected %d arguments", ErrInvalid, ImportCmdNumArgs)
+		}
+		err := uri.ValidateRepoURI(args[0])
+		if err != nil {
+			return fmt.Errorf("%w - %s is not a valid repo uri", ErrInvalid, args[0])
+		}
+		return nil
+	},
 	Run: func(cmd *cobra.Command, args []string) {
 		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
 		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
 		ctx := context.Background()
 		conf := config.NewConfig()
+		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
+		if err != nil {
+			fmt.Printf("%v\n", err)
+			os.Exit(1)
+		}
+		viper.Set("database.disable_auto_migrate", true)
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
@@ -55,7 +69,7 @@ var importCmd = &cobra.Command{
 		}
 		repoName := u.Repository
 		parsedURL, err := url.Parse(manifestURL)
-		if err != nil || parsedURL.Scheme != "s3" || strings.HasSuffix(parsedURL.Path, "/manifest.json") {
+		if err != nil || parsedURL.Scheme != "s3" || !strings.HasSuffix(parsedURL.Path, "/manifest.json") {
 			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestURLFormat)
 			os.Exit(1)
 		}
@@ -80,17 +94,14 @@ var importCmd = &cobra.Command{
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 		}
-		s := spinner.New(spinner.CharSets[34], ImportSpinnerFrequency)
-		importer, err := onboard.CreateImporter(ctx, logger, func(event *onboard.ProgressEvent) {
-			s.Suffix = fmt.Sprintf(" Objects Created/Changed: %d\tObjects Deleted: %d", *event.AddedOrChanged, *event.Deleted)
-		}, importConfig)
+		uiprogress.Start()
+		defer uiprogress.Stop()
+		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
 		if err != nil {
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
-		s.Start()
 		stats, err := importer.Import(ctx, dryRun)
-		s.Stop()
 		if err != nil {
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)

@@ -70,7 +70,8 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, stats *onboard.Stats, dryRun bool) error {
+func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.Stats, error) {
+	stats := onboard.NewStats()
 	for it.Next() {
 		diffObj := it.Get()
 		if diffObj.IsDeleted {
@@ -85,7 +86,7 @@ func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator,
 			stats.AddCreated(1)
 		}
 	}
-	return nil
+	return stats, nil
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {

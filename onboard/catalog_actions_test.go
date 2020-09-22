@@ -114,12 +114,8 @@ func TestCreateAndDeleteRows(t *testing.T) {
 				keys:         test.AddedRows,
 				lastModified: lastModified,
 			}
-			stats := &onboard.Stats{
-				Deleted:        new(int64),
-				AddedOrChanged: new(int64),
-			}
-			err := catalogActions.ApplyImport(context.Background(),
-				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), stats, dryRun)
+			stats, err := catalogActions.ApplyImport(context.Background(),
+				onboard.NewDiffIterator(leftInv.Iterator(), rightInv.Iterator()), dryRun)
 			if err != nil {
 				t.Fatalf("failed to create/delete objects: %v", err)
 			}

@@ -15,14 +15,24 @@ const (
 	CommitMsgTemplate = "Import from %s"
 )
 
+type ProgressReporter interface {
+	Progress() map[string]*Progress
+}
+
+type Progress struct {
+	Label   string
+	Current int
+	Total   int
+}
+
 type Importer struct {
+	ProgressReporter
 	repository         string
 	inventoryGenerator block.InventoryGenerator
 	inventory          block.Inventory
 	CatalogActions     RepoActions
 	logger             logging.Logger
 	previousCommit     *catalog.CommitLog
-	cb                 ProgressCallback
 }
 
 type Config struct {
@@ -36,13 +46,12 @@ type Config struct {
 
 var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")
 
-func CreateImporter(ctx context.Context, logger logging.Logger, cb ProgressCallback, config *Config) (importer *Importer, err error) {
+func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) (importer *Importer, err error) {
 	res := &Importer{
 		repository:         config.Repository,
 		inventoryGenerator: config.InventoryGenerator,
 		logger:             logger,
 		CatalogActions:     config.CatalogActions,
-		cb:                 cb,
 	}
 	if res.CatalogActions == nil {
 		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
@@ -77,8 +86,8 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	var dataToImport Iterator
 	var err error
 	if s.previousCommit == nil {
-		// no previous commit, add whole inventory
 		it := s.inventory.Iterator()
+		// no previous commit, add whole inventory
 		dataToImport = NewInventoryIterator(it)
 	} else {
 		dataToImport, err = s.diffIterator(ctx, *s.previousCommit)
@@ -86,9 +95,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 			return nil, err
 		}
 	}
-
-	stats := NewStats(s.cb)
-	err = s.CatalogActions.ApplyImport(ctx, dataToImport, stats, dryRun)
+	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
 		return nil, err
 	}

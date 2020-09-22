@@ -31,6 +31,8 @@ require (
 	github.com/golangci/golangci-lint v1.30.0
 	github.com/google/uuid v1.1.1
 	github.com/gopherjs/gopherjs v0.0.0-20200217142428-fce0ec30dd00 // indirect
+	github.com/gosuri/uilive v0.0.4 // indirect
+	github.com/gosuri/uiprogress v0.0.1
 	github.com/hashicorp/go-multierror v1.1.0
 	github.com/hnlq715/golang-lru v0.2.0
 	github.com/influxdata/tdigest v0.0.1 // indirect
@@ -79,6 +81,7 @@ require (
 	golang.org/x/net v0.0.0-20200813134508-3edf25e44fcc
 	golang.org/x/oauth2 v0.0.0-20200107190931-bf48bf16ab8d
 	golang.org/x/sys v0.0.0-20200817155316-9781c653f443 // indirect
+	golang.org/x/text v0.3.3
 	golang.org/x/tools v0.0.0-20200818005847-188abfa75333 // indirect
 	gonum.org/v1/netlib v0.0.0-20200603212716-16abd5ac5bc7 // indirect
 	google.golang.org/api v0.30.0

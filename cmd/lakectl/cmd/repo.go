@@ -77,7 +77,7 @@ var repoCreateCmd = &cobra.Command{
 	Short: "create a new repository ",
 	Args: ValidationChain(
 		HasNArgs(repoCreateCmdArgs),
-		IsRepoURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -112,7 +112,7 @@ var repoDeleteCmd = &cobra.Command{
 	Short: "delete existing repository",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRepoURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -140,7 +140,7 @@ var getPolicyCmd = &cobra.Command{
 	Short: "show retention policy",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRepoURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -163,7 +163,7 @@ var setPolicyCmd = &cobra.Command{
 	Long:  "set retention policy from file, or stdin if \"-\" specified",
 	Args: ValidationChain(
 		HasNArgs(setPolicyCmdArgs),
-		IsRepoURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))

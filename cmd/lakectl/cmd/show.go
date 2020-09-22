@@ -15,7 +15,7 @@ var showCmd = &cobra.Command{
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
 	Args: ValidationChain(
 		HasNArgs(1),
-		IsRepoURI(0),
+		PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))

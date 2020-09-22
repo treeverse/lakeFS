@@ -3,6 +3,7 @@ package db
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 	"time"
 
@@ -17,6 +18,8 @@ import (
 	"github.com/treeverse/lakefs/ddl"
 	"github.com/treeverse/lakefs/logging"
 )
+
+var ErrSchemaNotCompatible = errors.New("db schema version not compatible with latest version")
 
 type Migrator interface {
 	Migrate(ctx context.Context) error
@@ -57,6 +60,21 @@ func getStatikSrc() (source.Driver, error) {
 	return httpfs.New(migrationFs, "/")
 }
 
+func ValidateSchemaUpToDate(params params.Database) error {
+	version, _, err := MigrateVersion(params)
+	if err != nil {
+		return err
+	}
+	available, err := GetLastMigrationAvailable(0)
+	if err != nil {
+		return err
+	}
+	if available != version {
+		return fmt.Errorf("%w: db version=%d, available=%d", ErrSchemaNotCompatible, version, available)
+	}
+	return nil
+}
+
 func GetLastMigrationAvailable(from uint) (uint, error) {
 	src, err := getStatikSrc()
 	if err != nil {
@@ -66,6 +84,12 @@ func GetLastMigrationAvailable(from uint) (uint, error) {
 		_ = src.Close()
 	}()
 	current := from
+	if from == 0 {
+		current, err = src.First()
+		if err != nil {
+			return 0, fmt.Errorf("%w: failed to find first migration", err)
+		}
+	}
 	for {
 		next, err := src.Next(current)
 		if errors.Is(err, os.ErrNotExist) {

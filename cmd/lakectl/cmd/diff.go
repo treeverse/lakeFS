@@ -24,14 +24,14 @@ var diffCmd = &cobra.Command{
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
 	Args: ValidationChain(
 		HasRangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
-		IsRefURI(0),
+		PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 
 		const diffWithOtherArgsCount = 2
 		if len(args) == diffWithOtherArgsCount {
-			if err := IsRefURI(1)(args); err != nil {
+			if err := uri.ValidateRefURI(args[1]); err != nil {
 				DieErr(err)
 			}
 			leftRefURI := uri.Must(uri.Parse(args[0]))
