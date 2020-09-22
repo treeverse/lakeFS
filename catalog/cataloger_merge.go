@@ -87,13 +87,14 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 		order by branch_id,commit_id desc) t`
 	err := tx.Get(&hasCommitDifferences, mergeCommitsQuery, rightID, leftID)
 	if errors.Is(err, db.ErrNotFound) {
-		// not found errors indicate there is no  merge record for this relation
-		//  a parent to child merge record is written when the branch is created,
+		// not found errors indicate there is no merge record for this relation
+		// a parent to child merge record is written when the branch is created,
 		// so this may happen only in child to parent merge.
 		// in this case - a merge record has to be created, and true is returned
-		return true, ErrNoDifferenceWasFound
-	} else if err != nil {
-		return false, fmt.Errorf(" check zero diff commit : %w", err)
+		return true, nil
+	}
+	if err != nil {
+		return false, fmt.Errorf("has commit differences : %w", err)
 	}
 	return hasCommitDifferences, nil
 }
