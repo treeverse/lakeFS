@@ -115,7 +115,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 					break
 				}
 				if values == nil {
-					t.Errorf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
+					t.Fatalf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
 				}
 				letters := values.Interface().([]*row)
 				for _, c := range letters {
@@ -491,7 +491,6 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 }
 
 func TestDBAuthService_ListUserCredentials(t *testing.T) {
-	const numCredentials = 5
 	const userName = "accredited"
 	s := setupService(t)
 	if err := s.CreateUser(&model.User{Username: userName}); err != nil {
