@@ -87,8 +87,14 @@ func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
 		from catalog_commits where branch_id = $1 and merge_source_branch = $2
 		order by branch_id,commit_id desc) t`
 	err := tx.Get(&commitsChanged, mergeCommitsQuery, rightID, leftID)
-	if err != nil && err.Error() != "not found" && err.Error() != "entry not found" {
-		return false, fmt.Errorf("merge from parent error checking commit changes: %w", err)
+	if err.Error() == "not found" || err.Error() == "entry not found" {
+		// not found errors indicate there is no  merge record for this relation
+		//  a parent to child merge record is written when the branch is created,
+		// so this may happen only in child to parent merge.
+		// in this case - a merge record has to be created, and true is returned
+		return true, nil
+	} else if err != nil {
+		return false, fmt.Errorf(" error checking previouse merge : %w", err)
 	}
 	return commitsChanged, nil
 }
