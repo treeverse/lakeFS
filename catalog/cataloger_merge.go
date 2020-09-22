@@ -54,11 +54,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			total += c
 		}
 		if total == 0 {
-			someCommitAdvanced, err := checkZeroDiffCommit(tx, leftID, rightID)
+			commitDifferences, err := hasCommitDifferences(tx, leftID, rightID)
 			if err != nil {
 				return nil, err
 			}
-			if !someCommitAdvanced {
+			if !commitDifferences {
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
@@ -76,21 +76,20 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	return mergeResult, err
 }
 
-// checkZeroDiffCommit - Checks if the current commit id of target or source branch advanced since last merge.
-//		If so - a merge record must be created, even if there are no changes between branches.
-func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
-	var commitsChanged bool
+// hasCommitDifferences - Checks if the current commit id of target or source branch advanced since last merge
+func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
+	var hasCommitDifferences bool
 	mergeCommitsQuery := `select right_merge_commit < max_right_commit or left_merge_commit < max_left_commit from
 		(select distinct on (branch_id) commit_id as right_merge_commit, merge_source_commit as left_merge_commit,
 		(select max(commit_id) from catalog_commits where branch_id=$1)as max_right_commit,
 		(select max(commit_id) from catalog_commits where branch_id=$2)as max_left_commit
 		from catalog_commits where branch_id = $1 and merge_source_branch = $2
 		order by branch_id,commit_id desc) t`
-	err := tx.Get(&commitsChanged, mergeCommitsQuery, rightID, leftID)
-	if err != nil && err.Error() != "not found" && err.Error() != "entry not found" {
-		return false, fmt.Errorf("merge from parent error checking commit changes: %w", err)
+	err := tx.Get(&hasCommitDifferences, mergeCommitsQuery, rightID, leftID)
+	if err != nil && !errors.Is(err, db.ErrNotFound) {
+		return false, fmt.Errorf("check zero diff commit: %w", err)
 	}
-	return commitsChanged, nil
+	return hasCommitDifferences, nil
 }
 
 func formatMergeMessage(leftBranch string, rightBranch string) string {
