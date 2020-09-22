@@ -59,7 +59,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
    $ docker-compose up
    ```
 
-4. Open [http://localhost:8000/setup](http://localhost:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+4. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
 #### Download the Binary
 

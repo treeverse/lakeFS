@@ -36,7 +36,7 @@ To run a local lakeFS instance, you can clone the repository and run [Docker Com
    docker-compose up
    ```
 
-1. Check your installation by opening [http://localhost:8000/setup](http://localhost:8000/setup){:target="_blank"} in your web browser.
+1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
 
 ### Next steps
 
