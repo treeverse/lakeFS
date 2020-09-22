@@ -55,7 +55,9 @@ require (
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/ory/dockertest/v3 v3.6.0
 	github.com/prometheus/client_golang v1.7.1
+	github.com/prometheus/client_model v0.2.0
 	github.com/prometheus/common v0.11.1 // indirect
+	github.com/prometheus/prom2json v1.3.0
 	github.com/rakyll/statik v0.1.7
 	github.com/rs/xid v1.2.1
 	github.com/schollz/progressbar/v3 v3.3.4
