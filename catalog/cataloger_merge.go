@@ -91,7 +91,7 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 		//  a parent to child merge record is written when the branch is created,
 		// so this may happen only in child to parent merge.
 		// in this case - a merge record has to be created, and true is returned
-		return true, nil
+		return true, ErrNoDifferenceWasFound
 	} else if err != nil {
 		return false, fmt.Errorf(" check zero diff commit : %w", err)
 	}
