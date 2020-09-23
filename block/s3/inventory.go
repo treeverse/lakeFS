@@ -95,6 +95,7 @@ func loadManifest(manifestURL string, s3svc s3iface.S3API) (*Manifest, error) {
 		return nil, fmt.Errorf("failed to parse inventory bucket arn: %w", err)
 	}
 	m.inventoryBucket = inventoryBucketArn.Resource
+	m.Files = m.Files[:20] // TODO remove this!! [yoni]
 	return &m, nil
 }
 
