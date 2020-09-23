@@ -42,8 +42,8 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	return &InventoryIterator{
 		Inventory:          inv,
 		inventoryFileIndex: -1,
-		fileProgress:       &cmd_utils.Progress{Label: fmt.Sprintf("Files Read - Inventory %s", t.Format("2006-01-02")), Total: len(inv.Manifest.Files)},
-		objectProgress:     &cmd_utils.Progress{Label: fmt.Sprintf("Current File - Inventory %s", t.Format("2006-01-02"))},
+		fileProgress:       &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), Total: len(inv.Manifest.Files)},
+		objectProgress:     &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02"))},
 	}
 }
 
