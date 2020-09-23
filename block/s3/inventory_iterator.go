@@ -95,6 +95,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 		return false
 	}
 	it.objectProgress.Total = int(rdr.GetNumRows())
+	fmt.Println(int(rdr.GetNumRows()))
 	it.objectProgress.Set(0)
 	defer func() {
 		err = rdr.Close()

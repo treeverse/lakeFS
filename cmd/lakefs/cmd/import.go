@@ -143,19 +143,19 @@ func manageProgress(importer *onboard.Importer) chan bool {
 					b, ok := bars[p.Label]
 					if !ok {
 						total := p.Total
-						labelLength := 50
+						labelLength := 40
 						if total == -1 {
 							total = p.Current + 1
 							b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle([]string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}),
 								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
-								mpb.PrependDecorators(decor.CurrentNoUnit("%d ", decor.WC{W: 10})),
+								mpb.PrependDecorators(decor.CurrentNoUnit("%d ", decor.WC{W: 15})),
 								mpb.PrependDecorators(decor.Name("[")),
 								mpb.AppendDecorators(decor.Name("]")),
 							)
 						} else {
 							b = multi.AddBar(int64(total), mpb.BarStyle(" =>- <"),
 								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
-								mpb.PrependDecorators(decor.CountersNoUnit("%d / %d ", decor.WC{W: 10})),
+								mpb.PrependDecorators(decor.CountersNoUnit("%d / %d ", decor.WC{W: 15})),
 								mpb.PrependDecorators(decor.Name("[")),
 								mpb.AppendDecorators(decor.Name("]")),
 							)
