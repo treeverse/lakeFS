@@ -122,6 +122,7 @@ var importCmd = &cobra.Command{
 		}
 		close(progressDone)
 		updateProgress(importer.Progress(), bars, multiBar)
+		multiBar.Wait()
 		fmt.Print("\n")
 		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", stats.AddedOrChanged))
 		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", stats.Deleted))
