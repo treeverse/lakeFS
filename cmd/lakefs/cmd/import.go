@@ -164,18 +164,17 @@ func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, mu
 		b, ok := bars[p.Label]
 		if !ok {
 			total := p.Total
-			labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
-			doneDecorator := decor.OnComplete(decor.Name(p.Label, decor.WCSyncSpaceR), "done!")
+			labelDecorator := decor.OnComplete(decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight}), "done!")
 			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
 			if total == -1 {
 				// unknown total, render a spinner
 				total = p.Current + 1
 				b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixOption,
-					mpb.PrependDecorators(labelDecorator, doneDecorator,
+					mpb.PrependDecorators(labelDecorator,
 						decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
 			} else {
 				b = multi.AddBar(int64(total), mpb.BarStyle(progressBarStyle), suffixOption,
-					mpb.PrependDecorators(labelDecorator, doneDecorator,
+					mpb.PrependDecorators(labelDecorator,
 						decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
 			}
 			bars[p.Label] = b
