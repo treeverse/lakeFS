@@ -163,13 +163,17 @@ func manageProgress(importer *onboard.Importer) (*mpb.Progress, map[string]*mpb.
 func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, multi *mpb.Progress, isCompleted bool) {
 	for _, p := range progress {
 		total := p.Total
+		isSpinner := false
+		if total == -1 {
+			isSpinner = true
+			total = p.Current + 1
+		}
 		b, ok := bars[p.Label]
 		if !ok {
 			labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
 			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
-			if total == -1 {
+			if isSpinner {
 				// unknown total, render a spinner
-				total = p.Current + 1
 				b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixOption,
 					mpb.PrependDecorators(labelDecorator,
 						decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
