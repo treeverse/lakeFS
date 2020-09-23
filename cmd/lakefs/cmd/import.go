@@ -33,6 +33,16 @@ const (
 	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs    = 1
 )
+const (
+	progressCounterFormat         = "%d / %d ["
+	spinnerCounterFormat          = "%d ["
+	progressSuffix                = "]"
+	progressBarNameColumnWidth    = 40
+	progressBarCounterColumnWidth = 20
+	progressBarStyle              = " =>- <"
+)
+
+var spinnerStyles = []string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}
 
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
@@ -131,7 +141,6 @@ func manageProgress(importer *onboard.Importer) chan bool {
 	multi := mpb.New(mpb.WithWidth(60))
 	done := make(chan bool)
 	bars := make(map[string]*mpb.Bar)
-
 	go func() {
 		for {
 			select {
@@ -143,22 +152,18 @@ func manageProgress(importer *onboard.Importer) chan bool {
 					b, ok := bars[p.Label]
 					if !ok {
 						total := p.Total
-						labelLength := 40
+						labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
+						suffixDecorator := mpb.AppendDecorators(decor.Name(progressSuffix))
 						if total == -1 {
+							// unknown total, render a spinner
 							total = p.Current + 1
-							b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle([]string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}),
-								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
-								mpb.PrependDecorators(decor.CurrentNoUnit("%d ", decor.WC{W: 20})),
-								mpb.PrependDecorators(decor.Name("[")),
-								mpb.AppendDecorators(decor.Name("]")),
-							)
+							b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixDecorator,
+								mpb.PrependDecorators(labelDecorator,
+									decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})), mpb.BarFillerClearOnComplete())
 						} else {
-							b = multi.AddBar(int64(total), mpb.BarStyle(" =>- <"),
-								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
-								mpb.PrependDecorators(decor.CountersNoUnit("%d / %d ", decor.WC{W: 20})),
-								mpb.PrependDecorators(decor.Name("[")),
-								mpb.AppendDecorators(decor.Name("]")),
-							)
+							b = multi.AddBar(int64(total), mpb.BarStyle(progressBarStyle), suffixDecorator,
+								mpb.PrependDecorators(labelDecorator,
+									decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})), mpb.BarFillerClearOnComplete())
 						}
 						bars[p.Label] = b
 					}
