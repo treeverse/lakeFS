@@ -160,11 +160,11 @@ func manageProgress(importer *onboard.Importer) (*mpb.Progress, map[string]*mpb.
 	return multi, bars, done
 }
 
-func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, multi *mpb.Progress) {
+func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, multi *mpb.Progress, isCompleted bool) {
 	for _, p := range progress {
+		total := p.Total
 		b, ok := bars[p.Label]
 		if !ok {
-			total := p.Total
 			labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
 			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
 			if total == -1 {
@@ -180,12 +180,12 @@ func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, mu
 			}
 			bars[p.Label] = b
 		}
-		if p.Total != -1 {
-			b.SetTotal(int64(p.Total), false)
+		b.SetTotal(int64(total), isCompleted)
+		if !isCompleted {
+			b.SetCurrent(int64(p.Current))
 		} else {
-			b.SetTotal(int64(p.Current+1), false)
+			b.SetCurrent(int64(total))
 		}
-		b.SetCurrent(int64(p.Current))
 	}
 }
 
