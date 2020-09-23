@@ -7,8 +7,9 @@ import (
 	"net/url"
 	"os"
 	"strings"
+	"time"
 
-	"github.com/gosuri/uiprogress"
+	"gopkg.in/cheggaaa/pb.v1"
 
 	"github.com/spf13/viper"
 
@@ -94,9 +95,24 @@ var importCmd = &cobra.Command{
 			InventoryGenerator: blockStore,
 			Cataloger:          cataloger,
 		}
-		uiprogress.Start()
-		defer uiprogress.Stop()
+
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
+		p := pb.NewPool()
+		t := time.NewTicker(time.Second)
+		done := make(chan bool)
+		go func() {
+			for {
+				select {
+				case <-done:
+					err = p.Stop()
+					// TODO handle
+					return
+				case t := <-t.C:
+					fmt.Println("Tick at", t)
+				}
+			}
+		}()
+
 		if err != nil {
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
