@@ -37,57 +37,60 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 		baseBranchName = branchName
 	}
 
-	//_,_ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-	//var p string
-	//// test different cache sizes
-	//for k := 0;k < len(bufferSizes);k++{
-	//	bufSize := bufferSizes[k]
-	//// test single branch reader
-	//for branchNo := 0;branchNo < maxBranchNumber;branchNo++ {
-	//	branchName := "b" + strconv.Itoa(branchNo)
-	//	branchReader := NewSingleBranchReader(tx, int64(branchNo+1),UncommittedID,bufSize,"")
-	//	objSkipNo := ObjSkip[branchNo]
-	//	for i := 0;; i += objSkipNo{
-	//		o,err := branchReader.getNextPK()
-	//		testutil.MustDo(t, "read from branch " + branchName, err)
-	//		if o == nil{
-	//			if !(i - objSkipNo < ObjNumber &&  i  >= ObjNumber){
-	//				t.Fatalf("terminated at i=%d",i)
-	//			}
-	//			break
-	//		} else {
-	//			p = *o.Path
-	//			objNum,err := strconv.Atoi(p[4:])
-	//			testutil.MustDo(t, "convert obj number " + p, err)
-	//			if objNum != i{
-	//				t.Errorf(" objNum=%d, i=%d\n",objNum,i)
-	//			}
-	//		}
-	//	}
-	//}
-	//// test lineage reader
-	//for branchNo := 0;branchNo < maxBranchNumber;branchNo++ {
-	//	branchName := "b" + strconv.Itoa(branchNo)
-	//	lineageReader := newLineageReader(tx, int64(branchNo+1),UncommittedID,bufSize,0,"")
-	//	for i := 0;i < ObjNumber;i++{
-	//		var expectedBranch int64
-	//		o,err := lineageReader.getNextPK()
-	//		testutil.MustDo(t, "read from lineage " + branchName, err)
-	//		if o == nil{
-	//			t.Errorf("Got nil obj, branch=%s, numbr=%d\n",branchName,i)
-	//		}
-	//		// check item read from might branch
-	//		for j := branchNo; j >= 0;j--{
-	//			if i%ObjSkip[j] == 0{
-	//				expectedBranch = int64(j + 1)
-	//				break
-	//			}
-	//		}
-	//		if o.BranchID != expectedBranch{
-	//			t.Errorf("fetch from wrong branch.branchName=%s branchNumber=%d, i =%d\n",branchName,o.BranchID,i)
-	//		}
-	//	}
-	//}
+	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
+		var p string
+		// test different cache sizes
+		for k := 0; k < len(bufferSizes); k++ {
+			bufSize := bufferSizes[k]
+			// test single branch reader
+			for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
+				branchName := "b" + strconv.Itoa(branchNo)
+				branchReader := NewSingleBranchReader(tx, int64(branchNo+1), UncommittedID, bufSize, "")
+				objSkipNo := ObjSkip[branchNo]
+				for i := 0; ; i += objSkipNo {
+					o, err := branchReader.getNextPK()
+					testutil.MustDo(t, "read from branch "+branchName, err)
+					if o == nil {
+						if !(i-objSkipNo < ObjNumber && i >= ObjNumber) {
+							t.Fatalf("terminated at i=%d", i)
+						}
+						break
+					} else {
+						p = *o.Path
+						objNum, err := strconv.Atoi(p[4:])
+						testutil.MustDo(t, "convert obj number "+p, err)
+						if objNum != i {
+							t.Errorf(" objNum=%d, i=%d\n", objNum, i)
+						}
+					}
+				}
+			}
+			// test lineage reader
+			for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
+				branchName := "b" + strconv.Itoa(branchNo)
+				lineageReader := newLineageReader(tx, int64(branchNo+1), UncommittedID, bufSize, 0, "")
+				for i := 0; i < ObjNumber; i++ {
+					var expectedBranch int64
+					o, err := lineageReader.getNextPK()
+					testutil.MustDo(t, "read from lineage "+branchName, err)
+					if o == nil {
+						t.Errorf("Got nil obj, branch=%s, numbr=%d\n", branchName, i)
+					}
+					// check item read from might branch
+					for j := branchNo; j >= 0; j-- {
+						if i%ObjSkip[j] == 0 {
+							expectedBranch = int64(j + 1)
+							break
+						}
+					}
+					if o.BranchID != expectedBranch {
+						t.Errorf("fetch from wrong branch.branchName=%s branchNumber=%d, i =%d\n", branchName, o.BranchID, i)
+					}
+				}
+			}
+		}
+		return nil, nil
+	})
 	// test reading committed and uncomitted data
 	bufSize := 8
 	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "Obj-0004", nil, "sd1")
