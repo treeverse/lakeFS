@@ -73,6 +73,7 @@ require (
 	github.com/thanhpk/randstr v1.0.4
 	github.com/tidwall/pretty v1.0.1 // indirect
 	github.com/tsenart/vegeta/v12 v12.8.3
+	github.com/vbauerster/mpb/v5 v5.3.0
 	github.com/xitongsys/parquet-go v1.5.2
 	github.com/xitongsys/parquet-go-source v0.0.0-20200805105948-52b27ba08556
 	go.mongodb.org/mongo-driver v1.4.0 // indirect

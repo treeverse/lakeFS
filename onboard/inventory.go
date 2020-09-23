@@ -5,6 +5,8 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/treeverse/lakefs/cmd_utils"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 )
@@ -23,10 +25,12 @@ type ImportObject struct {
 }
 
 type Iterator interface {
+	cmd_utils.ProgressReporter
 	Next() bool
 	Err() error
 	Get() ImportObject
 }
+
 type DiffIterator struct {
 	leftInv   block.InventoryIterator
 	rightInv  block.InventoryIterator
@@ -34,6 +38,10 @@ type DiffIterator struct {
 	rightNext bool
 	value     ImportObject
 	err       error
+}
+
+func (d *DiffIterator) Progress() []*cmd_utils.Progress {
+	return append(d.leftInv.Progress(), d.rightInv.Progress()...)
 }
 
 // onboard.InventoryIterator reads from block.InventoryIterator and converts the objects to ImportObject

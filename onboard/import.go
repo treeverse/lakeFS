@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/treeverse/lakefs/cmd_utils"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
@@ -15,24 +17,14 @@ const (
 	CommitMsgTemplate = "Import from %s"
 )
 
-type ProgressReporter interface {
-	Progress() map[string]*Progress
-}
-
-type Progress struct {
-	Label   string
-	Current int
-	Total   int
-}
-
 type Importer struct {
-	ProgressReporter
 	repository         string
 	inventoryGenerator block.InventoryGenerator
 	inventory          block.Inventory
 	CatalogActions     RepoActions
 	logger             logging.Logger
 	previousCommit     *catalog.CommitLog
+	progress           []*cmd_utils.Progress
 }
 
 type Config struct {
@@ -56,6 +48,7 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 	if res.CatalogActions == nil {
 		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
 	}
+	res.progress = res.CatalogActions.Progress()
 	previousCommit, err := res.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
@@ -95,6 +88,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 			return nil, err
 		}
 	}
+	s.progress = append(s.progress, dataToImport.Progress()...)
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
 		return nil, err
@@ -113,4 +107,8 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 		stats.CommitRef = commitLog.Reference
 	}
 	return stats, nil
+}
+
+func (s *Importer) Progress() []*cmd_utils.Progress {
+	return s.progress
 }

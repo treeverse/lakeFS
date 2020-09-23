@@ -9,12 +9,12 @@ import (
 	"strings"
 	"time"
 
-	"gopkg.in/cheggaaa/pb.v1"
-
-	"github.com/spf13/viper"
+	"github.com/vbauerster/mpb/v5"
+	"github.com/vbauerster/mpb/v5/decor"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 	"github.com/treeverse/lakefs/uri"
 
 	"github.com/treeverse/lakefs/block/factory"
@@ -97,31 +97,18 @@ var importCmd = &cobra.Command{
 		}
 
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
-		p := pb.NewPool()
-		t := time.NewTicker(time.Second)
-		done := make(chan bool)
-		go func() {
-			for {
-				select {
-				case <-done:
-					err = p.Stop()
-					// TODO handle
-					return
-				case t := <-t.C:
-					fmt.Println("Tick at", t)
-				}
-			}
-		}()
-
 		if err != nil {
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
+		progressDone := manageProgress(importer)
 		stats, err := importer.Import(ctx, dryRun)
 		if err != nil {
+			close(progressDone)
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
+		close(progressDone)
 		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", *stats.AddedOrChanged))
 		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", *stats.Deleted))
 		if stats.PreviousInventoryURL != "" {
@@ -137,6 +124,55 @@ var importCmd = &cobra.Command{
 			fmt.Println("Dry run successful. No changes were made.")
 		}
 	},
+}
+
+func manageProgress(importer *onboard.Importer) chan bool {
+	ticker := time.NewTicker(50 * time.Millisecond)
+	multi := mpb.New(mpb.WithWidth(60))
+	done := make(chan bool)
+	bars := make(map[string]*mpb.Bar)
+
+	go func() {
+		for {
+			select {
+			case <-done:
+				return
+			case <-ticker.C:
+				progress := importer.Progress()
+				for _, p := range progress {
+					b, ok := bars[p.Label]
+					if !ok {
+						total := p.Total
+						labelLength := 50
+						if total == -1 {
+							total = p.Current + 1
+							b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle([]string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}),
+								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
+								mpb.PrependDecorators(decor.CurrentNoUnit("%d ", decor.WC{W: 10})),
+								mpb.PrependDecorators(decor.Name("[")),
+								mpb.AppendDecorators(decor.Name("]")),
+							)
+						} else {
+							b = multi.AddBar(int64(total), mpb.BarStyle(" =>- <"),
+								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
+								mpb.PrependDecorators(decor.CountersNoUnit("%d / %d ", decor.WC{W: 10})),
+								mpb.PrependDecorators(decor.Name("[")),
+								mpb.AppendDecorators(decor.Name("]")),
+							)
+						}
+						bars[p.Label] = b
+					}
+					if p.Total != -1 {
+						b.SetTotal(int64(p.Total), false)
+					} else {
+						b.SetTotal(int64(p.Current+1), false)
+					}
+					b.SetCurrent(int64(p.Current))
+				}
+			}
+		}
+	}()
+	return done
 }
 
 func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catalog.Repository, branch string) error {

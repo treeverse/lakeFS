@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/treeverse/lakefs/cmd_utils"
+
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
@@ -18,28 +20,35 @@ const (
 )
 
 type RepoActions interface {
-	ProgressReporter
+	cmd_utils.ProgressReporter
 	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
 }
 
 type CatalogRepoActions struct {
-	WriteBatchSize int
-	cataloger      catalog.Cataloger
-	repository     string
-	committer      string
-	logger         logging.Logger
-	progress       map[string]*Progress
+	WriteBatchSize  int
+	cataloger       catalog.Cataloger
+	repository      string
+	committer       string
+	logger          logging.Logger
+	deletedProgress *cmd_utils.Progress
+	addedProgress   *cmd_utils.Progress
 }
 
-func (c *CatalogRepoActions) Progress() map[string]*Progress {
-	panic("implement me")
+func (c *CatalogRepoActions) Progress() []*cmd_utils.Progress {
+	return []*cmd_utils.Progress{c.addedProgress, c.deletedProgress}
 }
 
 func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) RepoActions {
-	progress := make(map[string]*Progress)
-	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer, logger: logger, progress: progress}
+	return &CatalogRepoActions{
+		cataloger:       cataloger,
+		repository:      repository,
+		committer:       committer,
+		logger:          logger,
+		addedProgress:   &cmd_utils.Progress{Label: "Objects Added or Changed", Total: -1},
+		deletedProgress: &cmd_utils.Progress{Label: "Objects Deleted", Total: -1},
+	}
 }
 
 type task struct {
@@ -56,19 +65,6 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 
 func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
 	stats := NewStats()
-	//b1 := uiprogress.AddBar(2)
-	//b2 := uiprogress.AddBar(2)
-	//b1.PrependElapsed()
-	//b1.AppendFunc(func(b *uiprogress.Bar) string {
-	//	return fmt.Sprintf("%d objects added/changed", *stats.AddedOrChanged)
-	//})
-	//b2.AppendFunc(func(b *uiprogress.Bar) string {
-	//	return fmt.Sprintf("%d objects deleted", *stats.Deleted)
-	//})
-	//b1.Incr()
-	//b2.Incr()
-	//p, err := bars.StartPool()
-	//p.Add()
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
@@ -92,6 +88,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 				}
 			}
 			stats.AddDeleted(1)
+			c.deletedProgress.Incr()
 			continue
 		}
 		entry := catalog.Entry{
@@ -107,6 +104,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
 				stats.AddCreated(int64(len(previousBatch)))
+				c.addedProgress.Add(len(previousBatch))
 				continue
 			}
 			tsk := &task{
@@ -114,6 +112,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
 					if err == nil {
 						stats.AddCreated(int64(len(previousBatch)))
+						c.addedProgress.Add(len(previousBatch))
 					}
 					return err
 				},
@@ -140,6 +139,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		}
 	}
 	stats.AddCreated(int64(len(currentBatch)))
+	c.addedProgress.Add(len(currentBatch))
 	return stats, nil
 }
 

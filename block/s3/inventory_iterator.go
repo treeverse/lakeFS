@@ -4,10 +4,9 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
-	"github.com/gosuri/uiprogress"
+	"github.com/treeverse/lakefs/cmd_utils"
 
 	"github.com/treeverse/lakefs/block"
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
@@ -22,8 +21,14 @@ type InventoryIterator struct {
 	buffer             []inventorys3.InventoryObject
 	inventoryFileIndex int
 	valIndexInBuffer   int
-	fileProgress       *uiprogress.Bar
-	objectProgress     *uiprogress.Bar
+	fileProgress       *cmd_utils.Progress
+	objectProgress     *cmd_utils.Progress
+}
+
+func (it *InventoryIterator) Progress() []*cmd_utils.Progress {
+	return []*cmd_utils.Progress{
+		it.fileProgress, it.objectProgress,
+	}
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
@@ -33,26 +38,12 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 		creationTimestamp = 0
 	}
 	t := time.Unix(creationTimestamp/int64(time.Second/time.Millisecond), 0)
-	fileProgress := uiprogress.AddBar(len(inv.Manifest.Files))
-	prefix := fmt.Sprintf("inventory %s", t.Format("2006-01-02"))
-	fileProgress.PrependFunc(func(b *uiprogress.Bar) string {
-		return prefix
-	})
-	fileProgress.AppendFunc(func(b *uiprogress.Bar) string {
-		return fmt.Sprintf("%d/%d inventory files", b.Current(), b.Total)
-	})
-	objectProgress := uiprogress.AddBar(1)
-	objectProgress.PrependFunc(func(b *uiprogress.Bar) string {
-		return strings.Repeat(" ", len(prefix))
-	})
-	objectProgress.AppendFunc(func(b *uiprogress.Bar) string {
-		return fmt.Sprintf("%d/%d rows in file", b.Current(), b.Total)
-	})
+
 	return &InventoryIterator{
 		Inventory:          inv,
 		inventoryFileIndex: -1,
-		fileProgress:       fileProgress,
-		objectProgress:     objectProgress,
+		fileProgress:       &cmd_utils.Progress{Label: fmt.Sprintf("Files Read - Inventory %s", t.Format("2006-01-02")), Total: len(inv.Manifest.Files)},
+		objectProgress:     &cmd_utils.Progress{Label: fmt.Sprintf("Current File - Inventory %s", t.Format("2006-01-02"))},
 	}
 }
 
@@ -104,7 +95,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 		return false
 	}
 	it.objectProgress.Total = int(rdr.GetNumRows())
-	_ = it.objectProgress.Set(0)
+	it.objectProgress.Set(0)
 	defer func() {
 		err = rdr.Close()
 		if err != nil {
