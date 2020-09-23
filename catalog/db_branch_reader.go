@@ -24,11 +24,10 @@ type singleBranchReader struct {
 }
 
 type lineageReader struct {
-	tx       db.Tx
-	branchID int64
-	EOF      bool
-	commitID CommitID
-	//lineage      []lineageCommit
+	tx           db.Tx
+	branchID     int64
+	EOF          bool
+	commitID     CommitID
 	readers      []*singleBranchReader
 	nextRow      []*entryPK
 	firstTime    bool
@@ -47,7 +46,7 @@ func NewSingleBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize 
 	}
 }
 
-func newLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize, limit int, after string) *lineageReader {
+func NewLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize, limit int, after string) *lineageReader {
 	// limit <= 0 means there is no limit to number of returned rows
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
@@ -69,14 +68,14 @@ func newLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize, limi
 	return lr
 }
 
-func (r *lineageReader) getNextPK() (*entryPK, error) {
+func (r *lineageReader) GetNextPK() (*entryPK, error) {
 	if r.EOF {
 		return nil, nil
 	}
 	if r.firstTime {
 		r.firstTime = false
 		for i, reader := range r.readers {
-			e, err := reader.getNextPK()
+			e, err := reader.GetNextPK()
 			if err != nil {
 				panic(err)
 			}
@@ -109,7 +108,7 @@ func (r *lineageReader) getNextPK() (*entryPK, error) {
 	// advance next row for all branches that have this Path
 	for i := 0; i < len(nonNilNextRow); i++ {
 		if *r.nextRow[nonNilNextRow[i]].Path == *selectedEntry.Path {
-			n, err := r.readers[nonNilNextRow[i]].getNextPK()
+			n, err := r.readers[nonNilNextRow[i]].GetNextPK()
 			if err != nil {
 				panic(err)
 			}
@@ -119,7 +118,7 @@ func (r *lineageReader) getNextPK() (*entryPK, error) {
 	return selectedEntry, nil
 }
 
-func (r *singleBranchReader) getNextPK() (*entryPK, error) {
+func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 	if r.EOF {
 		return nil, nil
 	}
@@ -129,7 +128,8 @@ func (r *singleBranchReader) getNextPK() (*entryPK, error) {
 		q := baseSelect(r.branchID, r.commitID).Limit(uint64(r.bufSize)).Where("path >= ?", r.after)
 		err := fillBuf(r.tx, q, &r.buf)
 		if err != nil {
-			panic(err)
+			return nil, err // todo: just to trick the LINTER, remove when done
+			// panic(err)
 		}
 	}
 	//returnes the significant entry of that Path, and remove rows with that Path from buf
@@ -162,15 +162,11 @@ func (r *singleBranchReader) getNextPK() (*entryPK, error) {
 func findSignificantEntry(buf []*entryPK, lineageCommitID CommitID) *entryPK {
 	var ret *entryPK
 	l := len(buf)
-	if l == 1 {
-		ret = buf[0]
-	}
-	if buf[l-1].MinCommit == 0 { //uncommitted.Will appear only when reading includes uncommited entries
+	if buf[l-1].MinCommit == 0 { // uncommitted.Will appear only when reading includes uncommitted entries
 		ret = buf[l-1]
 	} else {
 		ret = buf[0]
 	}
-
 	// if entry was deleted after the max commit that can be read, it must be set to undeleted
 	if lineageCommitID == CommittedID ||
 		lineageCommitID == UncommittedID ||
@@ -213,7 +209,7 @@ func (r *singleBranchReader) extendBuf() error {
 		Limit(uint64(r.bufSize))
 	s = sq.DebugSqlizer(continueationQuery)
 	_ = s
-	// move rows of last Path to beginnig of buffer
+	// move rows of last Path to beginning of buffer
 	tempBuf := make([]*entryPK, 0, r.bufSize+len(r.buf)*2)
 	tempBuf = append(tempBuf, r.buf...)
 	r.buf = tempBuf
