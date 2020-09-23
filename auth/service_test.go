@@ -655,22 +655,31 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 func BenchmarkDBAuthService_ListEffectivePolicies(b *testing.B) {
 	// setup user with policies for benchmark
 	adb, _ := testutil.GetDB(b, databaseURI)
-	service := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+	serviceWithoutCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	})
-	userName := userWithPolicies(b, service, userPoliciesForTesting)
-	// test list effective policies with and without cache
+	serviceWithCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled:        true,
+		Size:           1024,
+		TTL:            20 * time.Second,
+		EvictionJitter: 3 * time.Second,
+	})
+	serviceWithCacheLowTTL := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled:        true,
+		Size:           1024,
+		TTL:            1 * time.Millisecond,
+		EvictionJitter: 1 * time.Millisecond,
+	})
+	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
+
+	b.Run("without_cache", func(b *testing.B) {
+		benchmarkListEffectivePolicies(b, serviceWithoutCache, userName)
+	})
 	b.Run("with_cache", func(b *testing.B) {
-		serviceWithCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
-			Enabled:        true,
-			Size:           1024,
-			TTL:            20 * time.Second,
-			EvictionJitter: 3 * time.Second,
-		})
 		benchmarkListEffectivePolicies(b, serviceWithCache, userName)
 	})
-	b.Run("without_cache", func(b *testing.B) {
-		benchmarkListEffectivePolicies(b, service, userName)
+	b.Run("without_cache_low_ttl", func(b *testing.B) {
+		benchmarkListEffectivePolicies(b, serviceWithCacheLowTTL, userName)
 	})
 }
 
