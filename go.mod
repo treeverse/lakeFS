@@ -49,6 +49,7 @@ require (
 	github.com/lunixbochs/vtclean v1.0.0 // indirect
 	github.com/mailru/easyjson v0.7.2 // indirect
 	github.com/manifoldco/promptui v0.7.0
+	github.com/matoous/go-nanoid v1.4.1
 	github.com/mattn/go-sqlite3 v1.14.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/mitchellh/mapstructure v1.3.3 // indirect

@@ -1,4 +1,4 @@
-package ddl
+package parade
 
 import (
 	"context"
