@@ -166,7 +166,7 @@ func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, mu
 		isSpinner := false
 		if total == -1 {
 			isSpinner = true
-			total = p.Current + 1
+			total = p.Current
 		}
 		b, ok := bars[p.Label]
 		if !ok {
