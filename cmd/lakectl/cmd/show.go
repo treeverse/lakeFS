@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+	cmd_utils2 "github.com/treeverse/lakefs/cmd_utils"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -15,9 +15,9 @@ import (
 var showCmd = &cobra.Command{
 	Use:   "show <repository uri>",
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))

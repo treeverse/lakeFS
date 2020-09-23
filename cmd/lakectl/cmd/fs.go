@@ -6,7 +6,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+	cmd_utils2 "github.com/treeverse/lakefs/cmd_utils"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/uri"
@@ -22,9 +22,9 @@ Checksum: {{.Checksum}}
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
 	Short: "view object metadata",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
@@ -46,11 +46,11 @@ const fsLsTemplate = `{{ range $val := . -}}
 var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.Or(
-			cmd_utils.PositionValidator(0, uri.ValidatePathURI),
-			cmd_utils.PositionValidator(1, uri.ValidateRefURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.Or(
+			cmd_utils2.PositionValidator(0, uri.ValidatePathURI),
+			cmd_utils2.PositionValidator(1, uri.ValidateRefURI),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -67,9 +67,9 @@ var fsListCmd = &cobra.Command{
 var fsCatCmd = &cobra.Command{
 	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.PositionValidator(0, uri.ValidatePathURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.PositionValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -84,9 +84,9 @@ var fsCatCmd = &cobra.Command{
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.PositionValidator(0, uri.ValidatePathURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.PositionValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -119,9 +119,9 @@ var fsUploadCmd = &cobra.Command{
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "delete object",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.PositionValidator(0, uri.ValidatePathURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.PositionValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))

@@ -9,6 +9,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/cmd_utils"
+
 	"github.com/vbauerster/mpb/v5"
 	"github.com/vbauerster/mpb/v5/decor"
 
@@ -111,7 +113,7 @@ var importCmd = &cobra.Command{
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
-		progressDone := manageProgress(importer)
+		multiBar, bars, progressDone := manageProgress(importer)
 		stats, err := importer.Import(ctx, dryRun)
 		if err != nil {
 			close(progressDone)
@@ -119,6 +121,8 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		close(progressDone)
+		updateProgress(importer.Progress(), bars, multiBar)
+		fmt.Print("\n")
 		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", stats.AddedOrChanged))
 		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", stats.Deleted))
 		if stats.PreviousInventoryURL != "" {
@@ -136,7 +140,7 @@ var importCmd = &cobra.Command{
 	},
 }
 
-func manageProgress(importer *onboard.Importer) chan bool {
+func manageProgress(importer *onboard.Importer) (*mpb.Progress, map[string]*mpb.Bar, chan bool) {
 	ticker := time.NewTicker(50 * time.Millisecond)
 	multi := mpb.New(mpb.WithWidth(60))
 	done := make(chan bool)
@@ -148,36 +152,44 @@ func manageProgress(importer *onboard.Importer) chan bool {
 				return
 			case <-ticker.C:
 				progress := importer.Progress()
-				for _, p := range progress {
-					b, ok := bars[p.Label]
-					if !ok {
-						total := p.Total
-						labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
-						suffixDecorator := mpb.AppendDecorators(decor.Name(progressSuffix))
-						if total == -1 {
-							// unknown total, render a spinner
-							total = p.Current + 1
-							b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixDecorator,
-								mpb.PrependDecorators(labelDecorator,
-									decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})), mpb.BarFillerClearOnComplete())
-						} else {
-							b = multi.AddBar(int64(total), mpb.BarStyle(progressBarStyle), suffixDecorator,
-								mpb.PrependDecorators(labelDecorator,
-									decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})), mpb.BarFillerClearOnComplete())
-						}
-						bars[p.Label] = b
-					}
-					if p.Total != -1 {
-						b.SetTotal(int64(p.Total), false)
-					} else {
-						b.SetTotal(int64(p.Current+1), false)
-					}
-					b.SetCurrent(int64(p.Current))
-				}
+				updateProgress(progress, bars, multi)
 			}
 		}
 	}()
-	return done
+	return multi, bars, done
+}
+
+func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, multi *mpb.Progress) {
+	for _, p := range progress {
+		b, ok := bars[p.Label]
+		if !ok {
+			total := p.Total
+			labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
+			doneDecorator := decor.OnComplete(decor.Name(p.Label, decor.WCSyncSpaceR), "done!")
+			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
+			if total == -1 {
+				// unknown total, render a spinner
+				total = p.Current + 1
+				b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixOption,
+					mpb.PrependDecorators(labelDecorator, doneDecorator,
+						decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
+			} else {
+				b = multi.AddBar(int64(total), mpb.BarStyle(progressBarStyle), suffixOption,
+					mpb.PrependDecorators(labelDecorator, doneDecorator,
+						decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
+			}
+			bars[p.Label] = b
+		}
+		if p.Total != -1 {
+			b.SetTotal(int64(p.Total), false)
+		} else {
+			b.SetTotal(int64(p.Current+1), false)
+		}
+		if p.Completed {
+			b.SetTotal(0, false)
+		}
+		b.SetCurrent(int64(p.Current))
+	}
 }
 
 func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catalog.Repository, branch string) error {

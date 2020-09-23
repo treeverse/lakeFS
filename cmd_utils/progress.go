@@ -5,9 +5,10 @@ type ProgressReporter interface {
 }
 
 type Progress struct {
-	Label   string
-	Current int
-	Total   int
+	Label     string
+	Current   int
+	Total     int
+	Completed bool
 }
 
 func (p *Progress) Incr() {

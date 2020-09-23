@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+	cmd_utils2 "github.com/treeverse/lakefs/cmd_utils"
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -27,9 +27,9 @@ var (
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
 	Short: "commit changes on a given branch",
-	Args: cmd_utils.ValidationChain(
-		cmd_utils.HasNArgs(1),
-		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
+	Args: cmd_utils2.ValidationChain(
+		cmd_utils2.HasNArgs(1),
+		cmd_utils2.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message
