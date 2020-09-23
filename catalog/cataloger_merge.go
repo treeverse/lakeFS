@@ -54,11 +54,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			total += c
 		}
 		if total == 0 {
-			leftCommitAdvanced, err := checkZeroDiffCommit(tx, leftID, rightID)
+			commitDifferences, err := hasCommitDifferences(tx, leftID, rightID)
 			if err != nil {
 				return nil, err
 			}
-			if !leftCommitAdvanced {
+			if !commitDifferences {
 				return nil, ErrNoDifferenceWasFound
 			}
 		}
@@ -76,29 +76,28 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 	return mergeResult, err
 }
 
-// checkZeroDiffCommit - Checks if the current commit id of source branch advanced since last merge.
-//		If so - a merge record must be created, even if there are no changes between branches.
-func checkZeroDiffCommit(tx db.Tx, leftID, rightID int64) (bool, error) {
-	leftMaxCommitID, err := getLastCommitIDByBranchID(tx, leftID)
+// hasCommitDifferences - Checks if the current commit id of target or source branch advanced since last merge
+func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
+	var hasCommitDifferences bool
+	mergeCommitsQuery := `select right_merge_commit < max_right_commit or left_merge_commit < max_left_commit from
+		(select distinct on (branch_id) commit_id as right_merge_commit, merge_source_commit as left_merge_commit,
+		(select max(commit_id) from catalog_commits where branch_id=$1)as max_right_commit,
+		(select max(commit_id) from catalog_commits where branch_id=$2)as max_left_commit
+		from catalog_commits where branch_id = $1 and merge_source_branch = $2
+		order by branch_id,commit_id desc) t`
+	err := tx.Get(&hasCommitDifferences, mergeCommitsQuery, rightID, leftID)
+	if errors.Is(err, db.ErrNotFound) {
+		// not found errors indicate there is no merge record for this relation
+		//  a parent to child merge record is written when the branch is created,
+		// so this may happen only on first child to parent merge.
+		// in this case - a check is done if any commits where done to child.
+		const checkChildCommitsQuery = "select exists(select * from catalog_commits where branch_id = $1 and merge_type='none')"
+		err = tx.Get(&hasCommitDifferences, checkChildCommitsQuery, leftID)
+	}
 	if err != nil {
-		return false, fmt.Errorf("left branch id: %w", err)
+		return false, fmt.Errorf("has commit difference: %w", err)
 	}
-	var mergeMaxCommitID CommitID
-	err = tx.Get(&mergeMaxCommitID, `SELECT DISTINCT on (branch_id) merge_source_commit 
-		FROM catalog_commits
-		WHERE branch_id = $1 AND merge_source_branch = $2
-		ORDER BY branch_id, commit_id DESC`,
-		rightID, leftID)
-	if err != nil && !errors.Is(err, db.ErrNotFound) {
-		return false, fmt.Errorf("max source commit id: %w", err)
-	}
-	if errors.Is(err, db.ErrNotFound) { // can happen only in from child merge, on the first merge
-		err = tx.Get(&mergeMaxCommitID, `SELECT MIN(commit_id) FROM catalog_commits WHERE branch_id = $1`, leftID)
-		if err != nil {
-			return false, fmt.Errorf("min commit from left branch: %w", err)
-		}
-	}
-	return leftMaxCommitID > mergeMaxCommitID, nil
+	return hasCommitDifferences, nil
 }
 
 func formatMergeMessage(leftBranch string, rightBranch string) string {
@@ -144,8 +143,10 @@ func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID 
 	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
-				WHERE e.ctid IN (SELECT entry_ctid FROM `+diffResultsTableName+` WHERE diff_type=$3)`,
-		childID, nextCommitID, DifferenceTypeChanged)
+				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type=$3 
+ 				-- the or condition - diff will see an entry as new if it is deleted in child. but merge still need to copy it
+				OR d.diff_type=$4 and d.path in (SELECT e1.path FROM catalog_entries e1 WHERE e1.branch_id=$1 and e1.max_commit != catalog_max_commit_id()))`,
+		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded)
 	if err != nil {
 		return err
 	}
