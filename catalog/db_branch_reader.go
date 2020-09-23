@@ -132,7 +132,7 @@ func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 			// panic(err)
 		}
 	}
-	//returnes the significant entry of that Path, and remove rows with that Path from buf
+	// returnes the significant entry of that Path, and remove rows with that Path from buf
 	l := len(r.buf)
 	if l == 0 {
 		r.EOF = true
