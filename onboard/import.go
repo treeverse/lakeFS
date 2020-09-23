@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"github.com/treeverse/lakefs/cmd_utils"
 
@@ -34,6 +35,15 @@ type Config struct {
 	InventoryGenerator block.InventoryGenerator
 	Cataloger          catalog.Cataloger
 	CatalogActions     RepoActions
+}
+
+type Stats struct {
+	AddedOrChanged       int
+	Deleted              int
+	DryRun               bool
+	PreviousInventoryURL string
+	CommitRef            string
+	PreviousImportDate   time.Time
 }
 
 var ErrNoInventoryURL = errors.New("no inventory_url in commit Metadata")

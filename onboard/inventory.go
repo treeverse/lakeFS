@@ -121,8 +121,8 @@ func CreateCommitMetadata(inv block.Inventory, stats Stats) catalog.Metadata {
 	return catalog.Metadata{
 		"inventory_url":            inv.InventoryURL(),
 		"source":                   inv.SourceName(),
-		"added_or_changed_objects": strconv.Itoa(int(*stats.AddedOrChanged)),
-		"deleted_objects":          strconv.Itoa(int(*stats.Deleted)),
+		"added_or_changed_objects": strconv.Itoa(stats.AddedOrChanged),
+		"deleted_objects":          strconv.Itoa(stats.Deleted),
 	}
 }
 

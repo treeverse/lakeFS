@@ -6,6 +6,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/treeverse/lakefs/cmd_utils"
+
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/logging"
@@ -71,22 +73,25 @@ func (m *mockInventory) rows() []block.InventoryObject {
 }
 
 func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.Stats, error) {
-	stats := onboard.NewStats()
+	stats := onboard.Stats{
+		AddedOrChanged: len(m.objectActions.Added),
+		Deleted:        len(m.objectActions.Deleted),
+	}
 	for it.Next() {
 		diffObj := it.Get()
 		if diffObj.IsDeleted {
 			if !dryRun {
 				m.objectActions.Deleted = append(m.objectActions.Deleted, diffObj.Obj.Key)
 			}
-			stats.AddDeleted(1)
+			stats.Deleted += 1
 		} else {
 			if !dryRun {
 				m.objectActions.Added = append(m.objectActions.Added, diffObj.Obj.Key)
 			}
-			stats.AddCreated(1)
+			stats.AddedOrChanged += 1
 		}
 	}
-	return stats, nil
+	return &stats, nil
 }
 
 func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catalog.CommitLog, err error) {
@@ -99,6 +104,10 @@ func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catal
 func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
 	m.lastCommitMetadata = metadata
 	return &catalog.CommitLog{}, nil
+}
+
+func (m *mockCatalogActions) Progress() []*cmd_utils.Progress {
+	return nil
 }
 
 type mockInventoryIterator struct {
@@ -121,6 +130,10 @@ func (m *mockInventoryIterator) Err() error {
 
 func (m *mockInventoryIterator) Get() *block.InventoryObject {
 	return &m.rows[*m.idx]
+}
+
+func (m *mockInventoryIterator) Progress() []*cmd_utils.Progress {
+	return nil
 }
 
 func (m *mockInventory) Iterator() block.InventoryIterator {

@@ -64,7 +64,7 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 }
 
 func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
-	stats := NewStats()
+	var stats Stats
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
@@ -81,13 +81,13 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 		diffObj := it.Get()
 		obj := diffObj.Obj
 		if diffObj.IsDeleted {
+			stats.Deleted += 1
 			if !dryRun {
 				err := c.cataloger.DeleteEntry(ctx, c.repository, DefaultBranchName, obj.Key)
 				if err != nil {
 					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
 			}
-			stats.AddDeleted(1)
 			c.deletedProgress.Incr()
 			continue
 		}
@@ -99,11 +99,11 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			Checksum:        obj.Checksum,
 		}
 		currentBatch = append(currentBatch, entry)
+		stats.AddedOrChanged += 1
 		if len(currentBatch) >= batchSize {
 			previousBatch := currentBatch
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
-				stats.AddCreated(int64(len(previousBatch)))
 				c.addedProgress.Add(len(previousBatch))
 				continue
 			}
@@ -111,7 +111,6 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 				f: func() error {
 					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
 					if err == nil {
-						stats.AddCreated(int64(len(previousBatch)))
 						c.addedProgress.Add(len(previousBatch))
 					}
 					return err
@@ -138,9 +137,8 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
-	stats.AddCreated(int64(len(currentBatch)))
 	c.addedProgress.Add(len(currentBatch))
-	return stats, nil
+	return &stats, nil
 }
 
 func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error) {

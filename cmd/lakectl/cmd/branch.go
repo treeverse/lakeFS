@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -25,9 +27,9 @@ var branchListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://<repository>",
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -69,9 +71,9 @@ var branchListCmd = &cobra.Command{
 var branchCreateCmd = &cobra.Command{
 	Use:   "create <ref uri>",
 	Short: "create a new branch in a repository",
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRefURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -100,9 +102,9 @@ var branchCreateCmd = &cobra.Command{
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete <branch uri>",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRefURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete branch")
@@ -127,9 +129,9 @@ var branchRevertCmd = &cobra.Command{
   2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master 
   3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master --prefix path
   4. revert uncommitted changes for specific object - revert lakefs://myrepo@master --object path`,
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRefURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -191,9 +193,9 @@ var branchRevertCmd = &cobra.Command{
 var branchShowCmd = &cobra.Command{
 	Use:   "show <branch uri>",
 	Short: "show branch latest commit reference",
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRefURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

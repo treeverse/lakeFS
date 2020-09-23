@@ -4,6 +4,8 @@ import (
 	"context"
 	"os"
 
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+
 	"github.com/go-openapi/swag"
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
@@ -22,9 +24,9 @@ var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
-	Args: ValidationChain(
-		HasRangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
-		PositionValidator(0, uri.ValidateRefURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasRangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
+		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

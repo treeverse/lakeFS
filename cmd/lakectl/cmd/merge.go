@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+
 	"github.com/treeverse/lakefs/catalog"
 
 	"github.com/spf13/cobra"
@@ -21,10 +23,10 @@ var mergeCmd = &cobra.Command{
 	Use:   "merge <source ref> <destination ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
-	Args: ValidationChain(
-		HasRangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
-		PositionValidator(0, uri.ValidateRefURI),
-		PositionValidator(1, uri.ValidateRefURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasRangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
+		cmd_utils.PositionValidator(0, uri.ValidateRefURI),
+		cmd_utils.PositionValidator(1, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

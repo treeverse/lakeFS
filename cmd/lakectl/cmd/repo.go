@@ -6,6 +6,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/treeverse/lakefs/cmd/lakectl/cmd_utils"
+
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
@@ -75,9 +77,9 @@ var repoListCmd = &cobra.Command{
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
-	Args: ValidationChain(
-		HasNArgs(repoCreateCmdArgs),
-		PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(repoCreateCmdArgs),
+		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
 	),
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -110,9 +112,9 @@ var repoCreateCmd = &cobra.Command{
 var repoDeleteCmd = &cobra.Command{
 	Use:   "delete <repository uri>",
 	Short: "delete existing repository",
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -138,9 +140,9 @@ var retentionCmd = &cobra.Command{
 var getPolicyCmd = &cobra.Command{
 	Use:   "get <repository uri>",
 	Short: "show retention policy",
-	Args: ValidationChain(
-		HasNArgs(1),
-		PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(1),
+		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -161,9 +163,9 @@ var setPolicyCmd = &cobra.Command{
 	Use:   "set <repository uri> </path/to/policy.json | ->",
 	Short: "set retention policy",
 	Long:  "set retention policy from file, or stdin if \"-\" specified",
-	Args: ValidationChain(
-		HasNArgs(setPolicyCmdArgs),
-		PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmd_utils.ValidationChain(
+		cmd_utils.HasNArgs(setPolicyCmdArgs),
+		cmd_utils.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))

@@ -2292,8 +2292,8 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			IsDryRun:           dryRun,
 			PreviousImportDate: importStats.PreviousImportDate.Unix(),
 			PreviousManifest:   importStats.PreviousInventoryURL,
-			AddedOrChanged:     swag.Int64Value(importStats.AddedOrChanged),
-			Deleted:            swag.Int64Value(importStats.Deleted),
+			AddedOrChanged:     int64(importStats.AddedOrChanged),
+			Deleted:            int64(importStats.Deleted),
 		})
 	})
 }

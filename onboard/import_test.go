@@ -108,11 +108,11 @@ func TestImport(t *testing.T) {
 				t.Fatalf("error was expected but none was returned")
 			}
 
-			if *stats.AddedOrChanged != int64(len(test.ExpectedAdded)) {
-				t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), *stats.AddedOrChanged)
+			if !reflect.DeepEqual(stats.AddedOrChanged, len(test.ExpectedAdded)) {
+				t.Fatalf("number of added objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedAdded), stats.AddedOrChanged)
 			}
-			if *stats.Deleted != int64(len(test.ExpectedDeleted)) {
-				t.Fatalf("number of deleted objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedDeleted), *stats.Deleted)
+			if !reflect.DeepEqual(stats.Deleted, len(test.ExpectedDeleted)) {
+				t.Fatalf("number of deleted objects in return value different than expected. expected=%v, got=%v", len(test.ExpectedDeleted), stats.Deleted)
 			}
 			var expectedAddedToCatalog, expectedDeletedFromCatalog []string
 			if !dryRun {

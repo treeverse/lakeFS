@@ -16,19 +16,13 @@ var ErrInventoryNotSorted = errors.New("got unsorted s3 inventory")
 
 type InventoryIterator struct {
 	*Inventory
-	err                error
-	val                *block.InventoryObject
-	buffer             []inventorys3.InventoryObject
-	inventoryFileIndex int
-	valIndexInBuffer   int
-	fileProgress       *cmd_utils.Progress
-	objectProgress     *cmd_utils.Progress
-}
-
-func (it *InventoryIterator) Progress() []*cmd_utils.Progress {
-	return []*cmd_utils.Progress{
-		it.fileProgress, it.objectProgress,
-	}
+	err                   error
+	val                   *block.InventoryObject
+	buffer                []inventorys3.InventoryObject
+	inventoryFileIndex    int
+	valIndexInBuffer      int
+	inventoryFileProgress *cmd_utils.Progress
+	currentFileProgress   *cmd_utils.Progress
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
@@ -40,10 +34,10 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 	t := time.Unix(creationTimestamp/int64(time.Second/time.Millisecond), 0)
 
 	return &InventoryIterator{
-		Inventory:          inv,
-		inventoryFileIndex: -1,
-		fileProgress:       &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), Total: len(inv.Manifest.Files)},
-		objectProgress:     &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02"))},
+		Inventory:             inv,
+		inventoryFileIndex:    -1,
+		inventoryFileProgress: &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), Total: len(inv.Manifest.Files)},
+		currentFileProgress:   &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02"))},
 	}
 }
 
@@ -60,7 +54,7 @@ func (it *InventoryIterator) Next() bool {
 				it.err = ErrInventoryNotSorted
 				return false
 			}
-			it.objectProgress.Incr()
+			it.currentFileProgress.Incr()
 			it.val = val
 			return true
 		}
@@ -81,7 +75,7 @@ func (it *InventoryIterator) moveToNextInventoryFile() bool {
 		return false
 	}
 	it.inventoryFileIndex += 1
-	it.fileProgress.Incr()
+	it.inventoryFileProgress.Incr()
 	it.logger.Debugf("moving to next manifest file: %s", it.Manifest.Files[it.inventoryFileIndex].Key)
 	it.buffer = nil
 	return true
@@ -94,8 +88,8 @@ func (it *InventoryIterator) fillBuffer() bool {
 		it.err = err
 		return false
 	}
-	it.objectProgress.Total = int(rdr.GetNumRows())
-	it.objectProgress.Set(0)
+	it.currentFileProgress.Total = int(rdr.GetNumRows())
+	it.currentFileProgress.Set(0)
 	defer func() {
 		err = rdr.Close()
 		if err != nil {
@@ -144,4 +138,10 @@ func (it *InventoryIterator) Err() error {
 
 func (it *InventoryIterator) Get() *block.InventoryObject {
 	return it.val
+}
+
+func (it *InventoryIterator) Progress() []*cmd_utils.Progress {
+	return []*cmd_utils.Progress{
+		it.inventoryFileProgress, it.currentFileProgress,
+	}
 }
