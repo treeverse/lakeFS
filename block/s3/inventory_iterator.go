@@ -65,6 +65,7 @@ func (it *InventoryIterator) Next() bool {
 			return false
 		}
 		if !it.fillBuffer() {
+			it.inventoryFileProgress.Completed = true
 			return false
 		}
 	}
