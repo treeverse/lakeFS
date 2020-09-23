@@ -86,7 +86,7 @@ var importCmd = &cobra.Command{
 				os.Exit(1)
 			}
 		} else {
-			fmt.Println("Starting import dry run. Will not perform any changes.")
+			fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
 		}
 		importConfig := &onboard.Config{
 			CommitUsername:     "lakefs",
@@ -148,14 +148,14 @@ func manageProgress(importer *onboard.Importer) chan bool {
 							total = p.Current + 1
 							b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle([]string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}),
 								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
-								mpb.PrependDecorators(decor.CurrentNoUnit("%d ", decor.WC{W: 15})),
+								mpb.PrependDecorators(decor.CurrentNoUnit("%d ", decor.WC{W: 20})),
 								mpb.PrependDecorators(decor.Name("[")),
 								mpb.AppendDecorators(decor.Name("]")),
 							)
 						} else {
 							b = multi.AddBar(int64(total), mpb.BarStyle(" =>- <"),
 								mpb.PrependDecorators(decor.Name(p.Label, decor.WC{W: labelLength, C: decor.DidentRight})),
-								mpb.PrependDecorators(decor.CountersNoUnit("%d / %d ", decor.WC{W: 15})),
+								mpb.PrependDecorators(decor.CountersNoUnit("%d / %d ", decor.WC{W: 20})),
 								mpb.PrependDecorators(decor.Name("[")),
 								mpb.AppendDecorators(decor.Name("]")),
 							)
@@ -179,7 +179,7 @@ func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catal
 	repoName := repo.Name
 	_, err := cataloger.GetBranchReference(ctx, repoName, branch)
 	if errors.Is(err, db.ErrNotFound) {
-		fmt.Printf("Branch %s does not exist, creating.\n", branch)
+		fmt.Printf("Branch %s does not exist, creating.\n\n", branch)
 		_, err = cataloger.CreateBranch(ctx, repoName, branch, repo.DefaultBranch)
 		if err != nil {
 			return fmt.Errorf("failed to create branch %s in repo %s: %v", branch, repoName, err)
@@ -187,7 +187,7 @@ func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catal
 	} else if err != nil {
 		return fmt.Errorf("error when fetching branches for repo %s: %v", repoName, err)
 	} else {
-		fmt.Printf("Branch %s already exists, no need to create it.\n", branch)
+		fmt.Printf("Branch %s already exists, no need to create it.\n\n", branch)
 	}
 	return nil
 }

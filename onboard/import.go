@@ -48,7 +48,6 @@ func CreateImporter(ctx context.Context, logger logging.Logger, config *Config) 
 	if res.CatalogActions == nil {
 		res.CatalogActions = NewCatalogActions(config.Cataloger, config.Repository, config.CommitUsername, logger)
 	}
-	res.progress = res.CatalogActions.Progress()
 	previousCommit, err := res.CatalogActions.GetPreviousCommit(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get previous commit: %w", err)
@@ -88,7 +87,7 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 			return nil, err
 		}
 	}
-	s.progress = append(s.progress, dataToImport.Progress()...)
+	s.progress = append(dataToImport.Progress(), s.CatalogActions.Progress()...)
 	stats, err := s.CatalogActions.ApplyImport(ctx, dataToImport, dryRun)
 	if err != nil {
 		return nil, err
