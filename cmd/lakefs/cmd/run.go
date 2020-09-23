@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"os/signal"
@@ -148,10 +149,36 @@ var runCmd = &cobra.Command{
 		}()
 
 		go gracefulShutdown(quit, done, server)
+
 		<-done
 		cancelFn()
 		<-stats.Done()
 	},
+}
+
+const runBanner = `
+
+     ██╗      █████╗ ██╗  ██╗███████╗███████╗███████╗
+     ██║     ██╔══██╗██║ ██╔╝██╔════╝██╔════╝██╔════╝
+     ██║     ███████║█████╔╝ █████╗  █████╗  ███████╗
+     ██║     ██╔══██║██╔═██╗ ██╔══╝  ██╔══╝  ╚════██║
+     ███████╗██║  ██║██║  ██╗███████╗██║     ███████║
+     ╚══════╝╚═╝  ╚═╝╚═╝  ╚═╝╚══════╝╚═╝     ╚══════╝
+
+│
+│ If you're running lakeFS locally for the first time,
+│     complete the setup process at http://127.0.0.1:8000/setup
+│
+
+│
+│ For more information on how to use lakeFS,
+│     check out the docs at https://docs.lakefs.io/quickstart/repository
+│
+
+`
+
+func printWelcome(w io.Writer) {
+	fmt.Fprint(w, runBanner)
 }
 
 func registerPrometheusCollector(db sqlstats.StatsGetter) {
@@ -165,6 +192,9 @@ func registerPrometheusCollector(db sqlstats.StatsGetter) {
 func gracefulShutdown(quit <-chan os.Signal, done chan<- bool, servers ...Shutter) {
 	logger := logging.Default()
 	logger.WithField("version", config.Version).Info("Up and running (^C to shutdown)...")
+
+	printWelcome(os.Stderr)
+
 	<-quit
 	logger.Warn("shutting down...")
 

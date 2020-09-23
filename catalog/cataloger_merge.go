@@ -87,18 +87,15 @@ func hasCommitDifferences(tx db.Tx, leftID, rightID int64) (bool, error) {
 		order by branch_id,commit_id desc) t`
 	err := tx.Get(&hasCommitDifferences, mergeCommitsQuery, rightID, leftID)
 	if errors.Is(err, db.ErrNotFound) {
-		// not found errors indicate there is no  merge record for this relation
+		// not found errors indicate there is no merge record for this relation
 		//  a parent to child merge record is written when the branch is created,
 		// so this may happen only on first child to parent merge.
 		// in this case - a check is done if any commits where done to child.
-		checkChildCommitsQuery := "select exists(select * from catalog_commits where branch_id = $1 and merge_type='none')"
+		const checkChildCommitsQuery = "select exists(select * from catalog_commits where branch_id = $1 and merge_type='none')"
 		err = tx.Get(&hasCommitDifferences, checkChildCommitsQuery, leftID)
-		if err != nil {
-			return false, fmt.Errorf("check if child has commits : %w", err)
-		}
-		return hasCommitDifferences, nil
-	} else if err != nil {
-		return false, fmt.Errorf(" check zero diff commit : %w", err)
+	}
+	if err != nil {
+		return false, fmt.Errorf("has commit difference: %w", err)
 	}
 	return hasCommitDifferences, nil
 }
@@ -135,15 +132,15 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 }
 
 func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, parentID, childID int64, committer string, msg string, metadata Metadata) error {
-	res, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
+	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id() AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		childID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
 		return err
 	}
-	_ = res
+
 	// DifferenceTypeChanged - create entries into this commit based on parent branch
-	res, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
+	_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,creation_date,size,checksum,metadata,min_commit)
 				SELECT $1,path,physical_address,creation_date,size,checksum,metadata,$2 AS min_commit
 				FROM catalog_entries e
 				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type=$3 
