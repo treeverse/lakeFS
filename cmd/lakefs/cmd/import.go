@@ -121,7 +121,7 @@ var importCmd = &cobra.Command{
 			os.Exit(1)
 		}
 		close(progressDone)
-		updateProgress(importer.Progress(), bars, multiBar)
+		updateProgress(importer.Progress(), bars, multiBar, true)
 		multiBar.Wait()
 		fmt.Print("\n")
 		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", stats.AddedOrChanged))
@@ -153,7 +153,7 @@ func manageProgress(importer *onboard.Importer) (*mpb.Progress, map[string]*mpb.
 				return
 			case <-ticker.C:
 				progress := importer.Progress()
-				updateProgress(progress, bars, multi)
+				updateProgress(progress, bars, multi, false)
 			}
 		}
 	}()
