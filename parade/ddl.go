@@ -14,12 +14,13 @@ import (
 	nanoid "github.com/matoous/go-nanoid"
 )
 
-type TaskId string
+type TaskID string
 
-type ActorId string
+type ActorID string
 
 type PerformanceToken pgtype.UUID
 
+// nolint:stylecheck (change name from src below)
 func (dst *PerformanceToken) Scan(src interface{}) error {
 	var scanned pgtype.UUID
 	if err := scanned.Scan(src); err != nil {
@@ -42,14 +43,19 @@ func (src PerformanceToken) String() string {
 		}
 		offset += n
 	}
+	// nolint:gomnd
 	addBytes(4)
 	res.WriteString("-")
+	// nolint:gomnd
 	addBytes(2)
 	res.WriteString("-")
+	// nolint:gomnd
 	addBytes(2)
 	res.WriteString("-")
+	// nolint:gomnd
 	addBytes(2)
 	res.WriteString("-")
+	// nolint:gomnd
 	addBytes(6)
 	return res.String()
 }
@@ -57,22 +63,22 @@ func (src PerformanceToken) String() string {
 type TaskStatusCodeValue string
 
 const (
-	// TASK_PENDING indicates a task is waiting for an actor to perform it (new or being
+	// TaskPending indicates a task is waiting for an actor to perform it (new or being
 	// retried)
-	TASK_PENDING TaskStatusCodeValue = "pending"
+	TaskPending TaskStatusCodeValue = "pending"
 	// IN_PROGRESS indicates a task is being performed by an actor.
-	TASK_IN_PROGRESS TaskStatusCodeValue = "in-progress"
+	TaskInProgress TaskStatusCodeValue = "in-progress"
 	// ABORTED indicates an actor has aborted this task with message, will not be reissued
-	TASK_ABORTED TaskStatusCodeValue = "aborted"
-	// TASK_COMPLETED indicates an actor has completed this task with message, will not reissued
-	TASK_COMPLETED TaskStatusCodeValue = "completed"
-	// TASK_INVALID is used by the API to report errors
-	TASK_INVALID TaskStatusCodeValue = "[invalid]"
+	TaskAborted TaskStatusCodeValue = "aborted"
+	// TaskCompleted indicates an actor has completed this task with message, will not reissued
+	TaskCompleted TaskStatusCodeValue = "completed"
+	// TaskInvalid is used by the API to report errors
+	TaskInvalid TaskStatusCodeValue = "[invalid]"
 )
 
 // TaskData is a row in table "tasks".  It describes a task to perform.
 type TaskData struct {
-	Id     TaskId `db:"task_id"`
+	ID     TaskID `db:"task_id"`
 	Action string `db:"action"`
 	// Body is JSON-formatted
 	Body              *string           `db:"body"`
@@ -81,8 +87,8 @@ type TaskData struct {
 	NumTries          int               `db:"num_tries"`
 	MaxTries          *int              `db:"max_tries"`
 	TotalDependencies *int              `db:"total_dependencies"`
-	ToSignal          []TaskId          `db:"to_signal"`
-	ActorId           ActorId           `db:"actor_id"`
+	ToSignal          []TaskID          `db:"to_signal"`
+	ActorID           ActorID           `db:"actor_id"`
 	ActionDeadline    *time.Time        `db:"action_deadline"`
 	PerformanceToken  *PerformanceToken `db:"performance_token"`
 	FinishChannelName *string           `db:"finish_channel"`
@@ -98,7 +104,7 @@ type TaskDataIterator struct {
 
 func (td *TaskDataIterator) Next() bool {
 	if td.next > len(td.Data) {
-		td.err = NoMoreDataError
+		td.err = ErrNoMoreData
 		return false
 	}
 	ret := td.next < len(td.Data)
@@ -106,7 +112,7 @@ func (td *TaskDataIterator) Next() bool {
 	return ret
 }
 
-var NoMoreDataError = errors.New("no more data")
+var ErrNoMoreData = errors.New("no more data")
 
 func (td *TaskDataIterator) Err() error {
 	return td.err
@@ -114,7 +120,7 @@ func (td *TaskDataIterator) Err() error {
 
 func (td *TaskDataIterator) Values() ([]interface{}, error) {
 	if td.next > len(td.Data) {
-		td.err = NoMoreDataError
+		td.err = ErrNoMoreData
 		return nil, td.err
 	}
 	value := td.Data[td.next-1]
@@ -125,7 +131,7 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 		toSignal[i] = string(value.ToSignal[i])
 	}
 	return []interface{}{
-		value.Id,
+		value.ID,
 		value.Action,
 		value.Body,
 		value.Status,
@@ -134,7 +140,7 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 		value.MaxTries,
 		value.TotalDependencies,
 		toSignal,
-		value.ActorId,
+		value.ActorID,
 		value.ActionDeadline,
 		value.PerformanceToken,
 		value.FinishChannelName,
@@ -150,25 +156,25 @@ var TaskDataColumnNames = []string{
 var tasksTable = pgx.Identifier{"tasks"}
 
 // InsertTasks adds multiple tasks efficiently.
-func InsertTasks(ctx context.Context, pgConn *pgx.Conn, source *TaskDataIterator) error {
+func InsertTasks(ctx context.Context, pgConn *pgx.Conn, source pgx.CopyFromSource) error {
 	_, err := pgConn.CopyFrom(ctx, tasksTable, TaskDataColumnNames, source)
 	return err
 }
 
 // OwnedTaskData is a row returned from "SELECT * FROM own_tasks(...)".
 type OwnedTaskData struct {
-	Id     TaskId           `db:"task_id"`
+	ID     TaskID           `db:"task_id"`
 	Token  PerformanceToken `db:"token"`
 	Action string           `db:"action"`
 	Body   *string
 }
 
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions.
-func OwnTasks(conn *sqlx.DB, actor ActorId, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
+func OwnTasks(conn *sqlx.DB, actor ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
 	// Use sqlx.In to expand slice actions
 	query, args, err := sqlx.In(`SELECT * FROM own_tasks(?, ARRAY[?], ?, ?)`, maxTasks, actions, actor, maxDuration)
 	if err != nil {
-		return nil, fmt.Errorf("expand own tasks query: %s", err)
+		return nil, fmt.Errorf("expand own tasks query: %w", err)
 	}
 	query = conn.Rebind(query)
 	rows, err := conn.Queryx(query, args...)
@@ -186,15 +192,18 @@ func OwnTasks(conn *sqlx.DB, actor ActorId, maxTasks int, actions []string, maxD
 	return tasks, nil
 }
 
-var InvalidTokenError = errors.New("performance token invalid (action may have exceeded deadline)")
+var ErrInvalidToken = errors.New("performance token invalid (action may have exceeded deadline)")
 
 // ReturnTask returns taskId which was acquired using the specified performanceToken, giving it
 // resultStatus and resultStatusCode.  It returns InvalidTokenError if the performanceToken is
 // invalid; this happens when ReturnTask is called after its deadline expires, or due to a logic
 // error.
-func ReturnTask(conn *sqlx.DB, taskId TaskId, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
+func ReturnTask(conn *sqlx.DB, taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
 	var res int
-	query, args, err := sqlx.In(`SELECT return_task(?, ?, ?, ?)`, taskId, token, resultStatus, resultStatusCode)
+	query, args, err := sqlx.In(`SELECT return_task(?, ?, ?, ?)`, taskID, token, resultStatus, resultStatusCode)
+	if err != nil {
+		return fmt.Errorf("create return_task query: %w", err)
+	}
 	query = conn.Rebind(query)
 	err = conn.Get(&res, query, args...)
 	if err != nil {
@@ -202,40 +211,42 @@ func ReturnTask(conn *sqlx.DB, taskId TaskId, token PerformanceToken, resultStat
 	}
 
 	if res != 1 {
-		return InvalidTokenError
+		return ErrInvalidToken
 	}
 
 	return nil
 }
 
+var ErrBadStatus = errors.New("bad status for task")
+
 // WaitForTask blocks until taskId ends, and returns its result status and status code.  It
 // needs a pgx.Conn -- *not* a sqlx.Conn -- because it depends on PostgreSQL specific features.
-func WaitForTask(ctx context.Context, conn *pgx.Conn, taskId TaskId) (resultStatus string, resultStatusCode TaskStatusCodeValue, err error) {
-	row := conn.QueryRow(ctx, `SELECT finish_channel, status_code FROM tasks WHERE id=$1`, taskId)
+func WaitForTask(ctx context.Context, conn *pgx.Conn, taskID TaskID) (resultStatus string, resultStatusCode TaskStatusCodeValue, err error) {
+	row := conn.QueryRow(ctx, `SELECT finish_channel, status_code FROM tasks WHERE id=$1`, taskID)
 	var (
 		finishChannel string
 		statusCode    TaskStatusCodeValue
 		status        string
 	)
 	if err = row.Scan(&finishChannel, &statusCode); err != nil {
-		return "", TASK_INVALID, fmt.Errorf("check task %s to listen: %w", taskId, err)
+		return "", TaskInvalid, fmt.Errorf("check task %s to listen: %w", taskID, err)
 	}
-	if statusCode != TASK_IN_PROGRESS && statusCode != TASK_PENDING {
-		return "", statusCode, fmt.Errorf("task %s already in status %s", taskId, statusCode)
+	if statusCode != TaskInProgress && statusCode != TaskPending {
+		return "", statusCode, fmt.Errorf("task %s already in status %s: %w", taskID, statusCode, ErrBadStatus)
 	}
 
 	if _, err = conn.Exec(ctx, "LISTEN "+pgx.Identifier{finishChannel}.Sanitize()); err != nil {
-		return "", TASK_INVALID, fmt.Errorf("listen for %s: %w", finishChannel, err)
+		return "", TaskInvalid, fmt.Errorf("listen for %s: %w", finishChannel, err)
 	}
 
 	_, err = conn.WaitForNotification(ctx)
 	if err != nil {
-		return "", TASK_INVALID, fmt.Errorf("wait for notification %s: %w", finishChannel, err)
+		return "", TaskInvalid, fmt.Errorf("wait for notification %s: %w", finishChannel, err)
 	}
 
-	row = conn.QueryRow(ctx, `SELECT status, status_code FROM tasks WHERE id=$1`, taskId)
+	row = conn.QueryRow(ctx, `SELECT status, status_code FROM tasks WHERE id=$1`, taskID)
 	status = ""
-	statusCode = TASK_INVALID
+	statusCode = TaskInvalid
 	err = row.Scan(&status, &statusCode)
 	return status, statusCode, err
 }
@@ -243,7 +254,7 @@ func WaitForTask(ctx context.Context, conn *pgx.Conn, taskId TaskId) (resultStat
 // taskWithNewIterator is a pgx.CopyFromSource iterator that passes each task along with a
 // 'new' copy status.
 type taskWithNewIterator struct {
-	tasks []TaskId
+	tasks []TaskID
 	idx   int
 }
 
@@ -260,7 +271,7 @@ func (it *taskWithNewIterator) Err() error {
 	return nil
 }
 
-func makeTaskWithNewIterator(tasks []TaskId) *taskWithNewIterator {
+func makeTaskWithNewIterator(tasks []TaskID) *taskWithNewIterator {
 	return &taskWithNewIterator{tasks, -1}
 }
 
@@ -268,12 +279,12 @@ func makeTaskWithNewIterator(tasks []TaskId) *taskWithNewIterator {
 // tasks that are left with no dependencies.  It creates a temporary table on tx, so ideally
 // close the transaction shortly after.  The effect is easiest to analyze when all deleted tasks
 // have been either completed or been aborted.
-func DeleteTasks(ctx context.Context, tx pgx.Tx, taskIds []TaskId) error {
-	uniqueId, err := nanoid.Nanoid()
+func DeleteTasks(ctx context.Context, tx pgx.Tx, taskIds []TaskID) error {
+	uniqueID, err := nanoid.Nanoid()
 	if err != nil {
 		return fmt.Errorf("generate random component for table name: %w", err)
 	}
-	tableName := fmt.Sprintf("delete_tasks_%s", uniqueId)
+	tableName := fmt.Sprintf("delete_tasks_%s", uniqueID)
 	if _, err = tx.Exec(
 		ctx,
 		fmt.Sprintf(`CREATE TEMP TABLE "%s" (id VARCHAR(64), mark tasks_recurse_value NOT NULL) ON COMMIT DROP`, tableName),

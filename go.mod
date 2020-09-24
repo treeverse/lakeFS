@@ -8,7 +8,6 @@ require (
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
 	github.com/aws/aws-sdk-go v1.34.0
-	github.com/benbjohnson/clock v1.0.3
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect
 	github.com/containerd/continuity v0.0.0-20200710164510-efbc4488d8fe // indirect
