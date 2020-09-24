@@ -24,7 +24,7 @@ var versionCmd = &cobra.Command{
 			fmt.Printf("Failed to get info for schema: %s\n", err)
 			return
 		}
-		available, err := db.GetLastMigrationAvailable(0)
+		available, err := db.GetLastMigrationAvailable()
 		if err != nil {
 			fmt.Printf("Failed to get info for schema: %s\n", err)
 			return

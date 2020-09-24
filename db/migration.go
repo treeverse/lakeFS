@@ -65,7 +65,7 @@ func ValidateSchemaUpToDate(params params.Database) error {
 	if err != nil {
 		return err
 	}
-	available, err := GetLastMigrationAvailable(0)
+	available, err := GetLastMigrationAvailable()
 	if err != nil {
 		return err
 	}
@@ -75,7 +75,7 @@ func ValidateSchemaUpToDate(params params.Database) error {
 	return nil
 }
 
-func GetLastMigrationAvailable(from uint) (uint, error) {
+func GetLastMigrationAvailable() (uint, error) {
 	src, err := getStatikSrc()
 	if err != nil {
 		return 0, err
@@ -83,12 +83,9 @@ func GetLastMigrationAvailable(from uint) (uint, error) {
 	defer func() {
 		_ = src.Close()
 	}()
-	current := from
-	if from == 0 {
-		current, err = src.First()
-		if err != nil {
-			return 0, fmt.Errorf("%w: failed to find first migration", err)
-		}
+	current, err := src.First()
+	if err != nil {
+		return 0, fmt.Errorf("%w: failed to find first migration", err)
 	}
 	for {
 		next, err := src.Next(current)
