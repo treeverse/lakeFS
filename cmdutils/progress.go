@@ -102,7 +102,7 @@ func (b *MultiBar) Refresh(isCompleted bool) {
 	for _, p := range progress {
 		total := atomic.LoadInt64(p.total)
 		isSpinner := false
-		if total == -1 {
+		if total <= 0 {
 			isSpinner = true
 			total = atomic.LoadInt64(p.current)
 		}
