@@ -53,7 +53,7 @@ $$;
 CREATE OR REPLACE FUNCTION own_tasks(
     max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
 )
-RETURNS TABLE(task_id VARCHAR(64), token UUID, body TEXT)
+RETURNS TABLE(task_id VARCHAR(64), token UUID, action VARCHAR(128), body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
@@ -69,9 +69,10 @@ LANGUAGE sql VOLATILE AS $$
 	    (max_tries IS NULL OR num_tries < max_tries)
 	-- maybe: AND not_before <= NOW()
 	-- maybe: ORDER BY priority (eventually)
-	FOR NO KEY UPDATE SKIP LOCKED
+	ORDER BY random()
+	FOR UPDATE SKIP LOCKED
 	LIMIT max_tasks)
-    RETURNING id, performance_token, body
+    RETURNING id, performance_token, action, body
 $$;
 
 -- Returns an owned task id that was locked with token.  It is an error

@@ -37,6 +37,7 @@ var (
 	parallelism = flag.Int("parallelism", 16, "Number of concurrent client worker goroutines.")
 	bulk        = flag.Int("bulk", 2_000, "Number of tasks to acquire at once in each client goroutine.")
 	taskFactor  = flag.Int("task-factor", 20_000, "Scale benchmark N by this many tasks")
+	numShards   = flag.Int("num-shards", 400, "Number of intermediate fan-in shards")
 )
 
 // taskIdSlice attaches the methods of sort.Interface to []TaskId.
@@ -195,21 +196,26 @@ func (w wrapper) deleteTasks(ids []parade.TaskId) error {
 	for i := 0; i < len(ids); i++ {
 		prefixedIds[i] = w.prefixTask(ids[i])
 	}
-	tx, err := w.db.BeginTxx(context.Background(), nil)
+	ctx := context.Background()
+	conn, err := pgx.Connect(ctx, databaseURI)
+	if err != nil {
+		return fmt.Errorf("connect to DB: %w", err)
+	}
+	tx, err := conn.Begin(ctx)
 	if err != nil {
 		return fmt.Errorf("BEGIN: %w", err)
 	}
 	defer func() {
 		if tx != nil {
-			tx.Rollback()
+			tx.Rollback(ctx)
 		}
 	}()
 
-	if err = parade.DeleteTasks(tx, prefixedIds); err != nil {
+	if err = parade.DeleteTasks(ctx, tx, prefixedIds); err != nil {
 		return err
 	}
 
-	if err = tx.Commit(); err != nil {
+	if err = tx.Commit(ctx); err != nil {
 		return fmt.Errorf("COMMIT: %w", err)
 	}
 	tx = nil
@@ -724,11 +730,19 @@ func BenchmarkFanIn(b *testing.B) {
 	id := func(n int) parade.TaskId {
 		return parade.TaskId(fmt.Sprintf("in:%08d", n))
 	}
+	shardId := func(n int) parade.TaskId {
+		return parade.TaskId(fmt.Sprintf("done:%05d", n))
+	}
 
-	tasks := make([]parade.TaskData, 0, numTasks+1)
-	toSignal := []parade.TaskId{"done"}
+	tasks := make([]parade.TaskData, 0, numTasks+*numShards+1)
 	for i := 0; i < numTasks; i++ {
+		toSignal := []parade.TaskId{shardId(i % *numShards)}
 		tasks = append(tasks, parade.TaskData{Id: id(i), Action: "part", ToSignal: toSignal})
+	}
+
+	toSignal := []parade.TaskId{"done"}
+	for i := 0; i < *numShards; i++ {
+		tasks = append(tasks, parade.TaskData{Id: shardId(i), Action: "spontaneous", ToSignal: toSignal})
 	}
 	tasks = append(tasks, parade.TaskData{Id: "done", Action: "done"})
 	cleanup := w.insertTasks(tasks)
@@ -752,8 +766,11 @@ func BenchmarkFanIn(b *testing.B) {
 			count := 0
 			receivedDone := false
 			for {
-				size := *bulk + int(rand.Int31n(int32(*bulk/10))) - *bulk/10
-				tasks, err := w.ownTasks(parade.ActorId(fmt.Sprintf("worker-%d", i)), size, []string{"part", "done"}, nil)
+				size := *bulk + int(rand.Int31n(int32(*bulk/5))) - *bulk/10
+				tasks, err := w.ownTasks(
+					parade.ActorId(fmt.Sprintf("worker-%d", i)),
+					size,
+					[]string{"part", "spontaneous", "done"}, nil)
 				if err != nil {
 					resultCh[i] <- result{err: err}
 					return
@@ -762,10 +779,15 @@ func BenchmarkFanIn(b *testing.B) {
 					break
 				}
 				for _, task := range tasks {
-					if task.Id != "done" {
+					switch task.Action {
+					case w.prefix("part"):
 						count++
-					} else {
+					case w.prefix("spontaneous"):
+						// nothing, just reduce fan-in contention
+					case w.prefix("done"):
 						receivedDone = true
+					default:
+						resultCh[i] <- result{err: fmt.Errorf("weird action %s", task.Action)}
 					}
 					w.returnTask(task.Id, task.Token, "ok", parade.TASK_COMPLETED)
 				}
