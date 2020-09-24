@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/treeverse/lakefs/cmd_utils"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
@@ -20,7 +20,7 @@ const (
 )
 
 type RepoActions interface {
-	cmd_utils.ProgressReporter
+	cmdutils.ProgressReporter
 	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
 	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
@@ -32,12 +32,12 @@ type CatalogRepoActions struct {
 	repository      string
 	committer       string
 	logger          logging.Logger
-	deletedProgress *cmd_utils.Progress
-	addedProgress   *cmd_utils.Progress
+	deletedProgress *cmdutils.Progress
+	addedProgress   *cmdutils.Progress
 }
 
-func (c *CatalogRepoActions) Progress() []*cmd_utils.Progress {
-	return []*cmd_utils.Progress{c.addedProgress, c.deletedProgress}
+func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
+	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress}
 }
 
 func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) RepoActions {
@@ -46,8 +46,8 @@ func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer
 		repository:      repository,
 		committer:       committer,
 		logger:          logger,
-		addedProgress:   &cmd_utils.Progress{Label: "Objects Added or Changed", Total: -1},
-		deletedProgress: &cmd_utils.Progress{Label: "Objects Deleted", Total: -1},
+		addedProgress:   cmdutils.NewProgress("Objects Added or Changed", 0),
+		deletedProgress: cmdutils.NewProgress("Objects Deleted", 0),
 	}
 }
 
@@ -104,14 +104,14 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			previousBatch := currentBatch
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
-				c.addedProgress.Add(len(previousBatch))
+				c.addedProgress.Add(int64(len(previousBatch)))
 				continue
 			}
 			tsk := &task{
 				f: func() error {
 					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
 					if err == nil {
-						c.addedProgress.Add(len(previousBatch))
+						c.addedProgress.Add(int64(len(previousBatch)))
 					}
 					return err
 				},
@@ -137,7 +137,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
-	c.addedProgress.Add(len(currentBatch))
+	c.addedProgress.Add(int64(len(currentBatch)))
 	return &stats, nil
 }
 

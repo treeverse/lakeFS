@@ -5,7 +5,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/treeverse/lakefs/cmd_utils"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -25,7 +25,7 @@ type ImportObject struct {
 }
 
 type Iterator interface {
-	cmd_utils.ProgressReporter
+	cmdutils.ProgressReporter
 	Next() bool
 	Err() error
 	Get() ImportObject
@@ -40,7 +40,7 @@ type DiffIterator struct {
 	err       error
 }
 
-func (d *DiffIterator) Progress() []*cmd_utils.Progress {
+func (d *DiffIterator) Progress() []*cmdutils.Progress {
 	return append(d.leftInv.Progress(), d.rightInv.Progress()...)
 }
 

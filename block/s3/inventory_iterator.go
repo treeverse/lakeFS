@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/treeverse/lakefs/cmd_utils"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/treeverse/lakefs/block"
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
@@ -21,8 +21,8 @@ type InventoryIterator struct {
 	buffer                []inventorys3.InventoryObject
 	inventoryFileIndex    int
 	valIndexInBuffer      int
-	inventoryFileProgress *cmd_utils.Progress
-	currentFileProgress   *cmd_utils.Progress
+	inventoryFileProgress *cmdutils.Progress
+	currentFileProgress   *cmdutils.Progress
 }
 
 func NewInventoryIterator(inv *Inventory) *InventoryIterator {
@@ -32,12 +32,11 @@ func NewInventoryIterator(inv *Inventory) *InventoryIterator {
 		creationTimestamp = 0
 	}
 	t := time.Unix(creationTimestamp/int64(time.Second/time.Millisecond), 0)
-
 	return &InventoryIterator{
 		Inventory:             inv,
 		inventoryFileIndex:    -1,
-		inventoryFileProgress: &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), Total: len(inv.Manifest.Files)},
-		currentFileProgress:   &cmd_utils.Progress{Label: fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02"))},
+		inventoryFileProgress: cmdutils.NewProgress(fmt.Sprintf("Inventory (%s) Files Read", t.Format("2006-01-02")), int64(len(inv.Manifest.Files))),
+		currentFileProgress:   cmdutils.NewProgress(fmt.Sprintf("Inventory (%s) Current File", t.Format("2006-01-02")), 0),
 	}
 }
 
@@ -88,8 +87,8 @@ func (it *InventoryIterator) fillBuffer() bool {
 		it.err = err
 		return false
 	}
-	it.currentFileProgress.Total = int(rdr.GetNumRows())
-	it.currentFileProgress.Set(0)
+	it.currentFileProgress.SetTotal(rdr.GetNumRows())
+	it.currentFileProgress.SetCurrent(0)
 	defer func() {
 		err = rdr.Close()
 		if err != nil {
@@ -140,8 +139,8 @@ func (it *InventoryIterator) Get() *block.InventoryObject {
 	return it.val
 }
 
-func (it *InventoryIterator) Progress() []*cmd_utils.Progress {
-	return []*cmd_utils.Progress{
+func (it *InventoryIterator) Progress() []*cmdutils.Progress {
+	return []*cmdutils.Progress{
 		it.inventoryFileProgress, it.currentFileProgress,
 	}
 }

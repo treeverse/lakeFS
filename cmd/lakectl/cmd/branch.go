@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	cmd_utils2 "github.com/treeverse/lakefs/cmd_utils"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
@@ -27,9 +27,9 @@ var branchListCmd = &cobra.Command{
 	Use:     "list <repository uri>",
 	Short:   "list branches in a repository",
 	Example: "lakectl branch list lakefs://<repository>",
-	Args: cmd_utils2.ValidationChain(
-		cmd_utils2.HasNArgs(1),
-		cmd_utils2.PositionValidator(0, uri.ValidateRepoURI),
+	Args: cmdutils.ValidationChain(
+		cmdutils.HasNArgs(1),
+		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, _ := cmd.Flags().GetInt("amount")
@@ -71,9 +71,9 @@ var branchListCmd = &cobra.Command{
 var branchCreateCmd = &cobra.Command{
 	Use:   "create <ref uri>",
 	Short: "create a new branch in a repository",
-	Args: cmd_utils2.ValidationChain(
-		cmd_utils2.HasNArgs(1),
-		cmd_utils2.PositionValidator(0, uri.ValidateRefURI),
+	Args: cmdutils.ValidationChain(
+		cmdutils.HasNArgs(1),
+		cmdutils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -102,9 +102,9 @@ var branchCreateCmd = &cobra.Command{
 var branchDeleteCmd = &cobra.Command{
 	Use:   "delete <branch uri>",
 	Short: "delete a branch in a repository, along with its uncommitted changes (CAREFUL)",
-	Args: cmd_utils2.ValidationChain(
-		cmd_utils2.HasNArgs(1),
-		cmd_utils2.PositionValidator(0, uri.ValidateRefURI),
+	Args: cmdutils.ValidationChain(
+		cmdutils.HasNArgs(1),
+		cmdutils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		confirmation, err := confirm(cmd.Flags(), "Are you sure you want to delete branch")
@@ -129,9 +129,9 @@ var branchRevertCmd = &cobra.Command{
   2. revert all uncommitted changes (reset) - revert lakefs://myrepo@master 
   3. revert uncommitted changes under specific path -	revert lakefs://myrepo@master --prefix path
   4. revert uncommitted changes for specific object - revert lakefs://myrepo@master --object path`,
-	Args: cmd_utils2.ValidationChain(
-		cmd_utils2.HasNArgs(1),
-		cmd_utils2.PositionValidator(0, uri.ValidateRefURI),
+	Args: cmdutils.ValidationChain(
+		cmdutils.HasNArgs(1),
+		cmdutils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -193,9 +193,9 @@ var branchRevertCmd = &cobra.Command{
 var branchShowCmd = &cobra.Command{
 	Use:   "show <branch uri>",
 	Short: "show branch latest commit reference",
-	Args: cmd_utils2.ValidationChain(
-		cmd_utils2.HasNArgs(1),
-		cmd_utils2.PositionValidator(0, uri.ValidateRefURI),
+	Args: cmdutils.ValidationChain(
+		cmdutils.HasNArgs(1),
+		cmdutils.PositionValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

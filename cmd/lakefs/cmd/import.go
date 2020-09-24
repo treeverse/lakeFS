@@ -7,12 +7,8 @@ import (
 	"net/url"
 	"os"
 	"strings"
-	"time"
 
-	"github.com/treeverse/lakefs/cmd_utils"
-
-	"github.com/vbauerster/mpb/v5"
-	"github.com/vbauerster/mpb/v5/decor"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
@@ -35,16 +31,6 @@ const (
 	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs    = 1
 )
-const (
-	progressCounterFormat         = "%d / %d ["
-	spinnerCounterFormat          = "%d ["
-	progressSuffix                = "]"
-	progressBarNameColumnWidth    = 40
-	progressBarCounterColumnWidth = 20
-	progressBarStyle              = " =>- <"
-)
-
-var spinnerStyles = []string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}
 
 var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
@@ -113,16 +99,15 @@ var importCmd = &cobra.Command{
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
-		multiBar, bars, progressDone := manageProgress(importer)
+		progressBars := cmdutils.StartMultiBar(importer)
 		stats, err := importer.Import(ctx, dryRun)
 		if err != nil {
-			close(progressDone)
+			progressBars.Finish()
 			fmt.Printf("import failed: %v\n", err)
 			os.Exit(1)
 		}
-		close(progressDone)
-		updateProgress(importer.Progress(), bars, multiBar, true)
-		multiBar.Wait()
+		progressBars.Refresh(true)
+		progressBars.Finish()
 		fmt.Print("\n")
 		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", stats.AddedOrChanged))
 		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", stats.Deleted))
@@ -141,73 +126,21 @@ var importCmd = &cobra.Command{
 	},
 }
 
-func manageProgress(importer *onboard.Importer) (*mpb.Progress, map[string]*mpb.Bar, chan bool) {
-	ticker := time.NewTicker(50 * time.Millisecond)
-	multi := mpb.New(mpb.WithWidth(60))
-	done := make(chan bool)
-	bars := make(map[string]*mpb.Bar)
-	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case <-ticker.C:
-				progress := importer.Progress()
-				updateProgress(progress, bars, multi, false)
-			}
-		}
-	}()
-	return multi, bars, done
-}
-
-func updateProgress(progress []*cmd_utils.Progress, bars map[string]*mpb.Bar, multi *mpb.Progress, isCompleted bool) {
-	for _, p := range progress {
-		total := p.Total
-		isSpinner := false
-		if total == -1 {
-			isSpinner = true
-			total = p.Current
-		}
-		b, ok := bars[p.Label]
-		if !ok {
-			labelDecorator := decor.Name(p.Label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
-			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
-			if isSpinner {
-				// unknown total, render a spinner
-				b = multi.AddSpinner(int64(total), mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixOption,
-					mpb.PrependDecorators(labelDecorator,
-						decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
-			} else {
-				b = multi.AddBar(int64(total), mpb.BarStyle(progressBarStyle), suffixOption,
-					mpb.PrependDecorators(labelDecorator,
-						decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
-			}
-			bars[p.Label] = b
-		}
-		b.SetTotal(int64(total), isCompleted)
-		if !isCompleted {
-			b.SetCurrent(int64(p.Current))
-		} else {
-			b.SetCurrent(int64(total))
-		}
-	}
-}
-
 func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catalog.Repository, branch string) error {
 	repoName := repo.Name
 	_, err := cataloger.GetBranchReference(ctx, repoName, branch)
+	if err == nil {
+		fmt.Printf("Branch %s already exists, no need to create it.\n\n", branch)
+		return nil
+	}
 	if errors.Is(err, db.ErrNotFound) {
 		fmt.Printf("Branch %s does not exist, creating.\n\n", branch)
 		_, err = cataloger.CreateBranch(ctx, repoName, branch, repo.DefaultBranch)
 		if err != nil {
-			return fmt.Errorf("failed to create branch %s in repo %s: %v", branch, repoName, err)
+			return fmt.Errorf("failed to create branch %s in repo %s: %w", branch, repoName, err)
 		}
-	} else if err != nil {
-		return fmt.Errorf("error when fetching branches for repo %s: %v", repoName, err)
-	} else {
-		fmt.Printf("Branch %s already exists, no need to create it.\n\n", branch)
 	}
-	return nil
+	return fmt.Errorf("error when fetching branches for repo %s: %w", repoName, err)
 }
 
 //nolint:gochecknoinits

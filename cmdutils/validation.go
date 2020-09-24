@@ -1,4 +1,4 @@
-package cmd_utils
+package cmdutils
 
 import (
 	"errors"

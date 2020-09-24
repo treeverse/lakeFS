@@ -6,7 +6,7 @@ import (
 	"sort"
 	"time"
 
-	"github.com/treeverse/lakefs/cmd_utils"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -106,7 +106,7 @@ func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalo
 	return &catalog.CommitLog{}, nil
 }
 
-func (m *mockCatalogActions) Progress() []*cmd_utils.Progress {
+func (m *mockCatalogActions) Progress() []*cmdutils.Progress {
 	return nil
 }
 
@@ -132,7 +132,7 @@ func (m *mockInventoryIterator) Get() *block.InventoryObject {
 	return &m.rows[*m.idx]
 }
 
-func (m *mockInventoryIterator) Progress() []*cmd_utils.Progress {
+func (m *mockInventoryIterator) Progress() []*cmdutils.Progress {
 	return nil
 }
 

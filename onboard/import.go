@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/treeverse/lakefs/cmd_utils"
+	"github.com/treeverse/lakefs/cmdutils"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -25,7 +25,7 @@ type Importer struct {
 	CatalogActions     RepoActions
 	logger             logging.Logger
 	previousCommit     *catalog.CommitLog
-	progress           []*cmd_utils.Progress
+	progress           []*cmdutils.Progress
 }
 
 type Config struct {
@@ -118,6 +118,6 @@ func (s *Importer) Import(ctx context.Context, dryRun bool) (*Stats, error) {
 	return stats, nil
 }
 
-func (s *Importer) Progress() []*cmd_utils.Progress {
+func (s *Importer) Progress() []*cmdutils.Progress {
 	return s.progress
 }
