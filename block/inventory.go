@@ -4,6 +4,7 @@ import (
 	"context"
 	"time"
 
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -28,6 +29,7 @@ type InventoryObject struct {
 }
 
 type InventoryIterator interface {
+	cmdutils.ProgressReporter
 	Next() bool
 	Err() error
 	Get() *InventoryObject

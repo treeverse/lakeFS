@@ -9,6 +9,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -22,16 +23,16 @@ var diffCmd = &cobra.Command{
 	Use:   "diff <ref uri> [other ref uri]",
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
-	Args: ValidationChain(
-		HasRangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
-		IsRefURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
 
 		const diffWithOtherArgsCount = 2
 		if len(args) == diffWithOtherArgsCount {
-			if err := IsRefURI(1)(args); err != nil {
+			if err := uri.ValidateRefURI(args[1]); err != nil {
 				DieErr(err)
 			}
 			leftRefURI := uri.Must(uri.Parse(args[0]))

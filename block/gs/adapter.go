@@ -413,6 +413,10 @@ func (a *Adapter) Close() error {
 	return a.client.Close()
 }
 
+func (a *Adapter) BlockstoreType() string {
+	return BlockstoreType
+}
+
 func formatMultipartFilename(uploadID string, partNumber int64) string {
 	// keep natural sort order with zero padding
 	return fmt.Sprintf("%s"+partSuffix+"%05d", uploadID, partNumber)

@@ -2245,7 +2245,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 		if err == nil {
 			username = userModel.Username
 		}
-		importConfig := &onboard.ImporterConfig{
+		importConfig := &onboard.Config{
 			CommitUsername:     username,
 			InventoryURL:       params.ManifestURL,
 			Repository:         params.Repository,
@@ -2257,8 +2257,9 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
 				WithPayload(responseErrorFrom(err))
 		}
-		var importStats *onboard.InventoryImportStats
-		if *params.DryRun {
+		var importStats *onboard.Stats
+		dryRun := swag.BoolValue(params.DryRun)
+		if dryRun {
 			importStats, err = importer.Import(deps.ctx, true)
 			if err != nil {
 				return repositories.NewImportFromS3InventoryDefault(http.StatusInternalServerError).
@@ -2288,7 +2289,7 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			}
 		}
 		return repositories.NewImportFromS3InventoryCreated().WithPayload(&repositories.ImportFromS3InventoryCreatedBody{
-			IsDryRun:           *params.DryRun,
+			IsDryRun:           dryRun,
 			PreviousImportDate: importStats.PreviousImportDate.Unix(),
 			PreviousManifest:   importStats.PreviousInventoryURL,
 			AddedOrChanged:     int64(importStats.AddedOrChanged),

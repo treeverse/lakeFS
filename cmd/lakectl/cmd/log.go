@@ -6,6 +6,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -30,9 +31,9 @@ Merge: {{ $val.Parents|join ", "|bold }}
 var logCmd = &cobra.Command{
 	Use:   "log <branch uri>",
 	Short: "show log of commits for the given branch",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, err := cmd.Flags().GetInt("amount")

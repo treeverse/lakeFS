@@ -20,7 +20,10 @@ const (
 )
 
 var (
-	ErrMalformedURI = errors.New("malformed lakefs uri")
+	ErrMalformedURI   = errors.New("malformed lakefs uri")
+	ErrInvalidRepoURI = errors.New("not a valid repo uri")
+	ErrInvalidRefURI  = errors.New("not a valid ref uri")
+	ErrInvalidPathURI = errors.New("not a valid path uri")
 )
 
 type URI struct {
@@ -111,6 +114,39 @@ func Equals(a, b *URI) bool {
 		strings.EqualFold(a.Repository, b.Repository) &&
 		strings.EqualFold(a.Ref, b.Ref) &&
 		strings.EqualFold(a.Path, b.Path)
+}
+
+func ValidateRepoURI(str string) error {
+	u, err := Parse(str)
+	if err != nil {
+		return err
+	}
+	if !u.IsRepository() {
+		return ErrInvalidRepoURI
+	}
+	return nil
+}
+
+func ValidatePathURI(str string) error {
+	u, err := Parse(str)
+	if err != nil {
+		return err
+	}
+	if !u.IsFullyQualified() {
+		return ErrInvalidPathURI
+	}
+	return nil
+}
+
+func ValidateRefURI(str string) error {
+	u, err := Parse(str)
+	if err != nil {
+		return err
+	}
+	if !u.IsRef() {
+		return ErrInvalidRefURI
+	}
+	return nil
 }
 
 func IsValid(str string) bool {
