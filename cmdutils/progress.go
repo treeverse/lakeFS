@@ -36,8 +36,6 @@ type MultiBar struct {
 	done     chan bool
 }
 
-var spinnerStyles = []string{"∙∙∙", "●∙∙", "∙●∙", "∙∙●", "∙∙∙"}
-
 func NewProgress(label string, total int64) *Progress {
 	return &Progress{
 		label:   label,
@@ -112,7 +110,7 @@ func (b *MultiBar) Refresh(isCompleted bool) {
 			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
 			if isSpinner {
 				// unknown total, render a spinner
-				bar = b.mpb.AddSpinner(total, mpb.SpinnerOnMiddle, mpb.SpinnerStyle(spinnerStyles), suffixOption,
+				bar = b.mpb.AddSpinner(total, mpb.SpinnerOnMiddle, suffixOption,
 					mpb.PrependDecorators(labelDecorator,
 						decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
 			} else {
