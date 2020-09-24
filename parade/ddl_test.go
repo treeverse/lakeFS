@@ -735,16 +735,19 @@ func BenchmarkFanIn(b *testing.B) {
 	}
 
 	tasks := make([]parade.TaskData, 0, numTasks+*numShards+1)
+	totalShardDependencies := make([]int, *numShards)
 	for i := 0; i < numTasks; i++ {
-		toSignal := []parade.TaskID{shardId(i % *numShards)}
+		shard := (i / 100) % *numShards
+		toSignal := []parade.TaskID{shardId(shard)}
 		tasks = append(tasks, parade.TaskData{ID: id(i), Action: "part", ToSignal: toSignal})
+		totalShardDependencies[shard]++
 	}
 
 	toSignal := []parade.TaskID{"done"}
 	for i := 0; i < *numShards; i++ {
-		tasks = append(tasks, parade.TaskData{ID: shardId(i), Action: "spontaneous", ToSignal: toSignal})
+		tasks = append(tasks, parade.TaskData{ID: shardId(i), Action: "spontaneous", ToSignal: toSignal, TotalDependencies: &totalShardDependencies[i]})
 	}
-	tasks = append(tasks, parade.TaskData{ID: "done", Action: "done"})
+	tasks = append(tasks, parade.TaskData{ID: "done", Action: "done", TotalDependencies: numShards})
 	cleanup := w.insertTasks(tasks)
 
 	defer cleanup()
