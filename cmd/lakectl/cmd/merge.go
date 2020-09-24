@@ -24,9 +24,9 @@ var mergeCmd = &cobra.Command{
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasRangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
-		cmdutils.PositionValidator(0, uri.ValidateRefURI),
-		cmdutils.PositionValidator(1, uri.ValidateRefURI),
+		cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
+		cmdutils.FuncValidator(1, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

@@ -24,8 +24,8 @@ var diffCmd = &cobra.Command{
 	Short: "diff between commits/hashes",
 	Long:  "see the list of paths added/changed/removed in a branch or between two references (could be either commit hash or branch name)",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasRangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
-		cmdutils.PositionValidator(0, uri.ValidateRefURI),
+		cobra.RangeArgs(diffCmdMinArgs, diffCmdMaxArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()

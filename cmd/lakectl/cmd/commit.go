@@ -28,8 +28,8 @@ var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
 	Short: "commit changes on a given branch",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidateRefURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message

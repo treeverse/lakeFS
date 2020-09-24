@@ -23,8 +23,8 @@ var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
 	Short: "view object metadata",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
@@ -47,10 +47,10 @@ var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
+		cobra.ExactArgs(1),
 		cmdutils.Or(
-			cmdutils.PositionValidator(0, uri.ValidatePathURI),
-			cmdutils.PositionValidator(1, uri.ValidateRefURI),
+			cmdutils.FuncValidator(0, uri.ValidatePathURI),
+			cmdutils.FuncValidator(1, uri.ValidateRefURI),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -68,8 +68,8 @@ var fsCatCmd = &cobra.Command{
 	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidatePathURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -85,8 +85,8 @@ var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidatePathURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -120,8 +120,8 @@ var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "delete object",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidatePathURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))

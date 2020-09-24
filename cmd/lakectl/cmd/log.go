@@ -32,8 +32,8 @@ var logCmd = &cobra.Command{
 	Use:   "log <branch uri>",
 	Short: "show log of commits for the given branch",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidateRefURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		amount, err := cmd.Flags().GetInt("amount")

@@ -77,8 +77,8 @@ var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(repoCreateCmdArgs),
-		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
+		cobra.ExactArgs(repoCreateCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -112,8 +112,8 @@ var repoDeleteCmd = &cobra.Command{
 	Use:   "delete <repository uri>",
 	Short: "delete existing repository",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -140,8 +140,8 @@ var getPolicyCmd = &cobra.Command{
 	Use:   "get <repository uri>",
 	Short: "show retention policy",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -163,8 +163,8 @@ var setPolicyCmd = &cobra.Command{
 	Short: "set retention policy",
 	Long:  "set retention policy from file, or stdin if \"-\" specified",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(setPolicyCmdArgs),
-		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
+		cobra.ExactArgs(setPolicyCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))

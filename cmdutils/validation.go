@@ -12,10 +12,8 @@ var (
 	ErrNoValidation = errors.New("no validation function passed OR condition")
 )
 
-type ArgumentValidator func(string) error
-
-func PositionValidator(pos int, validator ArgumentValidator) Validator {
-	return func(args []string) error {
+func FuncValidator(pos int, validator func(string) error) cobra.PositionalArgs {
+	return func(_ *cobra.Command, args []string) error {
 		if pos > len(args)-1 {
 			return fmt.Errorf("%w - no argument supplied at index %d", ErrInvalid, pos)
 		}
@@ -27,30 +25,10 @@ func PositionValidator(pos int, validator ArgumentValidator) Validator {
 	}
 }
 
-func HasNArgs(n int) Validator {
-	return func(args []string) error {
-		if len(args) != n {
-			return fmt.Errorf("%w - expected %d arguments", ErrInvalid, n)
-		}
-		return nil
-	}
-}
-
-func HasRangeArgs(n1, n2 int) Validator {
-	return func(args []string) error {
-		if len(args) < n1 || len(args) > n2 {
-			return fmt.Errorf("%w - expected %d-%d arguments", ErrInvalid, n1, n2)
-		}
-		return nil
-	}
-}
-
-type Validator func(args []string) error
-
-func ValidationChain(funcs ...Validator) func(cmd *cobra.Command, args []string) error {
+func ValidationChain(funcs ...cobra.PositionalArgs) cobra.PositionalArgs {
 	return func(cmd *cobra.Command, args []string) error {
 		for _, f := range funcs {
-			if err := f(args); err != nil {
+			if err := f(cmd, args); err != nil {
 				return err
 			}
 		}
@@ -58,10 +36,10 @@ func ValidationChain(funcs ...Validator) func(cmd *cobra.Command, args []string)
 	}
 }
 
-func Or(funcs ...Validator) Validator {
-	return func(args []string) error {
+func Or(funcs ...cobra.PositionalArgs) cobra.PositionalArgs {
+	return func(cmd *cobra.Command, args []string) error {
 		for _, f := range funcs {
-			if err := f(args); err == nil {
+			if err := f(cmd, args); err == nil {
 				return nil
 			}
 		}

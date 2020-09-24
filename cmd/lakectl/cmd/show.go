@@ -16,8 +16,8 @@ var showCmd = &cobra.Command{
 	Use:   "show <repository uri>",
 	Short: "See detailed information about an entity by ID (commit, user, etc)",
 	Args: cmdutils.ValidationChain(
-		cmdutils.HasNArgs(1),
-		cmdutils.PositionValidator(0, uri.ValidateRepoURI),
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
