@@ -5,10 +5,9 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 )
 
 type InventoryDiff struct {

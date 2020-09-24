@@ -4,10 +4,9 @@ import (
 	"context"
 	"strings"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 

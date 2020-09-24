@@ -33,7 +33,7 @@ type MultiBar struct {
 	reporter ProgressReporter
 	mpb      *mpb.Progress
 	mpbBars  map[string]*mpb.Bar
-	done     chan bool
+	ticker   *time.Ticker
 }
 
 func NewProgress(label string, total int64) *Progress {
@@ -72,59 +72,57 @@ func (p *Progress) SetTotal(n int64) {
 	atomic.StoreInt64(p.total, n)
 }
 
-func StartMultiBar(r ProgressReporter) *MultiBar {
+func NewMultiBar(r ProgressReporter) *MultiBar {
 	ticker := time.NewTicker(progressRefreshRate)
 	m := mpb.New(mpb.WithWidth(progressBarWidth))
-	done := make(chan bool)
 	bars := make(map[string]*mpb.Bar)
-	multi := &MultiBar{reporter: r, mpbBars: bars, mpb: m, done: done}
+	return &MultiBar{reporter: r, mpbBars: bars, mpb: m, ticker: ticker}
+}
+
+func (b *MultiBar) Start() {
 	go func() {
-		for {
-			select {
-			case <-done:
-				return
-			case <-ticker.C:
-				multi.Refresh(false)
-			}
+		for range b.ticker.C {
+			b.refresh(false)
 		}
 	}()
-	return multi
 }
 
-func (b *MultiBar) Finish() {
-	close(b.done)
+func (b *MultiBar) Stop() {
+	b.refresh(true)
+	b.ticker.Stop()
 }
 
-func (b *MultiBar) Refresh(isCompleted bool) {
+func (b *MultiBar) refresh(isCompleted bool) {
 	progress := b.reporter.Progress()
 	for _, p := range progress {
-		total := atomic.LoadInt64(p.total)
-		isSpinner := false
-		if total <= 0 {
-			isSpinner = true
-			total = atomic.LoadInt64(p.current)
-		}
+		total := p.Total()
 		bar, ok := b.mpbBars[p.label]
 		if !ok {
-			labelDecorator := decor.Name(p.label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
-			suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
-			if isSpinner {
-				// unknown total, render a spinner
-				bar = b.mpb.AddSpinner(total, mpb.SpinnerOnMiddle, suffixOption,
-					mpb.PrependDecorators(labelDecorator,
-						decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
-			} else {
-				bar = b.mpb.AddBar(total, mpb.BarStyle(progressBarStyle), suffixOption,
-					mpb.PrependDecorators(labelDecorator,
-						decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
-			}
+			bar = createBar(b.mpb, p, total)
 			b.mpbBars[p.label] = bar
 		}
 		bar.SetTotal(total, isCompleted)
-		if !isCompleted {
-			bar.SetCurrent(atomic.LoadInt64(p.current))
-		} else {
-			bar.SetCurrent(total)
-		}
+		bar.SetCurrent(p.Current())
 	}
+}
+
+func createBar(m *mpb.Progress, p *Progress, total int64) *mpb.Bar {
+	var bar *mpb.Bar
+	isSpinner := false
+	if total < 0 {
+		isSpinner = true
+	}
+	labelDecorator := decor.Name(p.label, decor.WC{W: progressBarNameColumnWidth, C: decor.DidentRight})
+	suffixOption := mpb.AppendDecorators(decor.Name(progressSuffix))
+	if isSpinner {
+		// unknown total, render a spinner
+		bar = m.AddSpinner(total, mpb.SpinnerOnMiddle, suffixOption,
+			mpb.PrependDecorators(labelDecorator,
+				decor.CurrentNoUnit(spinnerCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
+	} else {
+		bar = m.AddBar(total, mpb.BarStyle(progressBarStyle), suffixOption,
+			mpb.PrependDecorators(labelDecorator,
+				decor.CountersNoUnit(progressCounterFormat, decor.WC{W: progressBarCounterColumnWidth})))
+	}
+	return bar
 }

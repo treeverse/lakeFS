@@ -6,9 +6,8 @@ import (
 	"fmt"
 	"sync"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -40,14 +39,14 @@ func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
 	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress}
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) RepoActions {
+func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) *CatalogRepoActions {
 	return &CatalogRepoActions{
 		cataloger:       cataloger,
 		repository:      repository,
 		committer:       committer,
 		logger:          logger,
-		addedProgress:   cmdutils.NewProgress("Objects Added or Changed", 0),
-		deletedProgress: cmdutils.NewProgress("Objects Deleted", 0),
+		addedProgress:   cmdutils.NewProgress("Objects Added or Changed", -1),
+		deletedProgress: cmdutils.NewProgress("Objects Deleted", -1),
 	}
 }
 

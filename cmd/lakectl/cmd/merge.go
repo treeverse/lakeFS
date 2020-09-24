@@ -5,11 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 

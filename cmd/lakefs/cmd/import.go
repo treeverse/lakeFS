@@ -8,11 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
 	"github.com/jedib0t/go-pretty/text"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 
 	"github.com/treeverse/lakefs/block/factory"
@@ -22,8 +20,6 @@ import (
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 )
-
-var ErrInvalid = errors.New("validation")
 
 const (
 	DryRunFlagName      = "dry-run"
@@ -36,16 +32,10 @@ var importCmd = &cobra.Command{
 	Use:   "import <repository uri> --manifest <s3 uri to manifest.json>",
 	Short: "Import data from S3 to a lakeFS repository",
 	Long:  "Import from an S3 inventory to lakeFS without copying the data.",
-	Args: func(cmd *cobra.Command, args []string) error {
-		if len(args) != ImportCmdNumArgs {
-			return fmt.Errorf("%w - expected %d arguments", ErrInvalid, ImportCmdNumArgs)
-		}
-		err := uri.ValidateRepoURI(args[0])
-		if err != nil {
-			return fmt.Errorf("%w - %s is not a valid repo uri", ErrInvalid, args[0])
-		}
-		return nil
-	},
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(ImportCmdNumArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
+	),
 	Run: func(cmd *cobra.Command, args []string) {
 		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
 		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
@@ -53,28 +43,31 @@ var importCmd = &cobra.Command{
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
 		if err != nil {
-			fmt.Printf("%v\n", err)
+			fmt.Printf("%s\n", err)
 			os.Exit(1)
 		}
-		viper.Set("database.disable_auto_migrate", true)
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
 		u := uri.Must(uri.Parse(args[0]))
 		blockStore, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
-			fmt.Printf("failed to create block adapter: %v\n", err)
+			fmt.Printf("Failed to create block adapter: %s\n", err)
+			os.Exit(1)
+		}
+		if blockStore.BlockstoreType() != "s3" {
+			fmt.Printf("Configuration uses unsupported block adapter: %s. Only s3 is supported.\n", blockStore.BlockstoreType())
 			os.Exit(1)
 		}
 		repoName := u.Repository
 		parsedURL, err := url.Parse(manifestURL)
 		if err != nil || parsedURL.Scheme != "s3" || !strings.HasSuffix(parsedURL.Path, "/manifest.json") {
-			fmt.Printf("invalid manifest url. expected format: %s\n", ManifestURLFormat)
+			fmt.Printf("Invalid manifest url. expected format: %s\n", ManifestURLFormat)
 			os.Exit(1)
 		}
 		repo, err := cataloger.GetRepository(ctx, repoName)
 		if err != nil {
-			fmt.Printf("failed to read repository %s: %v\n", repoName, err)
+			fmt.Printf("Failed to read repository %s: %s\n", repoName, err)
 			os.Exit(1)
 		}
 		if !dryRun {
@@ -96,27 +89,29 @@ var importCmd = &cobra.Command{
 
 		importer, err := onboard.CreateImporter(ctx, logger, importConfig)
 		if err != nil {
-			fmt.Printf("import failed: %v\n", err)
+			fmt.Printf("Import failed: %s\n", err)
 			os.Exit(1)
 		}
-		progressBars := cmdutils.StartMultiBar(importer)
+		multiBar := cmdutils.NewMultiBar(importer)
+		multiBar.Start()
 		stats, err := importer.Import(ctx, dryRun)
 		if err != nil {
-			progressBars.Finish()
-			fmt.Printf("import failed: %v\n", err)
+			multiBar.Stop()
+			fmt.Printf("Import failed: %s\n", err)
 			os.Exit(1)
 		}
-		progressBars.Refresh(true)
-		progressBars.Finish()
-		fmt.Print("\n")
-		fmt.Print(text.FgYellow.Sprint("Added or changed objects: "), fmt.Sprintf("%d\n", stats.AddedOrChanged))
-		fmt.Print(text.FgYellow.Sprint("Deleted objects: "), fmt.Sprintf("%d\n", stats.Deleted))
+		multiBar.Stop()
+		fmt.Println()
+		fmt.Println(text.FgYellow.Sprint("Added or changed objects:"), stats.AddedOrChanged)
+		fmt.Println(text.FgYellow.Sprint("Deleted objects:"), stats.Deleted)
 		if stats.PreviousInventoryURL != "" {
-			fmt.Print(text.FgYellow.Sprint("Previously imported inventory: "), fmt.Sprintf("%s\n", stats.PreviousInventoryURL))
-			fmt.Print(text.FgYellow.Sprint("Previous import date: "), fmt.Sprintf("%v\n\n", stats.PreviousImportDate))
+			fmt.Println(text.FgYellow.Sprint("Previously imported inventory:"), stats.PreviousInventoryURL)
+			fmt.Println(text.FgYellow.Sprint("Previous import date:"), stats.PreviousImportDate)
+			fmt.Println()
 		}
 		if !dryRun {
-			fmt.Print(text.FgYellow.Sprint("Commit ref: "), fmt.Sprintf("%s\n\n", stats.CommitRef))
+			fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
+			fmt.Println()
 			fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
 			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
 			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)

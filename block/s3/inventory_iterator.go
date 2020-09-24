@@ -6,9 +6,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/treeverse/lakefs/cmdutils"
-
 	"github.com/treeverse/lakefs/block"
+	"github.com/treeverse/lakefs/cmdutils"
 	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 )
 

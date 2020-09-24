@@ -5,7 +5,6 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/cmdutils"
-
 	"github.com/treeverse/lakefs/logging"
 )
 
