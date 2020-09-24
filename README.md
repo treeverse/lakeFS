@@ -45,7 +45,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 #### Docker (MacOS, Linux)
 
-1. Ensure you have Docker & docker-compose installed on your computer
+1. Ensure you have Docker & Docker Compose installed on your computer.
 
 2. Run the following command:
 
