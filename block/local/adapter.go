@@ -251,3 +251,7 @@ func (l *Adapter) ValidateConfiguration(_ string) error {
 func (l *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool) (block.Inventory, error) {
 	return nil, ErrInventoryNotSupported
 }
+
+func (l *Adapter) BlockstoreType() string {
+	return BlockstoreType
+}

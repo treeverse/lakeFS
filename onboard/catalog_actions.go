@@ -7,6 +7,7 @@ import (
 	"sync"
 
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -18,21 +19,35 @@ const (
 )
 
 type RepoActions interface {
-	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error)
+	cmdutils.ProgressReporter
+	ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error)
 	GetPreviousCommit(ctx context.Context) (commit *catalog.CommitLog, err error)
-	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error
+	Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error)
 }
 
 type CatalogRepoActions struct {
-	WriteBatchSize int
-	cataloger      catalog.Cataloger
-	repository     string
-	committer      string
-	logger         logging.Logger
+	WriteBatchSize  int
+	cataloger       catalog.Cataloger
+	repository      string
+	committer       string
+	logger          logging.Logger
+	deletedProgress *cmdutils.Progress
+	addedProgress   *cmdutils.Progress
 }
 
-func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) RepoActions {
-	return &CatalogRepoActions{cataloger: cataloger, repository: repository, committer: committer, logger: logger}
+func (c *CatalogRepoActions) Progress() []*cmdutils.Progress {
+	return []*cmdutils.Progress{c.addedProgress, c.deletedProgress}
+}
+
+func NewCatalogActions(cataloger catalog.Cataloger, repository string, committer string, logger logging.Logger) *CatalogRepoActions {
+	return &CatalogRepoActions{
+		cataloger:       cataloger,
+		repository:      repository,
+		committer:       committer,
+		logger:          logger,
+		addedProgress:   cmdutils.NewProgress("Objects Added or Changed", -1),
+		deletedProgress: cmdutils.NewProgress("Objects Deleted", -1),
+	}
 }
 
 type task struct {
@@ -47,8 +62,8 @@ func worker(wg *sync.WaitGroup, tasks <-chan *task) {
 	wg.Done()
 }
 
-func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*InventoryImportStats, error) {
-	var stats InventoryImportStats
+func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRun bool) (*Stats, error) {
+	var stats Stats
 	var wg sync.WaitGroup
 	batchSize := DefaultWriteBatchSize
 	if c.WriteBatchSize > 0 {
@@ -72,6 +87,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 					return nil, fmt.Errorf("failed to delete entry: %s (%w)", obj.Key, err)
 				}
 			}
+			c.deletedProgress.Incr()
 			continue
 		}
 		entry := catalog.Entry{
@@ -87,11 +103,16 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			previousBatch := currentBatch
 			currentBatch = make([]catalog.Entry, 0, batchSize)
 			if dryRun {
+				c.addedProgress.Add(int64(len(previousBatch)))
 				continue
 			}
 			tsk := &task{
 				f: func() error {
-					return c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+					err := c.cataloger.CreateEntries(ctx, c.repository, DefaultBranchName, previousBatch)
+					if err == nil {
+						c.addedProgress.Add(int64(len(previousBatch)))
+					}
+					return err
 				},
 				err: new(error),
 			}
@@ -115,6 +136,7 @@ func (c *CatalogRepoActions) ApplyImport(ctx context.Context, it Iterator, dryRu
 			return nil, fmt.Errorf("failed to create batch of %d entries (%w)", len(currentBatch), err)
 		}
 	}
+	c.addedProgress.Add(int64(len(currentBatch)))
 	return &stats, nil
 }
 
@@ -136,10 +158,9 @@ func (c *CatalogRepoActions) GetPreviousCommit(ctx context.Context) (commit *cat
 	return commit, nil
 }
 
-func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) error {
-	_, err := c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
+func (c *CatalogRepoActions) Commit(ctx context.Context, commitMsg string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
+	return c.cataloger.Commit(ctx, c.repository, DefaultBranchName,
 		commitMsg,
 		c.committer,
 		metadata)
-	return err
 }
