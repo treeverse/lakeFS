@@ -15,25 +15,18 @@ For a production suitable deployment, see [Deploying on AWS](../deploying/index.
 
 ## Using docker-compose
 {: .no_toc }
-If you wish to install your lakeFS using Kubernetes or just install it manually, check out [Other Installations](other_installations.md) page.
+
+If you wish to install your lakeFS using Kubernetes, install it manually, or install it on Windows, check out [Other Installations](other_installations.md) page.
 {: .note .note-info }
 
-To run a local lakeFS instance, you can clone the repository and run [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} application:
+To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank"}:
 
-1. Ensure you have Docker installed on your computer. The MacOS and Windows installations include [Docker Compose](https://docs.docker.com/compose/){:target="_blank"} by default.
+1. Ensure you have Docker & Docker Compose installed on your computer.
 
-1. Clone the lakeFS repository:
-
-   ```bash
-   git clone https://github.com/treeverse/lakeFS
-   ```
-
-1. Navigate to the directory: `cd lakeFS`.
-
-1. Run the following command:
+1. Run the following command in your terminal:
 
    ```bash
-   docker-compose up
+   curl https://compose.lakefs.io | docker-compose -f - up
    ```
 
 1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.

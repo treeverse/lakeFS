@@ -15,6 +15,21 @@ has_children: false
 1. TOC
 {:toc}
 
+## Docker on Windows
+
+To run a local lakeFS instance using [Docker Compose](https://docs.docker.com/compose/){:target="_blank"}:
+
+1. Ensure you have Docker installed on your computer.
+
+1. Run the following command in your terminal:
+
+   ```bash
+   Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
+   ```
+
+1. Check your installation by opening [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup){:target="_blank"} in your web browser.
+
+
 ## On Kubernetes with Helm
 
 You can install lakeFS on a Kubernetes cluster with the following commands:
