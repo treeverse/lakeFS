@@ -1,5 +1,7 @@
 package catalog
 
+//todo: reading logic will change once we change umcommitted indication in "min_commit" from 0 to MaxCommitID
+
 import (
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
@@ -7,11 +9,12 @@ import (
 
 type entryPK struct {
 	BranchID  int64    `db:"branch_id"`
-	Path      *string  `db:"path"`
+	Path      string   `db:"path"`
 	MinCommit CommitID `db:"min_commit"`
 	MaxCommit CommitID `db:"max_commit"`
 	RowCtid   string   `db:"ctid"`
 }
+
 type singleBranchReader struct {
 	tx        db.Tx
 	branchID  int64
@@ -83,7 +86,7 @@ func (r *lineageReader) GetNextPK() (*entryPK, error) {
 		}
 	}
 	var selectedEntry *entryPK
-	// indirection array, to skip lieage branches that reached end
+	// indirection array, to skip lineage branches that reached end
 	nonNilNextRow := make([]int, 0, len(r.nextRow))
 	for i, ent := range r.nextRow {
 		if ent != nil {
@@ -97,7 +100,7 @@ func (r *lineageReader) GetNextPK() (*entryPK, error) {
 	// find lowest Path
 	selectedEntry = r.nextRow[nonNilNextRow[0]]
 	for i := 1; i < len(nonNilNextRow); i++ {
-		if *selectedEntry.Path > *r.nextRow[nonNilNextRow[i]].Path {
+		if selectedEntry.Path > r.nextRow[nonNilNextRow[i]].Path {
 			selectedEntry = r.nextRow[nonNilNextRow[i]]
 		}
 	}
@@ -107,7 +110,7 @@ func (r *lineageReader) GetNextPK() (*entryPK, error) {
 	}
 	// advance next row for all branches that have this Path
 	for i := 0; i < len(nonNilNextRow); i++ {
-		if *r.nextRow[nonNilNextRow[i]].Path == *selectedEntry.Path {
+		if r.nextRow[nonNilNextRow[i]].Path == selectedEntry.Path {
 			n, err := r.readers[nonNilNextRow[i]].GetNextPK()
 			if err != nil {
 				panic(err)
@@ -125,8 +128,8 @@ func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 	if r.firstTime {
 		r.firstTime = false
 		r.buf = make([]*entryPK, 0, r.bufSize)
-		q := baseSelect(r.branchID, r.commitID).Limit(uint64(r.bufSize)).Where("path >= ?", r.after)
-		err := fillBuf(r.tx, q, &r.buf)
+		q := branchSelectWithCommitID(r.branchID, r.commitID).Limit(uint64(r.bufSize)).Where("path > ?", r.after)
+		err := readEntriesIntoBuf(r.tx, q, &r.buf)
 		if err != nil {
 			return nil, err // todo: just to trick the LINTER, remove when done
 			// panic(err)
@@ -139,7 +142,7 @@ func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 		return nil, nil
 	}
 	// last Path in buffer may have more rows that were not read yet
-	if *r.buf[l-1].Path == *r.buf[0].Path {
+	if r.buf[l-1].Path == r.buf[0].Path {
 		err := r.extendBuf()
 		if err != nil {
 			panic(err)
@@ -150,9 +153,9 @@ func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 		r.EOF = true
 		return nil, nil
 	}
-	firstPath := *r.buf[0].Path
+	firstPath := r.buf[0].Path
 	var i int
-	for i = 1; i < l && *r.buf[i].Path == firstPath; i++ {
+	for i = 1; i < l && r.buf[i].Path == firstPath; i++ {
 	}
 	nextPK := findSignificantEntry(r.buf[:i], r.commitID)
 	r.buf = r.buf[i:] // discard first rows from buffer
@@ -180,7 +183,7 @@ func findSignificantEntry(buf []*entryPK, lineageCommitID CommitID) *entryPK {
 	return ret
 }
 
-func baseSelect(branchID int64, commitID CommitID) sq.SelectBuilder {
+func branchSelectWithCommitID(branchID int64, commitID CommitID) sq.SelectBuilder {
 	q := sq.Select("branch_id", "path", "min_commit", "max_commit", "ctid").
 		From("catalog_entries").
 		Where("branch_id = ? ", branchID).
@@ -199,43 +202,32 @@ func (r *singleBranchReader) extendBuf() error {
 		panic("in extendBuf with empty buffer!!!!!")
 	}
 	lastRow := r.buf[l-1]
-	completionQuery := baseSelect(r.branchID, r.commitID)
-	completionQuery = completionQuery.Where("Path = ? and min_commit < ?", *lastRow.Path, lastRow.MinCommit)
-	s := sq.DebugSqlizer(completionQuery)
-	_ = s
-	continueationQuery := baseSelect(r.branchID, r.commitID)
-	continueationQuery = continueationQuery.
-		Where("Path > ?", *lastRow.Path).
+	completionQuery := branchSelectWithCommitID(r.branchID, r.commitID)
+	completionQuery = completionQuery.Where("Path = ? and min_commit < ?", lastRow.Path, lastRow.MinCommit)
+	continuationQuery := branchSelectWithCommitID(r.branchID, r.commitID).
+		Where("Path > ?", lastRow.Path).
 		Limit(uint64(r.bufSize))
-	s = sq.DebugSqlizer(continueationQuery)
-	_ = s
 	// move rows of last Path to beginning of buffer
 	tempBuf := make([]*entryPK, 0, r.bufSize+len(r.buf)*2)
 	tempBuf = append(tempBuf, r.buf...)
 	r.buf = tempBuf
-	// do the union
-	unionQuery := union(completionQuery, continueationQuery)
-	err := fillBuf(r.tx, unionQuery, &r.buf)
+	unionQuery := union(completionQuery, continuationQuery)
+	err := readEntriesIntoBuf(r.tx, unionQuery, &r.buf)
 	return err
 }
 
-func union(compleateCurrntPath, continueationQuery sq.SelectBuilder) sq.SelectBuilder {
-	unionQuery := compleateCurrntPath.
+func union(completeCurrntPath, continueationQuery sq.SelectBuilder) sq.SelectBuilder {
+	unionQuery := completeCurrntPath.
 		Prefix("(").
 		SuffixExpr(sq.ConcatExpr(")\n UNION ALL \n(", continueationQuery, ")"))
-	s := sq.DebugSqlizer(unionQuery)
-	_ = s
 	return unionQuery
 }
 
-func fillBuf(tx db.Tx, q sq.SelectBuilder, buf *[]*entryPK) error {
+func readEntriesIntoBuf(tx db.Tx, q sq.SelectBuilder, buf *[]*entryPK) error {
 	sql, args, err := q.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return err
 	}
 	err = tx.Select(buf, sql, args...)
-	if err != nil {
-		return err
-	}
-	return nil
+	return err
 }
