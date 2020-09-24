@@ -157,9 +157,10 @@ func InsertTasks(ctx context.Context, pgConn *pgx.Conn, source *TaskDataIterator
 
 // OwnedTaskData is a row returned from "SELECT * FROM own_tasks(...)".
 type OwnedTaskData struct {
-	Id    TaskId           `db:"task_id"`
-	Token PerformanceToken `db:"token"`
-	Body  *string
+	Id     TaskId           `db:"task_id"`
+	Token  PerformanceToken `db:"token"`
+	Action string           `db:"action"`
+	Body   *string
 }
 
 // OwnTasks owns for actor and returns up to maxTasks tasks for performing any of actions.
@@ -239,27 +240,50 @@ func WaitForTask(ctx context.Context, conn *pgx.Conn, taskId TaskId) (resultStat
 	return status, statusCode, err
 }
 
+// taskWithNewIterator is a pgx.CopyFromSource iterator that passes each task along with a
+// 'new' copy status.
+type taskWithNewIterator struct {
+	tasks []TaskId
+	idx   int
+}
+
+func (it *taskWithNewIterator) Next() bool {
+	it.idx++
+	return it.idx < len(it.tasks)
+}
+
+func (it *taskWithNewIterator) Values() ([]interface{}, error) {
+	return []interface{}{it.tasks[it.idx], "new"}, nil
+}
+
+func (it *taskWithNewIterator) Err() error {
+	return nil
+}
+
+func makeTaskWithNewIterator(tasks []TaskId) *taskWithNewIterator {
+	return &taskWithNewIterator{tasks, -1}
+}
+
 // DeleteTasks deletes taskIds, removing dependencies and deleting (effectively recursively) any
-// tasks that are left with no dependencies.  The effect is easiest to analyze when all deleted
-// tasks have been either completed or been aborted.
-func DeleteTasks(tx *sqlx.Tx, taskIds []TaskId) error {
+// tasks that are left with no dependencies.  It creates a temporary table on tx, so ideally
+// close the transaction shortly after.  The effect is easiest to analyze when all deleted tasks
+// have been either completed or been aborted.
+func DeleteTasks(ctx context.Context, tx pgx.Tx, taskIds []TaskId) error {
 	uniqueId, err := nanoid.Nanoid()
 	if err != nil {
 		return fmt.Errorf("generate random component for table name: %w", err)
 	}
 	tableName := fmt.Sprintf("delete_tasks_%s", uniqueId)
-	if _, err = tx.Exec(fmt.Sprintf(`CREATE      TABLE "%s" (id VARCHAR(64), mark tasks_recurse_value NOT NULL)`, tableName)); err != nil {
+	if _, err = tx.Exec(
+		ctx,
+		fmt.Sprintf(`CREATE TEMP TABLE "%s" (id VARCHAR(64), mark tasks_recurse_value NOT NULL) ON COMMIT DROP`, tableName),
+	); err != nil {
 		return fmt.Errorf("create temp work table %s: %w", tableName, err)
 	}
-	insertStmt, err := tx.Prepare(fmt.Sprintf(`INSERT INTO "%s" VALUES($1, 'new')`, tableName))
-	if err != nil {
-		return fmt.Errorf("prepare INSERT statement: %w", err)
+
+	if _, err = tx.CopyFrom(ctx, pgx.Identifier{tableName}, []string{"id", "mark"}, makeTaskWithNewIterator(taskIds)); err != nil {
+		return fmt.Errorf("COPY: %w", err)
 	}
-	for _, id := range taskIds {
-		if _, err = insertStmt.Exec(id); err != nil {
-			return fmt.Errorf("insert ID %s: %w", id, err)
-		}
-	}
-	_, err = tx.Exec(`SELECT delete_tasks($1)`, tableName)
+	_, err = tx.Exec(ctx, `SELECT delete_tasks($1)`, tableName)
 	return err
 }
