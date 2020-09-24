@@ -232,7 +232,7 @@ func (c *cataloger) QueryEntriesToExpire(ctx context.Context, repositoryName str
 	// An object may have been deduped onto several branches with different names
 	// and will have multiple entries; it can only be remove once it expires from
 	// all of those.
-	rows, err := c.db.WithContext(ctx).Queryx(dedupedQuery, args...)
+	rows, err := c.db.WithContext(ctx).Query(dedupedQuery, args...)
 	if err != nil {
 		return nil, fmt.Errorf("running query: %w", err)
 	}
@@ -313,7 +313,10 @@ func (c *cataloger) MarkObjectsForDeletion(ctx context.Context, repositoryName s
                                 GROUP BY physical_address
                               ) physical_addresses_with_expiry
                               WHERE all_expired)`, repositoryName)
-	return result, err
+	if err != nil {
+		return 0, err
+	}
+	return result.RowsAffected()
 }
 
 type StringRows struct {
@@ -341,7 +344,7 @@ func (s *StringRows) Read() (string, error) {
 // TODO(ariels): Process in chunks.  Can store the inner physical_address query in a table for
 //     the duration.
 func (c *cataloger) DeleteOrUnmarkObjectsForDeletion(ctx context.Context, repositoryName string) (StringRows, error) {
-	rows, err := c.db.WithContext(ctx).Queryx(`
+	rows, err := c.db.WithContext(ctx).Query(`
 		WITH ids AS (SELECT id repository_id FROM catalog_repositories WHERE name = $1),
 		    update_result AS (
 			UPDATE catalog_object_dedup SET deleting=all_expired
