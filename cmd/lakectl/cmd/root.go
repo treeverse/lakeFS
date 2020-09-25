@@ -131,5 +131,8 @@ func initConfig() {
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
 
+	//Configuration defaults
+	viper.SetDefault("server.endpoint_url", "http://127.0.0.1:8000")
+
 	cfgFileErr = viper.ReadInConfig()
 }
