@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -25,9 +26,9 @@ var (
 var commitCmd = &cobra.Command{
 	Use:   "commit <branch uri>",
 	Short: "commit changes on a given branch",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRefURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		// validate message

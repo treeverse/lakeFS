@@ -63,6 +63,7 @@ type Adapter interface {
 	// ValidateConfiguration validates an appropriate bucket
 	// configuration and returns a validation error or nil.
 	ValidateConfiguration(storageNamespace string) error
+	BlockstoreType() string
 }
 
 type UploadIDTranslator interface {

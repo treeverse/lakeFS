@@ -9,6 +9,7 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/spf13/cobra"
 	"github.com/treeverse/lakefs/api/gen/models"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -75,9 +76,9 @@ var repoListCmd = &cobra.Command{
 var repoCreateCmd = &cobra.Command{
 	Use:   "create <repository uri> <storage namespace>",
 	Short: "create a new repository ",
-	Args: ValidationChain(
-		HasNArgs(repoCreateCmdArgs),
-		IsRepoURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(repoCreateCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 
 	Run: func(cmd *cobra.Command, args []string) {
@@ -110,9 +111,9 @@ var repoCreateCmd = &cobra.Command{
 var repoDeleteCmd = &cobra.Command{
 	Use:   "delete <repository uri>",
 	Short: "delete existing repository",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRepoURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		clt := getClient()
@@ -138,9 +139,9 @@ var retentionCmd = &cobra.Command{
 var getPolicyCmd = &cobra.Command{
 	Use:   "get <repository uri>",
 	Short: "show retention policy",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsRepoURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))
@@ -161,9 +162,9 @@ var setPolicyCmd = &cobra.Command{
 	Use:   "set <repository uri> </path/to/policy.json | ->",
 	Short: "set retention policy",
 	Long:  "set retention policy from file, or stdin if \"-\" specified",
-	Args: ValidationChain(
-		HasNArgs(setPolicyCmdArgs),
-		IsRepoURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(setPolicyCmdArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		u := uri.Must(uri.Parse(args[0]))

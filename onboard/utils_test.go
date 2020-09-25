@@ -8,6 +8,7 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/onboard"
 )
@@ -70,8 +71,8 @@ func (m *mockInventory) rows() []block.InventoryObject {
 	return res
 }
 
-func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.InventoryImportStats, error) {
-	stats := onboard.InventoryImportStats{
+func (m *mockCatalogActions) ApplyImport(_ context.Context, it onboard.Iterator, dryRun bool) (*onboard.Stats, error) {
+	stats := onboard.Stats{
 		AddedOrChanged: len(m.objectActions.Added),
 		Deleted:        len(m.objectActions.Deleted),
 	}
@@ -99,8 +100,12 @@ func (m *mockCatalogActions) GetPreviousCommit(_ context.Context) (commit *catal
 	return nil, nil
 }
 
-func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) error {
+func (m *mockCatalogActions) Commit(_ context.Context, _ string, metadata catalog.Metadata) (*catalog.CommitLog, error) {
 	m.lastCommitMetadata = metadata
+	return &catalog.CommitLog{}, nil
+}
+
+func (m *mockCatalogActions) Progress() []*cmdutils.Progress {
 	return nil
 }
 
@@ -124,6 +129,10 @@ func (m *mockInventoryIterator) Err() error {
 
 func (m *mockInventoryIterator) Get() *block.InventoryObject {
 	return &m.rows[*m.idx]
+}
+
+func (m *mockInventoryIterator) Progress() []*cmdutils.Progress {
+	return nil
 }
 
 func (m *mockInventory) Iterator() block.InventoryIterator {

@@ -85,7 +85,7 @@ func TestImport(t *testing.T) {
 				previousInventory:    test.PreviousInventory,
 				sourceBucket:         "example-repo",
 			}
-			config := &onboard.ImporterConfig{
+			config := &onboard.Config{
 				CommitUsername:     "committer",
 				InventoryURL:       newInventoryURL,
 				Repository:         "example-repo",

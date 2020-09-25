@@ -220,3 +220,7 @@ func (a *Adapter) ValidateConfiguration(_ string) error {
 func (a *Adapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool) (block.Inventory, error) {
 	return nil, ErrInventoryNotImplemented
 }
+
+func (a *Adapter) BlockstoreType() string {
+	return BlockstoreType
+}

@@ -7,6 +7,7 @@ import (
 	"strings"
 
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -20,9 +21,9 @@ Checksum: {{.Checksum}}
 var fsStatCmd = &cobra.Command{
 	Use:   "stat <path uri>",
 	Short: "view object metadata",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsPathURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidateRepoURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
@@ -44,11 +45,11 @@ const fsLsTemplate = `{{ range $val := . -}}
 var fsListCmd = &cobra.Command{
 	Use:   "ls <path uri>",
 	Short: "list entries under a given tree",
-	Args: ValidationChain(
-		HasNArgs(1),
-		Or(
-			IsPathURI(0),
-			IsRefURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.Or(
+			cmdutils.FuncValidator(0, uri.ValidatePathURI),
+			cmdutils.FuncValidator(1, uri.ValidateRefURI),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -65,9 +66,9 @@ var fsListCmd = &cobra.Command{
 var fsCatCmd = &cobra.Command{
 	Use:   "cat <path uri>",
 	Short: "dump content of object to stdout",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsPathURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -82,9 +83,9 @@ var fsCatCmd = &cobra.Command{
 var fsUploadCmd = &cobra.Command{
 	Use:   "upload <path uri>",
 	Short: "upload a local file to the specified URI",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsPathURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
@@ -117,9 +118,9 @@ var fsUploadCmd = &cobra.Command{
 var fsRmCmd = &cobra.Command{
 	Use:   "rm <path uri>",
 	Short: "delete object",
-	Args: ValidationChain(
-		HasNArgs(1),
-		IsPathURI(0),
+	Args: cmdutils.ValidationChain(
+		cobra.ExactArgs(1),
+		cmdutils.FuncValidator(0, uri.ValidatePathURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		pathURI := uri.Must(uri.Parse(args[0]))
