@@ -56,7 +56,7 @@ CREATE INDEX idx_auth_group_policies_group_id ON auth_group_policies (group_id);
 
 CREATE TABLE IF NOT EXISTS auth_credentials (
     access_key_id varchar(20) NOT NULL PRIMARY KEY,
-    access_secret_key bytea NOT NULL,
+    secret_access_key bytea NOT NULL,
     issued_date timestamptz NOT NULL,
     user_id integer REFERENCES auth_users (id) ON DELETE CASCADE
 );

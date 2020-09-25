@@ -661,7 +661,7 @@ func (s *DBAuthService) CreateCredentials(username string) (*model.Credential, e
 			UserID:                        user.ID,
 		}
 		_, err = tx.Exec(`
-			INSERT INTO auth_credentials (access_key_id, access_secret_key, issued_date, user_id)
+			INSERT INTO auth_credentials (access_key_id, secret_access_key, issued_date, user_id)
 			VALUES ($1, $2, $3, $4)`,
 			c.AccessKeyID,
 			encryptedKey,

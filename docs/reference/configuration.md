@@ -46,7 +46,7 @@ This reference uses `.` to denote the nesting of values.
 * `blockstore.s3.profile` `(string : )` - If specified, will be used as a [named credentials profile](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-profiles.html)
 * `blockstore.s3.credentials_file` `(string : )` - If specified, will be used as a [credentials file](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-files.html)
 * `blockstore.s3.credentials.access_key_id` `(string : )` - If specified, will be used as a static set of credential
-* `blockstore.s3.credentials.access_secret_key` `(string : )` - If specified, will be used as a static set of credential
+* `blockstore.s3.credentials.secret_access_key` `(string : )` - If specified, will be used as a static set of credential
 * `blockstore.s3.credentials.session_token` `(string : )` - If specified, will be used as a static session token
 * `blockstore.s3.streaming_chunk_size` `(int : 1048576)` - Object chunk size to buffer before streaming to S3 (use a lower value for less reliable networks). Minimum is 8192.
 * `blockstore.s3.retention.role_arn` - ARN of IAM role to use to

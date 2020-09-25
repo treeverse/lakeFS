@@ -24,7 +24,7 @@ Authenticating against the API server is done using a key-pair, passed via [Basi
 All HTTP requests must carry an `Authorization` header with the following structure:
 
 ```text
-Authorization: Basic <base64 encoded access_key_id:access_secret_key>
+Authorization: Basic <base64 encoded access_key_id:secret_access_key>
 ```
 
 For example, assuming my access_key_id is `my_access_key_id` and my secret_access_key is `my_secret_access_key`, we'd send the following header with every request:
