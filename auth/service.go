@@ -86,15 +86,15 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 	queryBuilder = queryBuilder.OrderBy(tokenColumnName)
 	if params != nil {
 		queryBuilder = queryBuilder.Where(sq.Gt{tokenColumnName: params.After})
-	}
-	if params.Amount >= 0 {
-		queryBuilder = queryBuilder.Limit(uint64(params.Amount) + 1)
+		if params.Amount >= 0 {
+			queryBuilder = queryBuilder.Limit(uint64(params.Amount) + 1)
+		}
 	}
 	query, args, err := queryBuilder.ToSql()
 	if err != nil {
 		return nil, nil, fmt.Errorf("convert to SQL: %w", err)
 	}
-	rows, err := db.Queryx(query, args...)
+	rows, err := db.Query(query, args...)
 	if err != nil {
 		return nil, nil, fmt.Errorf("query DB: %w", err)
 	}
@@ -106,7 +106,7 @@ func ListPaged(db db.Database, retType reflect.Type, params *model.PaginationPar
 		slice = reflect.Append(slice, value)
 	}
 	p := &model.Paginator{}
-	if params.Amount >= 0 && slice.Len() == params.Amount+1 {
+	if params != nil && params.Amount >= 0 && slice.Len() == params.Amount+1 {
 		// we have more pages
 		slice = slice.Slice(0, params.Amount)
 		p.Amount = params.Amount

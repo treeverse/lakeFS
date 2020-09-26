@@ -471,3 +471,7 @@ func (a *Adapter) ValidateConfiguration(storageNamespace string) error {
 	}
 	return nil
 }
+
+func (a *Adapter) BlockstoreType() string {
+	return BlockstoreType
+}
