@@ -54,7 +54,7 @@ data "aws_arn" "BENCHMARK_VM" {
 //# Resources to create sg, postgres db, and Fargate service
 //##############################################################
 resource "aws_security_group" "benchmark_sg" {
-  name        = "benchmark_sg"
+  name        = "benchmark_sg-${var.tag}"
   description = "Allow benchmark traffic"
   vpc_id      = "vpc-04b176d1264698ffc"
 
@@ -92,7 +92,7 @@ resource "aws_security_group" "benchmark_sg" {
 module "db" {
   source = "github.com/terraform-aws-modules/terraform-aws-rds"
 
-  identifier = "benchmarks-postgres"
+  identifier = "benchmarks-postgres-${var.tag}"
 
   engine            = "postgres"
   engine_version    = "11"
@@ -100,7 +100,6 @@ module "db" {
   allocated_storage = 5
   storage_encrypted = false
 
-  # kms_key_id        = "arm:aws:kms:<region>:<account id>:key/<kms key id>"
   name = "BenchmarksDB"
 
   # Do NOT use 'user' as the value for 'username' as it throws:
@@ -137,8 +136,12 @@ module "db" {
   deletion_protection = false
 }
 
+resource "random_string" "default" {
+  length = 16
+}
+
 resource "aws_launch_configuration" "benchmark" {
-  name          = "benchmark-launch"
+  name          = "benchmark-launch-${var.tag}"
   image_id      = data.aws_ami.ubuntu.id
   instance_type = "t2.micro"
 }
@@ -156,22 +159,17 @@ resource "aws_autoscaling_group" "benchmark" {
   }
 }
 
-resource "aws_ecs_capacity_provider" "benchmark" {
-  name = "benchmark-${var.tag}"
-
-  auto_scaling_group_provider {
-    auto_scaling_group_arn = aws_autoscaling_group.benchmark.arn
-    managed_termination_protection = "DISABLED"
-
-    managed_scaling {
-      status                    = "DISABLED"
-    }
-  }
-}
-
 resource "aws_ecs_cluster" "benchmark" {
   name = "benchmark-${var.tag}"
-  capacity_providers = [aws_ecs_capacity_provider.benchmark.name]
+  capacity_providers = ["FARGATE"]
+}
+
+resource "aws_cloudwatch_log_group" "benchmark" {
+  name = "/ecs/benchmark/${var.tag}"
+
+  tags = {
+    Benchmark = var.tag
+  }
 }
 
 resource "aws_ecs_task_definition" "benchmark" {
@@ -190,7 +188,7 @@ resource "aws_ecs_task_definition" "benchmark" {
         "image": "${var.dockerReg}/lakefs:${var.tag}",
         "entryPoint": ["/app/lakefs", "run"],
         "environment": [
-            {"name": "LAKEFS_AUTH_ENCRYPT_SECRET_KEY", "value": "some random secret string"},
+            {"name": "LAKEFS_AUTH_ENCRYPT_SECRET_KEY", "value": "${random_string.default.result}"},
             {"name": "LAKEFS_DATABASE_CONNECTION_STRING", "value": "postgres://benchmarks:${var.password}@${module.db.this_db_instance_endpoint}/postgres?sslmode=disable"},
             {"name": "LAKEFS_BLOCKSTORE_TYPE", "value": "s3"},
             {"name": "LAKEFS_LOGGING_LEVEL", "value": "DEBUG"}
@@ -198,6 +196,14 @@ resource "aws_ecs_task_definition" "benchmark" {
         "essential": true,
         "cpu": 2048,
         "memory": 8192,
+        "logConfiguration": {
+          "logDriver": "awslogs",
+          "options": {
+            "awslogs-group": "/ecs/benchmark/${var.tag}",
+            "awslogs-region": "us-east-1",
+            "awslogs-stream-prefix": "ecs"
+          }
+        },
         "portMappings": [
             {
                 "containerPort": 8000,
@@ -210,7 +216,7 @@ TASK_DEFINITION
 }
 
 resource "aws_ecs_service" "lakefs" {
-  name            = "lakeFS"
+  name            = "lakeFS-${var.tag}"
   cluster         = aws_ecs_cluster.benchmark.id
   task_definition = aws_ecs_task_definition.benchmark.id
   desired_count   = 1

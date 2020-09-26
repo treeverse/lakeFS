@@ -78,7 +78,7 @@ output "this_db_parameter_group_arn" {
   value       = "${module.db.this_db_parameter_group_arn}"
 }
 
-output "dns_lb" {
+output "this_dns_lb" {
   description = "DNS load balancer"
   value = aws_alb.main.dns_name
 }

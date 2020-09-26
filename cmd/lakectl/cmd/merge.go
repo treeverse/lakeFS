@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	"github.com/treeverse/lakefs/catalog"
-
 	"github.com/spf13/cobra"
+	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 	"github.com/treeverse/lakefs/uri"
 )
 
@@ -21,16 +21,13 @@ var mergeCmd = &cobra.Command{
 	Use:   "merge <source ref> <destination ref>",
 	Short: "merge",
 	Long:  "merge & commit changes from source branch into destination branch",
-	Args: ValidationChain(
-		HasRangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
-		IsRefURI(0),
-		IsRefURI(1),
+	Args: cmdutils.ValidationChain(
+		cobra.RangeArgs(mergeCmdMinArgs, mergeCmdMaxArgs),
+		cmdutils.FuncValidator(0, uri.ValidateRefURI),
+		cmdutils.FuncValidator(1, uri.ValidateRefURI),
 	),
 	Run: func(cmd *cobra.Command, args []string) {
 		client := getClient()
-		if err := IsRefURI(1)(args); err != nil {
-			DieErr(err)
-		}
 		rightRefURI := uri.Must(uri.Parse(args[0]))
 		leftRefURI := uri.Must(uri.Parse(args[1]))
 

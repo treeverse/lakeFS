@@ -9,21 +9,20 @@ import (
 	"testing"
 	"time"
 
-	"github.com/davecgh/go-spew/spew"
-	"github.com/go-test/deep"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/permissions"
-
-	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
 
 	sq "github.com/Masterminds/squirrel"
-
+	"github.com/davecgh/go-spew/spew"
+	"github.com/go-test/deep"
+	"github.com/google/uuid"
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
 	authparams "github.com/treeverse/lakefs/auth/params"
+	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
+	"github.com/treeverse/lakefs/permissions"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -31,9 +30,32 @@ var (
 	pool        *dockertest.Pool
 	databaseURI string
 	psql        = sq.StatementBuilder.PlaceholderFormat(sq.Dollar)
+	someSecret  = []byte("some secret")
+
+	userPoliciesForTesting = []*model.Policy{
+		{
+			Statement: model.Statements{
+				{
+					Action:   []string{"auth:DeleteUser"},
+					Resource: "arn:lakefs:auth:::user/foobar",
+					Effect:   model.StatementEffectAllow,
+				},
+			},
+		},
+		{
+			Statement: model.Statements{
+				{
+					Action:   []string{"auth:*"},
+					Resource: "*",
+					Effect:   model.StatementEffectDeny,
+				},
+			},
+		},
+	}
 )
 
 func TestMain(m *testing.M) {
+	logrus.SetLevel(logrus.PanicLevel)
 	var err error
 	var closer func()
 	pool, err = dockertest.NewPool("")
@@ -46,15 +68,15 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-func setupService(t *testing.T, opts ...testutil.GetDBOption) auth.Service {
+func setupService(t testing.TB, opts ...testutil.GetDBOption) auth.Service {
 	adb, _ := testutil.GetDB(t, databaseURI, opts...)
-	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
+	authService := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
 		Enabled: false,
 	})
 	return authService
 }
 
-func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) string {
+func userWithPolicies(t testing.TB, s auth.Service, policies []*model.Policy) string {
 	userName := uuid.New().String()
 	err := s.CreateUser(&model.User{
 		Username: userName,
@@ -82,10 +104,10 @@ func userWithPolicies(t *testing.T, s auth.Service, policies []*model.Policy) st
 
 func TestDBAuthService_ListPaged(t *testing.T) {
 	const chars = "abcdefghijklmnopqrstuvwxyz"
-	db, _ := testutil.GetDB(t, databaseURI)
-	defer db.Close()
+	adb, _ := testutil.GetDB(t, databaseURI)
+	defer adb.Close()
 	type row struct{ A string }
-	if _, err := db.Exec(`CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
+	if _, err := adb.Exec(`CREATE TABLE test_pages (a text PRIMARY KEY)`); err != nil {
 		t.Fatalf("CREATE TABLE test_pages: %s", err)
 	}
 	insert := psql.Insert("test_pages")
@@ -96,7 +118,7 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 	if err != nil {
 		t.Fatalf("create insert statement %v: %s", insert, err)
 	}
-	if _, err = db.Exec(insertSql, args...); err != nil {
+	if _, err = adb.Exec(insertSql, args...); err != nil {
 		t.Fatalf("%s [%v]: %s", insertSql, args, err)
 	}
 
@@ -109,13 +131,13 @@ func TestDBAuthService_ListPaged(t *testing.T) {
 			got := ""
 			for {
 				values, paginator, err := auth.ListPaged(
-					db, reflect.TypeOf(row{}), pagination, "A", psql.Select("a").From("test_pages"))
+					adb, reflect.TypeOf(row{}), pagination, "A", psql.Select("a").From("test_pages"))
 				if err != nil {
 					t.Errorf("ListPaged: %s", err)
 					break
 				}
 				if values == nil {
-					t.Errorf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
+					t.Fatalf("expected values for pagination %+v but got just paginator %+v", pagination, paginator)
 				}
 				letters := values.Interface().([]*row)
 				for _, c := range letters {
@@ -491,7 +513,6 @@ func TestDBAuthService_ListUsers(t *testing.T) {
 }
 
 func TestDBAuthService_ListUserCredentials(t *testing.T) {
-	const numCredentials = 5
 	const userName = "accredited"
 	s := setupService(t)
 	if err := s.CreateUser(&model.User{Username: userName}); err != nil {
@@ -569,8 +590,8 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	const userName = "foo"
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
-	time := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: time}); err != nil {
+	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(userName)
@@ -580,8 +601,8 @@ func TestDbAuthService_GetUser(t *testing.T) {
 	if user.Username != userName {
 		t.Errorf("GetUser(%s) returned user %+v with a different name", userName, user)
 	}
-	if user.CreatedAt.Sub(time) != 0 {
-		t.Errorf("expected user CreatedAt %s, got %+v", time, user.CreatedAt)
+	if user.CreatedAt.Sub(ts) != 0 {
+		t.Errorf("expected user CreatedAt %s, got %+v", ts, user.CreatedAt)
 	}
 	if user.ID == -22 {
 		t.Errorf("expected CreateUser ID:-22 to be dropped on server, got user %+v", user)
@@ -593,8 +614,8 @@ func TestDbAuthService_GetUserById(t *testing.T) {
 	const userName = "foo"
 	// Time should *not* have nanoseconds - otherwise we are comparing accuracy of golang
 	// and Postgres time storage.
-	time := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
-	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: time}); err != nil {
+	ts := time.Date(2222, 2, 22, 22, 22, 22, 0, time.UTC)
+	if err := s.CreateUser(&model.User{Username: userName, ID: -22, CreatedAt: ts}); err != nil {
 		t.Fatalf("CreateUser(%s): %s", userName, err)
 	}
 	user, err := s.GetUser(userName)
@@ -628,5 +649,46 @@ func TestDBAuthService_DeleteUser(t *testing.T) {
 		t.Errorf("GetUser(%s) succeeded after DeleteUser", userName)
 	} else if !errors.Is(err, db.ErrNotFound) {
 		t.Errorf("GetUser(%s) after deletion: %s", userName, err)
+	}
+}
+
+func BenchmarkDBAuthService_ListEffectivePolicies(b *testing.B) {
+	// setup user with policies for benchmark
+	adb, _ := testutil.GetDB(b, databaseURI)
+	serviceWithoutCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled: false,
+	})
+	serviceWithCache := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled:        true,
+		Size:           1024,
+		TTL:            20 * time.Second,
+		EvictionJitter: 3 * time.Second,
+	})
+	serviceWithCacheLowTTL := auth.NewDBAuthService(adb, crypt.NewSecretStore(someSecret), authparams.ServiceCache{
+		Enabled:        true,
+		Size:           1024,
+		TTL:            1 * time.Millisecond,
+		EvictionJitter: 1 * time.Millisecond,
+	})
+	userName := userWithPolicies(b, serviceWithoutCache, userPoliciesForTesting)
+
+	b.Run("without_cache", func(b *testing.B) {
+		benchmarkListEffectivePolicies(b, serviceWithoutCache, userName)
+	})
+	b.Run("with_cache", func(b *testing.B) {
+		benchmarkListEffectivePolicies(b, serviceWithCache, userName)
+	})
+	b.Run("without_cache_low_ttl", func(b *testing.B) {
+		benchmarkListEffectivePolicies(b, serviceWithCacheLowTTL, userName)
+	})
+}
+
+func benchmarkListEffectivePolicies(b *testing.B, s *auth.DBAuthService, userName string) {
+	b.ResetTimer()
+	for n := 0; n < b.N; n++ {
+		_, _, err := s.ListEffectivePolicies(userName, &model.PaginationParams{Amount: -1})
+		if err != nil {
+			b.Fatal("Failed to list effective policies", err)
+		}
 	}
 }

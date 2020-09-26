@@ -660,7 +660,7 @@ func TestCataloger_MarkObjectsForDeletion(t *testing.T) {
 		t.Fatalf("failed to connect to DB on %s", c.DbConnURI)
 	}
 
-	rows, err := conn.Queryx("SELECT physical_address, deleting FROM catalog_object_dedup")
+	rows, err := conn.Query("SELECT physical_address, deleting FROM catalog_object_dedup")
 	if err != nil {
 		t.Errorf("failed to query catalog_object_dedup: %s", err)
 	}
@@ -767,9 +767,13 @@ func TestCataloger_DeleteOrUnmarkObjectsForDeletion(t *testing.T) {
 		t.Fatalf("failed to connect to DB on %s", c.DbConnURI)
 	}
 
-	numRows, err := conn.Exec("UPDATE catalog_object_dedup SET deleting=true WHERE physical_address IN ('delete-me', 'dont-delete-me')")
-	if numRows != 2 || err != nil {
-		t.Fatalf("[interna] failed to set 2 objects to state deleting: %v objects set, %v", numRows, err)
+	res, err := conn.Exec("UPDATE catalog_object_dedup SET deleting=true WHERE physical_address IN ('delete-me', 'dont-delete-me')")
+	if err != nil {
+		t.Fatalf("[internal] failed to set 2 objects to state deleting, %s", err)
+	}
+	numRows, err := res.RowsAffected()
+	if err != nil || numRows != 2 {
+		t.Fatalf("[internal] failed to set 2 objects to state deleting: %d objects set, %s", numRows, err)
 	}
 
 	deleteRows, err := c.DeleteOrUnmarkObjectsForDeletion(ctx, repository)
@@ -790,7 +794,7 @@ func TestCataloger_DeleteOrUnmarkObjectsForDeletion(t *testing.T) {
 		t.Errorf("expected to delete other objects: %s\nexpected %v got %v", diffs, expectedDelete, deleteObjs)
 	}
 
-	rows, err := conn.Queryx("SELECT physical_address, deleting FROM catalog_object_dedup")
+	rows, err := conn.Query("SELECT physical_address, deleting FROM catalog_object_dedup")
 	if err != nil {
 		t.Fatalf("failed to query catalog_object_dedup: %s", err)
 	}
