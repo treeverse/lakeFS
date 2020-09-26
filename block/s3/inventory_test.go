@@ -1,66 +1,95 @@
 package s3_test
 
 import (
-	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io/ioutil"
-	"reflect"
 	"regexp"
 	"strings"
 	"testing"
+	"time"
 
-	"github.com/go-openapi/swag"
-	"github.com/treeverse/lakefs/logging"
-
-	s32 "github.com/aws/aws-sdk-go/service/s3"
+	s3sdk "github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
+	"github.com/go-openapi/swag"
+	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/s3"
+	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
+	"github.com/treeverse/lakefs/logging"
 )
 
-func rows(keys ...string) []*s3.ParquetInventoryObject {
+var ErrReadFile = errors.New("error reading file")
+
+func rows(keys []string, lastModified map[string]time.Time) []*inventorys3.InventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]*s3.ParquetInventoryObject, len(keys))
+	res := make([]*inventorys3.InventoryObject, len(keys))
 	for i, key := range keys {
 		if key != "" {
-			res[i] = new(s3.ParquetInventoryObject)
+			res[i] = new(inventorys3.InventoryObject)
 			res[i].Key = key
-			res[i].IsLatest = swag.Bool(!strings.HasPrefix(key, "expired_"))
-			res[i].IsDeleteMarker = swag.Bool(strings.HasPrefix(key, "del_"))
+			res[i].IsLatest = swag.Bool(!strings.Contains(key, "_expired"))
+			res[i].IsDeleteMarker = swag.Bool(strings.Contains(key, "_del"))
+			if lastModified != nil {
+				res[i].LastModifiedMillis = swag.Int64(lastModified[key].Unix() * 1000)
+			}
 		}
 	}
 	return res
 }
 
 var fileContents = map[string][]string{
-	"f1":          {"del_1", "f1row1", "f1row2", "del_2"},
-	"f2":          {"f2row1", "f2row2"},
-	"f3":          {"f3row1", "f3row2"},
-	"f4":          {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
-	"f5":          {"a1", "a2", "a3"},
-	"f6":          {"a4", "a5", "a6", "a7"},
-	"f7":          {"f7row1", "del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "expired_1", "expired_2", "expired_3", "f7row2"},
-	"err_file1":   {"a4", "", "a6", "a7"},
-	"err_file2":   {""},
-	"all_deleted": {"del_1", "del_2", "del_3", "del_4", "del_5", "del_6", "del_7", "del_8"},
-	"empty_file":  {},
+	"f1":            {"f1row1_del", "f1row2", "f1row3", "f1row4_del"},
+	"f2":            {"f2row1", "f2row2"},
+	"f3":            {"f3row1", "f3row2"},
+	"f4":            {"f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
+	"f5":            {"f5row1", "f5row2", "f5row3"},
+	"f6":            {"f6row1", "f6row2", "f6row3", "f6row4"},
+	"f7":            {"f7row1", "f7row2_del", "f7row3_del", "f7row4_del", "f7row5_del", "f7row6_del", "f7row7_del", "f7row8_expired", "f7row9_expired", "f7row10_expired", "f7row11"},
+	"err_file1":     {"f8row1", "", "f8row2", "f8row3"},
+	"err_file2":     {""},
+	"unsorted_file": {"f9row1", "f9row2", "f9row3", "f9row5", "f9row4"},
+	"all_deleted1":  {"fd1_del1", "fd1_del2", "fd1_del3", "fd1_del4", "fd1_del5", "fd1_del6", "fd1_del7", "fd1_del8"},
+	"all_deleted2":  {"fd2_del1", "fd2_del2", "fd2_del3", "fd2_del4", "fd2_del5", "fd2_del6", "fd2_del7", "fd2_del8"},
+	"all_deleted3":  {"fd3_del1", "fd3_del2", "fd3_del3", "fd3_del4", "fd3_del5", "fd3_del6", "fd3_del7", "fd3_del8"},
+	"all_deleted4":  {"fd4_del1", "fd4_del2", "fd4_del3", "fd4_del4", "fd4_del5", "fd4_del6", "fd4_del7", "fd4_del8"},
+	"all_deleted5":  {"fd5_del1", "fd5_del2", "fd5_del3", "fd5_del4", "fd5_del5", "fd5_del6", "fd5_del7", "fd5_del8"},
+	"all_deleted6":  {"fd6_del1", "fd6_del2", "fd6_del3", "fd6_del4", "fd6_del5", "fd6_del6", "fd6_del7", "fd6_del8"},
+	"all_deleted7":  {"fd7_del1", "fd7_del2", "fd7_del3", "fd7_del4", "fd7_del5", "fd7_del6", "fd7_del7", "fd7_del8"},
+	"all_deleted8":  {"fd8_del1", "fd8_del2", "fd8_del3", "fd8_del4", "fd8_del5", "fd8_del6", "fd8_del7", "fd8_del8"},
+	"all_deleted9":  {"fd9_del1", "fd9_del2", "fd9_del3", "fd9_del4", "fd9_del5", "fd9_del6", "fd9_del7", "fd9_del8"},
+	"empty_file":    {},
+	"f_overlap1":    {"fo_row1", "fo_row3", "fo_row5"},
+	"f_overlap2":    {"fo_row2", "fo_row4"},
+	"f_overlap3":    {"fo_row2", "fo_row6"},
+	"f_overlap4":    {"fo_row1", "fo_row4"},
+	"f_overlap5":    {"fo_row2", "fo_row4"},
 }
 
 func TestIterator(t *testing.T) {
+	now := time.Now()
+	lastModified := make(map[string]time.Time)
+	for _, rows := range fileContents {
+		for i, r := range rows {
+			lastModified[r] = now.Add(time.Hour * time.Duration(-i))
+		}
+	}
 	testdata := []struct {
 		InventoryFiles  []string
 		ExpectedObjects []string
-		ErrExpected     bool
+		ErrExpected     error
+		ShouldSort      bool
 	}{
 		{
 			InventoryFiles:  []string{"f1", "f2", "f3"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
 			InventoryFiles:  []string{"f3", "f2", "f1"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2", "f3row1", "f3row2"},
+			ShouldSort:      true,
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2", "f3row1", "f3row2"},
 		},
 		{
 			InventoryFiles:  []string{},
@@ -72,94 +101,157 @@ func TestIterator(t *testing.T) {
 		},
 		{
 			InventoryFiles:  []string{"f1", "f4"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f4row1", "f4row2", "f4row3", "f4row4", "f4row5", "f4row6", "f4row7"},
 		},
 		{
 			InventoryFiles:  []string{"f5", "f6"},
-			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			ExpectedObjects: []string{"f5row1", "f5row2", "f5row3", "f6row1", "f6row2", "f6row3", "f6row4"},
 		},
 		{
-			InventoryFiles:  []string{"f6", "f5"},
-			ExpectedObjects: []string{"a1", "a2", "a3", "a4", "a5", "a6", "a7"},
+			InventoryFiles: []string{"f1", "unsorted_file"},
+			ErrExpected:    s3.ErrInventoryNotSorted,
+			ShouldSort:     true,
 		},
 		{
 			InventoryFiles: []string{"f5", "err_file1"},
-			ErrExpected:    true,
+			ErrExpected:    ErrReadFile,
 		},
 		{
-			InventoryFiles: []string{"f1,", "f2", "f3", "f4", "f5", "f6", "err_file2"},
-			ErrExpected:    true,
+			InventoryFiles: []string{"f1", "f2", "f3", "f4", "f5", "f6", "err_file2"},
+			ErrExpected:    ErrReadFile,
 		},
 		{
 			InventoryFiles:  []string{"f7"},
-			ExpectedObjects: []string{"f7row1", "f7row2"},
+			ExpectedObjects: []string{"f7row1", "f7row11"},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "all_deleted"},
+			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "all_deleted3"},
 			ExpectedObjects: []string{},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "f1", "all_deleted3", "all_deleted4", "all_deleted5", "all_deleted6", "all_deleted7", "f2", "all_deleted8", "all_deleted9"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2"},
 		},
 		{
-			InventoryFiles:  []string{"all_deleted", "all_deleted", "f2", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "all_deleted", "f1", "all_deleted", "all_deleted"},
-			ExpectedObjects: []string{"f1row1", "f1row2", "f2row1", "f2row2"},
+			InventoryFiles:  []string{"all_deleted1", "all_deleted2", "f2", "all_deleted3", "all_deleted4", "all_deleted5", "all_deleted6", "all_deleted7", "f1", "all_deleted8", "all_deleted9"},
+			ExpectedObjects: []string{"f1row2", "f1row3", "f2row1", "f2row2"},
+			ShouldSort:      true,
 		},
 		{
 			InventoryFiles:  []string{"empty_file"},
 			ExpectedObjects: []string{},
 		},
+		{
+			InventoryFiles: []string{"f_overlap1", "f_overlap2"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
+		{
+			InventoryFiles: []string{"f_overlap1", "f_overlap3"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
+		{
+			InventoryFiles: []string{"f_overlap1", "f_overlap4"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
+		{
+			InventoryFiles: []string{"f_overlap4", "f_overlap5"},
+			ShouldSort:     true,
+			ErrExpected:    s3.ErrInventoryFilesRangesOverlap,
+		},
 	}
-
 	manifestURL := "s3://example-bucket/manifest1.json"
 	for _, test := range testdata {
-		for _, batchSize := range []int{1, 2, 3, 4, 5, 7, 9, 11, 15, 100, 1000, 10000} {
-			inv, err := s3.GenerateInventory(context.Background(), logging.Default(), manifestURL, &mockS3Client{
-				FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
-			}, mockParquetReaderGetter)
-			if !test.ErrExpected && err != nil {
-				t.Fatalf("error: %v", err)
-			} else if err != nil {
+		s3api := &mockS3Client{
+			FilesByManifestURL: map[string][]string{manifestURL: test.InventoryFiles},
+		}
+		reader := &mockInventoryReader{openFiles: make(map[string]bool), lastModified: lastModified}
+		inv, err := s3.GenerateInventory(logging.Default(), manifestURL, s3api, reader, test.ShouldSort)
+		if err != nil {
+			if errors.Is(err, test.ErrExpected) {
 				continue
 			}
-			it := inv.Iterator()
-			it.(*s3.InventoryIterator).ReadBatchSize = batchSize
-			objects := make([]string, 0, len(test.ExpectedObjects))
-			for it.Next() {
-				objects = append(objects, it.Get().Key)
+			t.Fatalf("error: %v", err)
+		}
+		it := inv.Iterator()
+		objects := make([]*block.InventoryObject, 0, len(test.ExpectedObjects))
+		for it.Next() {
+			objects = append(objects, it.Get())
+		}
+		if len(reader.openFiles) != 0 {
+			t.Errorf("some files stayed open: %v", reader.openFiles)
+		}
+		if !errors.Is(it.Err(), test.ErrExpected) {
+			t.Fatalf("got unexpected error. expected=%v, got=%v.", test.ErrExpected, it.Err())
+		}
+		if test.ErrExpected != nil {
+			continue
+		}
+		if len(objects) != len(test.ExpectedObjects) {
+			t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
+		}
+		for i, obj := range objects {
+			if obj.Key != test.ExpectedObjects[i] {
+				t.Fatalf("at index %d: expected=%s, got=%s", i, test.ExpectedObjects[i], obj.Key)
 			}
-			if !test.ErrExpected && it.Err() != nil {
-				t.Fatalf("got unexpected error: %v", it.Err())
-			}
-			if test.ErrExpected {
-				if it.Err() == nil {
-					print(len(test.ExpectedObjects))
-					t.Fatalf("expected error but didn't get one")
-				}
-				continue
-			}
-			if len(objects) != len(test.ExpectedObjects) {
-				t.Fatalf("unexpected number of objects in inventory. expected=%d, got=%d", len(test.ExpectedObjects), len(objects))
-			}
-			if !reflect.DeepEqual(objects, test.ExpectedObjects) {
-				t.Fatalf("objects in inventory differrent than expected. expected=%v, got=%v", test.ExpectedObjects, objects)
+			expectedLastModified := lastModified[obj.Key].Truncate(time.Second)
+			if obj.LastModified != expectedLastModified {
+				t.Fatalf("last modified for object in index %d different than expected. expected=%v, got=%v", i, expectedLastModified, obj.LastModified)
 			}
 		}
 	}
 }
 
-type mockParquetReader struct {
-	rows    []*s3.ParquetInventoryObject
-	nextIdx int
+type mockInventoryReader struct {
+	openFiles    map[string]bool
+	lastModified map[string]time.Time
 }
 
-func (m *mockParquetReader) Read(dstInterface interface{}) error {
-	res := make([]s3.ParquetInventoryObject, 0, len(m.rows))
-	dst := dstInterface.(*[]s3.ParquetInventoryObject)
+type mockInventoryFileReader struct {
+	rows            []*inventorys3.InventoryObject
+	nextIdx         int
+	inventoryReader *mockInventoryReader
+	key             string
+}
+
+func (m *mockInventoryFileReader) FirstObjectKey() string {
+	if len(m.rows) == 0 {
+		return ""
+	}
+	min := m.rows[0].Key
+	for _, r := range m.rows {
+		if r.Key < min {
+			min = r.Key
+		}
+	}
+	return min
+}
+
+func (m *mockInventoryFileReader) LastObjectKey() string {
+	max := ""
+	for _, r := range m.rows {
+		if r.Key > max {
+			max = r.Key
+		}
+	}
+	return max
+}
+
+func (m *mockInventoryFileReader) Close() error {
+	m.nextIdx = -1
+	m.rows = nil
+	delete(m.inventoryReader.openFiles, m.key)
+	return nil
+}
+
+func (m *mockInventoryFileReader) Read(dstInterface interface{}) error {
+	res := make([]inventorys3.InventoryObject, 0, len(m.rows))
+	dst := dstInterface.(*[]inventorys3.InventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
 		if m.rows[i] == nil {
-			return fmt.Errorf("got empty key") // for test - simulate file with error
+			return ErrReadFile // for test - simulate file with error
 		}
 		res = append(res, *m.rows[i])
 	}
@@ -168,48 +260,38 @@ func (m *mockParquetReader) Read(dstInterface interface{}) error {
 	return nil
 }
 
-func (m *mockParquetReader) GetNumRows() int64 {
+func (m *mockInventoryFileReader) GetNumRows() int64 {
 	return int64(len(m.rows))
 }
-func (m *mockParquetReader) SkipRows(skip int64) error {
-	m.nextIdx += int(skip)
-	if m.nextIdx > len(m.rows) {
-		return fmt.Errorf("index out of bounds after skip. got index=%d, length=%d", m.nextIdx, len(m.rows))
-	}
-	return nil
+
+func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (inventorys3.FileReader, error) {
+	m.openFiles[key] = true
+	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
 
-func mockParquetReaderGetter(_ context.Context, _ s3iface.S3API, bucket string, key string) (s3.ParquetReader, s3.CloseFunc, error) {
-	if bucket != "example-bucket" {
-		return nil, nil, fmt.Errorf("wrong bucket name: %s", bucket)
-	}
-	pr := &mockParquetReader{rows: rows(fileContents[key]...)}
-	return pr, func() error {
-		pr.nextIdx = -1
-		pr.rows = nil
-		return nil
-	}, nil
+func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (inventorys3.MetadataReader, error) {
+	m.openFiles[key] = true
+	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
-
-func (m *mockS3Client) GetObject(input *s32.GetObjectInput) (*s32.GetObjectOutput, error) {
-	output := s32.GetObjectOutput{}
+func (m *mockS3Client) GetObject(input *s3sdk.GetObjectInput) (*s3sdk.GetObjectOutput, error) {
+	output := s3sdk.GetObjectOutput{}
 	manifestURL := fmt.Sprintf("s3://%s%s", *input.Bucket, *input.Key)
 	if !manifestExists(manifestURL) {
 		return &output, nil
 	}
-	manifestFileNames := m.FilesByManifestURL[manifestURL]
-	if manifestFileNames == nil {
-		manifestFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
+	inventoryFileNames := m.FilesByManifestURL[manifestURL]
+	if inventoryFileNames == nil {
+		inventoryFileNames = []string{"inventory/lakefs-example-data/my_inventory/data/ea8268b2-a6ba-42de-8694-91a9833b4ff1.parquet"}
 	}
-	manifestFiles := make([]interface{}, 0, len(manifestFileNames))
-	for _, filename := range manifestFileNames {
-		manifestFiles = append(manifestFiles, struct {
+	inventoryFiles := make([]interface{}, 0, len(inventoryFileNames))
+	for _, filename := range inventoryFileNames {
+		inventoryFiles = append(inventoryFiles, struct {
 			Key string `json:"key"`
 		}{
 			Key: filename,
 		})
 	}
-	filesJSON, err := json.Marshal(manifestFiles)
+	filesJSON, err := json.Marshal(inventoryFiles)
 	if err != nil {
 		return nil, err
 	}

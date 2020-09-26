@@ -11,7 +11,7 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch string, committer string, message string, metadata Metadata) (*MergeResult, error) {
+func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBranch, committer, message string, metadata Metadata) (*MergeResult, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
@@ -21,7 +21,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}
 
-	var result *MergeResult
+	mergeResult := &MergeResult{}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
 		if err != nil {
@@ -36,18 +36,24 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
-		differences, err := c.doDiffByRelation(tx, relation, leftID, rightID)
+		err = c.doDiffByRelation(tx, relation, leftID, rightID)
 		if err != nil {
 			return nil, err
 		}
-		result = &MergeResult{
-			Differences: differences,
+		mergeResult.Summary, err = c.getDiffSummary(tx)
+		if err != nil {
+			return nil, err
 		}
-		diffCounts := result.Differences.CountByType()
-		if diffCounts[DifferenceTypeConflict] > 0 {
+		// check for conflicts
+		if mergeResult.Summary[DifferenceTypeConflict] > 0 {
 			return nil, ErrConflictFound
 		}
-		if len(diffCounts) == 0 {
+		// check for changes
+		var total int
+		for _, c := range mergeResult.Summary {
+			total += c
+		}
+		if total == 0 {
 			leftCommitAdvanced, err := checkZeroDiffCommit(tx, leftID, rightID)
 			if err != nil {
 				return nil, err
@@ -64,10 +70,10 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if err != nil {
 			return nil, err
 		}
-		result.Reference = MakeReference(rightBranch, commitID)
-		return nil, err
+		mergeResult.Reference = MakeReference(rightBranch, commitID)
+		return nil, nil
 	}, c.txOpts(ctx)...)
-	return result, err
+	return mergeResult, err
 }
 
 // checkZeroDiffCommit - Checks if the current commit id of source branch advanced since last merge.
@@ -162,8 +168,8 @@ func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID 
 
 	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id, commit_id, previous_commit_id,committer, message, creation_date, metadata, merge_type, merge_source_branch, merge_source_commit,
                      lineage_commits)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_parent',$8,$9,string_to_array($10,',')::bigint[])`,
-		childID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, parentID, parentLastCommitID, childNewLineage)
+		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,'from_parent',$7,$8,string_to_array($9,',')::bigint[])`,
+		childID, nextCommitID, previousMaxCommitID, committer, msg, metadata, parentID, parentLastCommitID, childNewLineage)
 	if err != nil {
 		return err
 	}
@@ -203,8 +209,8 @@ func (c *cataloger) mergeFromChild(tx db.Tx, previousMaxCommitID, nextCommitID C
 		return err
 	}
 	_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,previous_commit_id,committer,message,creation_date,metadata,merge_type,merge_source_branch,merge_source_commit)
-		VALUES ($1,$2,$3,$4,$5,$6,$7,'from_child',$8,$9)`,
-		parentID, nextCommitID, previousMaxCommitID, committer, msg, c.clock.Now(), metadata, childID, childLastCommitID)
+		VALUES ($1,$2,$3,$4,$5,transaction_timestamp(),$6,'from_child',$7,$8)`,
+		parentID, nextCommitID, previousMaxCommitID, committer, msg, metadata, childID, childLastCommitID)
 	return err
 }
 

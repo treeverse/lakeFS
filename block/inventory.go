@@ -2,12 +2,13 @@ package block
 
 import (
 	"context"
+	"time"
 
 	"github.com/treeverse/lakefs/logging"
 )
 
 type InventoryGenerator interface {
-	GenerateInventory(ctx context.Context, logger logging.Logger, inventoryURL string) (Inventory, error)
+	GenerateInventory(ctx context.Context, logger logging.Logger, inventoryURL string, shouldSort bool) (Inventory, error)
 }
 
 // Inventory represents a snapshot of the storage space
@@ -21,7 +22,7 @@ type InventoryObject struct {
 	Bucket          string
 	Key             string
 	Size            int64
-	LastModified    int64
+	LastModified    time.Time
 	Checksum        string
 	PhysicalAddress string
 }

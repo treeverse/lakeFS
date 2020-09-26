@@ -3,6 +3,8 @@ package onboard_test
 import (
 	"context"
 	"errors"
+	"sort"
+	"time"
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
@@ -16,9 +18,12 @@ const (
 )
 
 type mockInventory struct {
-	rows         []string
+	keys         []string
 	inventoryURL string
 	sourceBucket string
+	shouldSort   bool
+	lastModified []time.Time
+	checksum     func(string) string
 }
 
 type objectActions struct {
@@ -40,23 +45,27 @@ type mockInventoryGenerator struct {
 	sourceBucket         string
 }
 
-func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string) (block.Inventory, error) {
+func (m mockInventoryGenerator) GenerateInventory(_ context.Context, _ logging.Logger, inventoryURL string, shouldSort bool) (block.Inventory, error) {
 	if inventoryURL == m.newInventoryURL {
-		return &mockInventory{rows: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
+		return &mockInventory{keys: m.newInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
 	}
 	if inventoryURL == m.previousInventoryURL {
-		return &mockInventory{rows: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket}, nil
+		return &mockInventory{keys: m.previousInventory, inventoryURL: inventoryURL, sourceBucket: m.sourceBucket, shouldSort: shouldSort}, nil
 	}
 	return nil, errors.New("failed to create inventory")
 }
 
-func rows(keys ...string) []block.InventoryObject {
-	if keys == nil {
+func (m *mockInventory) rows() []block.InventoryObject {
+	if m.keys == nil {
 		return nil
 	}
-	res := make([]block.InventoryObject, 0, len(keys))
-	for _, key := range keys {
-		res = append(res, block.InventoryObject{Key: key})
+	res := make([]block.InventoryObject, 0, len(m.keys))
+	if m.checksum == nil {
+		m.checksum = func(s string) string { return s }
+	}
+	for i, key := range m.keys {
+
+		res = append(res, block.InventoryObject{Key: key, LastModified: m.lastModified[i%len(m.lastModified)], Checksum: m.checksum(key)})
 	}
 	return res
 }
@@ -118,8 +127,14 @@ func (m *mockInventoryIterator) Get() *block.InventoryObject {
 }
 
 func (m *mockInventory) Iterator() block.InventoryIterator {
+	if m.shouldSort {
+		sort.Strings(m.keys)
+	}
+	if m.lastModified == nil {
+		m.lastModified = []time.Time{time.Now()}
+	}
 	return &mockInventoryIterator{
-		rows: rows(m.rows...),
+		rows: m.rows(),
 	}
 }
 

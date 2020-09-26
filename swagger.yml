@@ -69,14 +69,19 @@ definitions:
   merge_result:
     type: object
     properties:
-      type:
+      summary:
+        type: object
+        properties:
+          added:
+            type: integer
+          removed:
+            type: integer
+          changed:
+            type: integer
+          conflict:
+            type: integer
+      reference:
         type: string
-        enum: [added, removed, changed, conflict]
-      path:
-        type: string
-      path_type:
-        type: string
-        enum: [common_prefix, object]
 
   repository_creation:
     type: object
@@ -1536,12 +1541,7 @@ paths:
         200:
           description: merge completed
           schema:
-            type: object
-            properties:
-              results:
-                type: array
-                items:
-                  $ref: "#/definitions/merge_result"
+            $ref: "#/definitions/merge_result"
         401:
           description: Unauthorized
           schema:
@@ -1553,12 +1553,7 @@ paths:
         409:
           description: conflict
           schema:
-            type: object
-            properties:
-              results:
-                type: array
-                items:
-                  $ref: "#/definitions/merge_result"
+            $ref: "#/definitions/merge_result"
         default:
           description: generic error response
           schema:
@@ -1574,6 +1569,12 @@ paths:
         name: branch
         required: true
         type: string
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
     get:
       tags:
         - branches
@@ -1585,6 +1586,8 @@ paths:
           schema:
             type: object
             properties:
+              pagination:
+                $ref: "#/definitions/pagination"
               results:
                 type: array
                 items:
@@ -1619,6 +1622,12 @@ paths:
         required: true
         type: string
         description: a reference (could be either a branch or a commit ID) to compare against
+      - in: query
+        name: after
+        type: string
+      - in: query
+        name: amount
+        type: integer
     get:
       tags:
         - refs
@@ -1630,6 +1639,8 @@ paths:
           schema:
             type: object
             properties:
+              pagination:
+                $ref: "#/definitions/pagination"
               results:
                 type: array
                 items:

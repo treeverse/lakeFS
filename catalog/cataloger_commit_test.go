@@ -12,16 +12,20 @@ import (
 
 	"github.com/davecgh/go-spew/spew"
 
-	"github.com/benbjohnson/clock"
 	"github.com/treeverse/lakefs/testutil"
 )
 
+func timeDifference(a, b time.Time) time.Duration {
+	diff := a.Sub(b)
+	if diff < time.Duration(0) {
+		return -diff
+	}
+	return diff
+}
+
 func TestCataloger_Commit(t *testing.T) {
 	ctx := context.Background()
-	now := time.Now().Round(time.Minute)
-	fakeClock := clock.NewMock()
-	fakeClock.Set(now)
-	c := testCataloger(t, WithClock(fakeClock))
+	c := testCataloger(t)
 	defer func() { _ = c.Close() }()
 	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
 	meta := Metadata{"key1": "val1", "key2": "val2"}
@@ -34,6 +38,7 @@ func TestCataloger_Commit(t *testing.T) {
 			PhysicalAddress: fileAddr,
 			Size:            int64(i) + 1,
 			Metadata:        meta,
+			CreationDate:    time.Now(),
 		}, CreateEntryParams{}); err != nil {
 			t.Fatal("create entry for testing", fileName, err)
 		}
@@ -59,7 +64,7 @@ func TestCataloger_Commit(t *testing.T) {
 				Reference:    "~KJ8Wd1Rs96Z",
 				Committer:    "tester",
 				Message:      "Simple commit",
-				CreationDate: now,
+				CreationDate: time.Now(),
 				Metadata:     meta,
 				Parents:      []string{"~KJ8Wd1Rs96Y"},
 			},
@@ -92,10 +97,19 @@ func TestCataloger_Commit(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			now := time.Now()
 			got, err := c.Commit(ctx, tt.args.repository, tt.args.branch, tt.args.message, tt.args.committer, tt.args.metadata)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Commit() error = %v, wantErr %v", err, tt.wantErr)
 				return
+			}
+			if got != nil {
+				if timeDifference(got.CreationDate, now) > 10*time.Second {
+					t.Errorf("expected creation time %s, got very different %s", got.CreationDate, now)
+				}
+				if tt.want != nil {
+					got.CreationDate = tt.want.CreationDate
+				}
 			}
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("Commit() got = %s, want = %s", spew.Sdump(got), spew.Sdump(tt.want))
@@ -240,5 +254,37 @@ func TestCataloger_Commit_Scenario(t *testing.T) {
 			t.Errorf("Delete should left no entries, got %d", len(entries))
 		}
 	})
+}
 
+func TestCataloger_CommitTombstoneShouldNotChangeHistory(t *testing.T) {
+	ctx := context.Background()
+	c := testCataloger(t)
+	defer func() { _ = c.Close() }()
+	repository := testCatalogerRepo(t, ctx, c, "repository", "master")
+
+	// create file
+	testCatalogerCreateEntry(t, ctx, c, repository, "master", "file42", nil, "")
+	_, err := c.Commit(ctx, repository, "master", "commit new file", "tester", nil)
+	testutil.MustDo(t, "commit new file", err)
+
+	// create branch
+	branchCommit, err := c.CreateBranch(ctx, repository, "branch1", "master")
+	testutil.MustDo(t, "create branch", err)
+
+	// delete file on branch (with commit) - should create tombstone
+	err = c.DeleteEntry(ctx, repository, "branch1", "file42")
+	testutil.MustDo(t, "delete entry", err)
+
+	// commit the delete - should create tombstone
+	_, err = c.Commit(ctx, repository, "branch1", "commit delete file", "tester", nil)
+	testutil.MustDo(t, "commit delete file", err)
+
+	// verify that the file is deleted
+	ent, err := c.GetEntry(ctx, repository, branchCommit.Reference, "file42", GetEntryParams{})
+	testutil.MustDo(t, "get entry from create branch commit - branch1", err)
+
+	checksumFile42 := testCreateEntryCalcChecksum("file42", "")
+	if ent.Checksum != checksumFile42 {
+		t.Fatalf("get entry from branch commit checksum=%s, expected, %s", ent.Checksum, checksumFile42)
+	}
 }

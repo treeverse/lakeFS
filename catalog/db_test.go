@@ -60,8 +60,8 @@ func Test_paginateSlice(t *testing.T) {
 				s:     []string{"one", "two", "three"},
 				limit: 0,
 			},
-			want:        []string{"one", "two", "three"},
-			wantHasMore: false,
+			want:        []string{},
+			wantHasMore: true,
 		},
 	}
 	for _, tt := range tests {

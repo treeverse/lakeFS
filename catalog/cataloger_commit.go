@@ -3,6 +3,7 @@ package catalog
 import (
 	"context"
 	"fmt"
+	"time"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/treeverse/lakefs/db"
@@ -38,30 +39,29 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 			return nil, fmt.Errorf("delete uncommitted tombstones: %w", err)
 		}
 
-		affectedTombstone, err := commitTombstones(tx, branchID, lastCommitID)
-		if err != nil {
-			return nil, fmt.Errorf("commit tombstones: %w", err)
-		}
-
 		// uncommitted to committed entries
 		commitID, err := getNextCommitID(tx)
 		if err != nil {
 			return nil, fmt.Errorf("next commit id: %w", err)
 		}
+
+		// commit entries (include the tombstones)
 		affectedNew, err := commitEntries(tx, branchID, commitID)
 		if err != nil {
 			return nil, fmt.Errorf("commit entries: %w", err)
 		}
-		if (affectedNew + affectedTombstone + committedAffected) == 0 {
+		if (affectedNew + committedAffected) == 0 {
 			return nil, ErrNothingToCommit
 		}
 
 		// insert commit record
-		creationDate := c.clock.Now()
-		_, err = tx.Exec(`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,metadata,merge_type,previous_commit_id)
-			VALUES ($1,$2,$3,$4,$5,$6,$7,$8)`,
-			branchID, commitID, committer, message, creationDate, metadata, RelationTypeNone, lastCommitID)
-		if err != nil {
+		var creationDate time.Time
+		if err = tx.Get(&creationDate,
+			`INSERT INTO catalog_commits (branch_id,commit_id,committer,message,creation_date,metadata,merge_type,previous_commit_id)
+			VALUES ($1,$2,$3,$4,transaction_timestamp(),$5,$6,$7)
+			RETURNING creation_date`,
+			branchID, commitID, committer, message, metadata, RelationTypeNone, lastCommitID,
+		); err != nil {
 			return nil, err
 		}
 		reference := MakeReference(branch, commitID)
@@ -104,17 +104,8 @@ func commitDeleteUncommittedTombstones(tx sqlx.Execer, branchID int64, commitID 
 	return res.RowsAffected()
 }
 
-func commitTombstones(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2, max_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND is_deleted`,
-		branchID, commitID)
-	if err != nil {
-		return 0, err
-	}
-	return res.RowsAffected()
-}
-
 func commitEntries(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
-	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed AND NOT is_deleted`,
+	res, err := tx.Exec(`UPDATE catalog_entries_v SET min_commit = $2 WHERE branch_id = $1 AND NOT is_committed`,
 		branchID, commitID)
 	if err != nil {
 		return 0, err

@@ -11,17 +11,19 @@ has_children: false
 1. Configure a new connection profile using the credentials we generated earlier:
 
    ```bash
-   $ aws configure --profile local
-   AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
-   AWS Secret Access Key [None]: ****************************************
-   Default region name [None]:
-   Default output format [None]:
+   aws configure --profile local
+   # output:
+   # AWS Access Key ID [None]: AKIAIOSFODNN7EXAMPLE
+   # AWS Secret Access Key [None]: ****************************************
+   # Default region name [None]:
+   # Default output format [None]:
    ```
 1. Let's test to see that it works. We'll do that by calling `s3 ls` which should list our repositories for us:
    
    ```bash
-   $ aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 ls
-     2020-05-18 17:47:03 example
+   aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 ls
+   # output:
+   # 2020-05-18 17:47:03 example
    ```
    
    **Note:** We're using `s3.local.lakefs.io` - a special DNS record which always resolves to localhost, subdomains included.  
@@ -31,8 +33,9 @@ has_children: false
 1. Great, now let's copy some files. We'll write to the master branch. This is done by prefixing our path with the name of the branch we'd like to read/write from:
 
    ```bash
-   $ aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example/master/
-   upload: ./foo.txt to s3://example/master/foo.txt
+   aws --endpoint-url=http://s3.local.lakefs.io:8000 --profile local s3 cp ./foo.txt s3://example/master/
+   # output:
+   # upload: ./foo.txt to s3://example/master/foo.txt
    ```
 
 1. Back in the lakeFS UI, we should be able to see our file added to the master branch!

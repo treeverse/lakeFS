@@ -717,3 +717,39 @@ footer {
 		}
 	}
 }
+.copy-code-container {
+	position: absolute;
+	right: 0.3em;
+}
+.copy-code-button:hover {
+	color: $teal-green;
+}
+
+.copy-code-button:active {
+	color: $white;
+}
+.copy-code-button {
+	align-items: center;
+	justify-content: center;
+	border: none;
+	cursor: pointer;
+	font-size: 1rem;
+	color: $black;
+	padding: 0.4em 0.5em;
+	background-color: transparent;
+	outline:none;
+}
+
+.highlighter-rouge {
+	position: relative;
+}
+
+.language-shell.highlighter-rouge pre.highlight::before,
+.language-sh.highlighter-rouge pre.highlight::before,
+.language-bash.highlighter-rouge pre.highlight::before{
+	content: "$ ";
+	color: $teal-green;
+	font-weight: 400;
+	font-family: monospace;
+	font-size: 0.75em;
+}

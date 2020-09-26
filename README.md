@@ -2,6 +2,7 @@
   <img src="logo_large.png"/>
 </p>
 
+[![Hacktoberfest](https://badgen.net/badge/hacktoberfest/friendly/pink)](docs/contributing.md)
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://raw.githubusercontent.com/treeverse/lakeFS/master/LICENSE)
 [![Go](https://github.com/treeverse/lakeFS/workflows/Go/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3AGo+branch%3Amaster++)
 [![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++)
@@ -22,21 +23,23 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
+
 ## Capabilities
 
-**Atomic Operations** - lakeFS allows data producers to manipulate multiple objects as a single, atomic operation. If something fails half-way, all changes can be instantly rolled back.
+**Development Environment for Data**
+* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
+* **Reproducibility** - go back to any point of time to a consistent version of your data lake.
 
-**Consistency** - lakeFS enables object-level and cross-collection consistency:
-  - object-level consistency ensures all operations within a branch are strongly consistent (read-after-write, list-after-write, read-after-delete, etc).
-  - cross-collection consistency is achieved by providing snapshot isolation. Using branches, writers can provide consistency guarantees across different logical   collections - merging to “main” is only done after several datasets have been created successfully.
+**Continuous Data Integration**
+* **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
+* **Metadata validation** - prevent breaking changes from entering the production data environment.
 
-**History** - Commits are retained for a configurable duration, so readers can query data from the latest commit, or from any other point in time. Writers can atomically and safely rollback changes to previous versions.
-
-**Cross-Lake Isolation** - Creating a lakeFS branch provides you with a snapshot of the entire lake at a given point in time.
-All reads from that branch are    guaranteed to always return the same results.
-
-**Data CI/CD** - The ability to define automated rules and tests that are required to pass before committing or merging changes to data.
-
+**Continuous Data Deployment**
+* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
+* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action
+* **Prevent data quality issues by enabling**
+  - Testing of production data before exposing it to users / consumers
+  - Testing of intermediate results in your DAG to avoid cascading quality issues
 
 ## Getting Started
 
@@ -79,6 +82,12 @@ Keep up to date and get lakeFS support via:
 - [Twitter](https://twitter.com/lakeFS) (follow for updates and news)
 - [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
+
+## Get ready for Hacktoberfest!
+
+Contribute to open-source projects throughout October 2020 by stepping up to Digital Ocean's annual tradition of hosting [Hacktoberfest](https://hacktoberfest.digitalocean.com/).  We _always_ welcome pull requests to lakeFS - but throughout October your pull requests to open source projects can get you some cool swag.  Check out our [contributing guide](https://docs.lakefs.io/contributing) and join our [slack channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) for help, more ideas, and discussions. 
+
+Not sure what to do?  We marked some issues that could get you started quickly on our [Hacktoberfest list](https://github.com/treeverse/lakeFS/issues?q=is%3Aissue+is%3Aopen+label%3Ahacktoberfest).
 
 ## More information
 

@@ -75,10 +75,10 @@ type RepositoryClient interface {
 	UploadObject(ctx context.Context, repository, branchID, path string, r io.Reader) (*models.ObjectStats, error)
 	DeleteObject(ctx context.Context, repository, branchID, path string) error
 
-	DiffRefs(ctx context.Context, repository, leftRef, rightRef string) ([]*models.Diff, error)
-	Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error)
+	DiffRefs(ctx context.Context, repository, leftRef, rightRef string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
+	Merge(ctx context.Context, repository, leftRef, rightRef string) (*models.MergeResult, error)
 
-	DiffBranch(ctx context.Context, repository, branch string) ([]*models.Diff, error)
+	DiffBranch(ctx context.Context, repository, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error)
 
 	GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error)
 	UpdateRetentionPolicy(ctx context.Context, repository string, policy *models.RetentionPolicy) error
@@ -526,20 +526,23 @@ func (c *client) GetCommitLog(ctx context.Context, repository, branchID, after s
 	return resp.GetPayload().Results, resp.GetPayload().Pagination, nil
 }
 
-func (c *client) DiffRefs(ctx context.Context, repository, leftRef, rightRef string) ([]*models.Diff, error) {
+func (c *client) DiffRefs(ctx context.Context, repository, leftRef, rightRef, after string, amount int) ([]*models.Diff, *models.Pagination, error) {
 	diff, err := c.remote.Refs.DiffRefs(&refs.DiffRefsParams{
+		After:      swag.String(after),
+		Amount:     swag.Int64(int64(amount)),
 		LeftRef:    leftRef,
-		RightRef:   rightRef,
 		Repository: repository,
+		RightRef:   rightRef,
 		Context:    ctx,
 	}, c.auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return diff.GetPayload().Results, nil
+	payload := diff.GetPayload()
+	return payload.Results, payload.Pagination, nil
 }
 
-func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string) ([]*models.MergeResult, error) {
+func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string) (*models.MergeResult, error) {
 	statusOK, err := c.remote.Refs.MergeIntoBranch(&refs.MergeIntoBranchParams{
 		DestinationRef: leftRef,
 		SourceRef:      rightRef,
@@ -548,27 +551,30 @@ func (c *client) Merge(ctx context.Context, repository, leftRef, rightRef string
 	}, c.auth)
 
 	if err == nil {
-		return statusOK.Payload.Results, nil
+		return statusOK.Payload, nil
 	}
 	conflict, ok := err.(*refs.MergeIntoBranchConflict)
-	if ok {
-		return conflict.Payload.Results, catalog.ErrConflictFound
-	} else {
-		return nil, err
+	if !ok {
+		return conflict.Payload, catalog.ErrConflictFound
 	}
+	return nil, err
 }
 
-func (c *client) DiffBranch(ctx context.Context, repoID, branch string) ([]*models.Diff, error) {
+func (c *client) DiffBranch(ctx context.Context, repoID, branch string, after string, amount int) ([]*models.Diff, *models.Pagination, error) {
 	diff, err := c.remote.Branches.DiffBranch(&branches.DiffBranchParams{
+		After:      swag.String(after),
+		Amount:     swag.Int64(int64(amount)),
 		Branch:     branch,
 		Repository: repoID,
 		Context:    ctx,
 	}, c.auth)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
-	return diff.GetPayload().Results, nil
+	payload := diff.GetPayload()
+	return payload.Results, payload.Pagination, nil
 }
+
 func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (string, error) {
 	resp, err := c.remote.Metadata.CreateSymlink(&metadata.CreateSymlinkParams{
 		Location:   swag.String(path),
@@ -581,6 +587,7 @@ func (c *client) Symlink(ctx context.Context, repoID, branch, path string) (stri
 	}
 	return resp.GetPayload(), nil
 }
+
 func (c *client) GetRetentionPolicy(ctx context.Context, repository string) (*models.RetentionPolicyWithCreationDate, error) {
 	policy, err := c.remote.Retention.GetRetentionPolicy(&retention.GetRetentionPolicyParams{
 		Repository: repository,

@@ -10,17 +10,25 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
-const diffResultsTableName = "catalog_diff_results"
+const (
+	DiffMaxLimit = 1000
 
-func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string) (Differences, error) {
+	diffResultsTableName = "catalog_diff_results"
+)
+
+func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
 		{Name: "repository", IsValid: ValidateRepositoryName(repository)},
 		{Name: "leftBranch", IsValid: ValidateBranchName(leftBranch)},
 		{Name: "rightBranch", IsValid: ValidateBranchName(rightBranch)},
 	}); err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	differences, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
+
+	if limit < 0 || limit > DiffMaxLimit {
+		limit = DiffMaxLimit
+	}
+	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
 		if err != nil {
 			return nil, fmt.Errorf("left branch: %w", err)
@@ -29,23 +37,29 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-		return c.doDiff(tx, leftID, rightID)
+		err = c.doDiff(tx, leftID, rightID)
+		if err != nil {
+			return nil, err
+		}
+		return getDiffDifferences(tx, limit+1, after)
 	}, c.txOpts(ctx)...)
 	if err != nil {
-		return nil, err
+		return nil, false, err
 	}
-	return differences.(Differences), nil
+	differences := res.(Differences)
+	hasMore := paginateSlice(&differences, limit)
+	return differences, hasMore, nil
 }
 
-func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int64) (Differences, error) {
+func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int64) error {
 	relation, err := getBranchesRelationType(tx, leftID, rightID)
 	if err != nil {
-		return nil, err
+		return err
 	}
 	return c.doDiffByRelation(tx, relation, leftID, rightID)
 }
 
-func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int64) (Differences, error) {
+func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int64) error {
 	switch relation {
 	case RelationTypeFromParent:
 		return c.diffFromParent(tx, leftID, rightID)
@@ -59,21 +73,37 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 			"left_id":       leftID,
 			"right_id":      rightID,
 		}).Debug("Diff by relation - unsupported type")
-		return nil, ErrFeatureNotSupported
+		return ErrFeatureNotSupported
 	}
 }
 
-func (c *cataloger) diffFromParent(tx db.Tx, parentID, childID int64) (Differences, error) {
+func (c *cataloger) getDiffSummary(tx db.Tx) (map[DifferenceType]int, error) {
+	var results []struct {
+		DiffType int `db:"diff_type"`
+		Count    int `db:"count"`
+	}
+	err := tx.Select(&results, "SELECT diff_type, count(diff_type) as count FROM "+diffResultsTableName+" GROUP BY diff_type")
+	if err != nil {
+		return nil, fmt.Errorf("count diff resutls by type: %w", err)
+	}
+	m := make(map[DifferenceType]int, len(results))
+	for _, res := range results {
+		m[DifferenceType(res.DiffType)] = res.Count
+	}
+	return m, nil
+}
+
+func (c *cataloger) diffFromParent(tx db.Tx, parentID, childID int64) error {
 	// get the last child commit number of the last parent merge
 	// if there is none - then it is  the first merge
 	var maxChildMerge CommitID
 	childLineage, err := getLineage(tx, childID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("child lineage failed: %w", err)
+		return fmt.Errorf("child lineage failed: %w", err)
 	}
 	parentLineage, err := getLineage(tx, parentID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("parent lineage failed: %w", err)
+		return fmt.Errorf("parent lineage failed: %w", err)
 	}
 	maxChildQuery, args, err := sq.Select("MAX(commit_id) as max_child_commit").
 		From("catalog_commits").
@@ -81,34 +111,44 @@ func (c *cataloger) diffFromParent(tx db.Tx, parentID, childID int64) (Differenc
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("get child last commit sql: %w", err)
+		return fmt.Errorf("get child last commit sql: %w", err)
 	}
 	err = tx.Get(&maxChildMerge, maxChildQuery, args...)
 	if err != nil {
-		return nil, fmt.Errorf("get child last commit failed: %w", err)
+		return fmt.Errorf("get child last commit failed: %w", err)
 	}
 	diffFromParentSQL, args, err := sqDiffFromParentV(parentID, childID, maxChildMerge, parentLineage, childLineage).
 		Prefix(`CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS ").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("diff from parent sql: %w", err)
+		return fmt.Errorf("diff from parent sql: %w", err)
 	}
 	if _, err := tx.Exec(diffFromParentSQL, args...); err != nil {
-		return nil, fmt.Errorf("select diff from parent: %w", err)
+		return fmt.Errorf("select diff from parent: %w", err)
 	}
-	return diffReadDifferences(tx)
+	return nil
 }
 
-func diffReadDifferences(tx db.Tx) (Differences, error) {
+func getDiffDifferences(tx db.Tx, limit int, after string) (Differences, error) {
 	var result Differences
-	if err := tx.Select(&result, "SELECT diff_type, path FROM "+diffResultsTableName); err != nil {
+	query, args, err := psql.Select("diff_type", "path").
+		From(diffResultsTableName).
+		Where(sq.Gt{"path": after}).
+		OrderBy("path").
+		Limit(uint64(limit)).
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("format diff results query: %w", err)
+	}
+	err = tx.Select(&result, query, args...)
+	if err != nil {
 		return nil, fmt.Errorf("select diff results: %w", err)
 	}
 	return result, nil
 }
 
-func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) (Differences, error) {
+func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) error {
 	// read last merge commit numbers from commit table
 	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
 	// the child is 0, as any change in the child was never merged to the parent.
@@ -127,12 +167,12 @@ func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) (Difference
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("effective commits sql: %w", err)
+		return fmt.Errorf("effective commits sql: %w", err)
 	}
 	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
 	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
 	if err != nil && !effectiveCommitsNotFound {
-		return nil, fmt.Errorf("select effective commit: %w", err)
+		return fmt.Errorf("select effective commit: %w", err)
 	}
 	if effectiveCommitsNotFound {
 		effectiveCommits.ChildEffectiveCommit = 1 // we need all commits from the child. so any small number will do
@@ -143,21 +183,21 @@ func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) (Difference
 			Limit(1).
 			ToSql()
 		if err != nil {
-			return nil, fmt.Errorf("parent effective commit sql: %w", err)
+			return fmt.Errorf("parent effective commit sql: %w", err)
 		}
 		err = tx.Get(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
 		if err != nil {
-			return nil, fmt.Errorf("select parent effective commit: %w", err)
+			return fmt.Errorf("select parent effective commit: %w", err)
 		}
 	}
 
 	parentLineage, err := getLineage(tx, parentID, UncommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("parent lineage failed: %w", err)
+		return fmt.Errorf("parent lineage failed: %w", err)
 	}
 	childLineage, err := getLineage(tx, childID, CommittedID)
 	if err != nil {
-		return nil, fmt.Errorf("child lineage failed: %w", err)
+		return fmt.Errorf("child lineage failed: %w", err)
 	}
 
 	childLineageValues := getLineageAsValues(childLineage, childID, MaxCommitID)
@@ -167,18 +207,18 @@ func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) (Difference
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
-		return nil, fmt.Errorf("diff from child sql: %w", err)
+		return fmt.Errorf("diff from child sql: %w", err)
 	}
 	if _, err := tx.Exec(diffFromChildSQL, args...); err != nil {
-		return nil, fmt.Errorf("exec diff from child: %w", err)
+		return fmt.Errorf("exec diff from child: %w", err)
 	}
-	return diffReadDifferences(tx)
+	return nil
 }
 
-func (c *cataloger) diffNonDirect(_ db.Tx, leftID, rightID int64) (Differences, error) {
+func (c *cataloger) diffNonDirect(_ db.Tx, leftID, rightID int64) error {
 	c.log.WithFields(logging.Fields{
 		"left_id":  leftID,
 		"right_id": rightID,
 	}).Debug("Diff not direct - feature not supported")
-	return nil, ErrFeatureNotSupported
+	return ErrFeatureNotSupported
 }

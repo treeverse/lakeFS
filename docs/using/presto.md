@@ -108,7 +108,7 @@ WITH (
 ### Example of copying a table with [metastore tools](glue_hive_metastore.md):
 Copy the created table `page_views` on schema `master` to schema `example_branch` with location `s3a://example/example_branch/page_views/` 
 ```shell
-$ lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
+lakectl metastore copy --from-schema master --from-table page_views   --to-branch example_branch 
 ```
 
 

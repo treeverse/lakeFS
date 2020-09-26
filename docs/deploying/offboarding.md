@@ -36,11 +36,11 @@ assuming the underlying S3 bucket is intact. Here's how to do it:
    To generate a manifest, connect to the PostgreSQL instance used by lakeFS and run the following command:
    
    ```shell
-   $ psql \
-       --var "repository_name=repo1" \
-       --var "branch_name=master" \
-       --var "dst_bucket_name=bucket1" \
-       postgres < create-extraction-manifest.sql > manifest.csv
+   psql \
+     --var "repository_name=repo1" \
+     --var "branch_name=master" \
+     --var "dst_bucket_name=bucket1" \
+     postgres < create-extraction-manifest.sql > manifest.csv
    ```
    
    You can download the `create-extraction-manifest.sql` script from the [lakeFS GitHub repository](https://github.com/treeverse/lakeFS/blob/master/scripts/create-extraction-manifest.sql){: target="_blank" }.
@@ -51,8 +51,8 @@ assuming the underlying S3 bucket is intact. Here's how to do it:
 1. Copy the manifest to S3. Once copied, keep note of its etag - we'll need this to run the copy batch job:
    
    ```shell
-   $ cp /path/to/manifest.csv s3://my-bucket/path/to/manifest.csv
-   $ aws s3api head-object --bucket my-bucket --key path/to-manifest/csv | jq -r .ETag # Or look for ETag in the output
+   cp /path/to/manifest.csv s3://my-bucket/path/to/manifest.csv
+   aws s3api head-object --bucket my-bucket --key path/to-manifest/csv | jq -r .ETag # Or look for ETag in the output
    ```
 1. Once we have a manifest, let's define a S3 batch job that will copy all files for us.
 To do this, let's start by creating an IAM role called `lakeFSExportJobRole`, and grant it permissions as described in ["Granting permissions for Batch Operations"](https://docs.aws.amazon.com/AmazonS3/latest/dev/batch-ops-iam-role-policies.html#batch-ops-iam-role-policies-create){: target="_blank" }
@@ -62,16 +62,16 @@ To do this, let's start by creating an IAM role called `lakeFSExportJobRole`, an
 1. Take note of your account ID - this is required for running an S3 Batch Job:
    
    ```shell
-   $ aws sts get-caller-identity | jq -r .Account
+   aws sts get-caller-identity | jq -r .Account
    ```
 1. Dispatch a copy job using the [`run_copy.py`](https://github.com/treeverse/treeverse-distcp/blob/master/run_copy.py){: target="_blank" } script:
    
    ```shell
-   $ run_copy.py \
-       --account-id "123456789" \
-       --csv-path "s3://s3://my-bucket/path/to/manifest" \
-       --csv-etag "..." \
-       --report-path "s3://another-bucket/prefix/for/reports" \
-       --lambda-handler-arn "arn:lambda:..."
+   run_copy.py \
+     --account-id "123456789" \
+     --csv-path "s3://s3://my-bucket/path/to/manifest" \
+     --csv-etag "..." \
+     --report-path "s3://another-bucket/prefix/for/reports" \
+     --lambda-handler-arn "arn:lambda:..."
    ```
 1. You will get a job number. Now go to the [AWS S3 Batch Operations Console](https://s3.console.aws.amazon.com/s3/jobs){: target="_blank" }, switch to the region of your bucket, and confirm execution of that job.
