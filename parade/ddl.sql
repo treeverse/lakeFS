@@ -75,6 +75,18 @@ LANGUAGE sql VOLATILE AS $$
     RETURNING id, performance_token, action, body
 $$;
 
+-- Extends ownership of task id by an extra max_duration, if it is still locked with performance
+-- token.
+CREATE OR REPLACE FUNCTION extend_task_deadline(
+    task_id VARCHAR(64), token UUID, max_duration INTERVAL
+) RETURNS BOOLEAN
+LANGUAGE sql AS $$
+    UPDATE tasks
+    SET action_deadline = NOW() + max_duration
+    WHERE id = task_id AND performance_token = token
+    RETURNING true;
+$$;
+
 -- Returns an owned task id that was locked with token.  It is an error
 -- to return a task with the wrong token; that can happen if the
 -- deadline expired and the task was given to another actor.
