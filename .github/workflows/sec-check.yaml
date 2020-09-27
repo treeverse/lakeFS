@@ -1,0 +1,16 @@
+name: Security-Check
+# Manually triggered workflow - Treeverse members should only invoke it after checking for malicious code changes in other workflows.
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  do_nothing:
+    runs-on: ubuntu-latest
+    steps:
+      - run: |
+          echo "Check passed!"
