@@ -4,6 +4,7 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
 jobs:
   deploy-image:
     name: Build and push Docker image
