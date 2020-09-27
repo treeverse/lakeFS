@@ -14,6 +14,7 @@ COPY . ./
 # Build a binaries
 RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakefs ./cmd/lakefs
 RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o lakectl ./cmd/lakectl
+RUN go build -ldflags "-X github.com/treeverse/lakefs/config.Version=${VERSION}" -o benchmark-executor ./benchmarks
 
 # lakectl image
 FROM alpine:3.11.5 AS lakectl
@@ -24,6 +25,14 @@ RUN addgroup -S lakefs && adduser -S lakefs -G lakefs
 USER lakefs
 WORKDIR /home/lakefs
 ENTRYPOINT ["/app/lakectl"]
+
+# benchmark-executor image
+FROM alpine:3.11.5 AS benchmark-executor
+WORKDIR /app
+ENV PATH /app:$PATH
+COPY --from=build /build/benchmark-executor ./
+ENTRYPOINT ["/app/lakefs"]
+CMD ["run"]
 
 # lakefs image
 FROM alpine:3.11.5 AS lakefs
