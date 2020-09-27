@@ -196,6 +196,27 @@ func OwnTasks(conn *sqlx.DB, actor ActorID, maxTasks int, actions []string, maxD
 
 var ErrInvalidToken = errors.New("performance token invalid (action may have exceeded deadline)")
 
+// ExtendTaskDeadline extends the deadline for completing taskID which was acquired with the
+// specified token, for maxDuration longer.  It returns nil if the task is still owned and its
+// deadline was extended, or an SQL error, or ErrInvalidToken.  deadline was extended.
+func ExtendTaskDeadline(conn *sqlx.DB, taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
+	var res *bool
+	query, args, err := sqlx.In(`SELECT * FROM extend_task_deadline(?, ?, ?)`, taskID, token, maxDuration)
+	if err != nil {
+		return fmt.Errorf("create extend_task_deadline query: %w", err)
+	}
+	query = conn.Rebind(query)
+	err = conn.Get(&res, query, args...)
+	if err != nil {
+		return fmt.Errorf("extend_task_deadline: %w", err)
+	}
+
+	if res == nil {
+		return ErrInvalidToken
+	}
+	return nil
+}
+
 // ReturnTask returns taskId which was acquired using the specified performanceToken, giving it
 // resultStatus and resultStatusCode.  It returns InvalidTokenError if the performanceToken is
 // invalid; this happens when ReturnTask is called after its deadline expires, or due to a logic
