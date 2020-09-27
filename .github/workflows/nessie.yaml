@@ -4,6 +4,11 @@ on:
     branches:
       - master
   pull_request:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'git ref (e.g. branch)'
+        required: true
 jobs:
   deploy-image:
     name: Build and push Docker image
@@ -12,6 +17,8 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@v2
+        with:
+          ref: "${{ github.event.inputs.ref }}"
 
       - name: Setup UI (node 10)
         uses: actions/setup-node@v1
