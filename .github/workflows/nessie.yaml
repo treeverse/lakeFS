@@ -1,15 +1,36 @@
 name: Nessie
 on:
+  workflow_run:
+    workflows: ["Security-Check"]
+    types:
+      - completed
+  pull_request_target:
+  pull_request:
   push:
     branches:
       - master
-  pull_request:
-  workflow_dispatch:
+
 jobs:
   deploy-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
     steps:
+      - name: Extract branch name
+        shell: bash
+        run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
+        id: extract_branch
+
+      # This step will retry until required check passes
+      # and will fail the whole workflow if the check conclusion is not a success.
+      # Security-check is a no-op (i.e. this shouldn't block), unless the PR was triggered from a forked repo.
+      # TODO: reenable after sec-check.yaml is in master branch
+#      - name: Wait on security check
+#        uses: lewagon/wait-on-check-action@v0.1
+#        with:
+#          ref: ${{ steps.extract_branch.outputs.branch }}
+#          check-name: sec-check
+#          repo-token: ${{ secrets.GITHUB_TOKEN }}
+#          wait-interval: 20 # seconds
 
       - name: Checkout
         uses: actions/checkout@v2
