@@ -3,10 +3,11 @@ package catalog
 import (
 	"context"
 	"fmt"
-	"github.com/treeverse/lakefs/db"
-	"github.com/treeverse/lakefs/testutil"
 	"strconv"
 	"testing"
+
+	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 const (
@@ -56,7 +57,7 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 						}
 						break
 					} else {
-						p = *o.Path
+						p = o.Path
 						objNum, err := strconv.Atoi(p[4:])
 						testutil.MustDo(t, "convert obj number "+p, err)
 						if objNum != i {
@@ -68,7 +69,8 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 			// test lineage reader
 			for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
 				branchName := "b" + strconv.Itoa(branchNo)
-				lineageReader := NewLineageReader(tx, int64(branchNo+1), UncommittedID, bufSize, 0, "")
+				lineageReader, err := NewLineageReader(tx, int64(branchNo+1), UncommittedID, bufSize, 0, "")
+				testutil.MustDo(t, "new lineage reader "+branchName, err)
 				for i := 0; i < ObjNumber; i++ {
 					var expectedBranch int64
 					o, err := lineageReader.GetNextPK()
@@ -95,10 +97,14 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	bufSize := 8
 	testCatalogerCreateEntry(t, ctx, c, repository, "b1", "Obj-0004", nil, "sd1")
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b1_U := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b1_C := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b1_U, err := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b1_C, err := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b1_U, "Obj-0004", "read 0004 lineage b1 U ", 2, 0, MaxCommitID)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
 		readAndTest(t, lineageReader_b1_C, "Obj-0004", "read 0004 lineage b1 C ", 2, 4, MaxCommitID)
@@ -108,10 +114,14 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	_, err := c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 	testutil.MustDo(t, "commit to b1", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b1_U := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b1_C := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b1_U, err := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b1_C, err := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b1_U, "Obj-0004", "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
 		readAndTest(t, lineageReader_b1_C, "Obj-0004", "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
@@ -121,8 +131,10 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
 		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b1 U ", 2, 13, MaxCommitID)
 		return nil, nil
@@ -130,10 +142,14 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	testutil.MustDo(t, "delete committed file on b1",
 		c.DeleteEntry(ctx, repository, "b1", "Obj-0004"))
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b1_U := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b1_C := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b1_U, err := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b1_C, err := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b1_U, "Obj-0004", "read 0004 lineage b1 U ", 2, 0, 0)
 		readAndTest(t, lineageReader_b1_C, "Obj-0004", "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
@@ -143,10 +159,14 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	_, err = c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 	testutil.MustDo(t, "commit to b1", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b1_U := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b1_C := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b1_U, err := NewLineageReader(tx, 2, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b1_C, err := NewLineageReader(tx, 2, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(2), err)
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b1_U, "Obj-0004", "read 0004 lineage b1 U ", 2, 13, 13)
 		readAndTest(t, lineageReader_b1_C, "Obj-0004", "read 0004 lineage b1 C ", 2, 13, 13)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
@@ -156,8 +176,10 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 2, 13, 13)
 		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b2 C ", 2, 13, 13)
 		return nil, nil
@@ -170,8 +192,10 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	testutil.MustDo(t, "delete committed file on b2",
 		c.DeleteEntry(ctx, repository, "b2", "Obj-0004"))
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 3, 0, 0)
 		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b2 C ", 2, 17, MaxCommitID)
 		return nil, nil
@@ -179,8 +203,10 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	_, err = c.Commit(ctx, repository, "b2", "commit to b2", "tester", nil)
 	testutil.MustDo(t, "commit to b1", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b2_U := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0004")
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b2_U, err := NewLineageReader(tx, 3, UncommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b2_U, "Obj-0004", "read 0004 lineage b2 U ", 3, 19, 0)
 		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b2 C ", 3, 19, 0)
 		return nil, nil
@@ -201,7 +227,8 @@ func TestCataloger_db_branch_reader(t *testing.T) {
 	_, err = c.Merge(ctx, repository, "b1", "b2", "tester", "", nil)
 	testutil.MustDo(t, "merge b1 into b2", err)
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		lineageReader_b2_C := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0004")
+		lineageReader_b2_C, err := NewLineageReader(tx, 3, CommittedID, bufSize, 0, "Obj-0003")
+		testutil.MustDo(t, "new lineage reader cranchID="+strconv.Itoa(3), err)
 		readAndTest(t, lineageReader_b2_C, "Obj-0004", "read 0004 lineage b2 C ", 3, 25, MaxCommitID)
 		return nil, nil
 	})
