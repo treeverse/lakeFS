@@ -3,6 +3,9 @@ package catalog
 //todo: reading logic will change once we change umcommitted indication in "min_commit" from 0 to MaxCommitID
 
 import (
+	"fmt"
+	"math"
+
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
 )
@@ -49,11 +52,14 @@ func NewSingleBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize 
 	}
 }
 
-func NewLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize, limit int, after string) *lineageReader {
+func NewLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize, limit int, after string) (*lineageReader, error) {
 	// limit <= 0 means there is no limit to number of returned rows
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("error getting lineage : %w", err)
+	}
+	if limit <= 0 { // unlimited
+		limit = math.MaxInt32
 	}
 	lr := &lineageReader{
 		tx:        tx,
@@ -68,7 +74,7 @@ func NewLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize, limi
 		lr.readers[i+1] = NewSingleBranchReader(tx, bl.BranchID, bl.CommitID, bufSize, after)
 	}
 	lr.nextRow = make([]*entryPK, len(lr.readers))
-	return lr
+	return lr, nil
 }
 
 func (r *lineageReader) GetNextPK() (*entryPK, error) {
@@ -80,7 +86,7 @@ func (r *lineageReader) GetNextPK() (*entryPK, error) {
 		for i, reader := range r.readers {
 			e, err := reader.GetNextPK()
 			if err != nil {
-				panic(err)
+				return nil, fmt.Errorf("error getting entry from branch ID %d : %w", reader.branchID, err)
 			}
 			r.nextRow[i] = e
 		}
@@ -105,7 +111,7 @@ func (r *lineageReader) GetNextPK() (*entryPK, error) {
 		}
 	}
 	r.returnedRows++
-	if r.limit > 0 && r.returnedRows >= r.limit {
+	if r.returnedRows >= r.limit {
 		r.EOF = true
 	}
 	// advance next row for all branches that have this Path
@@ -113,7 +119,7 @@ func (r *lineageReader) GetNextPK() (*entryPK, error) {
 		if r.nextRow[nonNilNextRow[i]].Path == selectedEntry.Path {
 			n, err := r.readers[nonNilNextRow[i]].GetNextPK()
 			if err != nil {
-				panic(err)
+				return nil, fmt.Errorf("error getting entry on branch : %w", err)
 			}
 			r.nextRow[nonNilNextRow[i]] = n
 		}
@@ -131,8 +137,7 @@ func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 		q := branchSelectWithCommitID(r.branchID, r.commitID).Limit(uint64(r.bufSize)).Where("path > ?", r.after)
 		err := readEntriesIntoBuf(r.tx, q, &r.buf)
 		if err != nil {
-			return nil, err // todo: just to trick the LINTER, remove when done
-			// panic(err)
+			return nil, fmt.Errorf("error getting entry : %w", err)
 		}
 	}
 	// returnes the significant entry of that Path, and remove rows with that Path from buf
@@ -145,7 +150,7 @@ func (r *singleBranchReader) GetNextPK() (*entryPK, error) {
 	if r.buf[l-1].Path == r.buf[0].Path {
 		err := r.extendBuf()
 		if err != nil {
-			panic(err)
+			return nil, fmt.Errorf("error getting entry : %w", err)
 		}
 		l = len(r.buf)
 	}
@@ -199,7 +204,7 @@ func branchSelectWithCommitID(branchID int64, commitID CommitID) sq.SelectBuilde
 func (r *singleBranchReader) extendBuf() error {
 	l := len(r.buf)
 	if l == 0 {
-		panic("in extendBuf with empty buffer!!!!!")
+		return fmt.Errorf("empty buffer - internal error : %w", ErrUnexpected)
 	}
 	lastRow := r.buf[l-1]
 	completionQuery := branchSelectWithCommitID(r.branchID, r.commitID)
@@ -211,16 +216,11 @@ func (r *singleBranchReader) extendBuf() error {
 	tempBuf := make([]*entryPK, 0, r.bufSize+len(r.buf)*2)
 	tempBuf = append(tempBuf, r.buf...)
 	r.buf = tempBuf
-	unionQuery := union(completionQuery, continuationQuery)
+	unionQuery := completionQuery.
+		Prefix("(").
+		SuffixExpr(sq.ConcatExpr(")\n UNION ALL \n(", continuationQuery, ")"))
 	err := readEntriesIntoBuf(r.tx, unionQuery, &r.buf)
 	return err
-}
-
-func union(completeCurrntPath, continueationQuery sq.SelectBuilder) sq.SelectBuilder {
-	unionQuery := completeCurrntPath.
-		Prefix("(").
-		SuffixExpr(sq.ConcatExpr(")\n UNION ALL \n(", continueationQuery, ")"))
-	return unionQuery
 }
 
 func readEntriesIntoBuf(tx db.Tx, q sq.SelectBuilder, buf *[]*entryPK) error {
