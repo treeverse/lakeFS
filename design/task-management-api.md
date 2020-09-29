@@ -18,7 +18,8 @@ In particular:
 1. We do *not* use the verbs or API calls of an existing task queue.
 
 This API definition comes with implementation sketches for how we to use these APIs to implement
-the branch export and concurrent dedupe "user" stories.
+the branch export story.  We shall also (re-)implement retention expiry to use these APIs for
+better ops; that story is considerably easier to imagine.
 
 ## API
 
@@ -359,13 +360,6 @@ concurrent export per branch.  Per-prefix `_SUCCESS` objects are generated on ti
 dependencies.  (As an option, we could set priorities and return tasks in priority order from
 `OwnTasks`, to allow `_SUCCESS` objects to be created before copying other objects.)  Retries
 are handled by setting multiple per-copy attempts.
-
-### Concurrent dedupe batching
-
-1. For every created object, create a dedupe task.
-2. To perform a dedupe task, acquire its checksum (from computation or ETag) and set a task to
-   write a dedupe record.
-3. Acquire tasks _many_ dedupe records at a time, and process those in batches.
 
 ## References
 
