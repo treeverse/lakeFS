@@ -4,7 +4,14 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"github.com/aws/aws-sdk-go/service/s3"
+	"net/http"
+	"os"
+	"strconv"
+	"strings"
+	"sync"
+	"sync/atomic"
+	"time"
+
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
 	dto "github.com/prometheus/client_model/go"
@@ -17,33 +24,25 @@ import (
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
-	"net/http"
-	"os"
-	"strconv"
-	"strings"
-	"sync"
-	"sync/atomic"
-	"time"
 )
 
 var (
 	logger logging.Logger
 	client *genclient.Lakefs
-	svc    *s3.S3
+)
+
+const (
+	defaultGlobalTimeout    = 30 * time.Minute
+	defaultFiles            = 50000
+	defaultParallelismLevel = 500
 )
 
 func main() {
-	//benchmarkTests := flag.Bool("benchmark-tests", false, "Run benchmark tests")
-	//flag.Parse()
-	//if !*benchmarkTests {
-	//	os.Exit(0)
-	//}
+	viper.SetDefault("parallelism_level", defaultParallelismLevel)
+	viper.SetDefault("files_amount", defaultFiles)
+	viper.SetDefault("global_timeout", defaultGlobalTimeout)
 
-	viper.SetDefault("parallelism_level", 500)
-	viper.SetDefault("files_amount", 10000)
-	viper.SetDefault("global_timeout", 30*time.Minute)
-
-	logger, client, svc = testutil.SetupTestingEnv("benchmark", "lakefs-benchmarking")
+	logger, client, _ = testutil.SetupTestingEnv("benchmark", "lakefs-benchmarking")
 	logger.Info("Setup succeeded, running the tests")
 
 	if err := testBenchmarkLakeFS(); err != nil {
@@ -54,48 +53,9 @@ func main() {
 	scrapePrometheus()
 }
 
-var monitoredOps = map[string]bool{
-	"getObject":    true,
-	"uploadObject": true,
-}
-
-func scrapePrometheus() {
-	lakefsEndpoint := viper.GetString("endpoint_url")
-	resp, err := http.DefaultClient.Get(lakefsEndpoint + "/metrics")
-	if err != nil {
-		panic(err)
-	}
-
-	ch := make(chan *dto.MetricFamily)
-	go func() { _ = prom2json.ParseResponse(resp, ch) }()
-	metrics := []*dto.Metric{}
-
-	for {
-		a, ok := <-ch
-		if !ok {
-			break
-		}
-
-		if *a.Name == "api_request_duration_seconds" {
-			for _, m := range a.Metric {
-				for _, label := range m.Label {
-					if *label.Name == "operation" && monitoredOps[*label.Value] {
-						metrics = append(metrics, m)
-					}
-				}
-			}
-		}
-	}
-
-	for _, m := range metrics {
-		fmt.Printf("%v\n", *m)
-	}
-}
-
 const (
 	contentSuffixLength = 32
-	//contentLength       = 128 * 1024
-	contentLength = 1 * 1024
+	contentLength       = 1 * 1024
 )
 
 func testBenchmarkLakeFS() error {
@@ -138,8 +98,8 @@ func doInParallel(ctx context.Context, repoName string, level, filesAmount int, 
 	var failed int64
 
 	for i := 0; i < level; i++ {
+		wg.Add(1)
 		go func() {
-			wg.Add(1)
 			fail := do(ctx, filesCh, repoName, contentPrefix)
 			atomic.AddInt64(&failed, int64(fail))
 			wg.Done()
@@ -234,4 +194,48 @@ func linearRetry(do func() error) error {
 		}
 	}
 	return err
+}
+
+var monitoredOps = map[string]bool{
+	"getObject":    true,
+	"uploadObject": true,
+}
+
+func scrapePrometheus() {
+	lakefsEndpoint := viper.GetString("endpoint_url")
+	resp, err := http.DefaultClient.Get(lakefsEndpoint + "/metrics")
+	if err != nil {
+		panic(err)
+	}
+	defer func() {
+		if resp != nil && resp.Body != nil {
+			resp.Body.Close()
+		}
+	}()
+
+	ch := make(chan *dto.MetricFamily)
+	go func() { _ = prom2json.ParseResponse(resp, ch) }()
+	metrics := []*dto.Metric{}
+
+	for {
+		a, ok := <-ch
+		if !ok {
+			break
+		}
+
+		if *a.Name == "api_request_duration_seconds" {
+			for _, m := range a.Metric {
+				for _, label := range m.Label {
+					if *label.Name == "operation" && monitoredOps[*label.Value] {
+						metrics = append(metrics, m)
+					}
+				}
+			}
+		}
+	}
+
+	// TODO: report instead of print
+	for _, m := range metrics {
+		fmt.Printf("%v\n", *m)
+	}
 }

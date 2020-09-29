@@ -2,12 +2,13 @@ package nessie
 
 import (
 	"flag"
+	"os"
+	"testing"
+
 	"github.com/aws/aws-sdk-go/service/s3"
 	genclient "github.com/treeverse/lakefs/api/gen/client"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/testutil"
-	"os"
-	"testing"
 )
 
 var (
@@ -28,4 +29,3 @@ func TestMain(m *testing.M) {
 
 	os.Exit(m.Run())
 }
-

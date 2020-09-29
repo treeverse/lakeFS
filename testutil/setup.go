@@ -4,6 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/url"
+	"strings"
+	"time"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -17,17 +21,16 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/setup"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/logging"
-	"net/url"
-	"strings"
-	"time"
 )
+
+const defaultSetupTimeout = 5 * time.Minute
 
 func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs, *s3.S3) {
 	logger := logging.Default()
 
 	viper.SetDefault("setup_lakefs", true)
-	viper.SetDefault("setup_lakefs_timeout", 5*time.Minute)
-	viper.SetDefault("endpoint_url", "http://internal-benchmark-load-balancer-1759434086.us-east-1.elb.amazonaws.com:8000")
+	viper.SetDefault("setup_lakefs_timeout", defaultSetupTimeout)
+	viper.SetDefault("endpoint_url", "http://localhost:8000")
 	viper.SetDefault("s3_endpoint", "s3.local.lakefs.io:8000")
 	viper.SetDefault("access_key_id", "")
 	viper.SetDefault("secret_access_key", "")
@@ -101,6 +104,8 @@ func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs,
 	return logger, client, svc
 }
 
+const checkIteration = 5 * time.Second
+
 func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl *genclient.Lakefs) error {
 	setupCtx, cancel := context.WithTimeout(ctx, viper.GetDuration("setup_lakefs_timeout"))
 	defer cancel()
@@ -114,7 +119,7 @@ func waitUntilLakeFSRunning(ctx context.Context, logger logging.Logger, cl *genc
 		select {
 		case <-setupCtx.Done():
 			return setupCtx.Err()
-		case <-time.After(5 * time.Second):
+		case <-time.After(checkIteration):
 		}
 	}
 }

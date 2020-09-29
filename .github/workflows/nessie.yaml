@@ -1,15 +1,15 @@
 name: Nessie
 on:
+  pull_request:
   push:
     branches:
       - master
-  pull_request:
+
 jobs:
   deploy-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@v2
 
@@ -47,10 +47,10 @@ jobs:
       - name: Build and push to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_BENCHMARK_EXECUTOR: benchmark-executor
+          ECR_REPOSITORY_LAKEFS: lakefs
         run: |
-          docker build -t $ECR_REGISTRY/ECR_REPOSITORY_BENCHMARK_EXECUTOR:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
-          docker push $ECR_REGISTRY/ECR_REPOSITORY_BENCHMARK_EXECUTOR:${{ steps.version.outputs.tag }}
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
 
   run-system:
     name: Run latest lakeFS app

@@ -1,8 +1,10 @@
-name: Nessie
+name: Benchmark
 on:
   push:
     branches:
       - master
+  # TODO: remove before merge
+  pull_request:
 jobs:
   deploy-executor-image:
     name: Build and push benchmark executor Docker image
@@ -41,15 +43,14 @@ jobs:
       - name: Build and push to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
-          ECR_REPOSITORY_LAKEFS: lakefs
-          ECR_REPOSITORY_LAKECTL: lakectl
+          ECR_REPOSITORY_BENCHMARK_EXECUTOR: benchmark-executor
         run: |
-          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
-          docker push $ECR_REGISTRY/$ECR_REPOSITORY_LAKEFS:${{ steps.version.outputs.tag }}
+          docker build --target benchmark-executor -t $ECR_REGISTRY/$ECR_REPOSITORY_BENCHMARK_EXECUTOR:${{ steps.version.outputs.tag }} --build-arg VERSION=${{ steps.version.outputs.tag }} .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY_BENCHMARK_EXECUTOR:${{ steps.version.outputs.tag }}
 
-  run-system:
-    name: Run latest lakeFS app
-    needs: deploy-image
+  benchmark-system:
+    name: Measure system benchmark
+    needs: deploy-executor-image
     runs-on: ubuntu-latest
     steps:
       - name: Check-out code
@@ -63,65 +64,43 @@ jobs:
         shell: bash
         run: echo "::set-output name=tag::sha-$(git rev-parse --short HEAD | sed s/^v//g)"
         id: version
-      - name: Generate code
-        run: |
-          make gen
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
         with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-access-key-id: ${{ secrets.BENCHMARK_AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.BENCHMARK_AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
-      - name: Login to Amazon ECR
-        id: login-ecr
-        uses: aws-actions/amazon-ecr-login@v1
-      - name: Run lakeFS S3
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-          # Setting Account_ID as a secret as a way to avoid specifying it here
-          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: s3
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
-        run: docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
-      - name: Run Nessie S3
-        env:
-          NESSIE_STORAGE_NAMESPACE: s3://nessie-system-testing/${{ github.run_number }}
-        run: go test -v ./nessie --system-tests
-      - name: Check files in S3 bucket
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v1
+      - name: Terraform init
         run: |
-            FILES_COUNT=`aws s3 ls s3://nessie-system-testing/${{ github.run_number }} --recursive | wc -l`
-            [ $FILES_COUNT -gt 5 ]
-      - name: Export DB
+          cd benchmarks/terraform/
+          terraform init
+      - name: Terraform apply
+        run: |
+          cd benchmarks/terraform/
+          terraform apply --auto-approve -var="dockerReg=${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com" -var="tag=${{ steps.version.outputs.tag }}"
+      - name: 'Terraform Output'
+        id: terraform
+        uses: hashicorp/terraform-github-actions@master
+        with:
+          tf_actions_version: 0.13.4
+          tf_actions_subcommand: 'output'
+          tf_actions_working_dir: 'benchmarks/terraform'
+      - name: Wait until executor finishes
+        run: |
+          CLUSTER_ARN=$(echo '${{ steps.terraform.outputs.tf_actions_output }}' | jq -r '.cluster_arn.value')
+          EXECUTOR_FAMILY=$(echo '${{ steps.terraform.outputs.tf_actions_output }}' | jq -r '.executor_family.value')
+          until [ $(aws ecs list-tasks --cluster=$CLUSTER_ARN --desired-status=STOPPED --family=$EXECUTOR_FAMILY | jq '.taskArns | length') -ge 1 ] ; do
+            echo benchmark-executor still running, sleeping...
+            sleep 20
+          done
+      - name: Terraform destory
         if: ${{ always() }}
-        env:
-          AWS_ACCESS_KEY_ID: ${{ secrets.NESSIE_AWS_ACCESS_KEY_ID }}
-          AWS_SECRET_ACCESS_KEY: ${{ secrets.NESSIE_AWS_SECRET_ACCESS_KEY }}
         run: |
-            cd nessie/ops
-            docker-compose ps -q postgres && docker-compose exec -T postgres pg_dumpall --username=lakefs | gzip | aws s3 cp - s3://nessie-system-testing/${{ github.run_number }}/dump.gz
-      - name: Run lakeFS GS
-        env:
-          TAG: ${{ steps.version.outputs.tag }}
-          # Setting Account_ID as a secret as a way to avoid specifying it here
-          REPO: ${{ secrets.AWS_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com
-          LAKEFS_STATS_ENABLED: "false"
-          LAKEFS_BLOCKSTORE_TYPE: gs
-          LAKEFS_GATEWAYS_S3_DOMAIN_NAME: s3.local.lakefs.io:8000
-          DOCKER_REG: ${{ steps.login-ecr.outputs.registry }}
-          AWS_ACCESS_KEY_ID: ""
-          AWS_SECRET_ACCESS_KEY: ""
-          LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON: ${{ secrets.LAKEFS_BLOCKSTORE_GS_CREDENTIALS_JSON }}
-        run: |
-            docker-compose -f nessie/ops/docker-compose.yaml down -v
-            docker-compose -f nessie/ops/docker-compose.yaml up --quiet-pull -d
-      - name: Run Nessie GS
-        env:
-          NESSIE_STORAGE_NAMESPACE: gs://nessie-system-testing/${{ github.run_number }}
-        run: go test -v ./nessie --system-tests
+          cd benchmarks/terraform/
+
+          # keep the logs
+          terraform state rm aws_cloudwatch_log_group.benchmark
+          terraform destroy --auto-approve
+

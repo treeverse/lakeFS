@@ -134,6 +134,7 @@ func prepareBranch(ctx context.Context, cataloger catalog.Cataloger, repo *catal
 		if err != nil {
 			return fmt.Errorf("failed to create branch %s in repo %s: %w", branch, repoName, err)
 		}
+		return nil
 	}
 	return fmt.Errorf("error when fetching branches for repo %s: %w", repoName, err)
 }

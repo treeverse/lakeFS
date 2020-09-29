@@ -31,8 +31,7 @@ FROM alpine:3.11.5 AS benchmark-executor
 WORKDIR /app
 ENV PATH /app:$PATH
 COPY --from=build /build/benchmark-executor ./
-ENTRYPOINT ["/app/lakefs"]
-CMD ["run"]
+ENTRYPOINT ["/app/benchmark-executor"]
 
 # lakefs image
 FROM alpine:3.11.5 AS lakefs
