@@ -537,14 +537,15 @@ func TestExtendTaskDuration(t *testing.T) {
 	}
 	invalidToken := parade.PerformanceToken(invalidUUID)
 
+	shortLifetime := 100 * time.Millisecond
+	longLifetime := time.Second
+
 	t.Run("ExtendUnowned", func(t *testing.T) {
-		if err := w.extendTaskOwnership("111", invalidToken, time.Hour); err != parade.ErrInvalidToken {
+		if err := w.extendTaskOwnership("111", invalidToken, time.Hour); !errors.Is(err, parade.ErrInvalidToken) {
 			t.Errorf("expected to fail with invalid token, got %s", err)
 		}
 	})
 	t.Run("ExtendOwned", func(t *testing.T) {
-		shortLifetime := 100 * time.Millisecond
-		longLifetime := time.Second
 		ownedTasks, err := w.ownTasks(parade.ActorID("extend"), 1, []string{"frob"}, &shortLifetime)
 		if err != nil {
 			t.Fatalf("failed to own task 111 to frob: %s", err)
@@ -556,13 +557,40 @@ func TestExtendTaskDuration(t *testing.T) {
 		if err != nil {
 			t.Errorf("couldn't extend task ownership of %v: %s", ownedTasks[0], err)
 		}
-		time.Sleep(300 * time.Millisecond)
+		time.Sleep(3 * shortLifetime)
 		moreOwnedTasks, err := w.ownTasks(parade.ActorID("steal"), 1, []string{"frob"}, nil)
 		if err != nil {
 			t.Fatalf("failed to try to own tasks: %s", err)
 		}
 		if len(moreOwnedTasks) != 0 {
 			t.Errorf("expected task 111 to still be owned, managed to own %v", moreOwnedTasks)
+		}
+	})
+	t.Run("ExtendFailsWhenAnotherActorSteals", func(t *testing.T) {
+		ownedTasks, err := w.ownTasks(parade.ActorID("first"), 1, []string{"broz"}, &shortLifetime)
+		if err != nil {
+			t.Fatalf("failed to own task 222 to broz: %s", err)
+		}
+		if len(ownedTasks) != 1 {
+			t.Fatalf("expected to own single task, got %v", ownedTasks)
+		}
+
+		// Wait for it to expire, grab the task by another actor
+		var moreOwnedTasks []parade.OwnedTaskData
+		for i := 0; i < 5 && len(moreOwnedTasks) == 0; i++ {
+			time.Sleep(shortLifetime)
+			moreOwnedTasks, err = w.ownTasks(parade.ActorID("second"), 1, []string{"broz"}, &shortLifetime)
+			if err != nil {
+				t.Fatalf("failed to re-own task 222 to broz: %s", err)
+			}
+		}
+		if len(moreOwnedTasks) != 1 {
+			t.Fatalf("task 222 never expired, got just %v", moreOwnedTasks)
+		}
+
+		err = w.extendTaskOwnership(ownedTasks[0].ID, ownedTasks[0].Token, shortLifetime)
+		if !errors.Is(err, parade.ErrInvalidToken) {
+			t.Fatalf("expected ownership of %v to have expired, got %s", ownedTasks[0], err)
 		}
 	})
 }
