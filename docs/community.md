@@ -9,7 +9,7 @@ has_children: false
 
 ### DockerHub
 
-lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/r/treeverse/).
+lakeFS and lakectl are both available as Docker images on the [Treeverse Docker Hub page](https://hub.docker.com/u/treeverse/).
 
 ### Support
 
