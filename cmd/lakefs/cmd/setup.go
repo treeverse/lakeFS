@@ -15,9 +15,9 @@ import (
 	"github.com/treeverse/lakefs/stats"
 )
 
-// initCmd represents the init command
-var initCmd = &cobra.Command{
-	Use:   "init",
+// setupCmd represents the setup command
+var setupCmd = &cobra.Command{
+	Use:   "setup",
 	Short: "Initialize a LakeFS instance, and setup an admin credential",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
@@ -60,7 +60,7 @@ var initCmd = &cobra.Command{
 		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
-		stats.CollectEvent("global", "init")
+		stats.CollectEvent("global", "setup")
 
 		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 			credentials.AccessKeyID, credentials.AccessSecretKey)
@@ -72,7 +72,7 @@ var initCmd = &cobra.Command{
 
 //nolint:gochecknoinits
 func init() {
-	rootCmd.AddCommand(initCmd)
-	initCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
-	_ = initCmd.MarkFlagRequired("user-name")
+	rootCmd.AddCommand(setupCmd)
+	setupCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
+	_ = setupCmd.MarkFlagRequired("user-name")
 }
