@@ -212,7 +212,8 @@ func ExtendTaskDeadline(conn *sqlx.DB, taskID TaskID, token PerformanceToken, ma
 	}
 
 	if res == nil {
-		return ErrInvalidToken
+		return fmt.Errorf("extend task %s token %s for %s: %w",
+			taskID, token, maxDuration, ErrInvalidToken)
 	}
 	return nil
 }
@@ -234,7 +235,8 @@ func ReturnTask(conn *sqlx.DB, taskID TaskID, token PerformanceToken, resultStat
 	}
 
 	if res != 1 {
-		return ErrInvalidToken
+		return fmt.Errorf("return task %s token %s with (%s, %s): %w",
+			taskID, token, resultStatus, resultStatusCode, ErrInvalidToken)
 	}
 
 	return nil
