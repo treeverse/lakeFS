@@ -6,15 +6,25 @@ import (
 	"fmt"
 
 	sq "github.com/Masterminds/squirrel"
+	"github.com/rs/xid"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
 
+type contextKey string
+
+func (k contextKey) String() string {
+	return string(k)
+}
+
 const (
 	DiffMaxLimit = 1000
 
-	diffResultsTableName = "catalog_diff_results"
+	diffResultsTableNamePrefix            = "catalog_diff_results"
+	contextDiffResultsKey      contextKey = "diff_results_key"
 )
+
+var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
 
 func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch string, rightBranch string, limit int, after string) (Differences, bool, error) {
 	if err := Validate(ValidateFields{
@@ -28,6 +38,10 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 	if limit < 0 || limit > DiffMaxLimit {
 		limit = DiffMaxLimit
 	}
+
+	ctx, cancel := contextWithDiffResultsDispose(ctx, c.db)
+	defer cancel()
+
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := c.getBranchIDCache(tx, repository, leftBranch)
 		if err != nil {
@@ -37,11 +51,11 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		if err != nil {
 			return nil, fmt.Errorf("right branch: %w", err)
 		}
-		err = c.doDiff(tx, leftID, rightID)
+		err = c.doDiff(ctx, tx, leftID, rightID)
 		if err != nil {
 			return nil, err
 		}
-		return getDiffDifferences(tx, limit+1, after)
+		return getDiffDifferences(ctx, tx, limit+1, after)
 	}, c.txOpts(ctx)...)
 	if err != nil {
 		return nil, false, err
@@ -51,22 +65,22 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 	return differences, hasMore, nil
 }
 
-func (c *cataloger) doDiff(tx db.Tx, leftID, rightID int64) error {
+func (c *cataloger) doDiff(ctx context.Context, tx db.Tx, leftID, rightID int64) error {
 	relation, err := getBranchesRelationType(tx, leftID, rightID)
 	if err != nil {
 		return err
 	}
-	return c.doDiffByRelation(tx, relation, leftID, rightID)
+	return c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
 }
 
-func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, rightID int64) error {
+func (c *cataloger) doDiffByRelation(ctx context.Context, tx db.Tx, relation RelationType, leftID, rightID int64) error {
 	switch relation {
 	case RelationTypeFromParent:
-		return c.diffFromParent(tx, leftID, rightID)
+		return c.diffFromParent(ctx, tx, leftID, rightID)
 	case RelationTypeFromChild:
-		return c.diffFromChild(tx, leftID, rightID)
+		return c.diffFromChild(ctx, tx, leftID, rightID)
 	case RelationTypeNotDirect:
-		return c.diffNonDirect(tx, leftID, rightID)
+		return c.diffNonDirect(ctx, tx, leftID, rightID)
 	default:
 		c.log.WithFields(logging.Fields{
 			"relation_type": relation,
@@ -77,12 +91,16 @@ func (c *cataloger) doDiffByRelation(tx db.Tx, relation RelationType, leftID, ri
 	}
 }
 
-func (c *cataloger) getDiffSummary(tx db.Tx) (map[DifferenceType]int, error) {
+func (c *cataloger) getDiffSummary(ctx context.Context, tx db.Tx) (map[DifferenceType]int, error) {
 	var results []struct {
 		DiffType int `db:"diff_type"`
 		Count    int `db:"count"`
 	}
-	err := tx.Select(&results, "SELECT diff_type, count(diff_type) as count FROM "+diffResultsTableName+" GROUP BY diff_type")
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	err = tx.Select(&results, "SELECT diff_type, count(diff_type) as count FROM "+diffResultsTableName+" GROUP BY diff_type")
 	if err != nil {
 		return nil, fmt.Errorf("count diff resutls by type: %w", err)
 	}
@@ -93,7 +111,7 @@ func (c *cataloger) getDiffSummary(tx db.Tx) (map[DifferenceType]int, error) {
 	return m, nil
 }
 
-func (c *cataloger) diffFromParent(tx db.Tx, parentID, childID int64) error {
+func (c *cataloger) diffFromParent(ctx context.Context, tx db.Tx, parentID, childID int64) error {
 	// get the last child commit number of the last parent merge
 	// if there is none - then it is  the first merge
 	var maxChildMerge CommitID
@@ -117,8 +135,12 @@ func (c *cataloger) diffFromParent(tx db.Tx, parentID, childID int64) error {
 	if err != nil {
 		return fmt.Errorf("get child last commit failed: %w", err)
 	}
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	diffFromParentSQL, args, err := sqDiffFromParentV(parentID, childID, maxChildMerge, parentLineage, childLineage).
-		Prefix(`CREATE TEMP TABLE ` + diffResultsTableName + " ON COMMIT DROP AS ").
+		Prefix(`CREATE UNLOGGED TABLE ` + diffResultsTableName + " AS ").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -130,7 +152,11 @@ func (c *cataloger) diffFromParent(tx db.Tx, parentID, childID int64) error {
 	return nil
 }
 
-func getDiffDifferences(tx db.Tx, limit int, after string) (Differences, error) {
+func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) (Differences, error) {
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return nil, err
+	}
 	var result Differences
 	query, args, err := psql.Select("diff_type", "path").
 		From(diffResultsTableName).
@@ -148,7 +174,7 @@ func getDiffDifferences(tx db.Tx, limit int, after string) (Differences, error) 
 	return result, nil
 }
 
-func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) error {
+func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
 	// read last merge commit numbers from commit table
 	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
 	// the child is 0, as any change in the child was never merged to the parent.
@@ -202,8 +228,12 @@ func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) error {
 
 	childLineageValues := getLineageAsValues(childLineage, childID, MaxCommitID)
 	mainDiffFromChild := sqDiffFromChildV(parentID, childID, effectiveCommits.ParentEffectiveCommit, effectiveCommits.ChildEffectiveCommit, parentLineage, childLineageValues)
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	diffFromChildSQL, args, err := mainDiffFromChild.
-		Prefix("CREATE TEMP TABLE " + diffResultsTableName + " ON COMMIT DROP AS").
+		Prefix("CREATE UNLOGGED TABLE " + diffResultsTableName + " AS ").
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
@@ -215,7 +245,28 @@ func (c *cataloger) diffFromChild(tx db.Tx, childID, parentID int64) error {
 	return nil
 }
 
-func (c *cataloger) diffNonDirect(_ db.Tx, leftID, rightID int64) error {
+// contextWithDiffResultsDispose generate diff results id used for temporary table name
+func contextWithDiffResultsDispose(ctx context.Context, tx db.Tx) (context.Context, context.CancelFunc) {
+	id := xid.New().String()
+	return context.WithValue(ctx, contextDiffResultsKey, id), func() {
+		tableName := diffResultsTableNameFormat(id)
+		_, _ = tx.Exec("DROP TABLE IF EXISTS " + tableName)
+	}
+}
+
+func diffResultsTableNameFromContext(ctx context.Context) (string, error) {
+	id, ok := ctx.Value(contextDiffResultsKey).(string)
+	if !ok {
+		return "", ErrMissingDiffResultsIDInContext
+	}
+	return diffResultsTableNameFormat(id), nil
+}
+
+func diffResultsTableNameFormat(id string) string {
+	return diffResultsTableNamePrefix + "_" + id
+}
+
+func (c *cataloger) diffNonDirect(_ context.Context, _ db.Tx, leftID, rightID int64) error {
 	c.log.WithFields(logging.Fields{
 		"left_id":  leftID,
 		"right_id": rightID,
