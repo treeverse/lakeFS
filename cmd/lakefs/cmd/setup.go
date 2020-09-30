@@ -18,6 +18,7 @@ import (
 // setupCmd represents the setup command
 var setupCmd = &cobra.Command{
 	Use:   "setup",
+	Aliases: []string{"init"},
 	Short: "Initialize a LakeFS instance, and setup an admin credential",
 	Run: func(cmd *cobra.Command, args []string) {
 		ctx := context.Background()
@@ -73,6 +74,7 @@ var setupCmd = &cobra.Command{
 //nolint:gochecknoinits
 func init() {
 	rootCmd.AddCommand(setupCmd)
+	rootCmd.Flags().MarkDeprecated("init", "use 'lakefs setup' instead")
 	setupCmd.Flags().String("user-name", "", "an identifier for the user (e.g. \"jane.doe\")")
 	_ = setupCmd.MarkFlagRequired("user-name")
 }
