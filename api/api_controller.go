@@ -16,15 +16,20 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/api/gen/models"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations"
+	
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	
 	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
+	
 	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/refs"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/repositories"
+	
 	retentionop "github.com/treeverse/lakefs/api/gen/restapi/operations/retention"
+	
 	setupop "github.com/treeverse/lakefs/api/gen/restapi/operations/setup"
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/model"
@@ -52,6 +57,7 @@ const (
 )
 
 type Dependencies struct {
+	
 	ctx          context.Context
 	Cataloger    catalog.Cataloger
 	Auth         auth.Service
@@ -63,10 +69,12 @@ type Dependencies struct {
 	Migrator     db.Migrator
 	Collector    stats.Collector
 	logger       logging.Logger
+
 }
 
 func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 	return &Dependencies{
+
 		ctx:          ctx,
 		Cataloger:    d.Cataloger,
 		Auth:         d.Auth,
@@ -78,15 +86,18 @@ func (d *Dependencies) WithContext(ctx context.Context) *Dependencies {
 		Migrator:     d.Migrator,
 		Collector:    d.Collector,
 		logger:       d.logger.WithContext(ctx),
+	
 	}
 }
 
 func (d *Dependencies) LogAction(action string) {
+	
 	logging.FromContext(d.ctx).
 		WithField("action", action).
 		WithField("message_type", "action").
 		Debug("performing API action")
 	d.Stats.CollectEvent("api_server", action)
+
 }
 
 type Controller struct {
@@ -223,7 +234,9 @@ func (c *Controller) GetHealthCheckHandler() hcop.HealthCheckHandler {
 }
 
 func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
+	
 	return setupop.SetupLakeFSHandlerFunc(func(setupReq setupop.SetupLakeFSParams) middleware.Responder {
+	
 		if len(*setupReq.User.Username) == 0 {
 			return setupop.NewSetupLakeFSBadRequest().
 				WithPayload(&models.Error{
@@ -233,6 +246,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 
 		// check if previous setup completed
 		if ts, _ := c.deps.Meta.SetupTimestamp(); !ts.IsZero() {
+		
 			return setupop.NewSetupLakeFSConflict().
 				WithPayload(&models.Error{
 					Message: "lakeFS already initialized",
@@ -242,6 +256,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		// migrate the database if needed
 		ctx := setupReq.HTTPRequest.Context()
 		err := c.deps.Migrator.Migrate(ctx)
+		
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{
@@ -258,6 +273,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 		}
 
 		cred, err := auth.SetupAdminUser(c.deps.Auth, adminUser)
+		
 		if err != nil {
 			return setupop.NewSetupLakeFSDefault(http.StatusInternalServerError).
 				WithPayload(&models.Error{
@@ -270,23 +286,28 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 			c.deps.logger.WithError(err).Error("Failed the update setup timestamp")
 		}
 
+		
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
 			AccessSecretKey: cred.AccessSecretKey,
 			CreationDate:    adminUser.CreatedAt.Unix(),
+		
 		})
 	})
 }
 
 func (c *Controller) GetCurrentUserHandler() authop.GetCurrentUserHandler {
+	
 	return authop.GetCurrentUserHandlerFunc(func(params authop.GetCurrentUserParams, user *models.User) middleware.Responder {
 		return authop.NewGetCurrentUserOK().WithPayload(&authop.GetCurrentUserOKBody{
 			User: user,
+	
 		})
 	})
 }
 
 func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHandler {
+	
 	return repositories.ListRepositoriesHandlerFunc(func(params repositories.ListRepositoriesParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
@@ -338,12 +359,14 @@ func (c *Controller) ListRepositoriesHandler() repositories.ListRepositoriesHand
 func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 	// amount
 	amount := MaxResultsPerPage
+	
 	if swagAmount != nil {
 		amount = int(swag.Int64Value(swagAmount))
 	}
 
 	// paginate after
 	after := ""
+	
 	if swagAfter != nil {
 		after = swag.StringValue(swagAfter)
 	}
@@ -351,6 +374,7 @@ func getPaginationParams(swagAfter *string, swagAmount *int64) (string, int) {
 }
 
 func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
+	
 	return repositories.GetRepositoryHandlerFunc(func(params repositories.GetRepositoryParams, user *models.User) middleware.Responder {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
@@ -358,15 +382,18 @@ func (c *Controller) GetRepoHandler() repositories.GetRepositoryHandler {
 				Resource: permissions.RepoArn(params.Repository),
 			},
 		})
+	
 		if err != nil {
 			return repositories.NewGetRepositoryUnauthorized().WithPayload(responseErrorFrom(err))
 		}
 		deps.LogAction("get_repo")
 		repo, err := deps.Cataloger.GetRepository(c.Context(), params.Repository)
+		
 		if errors.Is(err, db.ErrNotFound) {
 			return repositories.NewGetRepositoryNotFound().
 				WithPayload(responseError("repository not found"))
 		}
+		
 		if err != nil {
 			return repositories.NewGetRepositoryDefault(http.StatusInternalServerError).
 				WithPayload(responseError("error fetching repository: %s", err))
