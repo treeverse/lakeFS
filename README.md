@@ -36,10 +36,10 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 **Continuous Data Deployment**
 * **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action
+* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action.
 * **Prevent data quality issues by enabling**
-  - Testing of production data before exposing it to users / consumers
-  - Testing of intermediate results in your DAG to avoid cascading quality issues
+  - Testing of production data before exposing it to users / consumers.
+  - Testing of intermediate results in your DAG to avoid cascading quality issues.
 
 ## Getting Started
 
@@ -58,7 +58,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 #### Docker (Windows)
 
-1. Ensure you have Docker installed
+1. Ensure you have Docker installed.
 
 2. Run the following command in PowerShell:
 
@@ -79,7 +79,7 @@ Binaries are available at [https://github.com/treeverse/lakeFS/releases](https:/
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
-For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io)
+For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io).
 
 ## Community
 
