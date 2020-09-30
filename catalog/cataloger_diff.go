@@ -246,7 +246,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 }
 
 // contextWithDiffResultsDispose generate diff results id used for temporary table name
-func contextWithDiffResultsDispose(ctx context.Context, tx db.Tx) (context.Context, context.CancelFunc) {
+func contextWithDiffResultsDispose(ctx context.Context, tx sq.Execer) (context.Context, context.CancelFunc) {
 	id := xid.New().String()
 	return context.WithValue(ctx, contextDiffResultsKey, id), func() {
 		tableName := diffResultsTableNameFormat(id)
