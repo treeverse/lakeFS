@@ -21,6 +21,16 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
   <img src="docs/assets/img/wrapper.png"/>
 </p>
 
+## Why you need lakeFS and what it can do
+
+lakeFS provides a Git-like branching and committing model that scales to Petabytes of data by utilizing S3 or GCS for storage.
+
+This branching model makes your data lake ACID compliant by allowing changes to happen in isolated branches that can be created, merged and rolled back atomically and instantly.
+
+Since lakeFS is compatible with the S3 API, all popular applications will work without modification, by simply adding the branch name to the object path:
+
+s3://data-bucket/collections/foo -> s3://data-bucket/master/collections/foo
+
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
 
