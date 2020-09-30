@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Monitoring using Prometheus
-parent: AWS Deployment
+parent: Deployment
 nav_order: 30
 has_children: false
 ---

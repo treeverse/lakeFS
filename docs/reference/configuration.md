@@ -112,7 +112,7 @@ gateways:
 ```
 
 
-## Example: AWS Deployment
+## Example: S3
 
 ```yaml
 ---

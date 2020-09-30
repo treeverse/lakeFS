@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Installing lakeFS
-parent: AWS Deployment
+parent: Deployment
 nav_order: 20
 has_children: false
 ---

@@ -1,12 +1,18 @@
 ---
 layout: default
-title: Configuring the S3 bucket
-parent: AWS Deployment
+title: Configuring Storage
+parent: Deployment
 nav_order: 15
 has_children: false
 ---
 
-# Configuring the S3 bucket
+# Storage Bucket
+
+## Table of contents
+{: .no_toc .text-delta }
+{:toc}
+
+## AWS S3 bucket
 
 The S3 bucket will provide the data storage layer for our installation.
 You can choose to create a new S3 bucket (recommended) or use an existing bucket with a path prefix.
@@ -57,3 +63,8 @@ The path under the existing bucket should be empty.
       "AWS": ["arn:aws:iam::<ACCOUNT_ID>:user/<IAM_USER>"]
     }
    ```  
+
+## Google Bucket
+
+1. Follow the [Google documentation](https://cloud.google.com/storage/docs/creating-buckets) on creating storage buckets and (create a bucket)[https://console.cloud.google.com/storage/create-bucket] 
+2. Under PERMISSIONS tab add lakeFS service account with 'Storage Admin'. Follow the [Creating and managing service accounts](https://cloud.google.com/iam/docs/creating-managing-service-accounts) to create lakeFS service account if needed.

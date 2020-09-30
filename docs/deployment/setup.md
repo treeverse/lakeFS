@@ -1,7 +1,7 @@
 ---
 layout: default
 title: Setup
-parent: AWS Deployment
+parent: Deployment
 nav_order: 27
 has_children: false
 ---

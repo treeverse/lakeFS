@@ -10,7 +10,7 @@ has_children: false
 {: .no_toc }
 
 **Note** This section is for learning purposes. The installations below will not persist your data.
-For a production suitable deployment, see [Deploying on AWS](../deploying/index.md).
+For a production suitable deployment, see [Deploying on AWS](../deployment/index.md).
 {: .note }
 
 ## Using docker-compose
