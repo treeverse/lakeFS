@@ -91,7 +91,7 @@ Keep up to date and get lakeFS support via:
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
 
 
-## More information
+## More information about project
 
 - [lakeFS documentation](https://docs.lakefs.io)
 - If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
