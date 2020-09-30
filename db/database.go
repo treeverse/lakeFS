@@ -15,13 +15,9 @@ import (
 
 type TxFunc func(tx Tx) (interface{}, error)
 
-type Rows = sqlx.Rows
-
 type Database interface {
 	io.Closer
-	Get(dest interface{}, query string, args ...interface{}) error
-	Queryx(query string, args ...interface{}) (*Rows, error)
-	Exec(query string, args ...interface{}) (rowsAffected int64, err error)
+	Tx
 	Transact(fn TxFunc, opts ...TxOpt) (interface{}, error)
 	Metadata() (map[string]string, error)
 	Stats() sql.DBStats
@@ -94,7 +90,7 @@ func (d *SqlxDatabase) Get(dest interface{}, query string, args ...interface{}) 
 	return err
 }
 
-func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (rows *Rows, err error) {
+func (d *SqlxDatabase) Query(query string, args ...interface{}) (rows *sqlx.Rows, err error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "start query",
 		"query": query,
@@ -103,19 +99,28 @@ func (d *SqlxDatabase) Queryx(query string, args ...interface{}) (rows *Rows, er
 	if ret == nil {
 		return nil, err
 	}
-	return ret.(*Rows), err
+	return ret.(*sqlx.Rows), err
 }
 
-func (d *SqlxDatabase) Exec(query string, args ...interface{}) (count int64, err error) {
+func (d *SqlxDatabase) Select(dest interface{}, query string, args ...interface{}) error {
+	_, err := d.performAndReport(logging.Fields{
+		"type":  "exec",
+		"query": query,
+		"args":  args,
+	}, func() (interface{}, error) { return nil, d.db.SelectContext(d.getContext(), dest, query, args...) })
+	return err
+}
+
+func (d *SqlxDatabase) Exec(query string, args ...interface{}) (sql.Result, error) {
 	ret, err := d.performAndReport(logging.Fields{
 		"type":  "exec",
 		"query": query,
 		"args":  args,
 	}, func() (interface{}, error) { return d.db.ExecContext(d.getContext(), query, args...) })
 	if err != nil {
-		return 0, err
+		return nil, err
 	}
-	return ret.(sql.Result).RowsAffected()
+	return ret.(sql.Result), nil
 }
 
 func (d *SqlxDatabase) getTxOptions() *TxOptions {

@@ -1,15 +1,15 @@
 name: Nessie
 on:
+  pull_request:
   push:
     branches:
       - master
-  pull_request:
+
 jobs:
   deploy-image:
     name: Build and push Docker image
     runs-on: ubuntu-latest
     steps:
-
       - name: Checkout
         uses: actions/checkout@v2
 

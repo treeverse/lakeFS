@@ -43,23 +43,30 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 ## Getting Started
 
-#### Docker
+#### Docker (MacOS, Linux)
 
-1. Ensure you have Docker installed on your computer. The MacOS and Windows installations include Docker Compose by default.
+1. Ensure you have Docker & Docker Compose installed on your computer.
 
-2. Clone the repository:
-
-   ```bash
-   git clone git@github.com:treeverse/lakeFS.git
-   ```
-
-3. From the root of the cloned repository, run:
+2. Run the following command:
 
    ```bash
-   $ docker-compose up
+   curl https://compose.lakefs.io | docker-compose -f - up
    ```
 
-4. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+
+
+#### Docker (Windows)
+
+1. Ensure you have Docker installed
+
+2. Run the following command in PowerShell:
+
+   ```shell script
+   Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
+   ``` 
+
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
 #### Download the Binary
 
@@ -70,9 +77,9 @@ Binaries are available at [https://github.com/treeverse/lakeFS/releases](https:/
 
 #### Setting up a repository
 
-Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart.html#setting-up-a-repository) to set up your local lakeFS installation.
+Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
-For more detailed inforamation on how to setup lakeFS, please visit [the documentation](https://docs.lakefs.io)
+For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io)
 
 ## Community
 
@@ -83,11 +90,6 @@ Keep up to date and get lakeFS support via:
 - [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
 
-## Get ready for Hacktoberfest!
-
-Contribute to open-source projects throughout October 2020 by stepping up to Digital Ocean's annual tradition of hosting [Hacktoberfest](https://hacktoberfest.digitalocean.com/).  We _always_ welcome pull requests to lakeFS - but throughout October your pull requests to open source projects can get you some cool swag (stickers & t-shirt).  Check out our [contributing guide](https://docs.lakefs.io/contributing) and join our [slack channel](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) for help, more ideas, and discussions. 
-
-Not sure what to do?  We marked some issues that could get you started quickly on our [Hacktoberfest list](https://github.com/treeverse/lakeFS/issues?q=is%3Aissue+is%3Aopen+label%3Ahacktoberfest).
 
 ## More information
 

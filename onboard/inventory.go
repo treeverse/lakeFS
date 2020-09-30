@@ -7,6 +7,7 @@ import (
 
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
+	"github.com/treeverse/lakefs/cmdutils"
 )
 
 type InventoryDiff struct {
@@ -23,10 +24,12 @@ type ImportObject struct {
 }
 
 type Iterator interface {
+	cmdutils.ProgressReporter
 	Next() bool
 	Err() error
 	Get() ImportObject
 }
+
 type DiffIterator struct {
 	leftInv   block.InventoryIterator
 	rightInv  block.InventoryIterator
@@ -34,6 +37,10 @@ type DiffIterator struct {
 	rightNext bool
 	value     ImportObject
 	err       error
+}
+
+func (d *DiffIterator) Progress() []*cmdutils.Progress {
+	return append(d.leftInv.Progress(), d.rightInv.Progress()...)
 }
 
 // onboard.InventoryIterator reads from block.InventoryIterator and converts the objects to ImportObject
@@ -109,7 +116,7 @@ func CompareKeys(row1 *block.InventoryObject, row2 *block.InventoryObject) bool 
 	return row1.Key < row2.Key
 }
 
-func CreateCommitMetadata(inv block.Inventory, stats InventoryImportStats) catalog.Metadata {
+func CreateCommitMetadata(inv block.Inventory, stats Stats) catalog.Metadata {
 	return catalog.Metadata{
 		"inventory_url":            inv.InventoryURL(),
 		"source":                   inv.SourceName(),

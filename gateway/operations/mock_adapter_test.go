@@ -83,3 +83,7 @@ func (a *mockAdapter) ValidateConfiguration(_ string) error {
 func (a *mockAdapter) GenerateInventory(_ context.Context, _ logging.Logger, _ string, _ bool) (block.Inventory, error) {
 	return nil, nil
 }
+
+func (a *mockAdapter) BlockstoreType() string {
+	return "s3"
+}
