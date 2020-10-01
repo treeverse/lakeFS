@@ -36,7 +36,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 **Continuous Data Deployment**
 * **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
+* **Enforce cross collection consistency** - provide consumers with several collections of data that must be synchronized, in one atomic, revertible and in action.
 * **Prevent data quality issues by enabling**
   - Testing of production data before exposing it to users / consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
