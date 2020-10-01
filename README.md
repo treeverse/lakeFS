@@ -8,9 +8,9 @@
 [![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++)
 
 
-## What is lakeFS
+## What is lakeFS ?
 
-lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
+Answer- lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
@@ -24,7 +24,7 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
 
-## Capabilities
+## Capabilities --
 
 **Development Environment for Data**
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
@@ -41,9 +41,9 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
   - Testing of production data before exposing it to users / consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
 
-## Getting Started
+## Getting Started --
 
-#### Docker (MacOS, Linux)
+#### Docker (MacOS, Linux) --
 
 1. Ensure you have Docker & Docker Compose installed on your computer.
 
@@ -56,7 +56,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
 
-#### Docker (Windows)
+#### Docker (Windows) --
 
 1. Ensure you have Docker installed.
 
@@ -68,20 +68,20 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
 
-#### Download the Binary
+#### Download the Binary --
 
 Alternatively, you can download the lakeFS binaries and run them directly.
 
 Binaries are available at [https://github.com/treeverse/lakeFS/releases](https://github.com/treeverse/lakeFS/releases).
 
 
-#### Setting up a repository
+#### Setting up a repository --
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
 For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io).
 
-## Community
+## Community --
 
 Keep up to date and get lakeFS support via:
 
@@ -91,12 +91,12 @@ Keep up to date and get lakeFS support via:
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
 
 
-## More information
+## More information --
 
 - [lakeFS documentation](https://docs.lakefs.io)
 - If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
 
-## Licensing
+## Licensing --
 
 lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
