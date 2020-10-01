@@ -62,7 +62,7 @@ func getChunkSignature(cred *model.Credential, seedSignature string, region stri
 		hashedChunk
 
 	// Get hmac signing key.
-	signingKey := createSignature(cred.AccessSecretKey, date.Format(v4shortTimeFormat), region, service)
+	signingKey := createSignature(cred.SecretAccessKey, date.Format(v4shortTimeFormat), region, service)
 
 	// Calculate signature.
 	newSignature := hex.EncodeToString(sign(signingKey, stringToSign))

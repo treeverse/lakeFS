@@ -272,7 +272,7 @@ func (c *Controller) SetupLakeFSHandler() setupop.SetupLakeFSHandler {
 
 		return setupop.NewSetupLakeFSOK().WithPayload(&models.CredentialsWithSecret{
 			AccessKeyID:     cred.AccessKeyID,
-			AccessSecretKey: cred.AccessSecretKey,
+			SecretAccessKey: cred.SecretAccessKey,
 			CreationDate:    adminUser.CreatedAt.Unix(),
 		})
 	})
@@ -1899,7 +1899,7 @@ func (c *Controller) CreateCredentialsHandler() authop.CreateCredentialsHandler 
 		return authop.NewCreateCredentialsCreated().
 			WithPayload(&models.CredentialsWithSecret{
 				AccessKeyID:     credentials.AccessKeyID,
-				AccessSecretKey: credentials.AccessSecretKey,
+				SecretAccessKey: credentials.SecretAccessKey,
 				CreationDate:    credentials.IssuedDate.Unix(),
 			})
 	})

@@ -20,7 +20,7 @@ const (
 
 type loginData struct {
 	AccessKeyID     string `json:"access_key_id"`
-	AccessSecretKey string `json:"secret_access_key"`
+	SecretAccessKey string `json:"secret_access_key"`
 }
 
 var noCacheHeaders = map[string]string{
@@ -58,7 +58,7 @@ func UIHandler(authService auth.Service) http.Handler {
 
 		// check login
 		credentials, err := authService.GetCredentials(login.AccessKeyID)
-		if err != nil || credentials.AccessSecretKey != login.AccessSecretKey {
+		if err != nil || credentials.SecretAccessKey != login.SecretAccessKey {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}

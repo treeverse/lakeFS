@@ -123,7 +123,7 @@ func (s *Handler) BasicAuth() func(accessKey, secretKey string) (user *models.Us
 			logger.WithError(err).WithField("access_key", accessKey).Warn("could not get access key for login")
 			return nil, ErrAuthenticationFailed
 		}
-		if secretKey != credentials.AccessSecretKey {
+		if secretKey != credentials.SecretAccessKey {
 			logger.WithField("access_key", accessKey).Warn("access key secret does not match")
 			return nil, ErrAuthenticationFailed
 		}

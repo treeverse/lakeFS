@@ -526,8 +526,8 @@ func TestDBAuthService_ListUserCredentials(t *testing.T) {
 	if err != nil {
 		t.Errorf("ListUserCredentials(%s): %s", userName, err)
 	}
-	if len(credentials) != 1 || len(credentials[0].AccessKeyID) == 0 || len(credentials[0].AccessSecretKey) > 0 || len(credentials[0].AccessSecretKeyEncryptedBytes) == 0 {
-		t.Errorf("expected to receive single credential with nonempty AccessKeyId and AccessSecretKeyEncryptedBytes and empty AccessSecretKey, got %+v", spew.Sdump(credentials))
+	if len(credentials) != 1 || len(credentials[0].AccessKeyID) == 0 || len(credentials[0].SecretAccessKey) > 0 || len(credentials[0].SecretAccessKeyEncryptedBytes) == 0 {
+		t.Errorf("expected to receive single credential with nonempty AccessKeyId and SecretAccessKeyEncryptedBytes and empty SecretAccessKey, got %+v", spew.Sdump(credentials))
 	}
 	gotCredential := credentials[0]
 	if credential.AccessKeyID != gotCredential.AccessKeyID {

@@ -145,7 +145,7 @@ func TestServer_BasicAuth(t *testing.T) {
 	clt.SetTransport(&handlerTransport{Handler: handler})
 
 	t.Run("valid Auth", func(t *testing.T) {
-		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey))
+		_, err := clt.Repositories.ListRepositories(&repositories.ListRepositoriesParams{}, httptransport.BasicAuth(creds.AccessKeyID, creds.SecretAccessKey))
 		if err != nil {
 			t.Fatalf("did not expect error when passing valid credentials")
 		}
