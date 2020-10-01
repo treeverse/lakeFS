@@ -4,9 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strconv"
 	"testing"
 
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/testutil"
 )
 
 func TestCataloger_DeleteRepository(t *testing.T) {
@@ -21,6 +23,12 @@ func TestCataloger_DeleteRepository(t *testing.T) {
 		if err := c.CreateRepository(ctx, repoName, storage, branchName); err != nil {
 			t.Fatal("create repository for testing failed", err)
 		}
+		for j := 0; j < 3; j++ {
+			p := "ent" + strconv.Itoa(j)
+			testCatalogerCreateEntry(t, ctx, c, repoName, branchName, p, nil, branchName)
+		}
+		_, err := c.Commit(ctx, repoName, branchName, "commit changes", "tester", nil)
+		testutil.MustDo(t, "commit changes", err)
 	}
 	tests := []struct {
 		name       string
