@@ -44,6 +44,8 @@ Since lakeFS is compatible with the S3 API, all popular applications will work w
 * **Prevent data quality issues by enabling** -
    * Testing of production data before exposing it to users / consumers
    * Testing of intermediate results in your DAG to avoid cascading quality issues
+   
+* **Accept bad source data and fix issues during the ETL phase**. - Before customer data can be analyzed, it’s frequently put through an extract, transform, and load (ETL) process. If you’re able to fix data in this stage, before it enters the database, you can solve a number of data quality issues.
 
 
 
