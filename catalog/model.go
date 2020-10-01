@@ -87,3 +87,25 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	return json.Unmarshal(data, j)
 }
+
+type MinMaxCommit struct {
+	MinCommit CommitID `db:"min_commit"`
+	MaxCommit CommitID `db:"max_commit"`
+}
+
+func (m MinMaxCommit) IsDeleted() bool {
+	return m.MaxCommit != MaxCommitID
+}
+func (m MinMaxCommit) IsTombstone() bool {
+	return m.MaxCommit == 0
+}
+
+func (m MinMaxCommit) IsCommitted() bool {
+	return m.MinCommit != MaxCommitID
+}
+
+type entryPKeyRow struct {
+	BranchID   int64  `db:"branch_id"`
+	PathSuffix string `db:"path_postfix"`
+	MinMaxCommit
+}

@@ -95,8 +95,8 @@ type retentionQueryRecord struct {
 
 func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowScanner, limit *uint64) (sq.SelectBuilder, error) {
 	var (
-		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
-		byUncommitted = sq.Expr("min_commit = 0")
+		byNonCurrent  = sq.Expr("min_commit != catalog_max_commit_id() AND max_commit < catalog_max_commit_id()")
+		byUncommitted = sq.Expr("min_commit = catalog_max_commit_id()")
 	)
 
 	repositorySelector := byRepository(repositoryName)
@@ -141,6 +141,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 		}
 		filter = sq.And{
 			filter,
+			// todo: ask Ariel what this is
 			sq.Expr("(physical_address, branch_id, min_commit) > (?, ?, ?)", r.PhysicalAddress, r.BranchID, r.MinCommit),
 		}
 	}
@@ -150,6 +151,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 		Where(filter)
 	query = query.Join("catalog_branches ON catalog_entries.branch_id = catalog_branches.id").
 		Join("catalog_repositories on catalog_branches.repository_id = catalog_repositories.id")
+	// todo: Ariel - problematic sort
 	if limit != nil {
 		query = query.OrderBy("physical_address", "branch_id", "min_commit").
 			Limit(*limit)

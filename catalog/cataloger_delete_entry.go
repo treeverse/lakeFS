@@ -26,7 +26,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		}
 
 		// delete uncommitted entry, if found first
-		res, err := tx.Exec("DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=0 AND max_commit=catalog_max_commit_id()",
+		res, err := tx.Exec("DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=catalog_max_commit_id() AND max_commit=catalog_max_commit_id()",
 			branchID, path)
 		if err != nil {
 			return nil, fmt.Errorf("uncommitted: %w", err)
@@ -53,6 +53,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		var isCommitted bool
 		err = tx.Get(&isCommitted, sql, args...)
 		committedNotFound := errors.Is(err, db.ErrNotFound)
+		// err is real, and not just a "Not found"
 		if err != nil && !committedNotFound {
 			return nil, err
 		}
@@ -62,7 +63,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		//    - if we didn't delete uncommitted - return not found
 		if isCommitted {
 			_, err = tx.Exec(`INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata,min_commit,max_commit)
-					VALUES ($1,$2,'','',0,'{}',0,0)`,
+					VALUES ($1,$2,'','',0,'{}',catalog_max_commit_id(),0)`,
 				branchID, path)
 			if err != nil {
 				return nil, fmt.Errorf("tombstone: %w", err)

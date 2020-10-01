@@ -14,11 +14,10 @@ const (
 
 func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
-		"min_commit > 0 AS is_committed",
+		"min_commit != catalog_max_commit_id() AS is_committed",
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
-		"max_commit < catalog_max_commit_id() AS is_deleted",
-		"CASE WHEN min_commit = 0 THEN catalog_max_commit_id() ELSE min_commit END AS commit_weight").
+		"max_commit < catalog_max_commit_id() AS is_deleted").
 		From("catalog_entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required
@@ -50,7 +49,7 @@ func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineag
 	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
-		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
+		OrderBy("e.path", "source_branch desc", "e.min_commit desc").
 		Columns(strconv.FormatInt(branchID, 10)+" AS displayed_branch",
 			"e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
@@ -87,7 +86,7 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
-		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
+		OrderBy("e.path", "source_branch desc", "e.min_commit desc").
 		Column("? AS displayed_branch", strconv.FormatInt(branchID, 10)).
 		Columns("e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
