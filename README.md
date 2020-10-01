@@ -27,16 +27,16 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 ## Capabilities
 
 **Development Environment for Data**
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
-* **Reproducibility** - go back to any point of time to a consistent version of your data lake.
+* **Experimentation** - Try tools, upgrade versions and evaluate code changes in isolation. 
+* **Reproducibility** - Go back to any point of time to a consistent version of your data lake.
 
 **Continuous Data Integration**
-* **Ingest new data safely by enforcing best practices** - make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
-* **Metadata validation** - prevent breaking changes from entering the production data environment.
+* **Ingest new data safely by enforcing best practices** - Make sure new data sources adhere to your lake’s best practices such as format and schema enforcement, naming convention, etc.  
+* **Metadata validation** - Prevent breaking changes from entering the production data environment.
 
 **Continuous Data Deployment**
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
+* **Instantly revert changes to data** - If low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
+* **Enforce cross collection consistency** - Provides the consumers several collections of data that must be synchronized, in one atomic, revertible, action.
 * **Prevent data quality issues by enabling**
   - Testing of production data before exposing it to users / consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
