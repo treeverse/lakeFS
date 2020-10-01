@@ -52,7 +52,7 @@ export const RepositoryCreateForm = connect(({ repositories }) => {
             <Form.Group as={Row}>
                 <Form.Label column sm={fieldNameOffset}>Storage Namespace</Form.Label>
                     <Col sm={sm}>
-                        <Form.Control type="text" ref={storageNamespaceField} placeholder="i.e. s3://example-bucket/" onChange={checkValidity}/>
+                        <Form.Control type="text" ref={storageNamespaceField} placeholder="e.g. s3://example-bucket/" onChange={checkValidity}/>
                     </Col>
             </Form.Group>
             <Form.Group as={Row} controlId="defaultBranch">

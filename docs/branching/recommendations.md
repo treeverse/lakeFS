@@ -82,7 +82,7 @@ For our commit, let's also add the Git commit hash for the job's source code and
 
 This is similar to the previous case, except we now have several jobs that produce related data. We want to be able to release all related data as one atomic unit, or revert them all together (or partially) if something goes wrong.
 
-A common use case for this are "materialized views" - i.e. the same data but partitioned by different columns or sorted differently to optimize for different readers.
+A common use case for this are "materialized views" - e.g. the same data but partitioned by different columns or sorted differently to optimize for different readers.
 
 In production data pipelines, we require the following guarantees:
 
