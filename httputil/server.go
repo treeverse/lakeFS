@@ -40,7 +40,6 @@ func SubdomainsOf(v string) MatchFn {
 type HostMuxHandler struct {
 	MatchFns []MatchFn
 	Handler  http.Handler
-
 	isDefault bool
 }
 
