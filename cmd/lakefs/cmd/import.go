@@ -27,6 +27,7 @@ const (
 	ManifestURLFlagName = "manifest"
 	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs    = 1
+	CommitterName       = "lakefs"
 )
 
 var importCmd = &cobra.Command{
@@ -87,7 +88,7 @@ var importCmd = &cobra.Command{
 			fmt.Print("Starting import dry run. Will not perform any changes.\n\n")
 		}
 		importConfig := &onboard.Config{
-			CommitUsername:     "lakefs",
+			CommitUsername:     CommitterName,
 			InventoryURL:       manifestURL,
 			Repository:         repoName,
 			InventoryGenerator: blockStore,
@@ -119,22 +120,23 @@ var importCmd = &cobra.Command{
 		if dryRun {
 			fmt.Println("Dry run successful. No changes were made.")
 			return
-
 		}
+
 		fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
 		fmt.Println()
 		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
-		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
 		if withMerge {
 			fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
 			msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
-			commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultBranchName, repo.DefaultBranch, catalog.CatalogerCommitter, msg, nil)
+			commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultBranchName, repo.DefaultBranch, CommitterName, msg, nil)
 			if err != nil {
 				fmt.Printf("Merge failed: %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Println("Merge ref:", commitLog.Reference)
+			fmt.Println("Merge was completed successfully")
+			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
 		} else {
+			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
 			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
 		}
 	},
