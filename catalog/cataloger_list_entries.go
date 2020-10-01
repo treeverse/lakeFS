@@ -269,9 +269,9 @@ func findLowestResultInBranches(branchRanges map[int64][]entryPKeyRow, branchPri
 	var chosenPath string
 	for b, r := range branchRanges {
 		if firstTime {
-			firstTime = false
 			chosenBranch = b
 			chosenPath = r[0].PathSuffix
+			firstTime = false
 			continue
 		}
 		if r[0].PathSuffix == chosenPath {
