@@ -10,11 +10,11 @@
 
 ## What is lakeFS
 
-lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open-source layer that delivers resilience and manageability to object-storage based data lakes.
+With lakeFS you can build repeatable, atomic, and versioned data lake operations - from complex ETL jobs to data science and analytics.
+lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service. It is API compatible with S3 and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
-With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
-lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service. It is API compatible with S3, and works seamlessly with all modern data frameworks such as Spark, Hive, AWS Athena, Presto, etc.
 
 
 <p align="center">
@@ -27,7 +27,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 ## Capabilities
 
 **Development Environment for Data**
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
+* **Experimentation** - try tools, upgrade versions, and evaluate code changes in isolation. 
 * **Reproducibility** - go back to any point of time to a consistent version of your data lake.
 
 **Continuous Data Integration**
@@ -35,10 +35,10 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 * **Metadata validation** - prevent breaking changes from entering the production data environment.
 
 **Continuous Data Deployment**
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
+* **Instantly revert data changes** - if low-quality data is exposed to your consumers, you can revert instantly to a former, consistent, and correct snapshot of your data lake.
 * **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
 * **Prevent data quality issues by enabling**
-  - Testing of production data before exposing it to users / consumers.
+  - Testing of production data before exposing it to users/consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
 
 ## Getting Started
@@ -53,7 +53,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
    curl https://compose.lakefs.io | docker-compose -f - up
    ```
 
-3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to log in, and send API requests.
 
 
 #### Docker (Windows)
@@ -66,7 +66,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
    Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
    ``` 
 
-3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to login and send API requests.
+3. Open [http://127.0.0.1:8000/setup](http://127.0.0.1:8000/setup) in your web browser to set up an initial admin user, used to log in, and send API requests.
 
 #### Download the Binary
 
@@ -98,5 +98,5 @@ Stay up to date and get lakeFS support via:
 
 ## Licensing
 
-lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
