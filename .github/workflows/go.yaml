@@ -11,10 +11,10 @@ jobs:
     steps:
       - name: Check-out code
         uses: actions/checkout@v2
-      - name: Setup go
+      - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.15.2
         id: go
       - name: Generated code
         run: make gen
@@ -38,10 +38,10 @@ jobs:
       - name: install UI dependencies
         run: npm install
         working-directory: ./webui
-      - name: Set up Go 1.14
+      - name: Setup Go
         uses: actions/setup-go@v2
         with:
-          go-version: 1.14
+          go-version: 1.15.2
         id: go
       - name: Run tests
         run: |
