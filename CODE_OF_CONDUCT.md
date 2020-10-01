@@ -7,7 +7,10 @@ contributors and maintainers pledge to making participation in our project and
 our community a harassment-free experience for everyone, regardless of age, body
 size, disability, ethnicity, gender identity and expression, level of experience,
 nationality, personal appearance, race, religion, or sexual identity and
-orientation.
+orientation.We urge the memebers who are keen and enthusiastic in open
+Source Development to Participate and modify our projects only to improve
+the Technical Efficiency, but make sure it dosent change any technical
+Functionality and Code Efficiency.
 
 ## Our Standards
 
@@ -19,6 +22,8 @@ include:
 * Gracefully accepting constructive criticism
 * Focusing on what is best for the community
 * Showing empathy towards other community members
+* Refraining from using Foul language or any other demeaning signs
+* Providing compatiability to our rules and regulations
 
 Examples of unacceptable behavior by participants include:
 
@@ -30,6 +35,7 @@ advances
   address, without explicit permission
 * Other conduct which could reasonably be considered inappropriate in a
   professional setting
+ * Using signs or Symbols to demean or disrespect fellow members of the community.
 
 ## Our Responsibilities
 
