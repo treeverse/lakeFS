@@ -62,7 +62,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 2. Run the following command in PowerShell:
 
-   ```shell script
+   ```bash
    Invoke-WebRequest https://compose.lakefs.io | Select-Object -ExpandProperty Content | docker-compose -f - up
    ``` 
 
