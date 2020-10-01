@@ -2,7 +2,6 @@ package catalog
 
 import (
 	"context"
-	"fmt"
 	"strconv"
 	"testing"
 
@@ -12,7 +11,6 @@ import (
 
 func TestCataloger_DBBranchReader(t *testing.T) {
 	const numberOfObjects = 100
-
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)
 	defer conn.Close()
@@ -23,21 +21,9 @@ func TestCataloger_DBBranchReader(t *testing.T) {
 	bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
 	maxBranchNumber := len(objSkip)
 
-	for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
-		branchName := "b" + strconv.Itoa(branchNo)
-		if branchNo > 0 {
-			testCatalogerBranch(t, ctx, c, repository, branchName, baseBranchName)
-		}
-		for i := 0; i < numberOfObjects; i += objSkip[branchNo] {
-			testCatalogerCreateEntry(t, ctx, c, repository, branchName, fmt.Sprintf("Obj-%04d", i), nil, "")
-		}
-		_, err := c.Commit(ctx, repository, branchName, "commit to "+branchName, "tester", nil)
-		testutil.MustDo(t, "commit to "+branchName, err)
-		baseBranchName = branchName
-	}
+	testSetupDBReaderData(t, ctx, c, repository, numberOfObjects, maxBranchNumber, baseBranchName, objSkip)
 
 	_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-		var p string
 		// test different cache sizes
 		for k := 0; k < len(bufferSizes); k++ {
 			bufSize := bufferSizes[k]
@@ -55,11 +41,10 @@ func TestCataloger_DBBranchReader(t *testing.T) {
 						}
 						break
 					} else {
-						p = o.Path
-						objNum, err := strconv.Atoi(p[4:])
-						testutil.MustDo(t, "convert obj number "+p, err)
+						objNum, err := strconv.Atoi(o.Path[4:])
+						testutil.MustDo(t, "convert obj number "+o.Path, err)
 						if objNum != i {
-							t.Errorf(" objNum=%d, i=%d\n", objNum, i)
+							t.Errorf("objNum=%d, i=%d\n", objNum, i)
 						}
 					}
 				}
