@@ -10,7 +10,6 @@ import (
 	"os"
 	"sort"
 	"strconv"
-	"strings"
 	"testing"
 	"time"
 
@@ -55,135 +54,8 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// wrapper derives a prefix from t.Name and uses it to provide namespaced access to parade on DB
+// Wrapper derives a prefix from t.Name and uses it to provide namespaced access to parade on DB
 // db as well as a simple error-reporting inserter.
-type wrapper struct {
-	t  testing.TB
-	db *sqlx.DB
-}
-
-func (w wrapper) prefix(s string) string {
-	return fmt.Sprintf("%s.%s", w.t.Name(), s)
-}
-
-func (w wrapper) strip(s string) string {
-	return strings.TrimPrefix(s, w.t.Name()+".")
-}
-
-func (w wrapper) prefixTask(id parade.TaskID) parade.TaskID {
-	return parade.TaskID(w.prefix(string(id)))
-}
-
-func (w wrapper) stripTask(id parade.TaskID) parade.TaskID {
-	return parade.TaskID(w.strip(string(id)))
-}
-
-func (w wrapper) prefixActor(actor parade.ActorID) parade.ActorID {
-	return parade.ActorID(w.prefix(string(actor)))
-}
-
-func (w wrapper) stripActor(actor parade.TaskID) parade.ActorID {
-	return parade.ActorID(w.strip(string(actor)))
-}
-
-func (w wrapper) insertTasks(tasks []parade.TaskData) func() {
-	w.t.Helper()
-	ctx := context.Background()
-	sqlConn, err := w.db.Conn(ctx)
-	if err != nil {
-		w.t.Fatalf("sqlx.DB.Conn: %s", err)
-	}
-	defer sqlConn.Close()
-
-	conn, err := stdlib.AcquireConn(w.db.DB)
-	if err != nil {
-		w.t.Fatalf("stdlib.AcquireConn: %s", err)
-	}
-	defer stdlib.ReleaseConn(w.db.DB, conn)
-
-	prefixedTasks := make([]parade.TaskData, len(tasks))
-	for i := 0; i < len(tasks); i++ {
-		copy := tasks[i]
-		copy.ID = w.prefixTask(copy.ID)
-		copy.Action = w.prefix(copy.Action)
-		copy.ActorID = w.prefixActor(copy.ActorID)
-		if copy.StatusCode == "" {
-			copy.StatusCode = "pending"
-		}
-		toSignal := make([]parade.TaskID, len(copy.ToSignal))
-		for j := 0; j < len(toSignal); j++ {
-			toSignal[j] = w.prefixTask(copy.ToSignal[j])
-		}
-		copy.ToSignal = toSignal
-		prefixedTasks[i] = copy
-	}
-	err = parade.InsertTasks(ctx, conn, &parade.TaskDataIterator{Data: prefixedTasks})
-	if err != nil {
-		w.t.Fatalf("InsertTasks: %s", err)
-	}
-
-	// Create cleanup callback.  Compute the ids now, tasks may change later.
-	ids := make([]parade.TaskID, 0, len(tasks))
-
-	for _, task := range tasks {
-		ids = append(ids, task.ID)
-	}
-
-	return func() { w.deleteTasks(ids) }
-}
-
-func (w wrapper) deleteTasks(ids []parade.TaskID) error {
-	prefixedIds := make([]parade.TaskID, len(ids))
-	for i := 0; i < len(ids); i++ {
-		prefixedIds[i] = w.prefixTask(ids[i])
-	}
-	ctx := context.Background()
-	conn, err := stdlib.AcquireConn(w.db.DB)
-	if err != nil {
-		w.t.Fatalf("stdlib.AcquireConn: %s", err)
-	}
-	defer stdlib.ReleaseConn(w.db.DB, conn)
-
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("BEGIN: %w", err)
-	}
-	defer func() {
-		if tx != nil {
-			tx.Rollback(ctx)
-		}
-	}()
-
-	if err = parade.DeleteTasks(ctx, tx, prefixedIds); err != nil {
-		return err
-	}
-
-	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("COMMIT: %w", err)
-	}
-	tx = nil
-	return nil
-}
-
-func (w wrapper) returnTask(taskId parade.TaskID, token parade.PerformanceToken, resultStatus string, resultStatusCode parade.TaskStatusCodeValue) error {
-	return parade.ReturnTask(w.db, w.prefixTask(taskId), token, resultStatus, resultStatusCode)
-}
-
-func (w wrapper) ownTasks(actorId parade.ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]parade.OwnedTaskData, error) {
-	prefixedActions := make([]string, len(actions))
-	for i, action := range actions {
-		prefixedActions[i] = w.prefix(action)
-	}
-	tasks, err := parade.OwnTasks(w.db, actorId, maxTasks, prefixedActions, maxDuration)
-	if tasks != nil {
-		for i := 0; i < len(tasks); i++ {
-			task := &tasks[i]
-			task.ID = w.stripTask(task.ID)
-		}
-	}
-	return tasks, err
-}
-
 func stringAddr(s string) *string {
 	return &s
 }
@@ -272,16 +144,16 @@ func TestTaskDataIterator_Values(t *testing.T) {
 }
 
 func TestOwn(t *testing.T) {
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
-	cleanup := w.insertTasks([]parade.TaskData{
+	cleanup := w.InsertTasks([]parade.TaskData{
 		{ID: "000", Action: "never"},
 		{ID: "111", Action: "frob"},
 		{ID: "123", Action: "broz"},
 		{ID: "222", Action: "broz"},
 	})
 	defer cleanup()
-	tasks, err := w.ownTasks(parade.ActorID("tester"), 2, []string{"frob", "broz"}, nil)
+	tasks, err := w.OwnTasks(parade.ActorID("tester"), 2, []string{"frob", "broz"}, nil)
 	if err != nil {
 		t.Errorf("first own_tasks query: %s", err)
 	}
@@ -290,7 +162,7 @@ func TestOwn(t *testing.T) {
 	}
 	gotTasks := tasks
 
-	tasks, err = w.ownTasks(parade.ActorID("tester-two"), 2, []string{"frob", "broz"}, nil)
+	tasks, err = w.OwnTasks(parade.ActorID("tester-two"), 2, []string{"frob", "broz"}, nil)
 	if err != nil {
 		t.Errorf("second own_tasks query: %s", err)
 	}
@@ -310,17 +182,17 @@ func TestOwn(t *testing.T) {
 }
 
 func TestOwnBody(t *testing.T) {
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
 	val := "\"the quick brown fox jumps over the lazy dog\""
 
-	cleanup := w.insertTasks([]parade.TaskData{
+	cleanup := w.InsertTasks([]parade.TaskData{
 		{ID: "body", Action: "yes", Body: &val},
 		{ID: "nobody", Action: "no"},
 	})
 	defer cleanup()
 
-	tasks, err := w.ownTasks(parade.ActorID("somebody"), 2, []string{"yes", "no"}, nil)
+	tasks, err := w.OwnTasks(parade.ActorID("somebody"), 2, []string{"yes", "no"}, nil)
 	if err != nil {
 		t.Fatalf("own tasks: %s", err)
 	}
@@ -342,19 +214,19 @@ func TestOwnBody(t *testing.T) {
 
 func TestOwnAfterDeadlineElapsed(t *testing.T) {
 	second := 1 * time.Second
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
-	cleanup := w.insertTasks([]parade.TaskData{
+	cleanup := w.InsertTasks([]parade.TaskData{
 		{ID: "111", Action: "frob"},
 	})
 	defer cleanup()
 
-	_, err := w.ownTasks(parade.ActorID("tortoise"), 1, []string{"frob"}, &second)
+	_, err := w.OwnTasks(parade.ActorID("tortoise"), 1, []string{"frob"}, &second)
 	if err != nil {
 		t.Fatalf("failed to setup tortoise task ownership: %s", err)
 	}
 
-	fastTasks, err := w.ownTasks(parade.ActorID("hare"), 1, []string{"frob"}, &second)
+	fastTasks, err := w.OwnTasks(parade.ActorID("hare"), 1, []string{"frob"}, &second)
 	if err != nil {
 		t.Fatalf("failed to request fast task ownership: %s", err)
 	}
@@ -363,7 +235,7 @@ func TestOwnAfterDeadlineElapsed(t *testing.T) {
 	}
 
 	time.Sleep(2 * time.Second)
-	fastTasks, err = w.ownTasks(parade.ActorID("hare"), 1, []string{"frob"}, &second)
+	fastTasks, err = w.OwnTasks(parade.ActorID("hare"), 1, []string{"frob"}, &second)
 	if err != nil {
 		t.Fatalf("failed to request fast task ownership after sleeping: %s", err)
 	}
@@ -373,16 +245,16 @@ func TestOwnAfterDeadlineElapsed(t *testing.T) {
 }
 
 func TestReturnTask_DirectlyAndRetry(t *testing.T) {
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
-	cleanup := w.insertTasks([]parade.TaskData{
+	cleanup := w.InsertTasks([]parade.TaskData{
 		{ID: "111", Action: "frob"},
 		{ID: "123", Action: "broz"},
 		{ID: "222", Action: "broz"},
 	})
 	defer cleanup()
 
-	tasks, err := w.ownTasks(parade.ActorID("foo"), 4, []string{"frob", "broz"}, nil)
+	tasks, err := w.OwnTasks(parade.ActorID("foo"), 4, []string{"frob", "broz"}, nil)
 	if err != nil {
 		t.Fatalf("acquire all tasks: %s", err)
 	}
@@ -392,19 +264,19 @@ func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 		taskById[tasks[index].ID] = &tasks[index]
 	}
 
-	if err = w.returnTask(taskById[parade.TaskID("111")].ID, taskById[parade.TaskID("111")].Token, "done", parade.TaskCompleted); err != nil {
+	if err = w.ReturnTask(taskById[parade.TaskID("111")].ID, taskById[parade.TaskID("111")].Token, "done", parade.TaskCompleted); err != nil {
 		t.Errorf("return task 111: %s", err)
 	}
 
-	if err = w.returnTask(taskById[parade.TaskID("111")].ID, taskById[parade.TaskID("111")].Token, "done", parade.TaskCompleted); !errors.Is(err, parade.ErrInvalidToken) {
+	if err = w.ReturnTask(taskById[parade.TaskID("111")].ID, taskById[parade.TaskID("111")].Token, "done", parade.TaskCompleted); !errors.Is(err, parade.ErrInvalidToken) {
 		t.Errorf("expected second attempt to return task 111 to fail with InvalidTokenError, got %s", err)
 	}
 
 	// Now attempt to return a task to in-progress state.
-	if err = w.returnTask(taskById[parade.TaskID("123")].ID, taskById[parade.TaskID("123")].Token, "try-again", parade.TaskPending); err != nil {
+	if err = w.ReturnTask(taskById[parade.TaskID("123")].ID, taskById[parade.TaskID("123")].Token, "try-again", parade.TaskPending); err != nil {
 		t.Errorf("return task 123 (%+v) for another round: %s", taskById[parade.TaskID("123")], err)
 	}
-	moreTasks, err := w.ownTasks(parade.ActorID("foo"), 4, []string{"frob", "broz"}, nil)
+	moreTasks, err := w.OwnTasks(parade.ActorID("foo"), 4, []string{"frob", "broz"}, nil)
 	if err != nil {
 		t.Fatalf("re-acquire task 123: %s", err)
 	}
@@ -414,18 +286,18 @@ func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 }
 
 func TestReturnTask_RetryMulti(t *testing.T) {
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
 	maxTries := 7
 	lifetime := 250 * time.Millisecond
 
-	cleanup := w.insertTasks([]parade.TaskData{
+	cleanup := w.InsertTasks([]parade.TaskData{
 		{ID: "111", Action: "frob", MaxTries: &maxTries},
 	})
 	defer cleanup()
 
 	for i := 0; i < maxTries; i++ {
-		tasks, err := w.ownTasks(parade.ActorID("foo"), 1, []string{"frob"}, &lifetime)
+		tasks, err := w.OwnTasks(parade.ActorID("foo"), 1, []string{"frob"}, &lifetime)
 		if err != nil {
 			t.Errorf("acquire task after %d/%d tries: %s", i, maxTries, err)
 		}
@@ -435,13 +307,13 @@ func TestReturnTask_RetryMulti(t *testing.T) {
 		if i%2 == 0 {
 			time.Sleep(2 * lifetime)
 		} else {
-			if err = w.returnTask(tasks[0].ID, tasks[0].Token, "retry", parade.TaskPending); err != nil {
+			if err = w.ReturnTask(tasks[0].ID, tasks[0].Token, "retry", parade.TaskPending); err != nil {
 				t.Fatalf("return task %+v after %d/%d tries: %s", tasks[0], i, maxTries, err)
 			}
 		}
 	}
 
-	tasks, err := w.ownTasks(parade.ActorID("foo"), 1, []string{"frob"}, &lifetime)
+	tasks, err := w.OwnTasks(parade.ActorID("foo"), 1, []string{"frob"}, &lifetime)
 	if err != nil {
 		t.Fatalf("re-acquire task failed: %s", err)
 	}
@@ -451,7 +323,7 @@ func TestReturnTask_RetryMulti(t *testing.T) {
 }
 
 func TestDependencies(t *testing.T) {
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
 	id := func(n int) parade.TaskID {
 		return parade.TaskID(fmt.Sprintf("number-%d", n))
@@ -494,13 +366,13 @@ func TestDependencies(t *testing.T) {
 			TotalDependencies: &numDivisors,
 		})
 	}
-	cleanup := w.insertTasks(taskData)
+	cleanup := w.InsertTasks(taskData)
 	defer cleanup()
 
 	doneSet := make(map[int]struct{}, num)
 
 	for {
-		tasks, err := w.ownTasks(parade.ActorID("foo"), 17, []string{"div"}, nil)
+		tasks, err := w.OwnTasks(parade.ActorID("foo"), 17, []string{"div"}, nil)
 		if err != nil {
 			t.Fatalf("acquire tasks with done %+v: %s", doneSet, err)
 		}
@@ -517,7 +389,7 @@ func TestDependencies(t *testing.T) {
 					}
 				}
 			}
-			if err = w.returnTask(task.ID, task.Token, "divided", parade.TaskCompleted); err != nil {
+			if err = w.ReturnTask(task.ID, task.Token, "divided", parade.TaskCompleted); err != nil {
 				t.Errorf("failed to complete task %+v: %s", task, err)
 			}
 		}
@@ -529,9 +401,9 @@ func TestDependencies(t *testing.T) {
 
 func TestDeleteTasks(t *testing.T) {
 	// Delete tasks requires whitebox testing, to ensure tasks really are deleted.
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
-	cleanup := w.insertTasks([]parade.TaskData{
+	cleanup := w.InsertTasks([]parade.TaskData{
 		{ID: parade.TaskID("a0"), Action: "root", ToSignal: []parade.TaskID{"a1", "a3"}},
 		{ID: parade.TaskID("a1"), Action: "dep", ToSignal: []parade.TaskID{"a2"}, TotalDependencies: intAddr(1)},
 		{ID: parade.TaskID("a2"), Action: "dep", ToSignal: []parade.TaskID{"a3"}, TotalDependencies: intAddr(1)},
@@ -566,11 +438,11 @@ func TestDeleteTasks(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
 			casePrefix := fmt.Sprint(prefix, ".", c.casePrefix)
-			if err := w.deleteTasks(c.toDelete); err != nil {
+			if err := w.DeleteTasks(c.toDelete); err != nil {
 				t.Errorf("DeleteTasks failed: %s", err)
 			}
 
-			rows, err := w.db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
+			rows, err := w.DB.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
 			if err != nil {
 				t.Errorf("[I] select remaining IDs for prefix %s: %s", casePrefix, err)
 			}
@@ -594,7 +466,7 @@ func TestDeleteTasks(t *testing.T) {
 				expectedRemaining = []parade.TaskID{}
 			}
 			for i, e := range expectedRemaining {
-				expectedRemaining[i] = w.prefixTask(e)
+				expectedRemaining[i] = w.PrefixTask(e)
 			}
 			sort.Sort(testutil.TaskIdSlice(expectedRemaining))
 			if diffs := deep.Equal(expectedRemaining, gotRemaining); diffs != nil {
@@ -606,7 +478,7 @@ func TestDeleteTasks(t *testing.T) {
 
 func TestNotification(t *testing.T) {
 	ctx := context.Background()
-	w := wrapper{t, db}
+	w := testutil.Wrapper{TB: t, DB: db}
 
 	type testCase struct {
 		title      string
@@ -622,12 +494,12 @@ func TestNotification(t *testing.T) {
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
-			cleanup := w.insertTasks([]parade.TaskData{
+			cleanup := w.InsertTasks([]parade.TaskData{
 				{ID: c.id, Action: "frob"},
 			})
 			defer cleanup()
 
-			tasks, err := w.ownTasks(parade.ActorID("foo"), 1, []string{"frob"}, nil)
+			tasks, err := w.OwnTasks(parade.ActorID("foo"), 1, []string{"frob"}, nil)
 			if err != nil {
 				t.Fatalf("acquire task: %s", err)
 			}
@@ -635,11 +507,11 @@ func TestNotification(t *testing.T) {
 				t.Fatalf("expected to own single task but got %+v", tasks)
 			}
 
-			conn, err := stdlib.AcquireConn(w.db.DB)
+			conn, err := stdlib.AcquireConn(db.DB)
 			if err != nil {
-				w.t.Fatalf("stdlib.AcquireConn: %s", err)
+				t.Fatalf("stdlib.AcquireConn: %s", err)
 			}
-			defer stdlib.ReleaseConn(w.db.DB, conn)
+			defer stdlib.ReleaseConn(db.DB, conn)
 
 			type result struct {
 				status     string
@@ -652,7 +524,7 @@ func TestNotification(t *testing.T) {
 				ch <- result{status, statusCode, err}
 			}()
 
-			if err = w.returnTask(tasks[0].ID, tasks[0].Token, c.status, c.statusCode); err != nil {
+			if err = w.ReturnTask(tasks[0].ID, tasks[0].Token, c.status, c.statusCode); err != nil {
 				t.Fatalf("return task %+v: %s", tasks[0], err)
 			}
 
@@ -668,7 +540,7 @@ func TestNotification(t *testing.T) {
 func BenchmarkFanIn(b *testing.B) {
 	numTasks := b.N * *taskFactor
 
-	w := wrapper{b, db}
+	w := testutil.Wrapper{TB: b, DB: db}
 
 	id := func(n int) parade.TaskID {
 		return parade.TaskID(fmt.Sprintf("in:%08d", n))
@@ -691,7 +563,7 @@ func BenchmarkFanIn(b *testing.B) {
 		tasks = append(tasks, parade.TaskData{ID: shardId(i), Action: "spontaneous", ToSignal: toSignal, TotalDependencies: &totalShardDependencies[i]})
 	}
 	tasks = append(tasks, parade.TaskData{ID: "done", Action: "done", TotalDependencies: numShards})
-	cleanup := w.insertTasks(tasks)
+	cleanup := w.InsertTasks(tasks)
 
 	defer cleanup()
 
@@ -713,7 +585,7 @@ func BenchmarkFanIn(b *testing.B) {
 			receivedDone := false
 			for {
 				size := *bulk + int(rand.Int31n(int32(*bulk/5))) - *bulk/10
-				tasks, err := w.ownTasks(
+				tasks, err := w.OwnTasks(
 					parade.ActorID(fmt.Sprintf("worker-%d", i)),
 					size,
 					[]string{"part", "spontaneous", "done"}, nil)
@@ -726,16 +598,16 @@ func BenchmarkFanIn(b *testing.B) {
 				}
 				for _, task := range tasks {
 					switch task.Action {
-					case w.prefix("part"):
+					case w.Prefix("part"):
 						count++
-					case w.prefix("spontaneous"):
+					case w.Prefix("spontaneous"):
 						// nothing, just reduce fan-in contention
-					case w.prefix("done"):
+					case w.Prefix("done"):
 						receivedDone = true
 					default:
 						resultCh[i] <- result{err: fmt.Errorf("weird action %s", task.Action)}
 					}
-					w.returnTask(task.ID, task.Token, "ok", parade.TaskCompleted)
+					w.ReturnTask(task.ID, task.Token, "ok", parade.TaskCompleted)
 				}
 			}
 			resultCh[i] <- result{count: count, receivedDone: receivedDone}
