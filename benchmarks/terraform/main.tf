@@ -1,9 +1,9 @@
-variable "password" {
+variable "Password" {
   type        = string
   description = "The password to the postgres DB."
 }
 
-variable "dockerReg" {
+variable "DockerReg" {
   type        = string
   description = "docker registry to pull the image from"
 }
@@ -34,12 +34,12 @@ data "aws_ami" "ubuntu" {
   most_recent = true
 
   filter {
-    name   = "name"
+    name   = "Name"
     values = ["ubuntu/images/hvm-ssd/ubuntu-trusty-14.04-amd64-server-*"]
   }
 
   filter {
-    name   = "virtualization-type"
+    name   = "Virtualization-type"
     values = ["hvm"]
   }
 
