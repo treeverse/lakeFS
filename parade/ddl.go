@@ -81,17 +81,17 @@ type TaskData struct {
 	ID     TaskID `db:"task_id"`
 	Action string `db:"action"`
 	// Body is JSON-formatted
-	Body              *string           `db:"body"`
-	Status            *string           `db:"status"`
-	StatusCode        string            `db:"status_code"`
-	NumTries          int               `db:"num_tries"`
-	MaxTries          *int              `db:"max_tries"`
-	TotalDependencies *int              `db:"total_dependencies"`
-	ToSignal          []TaskID          `db:"to_signal"`
-	ActorID           ActorID           `db:"actor_id"`
-	ActionDeadline    *time.Time        `db:"action_deadline"`
-	PerformanceToken  *PerformanceToken `db:"performance_token"`
-	FinishChannelName *string           `db:"finish_channel"`
+	Body              *string             `db:"body"`
+	Status            *string             `db:"status"`
+	StatusCode        TaskStatusCodeValue `db:"status_code"`
+	NumTries          int                 `db:"num_tries"`
+	MaxTries          *int                `db:"max_tries"`
+	TotalDependencies *int                `db:"total_dependencies"`
+	ToSignal          []TaskID            `db:"to_signal"`
+	ActorID           ActorID             `db:"actor_id"`
+	ActionDeadline    *time.Time          `db:"action_deadline"`
+	PerformanceToken  *PerformanceToken   `db:"performance_token"`
+	FinishChannelName *string             `db:"finish_channel"`
 }
 
 // TaskDataIterator implements the pgx.CopyFromSource interface and allows using CopyFrom to insert
