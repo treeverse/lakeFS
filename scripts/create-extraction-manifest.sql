@@ -1,3 +1,4 @@
+--  Add New Scripts
 -- PostgreSQL script to create a manifest file for extracting files
 -- from LakeFS to S3.  Use this manifest to run treeverse-distcp,
 -- which will extract the files.
