@@ -10,7 +10,7 @@
 
 ## What is lakeFS
 
-lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
+lakeFS is an open-source layer that delivers resilience and manageability to object-storage based data lakes.
 
 With lakeFS you can build repeatable, atomic and versioned data lake operations - from complex ETL jobs to data science and analytics.
 
@@ -35,10 +35,10 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 * **Metadata validation** - prevent breaking changes from entering the production data environment.
 
 **Continuous Data Deployment**
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
+* **Instantly revert changes to data** - if low-quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
 * **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
 * **Prevent data quality issues by enabling**
-  - Testing of production data before exposing it to users / consumers.
+  - Testing of production data before exposing it to users/consumers.
   - Testing of intermediate results in your DAG to avoid cascading quality issues.
 
 ## Getting Started
@@ -77,7 +77,7 @@ Binaries are available at [https://github.com/treeverse/lakeFS/releases](https:/
 
 #### Setting up a repository
 
-Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
+Please follow the [Guide to getting Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
 For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io).
 
@@ -98,6 +98,6 @@ Stay up to date and get lakeFS support via:
 
 ## Licensing
 
-lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+lakeFS is completely free and open-source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
  
