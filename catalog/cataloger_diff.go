@@ -40,7 +40,7 @@ func (c *cataloger) Diff(ctx context.Context, repository string, leftBranch stri
 		limit = DiffMaxLimit
 	}
 
-	ctx, cancel := contextWithDiffResultsDispose(ctx, c.db)
+	ctx, cancel := c.withDiffResultsContext(ctx)
 	defer cancel()
 
 	res, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
@@ -246,12 +246,15 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	return nil
 }
 
-// contextWithDiffResultsDispose generate diff results id used for temporary table name
-func contextWithDiffResultsDispose(ctx context.Context, tx sq.Execer) (context.Context, context.CancelFunc) {
+// withDiffResultsContext generate diff results id used for temporary table name
+func (c *cataloger) withDiffResultsContext(ctx context.Context) (context.Context, context.CancelFunc) {
 	id := strings.ReplaceAll(uuid.New().String(), "-", "")
 	return context.WithValue(ctx, contextDiffResultsKey, id), func() {
 		tableName := diffResultsTableNameFormat(id)
-		_, _ = tx.Exec("DROP TABLE IF EXISTS " + tableName)
+		_, err := c.db.Exec("DROP TABLE IF EXISTS " + tableName)
+		if err != nil {
+			c.log.WithError(err).WithField("table_name", tableName).Warn("Failed to drop diff results table")
+		}
 	}
 }
 

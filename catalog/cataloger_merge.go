@@ -21,7 +21,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}
 
-	ctx, cancel := contextWithDiffResultsDispose(ctx, c.db)
+	ctx, cancel := c.withDiffResultsContext(ctx)
 	defer cancel()
 
 	mergeResult := &MergeResult{}
