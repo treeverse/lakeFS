@@ -97,11 +97,16 @@ func (m MinMaxCommit) IsDeleted() bool {
 	return m.MaxCommit != MaxCommitID
 }
 func (m MinMaxCommit) IsTombstone() bool {
-	return m.MaxCommit == 0
+	return m.MaxCommit == TombstoneCommitID
 }
 
 func (m MinMaxCommit) IsCommitted() bool {
 	return m.MinCommit != MaxCommitID
+}
+
+// needed for diff, to check if an entry changed after the lineage commit id
+func (m MinMaxCommit) changedAfterCommit(commitID CommitID) bool {
+	return m.MinCommit > commitID || (m.MaxCommit != MaxCommitID && m.MaxCommit > commitID)
 }
 
 type entryPKeyRow struct {

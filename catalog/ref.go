@@ -12,9 +12,10 @@ import (
 type CommitID int64
 
 const (
-	CommittedID   CommitID = -1
-	UncommittedID CommitID = 0
-	MaxCommitID   CommitID = 1_000_000_000_000_000_000
+	CommittedID       CommitID = -1
+	UncommittedID     CommitID = 0
+	MaxCommitID       CommitID = 1_000_000_000_000_000_000
+	TombstoneCommitID          = 0
 
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"
