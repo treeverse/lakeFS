@@ -134,7 +134,7 @@ var importCmd = &cobra.Command{
 				fmt.Printf("Merge failed: %s\n", err)
 				os.Exit(1)
 			}
-			fmt.Println("Merge was completed successfully")
+			fmt.Println("Merge was completed successfully.")
 			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, commitLog.Reference)
 		} else {
 			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
