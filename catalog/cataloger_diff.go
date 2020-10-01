@@ -4,9 +4,10 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/rs/xid"
+	"github.com/google/uuid"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
@@ -247,7 +248,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 
 // contextWithDiffResultsDispose generate diff results id used for temporary table name
 func contextWithDiffResultsDispose(ctx context.Context, tx sq.Execer) (context.Context, context.CancelFunc) {
-	id := xid.New().String()
+	id := strings.ReplaceAll(uuid.New().String(), "-", "")
 	return context.WithValue(ctx, contextDiffResultsKey, id), func() {
 		tableName := diffResultsTableNameFormat(id)
 		_, _ = tx.Exec("DROP TABLE IF EXISTS " + tableName)
