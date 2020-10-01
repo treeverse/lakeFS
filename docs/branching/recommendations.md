@@ -82,7 +82,7 @@ For our commit, let's also add the Git commit hash for the job's source code and
 
 This is similar to the previous case, except we now have several jobs that produce related data. We want to be able to release all related data as one atomic unit, or revert them all together (or partially) if something goes wrong.
 
-A common use case for this are "materialized views" - i.e. the same data but partitioned by different columns or sorted differently to optimize for different readers.
+A common use case for this are "materialized views" - e.g. the same data but partitioned by different columns or sorted differently to optimize for different readers.
 
 In production data pipelines, we require the following guarantees:
 
@@ -138,7 +138,7 @@ This is great for production safety - but re-reading will also mean duplication 
 When streaming data into a data lake, we require the following guarantees:
 
 1. **Production safety** - We want to be able to "rewind" to a previous state in case anything goes wrong.
-1. **Atomicity** - We want to make our changes available as one atomic unit, usually defined by a time interval (i.e. this is all the data for the current minute/hour/day)
+1. **Atomicity** - We want to make our changes available as one atomic unit, usually defined by a time interval (e.g. this is all the data for the current minute/hour/day)
 
 **Recommended model:** Branch per consumer type, periodic commits with stream offset, merge when ready for consumption
 {: .note .note-info }
