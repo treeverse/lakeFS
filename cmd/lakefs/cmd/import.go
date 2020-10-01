@@ -23,6 +23,7 @@ import (
 
 const (
 	DryRunFlagName      = "dry-run"
+	WithMergeFlagName   = "with-merge"
 	ManifestURLFlagName = "manifest"
 	ManifestURLFormat   = "s3://example-bucket/inventory/YYYY-MM-DDT00-00Z/manifest.json"
 	ImportCmdNumArgs    = 1
@@ -39,6 +40,8 @@ var importCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		dryRun, _ := cmd.Flags().GetBool(DryRunFlagName)
 		manifestURL, _ := cmd.Flags().GetString(ManifestURLFlagName)
+		withMerge, _ := cmd.Flags().GetBool(WithMergeFlagName)
+
 		ctx := context.Background()
 		conf := config.NewConfig()
 		err := db.ValidateSchemaUpToDate(conf.GetDatabaseParams())
@@ -48,7 +51,11 @@ var importCmd = &cobra.Command{
 		}
 		logger := logging.FromContext(ctx)
 		dbPool := db.BuildDatabaseConnection(cfg.GetDatabaseParams())
+		defer func() { _ = dbPool.Close() }()
+
 		cataloger := catalog.NewCataloger(dbPool, catalog.WithParams(conf.GetCatalogerCatalogParams()))
+		defer func() { _ = cataloger.Close() }()
+
 		u := uri.Must(uri.Parse(args[0]))
 		blockStore, err := factory.BuildBlockAdapter(cfg)
 		if err != nil {
@@ -109,14 +116,26 @@ var importCmd = &cobra.Command{
 			fmt.Println(text.FgYellow.Sprint("Previous import date:"), stats.PreviousImportDate)
 			fmt.Println()
 		}
-		if !dryRun {
-			fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
-			fmt.Println()
-			fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
-			fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
-			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
-		} else {
+		if dryRun {
 			fmt.Println("Dry run successful. No changes were made.")
+			return
+
+		}
+		fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
+		fmt.Println()
+		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
+		fmt.Printf("To list imported objects, run:\n\t$ lakectl fs ls lakefs://%s@%s/\n", repoName, stats.CommitRef)
+		if withMerge {
+			fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
+			msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
+			commitLog, err := cataloger.Merge(ctx, repoName, onboard.DefaultBranchName, repo.DefaultBranch, catalog.CatalogerCommitter, msg, nil)
+			if err != nil {
+				fmt.Printf("Merge failed: %s\n", err)
+				os.Exit(1)
+			}
+			fmt.Println("Merge ref:", commitLog.Reference)
+		} else {
+			fmt.Printf("To merge the changes to your main branch, run:\n\t$ lakectl merge lakefs://%s@%s lakefs://%s@%s\n", repoName, onboard.DefaultBranchName, repoName, repo.DefaultBranch)
 		}
 	},
 }
@@ -145,4 +164,5 @@ func init() {
 	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory and print stats, without making any changes")
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
+	importCmd.Flags().Bool(WithMergeFlagName, false, "With merge after import completes")
 }
