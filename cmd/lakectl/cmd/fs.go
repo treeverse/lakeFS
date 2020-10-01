@@ -49,7 +49,7 @@ var fsListCmd = &cobra.Command{
 		cobra.ExactArgs(1),
 		cmdutils.Or(
 			cmdutils.FuncValidator(0, uri.ValidatePathURI),
-			cmdutils.FuncValidator(1, uri.ValidateRefURI),
+			cmdutils.FuncValidator(0, uri.ValidateRefURI),
 		),
 	),
 	Run: func(cmd *cobra.Command, args []string) {

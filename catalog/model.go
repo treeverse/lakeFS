@@ -87,3 +87,11 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	return json.Unmarshal(data, j)
 }
+
+type DBReaderEntry struct {
+	BranchID  int64    `db:"branch_id"`
+	Path      string   `db:"path"`
+	MinCommit CommitID `db:"min_commit"`
+	MaxCommit CommitID `db:"max_commit"`
+	RowCtid   string   `db:"ctid"`
+}
