@@ -1,0 +1,215 @@
+$(function () {
+
+  // Let's further improve the Pokédex while diving deeper into AJAX with jQuery.
+  var pokeapi = "https://pokeapi.co/api/v2/generation/1";
+  var pokemonByName = "https://pokeapi.co/api/v2/pokemon/";
+
+  $.getJSON(pokeapi).done(function(data) {
+    console.log(data);  // Explore available data in the Developer Tools Console
+    $.each(data.pokemon_species, function(index, pokemon) {
+      var name = capitalize(pokemon.name);
+
+      // Add an additional link to show image of the Pokémon.
+      var boldName = $("<strong>").text(name);
+      var link = $("<a>")
+          .attr("id", pokemon.name)
+          .attr("href", "#")
+          .append(boldName);
+
+      var paragraph = $("<p>")
+          .html("Pokémon species no. " + (index+1) + " is ")
+          .append(link);
+      paragraph.appendTo("#pokedex");
+
+      // Add handler to the link to fetch and display image.
+      // The helper function showPokemon is defined below.
+      link.click(function() {
+        showPokemon(pokemon.name);  // API needs the non-capitalized name
+      });
+    });
+  }).fail(function() {
+    // Handle error case
+    console.log("Call to PokéAPI failed.");
+  }).always(function() {
+    // Will always be executed (in either case).
+    console.log("Pokémon is awesome.")
+  });
+
+  // Only select this element once and store in variable.
+  var detailsDiv = $("#pokemon-details");
+
+  function showPokemon(name) {
+    $.getJSON(pokemonByName + name).done(function(details) {
+      console.log(details);  // To explore data in browser
+
+      // Show selected Pokémon in the details div.
+      var image = $("<img>").attr("src", details.sprites.front_default);
+      detailsDiv.empty()
+          .append("<h2>" + capitalize(name) + "</h2>")
+          .append(image);
+
+    }).fail(function(error) {
+      console.log("Could not retrieve details for " + name);
+    });
+  }
+
+});
+
+// Capitalizes a given string.
+function capitalize(str) {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
+
+
+.lightbox {
+  position: absolute;
+  top: 0;
+  left: 0;
+  display: none;
+  width: 30%;
+  height: 60%;
+  padding: 15% 35% 25% 35%;
+  color: #000000;
+  background-color: rgba(200, 100, 0, 0.9);
+  text-align: center;
+  text-shadow: #333 0 1px 0; }
+
+.red-box {
+  float: left;
+  width: 80px;
+  height: 80px;
+  margin: 10px 10px 10px 0;
+  padding: 10px;
+  color: #ffffff;
+  background-color: #880000; }
+
+.green-box {
+  float: left;
+  width: 80px;
+  height: 80px;
+  margin: 10px 10px 10px 0;
+  padding: 10px;
+  color: #ffffff;
+  background-color: #008800; }
+
+.blue-box {
+  float: left;
+  width: 80px;
+  height: 80px;
+  margin: 10px 10px 10px 0;
+  padding: 10px;
+  color: #ffffff;
+  background-color: #000088; }
+
+.large {
+  font-size: 125%;
+}
+
+.emphasize {
+  color: #666;  
+  font-style: italic;
+}
+
+.gallery {
+  height: 400px;
+  width: 600px;
+  position: relative;
+  overflow: hidden;
+}
+
+.gallery img {
+  position: absolute;
+  height: 400px;
+  width: 600px;
+  left: 600px;
+}
+
+.gallery img:nth-child(1) {
+  left: 0;
+}
+
+fieldset {
+  border-radius: 4px;
+  -moz-border-radius: 4px;
+  -webkit-border-radius: 4px; }
+
+label {
+  display: inline-block;
+  min-width: 100px; }
+
+input[type="text"], input[type="email"], input[type="password"], input[type="tel"] {
+  margin: 8px;
+  padding: 6px 12px;
+  outline: none;
+  border: 1px solid #666;
+  border-radius: 4px;
+  box-shadow: inset 0 0 3px 3px #fafafa; }
+
+input[type="submit"] {
+  font-family: "Trebuchet MS", Verdana, Arial, sans-serif;
+  font-size: 16px;
+  padding: 4px 8px;
+  background-color: #fcfcfc;
+  box-shadow: 0 0 1px 0 #aaa;
+  -webkit-border-radius: 4px;
+  -moz-border-radius: 4px;
+  border-radius: 4px; }
+  input[type="submit"]:hover {
+    background-color: #f4f4f4;
+    box-shadow: 0 0 1px 0 #ccc; }
+
+html {
+  min-height: 100%;
+  background-color: #0769ad;
+  box-shadow: 0 0 8px 4px #06599d inset; }
+
+body {
+  font-size: 16px;
+  font-family: "Trebuchet MS", Verdana, Arial, sans-serif; }
+
+.clear {
+  clear: both; }
+
+#content {
+  overflow: auto;
+  width: 80%;
+  background-color: #fff;
+  margin: 30px auto 0 auto;
+  padding: 20px 30px;
+  border-radius: 8px;
+  -moz-border-radius: 8px;
+  -webkit-border-radius: 8px; }
+
+h1 {
+  color: #000; }
+
+h2 {
+  border-bottom: 1px solid #aaa; }
+
+#dashboard {
+  position: absolute;
+  width: 120px;
+  height: 60%;
+  left: -140px;
+  top: 100px;
+  padding: 20px;
+  border-radius: 0 6px 6px 0;
+  box-shadow: 0 0 3px 3px #f0f0f0;
+  background-color: #999; }
+
+.fancy-link {
+  display: inline-block;
+  text-decoration: none;
+  color: #111199; }
+
+.fancy-link:after {
+  display: block;
+  content: '';
+  border-bottom: solid 1px #22a;
+  transform: scaleX(0.0001);
+  transition: transform 250ms ease-in-out; }
+
+.fancy-link:hover:after {
+  transform: scaleX(1); }
+
+/*# sourceMappingURL=style.css.map */
