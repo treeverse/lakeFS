@@ -125,6 +125,7 @@ var importCmd = &cobra.Command{
 		fmt.Print(text.FgYellow.Sprint("Commit ref:"), stats.CommitRef)
 		fmt.Println()
 		fmt.Printf("Import to branch %s finished successfully.\n", onboard.DefaultBranchName)
+		fmt.Println()
 		if withMerge {
 			fmt.Printf("Merging import changes into lakefs://%s@%s/\n", repoName, repo.DefaultBranch)
 			msg := fmt.Sprintf(onboard.CommitMsgTemplate, stats.CommitRef)
@@ -166,5 +167,5 @@ func init() {
 	importCmd.Flags().Bool(DryRunFlagName, false, "Only read inventory and print stats, without making any changes")
 	importCmd.Flags().StringP(ManifestURLFlagName, "m", "", fmt.Sprintf("S3 uri to the manifest.json to use for the import. Format: %s", ManifestURLFormat))
 	_ = importCmd.MarkFlagRequired(ManifestURLFlagName)
-	importCmd.Flags().Bool(WithMergeFlagName, false, "With merge after import completes")
+	importCmd.Flags().Bool(WithMergeFlagName, false, "Merge imported data to the repository's main branch")
 }
