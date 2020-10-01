@@ -156,8 +156,8 @@ var TaskDataColumnNames = []string{
 var tasksTable = pgx.Identifier{"tasks"}
 
 // InsertTasks adds multiple tasks efficiently.
-func InsertTasks(ctx context.Context, pgConn *pgx.Conn, source pgx.CopyFromSource) error {
-	_, err := pgConn.CopyFrom(ctx, tasksTable, TaskDataColumnNames, source)
+func InsertTasks(ctx context.Context, conn *pgx.Conn, source pgx.CopyFromSource) error {
+	_, err := conn.CopyFrom(ctx, tasksTable, TaskDataColumnNames, source)
 	return err
 }
 
