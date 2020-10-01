@@ -24,7 +24,7 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
 
-## Capabilities
+## Capabilities 💪
 
 **Development Environment for Data**
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
