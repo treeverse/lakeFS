@@ -83,7 +83,7 @@ For more detailed information on how to set up lakeFS, please visit [the documen
 
 ## Community
 
-Keep up to date and get lakeFS support via:
+Stay up to date and get lakeFS support via:
 
 - [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) (to get help from our team and other users).
 - [Twitter](https://twitter.com/lakeFS) (follow for updates and news)
