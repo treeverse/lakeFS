@@ -4,12 +4,12 @@
 
 #### If you don't have git on your machine, [install it](https://help.github.com/articles/set-up-git/).
 
-## Fork this repository
+## Fork this repository.
 
 Fork this repository by clicking on the fork button on the top of this page.
 This will create a copy of this repository in your account.
 
-## Clone the repository
+## Clone the repository.
 
 <img align="right" width="300" src="/Images/clone.jpg" alt="clone this repository" />
 
