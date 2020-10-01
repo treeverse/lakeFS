@@ -27,7 +27,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 ## Capabilities
 
 **Development Environment for Data**
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
+* **Experimentation** - try tools, upgrade versions, and evaluate code changes in isolation. 
 * **Reproducibility** - go back to any point of time to a consistent version of your data lake.
 
 **Continuous Data Integration**
@@ -35,7 +35,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 * **Metadata validation** - prevent breaking changes from entering the production data environment.
 
 **Continuous Data Deployment**
-* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
+* **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent, and correct snapshot of your data lake.
 * **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action.
 * **Prevent data quality issues by enabling**
   - Testing of production data before exposing it to users / consumers.
