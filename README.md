@@ -27,7 +27,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 ## Capabilities
 
 **Development Environment for Data**
-* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
+* **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation.
 * **Reproducibility** - go back to any point of time to a consistent version of your data lake.
 
 **Continuous Data Integration**
@@ -100,3 +100,4 @@ Stay up to date and get lakeFS support via:
 
 lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
+ 
