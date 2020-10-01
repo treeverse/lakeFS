@@ -22,3 +22,4 @@ services:
     environment:
       POSTGRES_USER: lakefs
       POSTGRES_PASSWORD: lakefs
+Note: this file containing sensitive data which is user and password 
