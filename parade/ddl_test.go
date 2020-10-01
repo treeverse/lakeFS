@@ -18,14 +18,10 @@ import (
 	"github.com/jackc/pgx/v4"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/treeverse/lakefs/parade"
+	"github.com/treeverse/lakefs/parade/testutil"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/ory/dockertest/v3"
-)
-
-const (
-	dbContainerTimeoutSeconds = 10 * 60 // 10 min
-	dbName                    = "parade_db"
 )
 
 var (
@@ -40,69 +36,6 @@ var (
 	numShards   = flag.Int("num-shards", 400, "Number of intermediate fan-in shards")
 )
 
-// taskIdSlice attaches the methods of sort.Interface to []TaskId.
-type taskIdSlice []parade.TaskID
-
-func (p taskIdSlice) Len() int           { return len(p) }
-func (p taskIdSlice) Less(i, j int) bool { return p[i] < p[j] }
-func (p taskIdSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
-
-// runDBInstance starts a test Postgres server inside container pool, and returns a connection
-// URI and a closer function.
-func runDBInstance(pool *dockertest.Pool) (string, func()) {
-	if *postgresUrl != "" {
-		return *postgresUrl, nil
-	}
-
-	resource, err := pool.Run("postgres", "11", []string{
-		"POSTGRES_USER=parade",
-		"POSTGRES_PASSWORD=parade",
-		"POSTGRES_DB=parade_db",
-	})
-	if err != nil {
-		log.Fatalf("could not start postgresql: %s", err)
-	}
-
-	// set cleanup
-	closer := func() {
-		err := pool.Purge(resource)
-		if err != nil {
-			log.Fatalf("could not kill postgres container")
-		}
-	}
-
-	// expire, just to make sure
-	err = resource.Expire(dbContainerTimeoutSeconds)
-	if err != nil {
-		log.Fatalf("could not expire postgres container")
-	}
-
-	// create connection
-	var conn *sqlx.DB
-	uri := fmt.Sprintf("postgres://parade:parade@localhost:%s/"+dbName+"?sslmode=disable", resource.GetPort("5432/tcp"))
-	err = pool.Retry(func() error {
-		var err error
-		conn, err = sqlx.Connect("pgx", uri)
-		if err != nil {
-			return err
-		}
-		return conn.Ping()
-	})
-	if err != nil {
-		log.Fatalf("could not connect to postgres: %s", err)
-	}
-
-	// Run the DDL
-	if _, err = sqlx.LoadFile(conn, "./ddl.sql"); err != nil {
-		log.Fatalf("exec command file ./ddl.sql: %s", err)
-	}
-
-	_ = conn.Close()
-
-	// return DB URI
-	return uri, closer
-}
-
 func TestMain(m *testing.M) {
 	var err error
 	flag.Parse()
@@ -111,7 +44,7 @@ func TestMain(m *testing.M) {
 		log.Fatalf("could not connect to Docker: %s", err)
 	}
 	var dbCleanup func()
-	databaseURI, dbCleanup = runDBInstance(pool)
+	databaseURI, dbCleanup = testutil.RunDBInstance(pool, *postgresUrl)
 	defer dbCleanup() // In case we don't reach the cleanup action.
 	db = sqlx.MustConnect("pgx", databaseURI)
 	defer db.Close()
@@ -122,8 +55,8 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// wrapper derives a prefix from t.Name and uses it to provide namespaced access to  DB db as
-// well as a simple error-reporting inserter.
+// wrapper derives a prefix from t.Name and uses it to provide namespaced access to parade on DB
+// db as well as a simple error-reporting inserter.
 type wrapper struct {
 	t  testing.TB
 	db *sqlx.DB
@@ -360,7 +293,7 @@ func TestOwn(t *testing.T) {
 	for _, got := range gotTasks {
 		gotIds = append(gotIds, got.ID)
 	}
-	sort.Sort(taskIdSlice(gotIds))
+	sort.Sort(testutil.TaskIdSlice(gotIds))
 	if diffs := deep.Equal([]parade.TaskID{"111", "123", "222"}, gotIds); diffs != nil {
 		t.Errorf("expected other task IDs: %s", diffs)
 	}
@@ -645,7 +578,7 @@ func TestDeleteTasks(t *testing.T) {
 				}
 				gotRemaining = append(gotRemaining, id)
 			}
-			sort.Sort(taskIdSlice(gotRemaining))
+			sort.Sort(testutil.TaskIdSlice(gotRemaining))
 			expectedRemaining := c.expectedRemaining
 			if expectedRemaining == nil {
 				expectedRemaining = []parade.TaskID{}
@@ -653,7 +586,7 @@ func TestDeleteTasks(t *testing.T) {
 			for i, e := range expectedRemaining {
 				expectedRemaining[i] = w.prefixTask(e)
 			}
-			sort.Sort(taskIdSlice(expectedRemaining))
+			sort.Sort(testutil.TaskIdSlice(expectedRemaining))
 			if diffs := deep.Equal(expectedRemaining, gotRemaining); diffs != nil {
 				t.Errorf("left with other IDs than expected: %s", diffs)
 			}
