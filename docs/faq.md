@@ -13,7 +13,7 @@ lakeFS is completely free and open source and licensed under the [Apache 2.0](ht
 ### 2. The project is backed by a commercial company. What is your commitment to open source?
 Since it is important to us to align expectations, we have gathered our thoughts on the subject [here](https://lakefs.io/blog){: target="_blank" }.
 
-### 3. How do I contribute to lakeFS?**
+### 3. How do I contribute to lakeFS?
 Thank you for your interest in contributing to our project. We are excited to build a community of users and contributors around lakeFS. We trust the common wisdom of the community to evolve lakeFS to the best platform it might be. Don't hesitate to get started. Check out our [contribution guide](contributing.md)
 
 ### 4. How do I get support for my lakeFS installation?
