@@ -16,7 +16,7 @@ has_children: false
   
   1. Download the CLI binary:
   
-     [Download lakectl](../downloads.md){: .btn .btn-green target="_blank"}
+     [Download lakectl](../downloads.md)
   
   
   1. It's recommended that you place it somewhere in your PATH (this is OS dependant but for *NIX systems , `/usr/local/bin` is usually a safe bet).
