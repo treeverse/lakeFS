@@ -85,7 +85,7 @@ For more detailed information on how to set up lakeFS, please visit [the documen
 
 Stay up to date and get lakeFS support via:
 
-- [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) (to get help from our team and other users).
+- [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) (to get help from our team and other users)
 - [Twitter](https://twitter.com/lakeFS) (follow for updates and news)
 - [YouTube](https://www.youtube.com/channel/UCZiDUd28ex47BTLuehb1qSA) (learn from video tutorials)
 - [Contact us](https://lakefs.io/contact-us/) (for anything)
@@ -94,9 +94,9 @@ Stay up to date and get lakeFS support via:
 ## More information
 
 - [lakeFS documentation](https://docs.lakefs.io)
-- If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing).
+- If you would like to contribute, check out our [contributing guide](https://docs.lakefs.io/contributing)
 
 ## Licensing
 
-lakeFS is completely free and open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
+lakeFS is completely free, open source and licensed under the [Apache 2.0 License](https://www.apache.org/licenses/LICENSE-2.0).
 
