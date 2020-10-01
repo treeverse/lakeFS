@@ -32,7 +32,7 @@ The data we gather is limited to the following:
 1. the lakeFS version currently running
 1. the OS and architecture lakeFS is running on
 1. metadata regarding the database used (version, installed extensions and parameters such as DB Timezone and work memory)
-1. periodic aggregated action counters (e.g. how many "get_object" operations occurred).
+1. periodic aggregated action counters (i.e. how many "get_object" operations occurred).
 
 ### 7. What is the difference between lakeFS / Delta Lake /  Hudi / Iceberg?
 We support different use-cases. Delta Lake, Hudi and Iceberg all define dedicated, structured data formats that allow deletes and upserts. lakeFS is format-agnostic and enables consistent cross-collection versioning of your data using git-like operations.  Read our [blog](https://lakefs.io/2020/08/10/data-versioning/) for a more detailed comparison. 
