@@ -23,7 +23,8 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
-<aside>
+<div style="background: #ffdddd border: 3px solid #dd4444; margine: 15px;">
+
 # A Hacktoberfest update
 
 Welcome Hacktoberfest participants!  We commit to actively seek, help, and merge your
@@ -53,7 +54,7 @@ faster" or "Add update regarding Hacktoberfest".  Communication is key: If you a
 please open a discussion: ask us on the PR or on the issue.
 
 Thanks!
-</aside>
+</div>
 
 ## Capabilities
 
