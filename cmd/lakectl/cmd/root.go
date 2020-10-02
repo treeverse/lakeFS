@@ -15,9 +15,10 @@ import (
 )
 
 const (
-	ConfigAccessKeyID       = "credentials.access_key_id"
-	ConfigSecretAccessKey   = "credentials.secret_access_key"
-	ConfigServerEndpointURL = "server.endpoint_url"
+	ConfigAccessKeyID        = "credentials.access_key_id"
+	ConfigSecretAccessKey    = "credentials.secret_access_key"
+	ConfigServerEndpointURL  = "server.endpoint_url"
+	DefaultServerEndpointURL = "http://127.0.0.1:8000"
 )
 
 var (
@@ -130,6 +131,9 @@ func initConfig() {
 	viper.SetEnvPrefix("LAKECTL")
 	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_")) // support nested config
 	viper.AutomaticEnv()                                   // read in environment variables that match
+
+	// Configuration defaults
+	viper.SetDefault(ConfigServerEndpointURL, DefaultServerEndpointURL)
 
 	cfgFileErr = viper.ReadInConfig()
 }
