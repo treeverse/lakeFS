@@ -2027,3 +2027,16 @@ paths:
       responses:
         204:
           description: NoContent
+          
+  /config:
+    get:
+      tags:
+        - config
+      operationId: getConfig
+      description: retrieve the lakefs config
+      responses:
+        200:
+          description: the lakefs config
+          schema:
+            $ref: "#/definitions/config"
+
