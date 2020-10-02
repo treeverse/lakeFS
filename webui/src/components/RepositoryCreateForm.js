@@ -7,12 +7,14 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {connect} from "react-redux";
 
-
-export const RepositoryCreateForm = connect(({ repositories }) => {
+export const RepositoryCreateForm = connect(
+  ({ repositories, config }) => {
     const {create} = repositories;
-    return {create};
-})(({ error, onSubmit, onCancel, create, sm = 6 }) => {
-
+    return {
+      create,
+      config: config.config,
+    };
+  })(({ error, onSubmit, onCancel, create, sm = 6, config }) => {
     const fieldNameOffset = 3;
 
     const [formValid, setFormValid] = useState(false);
