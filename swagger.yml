@@ -370,6 +370,12 @@ definitions:
         format: int32
     minProperties: 1
 
+  config:
+      type: object
+      properties:
+        blockstore.type:
+          type: string
+
 paths:
 
   /setup_lakefs:
