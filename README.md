@@ -8,7 +8,7 @@
 [![Node](https://github.com/treeverse/lakeFS/workflows/Node/badge.svg?branch=master)](https://github.com/treeverse/lakeFS/actions?query=workflow%3ANode+branch%3Amaster++)
 
 
-## What is lakeFS
+## What is lakeFS:
 
 lakeFS is an open source layer that delivers resilience and manageability to object-storage based data lakes.
 
@@ -24,7 +24,7 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
 
-## Capabilities
+## Capabilities:
 
 **Development Environment for Data**
 * **Experimentation** - try tools, upgrade versions and evaluate code changes in isolation. 
