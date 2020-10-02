@@ -15,7 +15,7 @@ const (
 	CommittedID       CommitID = -1
 	UncommittedID     CommitID = 0
 	MaxCommitID       CommitID = 1_000_000_000_000_000_000
-	TombstoneCommitID          = 0
+	TombstoneCommitID CommitID = 0
 
 	CommittedSuffix = ":HEAD"
 	CommitPrefix    = "~"

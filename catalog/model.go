@@ -104,8 +104,8 @@ func (m MinMaxCommit) IsCommitted() bool {
 	return m.MinCommit != MaxCommitID
 }
 
-// needed for diff, to check if an entry changed after the lineage commit id
-func (m MinMaxCommit) changedAfterCommit(commitID CommitID) bool {
+func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
+	// needed for diff, to check if an entry changed after the lineage commit id
 	return m.MinCommit > commitID || (m.MaxCommit != MaxCommitID && m.MaxCommit > commitID)
 }
 

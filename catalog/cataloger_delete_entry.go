@@ -53,7 +53,6 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 		var isCommitted bool
 		err = tx.Get(&isCommitted, sql, args...)
 		committedNotFound := errors.Is(err, db.ErrNotFound)
-		// err is real, and not just a "Not found"
 		if err != nil && !committedNotFound {
 			return nil, err
 		}

@@ -112,11 +112,7 @@ type readPramsType struct {
 }
 
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
-	// translate logical (uncommitted and committed) commit id to actual minCommit,maxCommit numbers in Rows
-	//lowestCommitID := CommitID(1)
-	//if requestedCommit == UncommittedID {
-	//	lowestCommitID = UncommittedID
-	//}
+	// jump from prefix to prefix
 	topCommitID := requestedCommit
 	if requestedCommit == UncommittedID {
 		topCommitID = MaxCommitID
@@ -197,6 +193,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 }
 
 func processSinglePrefix(response []entryPKeyRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
+	// gets results of union-reading, search for a prefix, or list of objects if those are leaves
 	// split results by branch
 	branchRanges := make(map[int64][]entryPKeyRow, len(branchPriorityMap))
 	for _, result := range response {
@@ -247,7 +244,7 @@ func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPKeyRo
 	readBuf := make([]entryPKeyRow, 0, readParams.branchBatchSize)
 	singleSelect := readParams.branchQueryMap[branch]
 	requestedPath := readParams.prefix + path
-	singleSelect = singleSelect.Where("path > ? ", requestedPath)
+	singleSelect = singleSelect.Where("path > ?", requestedPath)
 	s, args, err := singleSelect.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return err
@@ -302,7 +299,7 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 		Column("substr(path,?) as path_postfix", prefixLen+1).
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
-		Where("min_commit <=  ? ", topCommitID).
+		Where("min_commit <=  ?", topCommitID).
 		Where("path < ?", endOfPrefixRange).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(branchBatchSize))
