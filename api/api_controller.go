@@ -19,6 +19,7 @@ import (
 	authop "github.com/treeverse/lakefs/api/gen/restapi/operations/auth"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/branches"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/commits"
+	configop "github.com/treeverse/lakefs/api/gen/restapi/operations/config"
 	hcop "github.com/treeverse/lakefs/api/gen/restapi/operations/health_check"
 	metadataop "github.com/treeverse/lakefs/api/gen/restapi/operations/metadata"
 	"github.com/treeverse/lakefs/api/gen/restapi/operations/objects"
@@ -189,6 +190,8 @@ func (c *Controller) Configure(api *operations.LakefsAPI) {
 	api.RetentionGetRetentionPolicyHandler = c.RetentionGetRetentionPolicyHandler()
 	api.RetentionUpdateRetentionPolicyHandler = c.RetentionUpdateRetentionPolicyHandler()
 	api.MetadataCreateSymlinkHandler = c.MetadataCreateSymlinkHandler()
+
+	api.ConfigGetConfigHandler = c.ConfigGetConfigHandler()
 }
 
 func (c *Controller) setupRequest(user *models.User, r *http.Request, permissions []permissions.Permission) (*Dependencies, error) {
@@ -2297,6 +2300,14 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 			PreviousManifest:   importStats.PreviousInventoryURL,
 			AddedOrChanged:     int64(importStats.AddedOrChanged),
 			Deleted:            int64(importStats.Deleted),
+		})
+	})
+}
+
+func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
+	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
+		return configop.NewGetConfigOK().WithPayload(&models.Config{
+			BlockstoreType: cfg.GetBlockstoreType(),
 		})
 	})
 }
