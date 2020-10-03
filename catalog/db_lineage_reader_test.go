@@ -11,7 +11,7 @@ import (
 )
 
 func TestCataloger_DBLineageReader(t *testing.T) {
-	const numberOfObjects = 100
+	const numberOfObjects = 10
 
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)
