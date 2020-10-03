@@ -103,12 +103,12 @@ func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, r
 // reading is mainly done in loopByLevel. It may happen (hopefully rarely) in getMoreRows.
 // variables needed for accessing the BD are packed and passed down to getMoreRows
 type readPramsType struct {
-	tx                          db.Tx
-	prefix                      string
-	branchBatchSize             int
-	lowestCommitID, topCommitID CommitID
-	branchID                    int64
-	branchQueryMap              map[int64]sq.SelectBuilder
+	tx              db.Tx
+	prefix          string
+	branchBatchSize int
+	topCommitID     CommitID
+	branchID        int64
+	branchQueryMap  map[int64]sq.SelectBuilder
 }
 
 func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSize int, branchID int64, requestedCommit CommitID, lineage []lineageCommit) ([]string, error) {
