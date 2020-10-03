@@ -55,9 +55,9 @@ func insertEntry(tx db.Tx, branchID int64, entry *Entry) (string, error) {
 	err := tx.Get(&ctid, `INSERT INTO catalog_entries (branch_id,path,physical_address,checksum,size,metadata,creation_date,is_expired)
                         VALUES ($1,$2,$3,$4,$5,$6, COALESCE($7, NOW()), $8)
 			ON CONFLICT (branch_id,path,min_commit)
-			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=catalog_max_commit_id()
+			DO UPDATE SET physical_address=$3, checksum=$4, size=$5, metadata=$6, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=$9
 			RETURNING ctid`,
-		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, dbTime, entry.Expired)
+		branchID, entry.Path, entry.PhysicalAddress, entry.Checksum, entry.Size, entry.Metadata, dbTime, entry.Expired, MaxCommitID)
 	if err != nil {
 		return "", fmt.Errorf("insert entry: %w", err)
 	}

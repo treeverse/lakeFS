@@ -68,7 +68,7 @@ func (c *cataloger) CreateEntries(ctx context.Context, repository, branch string
 					sq.Expr("COALESCE(?,NOW())", dbTime), entry.Expired)
 			}
 			query, args, err := sqInsert.Suffix(`ON CONFLICT (branch_id,path,min_commit)
-DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=catalog_max_commit_id()`).
+DO UPDATE SET physical_address=EXCLUDED.physical_address, checksum=EXCLUDED.checksum, size=EXCLUDED.size, metadata=EXCLUDED.metadata, creation_date=EXCLUDED.creation_date, is_expired=EXCLUDED.is_expired, max_commit=?`, MaxCommitID).
 				ToSql()
 			if err != nil {
 				return nil, fmt.Errorf("build query: %w", err)

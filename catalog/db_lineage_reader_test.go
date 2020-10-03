@@ -72,7 +72,7 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
 			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, 0, MaxCommitID)
+			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, MinCommitUncommitedIndicator, MaxCommitID)
 			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 4, MaxCommitID)
 			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 2, 4, MaxCommitID)
 			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 4, MaxCommitID)
@@ -125,7 +125,7 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
 			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, 0, 0)
+			testDBReaderNext(t, lineageReaderB1U, "read 0004 lineage b1 U ", 2, MinCommitUncommitedIndicator, 0)
 			testDBReaderNext(t, lineageReaderB1C, "read 0004 lineage b1 C ", 2, 13, MaxCommitID)
 			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 2, 13, MaxCommitID)
 			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 13, MaxCommitID)
@@ -180,7 +180,7 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
 			lineageReaderB2C, err := NewDBLineageReader(tx, 3, CommittedID, bufSize, -1, "Obj-0003")
 			testutil.MustDo(t, "new lineage reader branchID="+strconv.Itoa(3), err)
-			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, 0, 0)
+			testDBReaderNext(t, lineageReaderB2U, "read 0004 lineage b2 U ", 3, MinCommitUncommitedIndicator, 0)
 			testDBReaderNext(t, lineageReaderB2C, "read 0004 lineage b2 C ", 2, 17, MaxCommitID)
 			return nil, nil
 		})
@@ -240,7 +240,7 @@ func testSetupDBReaderData(t *testing.T, ctx context.Context, c TestCataloger, r
 	}
 }
 
-func testDBReaderNext(t *testing.T, lReader *DBLineageReader, msg string, expBranch, expMinCommit int, expMaxCommit CommitID) {
+func testDBReaderNext(t *testing.T, lReader *DBLineageReader, msg string, expBranch, expMinCommit CommitID, expMaxCommit CommitID) {
 	o, err := lReader.Next()
 	testutil.MustDo(t, msg, err)
 	if o.BranchID != int64(expBranch) || o.MinCommit != CommitID(expMinCommit) || o.MaxCommit != expMaxCommit {

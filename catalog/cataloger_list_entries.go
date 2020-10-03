@@ -295,7 +295,7 @@ func buildBaseLevelQuery(baseBranchID int64, lineage []lineageCommit, branchEntr
 
 func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, topCommitID CommitID, prefixLen int, endOfPrefixRange string) sq.SelectBuilder {
 	rawSelect := sq.Select("branch_id", "min_commit").
-		Distinct().Options(" ON (branch_id,path) ").
+		Distinct().Options(" ON (branch_id,path)").
 		Column("substr(path,?) as path_postfix", prefixLen+1).
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
@@ -308,7 +308,7 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 		query = rawSelect.Column("max_commit")
 	} else {
 		query = rawSelect.
-			Column("CASE WHEN max_commit >= ? THEN catalog_max_commit_id() ELSE max_commit END AS max_commit", topCommitID)
+			Column("CASE WHEN max_commit >= ? THEN ? ELSE max_commit END AS max_commit", topCommitID, MaxCommitID)
 	}
 	return query
 }

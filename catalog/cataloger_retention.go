@@ -95,8 +95,8 @@ type retentionQueryRecord struct {
 
 func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowScanner, limit *uint64) (sq.SelectBuilder, error) {
 	var (
-		byNonCurrent  = sq.Expr("min_commit != catalog_max_commit_id() AND max_commit < catalog_max_commit_id()")
-		byUncommitted = sq.Expr("min_commit = catalog_max_commit_id()")
+		byNonCurrent  = sq.Expr(fmt.Sprintf("min_commit != %d AND max_commit < %d", MinCommitUncommitedIndicator, MaxCommitID))
+		byUncommitted = sq.Expr(fmt.Sprintf("min_commit = %d", MinCommitUncommitedIndicator))
 	)
 
 	repositorySelector := byRepository(repositoryName)
