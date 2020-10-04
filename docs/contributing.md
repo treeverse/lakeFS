@@ -70,7 +70,7 @@ Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.githu
 ## Before creating a pull request
 
 1. Review this document in full
-1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `WON'T-FIX`
+1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `x/wontfix`
 1. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS)
 1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`
 1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`
@@ -83,7 +83,7 @@ Once you've made the necessary changes to the code, make sure tests pass:
    make test 
    ```
 
-Check listing rules are passing:
+Check linting rules are passing:
 
    ```shell
    make checks-validator
