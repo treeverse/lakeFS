@@ -8,14 +8,14 @@ import (
 )
 
 type DBBranchReader struct {
-	tx                 db.Tx
-	branchID           int64
-	initialBuf         []*DBReaderEntry
-	buf                []*DBReaderEntry
-	bufSize            int
-	EOF                bool
-	after              string
-	commitID           CommitID
+	tx         db.Tx
+	branchID   int64
+	initialBuf []*DBReaderEntry
+	buf        []*DBReaderEntry
+	bufSize    int
+	EOF        bool
+	after      string
+	commitID   CommitID
 }
 
 func NewDBBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) *DBBranchReader {
