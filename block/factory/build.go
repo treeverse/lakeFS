@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/aws/aws-sdk-go/service/sts"
+
 	"cloud.google.com/go/storage"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/s3"
@@ -79,11 +81,19 @@ func buildS3Adapter(params params.S3) (*s3a.Adapter, error) {
 		return nil, err
 	}
 	sess.ClientConfig(s3.ServiceName)
-	svc := s3.New(sess)
-	adapter := s3a.NewAdapter(svc,
+	stsClient := sts.New(sess)
+	identity, err := stsClient.GetCallerIdentity(&sts.GetCallerIdentityInput{})
+	opts := []func(adapter *s3a.Adapter){
 		s3a.WithStreamingChunkSize(params.StreamingChunkSize),
 		s3a.WithStreamingChunkTimeout(params.StreamingChunkTimeout),
-	)
+	}
+	if err != nil {
+		logging.Default().WithField("type", "s3").Error("failed to get aws account id")
+	} else {
+		opts = append(opts, s3a.WithAWSAccountID(*identity.Account))
+	}
+	svc := s3.New(sess)
+	adapter := s3a.NewAdapter(svc, opts...)
 	logging.Default().WithField("type", "s3").Info("initialized blockstore adapter")
 	return adapter, nil
 }

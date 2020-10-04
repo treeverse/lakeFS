@@ -26,10 +26,11 @@ type Metric struct {
 }
 
 type InputEvent struct {
-	InstallationID string   `json:"installation_id"`
-	ProcessID      string   `json:"process_id"`
-	Time           string   `json:"time"`
-	Metrics        []Metric `json:"metrics"`
+	InstallationID         string   `json:"installation_id"`
+	CloudProviderAccountID string   `json:"cloud_provider_account_id"`
+	ProcessID              string   `json:"process_id"`
+	Time                   string   `json:"time"`
+	Metrics                []Metric `json:"metrics"`
 }
 
 type MetadataEntry struct {
@@ -38,8 +39,9 @@ type MetadataEntry struct {
 }
 
 type Metadata struct {
-	InstallationID string          `json:"installation_id"`
-	Entries        []MetadataEntry `json:"entries"`
+	InstallationID         string          `json:"installation_id"`
+	CloudProviderAccountID string          `json:"cloud_provider_account_id"`
+	Entries                []MetadataEntry `json:"entries"`
 }
 
 type primaryKey struct {
@@ -71,14 +73,15 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 }
 
 type BufferedCollector struct {
-	cache          keyIndex
-	writes         chan primaryKey
-	sender         Sender
-	sendTimeout    time.Duration
-	flushTicker    FlushTicker
-	done           chan bool
-	installationID string
-	processID      string
+	cache                  keyIndex
+	writes                 chan primaryKey
+	sender                 Sender
+	sendTimeout            time.Duration
+	flushTicker            FlushTicker
+	done                   chan bool
+	installationID         string
+	processID              string
+	cloudProviderAccountID string
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -113,6 +116,12 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
+func WithCloudProviderAccountID(cloudProviderAccountID string) BufferedCollectorOpts {
+	return func(s *BufferedCollector) {
+		s.cloudProviderAccountID = cloudProviderAccountID
+	}
+}
+
 func NewBufferedCollector(installationID, processID string, opts ...BufferedCollectorOpts) *BufferedCollector {
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
@@ -135,6 +144,10 @@ func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
 }
 
+func (s *BufferedCollector) getCloudProviderAccountID() string {
+	return s.cloudProviderAccountID
+}
+
 func (s *BufferedCollector) incr(k primaryKey) {
 	if current, exists := s.cache[k]; !exists {
 		s.cache[k] = 1
@@ -149,7 +162,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
+	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.getCloudProviderAccountID(), s.processID, metrics)
 	if err != nil {
 		logging.Default().
 			WithError(err).
@@ -211,8 +224,9 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
 	err := s.sender.UpdateMetadata(ctx, Metadata{
-		InstallationID: s.getInstallationID(),
-		Entries:        entries,
+		InstallationID:         s.getInstallationID(),
+		CloudProviderAccountID: s.getCloudProviderAccountID(),
+		Entries:                entries,
 	})
 	if err != nil {
 		logging.Default().

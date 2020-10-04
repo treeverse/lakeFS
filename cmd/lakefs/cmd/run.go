@@ -11,6 +11,8 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/treeverse/lakefs/block"
+
 	"github.com/dlmiddlecote/sqlstats"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/spf13/cobra"
@@ -85,7 +87,9 @@ var runCmd = &cobra.Command{
 		if err != nil {
 			logger.WithError(err).Debug("failed to collect account metadata")
 		}
-
+		if cloudProvider, ok := blockStore.(block.CloudProvider); ok {
+			bufferedCollectorArgs = append(bufferedCollectorArgs, stats.WithCloudProviderAccountID(cloudProvider.GetAccountID()))
+		}
 		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
 		// send metadata
 		stats.CollectMetadata(metadata)

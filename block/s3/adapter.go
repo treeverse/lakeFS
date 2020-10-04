@@ -51,6 +51,7 @@ type Adapter struct {
 	uploadIDTranslator    block.UploadIDTranslator
 	streamingChunkSize    int
 	streamingChunkTimeout time.Duration
+	awsAccountID          string
 }
 
 func WithHTTPClient(c *http.Client) func(a *Adapter) {
@@ -68,6 +69,12 @@ func WithStreamingChunkSize(sz int) func(a *Adapter) {
 func WithStreamingChunkTimeout(d time.Duration) func(a *Adapter) {
 	return func(a *Adapter) {
 		a.streamingChunkTimeout = d
+	}
+}
+
+func WithAWSAccountID(awsAccountID string) func(a *Adapter) {
+	return func(a *Adapter) {
+		a.awsAccountID = awsAccountID
 	}
 }
 
@@ -474,4 +481,8 @@ func (a *Adapter) ValidateConfiguration(storageNamespace string) error {
 
 func (a *Adapter) BlockstoreType() string {
 	return BlockstoreType
+}
+
+func (a *Adapter) GetAccountID() string {
+	return a.awsAccountID
 }

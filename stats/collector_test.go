@@ -12,7 +12,7 @@ type mockSender struct {
 	metrics chan []stats.Metric
 }
 
-func (s *mockSender) SendEvent(ctx context.Context, installationId, processId string, m []stats.Metric) error {
+func (s *mockSender) SendEvent(ctx context.Context, installationID, cloudProviderAccountID, processID string, m []stats.Metric) error {
 	s.metrics <- m
 	return nil
 }

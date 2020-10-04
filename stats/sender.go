@@ -19,7 +19,7 @@ var (
 )
 
 type Sender interface {
-	SendEvent(ctx context.Context, installationID, processID string, m []Metric) error
+	SendEvent(ctx context.Context, installationID, cloudProviderAccountID string, processID string, m []Metric) error
 	UpdateMetadata(ctx context.Context, m Metadata) error
 }
 
@@ -61,16 +61,17 @@ func (s *HTTPSender) UpdateMetadata(ctx context.Context, m Metadata) error {
 	return nil
 }
 
-func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID string, metrics []Metric) error {
+func (s *HTTPSender) SendEvent(ctx context.Context, installationID, cloudProviderAccountID, processID string, metrics []Metric) error {
 	if len(installationID) == 0 {
 		return ErrNoInstallationID
 	}
 
 	event := &InputEvent{
-		InstallationID: installationID,
-		ProcessID:      processID,
-		Time:           s.timeFunc().Format(time.RFC3339),
-		Metrics:        metrics,
+		InstallationID:         installationID,
+		CloudProviderAccountID: cloudProviderAccountID,
+		ProcessID:              processID,
+		Time:                   s.timeFunc().Format(time.RFC3339),
+		Metrics:                metrics,
 	}
 	serialized, err := json.MarshalIndent(event, "", "  ")
 	if err != nil {
@@ -97,11 +98,12 @@ func (s *HTTPSender) SendEvent(ctx context.Context, installationID, processID st
 
 type dummySender struct{}
 
-func (s *dummySender) SendEvent(_ context.Context, installationID, processID string, metrics []Metric) error {
+func (s *dummySender) SendEvent(_ context.Context, installationID, cloudProviderAccountID, processID string, metrics []Metric) error {
 	logging.Default().WithFields(logging.Fields{
-		"installation_id": installationID,
-		"process_id":      processID,
-		"metrics":         spew.Sdump(metrics),
+		"installation_id":           installationID,
+		"cloud_provider_account_id": cloudProviderAccountID,
+		"process_id":                processID,
+		"metrics":                   spew.Sdump(metrics),
 	}).Trace("dummy sender received metrics")
 	return nil
 }

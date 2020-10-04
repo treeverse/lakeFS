@@ -72,6 +72,10 @@ type UploadIDTranslator interface {
 	RemoveUploadID(inputUploadID string)
 }
 
+type CloudProvider interface {
+	GetAccountID() string
+}
+
 // the uploadID translator is required to enable re-play of recorded requests (playback_test)
 // the NoOp translator is the default for non-simulated runs. a playback translator is implemented in playback_test
 type NoOpTranslator struct{}
