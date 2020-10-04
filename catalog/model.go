@@ -116,8 +116,8 @@ func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
 	return m.MinCommit > commitID || (m.MaxCommit != MaxCommitID && m.MaxCommit > commitID)
 }
 
-type entryPKeyRow struct {
+type entryPathPrefixInfo struct {
 	BranchID   int64  `db:"branch_id"`
-	PathSuffix string `db:"path_postfix"`
+	PathSuffix string `db:"path_suffix"`
 	MinMaxCommit
 }
