@@ -204,3 +204,37 @@ func NewBlockAdapterByEnv(t *testing.T, translator block.UploadIDTranslator) blo
 		return mem.New(mem.WithTranslator(translator))
 	}
 }
+
+func NewBlockAdapterFactory(t *testing.T, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+	switch blockstoreType {
+	case gs.BlockstoreType:
+		ctx := context.Background()
+		client, err := storage.NewClient(ctx)
+		if err != nil {
+			t.Fatal("Google Storage new client", err)
+		}
+		return gs.NewAdapter(client, gs.WithTranslator(translator))
+
+	case lakefsS3.BlockstoreType:
+		awsRegion, regionOk := os.LookupEnv(envKeyAwsRegion)
+		if !regionOk {
+			awsRegion = "us-east-1"
+		}
+		cfg := &aws.Config{
+			Region: aws.String(awsRegion),
+		}
+		awsSecret, secretOk := os.LookupEnv(envKeyAwsSecretKey)
+		awsKey, keyOk := os.LookupEnv(envKeyAwsKeyID)
+		if keyOk && secretOk {
+			cfg.Credentials = credentials.NewStaticCredentials(awsKey, awsSecret, "")
+		} else {
+			cfg.Credentials = credentials.NewSharedCredentials("", "default")
+		}
+		sess := session.Must(session.NewSession(cfg))
+		svc := s3.New(sess)
+		return lakefsS3.NewAdapter(svc, lakefsS3.WithTranslator(translator))
+
+	default:
+		return mem.New(mem.WithTranslator(translator))
+	}
+}
