@@ -20,6 +20,7 @@ import (
 	"github.com/treeverse/lakefs/api/gen/client/auth"
 	"github.com/treeverse/lakefs/api/gen/client/branches"
 	"github.com/treeverse/lakefs/api/gen/client/commits"
+	"github.com/treeverse/lakefs/api/gen/client/config"
 	"github.com/treeverse/lakefs/api/gen/client/objects"
 	"github.com/treeverse/lakefs/api/gen/client/repositories"
 	"github.com/treeverse/lakefs/api/gen/client/retention"
@@ -1307,6 +1308,31 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 		diff := deep.Equal(policy1, got.RetentionPolicy)
 		if diff != nil {
 			t.Errorf("expected to read back the same policy, got %s", diff)
+		}
+	})
+}
+
+func TestHandler_ConfigHandlers(t *testing.T) {
+	handler, deps := getHandler(t)
+
+	// create user
+	creds := createDefaultAdminUser(deps.auth, t)
+	bauth := httptransport.BasicAuth(creds.AccessKeyID, creds.AccessSecretKey)
+
+	// setup client
+	clt := client.Default
+	clt.SetTransport(&handlerTransport{Handler: handler})
+
+	t.Run("Get config (currently only block store type)", func(t *testing.T) {
+		resp, err := clt.Config.GetConfig(&config.GetConfigParams{}, bauth)
+		if err != nil {
+			t.Fatal(err)
+		}
+
+		got := resp.GetPayload()
+
+		if got.BlockstoreType != "mem" {
+			t.Errorf("expected to read back the same policy, got %s", got.BlockstoreType)
 		}
 	})
 }
