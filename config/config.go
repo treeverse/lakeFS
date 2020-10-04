@@ -187,7 +187,7 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.credentials.session_token"))
 		deprecatedSecret := viper.GetString("blockstore.s3.credentials.access_secret_key")
 		if deprecatedSecret != "" {
-			logging.Default().Fatal("blockstore.s3.credentials.access_secret_key is DEPRECATED - use blockstore.s3.credentials.secret_access_key")
+			logging.Default().Fatal("blockstore.s3.credentials.access_secret_key was replaced - use blockstore.s3.credentials.secret_access_key")
 		}
 	}
 
