@@ -34,7 +34,7 @@ import (
 )
 
 func TestHandler_ListRepositoriesHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -133,7 +133,7 @@ func TestHandler_ListRepositoriesHandler(t *testing.T) {
 }
 
 func TestHandler_GetRepoHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -176,7 +176,7 @@ func TestHandler_GetRepoHandler(t *testing.T) {
 }
 
 func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -234,7 +234,7 @@ func TestHandler_CommitsGetBranchCommitLogHandler(t *testing.T) {
 }
 
 func TestHandler_GetCommitHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -292,7 +292,7 @@ func TestHandler_GetCommitHandler(t *testing.T) {
 }
 
 func TestHandler_CommitHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -343,7 +343,7 @@ func TestHandler_CommitHandler(t *testing.T) {
 }
 
 func TestHandler_CreateRepositoryHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -392,7 +392,7 @@ func TestHandler_CreateRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteRepositoryHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -459,7 +459,7 @@ func TestHandler_DeleteRepositoryHandler(t *testing.T) {
 }
 
 func TestHandler_ListBranchesHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -537,7 +537,7 @@ func TestHandler_ListBranchesHandler(t *testing.T) {
 }
 
 func TestHandler_GetBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -586,7 +586,7 @@ func TestHandler_GetBranchHandler(t *testing.T) {
 }
 
 func TestHandler_CreateBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -644,7 +644,7 @@ func TestHandler_CreateBranchHandler(t *testing.T) {
 }
 
 func TestHandler_DeleteBranchHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -690,7 +690,7 @@ func TestHandler_DeleteBranchHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -780,7 +780,7 @@ func TestHandler_ObjectsStatObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -878,7 +878,7 @@ func TestHandler_ObjectsListObjectsHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	ctx := context.Background()
 	// create user
@@ -985,7 +985,7 @@ func TestHandler_ObjectsGetObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1085,7 +1085,7 @@ func TestHandler_ObjectsUploadObjectHandler(t *testing.T) {
 }
 
 func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1158,7 +1158,7 @@ func TestHandler_ObjectsDeleteObjectHandler(t *testing.T) {
 }
 
 func TestController_CreatePolicyHandler(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1255,7 +1255,7 @@ func TestController_CreatePolicyHandler(t *testing.T) {
 }
 
 func TestHandler_RetentionPolicyHandlers(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1339,7 +1339,7 @@ func TestHandler_ConfigHandlers(t *testing.T) {
 
 func Test_setupLakeFSHandler(t *testing.T) {
 	// get handler with DB without apply the DDL
-	handler, deps := getHandler(t, testutil.WithGetDBApplyDDL(false))
+	handler, deps := getHandler(t, "", testutil.WithGetDBApplyDDL(false))
 
 	srv := httptest.NewServer(handler)
 	defer srv.Close()
