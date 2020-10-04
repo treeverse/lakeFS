@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/treeverse/lakefs/logging"
+
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -184,6 +186,10 @@ func (c *Config) GetAwsConfig() *aws.Config {
 			viper.GetString("blockstore.s3.credentials.access_key_id"),
 			viper.GetString("blockstore.s3.credentials.access_secret_key"),
 			viper.GetString("blockstore.s3.credentials.session_token"))
+		deprecatedSecret := viper.GetString("blockstore.s3.credentials.access_secret_key")
+		if deprecatedSecret != "" {
+			logging.Default().Fatal("blockstore.s3.credentials.access_secret_key is DEPRECATED - use blockstore.s3.credentials.secret_access_key")
+		}
 	}
 
 	s3Endpoint := viper.GetString("blockstore.s3.endpoint")
