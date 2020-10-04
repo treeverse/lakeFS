@@ -41,4 +41,4 @@ jobs:
           SLACK_TITLE: lakeFS ${{ github.event.release.tag_name }} published
           SLACK_MESSAGE: ${{ github.event.release.html_url }}
           SLACK_CHANNEL: news
-        if: ${{ !github.event.release.prerelease && env.LAKEFS_SLACK_WEBHOOK }}
+        if: ${{ !github.event.release.prerelease && env.SLACK_WEBHOOK }}
