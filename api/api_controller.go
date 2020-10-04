@@ -31,7 +31,6 @@ import (
 	"github.com/treeverse/lakefs/auth/model"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/httputil"
@@ -52,8 +51,6 @@ const (
 	lakeFSPrefix                     = "symlinks"
 	UserContextKey        contextKey = "user"
 )
-
-var cfg = config.NewConfig()
 
 type Dependencies struct {
 	ctx          context.Context
@@ -2313,7 +2310,7 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 			},
 		})
 		return configop.NewGetConfigOK().WithPayload(&models.Config{
-			BlockstoreType: cfg.GetBlockstoreType(),
+			BlockstoreType: c.deps.BlockAdapter.BlockstoreType(),
 		})
 	})
 }
