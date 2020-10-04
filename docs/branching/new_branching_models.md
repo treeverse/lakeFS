@@ -81,7 +81,7 @@ lakeFS helps you validate your expectations and assumptions from the data itself
 
 ### Example 1: Pre merge hook - a data quality issue
 
-Continuous deployment of existing data we expect to consume, flowing from our ingest-pipelines into the lake. Similar to the Continuous Integration use-case   - we create an ingest branch (“events-data”), which allows us to create tests using data analysis tools or data quality services (e.g. [Great Expectations](https://greatexpectations.io/){: target="_blank" }, [Monte Carlo](https://www.montecarlodata.com/){: target="_blank" }) to ensure reliability of the data we merge to the master branch. Since merge is atomic, no performance issue will be introduced by using lakeFS, but your master branch will only include quality data. 
+Continuous deployment of existing data we expect to consume, flowing from our ingest-pipelines into the lake. Similar to the Continuous Integration use-case  - we create a ingest branch (“events-data”), which allows us to create tests using data analysis tools or data quality services (e.g. [Great Expectations](https://greatexpectations.io/){: target="_blank" }, [Monte Carlo](https://www.montecarlodata.com/){: target="_blank" }) to ensure reliability of the data we merge to the master branch. Since merge is atomic, no performance issue will be introduced by using lakeFS, but your master branch will only include quality data. 
 
 <img src="../assets/img/branching_6.png" alt="branching_6" width="500px"/>
 
