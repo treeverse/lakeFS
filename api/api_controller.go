@@ -2303,10 +2303,11 @@ func (c *Controller) ImportFromS3InventoryHandler() repositories.ImportFromS3Inv
 
 func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 	return configop.GetConfigHandlerFunc(func(params configop.GetConfigParams, user *models.User) middleware.Responder {
-		c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
+		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
-				Action:   permissions.ReadConfig,
-				Resource: permissions.ConfigArn(),
+				// Should use repository creation permission but it is coupled to a repo id
+				Action:   permissions.ListRepositoriesAction,
+				Resource: permissions.All,
 			},
 		})
 		return configop.NewGetConfigOK().WithPayload(&models.Config{
