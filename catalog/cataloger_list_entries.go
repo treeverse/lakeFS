@@ -221,12 +221,13 @@ func processSinglePrefix(response []entryPathPrefixInfo, delimiter string, branc
 		}
 		// after path is processed, it can not be viewed from branches "deeper" in the lineage chain.
 		// the path is removed from the beginning of all results.
-		// if  start of a result array is bigger than path - nothing happens
+		// if start of a result slice is bigger than path - nothing happens
 		// can not be smaller as path was selected for being the smallest
-		for branch := range branchRanges {
-			if branchRanges[branch][0].PathSuffix == p {
-				branchRanges[branch] = branchRanges[branch][1:]
-				if len(branchRanges[branch]) == 0 {
+		for branch, ranges := range branchRanges {
+			if ranges[0].PathSuffix == p {
+				if len(ranges) > 1 {
+					branchRanges[branch] = ranges[1:]
+				} else {
 					err := getMoreRows(p, branch, branchRanges, readParams)
 					if err != nil { // assume that no more entries for this branch. so it is removed from branchRanges
 						delete(branchRanges, branch)
