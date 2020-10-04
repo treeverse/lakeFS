@@ -98,7 +98,7 @@ BEGIN
     GET DIAGNOSTICS num_updated := ROW_COUNT;
 
     IF channel IS NOT NULL THEN
-        SELECT pg_notify(channel, NULL);
+        PERFORM pg_notify(channel, NULL);
     END IF;
 
     UPDATE tasks

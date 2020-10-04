@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -246,6 +247,7 @@ func (w wrapper) ownTasks(actorID parade.ActorID, maxTasks int, actions []string
 		for i := 0; i < len(tasks); i++ {
 			task := &tasks[i]
 			task.ID = w.stripTask(task.ID)
+			// TODO(ariels): Strip prefix from Action (so far unused in these tests)
 		}
 	}
 	return tasks, err
@@ -673,7 +675,6 @@ func TestDeleteTasks(t *testing.T) {
 
 func TestNotification(t *testing.T) {
 	ctx := context.Background()
-	w := wrapper{t, db}
 
 	type testCase struct {
 		title      string
@@ -683,14 +684,16 @@ func TestNotification(t *testing.T) {
 	}
 
 	cases := []testCase{
-		{"task aborted", parade.TaskID("111"), "b0rked!", parade.TaskAborted},
-		{"task succeeded", parade.TaskID("222"), "yay!", parade.TaskCompleted},
+		{"task aborted", parade.TaskID("111"), "b0rked", parade.TaskAborted},
+		{"task succeeded", parade.TaskID("222"), "yay", parade.TaskCompleted},
 	}
 
 	for _, c := range cases {
 		t.Run(c.title, func(t *testing.T) {
+			w := wrapper{t, db}
+
 			cleanup := w.insertTasks([]parade.TaskData{
-				{ID: c.id, Action: "frob"},
+				{ID: c.id, Action: "frob", StatusCode: "pending", Body: stringAddr(""), FinishChannelName: stringAddr(w.prefix("done"))},
 			})
 			defer cleanup()
 
@@ -701,29 +704,37 @@ func TestNotification(t *testing.T) {
 			if len(tasks) != 1 {
 				t.Fatalf("expected to own single task but got %+v", tasks)
 			}
+			task := tasks[0]
 
 			conn, err := stdlib.AcquireConn(w.db.DB)
 			if err != nil {
-				w.t.Fatalf("stdlib.AcquireConn: %s", err)
+				t.Fatalf("stdlib.AcquireConn: %s", err)
 			}
 			defer stdlib.ReleaseConn(w.db.DB, conn)
 
 			type result struct {
-				status     string
-				statusCode parade.TaskStatusCodeValue
-				err        error
+				Status     string
+				StatusCode parade.TaskStatusCodeValue
+				Err        error
 			}
 			ch := make(chan result)
+			wg := sync.WaitGroup{}
 			go func() {
-				status, statusCode, err := parade.WaitForTask(ctx, conn, parade.TaskID("111"))
+				wg.Add(1)
+				status, statusCode, err := parade.WaitForTask(ctx, conn, w.prefixTask(c.id))
 				ch <- result{status, statusCode, err}
 			}()
+			wg.Wait()
 
-			if err = w.returnTask(tasks[0].ID, tasks[0].Token, c.status, c.statusCode); err != nil {
-				t.Fatalf("return task %+v: %s", tasks[0], err)
+			if err = w.returnTask(task.ID, task.Token, c.status, c.statusCode); err != nil {
+				t.Fatalf("return task %+v: %s", task, err)
 			}
 
 			got := <-ch
+			if got.Err != nil {
+				t.Fatalf("wait for task %s: %s", c.id, got.Err)
+			}
+
 			expected := result{c.status, c.statusCode, nil}
 			if diffs := deep.Equal(expected, got); diffs != nil {
 				t.Errorf("WaitForTask returned unexpected values: %s", diffs)
