@@ -1313,7 +1313,8 @@ func TestHandler_RetentionPolicyHandlers(t *testing.T) {
 }
 
 func TestHandler_ConfigHandlers(t *testing.T) {
-	handler, deps := getHandler(t)
+	const BlockstoreType = "s3"
+	handler, deps := getHandler(t, BlockstoreType)
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
@@ -1331,8 +1332,8 @@ func TestHandler_ConfigHandlers(t *testing.T) {
 
 		got := resp.GetPayload()
 
-		if got.BlockstoreType != "mem" {
-			t.Errorf("expected to read back the same policy, got %s", got.BlockstoreType)
+		if got.BlockstoreType != BlockstoreType {
+			t.Errorf("expected to get %s, got %s", BlockstoreType, got.BlockstoreType)
 		}
 	})
 }
