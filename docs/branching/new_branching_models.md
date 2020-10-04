@@ -53,7 +53,7 @@ Everyday data lake  management includes ingestion of new data collections, and a
 
 ### Example 1: Pre-merge hooks - enforce best practices
 
-Examples for good practices enforced in organizations:  
+Examples of good practices enforced in organizations:  
 
  - No user_* columns except under /private/...
  - Only `(*.parquet | *.orc | _delta_log/*.json)` files allowed
