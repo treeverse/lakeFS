@@ -16,7 +16,6 @@ type DBBranchReader struct {
 	EOF                bool
 	after              string
 	commitID           CommitID
-	maxCommitFixNeeded bool
 }
 
 func NewDBBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) *DBBranchReader {
