@@ -52,16 +52,12 @@ const (
 	CreateCredentialsAction = "auth:CreateCredentials"
 	DeleteCredentialsAction = "auth:DeleteCredentials"
 	ListCredentialsAction   = "auth:ListCredentials"
-
-	ReadConfig  = "config:ReadConfig"
-	WriteConfig = "config:WriteConfig"
 )
 
 var serviceSet = map[string]struct{}{
 	"fs":        {},
 	"auth":      {},
 	"retention": {},
-	"config":    {},
 }
 
 func IsValidAction(name string) error {
