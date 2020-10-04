@@ -2039,4 +2039,6 @@ paths:
           description: the lakefs config
           schema:
             $ref: "#/definitions/config"
+        401:
+          $ref: "#/responses/Unauthorized"
 
