@@ -40,12 +40,12 @@ var (
 	numShards   = flag.Int("num-shards", 400, "Number of intermediate fan-in shards")
 )
 
-// taskIdSlice attaches the methods of sort.Interface to []TaskId.
-type taskIdSlice []parade.TaskID
+// taskIDSlice attaches the methods of sort.Interface to []TaskID.
+type taskIDSlice []parade.TaskID
 
-func (p taskIdSlice) Len() int           { return len(p) }
-func (p taskIdSlice) Less(i, j int) bool { return p[i] < p[j] }
-func (p taskIdSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
+func (p taskIDSlice) Len() int           { return len(p) }
+func (p taskIDSlice) Less(i, j int) bool { return p[i] < p[j] }
+func (p taskIDSlice) Swap(i, j int)      { p[i], p[j] = p[j], p[i] }
 
 // runDBInstance starts a test Postgres server inside container pool, and returns a connection
 // URI and a closer function.
@@ -192,9 +192,9 @@ func (w wrapper) insertTasks(tasks []parade.TaskData) func() {
 }
 
 func (w wrapper) deleteTasks(ids []parade.TaskID) error {
-	prefixedIds := make([]parade.TaskID, len(ids))
+	prefixedIDs := make([]parade.TaskID, len(ids))
 	for i := 0; i < len(ids); i++ {
-		prefixedIds[i] = w.prefixTask(ids[i])
+		prefixedIDs[i] = w.prefixTask(ids[i])
 	}
 	ctx := context.Background()
 	conn, err := pgx.Connect(ctx, databaseURI)
@@ -211,7 +211,7 @@ func (w wrapper) deleteTasks(ids []parade.TaskID) error {
 		}
 	}()
 
-	if err = parade.DeleteTasks(ctx, tx, prefixedIds); err != nil {
+	if err = parade.DeleteTasks(ctx, tx, prefixedIDs); err != nil {
 		return err
 	}
 
@@ -222,16 +222,16 @@ func (w wrapper) deleteTasks(ids []parade.TaskID) error {
 	return nil
 }
 
-func (w wrapper) returnTask(taskId parade.TaskID, token parade.PerformanceToken, resultStatus string, resultStatusCode parade.TaskStatusCodeValue) error {
-	return parade.ReturnTask(w.db, w.prefixTask(taskId), token, resultStatus, resultStatusCode)
+func (w wrapper) returnTask(taskID parade.TaskID, token parade.PerformanceToken, resultStatus string, resultStatusCode parade.TaskStatusCodeValue) error {
+	return parade.ReturnTask(w.db, w.prefixTask(taskID), token, resultStatus, resultStatusCode)
 }
 
-func (w wrapper) ownTasks(actorId parade.ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]parade.OwnedTaskData, error) {
+func (w wrapper) ownTasks(actorID parade.ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]parade.OwnedTaskData, error) {
 	prefixedActions := make([]string, len(actions))
 	for i, action := range actions {
 		prefixedActions[i] = w.prefix(action)
 	}
-	tasks, err := parade.OwnTasks(w.db, actorId, maxTasks, prefixedActions, maxDuration)
+	tasks, err := parade.OwnTasks(w.db, actorID, maxTasks, prefixedActions, maxDuration)
 	if tasks != nil {
 		for i := 0; i < len(tasks); i++ {
 			task := &tasks[i]
@@ -356,12 +356,12 @@ func TestOwn(t *testing.T) {
 	}
 	gotTasks = append(gotTasks, tasks...)
 
-	gotIds := make([]parade.TaskID, 0, len(gotTasks))
+	gotIDs := make([]parade.TaskID, 0, len(gotTasks))
 	for _, got := range gotTasks {
-		gotIds = append(gotIds, got.ID)
+		gotIDs = append(gotIDs, got.ID)
 	}
-	sort.Sort(taskIdSlice(gotIds))
-	if diffs := deep.Equal([]parade.TaskID{"111", "123", "222"}, gotIds); diffs != nil {
+	sort.Sort(taskIDSlice(gotIDs))
+	if diffs := deep.Equal([]parade.TaskID{"111", "123", "222"}, gotIDs); diffs != nil {
 		t.Errorf("expected other task IDs: %s", diffs)
 	}
 }
@@ -444,22 +444,22 @@ func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 		t.Fatalf("acquire all tasks: %s", err)
 	}
 
-	taskById := make(map[parade.TaskID]*parade.OwnedTaskData, len(tasks))
+	taskByID := make(map[parade.TaskID]*parade.OwnedTaskData, len(tasks))
 	for index := range tasks {
-		taskById[tasks[index].ID] = &tasks[index]
+		taskByID[tasks[index].ID] = &tasks[index]
 	}
 
-	if err = w.returnTask(taskById[parade.TaskID("111")].ID, taskById[parade.TaskID("111")].Token, "done", parade.TaskCompleted); err != nil {
+	if err = w.returnTask(taskByID[parade.TaskID("111")].ID, taskByID[parade.TaskID("111")].Token, "done", parade.TaskCompleted); err != nil {
 		t.Errorf("return task 111: %s", err)
 	}
 
-	if err = w.returnTask(taskById[parade.TaskID("111")].ID, taskById[parade.TaskID("111")].Token, "done", parade.TaskCompleted); !errors.Is(err, parade.ErrInvalidToken) {
+	if err = w.returnTask(taskByID[parade.TaskID("111")].ID, taskByID[parade.TaskID("111")].Token, "done", parade.TaskCompleted); !errors.Is(err, parade.ErrInvalidToken) {
 		t.Errorf("expected second attempt to return task 111 to fail with InvalidTokenError, got %s", err)
 	}
 
 	// Now attempt to return a task to in-progress state.
-	if err = w.returnTask(taskById[parade.TaskID("123")].ID, taskById[parade.TaskID("123")].Token, "try-again", parade.TaskPending); err != nil {
-		t.Errorf("return task 123 (%+v) for another round: %s", taskById[parade.TaskID("123")], err)
+	if err = w.returnTask(taskByID[parade.TaskID("123")].ID, taskByID[parade.TaskID("123")].Token, "try-again", parade.TaskPending); err != nil {
+		t.Errorf("return task 123 (%+v) for another round: %s", taskByID[parade.TaskID("123")], err)
 	}
 	moreTasks, err := w.ownTasks(parade.ActorID("foo"), 4, []string{"frob", "broz"}, nil)
 	if err != nil {
@@ -594,7 +594,7 @@ func TestDeleteTasks(t *testing.T) {
 		{ID: parade.TaskID("a2"), Action: "dep", ToSignal: []parade.TaskID{"a3"}, TotalDependencies: intAddr(1)},
 		{ID: parade.TaskID("a3"), Action: "leaf", TotalDependencies: intAddr(2)},
 
-		{ID: parade.TaskID("b0"), Action: "root", ToSignal: []parade.TaskID{"b1"}},
+		{ID: parade.TaskID("b0"), Action: "root", ToSignal: []parade.TaskID{"b2"}},
 		{ID: parade.TaskID("b1"), Action: "root-keep", ToSignal: []parade.TaskID{"b2"}},
 		{ID: parade.TaskID("b2"), Action: "leaf", TotalDependencies: intAddr(2)},
 
@@ -645,7 +645,7 @@ func TestDeleteTasks(t *testing.T) {
 				}
 				gotRemaining = append(gotRemaining, id)
 			}
-			sort.Sort(taskIdSlice(gotRemaining))
+			sort.Sort(taskIDSlice(gotRemaining))
 			expectedRemaining := c.expectedRemaining
 			if expectedRemaining == nil {
 				expectedRemaining = []parade.TaskID{}
@@ -653,7 +653,7 @@ func TestDeleteTasks(t *testing.T) {
 			for i, e := range expectedRemaining {
 				expectedRemaining[i] = w.prefixTask(e)
 			}
-			sort.Sort(taskIdSlice(expectedRemaining))
+			sort.Sort(taskIDSlice(expectedRemaining))
 			if diffs := deep.Equal(expectedRemaining, gotRemaining); diffs != nil {
 				t.Errorf("left with other IDs than expected: %s", diffs)
 			}
@@ -730,7 +730,7 @@ func BenchmarkFanIn(b *testing.B) {
 	id := func(n int) parade.TaskID {
 		return parade.TaskID(fmt.Sprintf("in:%08d", n))
 	}
-	shardId := func(n int) parade.TaskID {
+	shardID := func(n int) parade.TaskID {
 		return parade.TaskID(fmt.Sprintf("done:%05d", n))
 	}
 
@@ -738,14 +738,14 @@ func BenchmarkFanIn(b *testing.B) {
 	totalShardDependencies := make([]int, *numShards)
 	for i := 0; i < numTasks; i++ {
 		shard := (i / 100) % *numShards
-		toSignal := []parade.TaskID{shardId(shard)}
+		toSignal := []parade.TaskID{shardID(shard)}
 		tasks = append(tasks, parade.TaskData{ID: id(i), Action: "part", ToSignal: toSignal})
 		totalShardDependencies[shard]++
 	}
 
 	toSignal := []parade.TaskID{"done"}
 	for i := 0; i < *numShards; i++ {
-		tasks = append(tasks, parade.TaskData{ID: shardId(i), Action: "spontaneous", ToSignal: toSignal, TotalDependencies: &totalShardDependencies[i]})
+		tasks = append(tasks, parade.TaskData{ID: shardID(i), Action: "spontaneous", ToSignal: toSignal, TotalDependencies: &totalShardDependencies[i]})
 	}
 	tasks = append(tasks, parade.TaskData{ID: "done", Action: "done", TotalDependencies: numShards})
 	cleanup := w.insertTasks(tasks)
