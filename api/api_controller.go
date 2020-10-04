@@ -2310,8 +2310,13 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 				Resource: permissions.All,
 			},
 		})
+
+		if err != nil {
+			return configop.NewGetConfigUnauthorized().WithPayload(responseErrorFrom(err))
+		}
+
 		return configop.NewGetConfigOK().WithPayload(&models.Config{
-			BlockstoreType: c.deps.BlockAdapter.BlockstoreType(),
+			BlockstoreType: deps.BlockAdapter.BlockstoreType(),
 		})
 	})
 }
