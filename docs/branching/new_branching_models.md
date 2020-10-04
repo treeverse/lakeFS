@@ -57,7 +57,7 @@ Examples of good practices enforced in organizations:
 
  - No user_* columns except under /private/...
  - Only `(*.parquet | *.orc | _delta_log/*.json)` files allowed
- - Under /production, only backwards-compatible schema changes are allowed
+ - Under /production, only backward-compatible schema changes are allowed
  - New tables on master must be registered in our metadata repository first, with owner and SLA
 
 lakeFS will assist in enforcing best practices by giving you a designated branch  to ingest new data (“new-data-1” in drawing). . You may run automated tests to validate  predefined  best practices as pre-merge hooks. If the validation passes, the new data will be automatically and atomically merged to the master branch. However, if the validation fails, you will be alerted, and the new data will not be exposed to consumers.
