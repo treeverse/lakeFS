@@ -1,7 +1,9 @@
 BEGIN;
+
 ALTER TABLE catalog_entries
     ALTER COLUMN min_commit SET DEFAULT 0;
-drop view if exists catalog_entries_v;
+
+DROP VIEW IF EXISTS catalog_entries_v;
 CREATE VIEW catalog_entries_v AS
 SELECT e.branch_id,
        e.path,
@@ -21,5 +23,7 @@ SELECT e.branch_id,
            ELSE e.min_commit
            END AS commit_weight
 FROM catalog_entries e;
-update catalog_entries set min_commit = 0  where min_commit = catalog_max_commit_id();
+
+UPDATE catalog_entries SET min_commit=0  WHERE min_commit = catalog_max_commit_id();
+
 COMMIT;

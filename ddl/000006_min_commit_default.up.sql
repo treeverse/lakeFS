@@ -1,7 +1,9 @@
 BEGIN;
+
 ALTER TABLE catalog_entries
     ALTER COLUMN min_commit DROP DEFAULT;
-drop view if exists catalog_entries_v;
+
+DROP VIEW IF EXISTS catalog_entries_v;
 CREATE VIEW catalog_entries_v AS
 SELECT e.branch_id,
        e.path,
@@ -17,6 +19,7 @@ SELECT e.branch_id,
        (e.max_commit = 0) AS is_tombstone,
        e.ctid AS entry_ctid
 FROM catalog_entries e;
-update catalog_entries set min_commit = catalog_max_commit_id()  where min_commit = 0;
+
+UPDATE catalog_entries SET min_commit = catalog_max_commit_id() WHERE min_commit = 0;
 
 COMMIT;
