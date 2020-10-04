@@ -7,6 +7,8 @@ import Row from "react-bootstrap/Row";
 import Col from "react-bootstrap/Col";
 import {connect} from "react-redux";
 
+const DEFAULT_BLOCKSTORE_TYPE = "s3";
+
 export const RepositoryCreateForm = connect(
   ({ repositories, config }) => {
     const {create} = repositories;
@@ -32,6 +34,8 @@ export const RepositoryCreateForm = connect(
         setFormValid(true);
     };
 
+    let blockstoreType = config.payload == null ? DEFAULT_BLOCKSTORE_TYPE : config.payload['blockstore.type']
+
     return (
         <Form className={"mt-5"} onSubmit={(e) => {
             e.preventDefault();
@@ -54,7 +58,7 @@ export const RepositoryCreateForm = connect(
             <Form.Group as={Row}>
                 <Form.Label column sm={fieldNameOffset}>Storage Namespace</Form.Label>
                     <Col sm={sm}>
-                        <Form.Control type="text" ref={storageNamespaceField} placeholder={`e.g. ${config.payload['blockstore.type']}://example-bucket/`} onChange={checkValidity}/>
+                        <Form.Control type="text" ref={storageNamespaceField} placeholder={`e.g. ${blockstoreType}://example-bucket/`} onChange={checkValidity}/>
                     </Col>
             </Form.Group>
             <Form.Group as={Row} controlId="defaultBranch">
