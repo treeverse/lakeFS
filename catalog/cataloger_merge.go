@@ -140,8 +140,8 @@ func (c *cataloger) mergeFromParent(ctx context.Context, tx db.Tx, previousMaxCo
 		return err
 	}
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
-			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id() AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
-		childID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
+			WHERE branch_id = $1 AND max_commit = $5 AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
+		childID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged, MaxCommitID)
 	if err != nil {
 		return err
 	}
@@ -152,8 +152,8 @@ func (c *cataloger) mergeFromParent(ctx context.Context, tx db.Tx, previousMaxCo
 				FROM catalog_entries e
 				WHERE e.ctid IN (SELECT d.entry_ctid FROM `+diffResultsTableName+` d WHERE d.diff_type=$3 
  				-- the or condition - diff will see an entry as new if it is deleted in child. but merge still need to copy it
-				OR d.diff_type=$4 and d.path in (SELECT e1.path FROM catalog_entries e1 WHERE e1.branch_id=$1 and e1.max_commit != catalog_max_commit_id()))`,
-		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded)
+				OR d.diff_type=$4 and d.path in (SELECT e1.path FROM catalog_entries e1 WHERE e1.branch_id=$1 and e1.max_commit != $5))`,
+		childID, nextCommitID, DifferenceTypeChanged, DifferenceTypeAdded, MaxCommitID)
 	if err != nil {
 		return err
 	}
@@ -191,9 +191,9 @@ func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCom
 		return err
 	}
 	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
-			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id()
+			WHERE branch_id = $1 AND max_commit = $5
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
-		parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
+		parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged, MaxCommitID)
 	if err != nil {
 		return err
 	}

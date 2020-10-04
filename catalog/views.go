@@ -1,6 +1,7 @@
 package catalog
 
 import (
+	"fmt"
 	"strconv"
 	"unicode/utf8"
 
@@ -14,11 +15,10 @@ const (
 
 func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
-		"min_commit > 0 AS is_committed",
+		fmt.Sprintf("min_commit != %d AS is_committed", MinCommitUncommittedIndicator),
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
-		"max_commit < catalog_max_commit_id() AS is_deleted",
-		"CASE WHEN min_commit = 0 THEN catalog_max_commit_id() ELSE min_commit END AS commit_weight").
+		fmt.Sprintf("max_commit < %d AS is_deleted", MaxCommitID)).
 		From("catalog_entries")
 	switch requestedCommit {
 	case UncommittedID: // no further filtering is required
@@ -43,14 +43,14 @@ func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineag
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
-	maxCommitExpr = maxCommitExpr.Else("catalog_max_commit_id()")
+	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", MaxCommitID))
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
 	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
-		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
+		OrderBy("e.path", "source_branch desc", "e.min_commit desc").
 		Columns(strconv.FormatInt(branchID, 10)+" AS displayed_branch",
 			"e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",
@@ -73,7 +73,7 @@ func sqLineageConditions(branchID int64, lineage []lineageCommit) (string, sq.Sq
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
-	maxCommitExpr = maxCommitExpr.Else("catalog_max_commit_id()")
+	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", MaxCommitID))
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
@@ -87,7 +87,7 @@ func sqEntriesLineageV(branchID int64, requestedCommit CommitID, lineage []linea
 	baseSelect := sq.Select().Distinct().Options(" ON (e.path) ").
 		FromSelect(sqEntriesV(requestedCommit), "e\n").
 		Where(lineageFilter).
-		OrderBy("e.path", "source_branch desc", "e.commit_weight desc").
+		OrderBy("e.path", "source_branch desc", "e.min_commit desc").
 		Column("? AS displayed_branch", strconv.FormatInt(branchID, 10)).
 		Columns("e.path", "e.branch_id AS source_branch",
 			"e.min_commit", "e.physical_address",

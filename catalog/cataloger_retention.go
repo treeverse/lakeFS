@@ -94,13 +94,6 @@ type retentionQueryRecord struct {
 }
 
 func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowScanner, limit *uint64) (sq.SelectBuilder, error) {
-	var (
-		byNonCurrent  = sq.Expr("min_commit != 0 AND max_commit < catalog_max_commit_id()")
-		byUncommitted = sq.Expr("min_commit = 0")
-	)
-
-	repositorySelector := byRepository(repositoryName)
-
 	// An expression to select for each rule.  Select by ORing all these.
 	ruleSelectors := make([]sq.Sqlizer, 0, len(policy.Rules))
 	for _, rule := range policy.Rules {
@@ -113,6 +106,10 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 			expirationExprs = append(expirationExprs, byExpiration(*rule.Expiration.All))
 		}
 		if rule.Expiration.Noncurrent != nil {
+			byNonCurrent := sq.And{
+				sq.NotEq{"min_commit": MinCommitUncommittedIndicator},
+				sq.Lt{"max_commit": MaxCommitID},
+			}
 			expirationExprs = append(expirationExprs,
 				sq.And{
 					byExpiration(*rule.Expiration.Noncurrent),
@@ -120,6 +117,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 				})
 		}
 		if rule.Expiration.Uncommitted != nil {
+			byUncommitted := sq.Eq{"min_commit": MinCommitUncommittedIndicator}
 			expirationExprs = append(expirationExprs,
 				sq.And{
 					byExpiration(*rule.Expiration.Uncommitted),
@@ -133,6 +131,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 		ruleSelectors = append(ruleSelectors, selector)
 	}
 
+	repositorySelector := byRepository(repositoryName)
 	filter := sq.And{repositorySelector, sq.Or(ruleSelectors)}
 	if afterRow != nil {
 		var r retentionQueryRecord
@@ -150,6 +149,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 		Where(filter)
 	query = query.Join("catalog_branches ON catalog_entries.branch_id = catalog_branches.id").
 		Join("catalog_repositories on catalog_branches.repository_id = catalog_repositories.id")
+	// todo: Ariel - problematic sort
 	if limit != nil {
 		query = query.OrderBy("physical_address", "branch_id", "min_commit").
 			Limit(*limit)
