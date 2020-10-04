@@ -217,7 +217,10 @@ func ReturnTask(conn *sqlx.DB, taskID TaskID, token PerformanceToken, resultStat
 	return nil
 }
 
-var ErrBadStatus = errors.New("bad status for task")
+var (
+	ErrBadStatus       = errors.New("bad status for task")
+	ErrNoFinishChannel = errors.New("task has no Finishchannel")
+)
 
 // WaitForTask blocks until taskId ends, and returns its result status and status code.  It
 // needs a pgx.Conn -- *not* a sqlx.Conn -- because it depends on PostgreSQL specific features.
@@ -225,14 +228,17 @@ func WaitForTask(ctx context.Context, conn *pgx.Conn, taskID TaskID) (resultStat
 	row := conn.QueryRow(ctx, `SELECT finish_channel, status_code FROM tasks WHERE id=$1`, taskID)
 	var (
 		finishChannel string
-		statusCode    TaskStatusCodeValue
-		status        string
+		statusCode    TaskStatusCodeValue = TaskInvalid
+		status        string              = "invalid"
 	)
 	if err = row.Scan(&finishChannel, &statusCode); err != nil {
-		return "", TaskInvalid, fmt.Errorf("check task %s to listen: %w", taskID, err)
+		return status, statusCode, fmt.Errorf("check task %s to listen: %w", taskID, err)
 	}
 	if statusCode != TaskInProgress && statusCode != TaskPending {
-		return "", statusCode, fmt.Errorf("task %s already in status %s: %w", taskID, statusCode, ErrBadStatus)
+		return status, statusCode, fmt.Errorf("task %s already in status %s: %w", taskID, statusCode, ErrBadStatus)
+	}
+	if finishChannel == "" {
+		return status, statusCode, fmt.Errorf("cannot wait for task %s: %w", taskID, ErrNoFinishChannel)
 	}
 
 	if _, err = conn.Exec(ctx, "LISTEN "+pgx.Identifier{finishChannel}.Sanitize()); err != nil {
@@ -245,9 +251,10 @@ func WaitForTask(ctx context.Context, conn *pgx.Conn, taskID TaskID) (resultStat
 	}
 
 	row = conn.QueryRow(ctx, `SELECT status, status_code FROM tasks WHERE id=$1`, taskID)
-	status = ""
-	statusCode = TaskInvalid
 	err = row.Scan(&status, &statusCode)
+	if err != nil {
+		err = fmt.Errorf("query status for task %s: %w", taskID, err)
+	}
 	return status, statusCode, err
 }
 
