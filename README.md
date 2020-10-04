@@ -23,6 +23,38 @@ lakeFS supports AWS S3 or Google Cloud Storage as its underlying storage service
 
 For more information see the [Official Documentation](https://docs.lakefs.io).
 
+<div style="background: #ffdddd border: 3px solid #dd4444; margine: 15px;">
+
+# A Hacktoberfest update
+
+Welcome Hacktoberfest participants!  We commit to actively seek, help, and merge your
+improvements to lakeFS.  We've labelled some [issues with the hacktoberfest
+label](https://github.com/treeverse/lakeFS/issues?q=is%3Aissue+is%3Aopen+label%3Ahacktoberfest).
+Please check out our [contributing guide](https://docs.lakefs.io/contributing).
+
+*We know you like badges, stickers, and T-shirts*, because **we like them too!** But, like many
+other open-source projects, we are seeing an influx of lower quality PRs.  During October will
+be unable to accept PRs if they:
+
+1. Only change punctuation or grammar, unless accompanied by an explanation or are clearly
+   better.
+1. Repeat an existing PR, or try to merge branches authored by other contributors that are under
+   active work.
+1. Do not affect generated code or documentation in any way.
+1. Are detrimental: do not compile or cause harm when run.
+1. Change text or code that should be changed upstream, such as licenses, code of conduct, or
+   React boilerplate.
+
+We shall close such PRs and label them `x/invalid`; Digital Ocean _will not count_ those PRs
+towards Hacktoberfest progress, so such PRs only waste your time and ours.
+
+You can **help us accept your PR** by adding a clear title and description to the PR and to
+commits in that PR.  "Fixes #1234" or "update README.md" are not as good as "Make lakeFS run 3x
+faster" or "Add update regarding Hacktoberfest".  Communication is key: If you are uncertain,
+please open a discussion: ask us on the PR or on the issue.
+
+Thanks!
+</div>
 
 ## Capabilities
 
@@ -36,10 +68,10 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 **Continuous Data Deployment**
 * **Instantly revert changes to data** - if low quality data is exposed to your consumers, you can revert instantly to a former, consistent and correct snapshot of your data lake.
-* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertable, action
+* **Enforce cross collection consistency** - provide to consumers several collections of data that must be synchronized, in one atomic, revertible, action.
 * **Prevent data quality issues by enabling**
-  - Testing of production data before exposing it to users / consumers
-  - Testing of intermediate results in your DAG to avoid cascading quality issues
+  - Testing of production data before exposing it to users / consumers.
+  - Testing of intermediate results in your DAG to avoid cascading quality issues.
 
 ## Getting Started
 
@@ -58,7 +90,7 @@ For more information see the [Official Documentation](https://docs.lakefs.io).
 
 #### Docker (Windows)
 
-1. Ensure you have Docker installed
+1. Ensure you have Docker installed.
 
 2. Run the following command in PowerShell:
 
@@ -79,11 +111,11 @@ Binaries are available at [https://github.com/treeverse/lakeFS/releases](https:/
 
 Please follow the [Guide to Get Started](https://docs.lakefs.io/quickstart/repository) to set up your local lakeFS installation.
 
-For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io)
+For more detailed information on how to set up lakeFS, please visit [the documentation](https://docs.lakefs.io).
 
 ## Community
 
-Keep up to date and get lakeFS support via:
+Stay up to date and get lakeFS support via:
 
 - [Slack](https://join.slack.com/t/lakefs/shared_invite/zt-g86mkroy-186GzaxR4xOar1i1Us0bzw) (to get help from our team and other users).
 - [Twitter](https://twitter.com/lakeFS) (follow for updates and news)

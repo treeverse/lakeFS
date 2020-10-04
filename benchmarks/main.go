@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"net/http"
 	"os"
 	"strconv"
 	"strings"
@@ -12,10 +11,9 @@ import (
 	"sync/atomic"
 	"time"
 
+	retry "github.com/avast/retry-go"
 	"github.com/go-openapi/runtime"
 	"github.com/go-openapi/swag"
-	dto "github.com/prometheus/client_model/go"
-	"github.com/prometheus/prom2json"
 	"github.com/spf13/viper"
 	"github.com/thanhpk/randstr"
 	genclient "github.com/treeverse/lakefs/api/gen/client"
@@ -49,8 +47,6 @@ func main() {
 		logger.WithError(err).Error("Tests run failed")
 		os.Exit(-1)
 	}
-
-	scrapePrometheus()
 }
 
 const (
@@ -116,6 +112,11 @@ func doInParallel(ctx context.Context, repoName string, level, filesAmount int, 
 	return int(failed)
 }
 
+const (
+	retryAttempts = 3
+	retryDelay    = 200 * time.Millisecond
+)
+
 func uploader(ctx context.Context, ch chan string, repoName, contentPrefix string) int {
 	failed := 0
 	for {
@@ -132,7 +133,7 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 			content := contentPrefix + randstr.Hex(contentSuffixLength)
 			contentReader := runtime.NamedReader("content", strings.NewReader(content))
 
-			if err := linearRetry(func() error {
+			if err := retry.Do(func() error {
 				_, err := client.Objects.UploadObject(
 					objects.NewUploadObjectParamsWithContext(ctx).
 						WithRepository(repoName).
@@ -140,7 +141,10 @@ func uploader(ctx context.Context, ch chan string, repoName, contentPrefix strin
 						WithPath(file).
 						WithContent(contentReader), nil)
 				return err
-			}); err != nil {
+			}, retry.Attempts(retryAttempts),
+				retry.Delay(retryDelay),
+				retry.LastErrorOnly(true),
+				retry.DelayType(retry.FixedDelay)); err != nil {
 				failed++
 				logger.WithField("fileNum", file).Error("Failed uploading file")
 			}
@@ -160,7 +164,7 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 				return failed
 			}
 
-			if err := linearRetry(func() error {
+			if err := retry.Do(func() error {
 				var b bytes.Buffer
 				_, err := client.Objects.GetObject(
 					objects.NewGetObjectParamsWithContext(ctx).
@@ -168,74 +172,13 @@ func reader(ctx context.Context, ch chan string, repoName, _ string) int {
 						WithRef("master").
 						WithPath(file), nil, &b)
 				return err
-			}); err != nil {
+			}, retry.Attempts(retryAttempts),
+				retry.Delay(retryDelay),
+				retry.LastErrorOnly(true),
+				retry.DelayType(retry.FixedDelay)); err != nil {
 				failed++
 				logger.WithField("fileNum", file).Error("Failed reading file")
 			}
 		}
-	}
-}
-
-const (
-	tries        = 3
-	retryTimeout = 200 * time.Millisecond
-)
-
-func linearRetry(do func() error) error {
-	var err error
-	for i := 1; i <= tries; i++ {
-		if err = do(); err == nil {
-			return nil
-		}
-
-		if i != tries {
-			// skip sleep in the last iteration
-			time.Sleep(retryTimeout)
-		}
-	}
-	return err
-}
-
-var monitoredOps = map[string]bool{
-	"getObject":    true,
-	"uploadObject": true,
-}
-
-func scrapePrometheus() {
-	lakefsEndpoint := viper.GetString("endpoint_url")
-	resp, err := http.DefaultClient.Get(lakefsEndpoint + "/metrics")
-	if err != nil {
-		panic(err)
-	}
-	defer func() {
-		if resp != nil && resp.Body != nil {
-			resp.Body.Close()
-		}
-	}()
-
-	ch := make(chan *dto.MetricFamily)
-	go func() { _ = prom2json.ParseResponse(resp, ch) }()
-	metrics := []*dto.Metric{}
-
-	for {
-		a, ok := <-ch
-		if !ok {
-			break
-		}
-
-		if *a.Name == "api_request_duration_seconds" {
-			for _, m := range a.Metric {
-				for _, label := range m.Label {
-					if *label.Name == "operation" && monitoredOps[*label.Value] {
-						metrics = append(metrics, m)
-					}
-				}
-			}
-		}
-	}
-
-	// TODO: report instead of print
-	for _, m := range metrics {
-		fmt.Printf("%v\n", *m)
 	}
 }

@@ -90,6 +90,7 @@ func (b *MultiBar) Start() {
 func (b *MultiBar) Stop() {
 	b.refresh(true)
 	b.ticker.Stop()
+	b.mpb.Wait()
 }
 
 func (b *MultiBar) refresh(isCompleted bool) {
@@ -102,7 +103,11 @@ func (b *MultiBar) refresh(isCompleted bool) {
 			b.mpbBars[p.label] = bar
 		}
 		bar.SetTotal(total, isCompleted)
-		bar.SetCurrent(p.Current())
+		if !isCompleted {
+			bar.SetCurrent(p.Current())
+		} else {
+			bar.SetCurrent(total)
+		}
 	}
 }
 

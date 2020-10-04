@@ -35,11 +35,11 @@ See the [S3 API Reference](reference/s3.md) section for information on supported
 
 ### OpenAPI Server
 
-The Swagger ([OpenAPI](https://swagger.io/docs/specification/2-0/basic-structure/){:target="_blank"}) Server exposes the full set of lakeFS operations (see [Reference](reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing and reverting changes to data.
+The Swagger ([OpenAPI](https://swagger.io/docs/specification/2-0/basic-structure/){:target="_blank"}) Server exposes the full set of lakeFS operations (see [Reference](reference/api.md)). This includes basic CRUD operations against repositories, objects, and versioning related operations such as branching, merging, committing and reverting changes to data.
 
 ### S3 Storage Adapter
 
-The S3 Storage Adapter is the component in charge of communication with the underlying S3 bucket. It is logically decoupled from the S3 Gateway to allow for future compatibility with other types of undelying storage such as HDFS or S3-Compatible storage providers.
+The S3 Storage Adapter is the component in charge of communication with the underlying S3 bucket. It is logically decoupled from the S3 Gateway to allow for future compatibility with other types of underlying storage such as HDFS or S3-Compatible storage providers.
 
 See the [roadmap](roadmap.md) for information on future plans for storage compatibility. 
 
