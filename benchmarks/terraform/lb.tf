@@ -1,6 +1,6 @@
 # ALB Security Group: Edit to restrict access to the application
 resource "aws_security_group" "aws-lb" {
-  name = "benchmark-load-balancer"
+  name = "benchmark-load-balancer-${var.tag}"
   description = "Controls access to the ALB"
   vpc_id = aws_security_group.benchmark_sg.vpc_id
 
@@ -23,7 +23,7 @@ resource "aws_security_group" "aws-lb" {
 }
 
 resource "aws_alb" "main" {
-  name = "benchmark-load-balancer"
+  name = "benchmark-${var.tag}"
   subnets = [for s in data.aws_subnet.all : s.id]
   security_groups = [aws_security_group.aws-lb.id]
   internal = true
@@ -33,7 +33,7 @@ resource "aws_alb" "main" {
 }
 
 resource "aws_alb_target_group" "benchmark" {
-  name = "benchmark-target-group"
+  name = "benchmark-${var.tag}"
   port = 8000
   protocol = "HTTP"
   vpc_id = aws_security_group.benchmark_sg.vpc_id
