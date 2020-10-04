@@ -2,7 +2,7 @@ BEGIN;
 ALTER TABLE catalog_entries
     ALTER COLUMN min_commit SET DEFAULT catalog_max_commit_id();
 drop view if exists catalog_entries_v;
-CREATE  VIEW catalog_entries_v AS
+CREATE VIEW catalog_entries_v AS
 SELECT e.branch_id,
        e.path,
        e.physical_address,
