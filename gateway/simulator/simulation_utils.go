@@ -18,7 +18,7 @@ import (
 type PlayBackMockConf struct {
 	BareDomain      string `json:"bare_domain"`
 	AccessKeyID     string `json:"access_key_id"`
-	SecretAccessKey string `json:"secret_access_key"`
+	SecretAccessKey string `json:"access_secret_key"`
 	UserID          int    `json:"user_id"`
 	Region          string `json:"region"`
 }

@@ -62,7 +62,7 @@ var initCmd = &cobra.Command{
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")
 
-		fmt.Printf("credentials:\n  access_key_id: %s\n  access_secret_key: %s\n",
+		fmt.Printf("credentials:\n  access_key_id: %s\n  secret_access_key: %s\n",
 			credentials.AccessKeyID, credentials.SecretAccessKey)
 
 		cancelFn()

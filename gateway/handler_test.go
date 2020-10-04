@@ -14,7 +14,7 @@ func setupTest(t *testing.T, method, target string, body io.Reader) *http.Respon
 	h, _ := getBasicHandler(t, &simulator.PlayBackMockConf{
 		BareDomain:      "example.com",
 		AccessKeyID:     "AKIAIO5FODNN7EXAMPLE",
-		SecretAccessKey: "MockSecretAccessKey",
+		SecretAccessKey: "MockAccessSecretKey",
 		UserID:          1,
 		Region:          "MockRegion",
 	})
