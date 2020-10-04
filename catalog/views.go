@@ -15,7 +15,7 @@ const (
 
 func sqEntriesV(requestedCommit CommitID) sq.SelectBuilder {
 	entriesQ := sq.Select("*",
-		fmt.Sprintf("min_commit != %d AS is_committed", MinCommitUncommitedIndicator),
+		fmt.Sprintf("min_commit != %d AS is_committed", MinCommitUncommittedIndicator),
 		"max_commit = 0 AS is_tombstone",
 		"ctid AS entry_ctid\n",
 		fmt.Sprintf("max_commit < %d AS is_deleted", MaxCommitID)).

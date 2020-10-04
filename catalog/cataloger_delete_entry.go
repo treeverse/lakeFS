@@ -27,7 +27,7 @@ func (c *cataloger) DeleteEntry(ctx context.Context, repository, branch string, 
 
 		// delete uncommitted entry, if found first
 		res, err := tx.Exec("DELETE FROM catalog_entries WHERE branch_id=$1 AND path=$2 AND min_commit=$3 AND max_commit=$4",
-			branchID, path, MinCommitUncommitedIndicator, MaxCommitID)
+			branchID, path, MinCommitUncommittedIndicator, MaxCommitID)
 		if err != nil {
 			return nil, fmt.Errorf("uncommitted: %w", err)
 		}

@@ -300,7 +300,7 @@ func selectSingleBranch(branchID int64, isBaseBranch bool, branchBatchSize int, 
 		Column("substr(path,?) as path_suffix", prefixLen+1).
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
-		Where("min_commit <=  ?", topCommitID).
+		Where("min_commit <= ?", topCommitID).
 		Where("path < ?", endOfPrefixRange).
 		OrderBy("branch_id", "path", "min_commit desc").
 		Limit(uint64(branchBatchSize))
