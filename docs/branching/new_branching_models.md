@@ -71,9 +71,9 @@ By using this branching model and implementing best practices as pre merge hooks
 Not every day we introduce new data to the lake, or add/change ETLs, but we do have recurring jobs that are running, and updates to our existing data collections. Even if  the code and infra didn't change, the data might, and those changes introduce quality issues. This is one of the complexities of a data product, the data we consume changes over the course of a month, a week, or even a single day. 
 
 **Examples of changes to data that may occur:**
- -  A client side bug in the data collection of website events
- -  A new Android version that interferes with the collecting events from your App
- -  COVID-19 abrupt impact on consumers behavior , and its effect on the accuracy of ML models.
+ - A client-side bug in the data collection of website events
+ - A new Android version that interferes with the collecting events from your App
+ - COVID-19 abrupt impact on consumers' behavior, and its effect on the accuracy of ML models.
  - During a change to Salesforce interface, the validation requirement from a certain field had been lost
 
 lakeFS helps you validate your expectations and assumptions from the data itself.
