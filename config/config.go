@@ -7,8 +7,6 @@ import (
 	"strings"
 	"time"
 
-	"github.com/treeverse/lakefs/logging"
-
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
@@ -22,6 +20,7 @@ import (
 	blockparams "github.com/treeverse/lakefs/block/params"
 	catalogparams "github.com/treeverse/lakefs/catalog/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 )
 
