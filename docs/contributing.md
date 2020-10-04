@@ -37,11 +37,13 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 
 *This section was tested on macOS and Linux (Fedora 32, Ubuntu 20.04) - Your mileage may vary*
 
+Our [Go release workflow](https://github.com/treeverse/lakeFS/blob/master/.github/workflows/goreleaser.yaml) holds under _go-version_ the Go version we currently use.
+
 1. Install the required dependencies for your OS:
     1. [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
     1. [GNU make](https://www.gnu.org/software/make/) (probably best to install from your OS package manager such as apt or brew)
     1. [Docker](https://docs.docker.com/get-docker/)
-    1. [Go 1.14](https://golang.org/doc/install)
+    1. [Go](https://golang.org/doc/install)
     1. [Node.js & npm](https://www.npmjs.com/get-npm)
     1. *Optional* - [PostgreSQL 11](https://www.postgresql.org/docs/11/tutorial-install.html) (useful for running and debugging locally)
 1. Install statik:
@@ -68,7 +70,7 @@ Working on your first Pull Request? You can learn how from this free series, [Ho
 ## Before creating a pull request
 
 1. Review this document in full
-1. Make sure there's an open issue on Github that this pull request addresses, and that it isn't labeled `WONT-FIX`
+1. Make sure there's an open issue on GitHub that this pull request addresses, and that it isn't labeled `WON'T-FIX`
 1. Fork the [lakeFS repository](https://github.com/treeverse/lakeFS)
 1. If you're adding new functionality, create a new branch named `feature/<DESCRIPTIVE NAME>`
 1. If you're fixing a bug, create a new branch named `fix/<DESCRIPTIVE NAME>-<ISSUE NUMBER>`
@@ -81,7 +83,7 @@ Once you've made the necessary changes to the code, make sure tests pass:
    make test 
    ```
 
-Check linting rules are passing:
+Check listing rules are passing:
 
    ```shell
    make checks-validator
