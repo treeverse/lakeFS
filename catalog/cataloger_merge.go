@@ -21,6 +21,9 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		return nil, err
 	}
 
+	ctx, cancel := c.withDiffResultsContext(ctx)
+	defer cancel()
+
 	mergeResult := &MergeResult{}
 	_, err := c.db.Transact(func(tx db.Tx) (interface{}, error) {
 		leftID, err := getBranchID(tx, repository, leftBranch, LockTypeUpdate)
@@ -36,11 +39,11 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 			return nil, fmt.Errorf("branch relation: %w", err)
 		}
 
-		err = c.doDiffByRelation(tx, relation, leftID, rightID)
+		err = c.doDiffByRelation(ctx, tx, relation, leftID, rightID)
 		if err != nil {
 			return nil, err
 		}
-		mergeResult.Summary, err = c.getDiffSummary(tx)
+		mergeResult.Summary, err = c.getDiffSummary(ctx, tx)
 		if err != nil {
 			return nil, err
 		}
@@ -66,7 +69,7 @@ func (c *cataloger) Merge(ctx context.Context, repository, leftBranch, rightBran
 		if message == "" {
 			message = formatMergeMessage(leftBranch, rightBranch)
 		}
-		commitID, err := c.doMergeByRelation(tx, relation, leftID, rightID, committer, message, metadata)
+		commitID, err := c.doMergeByRelation(ctx, tx, relation, leftID, rightID, committer, message, metadata)
 		if err != nil {
 			return nil, err
 		}
@@ -104,7 +107,7 @@ func formatMergeMessage(leftBranch string, rightBranch string) string {
 	return fmt.Sprintf("Merge '%s' into '%s'", leftBranch, rightBranch)
 }
 
-func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
+func (c *cataloger) doMergeByRelation(ctx context.Context, tx db.Tx, relation RelationType, leftID, rightID int64, committer string, msg string, metadata Metadata) (CommitID, error) {
 	nextCommitID, err := getNextCommitID(tx)
 	if err != nil {
 		return 0, err
@@ -117,11 +120,11 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 	}
 	switch relation {
 	case RelationTypeFromParent:
-		err = c.mergeFromParent(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
+		err = c.mergeFromParent(ctx, tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
 	case RelationTypeFromChild:
-		err = c.mergeFromChild(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
+		err = c.mergeFromChild(ctx, tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
 	case RelationTypeNotDirect:
-		err = c.mergeNonDirect(tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
+		err = c.mergeNonDirect(ctx, tx, previousMaxCommitID, nextCommitID, leftID, rightID, committer, msg, metadata)
 	default:
 		return 0, ErrUnsupportedRelation
 	}
@@ -131,8 +134,12 @@ func (c *cataloger) doMergeByRelation(tx db.Tx, relation RelationType, leftID, r
 	return nextCommitID, nil
 }
 
-func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, parentID, childID int64, committer string, msg string, metadata Metadata) error {
-	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
+func (c *cataloger) mergeFromParent(ctx context.Context, tx db.Tx, previousMaxCommitID, nextCommitID CommitID, parentID, childID int64, committer, msg string, metadata Metadata) error {
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id() AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		childID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
 	if err != nil {
@@ -177,9 +184,13 @@ func (c *cataloger) mergeFromParent(tx db.Tx, previousMaxCommitID, nextCommitID 
 	return nil
 }
 
-func (c *cataloger) mergeFromChild(tx db.Tx, previousMaxCommitID, nextCommitID CommitID, childID int64, parentID int64, committer string, msg string, metadata Metadata) error {
+func (c *cataloger) mergeFromChild(ctx context.Context, tx db.Tx, previousMaxCommitID, nextCommitID CommitID, childID int64, parentID int64, committer string, msg string, metadata Metadata) error {
 	// DifferenceTypeRemoved and DifferenceTypeChanged - set max_commit the our commit for committed entries in parent branch
-	_, err := tx.Exec(`UPDATE catalog_entries SET max_commit = $2
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return err
+	}
+	_, err = tx.Exec(`UPDATE catalog_entries SET max_commit = $2
 			WHERE branch_id = $1 AND max_commit = catalog_max_commit_id()
 				AND path in (SELECT path FROM `+diffResultsTableName+` WHERE diff_type IN ($3,$4))`,
 		parentID, previousMaxCommitID, DifferenceTypeRemoved, DifferenceTypeChanged)
@@ -215,7 +226,7 @@ func (c *cataloger) mergeFromChild(tx db.Tx, previousMaxCommitID, nextCommitID C
 	return err
 }
 
-func (c *cataloger) mergeNonDirect(_ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer string, msg string, _ Metadata) error {
+func (c *cataloger) mergeNonDirect(_ context.Context, _ sqlx.Execer, previousMaxCommitID, nextCommitID CommitID, leftID, rightID int64, committer, msg string, _ Metadata) error {
 	c.log.WithFields(logging.Fields{
 		"commit_id":      previousMaxCommitID,
 		"next_commit_id": nextCommitID,

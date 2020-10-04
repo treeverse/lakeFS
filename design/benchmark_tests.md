@@ -26,7 +26,7 @@
 6. Delete all files.
 
 ### CI
-Github workflow is triggered on a merge to master.
+GitHub workflow is triggered on a merge to master.
 The workflow will deploy a temporary environment that includes the latest lakeFS app, and an RDS instance.
 Workflow collects and structures the tests results from the lakeFS instance, 
 and sends them to a dedicated `prometheus` server.
