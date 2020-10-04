@@ -17,4 +17,6 @@ SELECT e.branch_id,
        (e.max_commit = 0) AS is_tombstone,
        e.ctid AS entry_ctid
 FROM catalog_entries e;
+update catalog_entries set min_commit = catalog_max_commit_id()  where min_commit = 0;
+
 COMMIT;

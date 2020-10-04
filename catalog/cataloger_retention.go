@@ -141,7 +141,6 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 		}
 		filter = sq.And{
 			filter,
-			// todo: ask Ariel what this is
 			sq.Expr("(physical_address, branch_id, min_commit) > (?, ?, ?)", r.PhysicalAddress, r.BranchID, r.MinCommit),
 		}
 	}

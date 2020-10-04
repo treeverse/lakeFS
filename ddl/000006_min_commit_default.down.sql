@@ -21,4 +21,5 @@ SELECT e.branch_id,
            ELSE e.min_commit
            END AS commit_weight
 FROM catalog_entries e;
+update catalog_entries set min_commit = 0  where min_commit = catalog_max_commit_id();
 COMMIT;
