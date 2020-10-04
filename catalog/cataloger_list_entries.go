@@ -228,10 +228,8 @@ func processSinglePrefix(response []entryPathPrefixInfo, delimiter string, branc
 				if len(entries) > 1 {
 					branchRanges[branch] = entries[1:]
 				} else {
-					err := getMoreRows(p, branch, branchRanges, readParams)
-					if err != nil { // assume that no more entries for this branch. so it is removed from branchRanges
-						delete(branchRanges, branch)
-					}
+					delete(branchRanges, branch)
+					_ = getMoreRows(p, branch, branchRanges, readParams)
 				}
 			}
 		}

@@ -43,7 +43,7 @@ func sqEntriesLineage(branchID int64, requestedCommit CommitID, lineage []lineag
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
-	maxCommitExpr = maxCommitExpr.Else(strconv.FormatInt(int64(MaxCommitID), 10))
+	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", MaxCommitID))
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
@@ -73,7 +73,7 @@ func sqLineageConditions(branchID int64, lineage []lineageCommit) (string, sq.Sq
 		isDeletedExpr = isDeletedExpr.When(ancestorCond, "e.is_deleted\n")
 		lineageFilter += " OR (" + branchCond + " AND e.min_commit <= " + commitStr + " AND e.is_committed) \n"
 	}
-	maxCommitExpr = maxCommitExpr.Else(strconv.FormatInt(int64(MaxCommitID), 10))
+	maxCommitExpr = maxCommitExpr.Else(sq.Expr("?", MaxCommitID))
 	maxCommitAlias := sq.Alias(maxCommitExpr, "max_commit")
 	isDeletedExpr = isDeletedExpr.Else("false")
 	isDeletedAlias := sq.Alias(isDeletedExpr, "is_deleted")
