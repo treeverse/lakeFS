@@ -91,7 +91,7 @@ If you introduce a new code version to production and discover  it has a critica
 
 As previously mentioned, with lakeFS the recommended branching schema is to ingest data to a dedicated branch. When streaming data, we can decide to merge the incoming data to master at a given time interval or checkpoint, depending on how we chose to write it from Kafka. 
 
-You can run quality tests for each merge (as presented in Example 1). Alas, tests are not perfect and we might still introduce low quality data at some point. In such a case, we can rollback master to the last known high quality commit, since our commits for streaming will include the metadata of the kafka offset. 
+You can run quality tests for each merge (as presented in Example 1). Alas, tests are not perfect and we might still introduce low quality data at some point. In such a case, we can rollback master to the last known high quality commit, since our commits for streaming will include the metadata of the Kafka offset. 
 
 <img src="../assets/img/branching_7.png" alt="branching_7" width="500px"/>
 
