@@ -102,7 +102,7 @@ func (c *cataloger) listEntriesByLevel(ctx context.Context, repository string, r
 
 // reading is mainly done in loopByLevel. It may happen (hopefully rarely) in getMoreRows.
 // variables needed for accessing the BD are packed and passed down to getMoreRows
-type readPramsType struct {
+type readParamsType struct {
 	tx              db.Tx
 	prefix          string
 	branchBatchSize int
@@ -142,7 +142,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 		exactFirst = false
 	}
 	var markerList []string
-	readParams := readPramsType{
+	readParams := readParamsType{
 		tx:              tx,
 		prefix:          prefix,
 		branchBatchSize: branchBatchSize,
@@ -192,7 +192,7 @@ func loopByLevel(tx db.Tx, prefix, after, delimiter string, limit, branchBatchSi
 	}
 }
 
-func processSinglePrefix(response []entryPKeyRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readPramsType) []string {
+func processSinglePrefix(response []entryPKeyRow, delimiter string, branchPriorityMap map[int64]int, limit int, readParams readParamsType) []string {
 	// gets results of union-reading, search for a prefix, or list of objects if those are leaves
 	// split results by branch
 	branchRanges := make(map[int64][]entryPKeyRow, len(branchPriorityMap))
@@ -240,7 +240,7 @@ func processSinglePrefix(response []entryPKeyRow, delimiter string, branchPriori
 	}
 }
 
-func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPKeyRow, readParams readPramsType) error {
+func getMoreRows(path string, branch int64, branchRanges map[int64][]entryPKeyRow, readParams readParamsType) error {
 	readBuf := make([]entryPKeyRow, 0, readParams.branchBatchSize)
 	singleSelect := readParams.branchQueryMap[branch]
 	requestedPath := readParams.prefix + path
