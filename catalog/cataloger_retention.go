@@ -94,13 +94,6 @@ type retentionQueryRecord struct {
 }
 
 func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowScanner, limit *uint64) (sq.SelectBuilder, error) {
-	var (
-		byNonCurrent  = sq.Expr(fmt.Sprintf("min_commit != %d AND max_commit < %d", MinCommitUncommittedIndicator, MaxCommitID))
-		byUncommitted = sq.Expr(fmt.Sprintf("min_commit = %d", MinCommitUncommittedIndicator))
-	)
-
-	repositorySelector := byRepository(repositoryName)
-
 	// An expression to select for each rule.  Select by ORing all these.
 	ruleSelectors := make([]sq.Sqlizer, 0, len(policy.Rules))
 	for _, rule := range policy.Rules {
@@ -113,6 +106,10 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 			expirationExprs = append(expirationExprs, byExpiration(*rule.Expiration.All))
 		}
 		if rule.Expiration.Noncurrent != nil {
+			byNonCurrent := sq.And{
+				sq.NotEq{"min_commit": MinCommitUncommittedIndicator},
+				sq.Lt{"max_commit": MaxCommitID},
+			}
 			expirationExprs = append(expirationExprs,
 				sq.And{
 					byExpiration(*rule.Expiration.Noncurrent),
@@ -120,6 +117,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 				})
 		}
 		if rule.Expiration.Uncommitted != nil {
+			byUncommitted := sq.Eq{"min_commit": MinCommitUncommittedIndicator}
 			expirationExprs = append(expirationExprs,
 				sq.And{
 					byExpiration(*rule.Expiration.Uncommitted),
@@ -133,6 +131,7 @@ func buildRetentionQuery(repositoryName string, policy *Policy, afterRow sq.RowS
 		ruleSelectors = append(ruleSelectors, selector)
 	}
 
+	repositorySelector := byRepository(repositoryName)
 	filter := sq.And{repositorySelector, sq.Or(ruleSelectors)}
 	if afterRow != nil {
 		var r retentionQueryRecord
