@@ -223,10 +223,10 @@ func processSinglePrefix(response []entryPathPrefixInfo, delimiter string, branc
 		// the path is removed from the beginning of all results.
 		// if start of a result slice is bigger than path - nothing happens
 		// can not be smaller as path was selected for being the smallest
-		for branch, ranges := range branchRanges {
-			if ranges[0].PathSuffix == p {
-				if len(ranges) > 1 {
-					branchRanges[branch] = ranges[1:]
+		for branch, entries := range branchRanges {
+			if entries[0].PathSuffix == p {
+				if len(entries) > 1 {
+					branchRanges[branch] = entries[1:]
 				} else {
 					err := getMoreRows(p, branch, branchRanges, readParams)
 					if err != nil { // assume that no more entries for this branch. so it is removed from branchRanges
