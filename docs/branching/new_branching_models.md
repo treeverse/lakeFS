@@ -98,9 +98,9 @@ You can run quality tests for each merge (as presented in Example 1). Alas, test
 ### Example 3: Cross collection consistency
 
 We often need consistency between different data collections. A few examples may be:
-* To join different collections in order to create a unified view of an account, a user or another entity we measure.
-* To introduce the same data in different formats
-* To introduce the same data with different leading index or sorting due to performance considerations
+ - To join different collections in order to create a unified view of an account, a user or another entity we measure.
+ - To introduce the same data in different formats
+ - To introduce the same data with a different leading index or sorting due to performance considerations
 
 lakeFS will help ensure you introduce only consistent data to your consumers by exposing the new collections and their join in one atomic action to master. Once you consumed the collections on a different branch, and only when both are synchronized, we calculated the join and merged to master. 
 
