@@ -8,21 +8,22 @@ import (
 )
 
 type DBBranchReader struct {
-	tx                           db.Tx
-	branchID                     int64
-	buf, initialBuf              []*DBReaderEntry
-	bufSize                      int
-	EOF                          bool
-	after                        string
-	commitID, maxRequestedCommit CommitID
+	tx                 db.Tx
+	branchID           int64
+	buf, initialBuf    []*DBReaderEntry
+	bufSize            int
+	EOF                bool
+	after              string
+	commitID           CommitID
+	maxCommitFixNeeded bool
 }
 
 func NewDBBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) *DBBranchReader {
-	var maxRequestedCommit CommitID
+	var maxCommitFixNeeded bool
 	if commitID == CommittedID || commitID == UncommittedID {
-		maxRequestedCommit = MaxCommitID
+		maxCommitFixNeeded = false
 	} else {
-		maxRequestedCommit = commitID
+		maxCommitFixNeeded = true
 	}
 	return &DBBranchReader{
 		tx:                 tx,
@@ -31,7 +32,7 @@ func NewDBBranchReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int,
 		initialBuf:         make([]*DBReaderEntry, 0, bufSize),
 		after:              after,
 		commitID:           commitID,
-		maxRequestedCommit: maxRequestedCommit,
+		maxCommitFixNeeded: maxCommitFixNeeded,
 	}
 }
 
@@ -57,7 +58,7 @@ func (r *DBBranchReader) Next() (*DBReaderEntry, error) {
 	}
 	nextPk := r.buf[0]
 	// if entry was deleted after the max commit that can be read, it must be set to undeleted
-	if nextPk.MaxCommit >= r.maxRequestedCommit {
+	if r.maxCommitFixNeeded && nextPk.MaxCommit >= r.commitID {
 		nextPk.MaxCommit = MaxCommitID
 	}
 	r.buf = r.buf[1:]
