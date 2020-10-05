@@ -183,11 +183,6 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) 
 }
 
 func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
-	// read last merge commit numbers from commit table
-	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
-	// the child is 0, as any change in the child was never merged to the parent.
-	// the parent is the effective commit number of the first lineage record of the child that points to the parent
-	// it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
 	effectiveCommits, err := c.selectChildEffectiveCommits(childID, parentID, tx)
 	if err != nil {
 		return err
@@ -206,7 +201,7 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	}
 
 	childReader := NewDBBranchReader(tx, childID, CommittedID, diffReaderBufferSize, "")
-	parentReader, err := NewDBLineageReader(tx, parentID, UncommittedID, diffReaderBufferSize, -1, "")
+	parentReader, err := NewDBLineageReader(tx, parentID, UncommittedID, diffReaderBufferSize, "")
 	if err != nil {
 		return err
 	}
@@ -277,6 +272,11 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 	return nil
 }
 
+// selectChildEffectiveCommits - read last merge commit numbers from commit table
+// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
+// the child is 0, as any change in the child was never merged to the parent.
+// the parent is the effective commit number of the first lineage record of the child that points to the parent
+// it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
 func (c *cataloger) selectChildEffectiveCommits(childID int64, parentID int64, tx db.Tx) (*diffEffectiveCommits, error) {
 	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
 		From("catalog_commits").
@@ -311,77 +311,6 @@ func (c *cataloger) selectChildEffectiveCommits(childID int64, parentID int64, t
 		}
 	}
 	return &effectiveCommits, nil
-}
-
-func (c *cataloger) diffFromChildOLD(ctx context.Context, tx db.Tx, childID, parentID int64) error {
-	// read last merge commit numbers from commit table
-	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
-	// the child is 0, as any change in the child was never merged to the parent.
-	// the parent is the effective commit number of the first lineage record of the child that points to the parent
-	// it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
-	effectiveCommits := struct {
-		ParentEffectiveCommit CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
-		ChildEffectiveCommit  CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
-	}{}
-
-	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
-		From("catalog_commits").
-		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
-		OrderBy(`commit_id DESC`).
-		Limit(1).
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("effective commits sql: %w", err)
-	}
-	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
-	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
-	if err != nil && !effectiveCommitsNotFound {
-		return fmt.Errorf("select effective commit: %w", err)
-	}
-	if effectiveCommitsNotFound {
-		effectiveCommits.ChildEffectiveCommit = 1 // we need all commits from the child. so any small number will do
-		parentEffectiveQuery, args, err := psql.Select("commit_id as parent_effective_commit").
-			From("catalog_commits").
-			Where("branch_id = ? AND merge_source_branch = ?", childID, parentID).
-			OrderBy("commit_id").
-			Limit(1).
-			ToSql()
-		if err != nil {
-			return fmt.Errorf("parent effective commit sql: %w", err)
-		}
-		err = tx.Get(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
-		if err != nil {
-			return fmt.Errorf("select parent effective commit: %w", err)
-		}
-	}
-
-	parentLineage, err := getLineage(tx, parentID, UncommittedID)
-	if err != nil {
-		return fmt.Errorf("parent lineage failed: %w", err)
-	}
-	childLineage, err := getLineage(tx, childID, CommittedID)
-	if err != nil {
-		return fmt.Errorf("child lineage failed: %w", err)
-	}
-
-	childLineageValues := getLineageAsValues(childLineage, childID, MaxCommitID)
-	mainDiffFromChild := sqDiffFromChildV(parentID, childID, effectiveCommits.ParentEffectiveCommit, effectiveCommits.ChildEffectiveCommit, parentLineage, childLineageValues)
-	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
-	if err != nil {
-		return err
-	}
-	diffFromChildSQL, args, err := mainDiffFromChild.
-		Prefix("CREATE UNLOGGED TABLE " + diffResultsTableName + " AS ").
-		PlaceholderFormat(sq.Dollar).
-		ToSql()
-	if err != nil {
-		return fmt.Errorf("diff from child sql: %w", err)
-	}
-	if _, err := tx.Exec(diffFromChildSQL, args...); err != nil {
-		return fmt.Errorf("exec diff from child: %w", err)
-	}
-	return nil
 }
 
 // withDiffResultsContext generate diff results id used for temporary table name

@@ -18,18 +18,10 @@ type DBLineageReader struct {
 	returnedRows int
 }
 
-const (
-	DBReaderMaxLimit          = 1000
-	DBReaderDefaultBufferSize = 32
-)
-
-func NewDBLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, limit int, after string) (*DBLineageReader, error) {
+func NewDBLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, after string) (*DBLineageReader, error) {
 	lineage, err := getLineage(tx, branchID, commitID)
 	if err != nil {
 		return nil, fmt.Errorf("error getting lineage: %w", err)
-	}
-	if limit > DBReaderMaxLimit {
-		limit = DBReaderMaxLimit
 	}
 	lr := &DBLineageReader{
 		tx:        tx,
@@ -37,7 +29,6 @@ func NewDBLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int
 		commitID:  commitID,
 		firstTime: true,
 		readers:   make([]*DBBranchReader, len(lineage)+1),
-		limit:     limit,
 	}
 	lr.readers[0] = NewDBBranchReader(tx, branchID, commitID, bufSize, after)
 	for i, bl := range lineage {
