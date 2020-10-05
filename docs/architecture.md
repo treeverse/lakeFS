@@ -35,7 +35,7 @@ See the [S3 API Reference](reference/s3.md) section for information on supported
 
 ### OpenAPI Server
 
-The Swagger ([OpenAPI](https://swagger.io/docs/specification/2-0/basic-structure/){:target="_blank"}) Server exposes the full set of lakeFS operations (see [Reference](reference/api.md)). This includes basic CRUD operations against repositories, objects, and versioning related operations such as branching, merging, committing and reverting changes to data.
+The Swagger ([OpenAPI](https://swagger.io/docs/specification/2-0/basic-structure/){:target="_blank"}) Server exposes the full set of lakeFS operations (see [Reference](reference/api.md)). This includes basic CRUD operations against repositories and objects, as well as versioning related operations such as branching, merging, committing and reverting changes to data.
 
 ### S3 Storage Adapter
 
