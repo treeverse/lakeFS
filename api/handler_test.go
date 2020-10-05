@@ -11,6 +11,7 @@ import (
 
 	dbparams "github.com/treeverse/lakefs/db/params"
 	"github.com/treeverse/lakefs/dedup"
+	"github.com/treeverse/lakefs/stats"
 
 	"github.com/go-openapi/runtime"
 	httptransport "github.com/go-openapi/runtime/client"
@@ -71,7 +72,7 @@ func createDefaultAdminUser(authService auth.Service, t *testing.T) *authmodel.C
 
 type mockCollector struct{}
 
-func (m *mockCollector) CollectMetadata(_ map[string]string) {}
+func (m *mockCollector) CollectMetadata(_ *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 

@@ -106,8 +106,9 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func NewBufferedCollector(installationID string, c *config.Config) *BufferedCollector {
-	processID, opts := getBufferedCollectorArgs(c)
+func NewBufferedCollector(installationID string, c *config.Config, opts ...BufferedCollectorOpts) *BufferedCollector {
+	processID, moreOpts := getBufferedCollectorArgs(c)
+	opts = append(opts, moreOpts...)
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
 		writes:         make(chan primaryKey, DefaultCollectorEventBufferSize),
@@ -118,7 +119,6 @@ func NewBufferedCollector(installationID string, c *config.Config) *BufferedColl
 		installationID: installationID,
 		processID:      processID,
 	}
-
 	for _, opt := range opts {
 		opt(s)
 	}
@@ -207,6 +207,9 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 }
 
 func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
+	if c == nil {
+		return "", nil
+	}
 	var sender Sender
 	if c.GetStatsEnabled() && !strings.HasPrefix(config.Version, config.UnreleasedVersion) {
 		sender = NewHTTPSender(c.GetStatsAddress(), time.Now)
