@@ -16,7 +16,7 @@ Let’s look at 3 examples of a development environment and their branching mode
 
 ### Example 1: Upgrading Spark and using Revert action
 
-You installed the latest version of Apache Spark. As a first step you’ll test your spark jobs to see that the upgrade doesn't have any undesired side effects.
+You installed the latest version of Apache Spark. As a first step you’ll test your Spark jobs to see that the upgrade doesn't have any undesired side effects.
 
 You simply create a branch (testing-spark-3.0) to test the Spark upgrade. Jobs may run smoothly (the theoretical possibility exists!), or they may fail halfway through, leaving you with some intermediate partitions, data and metadata. In this case, you can simply revert the branch to its original state, without worrying about the intermediate results of your last experiment, and perform another (hopefully successful) test in an isolated branch. Revert actions are atomic and immediate, so no manual cleanup is required.
 
