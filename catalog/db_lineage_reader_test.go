@@ -15,34 +15,35 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 
 	ctx := context.Background()
 	conn, uri := testutil.GetDB(t, databaseURI)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
+
 	c := TestCataloger{Cataloger: NewCataloger(conn), DbConnURI: uri}
 	baseBranchName := "b0"
 	repository := testCatalogerRepo(t, ctx, c, "repo", baseBranchName)
+
 	objSkip := []int{1, 2, 3, 5, 7, 11}
+	testSetupDBReaderData(t, ctx, c, repository, numberOfObjects, baseBranchName, objSkip)
+
 	bufferSizes := []int{1, 2, 8, 64, 512, 1024 * 4}
-	maxBranchNumber := len(objSkip)
-
-	testSetupDBReaderData(t, ctx, c, repository, numberOfObjects, maxBranchNumber, baseBranchName, objSkip)
-
-	t.Run("cache_sizes", func(t *testing.T) {
-		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
-			// test different cache sizes
-			for k := 0; k < len(bufferSizes); k++ {
-				bufSize := bufferSizes[k]
+	for _, bufSize := range bufferSizes {
+		testName := fmt.Sprintf("buffer_size_%d", bufSize)
+		t.Run(testName, func(t *testing.T) {
+			_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
 				// test lineage reader
-				for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
+				for branchNo := range objSkip {
 					branchName := "b" + strconv.Itoa(branchNo)
-					lineageReader, err := NewDBLineageReader(tx, int64(branchNo+1), UncommittedID, bufSize, "")
+					branchID := int64(branchNo + 1)
+					lineageReader, err := NewDBLineageReader(tx, branchID, UncommittedID, bufSize, "")
 					testutil.MustDo(t, "new lineage reader "+branchName, err)
 					for i := 0; i < numberOfObjects; i++ {
-						var expectedBranch int64
 						o, err := lineageReader.Next()
-						testutil.MustDo(t, "read from lineage "+branchName, err)
+						position := fmt.Sprintf("branch=%s, number=%d", branchName, i)
+						testutil.MustDo(t, "next from lineage reader "+position, err)
 						if o == nil {
-							t.Errorf("Got nil obj, branch=%s, number=%d\n", branchName, i)
+							t.Error("Got nil obj", position)
 						}
 						// check item read from might branch
+						var expectedBranch int64
 						for j := branchNo; j >= 0; j-- {
 							if i%objSkip[j] == 0 {
 								expectedBranch = int64(j + 1)
@@ -50,17 +51,17 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 							}
 						}
 						if o.BranchID != expectedBranch {
-							t.Errorf("fetch from wrong branch.branchName=%s branchNumber=%d, i =%d\n", branchName, o.BranchID, i)
+							t.Errorf("fetch from branchID=%d, expected=%d (%s)", o.BranchID, expectedBranch, position)
 						}
 					}
 				}
-			}
-			return nil, nil
+				return nil, nil
+			})
 		})
-	})
+	}
 
 	// test reading committed and uncommitted data
-	bufSize := 8
+	const bufSize = 8
 	t.Run("uncommitted", func(t *testing.T) {
 		testCatalogerCreateEntry(t, ctx, c, repository, "b1", "Obj-0004", nil, "sd1")
 		_, _ = conn.Transact(func(tx db.Tx) (interface{}, error) {
@@ -79,6 +80,7 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 			return nil, nil
 		})
 	})
+
 	t.Run("committed", func(t *testing.T) {
 		_, err := c.Commit(ctx, repository, "b1", "commit to b1", "tester", nil)
 		testutil.MustDo(t, "commit to b1", err)
@@ -225,25 +227,11 @@ func TestCataloger_DBLineageReader(t *testing.T) {
 	})
 }
 
-func testSetupDBReaderData(t *testing.T, ctx context.Context, c TestCataloger, repository string, numberOfObjects int, maxBranchNumber int, baseBranchName string, objSkip []int) {
-	for branchNo := 0; branchNo < maxBranchNumber; branchNo++ {
-		branchName := "b" + strconv.Itoa(branchNo)
-		if branchNo > 0 {
-			testCatalogerBranch(t, ctx, c, repository, branchName, baseBranchName)
-		}
-		for i := 0; i < numberOfObjects; i += objSkip[branchNo] {
-			testCatalogerCreateEntry(t, ctx, c, repository, branchName, fmt.Sprintf("Obj-%04d", i), nil, "")
-		}
-		_, err := c.Commit(ctx, repository, branchName, "commit to "+branchName, "tester", nil)
-		testutil.MustDo(t, "commit to "+branchName, err)
-		baseBranchName = branchName
-	}
-}
-
-func testDBReaderNext(t *testing.T, lReader *DBLineageReader, msg string, expBranch, expMinCommit CommitID, expMaxCommit CommitID) {
-	o, err := lReader.Next()
+func testDBReaderNext(t *testing.T, reader *DBLineageReader, msg string, expBranch, expMinCommit CommitID, expMaxCommit CommitID) {
+	o, err := reader.Next()
 	testutil.MustDo(t, msg, err)
-	if o.BranchID != int64(expBranch) || o.MinCommit != CommitID(expMinCommit) || o.MaxCommit != expMaxCommit {
-		t.Errorf("%s branch=%d (%d), min_commit=%d (%d), max_commit=%d (%d)", msg, o.BranchID, expBranch, o.MinCommit, expMinCommit, o.MaxCommit, expMaxCommit)
+	if o.BranchID != int64(expBranch) || o.MinCommit != expMinCommit || o.MaxCommit != expMaxCommit {
+		t.Errorf("%s branch=%d (%d), min_commit=%d (%d), max_commit=%d (%d)",
+			msg, o.BranchID, expBranch, o.MinCommit, expMinCommit, o.MaxCommit, expMaxCommit)
 	}
 }

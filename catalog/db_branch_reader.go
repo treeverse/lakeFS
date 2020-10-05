@@ -39,7 +39,9 @@ func (r *DBBranchReader) Next() (*DBReaderEntry, error) {
 		return nil, nil
 	}
 	if r.idx >= len(r.buf) {
-		q := sqBranchReaderSelectWithCommitID(r.branchID, r.commitID).Limit(uint64(r.bufSize)).Where("path > ?", r.after)
+		q := sqBranchReaderSelectWithCommitID(r.branchID, r.commitID).
+			Limit(uint64(r.bufSize)).
+			Where("path > ?", r.after)
 		sql, args, err := q.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("next query format: %w", err)

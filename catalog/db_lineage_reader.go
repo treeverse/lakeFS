@@ -14,7 +14,6 @@ type DBLineageReader struct {
 	readers      []*DBBranchReader
 	nextRow      []*DBReaderEntry
 	firstTime    bool
-	limit        int
 	returnedRows int
 }
 
@@ -49,7 +48,7 @@ func (r *DBLineageReader) Next() (*DBReaderEntry, error) {
 	if r.EOF {
 		return nil, nil
 	}
-	var selectedEntry *DBReaderEntry
+
 	// indirection array, to skip lineage branches that reached end
 	nonNilNextRow := make([]int, 0, len(r.nextRow))
 	for i, ent := range r.nextRow {
@@ -61,25 +60,26 @@ func (r *DBLineageReader) Next() (*DBReaderEntry, error) {
 		r.EOF = true
 		return nil, nil
 	}
+
 	// find lowest Path
-	selectedEntry = r.nextRow[nonNilNextRow[0]]
+	selectedEntry := r.nextRow[nonNilNextRow[0]]
 	for i := 1; i < len(nonNilNextRow); i++ {
-		if selectedEntry.Path > r.nextRow[nonNilNextRow[i]].Path {
-			selectedEntry = r.nextRow[nonNilNextRow[i]]
+		branchIdx := nonNilNextRow[i]
+		if selectedEntry.Path > r.nextRow[branchIdx].Path {
+			selectedEntry = r.nextRow[branchIdx]
 		}
 	}
 	r.returnedRows++
-	if r.limit >= 0 && r.returnedRows >= r.limit {
-		r.EOF = true
-	}
+
 	// advance next row for all branches that have this Path
 	for i := 0; i < len(nonNilNextRow); i++ {
-		if r.nextRow[nonNilNextRow[i]].Path == selectedEntry.Path {
-			n, err := r.readers[nonNilNextRow[i]].Next()
+		branchIdx := nonNilNextRow[i]
+		if r.nextRow[branchIdx].Path == selectedEntry.Path {
+			n, err := r.readers[branchIdx].Next()
 			if err != nil {
-				return nil, fmt.Errorf("error getting entry on branch : %w", err)
+				return nil, fmt.Errorf("entry on branch : %w", err)
 			}
-			r.nextRow[nonNilNextRow[i]] = n
+			r.nextRow[branchIdx] = n
 		}
 	}
 	return selectedEntry, nil
