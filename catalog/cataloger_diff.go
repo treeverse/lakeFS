@@ -190,6 +190,9 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 
 	// create diff output table
 	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	if err != nil {
+		return err
+	}
 	_, err = tx.Exec("CREATE UNLOGGED TABLE " + diffResultsTableName + ` (
 		source_branch bigint NOT NULL,
 		diff_type integer NOT NULL,
@@ -233,31 +236,29 @@ func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parent
 		}
 
 		// diff
-		var diffType DifferenceType
-		parentPathExists := parentEnt != nil && parentEnt.Path == childEnt.Path
-		switch {
-		case childEnt.IsDeleted() && (!parentPathExists || parentEnt.IsDeleted()):
-			diffType = DifferenceTypeNone
-		case childEnt.IsDeleted() && parentPathExists:
-			if parentEnt.MinCommit > effectiveCommits.ParentEffectiveCommit {
+		var matchedParent *DBReaderEntry
+		if parentEnt != nil && parentEnt.Path == childEnt.Path {
+			matchedParent = parentEnt
+		}
+		diffType := DifferenceTypeAdded
+		if childEnt.IsDeleted() {
+			switch {
+			case matchedParent == nil || matchedParent.IsDeleted():
+				diffType = DifferenceTypeNone
+			case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
 				diffType = DifferenceTypeConflict
-			} else {
+			default:
 				diffType = DifferenceTypeRemoved
 			}
-		case !childEnt.IsDeleted() && (!parentPathExists || parentEnt.IsDeleted()):
-			if parentEnt != nil && parentEnt.MinCommit > effectiveCommits.ParentEffectiveCommit {
+		} else if matchedParent != nil {
+			switch {
+			case matchedParent.MinCommit > effectiveCommits.ParentEffectiveCommit:
 				diffType = DifferenceTypeConflict
-			} else {
+			case matchedParent.IsDeleted():
 				diffType = DifferenceTypeAdded
-			}
-		case !childEnt.IsDeleted() && parentPathExists && !parentEnt.IsDeleted():
-			if parentEnt.MinCommit > effectiveCommits.ParentEffectiveCommit {
-				diffType = DifferenceTypeConflict
-			} else {
+			default:
 				diffType = DifferenceTypeChanged
 			}
-		default:
-			diffType = DifferenceTypeNone
 		}
 
 		// insert record based on diff type
