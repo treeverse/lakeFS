@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/jackc/pgx/v4/stdlib"
@@ -60,6 +61,8 @@ type Waiter interface {
 
 type ParadeDB sqlx.DB
 
+// NewParadeDB returns a Parade that implements Parade on a database.  The DDL should already be
+// installed on that database.
 func NewParadeDB(db *sqlx.DB) Parade {
 	return (*ParadeDB)(db)
 }
@@ -69,6 +72,7 @@ func (p *ParadeDB) InsertTasks(ctx context.Context, tasks []TaskData) error {
 	if err != nil {
 		return err
 	}
+	defer sqlConn.Close()
 	return sqlConn.Raw(func(driverConn interface{}) error {
 		conn := driverConn.(*stdlib.Conn).Conn()
 		return InsertTasks(ctx, conn, &TaskDataIterator{Data: tasks})
@@ -88,22 +92,13 @@ func (p *ParadeDB) ReturnTask(taskID TaskID, token PerformanceToken, resultStatu
 }
 
 func (p *ParadeDB) NewWaiter(ctx context.Context, taskID TaskID) (Waiter, error) {
-	sqlConn, err := p.DB.Conn(ctx)
+	conn, err := stdlib.AcquireConn(p.DB)
 	if err != nil {
 		return nil, fmt.Errorf("get conn to for waiter: %w", err)
 	}
-	defer sqlConn.Close()
 
-	var ret *TaskDBWaiter
-	// Ignore err, it is just returned along with ret
-
-	// nolint:errcheck
-	sqlConn.Raw(func(driverConn interface{}) error {
-		conn := driverConn.(*stdlib.Conn).Conn()
-		ret, err = NewWaiter(ctx, conn, taskID)
-		return nil
-	})
-	return ret, err
+	// Transfers ownership of conn
+	return NewWaiter(ctx, conn, taskID)
 }
 
 func (p *ParadeDB) DeleteTasks(ctx context.Context, taskIDs []TaskID) error {
@@ -111,6 +106,7 @@ func (p *ParadeDB) DeleteTasks(ctx context.Context, taskIDs []TaskID) error {
 	if err != nil {
 		return err
 	}
+	defer sqlConn.Close()
 	return sqlConn.Raw(func(driverConn interface{}) error {
 		conn := driverConn.(*stdlib.Conn).Conn()
 		tx, err := conn.Begin(ctx)
@@ -142,3 +138,96 @@ func (p *ParadeDB) DeleteTasks(ctx context.Context, taskIDs []TaskID) error {
 		return nil
 	})
 }
+
+// ParadePrefix wraps a Parade and adds a prefix to all TaskIDs, action names, and ActorIDs.
+type ParadePrefix struct {
+	Base   Parade
+	Prefix string
+}
+
+func (pp *ParadePrefix) AddPrefix(s string) string {
+	return fmt.Sprintf("%s.%s", pp.Prefix, s)
+}
+
+func (pp *ParadePrefix) StripPrefix(s string) string {
+	return strings.TrimPrefix(s, pp.Prefix+".")
+}
+
+func (pp *ParadePrefix) AddPrefixTask(id TaskID) TaskID {
+	return TaskID(pp.AddPrefix(string(id)))
+}
+
+func (pp *ParadePrefix) StripPrefixTask(id TaskID) TaskID {
+	return TaskID(pp.StripPrefix(string(id)))
+}
+
+func (pp *ParadePrefix) AddPrefixActor(actor ActorID) ActorID {
+	return ActorID(pp.AddPrefix(string(actor)))
+}
+
+func (pp *ParadePrefix) StripPrefixActor(actor TaskID) ActorID {
+	return ActorID(pp.StripPrefix(string(actor)))
+}
+
+func (pp *ParadePrefix) InsertTasks(ctx context.Context, tasks []TaskData) error {
+	prefixedTasks := make([]TaskData, len(tasks))
+	for i := 0; i < len(tasks); i++ {
+		copy := tasks[i]
+		copy.ID = pp.AddPrefixTask(copy.ID)
+		copy.Action = pp.AddPrefix(copy.Action)
+		copy.ActorID = pp.AddPrefixActor(copy.ActorID)
+		if copy.StatusCode == "" {
+			copy.StatusCode = "pending"
+		}
+		toSignal := make([]TaskID, len(copy.ToSignal))
+		for j := 0; j < len(toSignal); j++ {
+			toSignal[j] = pp.AddPrefixTask(copy.ToSignal[j])
+		}
+		copy.ToSignal = toSignal
+		prefixedTasks[i] = copy
+	}
+	return pp.Base.InsertTasks(ctx, prefixedTasks)
+}
+
+func (pp *ParadePrefix) DeleteTasks(ctx context.Context, ids []TaskID) error {
+	prefixedIDs := make([]TaskID, len(ids))
+	for i := 0; i < len(ids); i++ {
+		prefixedIDs[i] = pp.AddPrefixTask(ids[i])
+	}
+
+	if err := pp.Base.DeleteTasks(ctx, prefixedIDs); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (pp *ParadePrefix) ReturnTask(taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
+	return pp.Base.ReturnTask(pp.AddPrefixTask(taskID), token, resultStatus, resultStatusCode)
+}
+
+func (pp *ParadePrefix) ExtendTaskDeadline(taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
+	return pp.Base.ExtendTaskDeadline(pp.AddPrefixTask(taskID), token, maxDuration)
+}
+
+func (pp *ParadePrefix) OwnTasks(actorID ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]OwnedTaskData, error) {
+	prefixedActions := make([]string, len(actions))
+	for i, action := range actions {
+		prefixedActions[i] = pp.AddPrefix(action)
+	}
+	tasks, err := pp.Base.OwnTasks(actorID, maxTasks, prefixedActions, maxDuration)
+	if tasks != nil {
+		for i := 0; i < len(tasks); i++ {
+			task := &tasks[i]
+			task.ID = pp.StripPrefixTask(task.ID)
+			// TODO(ariels): Strip prefix from Action (so far unused in these tests)
+		}
+	}
+	return tasks, err
+}
+
+func (pp *ParadePrefix) NewWaiter(ctx context.Context, taskID TaskID) (Waiter, error) {
+	return pp.Base.NewWaiter(ctx, pp.AddPrefixTask(taskID))
+}
+
+var _ Parade = &ParadePrefix{}
