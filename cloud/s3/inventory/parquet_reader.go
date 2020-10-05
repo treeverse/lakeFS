@@ -1,4 +1,4 @@
-package s3
+package inventory
 
 import "github.com/xitongsys/parquet-go/reader"
 

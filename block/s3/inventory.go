@@ -12,7 +12,7 @@ import (
 	"github.com/aws/aws-sdk-go/service/s3"
 	"github.com/aws/aws-sdk-go/service/s3/s3iface"
 	"github.com/treeverse/lakefs/block"
-	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
+	inventorys3 "github.com/treeverse/lakefs/cloud/s3/inventory"
 	"github.com/treeverse/lakefs/logging"
 )
 

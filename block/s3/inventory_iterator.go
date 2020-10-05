@@ -7,8 +7,8 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
+	inventorys3 "github.com/treeverse/lakefs/cloud/s3/inventory"
 	"github.com/treeverse/lakefs/cmdutils"
-	inventorys3 "github.com/treeverse/lakefs/inventory/s3"
 )
 
 var ErrInventoryNotSorted = errors.New("got unsorted s3 inventory")
