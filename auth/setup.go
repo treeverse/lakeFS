@@ -98,7 +98,7 @@ func SetupTestingEnv(name, storageNS string) (logging.Logger, *genclient.Lakefs,
 				&credentials.StaticProvider{
 					Value: credentials.Value{
 						AccessKeyID:     viper.GetString("access_key_id"),
-						SecretAccessKey: viper.GetString("secret_access_key"),
+						SecretAccessKey: viper.GetString("access_secret_key"),
 					}})))
 
 	return logger, client, svc
