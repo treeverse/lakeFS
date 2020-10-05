@@ -7,6 +7,7 @@ const (
 	DifferenceTypeRemoved
 	DifferenceTypeChanged
 	DifferenceTypeConflict
+	DifferenceTypeNone
 )
 
 type Difference struct {

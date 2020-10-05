@@ -12,6 +12,11 @@ import (
 	"github.com/treeverse/lakefs/logging"
 )
 
+type diffEffectiveCommits struct {
+	ParentEffectiveCommit CommitID `db:"parent_effective_commit"` // last commit parent synchronized with child. If non - it is the commit where the child was branched
+	ChildEffectiveCommit  CommitID `db:"child_effective_commit"`  // last commit child synchronized to parent. if never - than it is 1 (everything in the child is a change)
+}
+
 type contextKey string
 
 func (k contextKey) String() string {
@@ -21,8 +26,10 @@ func (k contextKey) String() string {
 const (
 	DiffMaxLimit = 1000
 
-	diffResultsTableNamePrefix            = "catalog_diff_results"
-	contextDiffResultsKey      contextKey = "diff_results_key"
+	diffResultsTableNamePrefix = "catalog_diff_results"
+	diffReaderBufferSize       = 32
+
+	contextDiffResultsKey contextKey = "diff_results_key"
 )
 
 var ErrMissingDiffResultsIDInContext = errors.New("missing diff results id in context")
@@ -176,6 +183,137 @@ func getDiffDifferences(ctx context.Context, tx db.Tx, limit int, after string) 
 }
 
 func (c *cataloger) diffFromChild(ctx context.Context, tx db.Tx, childID, parentID int64) error {
+	// read last merge commit numbers from commit table
+	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
+	// the child is 0, as any change in the child was never merged to the parent.
+	// the parent is the effective commit number of the first lineage record of the child that points to the parent
+	// it is possible that the child the have already done from_parent merge. so we have to take the minimal effective commit
+	effectiveCommits, err := c.selectChildEffectiveCommits(childID, parentID, tx)
+	if err != nil {
+		return err
+	}
+
+	// create diff output table
+	diffResultsTableName, err := diffResultsTableNameFromContext(ctx)
+	_, err = tx.Exec("CREATE UNLOGGED TABLE " + diffResultsTableName + ` (
+		source_branch bigint NOT NULL,
+		diff_type integer NOT NULL,
+		path character varying COLLATE "C" NOT NULL,
+		entry_ctid tid NOT NULL
+	)`)
+	if err != nil {
+		return fmt.Errorf("diff from child diff result table: %w", err)
+	}
+
+	childReader := NewDBBranchReader(tx, childID, CommittedID, diffReaderBufferSize, "")
+	parentReader, err := NewDBLineageReader(tx, parentID, UncommittedID, diffReaderBufferSize, -1, "")
+	if err != nil {
+		return err
+	}
+
+	var parentEnt *DBReaderEntry
+	for {
+		// get next child record
+		childEnt, err := childReader.Next()
+		if err != nil {
+			return err
+		}
+		if childEnt == nil {
+			break
+		}
+		if !childEnt.ChangedAfterCommit(effectiveCommits.ChildEffectiveCommit) {
+			continue
+		}
+
+		// get next parent - next parentEnt that path >= child
+		for parentReader != nil && (parentEnt == nil || parentEnt.Path < childEnt.Path) {
+			parentEnt, err = parentReader.Next()
+			if err != nil {
+				return err
+			}
+			if parentEnt == nil {
+				// no reader at end of iteration
+				parentReader = nil
+			}
+		}
+
+		// diff
+		var diffType DifferenceType
+		parentPathExists := parentEnt != nil && parentEnt.Path == childEnt.Path
+		switch {
+		case childEnt.IsDeleted() && (!parentPathExists || parentEnt.IsDeleted()):
+			diffType = DifferenceTypeNone
+		case childEnt.IsDeleted() && parentPathExists:
+			if parentEnt.MinCommit > effectiveCommits.ParentEffectiveCommit {
+				diffType = DifferenceTypeConflict
+			} else {
+				diffType = DifferenceTypeRemoved
+			}
+		case !childEnt.IsDeleted() && (!parentPathExists || parentEnt.IsDeleted()):
+			if parentEnt != nil && parentEnt.MinCommit > effectiveCommits.ParentEffectiveCommit {
+				diffType = DifferenceTypeConflict
+			} else {
+				diffType = DifferenceTypeAdded
+			}
+		case !childEnt.IsDeleted() && parentPathExists && !parentEnt.IsDeleted():
+			if parentEnt.MinCommit > effectiveCommits.ParentEffectiveCommit {
+				diffType = DifferenceTypeConflict
+			} else {
+				diffType = DifferenceTypeChanged
+			}
+		default:
+			diffType = DifferenceTypeNone
+		}
+
+		// insert record based on diff type
+		if diffType != DifferenceTypeNone {
+			_, err = tx.Exec(`INSERT INTO `+diffResultsTableName+` VALUES ($1,$2,$3,$4)`,
+				childID, diffType, childEnt.Path, childEnt.RowCtid)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (c *cataloger) selectChildEffectiveCommits(childID int64, parentID int64, tx db.Tx) (*diffEffectiveCommits, error) {
+	effectiveCommitsQuery, args, err := sq.Select(`commit_id AS parent_effective_commit`, `merge_source_commit AS child_effective_commit`).
+		From("catalog_commits").
+		Where("branch_id = ? AND merge_source_branch = ? AND merge_type = 'from_child'", parentID, childID).
+		OrderBy(`commit_id DESC`).
+		Limit(1).
+		PlaceholderFormat(sq.Dollar).
+		ToSql()
+	if err != nil {
+		return nil, err
+	}
+	var effectiveCommits diffEffectiveCommits
+	err = tx.Get(&effectiveCommits, effectiveCommitsQuery, args...)
+	effectiveCommitsNotFound := errors.Is(err, db.ErrNotFound)
+	if err != nil && !effectiveCommitsNotFound {
+		return nil, err
+	}
+	if effectiveCommitsNotFound {
+		effectiveCommits.ChildEffectiveCommit = 1 // we need all commits from the child. so any small number will do
+		parentEffectiveQuery, args, err := psql.Select("commit_id as parent_effective_commit").
+			From("catalog_commits").
+			Where("branch_id = ? AND merge_source_branch = ?", childID, parentID).
+			OrderBy("commit_id").
+			Limit(1).
+			ToSql()
+		if err != nil {
+			return nil, err
+		}
+		err = tx.Get(&effectiveCommits.ParentEffectiveCommit, parentEffectiveQuery, args...)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &effectiveCommits, nil
+}
+
+func (c *cataloger) diffFromChildOLD(ctx context.Context, tx db.Tx, childID, parentID int64) error {
 	// read last merge commit numbers from commit table
 	// if it is the first child-to-parent commit, than those commit numbers are calculated as follows:
 	// the child is 0, as any change in the child was never merged to the parent.

@@ -19,7 +19,8 @@ type DBLineageReader struct {
 }
 
 const (
-	DBReaderMaxLimit = 1000
+	DBReaderMaxLimit          = 1000
+	DBReaderDefaultBufferSize = 32
 )
 
 func NewDBLineageReader(tx db.Tx, branchID int64, commitID CommitID, bufSize int, limit int, after string) (*DBLineageReader, error) {
