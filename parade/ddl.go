@@ -198,7 +198,7 @@ var ErrInvalidToken = errors.New("performance token invalid (action may have exc
 
 // ExtendTaskDeadline extends the deadline for completing taskID which was acquired with the
 // specified token, for maxDuration longer.  It returns nil if the task is still owned and its
-// deadline was extended, or an SQL error, or ErrInvalidToken.  deadline was extended.
+// deadline was extended, or an SQL error, or ErrInvalidToken.
 func ExtendTaskDeadline(conn *sqlx.DB, taskID TaskID, token PerformanceToken, maxDuration time.Duration) error {
 	var res *bool
 	query, args, err := sqlx.In(`SELECT * FROM extend_task_deadline(?, ?, ?)`, taskID, token, maxDuration)
