@@ -2306,6 +2306,7 @@ func (c *Controller) ConfigGetConfigHandler() configop.GetConfigHandler {
 		deps, err := c.setupRequest(user, params.HTTPRequest, []permissions.Permission{
 			{
 				// Should use repository creation permission but it is coupled to a repo id
+				// TODO(#764): Add a new action for reading configs?
 				Action:   permissions.ListRepositoriesAction,
 				Resource: permissions.All,
 			},
