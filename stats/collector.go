@@ -26,11 +26,10 @@ type Metric struct {
 }
 
 type InputEvent struct {
-	InstallationID         string   `json:"installation_id"`
-	CloudProviderAccountID string   `json:"cloud_provider_account_id"`
-	ProcessID              string   `json:"process_id"`
-	Time                   string   `json:"time"`
-	Metrics                []Metric `json:"metrics"`
+	InstallationID string   `json:"installation_id"`
+	ProcessID      string   `json:"process_id"`
+	Time           string   `json:"time"`
+	Metrics        []Metric `json:"metrics"`
 }
 
 type MetadataEntry struct {
@@ -39,9 +38,8 @@ type MetadataEntry struct {
 }
 
 type Metadata struct {
-	InstallationID         string          `json:"installation_id"`
-	CloudProviderAccountID string          `json:"cloud_provider_account_id"`
-	Entries                []MetadataEntry `json:"entries"`
+	InstallationID string          `json:"installation_id"`
+	Entries        []MetadataEntry `json:"entries"`
 }
 
 type primaryKey struct {
@@ -162,7 +160,7 @@ func (s *BufferedCollector) send(metrics []Metric) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.getCloudProviderAccountID(), s.processID, metrics)
+	err := s.sender.SendEvent(ctx, s.getInstallationID(), s.processID, metrics)
 	if err != nil {
 		logging.Default().
 			WithError(err).
@@ -224,9 +222,8 @@ func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
 	err := s.sender.UpdateMetadata(ctx, Metadata{
-		InstallationID:         s.getInstallationID(),
-		CloudProviderAccountID: s.getCloudProviderAccountID(),
-		Entries:                entries,
+		InstallationID: s.getInstallationID(),
+		Entries:        entries,
 	})
 	if err != nil {
 		logging.Default().
