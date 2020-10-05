@@ -78,11 +78,10 @@ func (m *mockCollector) CollectEvent(_, _ string) {}
 func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
 	var blockAdapter block.Adapter
-	if blockstoreType != "" {
-		blockAdapter = testutil.NewBlockAdapterFactory(t, &block.NoOpTranslator{}, blockstoreType)
-	} else {
-		blockAdapter = testutil.NewBlockAdapterByEnv(t, &block.NoOpTranslator{})
+	if blockstoreType == "" {
+		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
 	}
+	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 	cataloger := catalog.NewCataloger(conn, catalog.WithCacheEnabled(false))
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
