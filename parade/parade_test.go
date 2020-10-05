@@ -122,11 +122,11 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// wrapper derives a prefix from t.Name and uses it to provide namespaced access to  DB db as
-// well as a simple error-reporting inserter.
+// wrapper derives a prefix from t.Name and uses it to provide namespaced access to parade, as
+// well as panicking inserters.
 type wrapper struct {
-	t  testing.TB
-	db *sqlx.DB
+	t testing.TB
+	p parade.Parade
 }
 
 func (w wrapper) prefix(s string) string {
@@ -156,17 +156,6 @@ func (w wrapper) stripActor(actor parade.TaskID) parade.ActorID {
 func (w wrapper) insertTasks(tasks []parade.TaskData) func() {
 	w.t.Helper()
 	ctx := context.Background()
-	sqlConn, err := w.db.Conn(ctx)
-	if err != nil {
-		w.t.Fatalf("sqlx.DB.Conn: %s", err)
-	}
-	defer sqlConn.Close()
-
-	conn, err := stdlib.AcquireConn(w.db.DB)
-	if err != nil {
-		w.t.Fatalf("stdlib.AcquireConn: %s", err)
-	}
-	defer stdlib.ReleaseConn(w.db.DB, conn)
 
 	prefixedTasks := make([]parade.TaskData, len(tasks))
 	for i := 0; i < len(tasks); i++ {
@@ -184,7 +173,7 @@ func (w wrapper) insertTasks(tasks []parade.TaskData) func() {
 		copy.ToSignal = toSignal
 		prefixedTasks[i] = copy
 	}
-	err = parade.InsertTasks(ctx, conn, &parade.TaskDataIterator{Data: prefixedTasks})
+	err := w.p.InsertTasks(ctx, prefixedTasks)
 	if err != nil {
 		w.t.Fatalf("InsertTasks: %s", err)
 	}
@@ -200,44 +189,26 @@ func (w wrapper) insertTasks(tasks []parade.TaskData) func() {
 }
 
 func (w wrapper) deleteTasks(ids []parade.TaskID) error {
+	ctx := context.Background()
+
 	prefixedIDs := make([]parade.TaskID, len(ids))
 	for i := 0; i < len(ids); i++ {
 		prefixedIDs[i] = w.prefixTask(ids[i])
 	}
-	ctx := context.Background()
-	conn, err := stdlib.AcquireConn(w.db.DB)
-	if err != nil {
-		w.t.Fatalf("stdlib.AcquireConn: %s", err)
-	}
-	defer stdlib.ReleaseConn(w.db.DB, conn)
 
-	tx, err := conn.Begin(ctx)
-	if err != nil {
-		return fmt.Errorf("BEGIN: %w", err)
-	}
-	defer func() {
-		if tx != nil {
-			tx.Rollback(ctx)
-		}
-	}()
-
-	if err = parade.DeleteTasks(ctx, tx, prefixedIDs); err != nil {
+	if err := w.p.DeleteTasks(ctx, prefixedIDs); err != nil {
 		return err
 	}
 
-	if err = tx.Commit(ctx); err != nil {
-		return fmt.Errorf("COMMIT: %w", err)
-	}
-	tx = nil
 	return nil
 }
 
 func (w wrapper) returnTask(taskID parade.TaskID, token parade.PerformanceToken, resultStatus string, resultStatusCode parade.TaskStatusCodeValue) error {
-	return parade.ReturnTask(w.db, w.prefixTask(taskID), token, resultStatus, resultStatusCode)
+	return w.p.ReturnTask(w.prefixTask(taskID), token, resultStatus, resultStatusCode)
 }
 
 func (w wrapper) extendTaskOwnership(taskID parade.TaskID, token parade.PerformanceToken, maxDuration time.Duration) error {
-	return parade.ExtendTaskDeadline(w.db, w.prefixTask(taskID), token, maxDuration)
+	return w.p.ExtendTaskDeadline(w.prefixTask(taskID), token, maxDuration)
 }
 
 func (w wrapper) ownTasks(actorID parade.ActorID, maxTasks int, actions []string, maxDuration *time.Duration) ([]parade.OwnedTaskData, error) {
@@ -245,7 +216,7 @@ func (w wrapper) ownTasks(actorID parade.ActorID, maxTasks int, actions []string
 	for i, action := range actions {
 		prefixedActions[i] = w.prefix(action)
 	}
-	tasks, err := parade.OwnTasks(w.db, actorID, maxTasks, prefixedActions, maxDuration)
+	tasks, err := w.p.OwnTasks(actorID, maxTasks, prefixedActions, maxDuration)
 	if tasks != nil {
 		for i := 0; i < len(tasks); i++ {
 			task := &tasks[i]
@@ -344,7 +315,7 @@ func TestTaskDataIterator_Values(t *testing.T) {
 }
 
 func TestOwn(t *testing.T) {
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	cleanup := w.insertTasks([]parade.TaskData{
 		{ID: "000", Action: "never"},
@@ -382,7 +353,7 @@ func TestOwn(t *testing.T) {
 }
 
 func TestOwnBody(t *testing.T) {
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	val := "\"the quick brown fox jumps over the lazy dog\""
 
@@ -414,7 +385,7 @@ func TestOwnBody(t *testing.T) {
 
 func TestOwnAfterDeadlineElapsed(t *testing.T) {
 	second := 1 * time.Second
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	cleanup := w.insertTasks([]parade.TaskData{
 		{ID: "111", Action: "frob"},
@@ -445,7 +416,7 @@ func TestOwnAfterDeadlineElapsed(t *testing.T) {
 }
 
 func TestReturnTask_DirectlyAndRetry(t *testing.T) {
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	cleanup := w.insertTasks([]parade.TaskData{
 		{ID: "111", Action: "frob"},
@@ -486,7 +457,7 @@ func TestReturnTask_DirectlyAndRetry(t *testing.T) {
 }
 
 func TestReturnTask_RetryMulti(t *testing.T) {
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	maxTries := 7
 	lifetime := 250 * time.Millisecond
@@ -523,7 +494,7 @@ func TestReturnTask_RetryMulti(t *testing.T) {
 }
 
 func TestExtendTaskDuration(t *testing.T) {
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	cleanup := w.insertTasks([]parade.TaskData{
 		{ID: "111", Action: "frob"},
@@ -596,7 +567,7 @@ func TestExtendTaskDuration(t *testing.T) {
 }
 
 func TestDependencies(t *testing.T) {
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	id := func(n int) parade.TaskID {
 		return parade.TaskID(fmt.Sprintf("number-%d", n))
@@ -674,7 +645,7 @@ func TestDependencies(t *testing.T) {
 
 func TestDeleteTasks(t *testing.T) {
 	// Delete tasks requires whitebox testing, to ensure tasks really are deleted.
-	w := wrapper{t, db}
+	w := wrapper{t, parade.NewParadeDB(db)}
 
 	cleanup := w.insertTasks([]parade.TaskData{
 		{ID: parade.TaskID("a0"), Action: "root", ToSignal: []parade.TaskID{"a1", "a3"}},
@@ -715,7 +686,7 @@ func TestDeleteTasks(t *testing.T) {
 				t.Errorf("DeleteTasks failed: %s", err)
 			}
 
-			rows, err := w.db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
+			rows, err := db.Query(`SELECT id FROM tasks WHERE id LIKE format('%s%%', $1::text)`, casePrefix)
 			if err != nil {
 				t.Errorf("[I] select remaining IDs for prefix %s: %s", casePrefix, err)
 			}
@@ -766,7 +737,7 @@ func TestNotification(t *testing.T) {
 
 	for _, c := range cases {
 		runCase := func(t *testing.T, listenFirst bool) {
-			w := wrapper{t, db}
+			w := wrapper{t, parade.NewParadeDB(db)}
 
 			cleanup := w.insertTasks([]parade.TaskData{
 				{ID: c.id, Action: "frob", StatusCode: "pending", Body: stringAddr(""), FinishChannelName: stringAddr(w.prefix("done"))},
@@ -782,17 +753,17 @@ func TestNotification(t *testing.T) {
 			}
 			task := tasks[0]
 
-			conn, err := stdlib.AcquireConn(w.db.DB)
+			conn, err := stdlib.AcquireConn(db.DB)
 			if err != nil {
 				t.Fatalf("stdlib.AcquireConn: %s", err)
 			}
 			defer func() {
 				if conn != nil {
-					stdlib.ReleaseConn(w.db.DB, conn)
+					stdlib.ReleaseConn(db.DB, conn)
 				}
 			}()
 
-			var waiter *parade.TaskWaiter
+			var waiter *parade.TaskDBWaiter
 
 			if listenFirst {
 				waiter, err = parade.NewWaiter(ctx, conn, w.prefixTask(task.ID))
@@ -834,7 +805,7 @@ func TestNotification(t *testing.T) {
 func BenchmarkFanIn(b *testing.B) {
 	numTasks := b.N * *taskFactor
 
-	w := wrapper{b, db}
+	w := wrapper{b, parade.NewParadeDB(db)}
 
 	id := func(n int) parade.TaskID {
 		return parade.TaskID(fmt.Sprintf("in:%08d", n))
