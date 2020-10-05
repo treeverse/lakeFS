@@ -85,9 +85,9 @@ func (c *cataloger) Commit(ctx context.Context, repository, branch string, messa
 func commitUpdateCommittedEntriesWithMaxCommit(tx sqlx.Execer, branchID int64, commitID CommitID) (int64, error) {
 	res, err := tx.Exec(`UPDATE catalog_entries_v SET max_commit = $2
 			WHERE branch_id = $1 AND is_committed
-				AND max_commit = catalog_max_commit_id()
+				AND max_commit = $3
 				AND path in (SELECT path FROM catalog_entries_v WHERE branch_id = $1 AND NOT is_committed)`,
-		branchID, commitID)
+		branchID, commitID, MaxCommitID)
 	if err != nil {
 		return 0, err
 	}

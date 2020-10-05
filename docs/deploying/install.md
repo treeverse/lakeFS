@@ -18,50 +18,55 @@ You are now ready to install the lakeFS server. Following are some options for d
 
 ## Kubernetes with Helm
 
-To install lakeFS with Helm, create a `conf-values.yaml` file, and run the following commands:
+lakeFS can be easily installed on Kubernetes using a [Helm chart](https://github.com/treeverse/charts/tree/master/charts/lakefs).
+To install lakeFS with Helm:
+1. Create a `conf-values.yaml` file, replacing values as described in the comments:
+ 
+     ```yaml
+     secrets:
+         # replace this with the connection string of the database you created in a previous step:
+         databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
+         # replace this with a randomly-generated string
+         authEncryptSecretKey: <some random string>
+     lakefsConfig: |
+       blockstore:
+         type: s3
+         s3:
+           region: us-east-1
+       gateways:
+         s3:
+           # replace this with the host you will use for the lakeFS S3-compatible endpoint:
+           domain_name: s3.lakefs.example.com
+     ```
+   
+    See [below](#configurations) for more configuration options. The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html), but without sensitive information.
+    Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject them into Kubernetes secrets.
+        
+1. In the directory where you created `conf-values.yaml`, run the following commands:
 
-```bash
-# Add the lakeFS repository
-helm repo add lakefs https://charts.lakefs.io
-# Deploy lakeFS
-helm install lakefs/lakefs -f conf-values.yaml --name example-lakefs
-```
+    ```bash
+    # Add the lakeFS repository
+    helm repo add lakefs https://charts.lakefs.io
+    # Deploy lakeFS
+    helm install example-lakefs lakefs/lakefs -f conf-values.yaml
+    ```
 
-`example-lakefs` is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
-
-Here is an example `conf-values.yaml`. See [below](#configurations) for more configuration options.
-
-```yaml
-service:
-    type: LoadBalancer
-databaseConnectionString: postgres://postgres:myPassword@my-lakefs-db.rds.amazonaws.com:5432/lakefs?search_path=lakefs
-authEncryptSecretKey: <some random string>
-lakefsConfig: |
-  blockstore:
-    type: s3
-    s3:
-      region: us-east-1
-  gateways:
-    s3:
-      domain_name: s3.lakefs.example.com
-```
-
-The `lakefsConfig` parameter is the lakeFS configuration documented [here](https://docs.lakefs.io/reference/configuration.html), but without sensitive information.
-Sensitive information like `databaseConnectionString` is given through separate parameters, and the chart will inject them into Kubernetes secrets.
+    `example-lakefs` is the [Helm Release](https://helm.sh/docs/intro/using_helm/#three-big-concepts) name.
 
 You should give your Kubernetes nodes access to all S3 buckets you intend to use lakeFS with.
 If you can't provide such access, lakeFS can be configured to use an AWS key-pair to authenticate (part of the `lakefsConfig` YAML below).
+{: .note .note-info }
 
 ### Configurations
 
 | **Parameter**                               | **Description**                                                                                            | **Default** |
 |---------------------------------------------|------------------------------------------------------------------------------------------------------------|-------------|
-|`databaseConnectionString`|PostgreSQL connection string to be used by lakeFS||
-|`authEncryptSecretKey`|A random (cryptographically safe) generated string that is used for encryption and HMAC signing||
+|`secrets.databaseConnectionString`|PostgreSQL connection string to be used by lakeFS||
+|`secrets.authEncryptSecretKey`|A random (cryptographically safe) generated string that is used for encryption and HMAC signing||
 | `lakefsConfig`                              | lakeFS config YAML stringified, as shown above. See [reference](../reference/configuration.md) for available configurations.                                                               |             |
 | `replicaCount`                              | Number of lakeFS pods                                                                                      | `1`         |
 | `resources`                                 | Pod resource requests & limits                                                                             | `{}`        |
-| `service.type`                              | Kuberenetes service type                                                                                   | ClusterIP   |
+| `service.type`                              | Kubernetes service type                                                                                   | ClusterIP   |
 | `service.port`                              | Kubernetes service external port                                                                           | 80          |
 
 ## Docker

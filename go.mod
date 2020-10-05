@@ -1,12 +1,13 @@
 module github.com/treeverse/lakefs
 
-go 1.14
+go 1.15
 
 require (
 	cloud.google.com/go v0.63.0 // indirect
 	cloud.google.com/go/storage v1.10.0
 	github.com/Masterminds/squirrel v1.4.0
 	github.com/apache/thrift v0.13.0
+	github.com/avast/retry-go v2.6.1+incompatible
 	github.com/aws/aws-sdk-go v1.34.0
 	github.com/cenkalti/backoff/v3 v3.2.2 // indirect
 	github.com/containerd/containerd v1.3.6 // indirect

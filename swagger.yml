@@ -64,7 +64,7 @@ definitions:
         type: string
       storage_namespace:
         type: string
-        description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
+        description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
 
   merge_result:
     type: object
@@ -93,7 +93,7 @@ definitions:
         type: string
       storage_namespace:
         type: string
-        description: "Filesystem URI to store the underlying data in (i.e. 's3://my-bucket/some/path/')"
+        description: "Filesystem URI to store the underlying data in (e.g. 's3://my-bucket/some/path/')"
         example: "s3://example-bucket/"
         pattern: '^(s3|gs|mem|local|transient)://.*$'
       default_branch:
@@ -395,7 +395,6 @@ paths:
           description: user created successfully
           schema:
             $ref: "#/definitions/credentials_with_secret"
-            description: first user credentials
         400:
           description: bad request
           schema:

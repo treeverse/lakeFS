@@ -87,3 +87,37 @@ func (j *Metadata) Scan(src interface{}) error {
 	}
 	return json.Unmarshal(data, j)
 }
+
+type DBReaderEntry struct {
+	BranchID int64  `db:"branch_id"`
+	Path     string `db:"path"`
+	MinMaxCommit
+	RowCtid string `db:"ctid"`
+}
+
+type MinMaxCommit struct {
+	MinCommit CommitID `db:"min_commit"`
+	MaxCommit CommitID `db:"max_commit"`
+}
+
+func (m MinMaxCommit) IsDeleted() bool {
+	return m.MaxCommit != MaxCommitID
+}
+func (m MinMaxCommit) IsTombstone() bool {
+	return m.MaxCommit == TombstoneCommitID
+}
+
+func (m MinMaxCommit) IsCommitted() bool {
+	return m.MinCommit != MaxCommitID
+}
+
+func (m MinMaxCommit) ChangedAfterCommit(commitID CommitID) bool {
+	// needed for diff, to check if an entry changed after the lineage commit id
+	return m.MinCommit > commitID || (m.MaxCommit != MaxCommitID && m.MaxCommit > commitID)
+}
+
+type entryPathPrefixInfo struct {
+	BranchID   int64  `db:"branch_id"`
+	PathSuffix string `db:"path_suffix"`
+	MinMaxCommit
+}
