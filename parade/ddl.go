@@ -22,7 +22,7 @@ type ActorID string
 
 type PerformanceToken pgtype.UUID
 
-// nolint:stylecheck (change name from src below)
+// nolint: stylecheck
 func (dst *PerformanceToken) Scan(src interface{}) error {
 	var scanned pgtype.UUID
 	if err := scanned.Scan(src); err != nil {
@@ -273,12 +273,11 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaite
 	}
 	defer func() {
 		if tx != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
+			if err := tx.Rollback(ctx); err != nil {
 				logging.
 					FromContext(ctx).
 					WithFields(logging.Fields{"taskID": taskID, "error": err}).
-					Error("cannot roll back listen tx")
+					Error("cannot roll back listen tx after error")
 			}
 		}
 	}()

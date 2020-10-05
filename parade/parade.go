@@ -8,6 +8,7 @@ import (
 
 	"github.com/jackc/pgx/v4/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/treeverse/lakefs/logging"
 )
 
 var (
@@ -118,7 +119,11 @@ func (p *ParadeDB) DeleteTasks(ctx context.Context, taskIDs []TaskID) error {
 		}
 		defer func() {
 			if tx != nil {
-				tx.Rollback(ctx)
+				// No useful error handling for an error here, return value is
+				// already out there.  Just log.
+				if err := tx.Rollback(ctx); err != nil {
+					logging.FromContext(ctx).Errorf("rollback after error: %s", err)
+				}
 			}
 		}()
 
