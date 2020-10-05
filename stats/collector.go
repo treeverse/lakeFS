@@ -3,8 +3,11 @@ package stats
 import (
 	"context"
 	"fmt"
+	"strings"
 	"time"
 
+	"github.com/google/uuid"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/logging"
 )
 
@@ -16,7 +19,7 @@ const (
 
 type Collector interface {
 	CollectEvent(class, action string)
-	CollectMetadata(accountMetadata map[string]string)
+	CollectMetadata(accountMetadata *Metadata)
 }
 
 type Metric struct {
@@ -30,16 +33,6 @@ type InputEvent struct {
 	ProcessID      string   `json:"process_id"`
 	Time           string   `json:"time"`
 	Metrics        []Metric `json:"metrics"`
-}
-
-type MetadataEntry struct {
-	Name  string `json:"name"`
-	Value string `json:"value"`
-}
-
-type Metadata struct {
-	InstallationID string          `json:"installation_id"`
-	Entries        []MetadataEntry `json:"entries"`
 }
 
 type primaryKey struct {
@@ -71,15 +64,14 @@ func (t *TimeTicker) Tick() <-chan time.Time {
 }
 
 type BufferedCollector struct {
-	cache                  keyIndex
-	writes                 chan primaryKey
-	sender                 Sender
-	sendTimeout            time.Duration
-	flushTicker            FlushTicker
-	done                   chan bool
-	installationID         string
-	processID              string
-	cloudProviderAccountID string
+	cache          keyIndex
+	writes         chan primaryKey
+	sender         Sender
+	sendTimeout    time.Duration
+	flushTicker    FlushTicker
+	done           chan bool
+	installationID string
+	processID      string
 }
 
 type BufferedCollectorOpts func(s *BufferedCollector)
@@ -114,13 +106,8 @@ func WithSendTimeout(d time.Duration) BufferedCollectorOpts {
 	}
 }
 
-func WithCloudProviderAccountID(cloudProviderAccountID string) BufferedCollectorOpts {
-	return func(s *BufferedCollector) {
-		s.cloudProviderAccountID = cloudProviderAccountID
-	}
-}
-
-func NewBufferedCollector(installationID, processID string, opts ...BufferedCollectorOpts) *BufferedCollector {
+func NewBufferedCollector(installationID string, c *config.Config) *BufferedCollector {
+	processID, opts := getBufferedCollectorArgs(c)
 	s := &BufferedCollector{
 		cache:          make(keyIndex),
 		writes:         make(chan primaryKey, DefaultCollectorEventBufferSize),
@@ -135,15 +122,10 @@ func NewBufferedCollector(installationID, processID string, opts ...BufferedColl
 	for _, opt := range opts {
 		opt(s)
 	}
-
 	return s
 }
 func (s *BufferedCollector) getInstallationID() string {
 	return s.installationID
-}
-
-func (s *BufferedCollector) getCloudProviderAccountID() string {
-	return s.cloudProviderAccountID
 }
 
 func (s *BufferedCollector) incr(k primaryKey) {
@@ -212,23 +194,28 @@ func makeMetrics(counters keyIndex) []Metric {
 	return metrics
 }
 
-func (s *BufferedCollector) CollectMetadata(accountMetadata map[string]string) {
-	entries := make([]MetadataEntry, len(accountMetadata))
-	i := 0
-	for k, v := range accountMetadata {
-		entries[i] = MetadataEntry{Name: k, Value: v}
-		i++
-	}
+func (s *BufferedCollector) CollectMetadata(accountMetadata *Metadata) {
 	ctx, cancel := context.WithTimeout(context.Background(), s.sendTimeout)
 	defer cancel()
-	err := s.sender.UpdateMetadata(ctx, Metadata{
-		InstallationID: s.getInstallationID(),
-		Entries:        entries,
-	})
+	err := s.sender.UpdateMetadata(ctx, *accountMetadata)
 	if err != nil {
 		logging.Default().
 			WithError(err).
 			WithField("service", "stats_collector").
 			Debug("could not update metadata")
 	}
+}
+
+func getBufferedCollectorArgs(c *config.Config) (processID string, opts []BufferedCollectorOpts) {
+	var sender Sender
+	if c.GetStatsEnabled() && !strings.HasPrefix(config.Version, config.UnreleasedVersion) {
+		sender = NewHTTPSender(c.GetStatsAddress(), time.Now)
+	} else {
+		sender = NewDummySender()
+	}
+	return uuid.Must(uuid.NewUUID()).String(),
+		[]BufferedCollectorOpts{
+			WithSender(sender),
+			WithFlushInterval(c.GetStatsFlushInterval()),
+		}
 }

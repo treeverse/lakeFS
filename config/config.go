@@ -11,7 +11,6 @@ import (
 	"github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
-	"github.com/google/uuid"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/mitchellh/go-homedir"
 	log "github.com/sirupsen/logrus"
@@ -20,7 +19,6 @@ import (
 	blockparams "github.com/treeverse/lakefs/block/params"
 	catalogparams "github.com/treeverse/lakefs/catalog/params"
 	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/stats"
 )
 
 const (
@@ -296,20 +294,6 @@ func (c *Config) GetStatsAddress() string {
 
 func (c *Config) GetStatsFlushInterval() time.Duration {
 	return viper.GetDuration("stats.flush_interval")
-}
-
-func (c *Config) GetStatsBufferedCollectorArgs() (processID string, opts []stats.BufferedCollectorOpts) {
-	var sender stats.Sender
-	if c.GetStatsEnabled() && !strings.HasPrefix(Version, UnreleasedVersion) {
-		sender = stats.NewHTTPSender(c.GetStatsAddress(), time.Now)
-	} else {
-		sender = stats.NewDummySender()
-	}
-	return uuid.Must(uuid.NewUUID()).String(),
-		[]stats.BufferedCollectorOpts{
-			stats.WithSender(sender),
-			stats.WithFlushInterval(c.GetStatsFlushInterval()),
-		}
 }
 
 func GetMetastoreAwsConfig() *aws.Config {

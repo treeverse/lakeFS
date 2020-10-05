@@ -10,8 +10,8 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
-	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
+	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
 )
 
@@ -39,13 +39,7 @@ var initCmd = &cobra.Command{
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
 
-		metaManager := auth.NewDBMetadataManager(config.Version, dbPool)
-		metadata, err := metaManager.Write()
-		if err != nil {
-			fmt.Printf("failed to write initial setup metadata: %s\n", err)
-			os.Exit(1)
-		}
-
+		metadata := stats.NewMetadata(logging.Default(), cfg, dbPool)
 		credentials, err := auth.SetupAdminUser(authService, &model.User{
 			CreatedAt: time.Now(),
 			Username:  userName,
@@ -56,8 +50,7 @@ var initCmd = &cobra.Command{
 		}
 
 		ctx, cancelFn := context.WithCancel(context.Background())
-		processID, bufferedCollectorArgs := cfg.GetStatsBufferedCollectorArgs()
-		stats := stats.NewBufferedCollector(metadata[auth.InstallationIDKeyName], processID, bufferedCollectorArgs...)
+		stats := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		go stats.Run(ctx)
 		stats.CollectMetadata(metadata)
 		stats.CollectEvent("global", "init")
