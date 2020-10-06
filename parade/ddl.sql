@@ -8,6 +8,7 @@ CREATE TYPE task_status_code_value AS ENUM (
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
+    -- tzahi: If you are using binary data with nanoid - maybe bytea will be better
     id VARCHAR(64) NOT NULL PRIMARY KEY, -- nanoid
 
     action VARCHAR(128) NOT NULL, -- name (type) of action to perform
@@ -29,6 +30,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     -- BUG(ariels): add REFERENCES dependency to each of the to_signal_after
     --     tasks.  Or at least add triggers that perform ON DELETE
     --     CASCADE.
+    --
     to_signal_after VARCHAR(64) ARRAY, -- IDs to signal after performing this task
     notify_channel_after VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
 );
@@ -48,6 +50,7 @@ $$;
 CREATE OR REPLACE FUNCTION own_tasks(
     max_tasks INTEGER, actions VARCHAR(128) ARRAY, owner_id VARCHAR(64), max_duration INTERVAL
 )
+-- tzahi: you may gain performance by partitioning on status
 RETURNS TABLE(task_id VARCHAR(64), token UUID, action VARCHAR(128), body TEXT)
 LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
@@ -56,7 +59,8 @@ LANGUAGE sql VOLATILE AS $$
         num_tries = num_tries + 1,
         performance_token = gen_random_uuid(),
         action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
-    WHERE id IN (
+    WHERE id IN (-- tzahi: you may use ctid instead,faster.
+        -- tzahi: why don't you use simple update x=x where condition? you do not need to access the id PK at all
         SELECT id
         FROM tasks
         WHERE can_allocate_task(id, status_code, action_deadline, num_signals, total_dependencies) AND
@@ -127,6 +131,7 @@ WITH signalled_ids AS (
     SET total_dependencies = tasks.total_dependencies-1
     WHERE tasks.id IN (SELECT UNNEST(to_signal_after) FROM tasks WHERE id=task_id)
     RETURNING (CASE WHEN tasks.total_dependencies = 0 THEN tasks.id ELSE NULL END) id
+    -- tzahi: shouldn't you be comparing the total_dependencies to num_signals ? the tasks may have already received signals
 )
 SELECT id FROM signalled_ids WHERE id IS NOT NULL;
 $$;
@@ -139,6 +144,8 @@ CREATE TYPE tasks_recurse_value AS ENUM ('new', 'in-progress', 'done');
 -- dependencies.  Uses table tasks for storage of to-be-deleted tasks during the operation.
 -- Returns the total number of tasks deleted.  No abort marking is performed -- make sure to
 -- abort the task first!
+
+
 CREATE OR REPLACE FUNCTION delete_tasks(task_id_name TEXT) RETURNS VOID LANGUAGE plpgsql AS $$
 DECLARE
     total_num_updated INTEGER;
