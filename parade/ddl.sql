@@ -14,8 +14,9 @@ CREATE TABLE IF NOT EXISTS tasks (
     body TEXT,                  -- data used by action
     status TEXT,                -- status text defined by action, visible to action
 
-    status_code TASK_STATUS_CODE_VALUE NOT NULL DEFAULT 'pending', -- internal status code, used by parade to issue tasks
-    num_tries INTEGER NOT NULL DEFAULT 0,
+    status_code task_status_code_value NOT NULL DEFAULT 'pending', -- internal status code, used by parade to issue tasks
+
+    num_tries INTEGER NOT NULL DEFAULT 0, -- number of attempts actors have made on this task
     max_tries INTEGER,
 
     total_dependencies INTEGER, -- number of tasks that must signal this task
@@ -30,13 +31,11 @@ CREATE TABLE IF NOT EXISTS tasks (
     action_deadline TIMESTAMPTZ, -- offer this task to other actors once action_deadline has elapsed
     performance_token UUID,
     finish_channel VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
--- TODO(ariels): add a lock token to each row, set when leasing the
---     task, and accept task completion only when lock token is unchanged.
 );
 
 -- Returns true if task with this id, code and deadline can
 -- be allocated.
-CREATE OR REPLACE FUNCTION can_allocate_task(id VARCHAR(64), code TASK_STATUS_CODE_VALUE, deadline TIMESTAMPTZ, num_signals INTEGER, total_dependencies INTEGER)
+CREATE OR REPLACE FUNCTION can_allocate_task(id VARCHAR(64), code task_status_code_value, deadline TIMESTAMPTZ, num_signals INTEGER, total_dependencies INTEGER)
 RETURNS BOOLEAN
 LANGUAGE sql IMMUTABLE AS $$
     SELECT (code = 'pending' OR (code = 'in-progress' AND deadline < NOW())) AND
@@ -75,7 +74,7 @@ $$;
 -- to return a task with the wrong token; that can happen if the
 -- deadline expired and the task was given to another actor.
 CREATE OR REPLACE FUNCTION return_task(
-    task_id VARCHAR(64), token UUID, result_status TEXT, result_status_code TASK_STATUS_CODE_VALUE
+    task_id VARCHAR(64), token UUID, result_status TEXT, result_status_code task_status_code_value
 ) RETURNS INTEGER
 LANGUAGE plpgsql AS $$
 DECLARE
@@ -93,13 +92,14 @@ BEGIN
 
     GET DIAGNOSTICS num_updated := ROW_COUNT;
 
+    UPDATE tasks
+    SET num_signals = num_signals+1
+    WHERE id = ANY(tasks_to_signal);
+
     IF channel IS NOT NULL THEN
         PERFORM pg_notify(channel, NULL);
     END IF;
 
-    UPDATE tasks
-    SET num_signals = num_signals+1
-    WHERE id = ANY(tasks_to_signal);
 
     RETURN num_updated;
 END;
