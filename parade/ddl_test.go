@@ -11,7 +11,6 @@ import (
 	"sort"
 	"strconv"
 	"strings"
-	"sync"
 	"testing"
 	"time"
 
@@ -710,34 +709,26 @@ func TestNotification(t *testing.T) {
 			if err != nil {
 				t.Fatalf("stdlib.AcquireConn: %s", err)
 			}
-			defer stdlib.ReleaseConn(w.db.DB, conn)
 
-			type result struct {
-				Status     string
-				StatusCode parade.TaskStatusCodeValue
-				Err        error
+			waiter, err := parade.NewWaiter(ctx, conn, w.prefixTask(task.ID))
+			if err != nil {
+				t.Fatalf("Start waiting for %+v: %s", task, err)
 			}
-			ch := make(chan result)
-			wg := sync.WaitGroup{}
-			go func() {
-				wg.Add(1)
-				status, statusCode, err := parade.WaitForTask(ctx, conn, w.prefixTask(c.id))
-				ch <- result{status, statusCode, err}
-			}()
-			wg.Wait()
 
 			if err = w.returnTask(task.ID, task.Token, c.status, c.statusCode); err != nil {
 				t.Fatalf("return task %+v: %s", task, err)
 			}
 
-			got := <-ch
-			if got.Err != nil {
-				t.Fatalf("wait for task %s: %s", c.id, got.Err)
-			}
+			status, statusCode, err := waiter.Wait()
 
-			expected := result{c.status, c.statusCode, nil}
-			if diffs := deep.Equal(expected, got); diffs != nil {
-				t.Errorf("WaitForTask returned unexpected values: %s", diffs)
+			if err != nil {
+				t.Errorf("wait failed: %s", err)
+			}
+			if c.status != status {
+				t.Errorf("expected status %s but got %s", c.status, status)
+			}
+			if c.statusCode != statusCode {
+				t.Errorf("expected status code %s but got %s", c.statusCode, statusCode)
 			}
 		})
 	}
