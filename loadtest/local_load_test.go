@@ -8,9 +8,6 @@ import (
 	"testing"
 	"time"
 
-	dbparams "github.com/treeverse/lakefs/db/params"
-	"github.com/treeverse/lakefs/dedup"
-
 	"github.com/ory/dockertest/v3"
 	"github.com/treeverse/lakefs/api"
 	"github.com/treeverse/lakefs/auth"
@@ -20,8 +17,11 @@ import (
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/catalog"
 	"github.com/treeverse/lakefs/db"
+	dbparams "github.com/treeverse/lakefs/db/params"
+	"github.com/treeverse/lakefs/dedup"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/retention"
+	"github.com/treeverse/lakefs/stats"
 	"github.com/treeverse/lakefs/testutil"
 )
 
@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 
 type mockCollector struct{}
 
-func (m *mockCollector) CollectMetadata(_ map[string]string) {}
+func (m *mockCollector) CollectMetadata(_ *stats.Metadata) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
