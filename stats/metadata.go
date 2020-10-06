@@ -9,14 +9,10 @@ import (
 	"github.com/treeverse/lakefs/block/gs"
 	s3a "github.com/treeverse/lakefs/block/s3"
 	"github.com/treeverse/lakefs/config"
-	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 )
 
-const (
-	BlockstoreTypeKey = "blockstore_type"
-	CloudAccountID    = "cloud_account_id"
-)
+const BlockstoreTypeKey = "blockstore_type"
 
 type MetadataEntry struct {
 	Name  string `json:"name"`
@@ -28,14 +24,13 @@ type Metadata struct {
 	Entries        []MetadataEntry `json:"entries"`
 }
 
-func NewMetadata(logger logging.Logger, c *config.Config, db db.Database) *Metadata {
+func NewMetadata(logger logging.Logger, c *config.Config, authMetadataManager auth.MetadataManager) *Metadata {
 	res := &Metadata{}
-	dbMetadataManager := auth.NewDBMetadataManager(config.Version, db)
-	dbMetadata, err := dbMetadataManager.Write()
+	authMetadata, err := authMetadataManager.Write()
 	if err != nil {
 		logger.WithError(err).Debug("failed to collect account metadata")
 	}
-	for k, v := range dbMetadata {
+	for k, v := range authMetadata {
 		if k == auth.InstallationIDKeyName {
 			res.InstallationID = v
 		}
@@ -43,15 +38,17 @@ func NewMetadata(logger logging.Logger, c *config.Config, db db.Database) *Metad
 	}
 	blockstoreType := c.GetBlockstoreType()
 	res.Entries = append(res.Entries, MetadataEntry{Name: BlockstoreTypeKey, Value: blockstoreType})
-	var accountID string
 	switch blockstoreType {
 	case s3a.BlockstoreType:
-		accountID = getAWSAccountID(logger, c)
+		accountID := getAWSAccountID(logger, c)
+		if accountID != "" {
+			res.Entries = append(res.Entries, MetadataEntry{Name: "aws_account_id", Value: accountID})
+		}
 	case gs.BlockstoreType:
-		accountID = getGoogleNumericProjectID(logger)
-	}
-	if accountID != "" {
-		res.Entries = append(res.Entries, MetadataEntry{Name: CloudAccountID, Value: accountID})
+		numericProjectID := getGoogleNumericProjectID(logger)
+		if numericProjectID != "" {
+			res.Entries = append(res.Entries, MetadataEntry{Name: "google_numeric_project_id", Value: numericProjectID})
+		}
 	}
 	return res
 }

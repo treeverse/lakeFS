@@ -41,24 +41,24 @@ var (
 )
 
 type Handler struct {
-	dbMetadataManager auth.MetadataManager
-	cataloger         catalog.Cataloger
-	blockStore        block.Adapter
-	authService       auth.Service
-	stats             stats.Collector
-	retention         retention.Service
-	migrator          db.Migrator
-	apiServer         *restapi.Server
-	handler           *http.ServeMux
-	dedupCleaner      *dedup.Cleaner
-	logger            logging.Logger
+	metadataManager auth.MetadataManager
+	cataloger       catalog.Cataloger
+	blockStore      block.Adapter
+	authService     auth.Service
+	stats           stats.Collector
+	retention       retention.Service
+	migrator        db.Migrator
+	apiServer       *restapi.Server
+	handler         *http.ServeMux
+	dedupCleaner    *dedup.Cleaner
+	logger          logging.Logger
 }
 
 func NewHandler(
 	cataloger catalog.Cataloger,
 	blockStore block.Adapter,
 	authService auth.Service,
-	dbMetadataManager auth.MetadataManager,
+	metadataManager auth.MetadataManager,
 	stats stats.Collector,
 	retention retention.Service,
 	migrator db.Migrator,
@@ -67,15 +67,15 @@ func NewHandler(
 ) http.Handler {
 	logger.Info("initialized OpenAPI server")
 	s := &Handler{
-		cataloger:         cataloger,
-		blockStore:        blockStore,
-		authService:       authService,
-		dbMetadataManager: dbMetadataManager,
-		stats:             stats,
-		retention:         retention,
-		migrator:          migrator,
-		dedupCleaner:      dedupCleaner,
-		logger:            logger,
+		cataloger:       cataloger,
+		blockStore:      blockStore,
+		authService:     authService,
+		metadataManager: metadataManager,
+		stats:           stats,
+		retention:       retention,
+		migrator:        migrator,
+		dedupCleaner:    dedupCleaner,
+		logger:          logger,
 	}
 	s.buildAPI()
 	return s.handler
@@ -167,7 +167,7 @@ func (s *Handler) buildAPI() {
 	api.BasicAuthAuth = s.BasicAuth()
 	api.JwtTokenAuth = s.JwtTokenAuth()
 	// bind our handlers to the server
-	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedupCleaner, s.dbMetadataManager, s.migrator, s.stats, s.logger).Configure(api)
+	NewController(s.cataloger, s.authService, s.blockStore, s.stats, s.retention, s.dedupCleaner, s.metadataManager, s.migrator, s.stats, s.logger).Configure(api)
 
 	// setup host/port
 	s.apiServer = restapi.NewServer(api)

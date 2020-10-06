@@ -75,7 +75,8 @@ var runCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-		metadata := stats.NewMetadata(logger, cfg, dbPool)
+		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		metadata := stats.NewMetadata(logger, cfg, authMetadataManager)
 		bufferedCollector := stats.NewBufferedCollector(metadata.InstallationID, cfg)
 		// send metadata
 		bufferedCollector.CollectMetadata(metadata)
@@ -96,7 +97,7 @@ var runCmd = &cobra.Command{
 			cataloger,
 			blockStore,
 			authService,
-			auth.NewDBMetadataManager(config.Version, dbPool),
+			authMetadataManager,
 			bufferedCollector,
 			retention,
 			migrator,

@@ -10,6 +10,7 @@ import (
 	"github.com/treeverse/lakefs/auth"
 	"github.com/treeverse/lakefs/auth/crypt"
 	"github.com/treeverse/lakefs/auth/model"
+	"github.com/treeverse/lakefs/config"
 	"github.com/treeverse/lakefs/db"
 	"github.com/treeverse/lakefs/logging"
 	"github.com/treeverse/lakefs/stats"
@@ -38,8 +39,8 @@ var initCmd = &cobra.Command{
 			dbPool,
 			crypt.NewSecretStore(cfg.GetAuthEncryptionSecret()),
 			cfg.GetAuthCacheConfig())
-
-		metadata := stats.NewMetadata(logging.Default(), cfg, dbPool)
+		authMetadataManager := auth.NewDBMetadataManager(config.Version, dbPool)
+		metadata := stats.NewMetadata(logging.Default(), cfg, authMetadataManager)
 		credentials, err := auth.SetupAdminUser(authService, &model.User{
 			CreatedAt: time.Now(),
 			Username:  userName,
