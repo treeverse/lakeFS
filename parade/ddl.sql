@@ -22,15 +22,15 @@ CREATE TABLE IF NOT EXISTS tasks (
     total_dependencies INTEGER, -- number of tasks that must signal this task
     num_signals INTEGER NOT NULL DEFAULT 0, -- number of tasks that have already signalled this task
 
-    -- BUG(ariels): add REFERENCES dependency to each of the to_signal
-    --     tasks.  Or at least add triggers that perform ON DELETE
-    --     CASCADE.
-    to_signal VARCHAR(64) ARRAY, -- IDs to signal after performing this task
-
     actor_id VARCHAR(64),    -- ID of performing actor if in-progress
     action_deadline TIMESTAMPTZ, -- offer this task to other actors once action_deadline has elapsed
     performance_token UUID,
-    finish_channel VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
+
+    -- BUG(ariels): add REFERENCES dependency to each of the to_signal_after
+    --     tasks.  Or at least add triggers that perform ON DELETE
+    --     CASCADE.
+    to_signal_after VARCHAR(64) ARRAY, -- IDs to signal after performing this task
+    notify_channel_after VARCHAR(64) -- (if non-NULL) name of a channel to NOTIFY when this task ends
 );
 
 -- Returns true if task with this id, code and deadline can
@@ -92,21 +92,21 @@ LANGUAGE plpgsql AS $$
 DECLARE
     num_updated INTEGER;
     channel VARCHAR(64);
-    tasks_to_signal VARCHAR(64) ARRAY;
+    tasks_to_signal_after VARCHAR(64) ARRAY;
 BEGIN
-    UPDATE tasks INTO channel, tasks_to_signal
+    UPDATE tasks INTO channel, tasks_to_signal_after
     SET status = result_status,
         status_code = result_status_code,
         actor_id = NULL,
         performance_token = NULL
     WHERE id = task_id AND performance_token = token
-    RETURNING finish_channel, to_signal;
+    RETURNING notify_channel_after, to_signal_after;
 
     GET DIAGNOSTICS num_updated := ROW_COUNT;
 
     UPDATE tasks
     SET num_signals = num_signals+1
-    WHERE id = ANY(tasks_to_signal);
+    WHERE id = ANY(tasks_to_signal_after);
 
     IF channel IS NOT NULL THEN
         PERFORM pg_notify(channel, NULL);
@@ -125,7 +125,7 @@ LANGUAGE sql AS $$
 WITH signalled_ids AS (
     UPDATE tasks
     SET total_dependencies = tasks.total_dependencies-1
-    WHERE tasks.id IN (SELECT UNNEST(to_signal) FROM tasks WHERE id=task_id)
+    WHERE tasks.id IN (SELECT UNNEST(to_signal_after) FROM tasks WHERE id=task_id)
     RETURNING (CASE WHEN tasks.total_dependencies = 0 THEN tasks.id ELSE NULL END) id
 )
 SELECT id FROM signalled_ids WHERE id IS NOT NULL;

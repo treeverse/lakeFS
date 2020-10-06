@@ -83,17 +83,17 @@ type TaskData struct {
 	ID     TaskID `db:"task_id"`
 	Action string `db:"action"`
 	// Body is JSON-formatted
-	Body              *string           `db:"body"`
-	Status            *string           `db:"status"`
-	StatusCode        string            `db:"status_code"`
-	NumTries          int               `db:"num_tries"`
-	MaxTries          *int              `db:"max_tries"`
-	TotalDependencies *int              `db:"total_dependencies"`
-	ToSignal          []TaskID          `db:"to_signal"`
-	ActorID           ActorID           `db:"actor_id"`
-	ActionDeadline    *time.Time        `db:"action_deadline"`
-	PerformanceToken  *PerformanceToken `db:"performance_token"`
-	FinishChannelName *string           `db:"finish_channel"`
+	Body               *string           `db:"body"`
+	Status             *string           `db:"status"`
+	StatusCode         string            `db:"status_code"`
+	NumTries           int               `db:"num_tries"`
+	MaxTries           *int              `db:"max_tries"`
+	TotalDependencies  *int              `db:"total_dependencies"`
+	ActorID            ActorID           `db:"actor_id"`
+	ActionDeadline     *time.Time        `db:"action_deadline"`
+	PerformanceToken   *PerformanceToken `db:"performance_token"`
+	ToSignalAfter      []TaskID          `db:"to_signal_after"`
+	NotifyChannelAfter *string           `db:"notify_channel_after"`
 }
 
 // TaskDataIterator implements the pgx.CopyFromSource interface and allows using CopyFrom to insert
@@ -126,11 +126,11 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 		return nil, td.err
 	}
 	value := td.Data[td.next-1]
-	// Convert ToSignal to a text array so pgx can convert it to text.  Needed because Go
-	// types.
-	toSignal := make([]string, len(value.ToSignal))
-	for i := 0; i < len(value.ToSignal); i++ {
-		toSignal[i] = string(value.ToSignal[i])
+	// Convert ToSignalAfter to a text array so pgx can convert it to text.  Needed because
+	// Go types.
+	toSignalAfter := make([]string, len(value.ToSignalAfter))
+	for i := 0; i < len(value.ToSignalAfter); i++ {
+		toSignalAfter[i] = string(value.ToSignalAfter[i])
 	}
 	return []interface{}{
 		value.ID,
@@ -141,18 +141,18 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 		value.NumTries,
 		value.MaxTries,
 		value.TotalDependencies,
-		toSignal,
+		toSignalAfter,
 		value.ActorID,
 		value.ActionDeadline,
 		value.PerformanceToken,
-		value.FinishChannelName,
+		value.NotifyChannelAfter,
 	}, nil
 }
 
 var TaskDataColumnNames = []string{
 	"id", "action", "body", "status", "status_code", "num_tries", "max_tries",
-	"total_dependencies", "to_signal", "actor_id", "action_deadline", "performance_token",
-	"finish_channel",
+	"total_dependencies", "to_signal_after", "actor_id", "action_deadline", "performance_token",
+	"notify_channel_after",
 }
 
 var tasksTable = pgx.Identifier{"tasks"}
@@ -282,18 +282,18 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaite
 		}
 	}()
 
-	row := tx.QueryRow(ctx, `SELECT finish_channel, status_code, status FROM tasks WHERE id=$1 FOR SHARE`, taskID)
+	row := tx.QueryRow(ctx, `SELECT notify_channel_after, status_code, status FROM tasks WHERE id=$1 FOR SHARE`, taskID)
 
 	var (
-		finishChannel string
+		notifyChannel string
 		status        sql.NullString
 		statusCode    TaskStatusCodeValue = TaskInvalid
 	)
-	if err = row.Scan(&finishChannel, &statusCode, &status); err != nil {
+	if err = row.Scan(&notifyChannel, &statusCode, &status); err != nil {
 		return nil, fmt.Errorf("check task %s to listen: %w", taskID, err)
 	}
-	if finishChannel == "" {
-		return nil, fmt.Errorf("cannot wait for task %s: %w", taskID, ErrNoFinishChannel)
+	if notifyChannel == "" {
+		return nil, fmt.Errorf("cannot wait for task %s: %w", taskID, ErrNoNotifyChannel)
 	}
 	if statusCode != TaskInProgress && statusCode != TaskPending {
 		if !status.Valid {
@@ -309,8 +309,8 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaite
 		}, nil
 	}
 
-	if _, err = conn.Exec(ctx, "LISTEN "+pgx.Identifier{finishChannel}.Sanitize()); err != nil {
-		return nil, fmt.Errorf("listen for %s: %w", finishChannel, err)
+	if _, err = conn.Exec(ctx, "LISTEN "+pgx.Identifier{notifyChannel}.Sanitize()); err != nil {
+		return nil, fmt.Errorf("listen for %s: %w", notifyChannel, err)
 	}
 	err = tx.Commit(ctx)
 	tx = nil
@@ -334,7 +334,7 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaite
 		_, err := conn.WaitForNotification(waitCtx)
 		if err != nil {
 			ret.result = &waitResult{
-				err:        fmt.Errorf("wait for notification %s: %w", finishChannel, err),
+				err:        fmt.Errorf("wait for notification %s: %w", notifyChannel, err),
 				statusCode: TaskInvalid,
 			}
 			return
