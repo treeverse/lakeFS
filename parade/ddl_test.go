@@ -688,7 +688,7 @@ func TestNotification(t *testing.T) {
 	}
 
 	for _, c := range cases {
-		t.Run(c.title, func(t *testing.T) {
+		runCase := func(t *testing.T, listenFirst bool) {
 			w := wrapper{t, db}
 
 			cleanup := w.insertTasks([]parade.TaskData{
@@ -709,14 +709,32 @@ func TestNotification(t *testing.T) {
 			if err != nil {
 				t.Fatalf("stdlib.AcquireConn: %s", err)
 			}
+			defer func() {
+				if conn != nil {
+					stdlib.ReleaseConn(w.db.DB, conn)
+				}
+			}()
 
-			waiter, err := parade.NewWaiter(ctx, conn, w.prefixTask(task.ID))
-			if err != nil {
-				t.Fatalf("Start waiting for %+v: %s", task, err)
+			var waiter *parade.TaskWaiter
+
+			if listenFirst {
+				waiter, err = parade.NewWaiter(ctx, conn, w.prefixTask(task.ID))
+				if err != nil {
+					t.Fatalf("Start waiting for %+v: %s", task, err)
+				}
+				conn = nil
 			}
 
 			if err = w.returnTask(task.ID, task.Token, c.status, c.statusCode); err != nil {
 				t.Fatalf("return task %+v: %s", task, err)
+			}
+
+			if !listenFirst {
+				waiter, err = parade.NewWaiter(ctx, conn, w.prefixTask(task.ID))
+				if err != nil {
+					t.Fatalf("Start waiting for %+v: %s", task, err)
+				}
+				conn = nil
 			}
 
 			status, statusCode, err := waiter.Wait()
@@ -730,7 +748,9 @@ func TestNotification(t *testing.T) {
 			if c.statusCode != statusCode {
 				t.Errorf("expected status code %s but got %s", c.statusCode, statusCode)
 			}
-		})
+		}
+		t.Run(c.title+" (return before wait)", func(t *testing.T) { runCase(t, false) })
+		t.Run(c.title+" (wait before return)", func(t *testing.T) { runCase(t, true) })
 	}
 }
 
