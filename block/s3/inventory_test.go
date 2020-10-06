@@ -15,20 +15,20 @@ import (
 	"github.com/go-openapi/swag"
 	"github.com/treeverse/lakefs/block"
 	"github.com/treeverse/lakefs/block/s3"
-	inventorys3 "github.com/treeverse/lakefs/cloud/aws/s3inventory"
+	"github.com/treeverse/lakefs/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/logging"
 )
 
 var ErrReadFile = errors.New("error reading file")
 
-func rows(keys []string, lastModified map[string]time.Time) []*inventorys3.InventoryObject {
+func rows(keys []string, lastModified map[string]time.Time) []*s3inventory.InventoryObject {
 	if keys == nil {
 		return nil
 	}
-	res := make([]*inventorys3.InventoryObject, len(keys))
+	res := make([]*s3inventory.InventoryObject, len(keys))
 	for i, key := range keys {
 		if key != "" {
-			res[i] = new(inventorys3.InventoryObject)
+			res[i] = new(s3inventory.InventoryObject)
 			res[i].Key = key
 			res[i].IsLatest = swag.Bool(!strings.Contains(key, "_expired"))
 			res[i].IsDeleteMarker = swag.Bool(strings.Contains(key, "_del"))
@@ -210,7 +210,7 @@ type mockInventoryReader struct {
 }
 
 type mockInventoryFileReader struct {
-	rows            []*inventorys3.InventoryObject
+	rows            []*s3inventory.InventoryObject
 	nextIdx         int
 	inventoryReader *mockInventoryReader
 	key             string
@@ -247,8 +247,8 @@ func (m *mockInventoryFileReader) Close() error {
 }
 
 func (m *mockInventoryFileReader) Read(dstInterface interface{}) error {
-	res := make([]inventorys3.InventoryObject, 0, len(m.rows))
-	dst := dstInterface.(*[]inventorys3.InventoryObject)
+	res := make([]s3inventory.InventoryObject, 0, len(m.rows))
+	dst := dstInterface.(*[]s3inventory.InventoryObject)
 	for i := m.nextIdx; i < len(m.rows) && i < m.nextIdx+len(*dst); i++ {
 		if m.rows[i] == nil {
 			return ErrReadFile // for test - simulate file with error
@@ -264,12 +264,12 @@ func (m *mockInventoryFileReader) GetNumRows() int64 {
 	return int64(len(m.rows))
 }
 
-func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (inventorys3.FileReader, error) {
+func (m *mockInventoryReader) GetFileReader(_ string, _ string, key string) (s3inventory.FileReader, error) {
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }
 
-func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (inventorys3.MetadataReader, error) {
+func (m *mockInventoryReader) GetMetadataReader(_ string, _ string, key string) (s3inventory.MetadataReader, error) {
 	m.openFiles[key] = true
 	return &mockInventoryFileReader{rows: rows(fileContents[key], m.lastModified), inventoryReader: m, key: key}, nil
 }

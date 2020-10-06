@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"github.com/treeverse/lakefs/block"
-	inventorys3 "github.com/treeverse/lakefs/cloud/aws/s3inventory"
+	"github.com/treeverse/lakefs/cloud/aws/s3inventory"
 	"github.com/treeverse/lakefs/cmdutils"
 )
 
@@ -17,7 +17,7 @@ type InventoryIterator struct {
 	*Inventory
 	err                   error
 	val                   *block.InventoryObject
-	buffer                []inventorys3.InventoryObject
+	buffer                []s3inventory.InventoryObject
 	inventoryFileIndex    int
 	valIndexInBuffer      int
 	inventoryFileProgress *cmdutils.Progress
@@ -94,7 +94,7 @@ func (it *InventoryIterator) fillBuffer() bool {
 			it.logger.Errorf("failed to close manifest file reader. file=%s, err=%w", it.Manifest.Files[it.inventoryFileIndex].Key, err)
 		}
 	}()
-	it.buffer = make([]inventorys3.InventoryObject, rdr.GetNumRows())
+	it.buffer = make([]s3inventory.InventoryObject, rdr.GetNumRows())
 	err = rdr.Read(&it.buffer)
 	if err != nil {
 		it.err = err
