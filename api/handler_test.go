@@ -75,9 +75,13 @@ func (m *mockCollector) CollectMetadata(_ map[string]string) {}
 
 func (m *mockCollector) CollectEvent(_, _ string) {}
 
-func getHandler(t *testing.T, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
+func getHandler(t *testing.T, blockstoreType string, opts ...testutil.GetDBOption) (http.Handler, *dependencies) {
 	conn, handlerDatabaseURI := testutil.GetDB(t, databaseURI, opts...)
-	blockAdapter := testutil.NewBlockAdapterByEnv(t, &block.NoOpTranslator{})
+	var blockAdapter block.Adapter
+	if blockstoreType == "" {
+		blockstoreType, _ = os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
+	}
+	blockAdapter = testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 	cataloger := catalog.NewCataloger(conn, catalog.WithCacheEnabled(false))
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{
 		Enabled: false,
@@ -135,7 +139,7 @@ func (r *handlerTransport) Submit(op *runtime.ClientOperation) (interface{}, err
 }
 
 func TestServer_BasicAuth(t *testing.T) {
-	handler, deps := getHandler(t)
+	handler, deps := getHandler(t, "")
 
 	// create user
 	creds := createDefaultAdminUser(deps.auth, t)
