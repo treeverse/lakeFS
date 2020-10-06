@@ -1,3 +1,5 @@
+BEGIN;
+
 DROP TABLE IF EXISTS auth_credentials;
 DROP TABLE IF EXISTS auth_group_policies;
 DROP TABLE IF EXISTS auth_user_policies;
@@ -20,3 +22,5 @@ DROP SEQUENCE IF EXISTS catalog_repositories_id_seq;
 DROP SEQUENCE IF EXISTS catalog_branches_id_seq;
 DROP SEQUENCE IF EXISTS catalog_commit_id_seq;
 DROP FUNCTION IF EXISTS catalog_max_commit_id;
+
+COMMIT;
