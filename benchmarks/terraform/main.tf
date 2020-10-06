@@ -10,6 +10,24 @@ variable "tag" {
   default = "dev"
 }
 
+variable "build" {
+  type        = number
+  description = "Benchmark Github action build number"
+  default = 0
+}
+
+variable "grafana-username" {
+  type        = string
+  description = "Grafana Cloud collector username"
+  default = "treeverse"
+}
+
+variable "grafana-password" {
+  type        = string
+  description = "Grafana Cloud collector password"
+  default = "notThePassw0rd"
+}
+
 provider "aws" {
   region = "us-east-1"
 }

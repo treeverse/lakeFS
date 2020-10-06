@@ -15,7 +15,7 @@ resource "aws_ecs_task_definition" "executor" {
         "entryPoint": ["/app/benchmark-executor"],
         "environment": [
             {"name": "BENCHMARK_ENDPOINT_URL", "value": "http://${aws_alb.main.dns_name}:8000"},
-            {"name": "BENCHMARK_STORAGE_NAMESPACE", "value": "s3://lakefs-benchmarking/${var.tag}"}
+            {"name": "BENCHMARK_STORAGE_NAMESPACE", "value": "s3://lakefs-benchmarking/${var.build}"}
         ],
         "essential": true,
         "cpu": 2048,
