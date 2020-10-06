@@ -2,6 +2,7 @@ package parade
 
 import (
 	"context"
+	"database/sql"
 	"database/sql/driver"
 	"errors"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"github.com/jackc/pgx/v4"
 	"github.com/jmoiron/sqlx"
 	nanoid "github.com/matoous/go-nanoid"
+	"github.com/treeverse/lakefs/logging"
 )
 
 type TaskID string
@@ -222,40 +224,143 @@ var (
 	ErrNoFinishChannel = errors.New("task has no Finishchannel")
 )
 
-// WaitForTask blocks until taskId ends, and returns its result status and status code.  It
-// needs a pgx.Conn -- *not* a sqlx.Conn -- because it depends on PostgreSQL specific features.
-func WaitForTask(ctx context.Context, conn *pgx.Conn, taskID TaskID) (resultStatus string, resultStatusCode TaskStatusCodeValue, err error) {
-	row := conn.QueryRow(ctx, `SELECT finish_channel, status_code FROM tasks WHERE id=$1`, taskID)
+type waitResult struct {
+	status     string
+	statusCode TaskStatusCodeValue
+	err        error
+}
+
+// TaskWaiter is used to wait for tasks.  It is an object not a function to prevent race
+// conditions by starting to wait before beginning to act.  It owns a connection to the database
+// and should not be copied.
+type TaskWaiter struct {
+	taskID     TaskID
+	cancelFunc context.CancelFunc
+	done       chan struct{}
+	result     *waitResult
+}
+
+// NewWaiter returns TaskWaiter to wait for id on conn.  conn is owned by the returned
+// TaskWaiter until the waiter is done or cancelled.
+func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter, error) {
+	defer func() {
+		if conn != nil {
+			if err := conn.Close(ctx); err != nil {
+				logging.FromContext(ctx).
+					WithFields(logging.Fields{"taskID": taskID, "error": err}).
+					Error("failed to close conn after failure")
+			}
+		}
+	}()
+	tx, err := conn.Begin(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("Start waiting for %s: %w", taskID, err)
+	}
+	defer func() {
+		if tx != nil {
+			err := tx.Rollback(ctx)
+			if err != nil {
+				logging.
+					FromContext(ctx).
+					WithFields(logging.Fields{"taskID": taskID, "error": err}).
+					Error("cannot roll back listen tx")
+			}
+		}
+	}()
+
+	row := tx.QueryRow(ctx, `SELECT finish_channel, status_code, status FROM tasks WHERE id=$1 FOR SHARE`, taskID)
 	var (
 		finishChannel string
+		status        sql.NullString
 		statusCode    TaskStatusCodeValue = TaskInvalid
-		status        string              = "invalid"
 	)
-	if err = row.Scan(&finishChannel, &statusCode); err != nil {
-		return status, statusCode, fmt.Errorf("check task %s to listen: %w", taskID, err)
-	}
-	if statusCode != TaskInProgress && statusCode != TaskPending {
-		return status, statusCode, fmt.Errorf("task %s already in status %s: %w", taskID, statusCode, ErrBadStatus)
+	if err = row.Scan(&finishChannel, &statusCode, &status); err != nil {
+		return nil, fmt.Errorf("check task %s to listen: %w", taskID, err)
 	}
 	if finishChannel == "" {
-		return status, statusCode, fmt.Errorf("cannot wait for task %s: %w", taskID, ErrNoFinishChannel)
+		return nil, fmt.Errorf("cannot wait for task %s: %w", taskID, ErrNoFinishChannel)
+	}
+	if statusCode != TaskInProgress && statusCode != TaskPending {
+		if !status.Valid {
+			status.String = ""
+		}
+		return &TaskWaiter{
+			taskID: taskID,
+			result: &waitResult{
+				status:     status.String,
+				statusCode: statusCode,
+				err:        nil,
+			},
+		}, nil
 	}
 
 	if _, err = conn.Exec(ctx, "LISTEN "+pgx.Identifier{finishChannel}.Sanitize()); err != nil {
-		return "", TaskInvalid, fmt.Errorf("listen for %s: %w", finishChannel, err)
+		return nil, fmt.Errorf("listen for %s: %w", finishChannel, err)
+	}
+	err = tx.Commit(ctx)
+	tx = nil
+	if err != nil {
+		return nil, fmt.Errorf("commit listen for %s tx: %w", taskID, err)
 	}
 
-	_, err = conn.WaitForNotification(ctx)
-	if err != nil {
-		return "", TaskInvalid, fmt.Errorf("wait for notification %s: %w", finishChannel, err)
+	// Wait for task, report when done.
+	waitCtx, cancelFunc := context.WithCancel(ctx)
+
+	doneCh := make(chan struct{})
+	ret := &TaskWaiter{
+		taskID:     taskID,
+		done:       doneCh,
+		cancelFunc: cancelFunc,
+		result:     nil,
 	}
 
-	row = conn.QueryRow(ctx, `SELECT status, status_code FROM tasks WHERE id=$1`, taskID)
-	err = row.Scan(&status, &statusCode)
-	if err != nil {
-		err = fmt.Errorf("query status for task %s: %w", taskID, err)
+	go func(conn *pgx.Conn) {
+		defer conn.Close(ctx) // Closing should *not* be cancelled.
+		_, err := conn.WaitForNotification(waitCtx)
+		if err != nil {
+			ret.result = &waitResult{
+				err:        fmt.Errorf("wait for notification %s: %w", finishChannel, err),
+				statusCode: TaskInvalid,
+			}
+			return
+		}
+		row := conn.QueryRow(waitCtx, `SELECT status, status_code FROM tasks WHERE id=$1`, taskID)
+		var (
+			status     sql.NullString
+			statusCode TaskStatusCodeValue = TaskInvalid
+		)
+		err = row.Scan(&status, &statusCode)
+		if err != nil {
+			err = fmt.Errorf("query status for task %s: %w", taskID, err)
+		}
+		if !status.Valid {
+			status.String = ""
+		}
+		ret.result = &waitResult{
+			status:     status.String,
+			statusCode: statusCode,
+			err:        err,
+		}
+		close(ret.done)
+	}(conn)
+
+	conn = nil
+
+	return ret, nil
+}
+
+// Wait waits for the task to finish or the waiter to be cancelled and returns the task status
+// and status code.  It may safely be called from multiple goroutines.
+func (tw *TaskWaiter) Wait() (string, TaskStatusCodeValue, error) {
+	if tw.done != nil {
+		_ = <-tw.done
 	}
-	return status, statusCode, err
+	return tw.result.status, tw.result.statusCode, tw.result.err
+}
+
+// Cancel cancels waiting.
+func (tw *TaskWaiter) Cancel() {
+	tw.cancelFunc()
 }
 
 // taskWithNewIterator is a pgx.CopyFromSource iterator that passes each task along with a
