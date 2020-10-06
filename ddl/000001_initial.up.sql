@@ -1,3 +1,5 @@
+BEGIN;
+
 -- auth schema, containing information about lakeFS authentication and authorization
 CREATE TABLE IF NOT EXISTS auth_users (
     id serial NOT NULL PRIMARY KEY,
@@ -244,3 +246,4 @@ ALTER TABLE ONLY catalog_object_dedup
 ALTER TABLE ONLY catalog_repositories
     ADD CONSTRAINT catalog_repositories_branches_id_fk FOREIGN KEY (default_branch) REFERENCES catalog_branches(id) DEFERRABLE INITIALLY DEFERRED NOT VALID;
 
+COMMIT;
