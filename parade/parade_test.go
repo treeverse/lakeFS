@@ -160,10 +160,10 @@ func TestTaskDataIterator_Values(t *testing.T) {
 			StatusCode: "pending",
 			NumTries:   11, MaxTries: intAddr(17),
 			TotalDependencies: intAddr(9),
-			ToSignal:          []parade.TaskID{parade.TaskID("foo"), parade.TaskID("bar")},
+			ToSignalAfter:     []parade.TaskID{parade.TaskID("foo"), parade.TaskID("bar")},
 			ActorID:           parade.ActorID("actor"), ActionDeadline: &now,
-			PerformanceToken:  performanceTokenAddr(parade.PerformanceToken{}),
-			FinishChannelName: stringAddr("done"),
+			PerformanceToken:   performanceTokenAddr(parade.PerformanceToken{}),
+			NotifyChannelAfter: stringAddr("done"),
 		},
 	}
 	it := parade.TaskDataIterator{Data: tasks}
@@ -179,17 +179,17 @@ func TestTaskDataIterator_Values(t *testing.T) {
 		if err != nil {
 			t.Errorf("expected to values at index %d, got error %s", index, err)
 		}
-		toSignal := make([]string, len(task.ToSignal))
-		for i := 0; i < len(task.ToSignal); i++ {
-			toSignal[i] = string(task.ToSignal[i])
+		toSignalAfter := make([]string, len(task.ToSignalAfter))
+		for i := 0; i < len(task.ToSignalAfter); i++ {
+			toSignalAfter[i] = string(task.ToSignalAfter[i])
 		}
 		if diffs := deep.Equal(
 			[]interface{}{
 				task.ID, task.Action, task.Body, task.Status, task.StatusCode,
 				task.NumTries, task.MaxTries,
-				task.TotalDependencies, toSignal,
+				task.TotalDependencies, toSignalAfter,
 				task.ActorID, task.ActionDeadline,
-				task.PerformanceToken, task.FinishChannelName,
+				task.PerformanceToken, task.NotifyChannelAfter,
 			}, values); diffs != nil {
 			t.Errorf("got other values at index %d than expected: %s", index, diffs)
 		}
@@ -516,9 +516,9 @@ func TestDependencies(t *testing.T) {
 	const num = 63
 	taskData := make([]parade.TaskData, 0, num)
 	for i := 1; i <= num; i++ {
-		toSignal := make([]parade.TaskID, 0, i/20)
+		toSignalAfter := make([]parade.TaskID, 0, i/20)
 		for j := 2 * i; j <= num; j += i {
-			toSignal = append(toSignal, id(j))
+			toSignalAfter = append(toSignalAfter, id(j))
 		}
 		numDivisors := 0
 		for k := 1; k <= i/2; k++ {
@@ -531,7 +531,7 @@ func TestDependencies(t *testing.T) {
 			ID:                id(i),
 			Action:            "div",
 			Body:              makeBody(i),
-			ToSignal:          toSignal,
+			ToSignalAfter:     toSignalAfter,
 			TotalDependencies: &numDivisors,
 		})
 	}
@@ -575,19 +575,19 @@ func TestDeleteTasks(t *testing.T) {
 	pp := makeParadePrefix(t)
 
 	tasks := []parade.TaskData{
-		{ID: parade.TaskID("a0"), Action: "root", ToSignal: []parade.TaskID{"a1", "a3"}},
-		{ID: parade.TaskID("a1"), Action: "dep", ToSignal: []parade.TaskID{"a2"}, TotalDependencies: intAddr(1)},
-		{ID: parade.TaskID("a2"), Action: "dep", ToSignal: []parade.TaskID{"a3"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("a0"), Action: "root", ToSignalAfter: []parade.TaskID{"a1", "a3"}},
+		{ID: parade.TaskID("a1"), Action: "dep", ToSignalAfter: []parade.TaskID{"a2"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("a2"), Action: "dep", ToSignalAfter: []parade.TaskID{"a3"}, TotalDependencies: intAddr(1)},
 		{ID: parade.TaskID("a3"), Action: "leaf", TotalDependencies: intAddr(2)},
 
-		{ID: parade.TaskID("b0"), Action: "root", ToSignal: []parade.TaskID{"b2"}},
-		{ID: parade.TaskID("b1"), Action: "root-keep", ToSignal: []parade.TaskID{"b2"}},
+		{ID: parade.TaskID("b0"), Action: "root", ToSignalAfter: []parade.TaskID{"b2"}},
+		{ID: parade.TaskID("b1"), Action: "root-keep", ToSignalAfter: []parade.TaskID{"b2"}},
 		{ID: parade.TaskID("b2"), Action: "leaf", TotalDependencies: intAddr(2)},
 
-		{ID: parade.TaskID("c0"), Action: "root", ToSignal: []parade.TaskID{"c1", "c2"}},
-		{ID: parade.TaskID("c1"), Action: "dep", ToSignal: []parade.TaskID{"c3", "c4"}, TotalDependencies: intAddr(1)},
-		{ID: parade.TaskID("c2"), Action: "dep", ToSignal: []parade.TaskID{"c4", "c5"}, TotalDependencies: intAddr(1)},
-		{ID: parade.TaskID("c3"), Action: "dep", ToSignal: []parade.TaskID{"c5", "c6"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("c0"), Action: "root", ToSignalAfter: []parade.TaskID{"c1", "c2"}},
+		{ID: parade.TaskID("c1"), Action: "dep", ToSignalAfter: []parade.TaskID{"c3", "c4"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("c2"), Action: "dep", ToSignalAfter: []parade.TaskID{"c4", "c5"}, TotalDependencies: intAddr(1)},
+		{ID: parade.TaskID("c3"), Action: "dep", ToSignalAfter: []parade.TaskID{"c5", "c6"}, TotalDependencies: intAddr(1)},
 		{ID: parade.TaskID("c4"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("c5"), Action: "leaf", TotalDependencies: intAddr(2)},
 		{ID: parade.TaskID("c6"), Action: "leaf", TotalDependencies: intAddr(1)},
@@ -667,7 +667,7 @@ func TestNotification(t *testing.T) {
 			ctx := context.Background()
 			pp := makeParadePrefix(t)
 			tasks := []parade.TaskData{
-				{ID: c.id, Action: "frob", StatusCode: "pending", Body: stringAddr(""), FinishChannelName: stringAddr(pp.AddPrefix("done"))},
+				{ID: c.id, Action: "frob", StatusCode: "pending", Body: stringAddr(""), NotifyChannelAfter: stringAddr(pp.AddPrefix("done"))},
 			}
 
 			testutil.MustDo(t, "InsertTasks", pp.InsertTasks(ctx, tasks))
@@ -736,14 +736,14 @@ func BenchmarkFanIn(b *testing.B) {
 	totalShardDependencies := make([]int, *numShards)
 	for i := 0; i < numTasks; i++ {
 		shard := (i / 100) % *numShards
-		toSignal := []parade.TaskID{shardID(shard)}
-		tasks = append(tasks, parade.TaskData{ID: id(i), Action: "part", ToSignal: toSignal})
+		toSignalAfter := []parade.TaskID{shardID(shard)}
+		tasks = append(tasks, parade.TaskData{ID: id(i), Action: "part", ToSignalAfter: toSignalAfter})
 		totalShardDependencies[shard]++
 	}
 
-	toSignal := []parade.TaskID{"done"}
+	toSignalAfter := []parade.TaskID{"done"}
 	for i := 0; i < *numShards; i++ {
-		tasks = append(tasks, parade.TaskData{ID: shardID(i), Action: "spontaneous", ToSignal: toSignal, TotalDependencies: &totalShardDependencies[i]})
+		tasks = append(tasks, parade.TaskData{ID: shardID(i), Action: "spontaneous", ToSignalAfter: toSignalAfter, TotalDependencies: &totalShardDependencies[i]})
 	}
 	tasks = append(tasks, parade.TaskData{ID: "done", Action: "done", TotalDependencies: numShards})
 

@@ -15,7 +15,7 @@ import (
 var (
 	ErrInvalidToken    = errors.New("performance token invalid (action may have exceeded deadline)")
 	ErrBadStatus       = errors.New("bad status for task")
-	ErrNoFinishChannel = errors.New("task has no Finishchannel")
+	ErrNoNotifyChannel = errors.New("task has no notify_channel_after")
 )
 
 type Parade interface {
@@ -179,11 +179,11 @@ func (pp *ParadePrefix) InsertTasks(ctx context.Context, tasks []TaskData) error
 		if copy.StatusCode == "" {
 			copy.StatusCode = "pending"
 		}
-		toSignal := make([]TaskID, len(copy.ToSignal))
-		for j := 0; j < len(toSignal); j++ {
-			toSignal[j] = pp.AddPrefixTask(copy.ToSignal[j])
+		toSignalAfter := make([]TaskID, len(copy.ToSignalAfter))
+		for j := 0; j < len(toSignalAfter); j++ {
+			toSignalAfter[j] = pp.AddPrefixTask(copy.ToSignalAfter[j])
 		}
-		copy.ToSignal = toSignal
+		copy.ToSignalAfter = toSignalAfter
 		prefixedTasks[i] = copy
 	}
 	return pp.Base.InsertTasks(ctx, prefixedTasks)
