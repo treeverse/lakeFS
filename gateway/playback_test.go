@@ -112,7 +112,8 @@ func getBasicHandler(t *testing.T, authService *simulator.PlayBackMockConf) (htt
 	conn, _ := testutil.GetDB(t, databaseURI)
 	cataloger := catalog.NewCataloger(conn)
 
-	blockAdapter := testutil.NewBlockAdapterByEnv(t, IdTranslator)
+	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
+	blockAdapter := testutil.NewBlockAdapterByType(t, IdTranslator, blockstoreType)
 
 	dedupCleaner := dedup.NewCleaner(blockAdapter, cataloger.DedupReportChannel())
 	t.Cleanup(func() {

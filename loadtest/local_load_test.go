@@ -54,7 +54,8 @@ func TestLocalLoad(t *testing.T) {
 		t.Skip("Skipping loadtest tests in short mode")
 	}
 	conn, _ := testutil.GetDB(t, databaseURI)
-	blockAdapter := testutil.NewBlockAdapterByEnv(t, &block.NoOpTranslator{})
+	blockstoreType, _ := os.LookupEnv(testutil.EnvKeyUseBlockAdapter)
+	blockAdapter := testutil.NewBlockAdapterByType(t, &block.NoOpTranslator{}, blockstoreType)
 	cataloger := catalog.NewCataloger(conn)
 	authService := auth.NewDBAuthService(conn, crypt.NewSecretStore([]byte("some secret")), authparams.ServiceCache{})
 	retentionService := retention.NewService(conn)
