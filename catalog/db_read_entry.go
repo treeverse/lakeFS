@@ -1,7 +1,7 @@
 package catalog
 
 import (
-	"fmt"
+	"strconv"
 
 	sq "github.com/Masterminds/squirrel"
 	"github.com/treeverse/lakefs/db"
@@ -23,9 +23,9 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) 
 	lineage, err := getLineage(tx, branchID, commitID)
 	panicIfErr(err)
 	queries := make([]sq.SelectBuilder, len(lineage)+1)
-	queries[0] = singleBranchSelect(branchID, paths, commitID).Column("? as lineage_order", 0)
+	queries[0] = singleBranchSelect(branchID, paths, commitID).Column("? as lineage_order", "0")
 	for i, branch := range lineage {
-		queries[i+1] = singleBranchSelect(branch.BranchID, paths, branch.CommitID).Column("? as lineage_order", i+1)
+		queries[i+1] = singleBranchSelect(branch.BranchID, paths, branch.CommitID).Column("? as lineage_order", strconv.Itoa(i+1))
 	}
 	//from each branch in the lineage,  select the most current entry for the path
 	unionSelect := queries[0].Prefix("(").Suffix(")")
@@ -33,21 +33,21 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) 
 		unionSelect = unionSelect.SuffixExpr(sq.ConcatExpr("\n UNION ALL \n", "(",
 			queries[i], ")"))
 	}
-	s := sq.DebugSqlizer(unionSelect)
-	fmt.Print(s)
+	//s := sq.DebugSqlizer(unionSelect)
+	//fmt.Print(s)
 	// for each path - select the CTID of the entry that is closest to the branch by lineage
-	distinctSelect := sq.Select("*").
+	distinctSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		FromSelect(unionSelect, "c").
 		Distinct().Options("ON (path)").
 		OrderBy("path", "lineage_order")
 	// select entries matching the ctid list
-	s = sq.DebugSqlizer(distinctSelect)
-	fmt.Print(s)
+	//s := sq.DebugSqlizer(distinctSelect)
+	//fmt.Print(s)
 	return distinctSelect
 }
 
 func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.SelectBuilder {
-	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+	rawSelect := sq.Select("*").
 		Distinct().Options("ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).

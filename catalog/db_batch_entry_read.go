@@ -129,7 +129,7 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 			return nil, err
 		}
 		// get lineage
-		lineage, err := getLineage(tx, branchID, ref.CommitID)
+		//lineage, err := getLineage(tx, branchID, ref.CommitID)
 		if err != nil {
 			return nil, fmt.Errorf("get lineage: %w", err)
 		}
@@ -139,9 +139,10 @@ func (c *cataloger) dbSelectBatchEntries(repository string, ref Ref, pathReqList
 			p[i] = s.path
 		}
 		// prepare query
-		readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
-			FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
-			Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
+		readExpr := LineageSelect(branchID, p, ref.CommitID, tx)
+		//readExpr := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
+		//	FromSelect(sqEntriesLineage(branchID, ref.CommitID, lineage), "entries").
+		//	Where(sq.And{sq.Eq{"path": p}, sq.Expr("not is_deleted")})
 		query, args, err := readExpr.PlaceholderFormat(sq.Dollar).ToSql()
 		if err != nil {
 			return nil, fmt.Errorf("build sql: %w", err)
