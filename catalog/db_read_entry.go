@@ -36,19 +36,18 @@ func LineageSelect(branchID int64, paths []string, commitID CommitID, tx db.Tx) 
 	s := sq.DebugSqlizer(unionSelect)
 	fmt.Print(s)
 	// for each path - select the CTID of the entry that is closest to the branch by lineage
-	ctidSelect := sq.Select("entry_ctid").
+	distinctSelect := sq.Select("*").
 		FromSelect(unionSelect, "c").
 		Distinct().Options("ON (path)").
-		OrderBy("path", "lineageOrder")
+		OrderBy("path", "lineage_order")
 	// select entries matching the ctid list
-	entriesSelect := ctidSelect.Prefix("SELECT * FROM catalog_entries WHERE ctid IN \n(").Suffix(")")
-	s = sq.DebugSqlizer(entriesSelect)
+	s = sq.DebugSqlizer(distinctSelect)
 	fmt.Print(s)
-	return entriesSelect
+	return distinctSelect
 }
 
 func singleBranchSelect(branchID int64, paths []string, commitID CommitID) sq.SelectBuilder {
-	rawSelect := sq.Select("branch_id", "path", "ctid as entry_ctid").
+	rawSelect := sq.Select("path", "physical_address", "creation_date", "size", "checksum", "metadata", "is_expired").
 		Distinct().Options("ON (branch_id,path)").
 		From("catalog_entries").
 		Where("branch_id = ?", branchID).
