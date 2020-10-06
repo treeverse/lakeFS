@@ -254,7 +254,7 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter,
 	}()
 	tx, err := conn.Begin(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("Start waiting for %s: %w", taskID, err)
+		return nil, fmt.Errorf("start waiting for %s: %w", taskID, err)
 	}
 	defer func() {
 		if tx != nil {
@@ -353,7 +353,7 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter,
 // and status code.  It may safely be called from multiple goroutines.
 func (tw *TaskWaiter) Wait() (string, TaskStatusCodeValue, error) {
 	if tw.done != nil {
-		_ = <-tw.done
+		<-tw.done
 	}
 	return tw.result.status, tw.result.statusCode, tw.result.err
 }
