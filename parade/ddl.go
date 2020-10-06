@@ -22,7 +22,7 @@ type ActorID string
 
 type PerformanceToken pgtype.UUID
 
-// nolint:stylecheck (change name from src below)
+// nolint: stylecheck
 func (dst *PerformanceToken) Scan(src interface{}) error {
 	var scanned pgtype.UUID
 	if err := scanned.Scan(src); err != nil {
@@ -127,7 +127,7 @@ func (td *TaskDataIterator) Values() ([]interface{}, error) {
 	}
 	value := td.Data[td.next-1]
 	// Convert ToSignal to a text array so pgx can convert it to text.  Needed because Go
-	// types
+	// types.
 	toSignal := make([]string, len(value.ToSignal))
 	for i := 0; i < len(value.ToSignal); i++ {
 		toSignal[i] = string(value.ToSignal[i])
@@ -157,7 +157,6 @@ var TaskDataColumnNames = []string{
 
 var tasksTable = pgx.Identifier{"tasks"}
 
-// InsertTasks adds multiple tasks efficiently.
 func InsertTasks(ctx context.Context, conn *pgx.Conn, source pgx.CopyFromSource) error {
 	_, err := conn.CopyFrom(ctx, tasksTable, TaskDataColumnNames, source)
 	return err
@@ -194,8 +193,6 @@ func OwnTasks(conn *sqlx.DB, actor ActorID, maxTasks int, actions []string, maxD
 	return tasks, nil
 }
 
-var ErrInvalidToken = errors.New("performance token invalid (action may have exceeded deadline)")
-
 // ExtendTaskDeadline extends the deadline for completing taskID which was acquired with the
 // specified token, for maxDuration longer.  It returns nil if the task is still owned and its
 // deadline was extended, or an SQL error, or ErrInvalidToken.
@@ -219,7 +216,7 @@ func ExtendTaskDeadline(conn *sqlx.DB, taskID TaskID, token PerformanceToken, ma
 }
 
 // ReturnTask returns taskId which was acquired using the specified performanceToken, giving it
-// resultStatus and resultStatusCode.  It returns InvalidTokenError if the performanceToken is
+// resultStatus and resultStatusCode.  It returns ErrInvalidToken if the performanceToken is
 // invalid; this happens when ReturnTask is called after its deadline expires, or due to a logic
 // error.
 func ReturnTask(conn *sqlx.DB, taskID TaskID, token PerformanceToken, resultStatus string, resultStatusCode TaskStatusCodeValue) error {
@@ -242,11 +239,6 @@ func ReturnTask(conn *sqlx.DB, taskID TaskID, token PerformanceToken, resultStat
 	return nil
 }
 
-var (
-	ErrBadStatus       = errors.New("bad status for task")
-	ErrNoFinishChannel = errors.New("task has no Finishchannel")
-)
-
 type waitResult struct {
 	status     string
 	statusCode TaskStatusCodeValue
@@ -256,7 +248,7 @@ type waitResult struct {
 // TaskWaiter is used to wait for tasks.  It is an object not a function to prevent race
 // conditions by starting to wait before beginning to act.  It owns a connection to the database
 // and should not be copied.
-type TaskWaiter struct {
+type TaskDBWaiter struct {
 	taskID     TaskID
 	cancelFunc context.CancelFunc
 	done       chan struct{}
@@ -265,7 +257,7 @@ type TaskWaiter struct {
 
 // NewWaiter returns TaskWaiter to wait for id on conn.  conn is owned by the returned
 // TaskWaiter until the waiter is done or cancelled.
-func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter, error) {
+func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskDBWaiter, error) {
 	defer func() {
 		if conn != nil {
 			if err := conn.Close(ctx); err != nil {
@@ -281,17 +273,17 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter,
 	}
 	defer func() {
 		if tx != nil {
-			err := tx.Rollback(ctx)
-			if err != nil {
+			if err := tx.Rollback(ctx); err != nil {
 				logging.
 					FromContext(ctx).
 					WithFields(logging.Fields{"taskID": taskID, "error": err}).
-					Error("cannot roll back listen tx")
+					Error("cannot roll back listen tx after error")
 			}
 		}
 	}()
 
 	row := tx.QueryRow(ctx, `SELECT finish_channel, status_code, status FROM tasks WHERE id=$1 FOR SHARE`, taskID)
+
 	var (
 		finishChannel string
 		status        sql.NullString
@@ -307,7 +299,7 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter,
 		if !status.Valid {
 			status.String = ""
 		}
-		return &TaskWaiter{
+		return &TaskDBWaiter{
 			taskID: taskID,
 			result: &waitResult{
 				status:     status.String,
@@ -330,7 +322,7 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter,
 	waitCtx, cancelFunc := context.WithCancel(ctx)
 
 	doneCh := make(chan struct{})
-	ret := &TaskWaiter{
+	ret := &TaskDBWaiter{
 		taskID:     taskID,
 		done:       doneCh,
 		cancelFunc: cancelFunc,
@@ -374,7 +366,7 @@ func NewWaiter(ctx context.Context, conn *pgx.Conn, taskID TaskID) (*TaskWaiter,
 
 // Wait waits for the task to finish or the waiter to be cancelled and returns the task status
 // and status code.  It may safely be called from multiple goroutines.
-func (tw *TaskWaiter) Wait() (string, TaskStatusCodeValue, error) {
+func (tw *TaskDBWaiter) Wait() (string, TaskStatusCodeValue, error) {
 	if tw.done != nil {
 		<-tw.done
 	}
@@ -382,7 +374,7 @@ func (tw *TaskWaiter) Wait() (string, TaskStatusCodeValue, error) {
 }
 
 // Cancel cancels waiting.
-func (tw *TaskWaiter) Cancel() {
+func (tw *TaskDBWaiter) Cancel() {
 	tw.cancelFunc()
 }
 
