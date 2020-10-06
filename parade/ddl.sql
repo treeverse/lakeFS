@@ -1,28 +1,24 @@
-CREATE EXTENSION pgcrypto;
-
-CREATE SCHEMA IF NOT EXISTS parade;
-
--- (requires extensioon pgcrypto)
+CREATE EXTENSION IF NOT EXISTS pgcrypto;
 
 CREATE TYPE task_status_code_value AS ENUM (
-    'pending',		-- waiting for an actor to perform it (new or being retried)
-    'in-progress',	-- task is being performed by an actor
-    'aborted',		-- an actor has aborted this task with message, will not be reissued
-    'completed'		-- an actor has completed this task with message, will not reissued
+    'pending',          -- waiting for an actor to perform it (new or being retried)
+    'in-progress',      -- task is being performed by an actor
+    'aborted',          -- an actor has aborted this task with message, will not be reissued
+    'completed'         -- an actor has completed this task with message, will not reissued
 );
 
 CREATE TABLE IF NOT EXISTS tasks (
     id VARCHAR(64) NOT NULL PRIMARY KEY, -- nanoid
 
     action VARCHAR(128) NOT NULL, -- name (type) of action to perform
-    body TEXT,			-- data used by action
-    status TEXT,		-- status text defined by action, visible to action
+    body TEXT,                  -- data used by action
+    status TEXT,                -- status text defined by action, visible to action
 
     status_code TASK_STATUS_CODE_VALUE NOT NULL DEFAULT 'pending', -- internal status code, used by parade to issue tasks
     num_tries INTEGER NOT NULL DEFAULT 0,
     max_tries INTEGER,
 
-    total_dependencies INTEGER,	-- number of tasks that must signal this task
+    total_dependencies INTEGER, -- number of tasks that must signal this task
     num_signals INTEGER NOT NULL DEFAULT 0, -- number of tasks that have already signalled this task
 
     -- BUG(ariels): add REFERENCES dependency to each of the to_signal
@@ -58,20 +54,20 @@ LANGUAGE sql VOLATILE AS $$
     UPDATE tasks
     SET actor_id = owner_id,
         status_code = 'in-progress',
-	num_tries = num_tries + 1,
-	performance_token = gen_random_uuid(),
-	action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
+        num_tries = num_tries + 1,
+        performance_token = gen_random_uuid(),
+        action_deadline = NOW() + max_duration -- NULL if max_duration IS NULL
     WHERE id IN (
         SELECT id
-	FROM tasks
+        FROM tasks
         WHERE can_allocate_task(id, status_code, action_deadline, num_signals, total_dependencies) AND
-	    action = ANY(actions) AND
-	    (max_tries IS NULL OR num_tries < max_tries)
-	-- maybe: AND not_before <= NOW()
-	-- maybe: ORDER BY priority (eventually)
-	ORDER BY random()
-	FOR UPDATE SKIP LOCKED
-	LIMIT max_tasks)
+            action = ANY(actions) AND
+            (max_tries IS NULL OR num_tries < max_tries)
+        -- maybe: AND not_before <= NOW()
+        -- maybe: ORDER BY priority (eventually)
+        ORDER BY random()
+        FOR UPDATE SKIP LOCKED
+        LIMIT max_tasks)
     RETURNING id, performance_token, action, body
 $$;
 
@@ -89,9 +85,9 @@ DECLARE
 BEGIN
     UPDATE tasks INTO channel, tasks_to_signal
     SET status = result_status,
-    	status_code = result_status_code,
-	actor_id = NULL,
-	performance_token = NULL
+        status_code = result_status_code,
+        actor_id = NULL,
+        performance_token = NULL
     WHERE id = task_id AND performance_token = token
     RETURNING finish_channel, to_signal;
 
@@ -138,23 +134,23 @@ DECLARE
     row_count INTEGER;
 BEGIN
     LOOP
-	EXECUTE format($Q$
+        EXECUTE format($Q$
             UPDATE %1$I SET mark='in-progress' WHERE mark='new'
         $Q$, task_id_name);
         EXECUTE format($Q$
-	    WITH new_to_delete AS (
-	        SELECT remove_task_dependencies(id) id FROM %1$I WHERE mark='in-progress'
-	    )
-	    INSERT INTO %1$I (SELECT id, 'new' mark FROM new_to_delete)
-	$Q$, task_id_name);
-	GET DIAGNOSTICS row_count = ROW_COUNT;
-	EXIT WHEN row_count=0;
-	EXECUTE format($Q$
+            WITH new_to_delete AS (
+                SELECT remove_task_dependencies(id) id FROM %1$I WHERE mark='in-progress'
+            )
+            INSERT INTO %1$I (SELECT id, 'new' mark FROM new_to_delete)
+        $Q$, task_id_name);
+        GET DIAGNOSTICS row_count = ROW_COUNT;
+        EXIT WHEN row_count=0;
+        EXECUTE format($Q$
             UPDATE %1$I SET mark='done' WHERE mark='in-progress'
         $Q$, task_id_name);
     END LOOP;
     EXECUTE format($Q$
-	DELETE FROM tasks WHERE id IN (SELECT id FROM %1$I)
+        DELETE FROM tasks WHERE id IN (SELECT id FROM %1$I)
     $Q$, task_id_name);
 END;
 $$;
