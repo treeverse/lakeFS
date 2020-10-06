@@ -576,6 +576,22 @@ class Setup {
     }
 }
 
+class Config {
+    async get() {
+        const response = await apiRequest('/config', {
+            method: 'GET',
+        });
+        switch (response.status) {
+            case 200:
+                return response.json();
+            case 409:
+                throw new Error('Conflict');
+            default:
+                throw new Error('Unknown');
+        }
+    }
+}
+
 
 export const repositories = new Repositories();
 export const branches = new Branches();
@@ -584,3 +600,4 @@ export const commits = new Commits();
 export const refs = new Refs();
 export const setup = new Setup();
 export const auth = new Auth();
+export const config = new Config();

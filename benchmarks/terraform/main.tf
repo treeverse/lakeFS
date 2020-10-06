@@ -89,22 +89,6 @@ resource "aws_security_group" "benchmark_sg" {
     cidr_blocks = [for s in data.aws_subnet.all : s.cidr_block]
   }
 
-  ingress {
-    description = "NFS for EFS volume"
-    from_port   = 2049
-    to_port     = 2049
-    protocol    = "tcp"
-    cidr_blocks = [for s in data.aws_subnet.all : s.cidr_block]
-  }
-
-  ingress {
-    description = "DNS for NFS resolution"
-    from_port   = 53
-    to_port     = 53
-    protocol    = "tcp"
-    cidr_blocks = [for s in data.aws_subnet.all : s.cidr_block]
-  }
-
   egress {
     from_port   = 0
     to_port     = 0

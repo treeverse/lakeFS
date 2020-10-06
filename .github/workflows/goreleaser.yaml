@@ -33,3 +33,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+
+      - name: Slack Notification
+        uses: bryannice/gitactions-slack-notification@master
+        env:
+          SLACK_WEBHOOK: ${{ secrets.LAKEFS_SLACK_WEBHOOK }}
+          SLACK_TITLE: lakeFS ${{ github.event.release.tag_name }} published
+          SLACK_MESSAGE: ${{ github.event.release.html_url }}
+          SLACK_CHANNEL: news
+        if: ${{ !github.event.release.prerelease && env.SLACK_WEBHOOK }}

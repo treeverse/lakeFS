@@ -4,9 +4,6 @@ on:
     branches:
       - master
 
-  # TODO(itai): remove before merge
-  pull_request:
-
 jobs:
   deploy-executor-image:
     name: Build and push benchmark executor Docker image
@@ -102,9 +99,6 @@ jobs:
         if: ${{ always() }}
         run: |
           cd benchmarks/terraform/
-
-          # safety timeout for scraping
-          sleep 30
 
           # keep the logs
           terraform state rm aws_cloudwatch_log_group.benchmark

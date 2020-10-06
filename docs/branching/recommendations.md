@@ -106,7 +106,7 @@ In production data pipelines, we require the following guarantees:
    # output:
    # created branch 'pipeline-raw-data-grouping', pointing to commit ID: '~43aP3nUrR17LcX'
    ```
-1. Now, for each job that takes part in the pipeline, we'll create a `job` branch that is **derived from the `pipline` branch**:
+1. Now, for each job that takes part in the pipeline, we'll create a `job` branch that is **derived from the `pipeline` branch**:
    
    ```shell
    lakectl branch create \
