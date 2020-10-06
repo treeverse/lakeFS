@@ -31,7 +31,7 @@ const (
 
 	DBContainerTimeoutSeconds = 60 * 30 // 30 minutes
 
-	envKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
+	EnvKeyUseBlockAdapter = "USE_BLOCK_ADAPTER"
 	envKeyAwsKeyID        = "AWS_ACCESS_KEY_ID"
 	envKeyAwsSecretKey    = "AWS_SECRET_ACCESS_KEY" //nolint:gosec
 	envKeyAwsRegion       = "AWS_DEFAULT_REGION"
@@ -170,9 +170,8 @@ func MustDo(t testing.TB, what string, err error) {
 	}
 }
 
-func NewBlockAdapterByEnv(t *testing.T, translator block.UploadIDTranslator) block.Adapter {
-	useAdapter, _ := os.LookupEnv(envKeyUseBlockAdapter)
-	switch useAdapter {
+func NewBlockAdapterByType(t *testing.T, translator block.UploadIDTranslator, blockstoreType string) block.Adapter {
+	switch blockstoreType {
 	case gs.BlockstoreType:
 		ctx := context.Background()
 		client, err := storage.NewClient(ctx)
